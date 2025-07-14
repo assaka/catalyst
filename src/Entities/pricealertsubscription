@@ -1,0 +1,29 @@
+{
+  "name": "PriceAlertSubscription",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "target_price": {
+      "type": "number"
+    },
+    "is_notified": {
+      "type": "boolean",
+      "default": false
+    },
+    "store_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "product_id",
+    "email",
+    "target_price",
+    "store_id"
+  ]
+}

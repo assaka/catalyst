@@ -1,0 +1,52 @@
+{
+  "name": "CmsPage",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "slug": {
+      "type": "string"
+    },
+    "content": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "store_id": {
+      "type": "string"
+    },
+    "related_product_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "meta_title": {
+      "type": "string"
+    },
+    "meta_description": {
+      "type": "string"
+    },
+    "meta_keywords": {
+      "type": "string"
+    },
+    "meta_robots_tag": {
+      "type": "string",
+      "enum": [
+        "index, follow",
+        "noindex, follow",
+        "index, nofollow",
+        "noindex, nofollow"
+      ],
+      "default": "index, follow"
+    }
+  },
+  "required": [
+    "title",
+    "slug",
+    "store_id"
+  ]
+}

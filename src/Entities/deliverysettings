@@ -1,0 +1,78 @@
+{
+  "name": "DeliverySettings",
+  "type": "object",
+  "properties": {
+    "enable_delivery_date": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable delivery date selection for customers"
+    },
+    "enable_comments": {
+      "type": "boolean",
+      "default": true,
+      "description": "Allow customers to add delivery comments"
+    },
+    "offset_days": {
+      "type": "number",
+      "default": 1,
+      "description": "Minimum days from order date for delivery"
+    },
+    "max_advance_days": {
+      "type": "number",
+      "default": 30,
+      "description": "Maximum days in advance customers can schedule delivery"
+    },
+    "blocked_dates": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "date"
+      },
+      "description": "Specific dates when delivery is not available"
+    },
+    "blocked_weekdays": {
+      "type": "array",
+      "items": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 6
+      },
+      "description": "Weekdays when delivery is not available (0=Sunday, 6=Saturday)"
+    },
+    "out_of_office_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Start date for out of office period"
+    },
+    "out_of_office_end": {
+      "type": "string",
+      "format": "date",
+      "description": "End date for out of office period"
+    },
+    "delivery_time_slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "start_time": {
+            "type": "string"
+          },
+          "end_time": {
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      },
+      "description": "Available delivery time slots"
+    },
+    "store_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id"
+  ]
+}

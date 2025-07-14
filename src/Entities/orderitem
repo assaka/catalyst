@@ -1,0 +1,54 @@
+{
+  "name": "OrderItem",
+  "type": "object",
+  "properties": {
+    "order_id": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "product_name": {
+      "type": "string"
+    },
+    "sku": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "number"
+    },
+    "price": {
+      "type": "number"
+    },
+    "total": {
+      "type": "number"
+    },
+    "selected_attributes": {
+      "type": "object",
+      "description": "Selected product attributes/variants, including custom options"
+    },
+    "selected_options": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "description": "List of selected custom options with their prices."
+    }
+  },
+  "required": [
+    "order_id",
+    "store_id",
+    "product_id",
+    "quantity",
+    "price",
+    "total"
+  ],
+  "rls": {
+    "read": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

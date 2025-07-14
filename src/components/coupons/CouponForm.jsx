@@ -1,0 +1,428 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { MultiSelect } from '@/components/ui/multi-select';
+import { Category } from '@/api/entities';
+import { Product } from '@/api/entities';
+import { AttributeSet } from '@/api/entities';
+import { Attribute } from '@/api/entities';
+
+export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    code: '',
+    description: '',
+    discount_type: 'fixed',
+    discount_value: 0,
+    is_active: true,
+    usage_limit: 100, // Default value
+    usage_count: 0,
+    min_purchase_amount: '',
+    max_discount_amount: '',
+    start_date: '',
+    end_date: '',
+    applicable_products: [],
+    applicable_categories: [],
+    applicable_skus: [],
+    applicable_attribute_sets: [], // New field
+    applicable_attributes: [], // New field
+    buy_quantity: 1, // New field
+    get_quantity: 1  // New field
+  });
+
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [attributeSets, setAttributeSets] = useState([]);
+  const [attributes, setAttributes] = useState([]);
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    loadData();
+  }, [storeId]);
+
+  useEffect(() => {
+    if (coupon) {
+      setFormData({
+        name: coupon.name || '',
+        code: coupon.code || '',
+        description: coupon.description || '',
+        discount_type: coupon.discount_type || 'fixed',
+        discount_value: coupon.discount_value || 0,
+        is_active: coupon.is_active !== undefined ? coupon.is_active : true,
+        usage_limit: coupon.usage_limit || 100,
+        usage_count: coupon.usage_count || 0,
+        min_purchase_amount: coupon.min_purchase_amount || '',
+        max_discount_amount: coupon.max_discount_amount || '',
+        start_date: coupon.start_date ? coupon.start_date.split('T')[0] : '',
+        end_date: coupon.end_date ? coupon.end_date.split('T')[0] : '',
+        applicable_products: coupon.applicable_products || [],
+        applicable_categories: coupon.applicable_categories || [],
+        applicable_skus: coupon.applicable_skus || [],
+        applicable_attribute_sets: coupon.applicable_attribute_sets || [],
+        applicable_attributes: coupon.applicable_attributes || [],
+        buy_quantity: coupon.buy_quantity || 1,
+        get_quantity: coupon.get_quantity || 1
+      });
+    }
+  }, [coupon]);
+
+  const loadData = async () => {
+    if (!storeId) return;
+
+    try {
+      const [categoriesData, productsData, attributeSetsData, attributesData] = await Promise.all([
+        Category.filter({ store_id: storeId }),
+        Product.filter({ store_id: storeId }),
+        AttributeSet.filter({ store_id: storeId }),
+        Attribute.filter({ store_id: storeId })
+      ]);
+
+      setCategories(categoriesData || []);
+      setProducts(productsData || []);
+      setAttributeSets(attributeSetsData || []);
+      setAttributes(attributesData || []);
+    } catch (error) {
+      console.error('Error loading coupon form data:', error);
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.code.trim()) newErrors.code = 'Code is required';
+    if (!formData.discount_value || formData.discount_value <= 0) {
+      newErrors.discount_value = 'Discount value must be greater than 0';
+    }
+    if (formData.usage_limit && formData.usage_limit <= 0) {
+      newErrors.usage_limit = 'Usage limit must be greater than 0';
+    }
+    if (formData.min_purchase_amount && formData.min_purchase_amount < 0) {
+      newErrors.min_purchase_amount = 'Minimum purchase amount cannot be negative';
+    }
+    if (formData.max_discount_amount && formData.max_discount_amount < 0) {
+      newErrors.max_discount_amount = 'Maximum discount amount cannot be negative';
+    }
+    if (formData.discount_type === 'buy_x_get_y') {
+      if (!formData.buy_quantity || formData.buy_quantity <= 0) {
+        newErrors.buy_quantity = 'Buy quantity is required for Buy X Get Y offers';
+      }
+      if (!formData.get_quantity || formData.get_quantity <= 0) {
+        newErrors.get_quantity = 'Get quantity is required for Buy X Get Y offers';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    const submitData = { ...formData };
+    
+    // Convert empty strings to null for optional numeric fields
+    if (submitData.min_purchase_amount === '') submitData.min_purchase_amount = null;
+    if (submitData.max_discount_amount === '') submitData.max_discount_amount = null;
+    if (submitData.usage_limit === '') submitData.usage_limit = null;
+    
+    // Convert dates to ISO format
+    if (submitData.start_date) {
+      submitData.start_date = new Date(submitData.start_date).toISOString();
+    }
+    if (submitData.end_date) {
+      submitData.end_date = new Date(submitData.end_date).toISOString();
+    }
+
+    if (coupon?.id) {
+      submitData.id = coupon.id;
+    }
+
+    onSubmit(submitData);
+  };
+
+  const categoryOptions = categories.map(cat => ({ value: cat.id, label: cat.name }));
+  const productOptions = products.map(prod => ({ value: prod.id, label: `${prod.name} (${prod.sku})` }));
+  const attributeSetOptions = attributeSets.map(set => ({ value: set.id, label: set.name }));
+  const attributeOptions = attributes.map(attr => ({ value: attr.id, label: `${attr.name} (${attr.code})` }));
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Basic Information</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className={errors.name ? 'border-red-500' : ''}
+              />
+              {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+            </div>
+            <div>
+              <Label htmlFor="code">Coupon Code *</Label>
+              <Input
+                id="code"
+                value={formData.code}
+                onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value.toUpperCase() }))}
+                className={errors.code ? 'border-red-500' : ''}
+              />
+              {errors.code && <p className="text-sm text-red-500 mt-1">{errors.code}</p>}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              rows={3}
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="is_active"
+              checked={formData.is_active}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+            />
+            <Label htmlFor="is_active">Active</Label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Discount Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="discount_type">Discount Type</Label>
+              <Select
+                value={formData.discount_type}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, discount_type: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fixed">Fixed Amount</SelectItem>
+                  <SelectItem value="percentage">Percentage</SelectItem>
+                  <SelectItem value="buy_x_get_y">Buy X Get Y</SelectItem>
+                  <SelectItem value="free_shipping">Free Shipping</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="discount_value">
+                Discount Value * 
+                {formData.discount_type === 'percentage' && ' (%)'}
+                {formData.discount_type === 'fixed' && ' ($)'}
+              </Label>
+              <Input
+                id="discount_value"
+                type="number"
+                step="0.01"
+                value={formData.discount_value}
+                onChange={(e) => setFormData(prev => ({ ...prev, discount_value: parseFloat(e.target.value) || 0 }))}
+                className={errors.discount_value ? 'border-red-500' : ''}
+                disabled={formData.discount_type === 'free_shipping'}
+              />
+              {errors.discount_value && <p className="text-sm text-red-500 mt-1">{errors.discount_value}</p>}
+            </div>
+          </div>
+
+          {formData.discount_type === 'buy_x_get_y' && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="buy_quantity">Buy Quantity *</Label>
+                <Input
+                  id="buy_quantity"
+                  type="number"
+                  min="1"
+                  value={formData.buy_quantity}
+                  onChange={(e) => setFormData(prev => ({ ...prev, buy_quantity: parseInt(e.target.value) || 1 }))}
+                  className={errors.buy_quantity ? 'border-red-500' : ''}
+                />
+                {errors.buy_quantity && <p className="text-sm text-red-500 mt-1">{errors.buy_quantity}</p>}
+              </div>
+              <div>
+                <Label htmlFor="get_quantity">Get Quantity *</Label>
+                <Input
+                  id="get_quantity"
+                  type="number"
+                  min="1"
+                  value={formData.get_quantity}
+                  onChange={(e) => setFormData(prev => ({ ...prev, get_quantity: parseInt(e.target.value) || 1 }))}
+                  className={errors.get_quantity ? 'border-red-500' : ''}
+                />
+                {errors.get_quantity && <p className="text-sm text-red-500 mt-1">{errors.get_quantity}</p>}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Usage Limits & Conditions</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="usage_limit">Usage Limit</Label>
+              <Input
+                id="usage_limit"
+                type="number"
+                min="1"
+                value={formData.usage_limit}
+                onChange={(e) => setFormData(prev => ({ ...prev, usage_limit: parseInt(e.target.value) || 100 }))}
+                placeholder="100 (default)"
+                className={errors.usage_limit ? 'border-red-500' : ''}
+              />
+              {errors.usage_limit && <p className="text-sm text-red-500 mt-1">{errors.usage_limit}</p>}
+              <p className="text-sm text-gray-500 mt-1">Leave empty for unlimited usage</p>
+            </div>
+            <div>
+              <Label htmlFor="min_purchase_amount">Min Purchase Amount ($)</Label>
+              <Input
+                id="min_purchase_amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.min_purchase_amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, min_purchase_amount: e.target.value }))}
+                placeholder="No minimum"
+                className={errors.min_purchase_amount ? 'border-red-500' : ''}
+              />
+              {errors.min_purchase_amount && <p className="text-sm text-red-500 mt-1">{errors.min_purchase_amount}</p>}
+              <p className="text-sm text-gray-500 mt-1">Leave empty for no limit</p>
+            </div>
+            <div>
+              <Label htmlFor="max_discount_amount">Max Discount Amount ($)</Label>
+              <Input
+                id="max_discount_amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.max_discount_amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, max_discount_amount: e.target.value }))}
+                placeholder="No maximum"
+                className={errors.max_discount_amount ? 'border-red-500' : ''}
+              />
+              {errors.max_discount_amount && <p className="text-sm text-red-500 mt-1">{errors.max_discount_amount}</p>}
+              <p className="text-sm text-gray-500 mt-1">Leave empty for no limit</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="start_date">Start Date</Label>
+              <Input
+                id="start_date"
+                type="date"
+                value={formData.start_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label htmlFor="end_date">End Date</Label>
+              <Input
+                id="end_date"
+                type="date"
+                value={formData.end_date}
+                onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Applicability Rules</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Applicable Categories</Label>
+            <MultiSelect
+              options={categoryOptions}
+              value={formData.applicable_categories}
+              onChange={(value) => setFormData(prev => ({ ...prev, applicable_categories: value }))}
+              placeholder="Select categories (leave empty for all)"
+            />
+          </div>
+
+          <div>
+            <Label>Applicable Attribute Sets</Label>
+            <MultiSelect
+              options={attributeSetOptions}
+              value={formData.applicable_attribute_sets}
+              onChange={(value) => setFormData(prev => ({ ...prev, applicable_attribute_sets: value }))}
+              placeholder="Select attribute sets"
+            />
+          </div>
+
+          <div>
+            <Label>Applicable Attributes</Label>
+            <MultiSelect
+              options={attributeOptions}
+              value={formData.applicable_attributes}
+              onChange={(value) => setFormData(prev => ({ ...prev, applicable_attributes: value }))}
+              placeholder="Select specific attributes"
+            />
+          </div>
+
+          <div>
+            <Label>Applicable Products</Label>
+            <MultiSelect
+              options={productOptions}
+              value={formData.applicable_products}
+              onChange={(value) => setFormData(prev => ({ ...prev, applicable_products: value }))}
+              placeholder="Select specific products"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="applicable_skus">Applicable SKUs (comma-separated)</Label>
+            <Input
+              id="applicable_skus"
+              value={formData.applicable_skus.join(', ')}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                applicable_skus: e.target.value.split(',').map(sku => sku.trim()).filter(Boolean)
+              }))}
+              placeholder="SKU1, SKU2, SKU3"
+            />
+            <p className="text-sm text-gray-500 mt-1">Enter specific SKUs separated by commas</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end space-x-2">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+          {coupon ? 'Update Coupon' : 'Create Coupon'}
+        </Button>
+      </div>
+    </form>
+  );
+}

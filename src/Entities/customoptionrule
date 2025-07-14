@@ -1,0 +1,70 @@
+{
+  "name": "CustomOptionRule",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "display_label": {
+      "type": "string",
+      "default": "Custom Options",
+      "description": "The label to display on the product page for this set of options."
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "conditions": {
+      "type": "object",
+      "properties": {
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attribute_sets": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "attribute_conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "attribute_code": {
+                "type": "string"
+              },
+              "attribute_value": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "optional_product_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of optional product IDs"
+    },
+    "store_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "optional_product_ids",
+    "store_id"
+  ]
+}

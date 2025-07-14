@@ -1,0 +1,54 @@
+{
+  "name": "ShippingMethod",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the shipping method (e.g., Standard Shipping, Express)"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "flat_rate",
+        "free_shipping"
+      ],
+      "default": "flat_rate"
+    },
+    "flat_rate_cost": {
+      "type": "number",
+      "description": "Cost for the flat rate shipping. Used if type is 'flat_rate'."
+    },
+    "free_shipping_min_order": {
+      "type": "number",
+      "description": "Minimum order amount for free shipping. Used if type is 'free_shipping'."
+    },
+    "availability": {
+      "type": "string",
+      "enum": [
+        "all",
+        "specific_countries"
+      ],
+      "default": "all",
+      "description": "Specifies if this method is available to all countries or specific ones."
+    },
+    "countries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of country codes this method applies to, if availability is 'specific_countries'."
+    },
+    "store_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "store_id"
+  ]
+}

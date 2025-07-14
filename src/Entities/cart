@@ -1,0 +1,54 @@
+{
+  "name": "Cart",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session or user identifier"
+    },
+    "product_id": {
+      "type": "string"
+    },
+    "quantity": {
+      "type": "number",
+      "default": 1
+    },
+    "price": {
+      "type": "number",
+      "description": "Tax-exclusive price of the product at time of adding to cart."
+    },
+    "selected_attributes": {
+      "type": "object",
+      "description": "Selected product attributes/variants"
+    },
+    "selected_options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "List of selected custom options with their prices."
+    },
+    "added_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "product_id",
+    "quantity"
+  ]
+}

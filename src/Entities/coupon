@@ -1,0 +1,89 @@
+{
+  "name": "Coupon",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "code": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "discount_type": {
+      "type": "string",
+      "enum": [
+        "fixed",
+        "percentage",
+        "buy_x_get_y",
+        "free_shipping"
+      ],
+      "default": "fixed"
+    },
+    "discount_value": {
+      "type": "number"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "usage_limit": {
+      "type": "number"
+    },
+    "usage_count": {
+      "type": "number",
+      "default": 0
+    },
+    "min_purchase_amount": {
+      "type": "number"
+    },
+    "max_discount_amount": {
+      "type": "number"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "applicable_products": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "applicable_categories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "applicable_skus": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "buy_quantity": {
+      "type": "number",
+      "description": "For buy X get Y offers"
+    },
+    "get_quantity": {
+      "type": "number",
+      "description": "For buy X get Y offers"
+    },
+    "store_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "code",
+    "discount_type",
+    "discount_value",
+    "store_id"
+  ]
+}

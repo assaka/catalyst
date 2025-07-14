@@ -1,0 +1,72 @@
+{
+  "name": "CustomerActivity",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string",
+      "description": "ID of the store this activity belongs to"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "ID of the logged-in user (optional)"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session ID for guest users"
+    },
+    "customer_email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email of the customer"
+    },
+    "activity_type": {
+      "type": "string",
+      "enum": [
+        "page_view",
+        "product_view",
+        "add_to_cart",
+        "remove_from_cart",
+        "checkout_start",
+        "purchase",
+        "search",
+        "add_to_wishlist",
+        "remove_from_wishlist"
+      ],
+      "description": "Type of customer activity"
+    },
+    "page_url": {
+      "type": "string",
+      "description": "URL of the page where activity occurred"
+    },
+    "product_id": {
+      "type": "string",
+      "description": "ID of the product involved in the activity"
+    },
+    "search_query": {
+      "type": "string",
+      "description": "Search query if activity is search"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata about the activity",
+      "properties": {
+        "user_agent": {
+          "type": "string"
+        },
+        "ip_address": {
+          "type": "string"
+        },
+        "referrer": {
+          "type": "string"
+        },
+        "session_id": {
+          "type": "string"
+        }
+      }
+    }
+  },
+  "required": [
+    "store_id",
+    "activity_type"
+  ]
+}

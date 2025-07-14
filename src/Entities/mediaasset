@@ -1,0 +1,37 @@
+{
+  "name": "MediaAsset",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the file"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL of the uploaded file in cloud storage"
+    },
+    "file_type": {
+      "type": "string",
+      "description": "MIME type of the file (e.g., image/jpeg)"
+    },
+    "file_size": {
+      "type": "number",
+      "description": "Size of the file in bytes"
+    },
+    "alt_text": {
+      "type": "string",
+      "description": "Alternative text for accessibility"
+    },
+    "store_id": {
+      "type": "string",
+      "description": "The store this asset belongs to"
+    }
+  },
+  "required": [
+    "name",
+    "file_url",
+    "file_type",
+    "file_size",
+    "store_id"
+  ]
+}

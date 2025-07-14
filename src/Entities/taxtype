@@ -1,0 +1,48 @@
+{
+  "name": "TaxType",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Tax type name (e.g., Standard VAT, Reduced VAT)"
+    },
+    "description": {
+      "type": "string"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false
+    },
+    "country_rates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string"
+          },
+          "rate": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Tax rates per country"
+    },
+    "store_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "country_rates",
+    "store_id"
+  ],
+  "rls": {
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

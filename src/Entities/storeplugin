@@ -1,0 +1,40 @@
+{
+  "name": "StorePlugin",
+  "type": "object",
+  "properties": {
+    "store_id": {
+      "type": "string"
+    },
+    "plugin_slug": {
+      "type": "string",
+      "description": "Plugin identifier slug"
+    },
+    "plugin_name": {
+      "type": "string",
+      "description": "Human readable plugin name"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "configuration": {
+      "type": "object"
+    },
+    "installed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "store_id",
+    "plugin_slug"
+  ],
+  "rls": {
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

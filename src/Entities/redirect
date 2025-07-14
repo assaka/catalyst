@@ -1,0 +1,35 @@
+{
+  "name": "Redirect",
+  "type": "object",
+  "properties": {
+    "from_url": {
+      "type": "string",
+      "description": "The original URL path to redirect from (e.g., /old-product.html)"
+    },
+    "to_url": {
+      "type": "string",
+      "description": "The new URL path to redirect to (e.g., /new-product)"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "301",
+        "302"
+      ],
+      "default": "301",
+      "description": "301 for permanent, 302 for temporary."
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "store_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "from_url",
+    "to_url",
+    "store_id"
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "name": "ProductLabel",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Label name (e.g., New, Sale, Hot)"
+    },
+    "text": {
+      "type": "string",
+      "description": "Label text to display"
+    },
+    "background_color": {
+      "type": "string",
+      "default": "#FF0000"
+    },
+    "text_color": {
+      "type": "string",
+      "default": "#FFFFFF"
+    },
+    "position": {
+      "type": "string",
+      "enum": [
+        "top-left",
+        "top-right",
+        "top-center",
+        "center-left",
+        "center-right",
+        "bottom-left",
+        "bottom-right",
+        "bottom-center"
+      ],
+      "default": "top-right"
+    },
+    "conditions": {
+      "type": "object",
+      "properties": {
+        "attribute_conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "attribute_code": {
+                "type": "string"
+              },
+              "attribute_value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "price_conditions": {
+          "type": "object",
+          "properties": {
+            "has_sale_price": {
+              "type": "boolean"
+            },
+            "is_new": {
+              "type": "boolean"
+            },
+            "days_since_created": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "store_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "text",
+    "store_id"
+  ]
+}

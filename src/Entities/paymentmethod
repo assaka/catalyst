@@ -1,0 +1,63 @@
+{
+  "name": "PaymentMethod",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Payment method name (e.g., Credit Card, PayPal)"
+    },
+    "code": {
+      "type": "string",
+      "description": "Unique payment method code (e.g., creditcard, paypal, ideal)"
+    },
+    "provider": {
+      "type": "string",
+      "enum": [
+        "stripe",
+        "manual"
+      ],
+      "default": "manual",
+      "description": "Payment provider"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "description": {
+      "type": "string",
+      "description": "Payment method description shown to customers"
+    },
+    "icon_url": {
+      "type": "string",
+      "description": "URL to payment method icon"
+    },
+    "sort_order": {
+      "type": "number",
+      "default": 0
+    },
+    "min_amount": {
+      "type": "number",
+      "description": "Minimum order amount for this payment method"
+    },
+    "max_amount": {
+      "type": "number",
+      "description": "Maximum order amount for this payment method"
+    },
+    "countries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Countries where this payment method is available"
+    },
+    "store_id": {
+      "type": "string",
+      "description": "Store ID this payment method belongs to"
+    }
+  },
+  "required": [
+    "name",
+    "code",
+    "store_id"
+  ]
+}

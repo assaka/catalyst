@@ -1,0 +1,362 @@
+{
+  "name": "Store",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Store name"
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL-friendly store identifier"
+    },
+    "description": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "custom_domain": {
+      "type": "string",
+      "description": "Custom domain connected to this store"
+    },
+    "domain_status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "failed"
+      ],
+      "default": "pending",
+      "description": "Status of custom domain connection"
+    },
+    "ssl_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether SSL is enabled for custom domain"
+    },
+    "currency": {
+      "type": "string",
+      "default": "USD"
+    },
+    "timezone": {
+      "type": "string",
+      "default": "UTC"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "suspended"
+      ],
+      "default": "active"
+    },
+    "owner_email": {
+      "type": "string",
+      "description": "Email of the store owner"
+    },
+    "contact_details": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        },
+        "state": {
+          "type": "string"
+        },
+        "postal_code": {
+          "type": "string"
+        },
+        "country": {
+          "type": "string"
+        },
+        "support_email": {
+          "type": "string"
+        }
+      }
+    },
+    "stripe_settings": {
+      "type": "object",
+      "properties": {
+        "publishable_key": {
+          "type": "string",
+          "description": "Store's Stripe publishable key"
+        },
+        "secret_key": {
+          "type": "string",
+          "description": "Store's Stripe secret key (encrypted)"
+        },
+        "webhook_secret": {
+          "type": "string",
+          "description": "Store's Stripe webhook secret"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "stripe_account_id": {
+      "type": "string",
+      "description": "The connected Stripe account ID for Stripe Connect"
+    },
+    "stripe_connect_onboarding_complete": {
+      "type": "boolean",
+      "default": false,
+      "description": "Indicates if the Stripe Connect onboarding is complete"
+    },
+    "brevo_settings": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false
+        },
+        "api_key": {
+          "type": "string",
+          "description": "Brevo API key (v3)"
+        },
+        "sender_email": {
+          "type": "string",
+          "description": "Default sender email for Brevo campaigns"
+        },
+        "sender_name": {
+          "type": "string",
+          "description": "Default sender name for Brevo campaigns"
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "enable_inventory": {
+          "type": "boolean",
+          "default": true
+        },
+        "enable_reviews": {
+          "type": "boolean",
+          "default": true
+        },
+        "hide_currency_category": {
+          "type": "boolean",
+          "default": false
+        },
+        "hide_currency_product": {
+          "type": "boolean",
+          "default": false
+        },
+        "hide_header_cart": {
+          "type": "boolean",
+          "default": false
+        },
+        "hide_header_checkout": {
+          "type": "boolean",
+          "default": false
+        },
+        "hide_header_search": {
+          "type": "boolean",
+          "default": false
+        },
+        "hide_sorting": {
+          "type": "boolean",
+          "default": false
+        },
+        "hide_filtering": {
+          "type": "boolean",
+          "default": false
+        },
+        "hide_grid_list_toggle": {
+          "type": "boolean",
+          "default": false
+        },
+        "show_category_in_breadcrumb": {
+          "type": "boolean",
+          "default": true
+        },
+        "show_permanent_search": {
+          "type": "boolean",
+          "default": true
+        },
+        "hide_shipping_costs": {
+          "type": "boolean",
+          "default": false
+        },
+        "hide_quantity_selector": {
+          "type": "boolean",
+          "default": false
+        },
+        "allow_guest_checkout": {
+          "type": "boolean",
+          "default": true
+        },
+        "require_shipping_address": {
+          "type": "boolean",
+          "default": true
+        },
+        "collect_phone_number_at_checkout": {
+          "type": "boolean",
+          "default": false
+        },
+        "require_email_verification": {
+          "type": "boolean",
+          "default": false
+        },
+        "allowed_countries": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of allowed country codes for shipping"
+        },
+        "theme": {
+          "type": "object",
+          "properties": {
+            "primary_button_color": {
+              "type": "string",
+              "default": "#007bff"
+            },
+            "secondary_button_color": {
+              "type": "string",
+              "default": "#6c757d"
+            },
+            "add_to_cart_button_color": {
+              "type": "string",
+              "default": "#28a745"
+            },
+            "view_cart_button_color": {
+              "type": "string",
+              "default": "#17a2b8"
+            },
+            "checkout_button_color": {
+              "type": "string",
+              "default": "#007bff"
+            },
+            "place_order_button_color": {
+              "type": "string",
+              "default": "#28a745"
+            },
+            "font_family": {
+              "type": "string",
+              "default": "Inter"
+            }
+          }
+        },
+        "analytics_settings": {
+          "type": "object",
+          "properties": {
+            "enable_google_tag_manager": {
+              "type": "boolean",
+              "default": false
+            },
+            "gtm_id": {
+              "type": "string"
+            },
+            "google_ads_id": {
+              "type": "string"
+            }
+          }
+        },
+        "seo_settings": {
+          "type": "object",
+          "properties": {
+            "meta_title_suffix": {
+              "type": "string"
+            },
+            "meta_description": {
+              "type": "string"
+            },
+            "meta_keywords": {
+              "type": "string"
+            },
+            "robots_txt_content": {
+              "type": "string"
+            },
+            "enable_rich_snippets_product": {
+              "type": "boolean",
+              "default": true
+            },
+            "enable_rich_snippets_store": {
+              "type": "boolean",
+              "default": true
+            },
+            "global_schema_markup_json": {
+              "type": "string"
+            }
+          }
+        },
+        "tax_settings": {
+          "type": "object",
+          "properties": {
+            "prices_include_tax": {
+              "type": "boolean",
+              "default": false
+            },
+            "default_tax_included_in_prices": {
+              "type": "boolean",
+              "default": false
+            },
+            "display_tax_inclusive_prices": {
+              "type": "boolean",
+              "default": false
+            },
+            "calculate_tax_after_discount": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "display_out_of_stock": {
+          "type": "boolean",
+          "default": true
+        },
+        "hide_stock_quantity": {
+          "type": "boolean",
+          "default": false
+        },
+        "display_low_stock_threshold": {
+          "type": "number",
+          "default": 0
+        },
+        "stock_settings": {
+          "type": "object",
+          "properties": {
+            "in_stock_label": {
+              "type": "string",
+              "default": "In Stock"
+            },
+            "out_of_stock_label": {
+              "type": "string",
+              "default": "Out of Stock"
+            },
+            "low_stock_label": {
+              "type": "string",
+              "default": "Low stock, just {quantity} left"
+            },
+            "show_stock_label": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "name",
+    "slug",
+    "owner_email"
+  ]
+}

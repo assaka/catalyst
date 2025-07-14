@@ -1,0 +1,210 @@
+{
+  "name": "Product",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Product name"
+    },
+    "slug": {
+      "type": "string",
+      "description": "URL-friendly product identifier"
+    },
+    "sku": {
+      "type": "string",
+      "description": "Stock Keeping Unit"
+    },
+    "barcode": {
+      "type": "string",
+      "description": "Barcode (ISBN, UPC, GTIN, etc.)"
+    },
+    "description": {
+      "type": "string",
+      "description": "Full product description"
+    },
+    "short_description": {
+      "type": "string",
+      "description": "Brief product summary"
+    },
+    "price": {
+      "type": "number",
+      "description": "Regular price"
+    },
+    "compare_price": {
+      "type": "number",
+      "description": "Comparison price, often the original price when on sale."
+    },
+    "cost_price": {
+      "type": "number",
+      "description": "Cost price for margin calculations"
+    },
+    "stock_quantity": {
+      "type": "number",
+      "default": 0,
+      "description": "Available stock quantity"
+    },
+    "manage_stock": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether to track inventory for this product"
+    },
+    "infinite_stock": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, stock quantity is not tracked"
+    },
+    "allow_backorders": {
+      "type": "boolean",
+      "default": false
+    },
+    "low_stock_threshold": {
+      "type": "number",
+      "default": 5,
+      "description": "Alert when stock falls below this level"
+    },
+    "images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of image URLs"
+    },
+    "category_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of category IDs this product belongs to"
+    },
+    "attribute_set_id": {
+      "type": "string",
+      "description": "ID of the attribute set for this product"
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Product attributes (color, size, etc.)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "active",
+        "inactive"
+      ],
+      "default": "draft"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": [
+        "visible",
+        "hidden"
+      ],
+      "default": "visible"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_custom_option": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, this product can be used as a custom option for other products"
+    },
+    "is_coupon_eligible": {
+      "type": "boolean",
+      "default": true,
+      "description": "Makes this product eligible for coupon restrictions."
+    },
+    "is_virtual": {
+      "type": "boolean",
+      "default": false,
+      "description": "Virtual products don't require shipping"
+    },
+    "is_downloadable": {
+      "type": "boolean",
+      "default": false
+    },
+    "download_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs to downloadable files"
+    },
+    "weight": {
+      "type": "number",
+      "description": "Product weight for shipping calculations"
+    },
+    "dimensions": {
+      "type": "object",
+      "properties": {
+        "length": {
+          "type": "number"
+        },
+        "width": {
+          "type": "number"
+        },
+        "height": {
+          "type": "number"
+        }
+      }
+    },
+    "shipping_class": {
+      "type": "string"
+    },
+    "tax_id": {
+      "type": "string"
+    },
+    "store_id": {
+      "type": "string",
+      "description": "ID of the store this product belongs to"
+    },
+    "seo": {
+      "type": "object",
+      "properties": {
+        "meta_title": {
+          "type": "string"
+        },
+        "meta_description": {
+          "type": "string"
+        },
+        "meta_keywords": {
+          "type": "string"
+        },
+        "url_key": {
+          "type": "string"
+        },
+        "meta_robots_tag": {
+          "type": "string",
+          "enum": [
+            "index, follow",
+            "noindex, follow",
+            "index, nofollow",
+            "noindex, nofollow"
+          ],
+          "default": "index, follow"
+        }
+      }
+    },
+    "related_product_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of related product IDs"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "name",
+    "slug",
+    "sku",
+    "price",
+    "store_id"
+  ]
+}

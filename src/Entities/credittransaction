@@ -1,0 +1,36 @@
+{
+  "name": "CreditTransaction",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "amount_usd": {
+      "type": "number"
+    },
+    "credits_purchased": {
+      "type": "number"
+    },
+    "stripe_payment_intent_id": {
+      "type": "string"
+    },
+    "stripe_charge_id": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "completed",
+        "failed"
+      ],
+      "default": "pending"
+    }
+  },
+  "required": [
+    "user_id",
+    "amount_usd",
+    "credits_purchased",
+    "status"
+  ]
+}

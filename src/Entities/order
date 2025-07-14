@@ -1,0 +1,74 @@
+{
+  "name": "Order",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "guest_email": {
+      "type": "string",
+      "description": "Email for guest orders"
+    },
+    "store_id": {
+      "type": "string"
+    },
+    "order_number": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "processing",
+        "shipped",
+        "complete",
+        "cancelled"
+      ],
+      "default": "pending"
+    },
+    "subtotal": {
+      "type": "number"
+    },
+    "shipping_cost": {
+      "type": "number"
+    },
+    "tax_amount": {
+      "type": "number"
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "total_amount": {
+      "type": "number"
+    },
+    "shipping_address": {
+      "type": "object"
+    },
+    "billing_address": {
+      "type": "object"
+    },
+    "coupon_code": {
+      "type": "string"
+    },
+    "delivery_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "delivery_time_slot": {
+      "type": "string"
+    },
+    "delivery_comments": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "store_id",
+    "order_number",
+    "total_amount"
+  ],
+  "rls": {
+    "read": {},
+    "write": {}
+  }
+}

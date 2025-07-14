@@ -1,0 +1,42 @@
+{
+  "name": "Language",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Language name (e.g., English, German)"
+    },
+    "code": {
+      "type": "string",
+      "description": "Language code (e.g., en, de, fr)"
+    },
+    "flag_icon": {
+      "type": "string",
+      "description": "Flag emoji or icon"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false
+    },
+    "store_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "code",
+    "store_id"
+  ],
+  "rls": {
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "write": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

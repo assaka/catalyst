@@ -1,0 +1,374 @@
+
+import React, { useState, useEffect } from "react";
+import { Coupon } from "@/api/entities";
+import { Store } from "@/api/entities";
+import { Product } from "@/api/entities";
+import { Category } from "@/api/entities";
+import { User } from "@/api/entities"; // Import User entity for data isolation
+import { 
+  Percent, 
+  Plus, 
+  Search, 
+  Edit,
+  Trash2,
+  Copy,
+  Calendar,
+  Package
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog";
+
+import CouponForm from "../components/coupons/CouponForm";
+import FlashMessage from "../components/storefront/FlashMessage";
+
+export default function CouponsPage() {
+  const [coupons, setCoupons] = useState([]);
+  const [store, setStore] = useState(null); // Changed from 'stores' to 'store' (singular)
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingCoupon, setEditingCoupon] = useState(null); // Renamed from 'selectedCoupon'
+  const [showForm, setShowForm] = useState(false); // Renamed from 'showCouponForm'
+  const [flashMessage, setFlashMessage] = useState(null);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // CRITICAL FIX: Get current user first, then filter by user's stores
+      const user = await User.me();
+      const userStores = await Store.filter({ owner_email: user.email }); // Fetch stores owned by the current user
+      
+      if (userStores && userStores.length > 0) {
+        // Assuming the user is associated with the first store found, or primary store
+        const currentStore = userStores[0]; 
+        setStore(currentStore);
+        
+        // Filter all data by current store's ID
+        const [couponsData, categoriesData, productsData] = await Promise.all([
+          Coupon.filter({ store_id: currentStore.id }),
+          Category.filter({ store_id: currentStore.id }),
+          Product.filter({ store_id: currentStore.id })
+        ]);
+        
+        setCoupons(couponsData || []);
+        setCategories(categoriesData || []);
+        setProducts(productsData || []);
+      } else {
+        // If no store is found for the user, clear all related data and warn
+        setCoupons([]);
+        setCategories([]);
+        setProducts([]);
+        setStore(null);
+        console.warn("No store found for user:", user.email);
+        setFlashMessage({ type: 'error', message: 'No store found for your account. Please contact support.' });
+      }
+    } catch (error) {
+      console.error("Error loading data:", error);
+      // Ensure state is reset on error
+      setCoupons([]);
+      setCategories([]);
+      setProducts([]);
+      setStore(null);
+      setFlashMessage({ type: 'error', message: 'Failed to load data. Please try again.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (couponData) => {
+    if (!store) {
+      setFlashMessage({ type: 'error', message: 'Cannot save coupon: No associated store found.' });
+      return; // Prevent saving if no store is available
+    }
+    
+    try {
+      if (editingCoupon) {
+        // Update existing coupon
+        await Coupon.update(editingCoupon.id, { ...couponData, store_id: store.id });
+        setFlashMessage({ type: 'success', message: 'Coupon updated successfully!' });
+      } else {
+        // Create new coupon
+        await Coupon.create({ ...couponData, store_id: store.id });
+        setFlashMessage({ type: 'success', message: 'Coupon created successfully!' });
+      }
+      
+      await loadData(); // Reload data to reflect changes
+      setShowForm(false); // Close the form
+      setEditingCoupon(null); // Clear editing coupon state
+    } catch (error) {
+      console.error(`Error ${editingCoupon ? 'updating' : 'creating'} coupon:`, error);
+      setFlashMessage({ type: 'error', message: `Failed to ${editingCoupon ? 'update' : 'create'} coupon` });
+    }
+  };
+
+  const handleDeleteCoupon = async (couponId) => {
+    if (window.confirm("Are you sure you want to delete this coupon?")) {
+      try {
+        await Coupon.delete(couponId);
+        await loadData();
+        setFlashMessage({ type: 'success', message: 'Coupon deleted successfully!' });
+      } catch (error) {
+        console.error("Error deleting coupon:", error);
+        setFlashMessage({ type: 'error', message: 'Failed to delete coupon' });
+      }
+    }
+  };
+
+  const handleCopyCode = (code) => {
+    navigator.clipboard.writeText(code);
+    setFlashMessage({ type: 'success', message: 'Coupon code copied to clipboard!' });
+  };
+
+  const getDiscountTypeLabel = (type) => {
+    switch (type) {
+      case "fixed": return "Fixed Amount";
+      case "percentage": return "Percentage";
+      case "buy_x_get_y": return "Buy X Get Y";
+      case "free_shipping": return "Free Shipping";
+      default: return type;
+    }
+  };
+
+  const getDiscountValueDisplay = (coupon) => {
+    switch (coupon.discount_type) {
+      case "percentage":
+        return `${coupon.discount_value}%`;
+      case "fixed":
+        return `$${coupon.discount_value}`;
+      case "buy_x_get_y":
+        return `Buy ${coupon.buy_quantity} Get ${coupon.get_quantity}`;
+      case "free_shipping":
+        return "Free Shipping";
+      default:
+        return coupon.discount_value;
+    }
+  };
+
+  const isExpired = (coupon) => {
+    if (!coupon.end_date) return false;
+    return new Date(coupon.end_date) < new Date();
+  };
+
+  const filteredCoupons = coupons.filter(coupon =>
+    coupon.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    coupon.code.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Coupons & Discounts</h1>
+            <p className="text-gray-600 mt-1">Create and manage discount codes</p>
+          </div>
+          <Button
+            onClick={() => {
+              setEditingCoupon(null); // Clear editing state for new coupon
+              setShowForm(true); // Open the form
+            }}
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Coupon
+          </Button>
+        </div>
+
+        {/* Search */}
+        <Card className="material-elevation-1 border-0 mb-6">
+          <CardContent className="p-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                placeholder="Search coupons by name or code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Coupons Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCoupons.map((coupon) => (
+            <Card key={coupon.id} className={`material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300 ${
+              isExpired(coupon) ? 'opacity-60' : ''
+            }`}>
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-lg flex items-center justify-center">
+                      <Percent className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{coupon.name}</CardTitle>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <code className="text-sm bg-gray-100 px-2 py-1 rounded font-mono">
+                          {coupon.code}
+                        </code>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleCopyCode(coupon.code)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingCoupon(coupon); // Set coupon for editing
+                        setShowForm(true); // Open the form
+                      }}
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteCoupon(coupon.id)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="text-center p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                    <p className="text-2xl font-bold text-gray-900">
+                      {getDiscountValueDisplay(coupon)}
+                    </p>
+                    <p className="text-sm text-gray-600">{getDiscountTypeLabel(coupon.discount_type)}</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {coupon.min_purchase_amount && (
+                      <p className="text-sm text-gray-600">
+                        Min purchase: ${coupon.min_purchase_amount}
+                      </p>
+                    )}
+                    
+                    {coupon.usage_limit && (
+                      <p className="text-sm text-gray-600">
+                        Used: {coupon.usage_count || 0} / {coupon.usage_limit}
+                      </p>
+                    )}
+                    
+                    {coupon.end_date && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Calendar className="w-4 h-4 mr-1" />
+                        Expires: {new Date(coupon.end_date).toLocaleDateString()}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={coupon.is_active ? "default" : "secondary"}>
+                      {coupon.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                    
+                    {isExpired(coupon) && (
+                      <Badge variant="destructive">Expired</Badge>
+                    )}
+                    
+                    {coupon.applicable_products?.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        <Package className="w-3 h-3 mr-1" />
+                        Product specific
+                      </Badge>
+                    )}
+                    
+                    {coupon.applicable_categories?.length > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        Category specific
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredCoupons.length === 0 && (
+          <Card className="material-elevation-1 border-0">
+            <CardContent className="text-center py-12">
+              <Percent className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No coupons found</h3>
+              <p className="text-gray-600 mb-6">
+                {searchQuery 
+                  ? "Try adjusting your search terms"
+                  : "Start by creating your first coupon code"}
+              </p>
+              <Button
+                onClick={() => {
+                  setEditingCoupon(null); // Clear editing state for new coupon
+                  setShowForm(true); // Open the form
+                }}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Coupon
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Coupon Form Dialog */}
+        <Dialog open={showForm} onOpenChange={setShowForm}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingCoupon ? 'Edit Coupon' : 'Create New Coupon'}
+              </DialogTitle>
+            </DialogHeader>
+            <CouponForm
+              coupon={editingCoupon}
+              stores={store ? [store] : []} // Pass the current user's store as an array if available
+              products={products}
+              categories={categories}
+              onSubmit={handleSubmit} // Use the combined handleSubmit function
+              onCancel={() => {
+                setShowForm(false);
+                setEditingCoupon(null);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+    </div>
+  );
+}
