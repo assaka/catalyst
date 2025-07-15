@@ -1,15 +1,80 @@
-import { base44 } from './base44Client';
+import apiClient from './client';
 
+// Stripe payment functions
+export const createPaymentIntent = async (amount, currency = 'usd', metadata = {}) => {
+  try {
+    const response = await apiClient.post('payments/create-intent', {
+      amount,
+      currency,
+      metadata
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    throw error;
+  }
+};
 
-export const createPaymentIntent = base44.functions.createPaymentIntent;
+export const createStripeCheckout = async (items, successUrl, cancelUrl, customerEmail) => {
+  try {
+    const response = await apiClient.post('payments/create-checkout', {
+      items,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      customer_email: customerEmail
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Stripe checkout:', error);
+    throw error;
+  }
+};
 
-export const createStripeCheckout = base44.functions.createStripeCheckout;
+export const stripeWebhook = async (payload, signature) => {
+  try {
+    const response = await apiClient.post('payments/stripe-webhook', {
+      payload,
+      signature
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error processing Stripe webhook:', error);
+    throw error;
+  }
+};
 
-export const stripeWebhook = base44.functions.stripeWebhook;
+export const createStripeConnectLink = async (returnUrl, refreshUrl) => {
+  try {
+    const response = await apiClient.post('payments/connect-link', {
+      return_url: returnUrl,
+      refresh_url: refreshUrl
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating Stripe Connect link:', error);
+    throw error;
+  }
+};
 
-export const createStripeConnectLink = base44.functions.createStripeConnectLink;
+export const checkStripeConnectStatus = async () => {
+  try {
+    const response = await apiClient.get('payments/connect-status');
+    return response.data;
+  } catch (error) {
+    console.error('Error checking Stripe Connect status:', error);
+    throw error;
+  }
+};
 
-export const checkStripeConnectStatus = base44.functions.checkStripeConnectStatus;
-
-export const getStripePublishableKey = base44.functions.getStripePublishableKey;
-
+export const getStripePublishableKey = async () => {
+  try {
+    const response = await apiClient.get('payments/publishable-key');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting Stripe publishable key:', error);
+    // Return a fallback key from environment variables
+    return {
+      publishable_key: import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''
+    };
+  }
+};
