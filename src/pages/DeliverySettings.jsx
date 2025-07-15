@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { DeliverySettings } from "@/api/entities";
+import { DeliverySettings as DeliverySettingsEntity } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities"; // New import for user authentication
 import { Button } from "@/components/ui/button";
@@ -45,7 +45,7 @@ export default function DeliverySettings() { // Renamed the function component f
         setStore(currentStore);
         
         // Filter delivery settings by this specific store's ID
-        const existingSettings = await DeliverySettings.filter({ store_id: currentStore.id });
+        const existingSettings = await DeliverySettingsEntity.filter({ store_id: currentStore.id });
         
         if (existingSettings && existingSettings.length > 0) {
           setDeliverySettings(existingSettings[0]);
@@ -100,10 +100,10 @@ export default function DeliverySettings() { // Renamed the function component f
       let result;
       if (deliverySettings.id) {
         // If deliverySettings already has an ID, it means it exists in the DB, so update
-        result = await DeliverySettings.update(deliverySettings.id, settingsToSave);
+        result = await DeliverySettingsEntity.update(deliverySettings.id, settingsToSave);
       } else {
         // Otherwise, it's a new set of settings for this store, so create
-        result = await DeliverySettings.create(settingsToSave);
+        result = await DeliverySettingsEntity.create(settingsToSave);
       }
       setDeliverySettings(result); // Update state with the saved/created settings (especially if new ID generated)
       setFlashMessage({ type: 'success', message: 'Delivery settings saved successfully!' });
