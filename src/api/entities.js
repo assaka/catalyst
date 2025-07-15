@@ -203,6 +203,18 @@ export const CustomOptionRule = new BaseEntity('custom-option-rules');
 export const Plugin = new BaseEntity('plugins');
 export const StorePlugin = new BaseEntity('store-plugins');
 export const Language = new BaseEntity('languages');
+export const SeoTemplate = new BaseEntity('seo-templates');
+export const SeoSetting = new BaseEntity('seo-settings');
+export const CreditTransaction = new BaseEntity('credit-transactions');
+export const CookieConsentSettings = new BaseEntity('cookie-consent-settings');
+export const CookieConsent = new BaseEntity('cookie-consent');
+export const PriceAlertSubscription = new BaseEntity('price-alert-subscriptions');
+export const StockAlertSubscription = new BaseEntity('stock-alert-subscriptions');
+export const PaymentMethod = new BaseEntity('payment-methods');
+export const Customer = new BaseEntity('customers');
+export const CustomerActivity = new BaseEntity('customer-activity');
+export const Redirect = new BaseEntity('redirects');
+export const MediaAsset = new BaseEntity('media-assets');
 
 // For backward compatibility, export common methods
 export const getCurrentUser = () => User.me();
