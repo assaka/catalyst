@@ -86,4 +86,6 @@ The deployment guides are available at:
 - Backend: backend/DEPLOYMENT.md
 - Frontend: DEPLOYMENT.md
 
+Add correct user to vercel project to auto deploy
+git config user.email "hamidelabassi99@gmail.com"
 
