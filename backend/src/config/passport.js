@@ -11,6 +11,12 @@ passport.use(new GoogleStrategy({
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
+      console.log('🔍 Google OAuth profile received:', {
+        id: profile.id,
+        email: profile.emails[0]?.value,
+        name: profile.name?.givenName + ' ' + profile.name?.familyName
+      });
+
       // Extract user info from Google profile
       const googleUser = {
         email: profile.emails[0].value,
@@ -19,6 +25,8 @@ passport.use(new GoogleStrategy({
         avatar_url: profile.photos[0]?.value,
         google_id: profile.id
       };
+
+      console.log('🔍 Looking for user with email:', googleUser.email);
 
       // Try to find or create user
       let user = await User.findOne({ where: { email: googleUser.email } });
