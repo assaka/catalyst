@@ -1,26 +1,58 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { User } = require('../models');
+const { User, LoginAttempt } = require('../models');
+const passport = require('../config/passport');
 const router = express.Router();
 
 // Generate JWT token
-const generateToken = (user) => {
+const generateToken = (user, rememberMe = false) => {
+  const expiresIn = rememberMe ? '30d' : (process.env.JWT_EXPIRES_IN || '24h');
   return jwt.sign(
     { id: user.id, email: user.email, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+    { expiresIn }
   );
+};
+
+// Password strength validator
+const validatePasswordStrength = (password) => {
+  const minLength = 8;
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+  
+  if (password.length < minLength) {
+    return `Password must be at least ${minLength} characters long`;
+  }
+  if (!hasUpperCase) {
+    return 'Password must contain at least one uppercase letter';
+  }
+  if (!hasLowerCase) {
+    return 'Password must contain at least one lowercase letter';
+  }
+  if (!hasNumber) {
+    return 'Password must contain at least one number';
+  }
+  if (!hasSpecialChar) {
+    return 'Password must contain at least one special character';
+  }
+  return null;
 };
 
 // @route   POST /api/auth/register
 // @desc    Register a new user
 // @access  Public
 router.post('/register', [
-  body('email').isEmail().withMessage('Please enter a valid email'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('first_name').notEmpty().withMessage('First name is required'),
-  body('last_name').notEmpty().withMessage('Last name is required')
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('password').custom(value => {
+    const error = validatePasswordStrength(value);
+    if (error) throw new Error(error);
+    return true;
+  }),
+  body('first_name').trim().notEmpty().withMessage('First name is required'),
+  body('last_name').trim().notEmpty().withMessage('Last name is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -76,8 +108,9 @@ router.post('/register', [
 // @desc    Login user
 // @access  Public
 router.post('/login', [
-  body('email').isEmail().withMessage('Please enter a valid email'),
-  body('password').notEmpty().withMessage('Password is required')
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('password').notEmpty().withMessage('Password is required'),
+  body('rememberMe').optional().isBoolean().withMessage('Remember me must be a boolean')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -88,11 +121,28 @@ router.post('/login', [
       });
     }
 
-    const { email, password } = req.body;
+    const { email, password, rememberMe } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+
+    // Check rate limiting
+    const isRateLimited = await LoginAttempt.checkRateLimit(email, ipAddress);
+    if (isRateLimited) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many login attempts. Please try again later.'
+      });
+    }
 
     // Find user
     const user = await User.findOne({ where: { email } });
     if (!user) {
+      // Log failed attempt
+      await LoginAttempt.create({
+        email,
+        ip_address: ipAddress,
+        success: false
+      });
+      
       return res.status(400).json({
         success: false,
         message: 'Invalid credentials'
@@ -102,6 +152,13 @@ router.post('/login', [
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
+      // Log failed attempt
+      await LoginAttempt.create({
+        email,
+        ip_address: ipAddress,
+        success: false
+      });
+      
       return res.status(400).json({
         success: false,
         message: 'Invalid credentials'
@@ -116,18 +173,26 @@ router.post('/login', [
       });
     }
 
+    // Log successful attempt
+    await LoginAttempt.create({
+      email,
+      ip_address: ipAddress,
+      success: true
+    });
+
     // Update last login
     await user.update({ last_login: new Date() });
 
-    // Generate token
-    const token = generateToken(user);
+    // Generate token with remember me option
+    const token = generateToken(user, rememberMe);
 
     res.json({
       success: true,
       message: 'Login successful',
       data: {
         user,
-        token
+        token,
+        expiresIn: rememberMe ? '30 days' : '24 hours'
       }
     });
   } catch (error) {
@@ -148,5 +213,26 @@ router.get('/me', require('../middleware/auth'), async (req, res) => {
     data: req.user
   });
 });
+
+// @route   GET /api/auth/google
+// @desc    Initiate Google OAuth
+// @access  Public
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+// @route   GET /api/auth/google/callback
+// @desc    Google OAuth callback
+// @access  Public
+router.get('/google/callback', 
+  passport.authenticate('google', { session: false, failureRedirect: process.env.CORS_ORIGIN + '/auth?error=oauth_failed' }),
+  async (req, res) => {
+    try {
+      const token = generateToken(req.user);
+      res.redirect(`${process.env.CORS_ORIGIN}/auth?token=${token}&oauth=success`);
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.redirect(`${process.env.CORS_ORIGIN}/auth?error=token_generation_failed`);
+    }
+  }
+);
 
 module.exports = router;

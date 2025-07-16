@@ -11,6 +11,7 @@ const CmsPage = require('./CmsPage');
 const Tax = require('./Tax');
 const ShippingMethod = require('./ShippingMethod');
 const DeliverySettings = require('./DeliverySettings');
+const LoginAttempt = require('./LoginAttempt');
 
 // Define associations
 const defineAssociations = () => {
@@ -89,5 +90,6 @@ module.exports = {
   CmsPage,
   Tax,
   ShippingMethod,
-  DeliverySettings
+  DeliverySettings,
+  LoginAttempt
 };

@@ -52,12 +52,16 @@ class BaseEntity {
 
 // Authentication service
 class AuthService {
-  async login(email, password) {
-    const response = await apiClient.post('auth/login', { email, password });
+  async login(email, password, rememberMe = false) {
+    const response = await apiClient.post('auth/login', { email, password, rememberMe });
     if (response.data.token) {
       apiClient.setToken(response.data.token);
     }
     return response.data;
+  }
+
+  googleLogin() {
+    window.location.href = `${apiClient.baseURL}/auth/google`;
   }
 
   async register(userData) {
