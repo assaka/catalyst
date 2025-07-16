@@ -73,7 +73,7 @@ passport.use(new GoogleStrategy({
               avatar_url: googleUser.avatar_url,
               email_verified: true,
               password: '$2b$10$' + Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8),
-              role: 'customer',
+              role: 'store_owner',
               is_active: true
             }])
             .select()
@@ -100,7 +100,7 @@ passport.use(new GoogleStrategy({
             avatar_url: googleUser.avatar_url,
             email_verified: true,
             password: Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8),
-            role: 'customer',
+            role: 'store_owner',
             is_active: true
           });
           console.log('✅ New user created via Sequelize fallback:', user.email);
