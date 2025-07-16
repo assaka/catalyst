@@ -28,6 +28,7 @@ const deliveryRoutes = require('./routes/delivery');
 const oauthTestRoutes = require('./routes/oauth-test');
 const dbTestRoutes = require('./routes/db-test');
 const dbInitRoutes = require('./routes/db-init');
+const dbSetupRoutes = require('./routes/db-setup');
 
 const app = express();
 
@@ -139,6 +140,7 @@ app.use('/api/delivery', authMiddleware, deliveryRoutes);
 app.use('/api/oauth-test', oauthTestRoutes);
 app.use('/api/db-test', dbTestRoutes);
 app.use('/api/db-init', dbInitRoutes);
+app.use('/api/db-setup', dbSetupRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
