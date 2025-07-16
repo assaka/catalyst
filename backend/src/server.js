@@ -50,6 +50,7 @@ app.use('/api/', limiter);
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
+  'https://catalyst-pearl.vercel.app',
   'https://catalyst-ecommerce.vercel.app',
   'https://catalyst-683t6upsk-hamids-projects-1928df2f.vercel.app',
   process.env.CORS_ORIGIN

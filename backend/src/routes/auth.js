@@ -224,7 +224,7 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 // @access  Public
 router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', { session: false }, async (err, user, info) => {
-    const corsOrigin = process.env.CORS_ORIGIN || 'https://catalyst-683t6upsk-hamids-projects-1928df2f.vercel.app';
+    const corsOrigin = process.env.CORS_ORIGIN || 'https://catalyst-pearl.vercel.app';
     
     if (err) {
       console.error('OAuth authentication error:', err);
