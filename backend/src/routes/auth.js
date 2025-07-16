@@ -222,17 +222,34 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 // @route   GET /api/auth/google/callback
 // @desc    Google OAuth callback
 // @access  Public
-router.get('/google/callback', 
-  passport.authenticate('google', { session: false, failureRedirect: process.env.CORS_ORIGIN + '/auth?error=oauth_failed' }),
-  async (req, res) => {
-    try {
-      const token = generateToken(req.user);
-      res.redirect(`${process.env.CORS_ORIGIN}/auth?token=${token}&oauth=success`);
-    } catch (error) {
-      console.error('OAuth callback error:', error);
-      res.redirect(`${process.env.CORS_ORIGIN}/auth?error=token_generation_failed`);
+router.get('/google/callback', (req, res, next) => {
+  passport.authenticate('google', { session: false }, async (err, user, info) => {
+    const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173';
+    
+    if (err) {
+      console.error('OAuth authentication error:', err);
+      
+      // Handle database connection errors specifically
+      if (err.message && err.message.includes('ENETUNREACH')) {
+        return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
+      }
+      
+      return res.redirect(`${corsOrigin}/auth?error=oauth_failed`);
     }
-  }
-);
+    
+    if (!user) {
+      console.error('OAuth failed: No user returned');
+      return res.redirect(`${corsOrigin}/auth?error=oauth_failed`);
+    }
+    
+    try {
+      const token = generateToken(user);
+      res.redirect(`${corsOrigin}/auth?token=${token}&oauth=success`);
+    } catch (tokenError) {
+      console.error('Token generation error:', tokenError);
+      res.redirect(`${corsOrigin}/auth?error=token_generation_failed`);
+    }
+  })(req, res, next);
+});
 
 module.exports = router;

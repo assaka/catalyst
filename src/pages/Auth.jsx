@@ -47,7 +47,8 @@ export default function Auth() {
   const getErrorMessage = (error) => {
     const errorMessages = {
       'oauth_failed': 'Google authentication failed. Please try again.',
-      'token_generation_failed': 'Failed to generate authentication token. Please try again.'
+      'token_generation_failed': 'Failed to generate authentication token. Please try again.',
+      'database_connection_failed': 'Database connection issue. Please try again in a few moments.'
     };
     return errorMessages[error] || 'An error occurred. Please try again.';
   };
