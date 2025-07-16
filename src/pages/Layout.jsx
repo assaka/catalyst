@@ -211,7 +211,7 @@ export default function Layout({ children, currentPageName }) {
   
   // Handle admin pages
   if (isAdminPage) {
-      if (!isLoading && (!user || (user.account_type !== 'agency' && user.role !== 'admin'))) {
+      if (!isLoading && (!user || (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner'))) {
           const destination = user ? "CustomerDashboard" : "Landing";
           navigate(createPageUrl(destination));
           return (
