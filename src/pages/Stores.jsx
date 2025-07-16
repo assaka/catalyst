@@ -19,6 +19,7 @@ export default function Stores() {
   const [clients, setClients] = useState([]); // Keep state for clients, though its usage in loadData is removed by outline
   const [loading, setLoading] = useState(true);
   const [showCreateStore, setShowCreateStore] = useState(false);
+  const [createError, setCreateError] = useState('');
   const [newStore, setNewStore] = useState({
     name: '',
     // client_email and description are kept here because UI still references them
@@ -58,6 +59,8 @@ export default function Stores() {
   };
 
   const handleCreateStore = async () => {
+    setCreateError('');
+    
     // Dynamically generate slug if not provided, to ensure validation works
     // and to align with previous functionality where slug was derived from name.
     // The outline removed the generation but added validation for slug.
@@ -66,8 +69,8 @@ export default function Stores() {
       storeSlug = newStore.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     }
 
-    if (!newStore.name || !storeSlug) {
-      alert("Store Name and Slug are required.");
+    if (!newStore.name) {
+      setCreateError("Store Name is required.");
       return;
     }
 
@@ -83,10 +86,20 @@ export default function Stores() {
       setShowCreateStore(false);
       // Reset only name and slug as specified in the outline,
       // despite client_email and description being present in the input fields.
-      setNewStore({ name: '', slug: '' });
+      setNewStore({ name: '', client_email: '', description: '', slug: '' });
+      setCreateError('');
       loadData();
     } catch (error) {
       console.error("Error creating store:", error);
+      
+      // Handle specific error messages from the backend
+      if (error.response?.data?.message) {
+        setCreateError(error.response.data.message);
+      } else if (error.response?.data?.errors) {
+        setCreateError(error.response.data.errors.map(e => e.message).join(', '));
+      } else {
+        setCreateError('Failed to create store. Please try again.');
+      }
     }
   };
 
@@ -133,7 +146,12 @@ export default function Stores() {
           </p>
         </div>
 
-        <Dialog open={showCreateStore} onOpenChange={setShowCreateStore}>
+        <Dialog open={showCreateStore} onOpenChange={(open) => {
+          setShowCreateStore(open);
+          if (!open) {
+            setCreateError('');
+          }
+        }}>
           <DialogTrigger asChild>
             <Button className="bg-blue-600 hover:bg-blue-700">
               <Plus className="w-4 h-4 mr-2" />
@@ -145,6 +163,11 @@ export default function Stores() {
               <DialogTitle>Create New Store</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {createError && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-sm text-red-800">{createError}</p>
+                </div>
+              )}
               <div>
                 <Label htmlFor="storeName">Store Name *</Label>
                 <Input

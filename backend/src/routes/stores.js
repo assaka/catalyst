@@ -87,6 +87,7 @@ router.get('/:id', async (req, res) => {
 // @access  Private
 router.post('/', [
   body('name').notEmpty().withMessage('Store name is required'),
+  body('slug').optional().isString().isLength({ min: 1 }).withMessage('Slug cannot be empty if provided'),
   body('description').optional().isString()
 ], async (req, res) => {
   try {
@@ -103,6 +104,20 @@ router.post('/', [
       owner_email: req.user.email
     };
 
+    // Generate slug if not provided
+    if (!storeData.slug) {
+      storeData.slug = storeData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+
+    // Check for duplicate slug
+    const existingStore = await Store.findOne({ where: { slug: storeData.slug } });
+    if (existingStore) {
+      return res.status(400).json({
+        success: false,
+        message: 'A store with this slug already exists'
+      });
+    }
+
     const store = await Store.create(storeData);
 
     res.status(201).json({
@@ -112,6 +127,23 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create store error:', error);
+    
+    // Handle specific database errors
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'A store with this slug already exists'
+      });
+    }
+    
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: error.errors.map(e => ({ field: e.path, message: e.message }))
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: 'Server error'
