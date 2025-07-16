@@ -27,6 +27,7 @@ const taxRoutes = require('./routes/tax');
 const deliveryRoutes = require('./routes/delivery');
 const oauthTestRoutes = require('./routes/oauth-test');
 const dbTestRoutes = require('./routes/db-test');
+const dbInitRoutes = require('./routes/db-init');
 
 const app = express();
 
@@ -137,6 +138,7 @@ app.use('/api/tax', authMiddleware, taxRoutes);
 app.use('/api/delivery', authMiddleware, deliveryRoutes);
 app.use('/api/oauth-test', oauthTestRoutes);
 app.use('/api/db-test', dbTestRoutes);
+app.use('/api/db-init', dbInitRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
