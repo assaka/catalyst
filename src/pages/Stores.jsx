@@ -77,11 +77,17 @@ export default function Stores() {
     try {
       // The outline significantly simplifies this logic, removing client_email handling,
       // credit deductions, and specific owner_id/agency_id assignments in favor of owner_email.
-      await Store.create({
-        ...newStore, // This passes name, client_email, description (if in state)
-        slug: storeSlug, // Ensure the generated/provided slug is used
-        owner_email: user.email // Set owner_email as specified in the outline
-      });
+      // Remove client_email from the request data since it's not supported by the model
+      const storeRequest = {
+        name: newStore.name,
+        description: newStore.description,
+        slug: storeSlug,
+        owner_email: user.email
+      };
+      
+      console.log('Creating store with data:', storeRequest);
+      
+      await Store.create(storeRequest);
 
       setShowCreateStore(false);
       // Reset only name and slug as specified in the outline,
@@ -96,7 +102,10 @@ export default function Stores() {
       if (error.response?.data?.message) {
         setCreateError(error.response.data.message);
       } else if (error.response?.data?.errors) {
-        setCreateError(error.response.data.errors.map(e => e.message).join(', '));
+        const errorMessages = error.response.data.errors.map(e => e.message || e.msg || 'Unknown error');
+        setCreateError(errorMessages.join(', '));
+      } else if (error.message) {
+        setCreateError(error.message);
       } else {
         setCreateError('Failed to create store. Please try again.');
       }

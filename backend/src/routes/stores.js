@@ -91,8 +91,12 @@ router.post('/', [
   body('description').optional().isString()
 ], async (req, res) => {
   try {
+    console.log('Store creation request received:', req.body);
+    console.log('User info:', { email: req.user.email, role: req.user.role });
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         errors: errors.array()
@@ -109,9 +113,12 @@ router.post('/', [
       storeData.slug = storeData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     }
 
+    console.log('Final store data to create:', storeData);
+
     // Check for duplicate slug
     const existingStore = await Store.findOne({ where: { slug: storeData.slug } });
     if (existingStore) {
+      console.log('Duplicate slug found:', storeData.slug);
       return res.status(400).json({
         success: false,
         message: 'A store with this slug already exists'
@@ -119,6 +126,7 @@ router.post('/', [
     }
 
     const store = await Store.create(storeData);
+    console.log('Store created successfully:', store.id);
 
     res.status(201).json({
       success: true,
@@ -127,9 +135,11 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create store error:', error);
+    console.error('Error stack:', error.stack);
     
     // Handle specific database errors
     if (error.name === 'SequelizeUniqueConstraintError') {
+      console.log('Unique constraint error:', error.errors);
       return res.status(400).json({
         success: false,
         message: 'A store with this slug already exists'
@@ -137,6 +147,7 @@ router.post('/', [
     }
     
     if (error.name === 'SequelizeValidationError') {
+      console.log('Validation error:', error.errors);
       return res.status(400).json({
         success: false,
         message: 'Validation error',
