@@ -2,7 +2,101 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { Store } = require('../models');
 const { authorize } = require('../middleware/auth');
+const { sequelize } = require('../database/connection');
 const router = express.Router();
+
+// Initialize stores table on module load
+const initializeStoresTable = async () => {
+  try {
+    console.log('Initializing stores table...');
+    await Store.sync({ alter: true });
+    console.log('✅ Stores table initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize stores table:', error.message);
+  }
+};
+
+// Initialize table
+initializeStoresTable();
+
+// @route   GET /api/stores/setup
+// @desc    Setup stores table
+// @access  Public (for debugging)
+router.get('/setup', async (req, res) => {
+  try {
+    console.log('Setting up stores table...');
+    await Store.sync({ alter: true });
+    console.log('Stores table setup completed');
+    res.json({
+      success: true,
+      message: 'Stores table setup completed'
+    });
+  } catch (error) {
+    console.error('Setup error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Setup failed',
+      error: error.message
+    });
+  }
+});
+
+// @route   GET /api/stores/debug
+// @desc    Debug stores table and model
+// @access  Public (for debugging)
+router.get('/debug', async (req, res) => {
+  try {
+    console.log('Running stores debug...');
+    
+    // Test 1: Check if Store model is defined
+    const modelInfo = {
+      name: Store.name,
+      tableName: Store.tableName,
+      attributes: Object.keys(Store.rawAttributes)
+    };
+    console.log('Store model info:', modelInfo);
+    
+    // Test 2: Test database connection
+    await sequelize.authenticate();
+    console.log('Database connection: OK');
+    
+    // Test 3: Try to describe the table
+    let tableExists = true;
+    try {
+      const tableDescription = await sequelize.getQueryInterface().describeTable(Store.tableName);
+      console.log('Table description:', tableDescription);
+    } catch (describeError) {
+      console.log('Table describe error:', describeError.message);
+      tableExists = false;
+    }
+    
+    // Test 4: Try to find all stores
+    let storesData = [];
+    try {
+      storesData = await Store.findAll({ limit: 5 });
+      console.log(`Found ${storesData.length} stores`);
+    } catch (findError) {
+      console.log('Find stores error:', findError.message);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Debug completed',
+      debug: {
+        model: modelInfo,
+        tableExists,
+        storeCount: storesData.length
+      }
+    });
+  } catch (error) {
+    console.error('Debug error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Debug failed',
+      error: error.message
+    });
+  }
+});
 
 // @route   GET /api/stores
 // @desc    Get user's stores
@@ -94,6 +188,36 @@ router.post('/', [
     console.log('Store creation request received:', req.body);
     console.log('User info:', { email: req.user.email, role: req.user.role });
     
+    // Test database connection and table existence
+    try {
+      await Store.findAll({ limit: 1 });
+      console.log('Database connection test passed');
+    } catch (dbError) {
+      console.error('Database connection test failed:', dbError);
+      
+      // If table doesn't exist, try to create it
+      if (dbError.name === 'SequelizeDatabaseError' && dbError.message.includes('does not exist')) {
+        try {
+          console.log('Attempting to create stores table...');
+          await Store.sync({ alter: true });
+          console.log('Stores table created successfully');
+        } catch (syncError) {
+          console.error('Failed to create stores table:', syncError);
+          return res.status(500).json({
+            success: false,
+            message: 'Failed to create stores table',
+            error: syncError.message
+          });
+        }
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: 'Database connection failed',
+          error: dbError.message
+        });
+      }
+    }
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       console.log('Validation errors:', errors.array());
@@ -136,6 +260,7 @@ router.post('/', [
   } catch (error) {
     console.error('Create store error:', error);
     console.error('Error stack:', error.stack);
+    console.error('Error name:', error.name);
     
     // Handle specific database errors
     if (error.name === 'SequelizeUniqueConstraintError') {
@@ -155,9 +280,17 @@ router.post('/', [
       });
     }
 
+    if (error.name === 'SequelizeDatabaseError') {
+      console.log('Database error:', error.message);
+      return res.status(500).json({
+        success: false,
+        message: `Database error: ${error.message}`
+      });
+    }
+
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: `Server error: ${error.message}`
     });
   }
 });
