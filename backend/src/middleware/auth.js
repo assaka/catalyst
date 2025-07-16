@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
+const { supabase } = require('../database/connection');
 
 const authMiddleware = async (req, res, next) => {
   try {
@@ -14,7 +15,28 @@ const authMiddleware = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const user = await User.findByPk(decoded.id);
+    let user;
+    
+    // Try Supabase first
+    try {
+      const { data: supabaseUser, error } = await supabase
+        .from('users')
+        .select('id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, created_at, updated_at')
+        .eq('id', decoded.id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      user = supabaseUser;
+    } catch (supabaseError) {
+      console.error('❌ Supabase auth error, falling back to Sequelize:', supabaseError);
+      
+      // Fallback to Sequelize
+      user = await User.findByPk(decoded.id);
+    }
+    
     if (!user) {
       return res.status(401).json({
         error: 'Access denied',

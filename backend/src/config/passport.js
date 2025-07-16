@@ -1,6 +1,7 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { User } = require('../models');
+const { supabase } = require('../database/connection');
 const jwt = require('jsonwebtoken');
 
 passport.use(new GoogleStrategy({
@@ -28,30 +29,89 @@ passport.use(new GoogleStrategy({
 
       console.log('🔍 Looking for user with email:', googleUser.email);
 
-      // Try to find or create user
-      let user = await User.findOne({ where: { email: googleUser.email } });
-      
-      if (!user) {
-        // Create new user
-        user = await User.create({
-          email: googleUser.email,
-          first_name: googleUser.first_name,
-          last_name: googleUser.last_name,
-          avatar_url: googleUser.avatar_url,
-          email_verified: true,
-          password: Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8),
-          role: 'customer',
-          is_active: true
-        });
-        console.log('✅ New user created via Google OAuth:', user.email);
-      } else {
-        // Update existing user
-        await user.update({
-          last_login: new Date(),
-          email_verified: true,
-          avatar_url: googleUser.avatar_url // Update avatar if changed
-        });
-        console.log('✅ Existing user logged in via Google OAuth:', user.email);
+      // Try to find user using Supabase client (fallback for Sequelize issues)
+      let user;
+      try {
+        const { data: existingUser, error: findError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', googleUser.email)
+          .single();
+
+        if (findError && findError.code !== 'PGRST116') { // PGRST116 means no rows found
+          throw findError;
+        }
+
+        if (existingUser) {
+          // Update existing user
+          const { data: updatedUser, error: updateError } = await supabase
+            .from('users')
+            .update({
+              last_login: new Date().toISOString(),
+              email_verified: true,
+              avatar_url: googleUser.avatar_url,
+              updated_at: new Date().toISOString()
+            })
+            .eq('email', googleUser.email)
+            .select()
+            .single();
+
+          if (updateError) {
+            throw updateError;
+          }
+
+          user = updatedUser;
+          console.log('✅ Existing user logged in via Google OAuth:', user.email);
+        } else {
+          // Create new user
+          const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert([{
+              email: googleUser.email,
+              first_name: googleUser.first_name,
+              last_name: googleUser.last_name,
+              avatar_url: googleUser.avatar_url,
+              email_verified: true,
+              password: '$2b$10$' + Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8),
+              role: 'customer',
+              is_active: true
+            }])
+            .select()
+            .single();
+
+          if (createError) {
+            throw createError;
+          }
+
+          user = newUser;
+          console.log('✅ New user created via Google OAuth:', user.email);
+        }
+      } catch (supabaseError) {
+        console.error('❌ Supabase error, falling back to Sequelize:', supabaseError);
+        
+        // Fallback to Sequelize (original code)
+        user = await User.findOne({ where: { email: googleUser.email } });
+        
+        if (!user) {
+          user = await User.create({
+            email: googleUser.email,
+            first_name: googleUser.first_name,
+            last_name: googleUser.last_name,
+            avatar_url: googleUser.avatar_url,
+            email_verified: true,
+            password: Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8),
+            role: 'customer',
+            is_active: true
+          });
+          console.log('✅ New user created via Sequelize fallback:', user.email);
+        } else {
+          await user.update({
+            last_login: new Date(),
+            email_verified: true,
+            avatar_url: googleUser.avatar_url
+          });
+          console.log('✅ Existing user logged in via Sequelize fallback:', user.email);
+        }
       }
       
       return done(null, user);
@@ -75,9 +135,30 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await User.findByPk(id, {
-      attributes: { exclude: ['password'] }
-    });
+    let user;
+    
+    // Try Supabase first
+    try {
+      const { data: supabaseUser, error } = await supabase
+        .from('users')
+        .select('id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, created_at, updated_at')
+        .eq('id', id)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      user = supabaseUser;
+    } catch (supabaseError) {
+      console.error('❌ Supabase deserialize error, falling back to Sequelize:', supabaseError);
+      
+      // Fallback to Sequelize
+      user = await User.findByPk(id, {
+        attributes: { exclude: ['password'] }
+      });
+    }
+    
     done(null, user);
   } catch (error) {
     done(error, null);
