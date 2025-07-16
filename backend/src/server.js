@@ -152,8 +152,21 @@ app.get('/debug/simple-db', async (req, res) => {
       });
     }
     
-    const testSequelize = new Sequelize(databaseUrl, {
+    console.log('📊 Parsed URL components:', {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port,
+      database: parsedUrl.pathname.slice(1),
+      username: parsedUrl.username
+    });
+    
+    // Create explicit connection config to force IPv4
+    const connectionConfig = {
       dialect: 'postgres',
+      host: parsedUrl.hostname,
+      port: parseInt(parsedUrl.port) || 5432,
+      username: parsedUrl.username,
+      password: parsedUrl.password,
+      database: parsedUrl.pathname.slice(1),
       logging: (msg) => console.log('🔧 SQL:', msg),
       dialectOptions: {
         ssl: {
@@ -161,15 +174,22 @@ app.get('/debug/simple-db', async (req, res) => {
           rejectUnauthorized: false
         },
         // Force IPv4 to avoid IPv6 connectivity issues on Render.com
-        family: 4
+        family: 4,
+        // Additional connection options
+        connectTimeout: 60000,
+        keepAlive: true,
+        keepAliveInitialDelayMs: 0
       },
       pool: {
         max: 5,
         min: 0,
-        acquire: 30000,
+        acquire: 60000,
         idle: 10000
       }
-    });
+    };
+    
+    console.log('📊 Using explicit connection config with forced IPv4');
+    const testSequelize = new Sequelize(connectionConfig);
     
     console.log('🔄 Attempting authentication...');
     await testSequelize.authenticate();
@@ -184,7 +204,7 @@ app.get('/debug/simple-db', async (req, res) => {
     res.json({
       success: true,
       message: 'Direct database connection successful',
-      databaseUrl: databaseUrl.substring(0, 30) + '...',
+      connectionType: 'Explicit config with IPv4',
       host: parsedUrl.hostname,
       port: parsedUrl.port,
       database: parsedUrl.pathname.slice(1),
