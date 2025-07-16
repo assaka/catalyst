@@ -89,4 +89,4 @@ The deployment guides are available at:
 Add correct user to vercel project to auto deploy
 git config user.email "hamidelabassi99@gmail.com"
 
-add    
+add      
