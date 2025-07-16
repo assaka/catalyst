@@ -260,10 +260,18 @@ export default function StorefrontLayout({ children }) {
                                             </Button>
                                         )}
                                         {user ? (
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                onClick={() => window.location.href = createPageUrl('CustomerDashboard')}
+
+
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => {
+                                                    if (user.account_type === 'agency' || user.role === 'admin' || user.role==='store_owner') {
+                                                        window.location.href = createPageUrl('Dashboard');
+                                                    } else {
+                                                        window.location.href = createPageUrl('CustomerDashboard');
+                                                    }
+                                                }}
                                                 disabled={userLoading}
                                             >
                                                 <UserIcon className="w-5 h-5" />
@@ -305,39 +313,49 @@ export default function StorefrontLayout({ children }) {
                                             <CountrySelect value={selectedCountry} onValueChange={setSelectedCountry} />
                                         )}
                                         {user ? (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button 
-                                                        size="sm" 
-                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
-                                                    >
-                                                        <UserIcon className="w-4 h-4" />
-                                                        <span>My Account</span>
-                                                        <ChevronDown className="w-4 h-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent className="w-56">
-                                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem onClick={() => {
-                                                        if (user.account_type === 'agency' || user.role === 'admin') {
-                                                            window.location.href = createPageUrl('Dashboard');
-                                                        } else {
-                                                            window.location.href = createPageUrl('CustomerDashboard');
-                                                        }
-                                                    }}>
-                                                        <Settings className="mr-2 h-4 w-4" />
-                                                        <span>Dashboard</span>
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem onClick={() => {
+                                            <div>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            size="sm"
+                                                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
+                                                        >
+                                                            <UserIcon className="w-4 h-4" />
+                                                            <span>My Account</span>
+                                                            <ChevronDown className="w-4 h-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="w-56">
+                                                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem onClick={() => {
+                                                            if (user.account_type === 'agency' || user.role === 'admin' || user.role==='store_owner') {
+                                                                window.location.href = createPageUrl('Dashboard');
+                                                            } else {
+                                                                window.location.href = createPageUrl('CustomerDashboard');
+                                                            }
+                                                        }}>
+                                                            <Settings className="mr-2 h-4 w-4" />
+                                                            <span>Dashboard</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => {
+                                                            User.logout();
+                                                            window.location.href = createPageUrl('Auth');
+                                                        }}>
+                                                            <LogOut className="mr-2 h-4 w-4" />
+                                                            <span>Logout</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                                <Button
+                                                    onClick={() => {
                                                         User.logout();
                                                         window.location.href = createPageUrl('Auth');
                                                     }}>
-                                                        <LogOut className="mr-2 h-4 w-4" />
-                                                        <span>Logout</span>
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                                    <LogOut className="mr-2 h-4 w-4" />
+                                                    <span>Logout</span>
+                                                </Button>
+                                            </div>
                                         ) : (
                                             <Button 
                                                 onClick={() => User.login()}
@@ -408,6 +426,34 @@ export default function StorefrontLayout({ children }) {
                                     {settings.allowed_countries && Array.isArray(settings.allowed_countries) && settings.allowed_countries.length > 1 && (
                                         <div className="pt-3 mt-3 border-t border-gray-200">
                                             <CountrySelect value={selectedCountry} onValueChange={setSelectedCountry} />
+                                        </div>
+                                    )}
+                                    
+                                    {user && (
+                                        <div className="pt-3 mt-3 border-t border-gray-200">
+                                            <button
+                                                onClick={() => {
+                                                    if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
+                                                        window.location.href = createPageUrl('Dashboard');
+                                                    } else {
+                                                        window.location.href = createPageUrl('CustomerDashboard');
+                                                    }
+                                                }}
+                                                className="w-full flex items-center py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
+                                            >
+                                                <Settings className="mr-2 h-4 w-4" />
+                                                <span>Dashboard</span>
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    User.logout();
+                                                    window.location.href = createPageUrl('Auth');
+                                                }}
+                                                className="w-full flex items-center py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
+                                            >
+                                                <LogOut className="mr-2 h-4 w-4" />
+                                                <span>Logout</span>
+                                            </button>
                                         </div>
                                     )}
                                 </div>
