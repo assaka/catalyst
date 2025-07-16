@@ -10,6 +10,7 @@ import { DeliverySettings } from '@/api/entities';
 import { ShoppingBag, User as UserIcon, Globe, Menu, Search, ChevronDown, Settings, Package, LogOut, X } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import MiniCart from './MiniCart';
 import WishlistDropdown from './WishlistDropdown';
 import CategoryNav from './CategoryNav';
@@ -304,19 +305,39 @@ export default function StorefrontLayout({ children }) {
                                             <CountrySelect value={selectedCountry} onValueChange={setSelectedCountry} />
                                         )}
                                         {user ? (
-                                            <Button 
-                                                size="sm" 
-                                                onClick={() => {
-                                                    if (user.account_type === 'agency' || user.role === 'admin') {
-                                                        window.location.href = createPageUrl('Dashboard');
-                                                    } else {
-                                                        window.location.href = createPageUrl('CustomerDashboard');
-                                                    }
-                                                }}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-                                            >
-                                                My Account
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button 
+                                                        size="sm" 
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
+                                                    >
+                                                        <UserIcon className="w-4 h-4" />
+                                                        <span>My Account</span>
+                                                        <ChevronDown className="w-4 h-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-56">
+                                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    <DropdownMenuItem onClick={() => {
+                                                        if (user.account_type === 'agency' || user.role === 'admin') {
+                                                            window.location.href = createPageUrl('Dashboard');
+                                                        } else {
+                                                            window.location.href = createPageUrl('CustomerDashboard');
+                                                        }
+                                                    }}>
+                                                        <Settings className="mr-2 h-4 w-4" />
+                                                        <span>Dashboard</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => {
+                                                        User.logout();
+                                                        window.location.href = createPageUrl('Auth');
+                                                    }}>
+                                                        <LogOut className="mr-2 h-4 w-4" />
+                                                        <span>Logout</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         ) : (
                                             <Button 
                                                 onClick={() => User.login()}
