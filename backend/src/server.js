@@ -124,6 +124,53 @@ app.get('/debug/env', (req, res) => {
   });
 });
 
+// Simple database test endpoint
+app.get('/debug/simple-db', async (req, res) => {
+  try {
+    const { Sequelize } = require('sequelize');
+    const databaseUrl = process.env.DATABASE_URL;
+    
+    if (!databaseUrl) {
+      return res.status(500).json({
+        success: false,
+        message: 'No DATABASE_URL found'
+      });
+    }
+    
+    console.log('🔄 Testing direct database connection...');
+    
+    const testSequelize = new Sequelize(databaseUrl, {
+      dialect: 'postgres',
+      logging: console.log,
+      dialectOptions: {
+        ssl: {
+          require: true,
+          rejectUnauthorized: false
+        }
+      }
+    });
+    
+    await testSequelize.authenticate();
+    console.log('✅ Direct database connection successful');
+    
+    await testSequelize.close();
+    
+    res.json({
+      success: true,
+      message: 'Direct database connection successful',
+      databaseUrl: databaseUrl.substring(0, 30) + '...'
+    });
+  } catch (error) {
+    console.error('❌ Direct database connection failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Direct database connection failed',
+      error: error.message,
+      stack: error.stack?.split('\n')[0]
+    });
+  }
+});
+
 // Database health check endpoint
 app.get('/health/db', async (req, res) => {
   try {
