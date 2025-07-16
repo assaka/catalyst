@@ -260,8 +260,6 @@ export default function StorefrontLayout({ children }) {
                                             </Button>
                                         )}
                                         {user ? (
-
-
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
@@ -321,12 +319,12 @@ export default function StorefrontLayout({ children }) {
                                                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
                                                         >
                                                             <UserIcon className="w-4 h-4" />
-                                                            <span>My Account</span>
+                                                            <span>My Account2  - {user.role} - {user.name}</span>
                                                             <ChevronDown className="w-4 h-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent className="w-56">
-                                                        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                                        <DropdownMenuLabel>My Account3 - {user.role} - {user.name} </DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem onClick={() => {
                                                             if (user.account_type === 'agency' || user.role === 'admin' || user.role==='store_owner') {

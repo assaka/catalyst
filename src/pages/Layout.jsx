@@ -519,7 +519,7 @@ export default function Layout({ children, currentPageName }) {
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>My Account5 - {user.role} - {user.name}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => window.open(createPageUrl("Storefront"), '_blank')}>
                     <ShoppingBag className="mr-2 h-4 w-4" />
