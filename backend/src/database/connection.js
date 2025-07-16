@@ -42,7 +42,9 @@ try {
         ssl: process.env.NODE_ENV === 'production' ? {
           require: true,
           rejectUnauthorized: false
-        } : false
+        } : false,
+        // Force IPv4 to avoid IPv6 connectivity issues on Render.com
+        family: 4
       }
     });
   } else {

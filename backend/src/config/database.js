@@ -36,7 +36,7 @@ const getDatabaseConfig = () => {
         require: true,
         rejectUnauthorized: false
       } : false,
-      // Force IPv4 to avoid IPv6 connectivity issues
+      // Force IPv4 to avoid IPv6 connectivity issues on Render.com
       family: 4,
       // Connection timeout
       connectTimeout: 60000,

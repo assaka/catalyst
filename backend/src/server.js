@@ -159,7 +159,9 @@ app.get('/debug/simple-db', async (req, res) => {
         ssl: {
           require: true,
           rejectUnauthorized: false
-        }
+        },
+        // Force IPv4 to avoid IPv6 connectivity issues on Render.com
+        family: 4
       },
       pool: {
         max: 5,
