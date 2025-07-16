@@ -57,12 +57,12 @@ export default function Auth() {
     try {
       const user = await User.me();
       if (user) {
-        if (!user.account_type) {
+        if (!user.role) {
           navigate(createPageUrl("Onboarding"));
           return;
         }
 
-        if (user.account_type === 'agency' || user.role === 'admin') {
+        if (user.role === 'admin' || user.role === 'store_owner') {
           navigate(createPageUrl("Dashboard"));
         } else {
           navigate(createPageUrl("CustomerDashboard"));
