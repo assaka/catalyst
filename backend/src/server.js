@@ -108,6 +108,22 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Environment variables test endpoint
+app.get('/debug/env', (req, res) => {
+  res.json({
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+    hasDatabaseUrl: !!process.env.DATABASE_URL,
+    hasSupabaseDbUrl: !!process.env.SUPABASE_DB_URL,
+    hasJwtSecret: !!process.env.JWT_SECRET,
+    supabaseUrlPrefix: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.substring(0, 30) + '...' : 'Not set',
+    databaseUrlPrefix: process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'Not set',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Database health check endpoint
 app.get('/health/db', async (req, res) => {
   try {
