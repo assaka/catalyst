@@ -128,22 +128,59 @@ const PORT = process.env.PORT || 5000;
 // Database connection and server startup
 const startServer = async () => {
   try {
-    await sequelize.authenticate();
-    console.log('Database connection has been established successfully.');
+    console.log('Starting server...');
+    console.log(`Environment: ${process.env.NODE_ENV}`);
+    console.log(`Port: ${PORT}`);
+    
+    // Test database connection with retry logic
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await sequelize.authenticate();
+        console.log('Database connection has been established successfully.');
+        break;
+      } catch (dbError) {
+        retries--;
+        console.error(`Database connection failed (${3 - retries}/3):`, dbError.message);
+        
+        if (retries === 0) {
+          throw new Error(`Failed to connect to database after 3 attempts: ${dbError.message}`);
+        }
+        
+        console.log(`Retrying database connection in 5 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
+    }
     
     // Sync database (in development only)
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: true });
       console.log('Database synchronized successfully.');
+    } else {
+      // In production, just ensure tables exist
+      await sequelize.sync({ alter: false });
+      console.log('Database schema validation completed.');
     }
     
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV}`);
       console.log(`Health check: http://localhost:${PORT}/health`);
+      console.log(`CORS Origin: ${process.env.CORS_ORIGIN}`);
     });
   } catch (error) {
     console.error('Unable to start server:', error);
+    console.error('Stack trace:', error.stack);
+    
+    // Provide helpful error messages
+    if (error.message.includes('ENETUNREACH')) {
+      console.error('\n🔧 TROUBLESHOOTING TIPS:');
+      console.error('- Check if DATABASE_URL is correct');
+      console.error('- Verify Supabase project is not paused');
+      console.error('- Try using IPv4 connection string');
+      console.error('- Check hosting platform network settings');
+    }
+    
     process.exit(1);
   }
 };
