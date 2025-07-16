@@ -121,6 +121,7 @@ app.get('/health/db', async (req, res) => {
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes); // Fallback for legacy paths
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/stores', authMiddleware, storeRoutes);
 app.use('/api/products', authMiddleware, productRoutes);

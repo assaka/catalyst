@@ -61,7 +61,7 @@ class AuthService {
   }
 
   googleLogin() {
-    window.location.href = `${apiClient.baseURL}/auth/google`;
+    window.location.href = `${apiClient.baseURL}/api/auth/google`;
   }
 
   async register(userData) {
