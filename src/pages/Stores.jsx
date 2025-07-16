@@ -37,13 +37,14 @@ export default function Stores() {
       const userData = await User.me();
       setUser(userData);
 
-      if (userData.account_type === 'agency') {
+      if (userData.account_type === 'agency' || userData.role === 'admin') {
+        // For agency accounts and admin users, show all stores they own
         const agencyStores = await Store.filter({ owner_email: userData.email });
         setStores(agencyStores || []);
         // The outline removes the loading of client stores (agency_id) and agency clients.
         // setClients logic for agencies is also removed based on the outline.
       } else {
-        // Regular client - show their own stores
+        // Regular client or store_owner - show their own stores
         const userStores = await Store.filter({ owner_id: userData.id });
         setStores(userStores || []);
       }
@@ -120,12 +121,14 @@ export default function Stores() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">
-            {user?.account_type === 'agency' ? 'Client Stores' : 'My Stores'}
+            {user?.account_type === 'agency' ? 'Client Stores' : user?.role === 'admin' ? 'All Stores' : 'My Stores'}
           </h1>
           <p className="text-gray-600 mt-1">
             {user?.account_type === 'agency'
               ? `Manage stores for your clients. ${user?.credits || 0} credits remaining.`
-              : 'Manage your online stores'
+              : user?.role === 'admin'
+                ? 'Manage all stores in the system'
+                : 'Manage your online stores'
             }
           </p>
         </div>
@@ -163,7 +166,7 @@ export default function Stores() {
                 />
               </div>
 
-              {user?.account_type === 'agency' && (
+              {(user?.account_type === 'agency' || user?.role === 'admin') && (
                 <div>
                   <Label htmlFor="clientEmail">Client Email (optional)</Label>
                   <Input
@@ -173,7 +176,7 @@ export default function Stores() {
                     placeholder="client@example.com"
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    Leave empty to create under your agency account
+                    {user?.role === 'admin' ? 'Leave empty to create under your admin account' : 'Leave empty to create under your agency account'}
                   </p>
                 </div>
               )}
@@ -207,7 +210,8 @@ export default function Stores() {
                   onClick={handleCreateStore}
                   // The disabled condition for credits is retained based on the previous implementation,
                   // but the credit deduction itself was removed from handleCreateStore in the outline.
-                  disabled={!newStore.name || (user?.account_type === 'agency' && stores.length > 0 && (user?.credits || 0) < 10)}
+                  // Admin users should not be restricted by credits
+                  disabled={!newStore.name || (user?.account_type === 'agency' && user?.role !== 'admin' && stores.length > 0 && (user?.credits || 0) < 10)}
                 >
                   Create Store
                 </Button>
@@ -225,7 +229,9 @@ export default function Stores() {
             <p className="text-gray-600 mb-6">
               {user?.account_type === 'agency'
                 ? 'Create your first client store to get started.'
-                : 'Create your first store to start selling online.'
+                : user?.role === 'admin'
+                  ? 'Create the first store to get started.'
+                  : 'Create your first store to start selling online.'
               }
             </p>
             <Button onClick={() => setShowCreateStore(true)}>

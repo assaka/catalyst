@@ -356,7 +356,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "Settings", path: "Settings", icon: SettingsIcon },
         { name: "Theme & Layout", path: "ThemeLayout", icon: Palette },
         { name: "Plugins", path: "Plugins", icon: Puzzle },
-        ...(user?.account_type === 'agency' ? [
+        ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "Stores", icon: Building2 },
         ] : []),
       ]
