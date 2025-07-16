@@ -30,6 +30,7 @@ const dbTestRoutes = require('./routes/db-test');
 const dbInitRoutes = require('./routes/db-init');
 const dbSetupRoutes = require('./routes/db-setup');
 const migrateRoutes = require('./routes/migrate');
+const migrateSupabaseRoutes = require('./routes/migrate-supabase');
 
 const app = express();
 
@@ -143,6 +144,7 @@ app.use('/api/db-test', dbTestRoutes);
 app.use('/api/db-init', dbInitRoutes);
 app.use('/api/db-setup', dbSetupRoutes);
 app.use('/api/migrate', migrateRoutes);
+app.use('/api/migrate-supabase', migrateSupabaseRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
