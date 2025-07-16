@@ -1,5 +1,7 @@
 const express = require('express');
 const { supabase } = require('../database/connection');
+const fs = require('fs');
+const path = require('path');
 const router = express.Router();
 
 // @route   POST /api/migrate-supabase/run
@@ -14,78 +16,92 @@ router.post('/run', async (req, res) => {
   }
 
   try {
+    console.log('🚀 Starting Supabase migration...');
+    
+    // Try to create just the essential tables first
+    const essentialTables = [
+      {
+        name: 'users',
+        sql: `
+          CREATE TABLE IF NOT EXISTS users (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            first_name VARCHAR(100) NOT NULL,
+            last_name VARCHAR(100) NOT NULL,
+            phone VARCHAR(20),
+            avatar_url TEXT,
+            is_active BOOLEAN DEFAULT true,
+            email_verified BOOLEAN DEFAULT false,
+            email_verification_token VARCHAR(255),
+            password_reset_token VARCHAR(255),
+            password_reset_expires TIMESTAMP,
+            last_login TIMESTAMP,
+            role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('admin', 'store_owner', 'customer')),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );`
+      },
+      {
+        name: 'login_attempts',
+        sql: `
+          CREATE TABLE IF NOT EXISTS login_attempts (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            email VARCHAR(255) NOT NULL,
+            ip_address VARCHAR(45) NOT NULL,
+            success BOOLEAN DEFAULT false,
+            attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );`
+      }
+    ];
+
     const results = [];
     
-    // 1. Create Users table
-    console.log('📋 Creating users table...');
-    const createUsersTable = `
-      CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        email VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        phone VARCHAR(20),
-        avatar_url TEXT,
-        is_active BOOLEAN DEFAULT true,
-        email_verified BOOLEAN DEFAULT false,
-        email_verification_token VARCHAR(255),
-        password_reset_token VARCHAR(255),
-        password_reset_expires TIMESTAMP,
-        last_login TIMESTAMP,
-        role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('admin', 'store_owner', 'customer')),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-    
-    const { error: usersError } = await supabase.rpc('exec_sql', { query: createUsersTable });
-    if (usersError && !usersError.message.includes('already exists')) {
-      return res.json({ 
-        success: false, 
-        message: 'Failed to create users table',
-        error: usersError.message 
-      });
+    // Create each table
+    for (const table of essentialTables) {
+      console.log(`📋 Creating ${table.name} table...`);
+      
+      try {
+        // Try to create table by querying directly
+        const { error } = await supabase.rpc('exec_sql', { sql: table.sql });
+        
+        if (error) {
+          console.warn(`Warning creating ${table.name}:`, error.message);
+          // Try alternative approach - check if table exists
+          const { data: checkData, error: checkError } = await supabase
+            .from(table.name)
+            .select('*')
+            .limit(1);
+          
+          if (!checkError) {
+            results.push({ table: table.name, status: 'already_exists' });
+          } else {
+            results.push({ table: table.name, status: 'failed', error: error.message });
+          }
+        } else {
+          results.push({ table: table.name, status: 'created' });
+        }
+      } catch (err) {
+        console.error(`Error with ${table.name}:`, err);
+        results.push({ table: table.name, status: 'failed', error: err.message });
+      }
     }
-    results.push({ table: 'users', status: 'created' });
 
-    // 2. Create Login attempts table
-    console.log('📋 Creating login_attempts table...');
-    const createLoginAttemptsTable = `
-      CREATE TABLE IF NOT EXISTS login_attempts (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        email VARCHAR(255) NOT NULL,
-        ip_address VARCHAR(45) NOT NULL,
-        success BOOLEAN DEFAULT false,
-        attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `;
-    
-    const { error: loginAttemptsError } = await supabase.rpc('exec_sql', { query: createLoginAttemptsTable });
-    if (loginAttemptsError && !loginAttemptsError.message.includes('already exists')) {
-      return res.json({ 
-        success: false, 
-        message: 'Failed to create login_attempts table',
-        error: loginAttemptsError.message 
-      });
-    }
-    results.push({ table: 'login_attempts', status: 'created' });
-
-    // 3. Create indexes
+    // Create indexes
     console.log('📋 Creating indexes...');
-    const createIndexes = `
+    const indexSql = `
       CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
       CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time ON login_attempts(email, attempted_at);
       CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(ip_address, attempted_at);
     `;
     
-    const { error: indexError } = await supabase.rpc('exec_sql', { query: createIndexes });
-    if (indexError && !indexError.message.includes('already exists')) {
+    const { error: indexError } = await supabase.rpc('exec_sql', { sql: indexSql });
+    if (indexError) {
       console.warn('Index creation warning:', indexError.message);
     }
-    results.push({ table: 'indexes', status: 'created' });
+    results.push({ table: 'indexes', status: indexError ? 'failed' : 'created' });
 
-    // 4. Insert default admin user
+    // Insert default admin user
     console.log('📋 Creating default admin user...');
     const { data: existingAdmin } = await supabase
       .from('users')
@@ -108,6 +124,7 @@ router.post('/run', async (req, res) => {
 
       if (adminError) {
         console.warn('Admin user creation warning:', adminError.message);
+        results.push({ table: 'admin_user', status: 'failed', error: adminError.message });
       } else {
         results.push({ table: 'admin_user', status: 'created' });
       }
