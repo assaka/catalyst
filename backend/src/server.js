@@ -138,35 +138,68 @@ app.get('/debug/simple-db', async (req, res) => {
     }
     
     console.log('🔄 Testing direct database connection...');
+    console.log('📊 Database URL format check:', databaseUrl.substring(0, 50) + '...');
+    
+    // Parse URL to check components
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(databaseUrl);
+    } catch (urlError) {
+      return res.status(500).json({
+        success: false,
+        message: 'Invalid DATABASE_URL format',
+        error: urlError.message
+      });
+    }
     
     const testSequelize = new Sequelize(databaseUrl, {
       dialect: 'postgres',
-      logging: console.log,
+      logging: (msg) => console.log('🔧 SQL:', msg),
       dialectOptions: {
         ssl: {
           require: true,
           rejectUnauthorized: false
         }
+      },
+      pool: {
+        max: 5,
+        min: 0,
+        acquire: 30000,
+        idle: 10000
       }
     });
     
+    console.log('🔄 Attempting authentication...');
     await testSequelize.authenticate();
     console.log('✅ Direct database connection successful');
+    
+    // Test a simple query
+    const [results] = await testSequelize.query('SELECT 1 as test');
+    console.log('✅ Simple query successful:', results);
     
     await testSequelize.close();
     
     res.json({
       success: true,
       message: 'Direct database connection successful',
-      databaseUrl: databaseUrl.substring(0, 30) + '...'
+      databaseUrl: databaseUrl.substring(0, 30) + '...',
+      host: parsedUrl.hostname,
+      port: parsedUrl.port,
+      database: parsedUrl.pathname.slice(1),
+      username: parsedUrl.username
     });
   } catch (error) {
     console.error('❌ Direct database connection failed:', error);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error code:', error.code);
+    
     res.status(500).json({
       success: false,
       message: 'Direct database connection failed',
       error: error.message,
-      stack: error.stack?.split('\n')[0]
+      errorName: error.name,
+      errorCode: error.code,
+      stack: error.stack?.split('\n').slice(0, 3)
     });
   }
 });
