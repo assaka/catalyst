@@ -2,11 +2,23 @@ const { Sequelize } = require('sequelize');
 const { createClient } = require('@supabase/supabase-js');
 const { getDatabaseConfig } = require('../config/database');
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_ANON_KEY
-);
+// Initialize Supabase client with error handling
+let supabase;
+try {
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+    supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY
+    );
+    console.log('✅ Supabase client initialized');
+  } else {
+    console.warn('⚠️  Supabase credentials missing - client not initialized');
+    supabase = null;
+  }
+} catch (error) {
+  console.error('❌ Failed to initialize Supabase client:', error.message);
+  supabase = null;
+}
 
 // Sequelize connection using robust configuration
 let sequelize;

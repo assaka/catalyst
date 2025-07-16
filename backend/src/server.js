@@ -88,14 +88,35 @@ app.use(passport.session());
 // Static files
 app.use('/uploads', express.static('uploads'));
 
-// Health check endpoint
+// Health check endpoint (no DB required)
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
+    port: process.env.PORT,
+    nodeVersion: process.version
   });
+});
+
+// Database health check endpoint
+app.get('/health/db', async (req, res) => {
+  try {
+    await sequelize.authenticate();
+    res.json({
+      status: 'OK',
+      database: 'Connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      database: 'Disconnected',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // API routes
@@ -127,61 +148,80 @@ const PORT = process.env.PORT || 5000;
 
 // Database connection and server startup
 const startServer = async () => {
+  // Start HTTP server first (for health checks)
+  const server = app.listen(PORT, () => {
+    console.log(`🚀 Server started on port ${PORT}`);
+    console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+    console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+    console.log(`🌐 CORS Origin: ${process.env.CORS_ORIGIN || 'Not set'}`);
+  });
+
+  // Handle graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+      console.log('Process terminated');
+    });
+  });
+
+  // Connect to database after server is running
   try {
-    console.log('Starting server...');
-    console.log(`Environment: ${process.env.NODE_ENV}`);
-    console.log(`Port: ${PORT}`);
+    console.log('🔍 Checking environment variables...');
+    console.log(`- NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`- PORT: ${PORT}`);
+    console.log(`- DATABASE_URL: ${process.env.DATABASE_URL ? '✅ Set' : '❌ Missing'}`);
+    console.log(`- SUPABASE_URL: ${process.env.SUPABASE_URL ? '✅ Set' : '❌ Missing'}`);
+    console.log(`- JWT_SECRET: ${process.env.JWT_SECRET ? '✅ Set' : '❌ Missing'}`);
+    
+    console.log('\n🔗 Attempting database connection...');
     
     // Test database connection with retry logic
     let retries = 3;
-    while (retries > 0) {
+    let dbConnected = false;
+    
+    while (retries > 0 && !dbConnected) {
       try {
         await sequelize.authenticate();
-        console.log('Database connection has been established successfully.');
-        break;
-      } catch (dbError) {
-        retries--;
-        console.error(`Database connection failed (${3 - retries}/3):`, dbError.message);
+        console.log('✅ Database connection established successfully.');
+        dbConnected = true;
         
-        if (retries === 0) {
-          throw new Error(`Failed to connect to database after 3 attempts: ${dbError.message}`);
+        // Sync database tables
+        if (process.env.NODE_ENV === 'development') {
+          await sequelize.sync({ alter: true });
+          console.log('📊 Database synchronized (development mode).');
+        } else {
+          await sequelize.sync({ alter: false });
+          console.log('📊 Database schema validated (production mode).');
         }
         
-        console.log(`Retrying database connection in 5 seconds...`);
+      } catch (dbError) {
+        retries--;
+        console.error(`❌ Database connection failed (${3 - retries}/3):`, dbError.message);
+        
+        if (retries === 0) {
+          console.warn('⚠️  Database connection failed. Server will continue without database.');
+          console.warn('⚠️  Some features may not work properly.');
+          break;
+        }
+        
+        console.log(`🔄 Retrying database connection in 5 seconds...`);
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
     
-    // Sync database (in development only)
-    if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: true });
-      console.log('Database synchronized successfully.');
-    } else {
-      // In production, just ensure tables exist
-      await sequelize.sync({ alter: false });
-      console.log('Database schema validation completed.');
-    }
+    console.log('\n✅ Server startup completed successfully!');
     
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV}`);
-      console.log(`Health check: http://localhost:${PORT}/health`);
-      console.log(`CORS Origin: ${process.env.CORS_ORIGIN}`);
-    });
   } catch (error) {
-    console.error('Unable to start server:', error);
-    console.error('Stack trace:', error.stack);
+    console.error('❌ Server startup error:', error.message);
     
-    // Provide helpful error messages
+    // Don't exit - let the server run for health checks
     if (error.message.includes('ENETUNREACH')) {
-      console.error('\n🔧 TROUBLESHOOTING TIPS:');
-      console.error('- Check if DATABASE_URL is correct');
-      console.error('- Verify Supabase project is not paused');
-      console.error('- Try using IPv4 connection string');
-      console.error('- Check hosting platform network settings');
+      console.error('\n🔧 DATABASE TROUBLESHOOTING TIPS:');
+      console.error('- Verify DATABASE_URL environment variable');
+      console.error('- Check Supabase project status');
+      console.error('- Try IPv4 connection string');
+      console.error('- Check network connectivity');
     }
-    
-    process.exit(1);
   }
 };
 
