@@ -128,6 +128,8 @@ app.get('/debug/env', (req, res) => {
 app.get('/debug/simple-db', async (req, res) => {
   try {
     const { Sequelize } = require('sequelize');
+    const dns = require('dns');
+    const { promisify } = require('util');
     const databaseUrl = process.env.DATABASE_URL;
     
     if (!databaseUrl) {
@@ -159,10 +161,27 @@ app.get('/debug/simple-db', async (req, res) => {
       username: parsedUrl.username
     });
     
+    // Try to resolve hostname to IPv4 address
+    const resolve4 = promisify(dns.resolve4);
+    let ipv4Address = null;
+    
+    try {
+      console.log('🔄 Resolving hostname to IPv4...');
+      const addresses = await resolve4(parsedUrl.hostname);
+      ipv4Address = addresses[0];
+      console.log('✅ Resolved to IPv4:', ipv4Address);
+    } catch (dnsError) {
+      console.log('❌ DNS resolution failed:', dnsError.message);
+    }
+    
+    // Use IPv4 address if available, otherwise use original hostname
+    const connectionHost = ipv4Address || parsedUrl.hostname;
+    console.log('📊 Using connection host:', connectionHost);
+    
     // Create explicit connection config to force IPv4
     const connectionConfig = {
       dialect: 'postgres',
-      host: parsedUrl.hostname,
+      host: connectionHost,
       port: parseInt(parsedUrl.port) || 5432,
       username: parsedUrl.username,
       password: parsedUrl.password,
@@ -205,7 +224,8 @@ app.get('/debug/simple-db', async (req, res) => {
       success: true,
       message: 'Direct database connection successful',
       connectionType: 'Explicit config with IPv4',
-      host: parsedUrl.hostname,
+      originalHost: parsedUrl.hostname,
+      resolvedHost: connectionHost,
       port: parsedUrl.port,
       database: parsedUrl.pathname.slice(1),
       username: parsedUrl.username
