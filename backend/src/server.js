@@ -143,6 +143,32 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+// Public database migration endpoint
+app.post('/debug/migrate', async (req, res) => {
+  try {
+    console.log('🔄 Running database migration...');
+    
+    // Import all models to ensure they're synced
+    const { User, Store, Product, Category, Order, OrderItem, Coupon, CmsPage, Tax, ShippingMethod, DeliverySettings } = require('./models');
+    
+    // Sync all models in the correct order
+    await sequelize.sync({ alter: true });
+    console.log('✅ All tables synchronized');
+    
+    res.json({
+      success: true,
+      message: 'Database migration completed successfully'
+    });
+  } catch (error) {
+    console.error('❌ Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
+      error: error.message
+    });
+  }
+});
+
 // Detailed database debug endpoint
 app.get('/debug/db', async (req, res) => {
   const { supabase } = require('./database/connection');
