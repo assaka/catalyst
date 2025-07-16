@@ -1,7 +1,22 @@
 const { Sequelize } = require('sequelize');
+const dns = require('dns').promises;
 
-// Database configuration with fallback options
-const getDatabaseConfig = () => {
+// Force IPv4 DNS resolution
+async function resolveToIPv4(hostname) {
+  try {
+    const addresses = await dns.resolve4(hostname);
+    if (addresses && addresses.length > 0) {
+      console.log(`Resolved ${hostname} to IPv4: ${addresses[0]}`);
+      return addresses[0];
+    }
+  } catch (error) {
+    console.error(`Failed to resolve ${hostname} to IPv4:`, error.message);
+  }
+  return hostname;
+}
+
+// Database configuration with IPv4 resolution
+const getDatabaseConfig = async () => {
   const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
   
   if (!databaseUrl) {
@@ -18,16 +33,18 @@ const getDatabaseConfig = () => {
     };
   }
 
-  // Parse connection string to handle IPv6 issues
+  // Parse connection string
   const url = new URL(databaseUrl);
+  
+  // Resolve hostname to IPv4
+  const ipv4Host = await resolveToIPv4(url.hostname);
   
   // Check if this is a Supabase pooler connection
   const isPooler = url.hostname.includes('.pooler.supabase.com') || url.port === '6543';
   
-  // Force IPv4 hostname resolution for Supabase
   const config = {
     dialect: 'postgres',
-    host: url.hostname,
+    host: ipv4Host, // Use resolved IPv4 address
     port: parseInt(url.port) || 5432,
     username: url.username,
     password: url.password,
@@ -37,9 +54,12 @@ const getDatabaseConfig = () => {
     dialectOptions: {
       ssl: process.env.NODE_ENV === 'production' ? {
         require: true,
-        rejectUnauthorized: false
+        rejectUnauthorized: false,
+        // Override SNI with original hostname for SSL
+        servername: url.hostname
       } : false,
-      // Socket settings
+      // Connection settings
+      connectTimeout: 60000,
       keepAlive: true,
       keepAliveInitialDelayMs: 0,
       // Add application_name for pooler connections

@@ -21,13 +21,22 @@ router.get('/all', async (req, res) => {
   // Test 1: Sequelize connection
   try {
     await sequelize.authenticate();
-    results.tests.sequelize = { status: 'success', message: 'Connected via Sequelize' };
+    // Try a simple query to verify connection
+    const [dbInfo] = await sequelize.query('SELECT current_database(), version()');
+    results.tests.sequelize = { 
+      status: 'success', 
+      message: 'Connected via Sequelize',
+      database: dbInfo[0].current_database,
+      version: dbInfo[0].version
+    };
   } catch (error) {
     results.tests.sequelize = { 
       status: 'failed', 
       error: error.message,
       code: error.code,
-      errno: error.errno
+      errno: error.errno,
+      hint: error.message.includes('Tenant or user not found') ? 
+        'This error typically occurs with pooler connections. Make sure to use the correct connection string format.' : null
     };
   }
 
@@ -259,6 +268,50 @@ router.get('/pooler', async (req, res) => {
       message: 'Pooler connection failed',
       error: error.message,
       code: error.code
+    });
+  }
+});
+
+// @route   GET /api/db-test/direct
+// @desc    Test direct database connection (non-pooler)
+// @access  Public
+router.get('/direct', async (req, res) => {
+  const dbUrl = process.env.DATABASE_URL;
+  
+  if (!dbUrl) {
+    return res.json({ status: 'error', message: 'DATABASE_URL not set' });
+  }
+  
+  try {
+    const url = new URL(dbUrl);
+    
+    // Create direct connection string (port 5432 instead of 6543)
+    const directHost = url.hostname.replace('.pooler.supabase.com', '.supabase.co').replace('aws-0-us-west-1.pooler', 'db');
+    const directUrl = `postgresql://${url.username}:${url.password}@${directHost}:5432${url.pathname}`;
+    
+    const pool = new Pool({
+      connectionString: directUrl,
+      ssl: { rejectUnauthorized: false }
+    });
+    
+    const result = await pool.query('SELECT NOW() as current_time, current_database() as db_name');
+    await pool.end();
+    
+    res.json({
+      status: 'success',
+      message: 'Direct connection working',
+      time: result.rows[0].current_time,
+      database: result.rows[0].db_name,
+      direct_host: directHost
+    });
+    
+  } catch (error) {
+    res.json({
+      status: 'error',
+      message: 'Direct connection failed',
+      error: error.message,
+      code: error.code,
+      hint: 'Make sure your IP is allowed in Supabase database settings'
     });
   }
 });

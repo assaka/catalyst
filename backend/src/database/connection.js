@@ -1,6 +1,6 @@
 const { Sequelize } = require('sequelize');
 const { createClient } = require('@supabase/supabase-js');
-const { getDatabaseConfig } = require('../config/database');
+const { getDatabaseConfig } = require('../config/database-ipv4');
 
 // Initialize Supabase client with error handling
 let supabase;
@@ -23,51 +23,58 @@ try {
 // Sequelize connection using robust configuration
 let sequelize;
 
-try {
-  const config = getDatabaseConfig();
-  sequelize = new Sequelize(config);
-  console.log('✅ Database configuration loaded successfully');
-} catch (error) {
-  console.error('❌ Failed to create database configuration:', error.message);
-  
-  // Check if we have database URL
-  const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
-  
-  if (databaseUrl) {
-    console.log('🔄 Attempting fallback database connection...');
-    sequelize = new Sequelize(databaseUrl, {
-      dialect: 'postgres',
-      logging: console.log,
-      dialectOptions: {
-        ssl: process.env.NODE_ENV === 'production' ? {
-          require: true,
-          rejectUnauthorized: false
-        } : false,
-        // Force IPv4 to avoid IPv6 connectivity issues on Render.com
-        family: 4
-      }
-    });
-  } else {
-    console.error('❌ No database URL found! Please configure Supabase connection.');
-    console.error('In Render.com dashboard, set these environment variables:');
-    console.error('- SUPABASE_URL');
-    console.error('- SUPABASE_ANON_KEY');
-    console.error('- SUPABASE_DB_URL (or DATABASE_URL)');
-    console.error('- JWT_SECRET');
-    console.error('- SESSION_SECRET');
+// Initialize Sequelize with async config
+const initializeSequelize = async () => {
+  try {
+    const config = await getDatabaseConfig();
+    sequelize = new Sequelize(config);
+    console.log('✅ Database configuration loaded successfully');
+    return sequelize;
+  } catch (error) {
+    console.error('❌ Failed to create database configuration:', error.message);
     
-    // For development, still use SQLite fallback
-    if (process.env.NODE_ENV === 'development') {
-      console.log('⚠️  Using SQLite for development...');
-      sequelize = new Sequelize({
-        dialect: 'sqlite',
-        storage: './database.sqlite',
-        logging: console.log
+    // Check if we have database URL
+    const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+    
+    if (databaseUrl) {
+      console.log('🔄 Attempting fallback database connection...');
+      sequelize = new Sequelize(databaseUrl, {
+        dialect: 'postgres',
+        logging: console.log,
+        dialectOptions: {
+          ssl: process.env.NODE_ENV === 'production' ? {
+            require: true,
+            rejectUnauthorized: false
+          } : false
+        }
       });
+      return sequelize;
     } else {
-      throw new Error('Database configuration required for production');
+      console.error('❌ No database URL found! Please configure Supabase connection.');
+      console.error('In Render.com dashboard, set these environment variables:');
+      console.error('- SUPABASE_URL');
+      console.error('- SUPABASE_ANON_KEY');
+      console.error('- SUPABASE_DB_URL (or DATABASE_URL)');
+      console.error('- JWT_SECRET');
+      console.error('- SESSION_SECRET');
+      
+      // For development, still use SQLite fallback
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⚠️  Using SQLite for development...');
+        sequelize = new Sequelize({
+          dialect: 'sqlite',
+          storage: './database.sqlite',
+          logging: console.log
+        });
+        return sequelize;
+      } else {
+        throw new Error('Database configuration required for production');
+      }
     }
   }
-}
+};
+
+// Initialize on module load
+initializeSequelize().catch(console.error);
 
 module.exports = { sequelize, supabase };
