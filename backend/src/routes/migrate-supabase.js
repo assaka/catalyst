@@ -8,142 +8,39 @@ const router = express.Router();
 // @desc    Run database migration using Supabase client
 // @access  Public
 router.post('/run', async (req, res) => {
-  if (!supabase) {
-    return res.json({ 
-      success: false, 
-      message: 'Supabase client not available' 
-    });
-  }
-
   try {
-    console.log('🚀 Starting Supabase migration...');
+    console.log('🚀 Starting manual table creation...');
     
-    // Try to create just the essential tables first
-    const essentialTables = [
-      {
-        name: 'users',
-        sql: `
-          CREATE TABLE IF NOT EXISTS users (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            email VARCHAR(255) UNIQUE NOT NULL,
-            password VARCHAR(255) NOT NULL,
-            first_name VARCHAR(100) NOT NULL,
-            last_name VARCHAR(100) NOT NULL,
-            phone VARCHAR(20),
-            avatar_url TEXT,
-            is_active BOOLEAN DEFAULT true,
-            email_verified BOOLEAN DEFAULT false,
-            email_verification_token VARCHAR(255),
-            password_reset_token VARCHAR(255),
-            password_reset_expires TIMESTAMP,
-            last_login TIMESTAMP,
-            role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('admin', 'store_owner', 'customer')),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );`
-      },
-      {
-        name: 'login_attempts',
-        sql: `
-          CREATE TABLE IF NOT EXISTS login_attempts (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            email VARCHAR(255) NOT NULL,
-            ip_address VARCHAR(45) NOT NULL,
-            success BOOLEAN DEFAULT false,
-            attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          );`
-      }
-    ];
-
-    const results = [];
+    // Read the migration SQL file
+    const migrationPath = path.join(__dirname, '../database/migrations/create-all-tables.sql');
+    let migrationSQL;
     
-    // Create each table
-    for (const table of essentialTables) {
-      console.log(`📋 Creating ${table.name} table...`);
-      
-      try {
-        // Try to create table by querying directly
-        const { error } = await supabase.rpc('exec_sql', { sql: table.sql });
-        
-        if (error) {
-          console.warn(`Warning creating ${table.name}:`, error.message);
-          // Try alternative approach - check if table exists
-          const { data: checkData, error: checkError } = await supabase
-            .from(table.name)
-            .select('*')
-            .limit(1);
-          
-          if (!checkError) {
-            results.push({ table: table.name, status: 'already_exists' });
-          } else {
-            results.push({ table: table.name, status: 'failed', error: error.message });
-          }
-        } else {
-          results.push({ table: table.name, status: 'created' });
-        }
-      } catch (err) {
-        console.error(`Error with ${table.name}:`, err);
-        results.push({ table: table.name, status: 'failed', error: err.message });
-      }
+    try {
+      migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+      console.log('📋 Migration SQL file loaded successfully');
+    } catch (fsError) {
+      console.error('❌ Could not read migration file:', fsError);
+      return res.json({
+        success: false,
+        message: 'Could not read migration file',
+        error: fsError.message
+      });
     }
 
-    // Create indexes
-    console.log('📋 Creating indexes...');
-    const indexSql = `
-      CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-      CREATE INDEX IF NOT EXISTS idx_login_attempts_email_time ON login_attempts(email, attempted_at);
-      CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(ip_address, attempted_at);
-    `;
-    
-    const { error: indexError } = await supabase.rpc('exec_sql', { sql: indexSql });
-    if (indexError) {
-      console.warn('Index creation warning:', indexError.message);
-    }
-    results.push({ table: 'indexes', status: indexError ? 'failed' : 'created' });
-
-    // Insert default admin user
-    console.log('📋 Creating default admin user...');
-    const { data: existingAdmin } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', 'admin@catalyst.com')
-      .single();
-
-    if (!existingAdmin) {
-      const { error: adminError } = await supabase
-        .from('users')
-        .insert([{
-          email: 'admin@catalyst.com',
-          password: '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
-          first_name: 'Admin',
-          last_name: 'User',
-          role: 'admin',
-          is_active: true,
-          email_verified: true
-        }]);
-
-      if (adminError) {
-        console.warn('Admin user creation warning:', adminError.message);
-        results.push({ table: 'admin_user', status: 'failed', error: adminError.message });
-      } else {
-        results.push({ table: 'admin_user', status: 'created' });
-      }
-    } else {
-      results.push({ table: 'admin_user', status: 'already_exists' });
-    }
-
+    // Return the SQL for manual execution
     res.json({
       success: true,
-      message: 'Database migration completed successfully!',
-      results,
-      timestamp: new Date().toISOString()
+      message: 'Migration SQL ready for manual execution',
+      instructions: 'Please run this SQL manually in your Supabase SQL editor',
+      sql: migrationSQL,
+      migration_file: migrationPath
     });
 
   } catch (error) {
-    console.error('❌ Migration failed:', error);
+    console.error('❌ Migration preparation failed:', error);
     res.json({
       success: false,
-      message: 'Database migration failed',
+      message: 'Migration preparation failed',
       error: error.message
     });
   }
