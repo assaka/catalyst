@@ -1,14 +1,5 @@
 import apiClient from './client';
 
-// Core integrations
-export const Core = {
-  InvokeLLM,
-  SendEmail,
-  UploadFile,
-  GenerateImage,
-  ExtractDataFromUploadedFile
-};
-
 // LLM integration function
 export const InvokeLLM = async (prompt, model = 'gpt-3.5-turbo', options = {}) => {
   try {
@@ -77,4 +68,13 @@ export const ExtractDataFromUploadedFile = async (fileUrl, extractionType = 'tex
     console.error('Error extracting data from file:', error);
     throw error;
   }
+};
+
+// Core integrations - must be defined after all function declarations
+export const Core = {
+  InvokeLLM,
+  SendEmail,
+  UploadFile,
+  GenerateImage,
+  ExtractDataFromUploadedFile
 };

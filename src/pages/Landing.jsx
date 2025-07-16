@@ -3,12 +3,12 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { User } from "@/api/entities";
-import { 
-  ShoppingBag, 
-  Store, 
-  Palette, 
-  Zap, 
-  Shield, 
+import {
+  ShoppingBag,
+  Store,
+  Palette,
+  Zap,
+  Shield,
   Globe,
   Check,
   Star,
@@ -19,11 +19,17 @@ import {
   Smartphone,
   CreditCard, // New icon for Checkout
   Calculator, // New icon for Tax
-  Layout // New icon for CMS
+  Layout, User as UserIcon, ChevronDown, Settings, LogOut // New icon for CMS
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu.jsx";
 
 export default function Landing() {
   const [user, setUser] = useState(null);
@@ -138,11 +144,39 @@ export default function Landing() {
             </div>
             <div className="flex items-center space-x-4">
               {user ? (
-                <Link to={createPageUrl(user.role === 'admin' ? "Dashboard" : "CustomerDashboard")}>
-                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1">
-                    {user.role === 'admin' ? "Go to Dashboard" : "My Account"}
-                  </Button>
-                </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
+                      >
+                        <UserIcon className="w-4 h-4" />
+                        <span>My Account</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => {
+                        if (user.account_type === 'agency' || user.role === 'admin' || user.role==='store_owner') {
+                          window.location.href = createPageUrl('Dashboard');
+                        } else {
+                          window.location.href = createPageUrl('CustomerDashboard');
+                        }
+                      }}>
+                        <Settings className="mr-2 h-4 w-4" />
+                        <span>Dashboard</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        User.logout();
+                        window.location.href = createPageUrl('Auth');
+                      }}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Logout</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
               ) : (
                 <>
                   <Link to={createPageUrl("Auth")}>
