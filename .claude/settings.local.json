@@ -14,7 +14,8 @@
       "Bash(npm run lint)",
       "Bash(npm run lint:*)",
       "Bash(ls:*)",
-      "WebFetch(domain:catalyst-backend-fzhu.onrender.com)"
+      "WebFetch(domain:catalyst-backend-fzhu.onrender.com)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

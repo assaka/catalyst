@@ -20,61 +20,72 @@ try {
   supabase = null;
 }
 
-// Sequelize connection using robust configuration
+// Initialize Sequelize with synchronous fallback for immediate model loading
 let sequelize;
 
-// Initialize Sequelize with async config
-const initializeSequelize = async () => {
+// Create initial sequelize instance for immediate model loading
+const createInitialSequelize = () => {
+  const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+  
+  if (!databaseUrl) {
+    console.warn('⚠️  No database URL provided. Using SQLite for development.');
+    return new Sequelize({
+      dialect: 'sqlite',
+      storage: './database.sqlite',
+      logging: process.env.NODE_ENV === 'development' ? console.log : false,
+      define: {
+        timestamps: true,
+        underscored: true,
+        freezeTableName: true
+      }
+    });
+  }
+
+  // Create basic postgres connection for model definitions
+  return new Sequelize(databaseUrl, {
+    dialect: 'postgres',
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    dialectOptions: {
+      ssl: process.env.NODE_ENV === 'production' ? {
+        require: true,
+        rejectUnauthorized: false
+      } : false
+    },
+    define: {
+      timestamps: true,
+      underscored: true,
+      freezeTableName: true
+    }
+  });
+};
+
+// Initialize sequelize immediately for model loading
+sequelize = createInitialSequelize();
+
+// Enhance with IPv4 configuration after initial setup
+const enhanceSequelizeConnection = async () => {
   try {
     const config = await getDatabaseConfig();
-    sequelize = new Sequelize(config);
-    console.log('✅ Database configuration loaded successfully');
+    const enhancedSequelize = new Sequelize(config);
+    console.log('✅ Enhanced database configuration loaded successfully');
+    
+    // Test the enhanced connection
+    await enhancedSequelize.authenticate();
+    
+    // Replace the basic sequelize with the enhanced one
+    await sequelize.close();
+    sequelize = enhancedSequelize;
+    console.log('✅ Database connection enhanced with IPv4 support');
+    
     return sequelize;
   } catch (error) {
-    console.error('❌ Failed to create database configuration:', error.message);
-    
-    // Check if we have database URL
-    const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
-    
-    if (databaseUrl) {
-      console.log('🔄 Attempting fallback database connection...');
-      sequelize = new Sequelize(databaseUrl, {
-        dialect: 'postgres',
-        logging: console.log,
-        dialectOptions: {
-          ssl: process.env.NODE_ENV === 'production' ? {
-            require: true,
-            rejectUnauthorized: false
-          } : false
-        }
-      });
-      return sequelize;
-    } else {
-      console.error('❌ No database URL found! Please configure Supabase connection.');
-      console.error('In Render.com dashboard, set these environment variables:');
-      console.error('- SUPABASE_URL');
-      console.error('- SUPABASE_ANON_KEY');
-      console.error('- SUPABASE_DB_URL (or DATABASE_URL)');
-      console.error('- JWT_SECRET');
-      console.error('- SESSION_SECRET');
-      
-      // For development, still use SQLite fallback
-      if (process.env.NODE_ENV === 'development') {
-        console.log('⚠️  Using SQLite for development...');
-        sequelize = new Sequelize({
-          dialect: 'sqlite',
-          storage: './database.sqlite',
-          logging: console.log
-        });
-        return sequelize;
-      } else {
-        throw new Error('Database configuration required for production');
-      }
-    }
+    console.error('❌ Failed to enhance database configuration:', error.message);
+    console.log('🔄 Continuing with basic database connection...');
+    return sequelize;
   }
 };
 
-// Initialize on module load
-initializeSequelize().catch(console.error);
+// Enhance connection in background
+enhanceSequelizeConnection().catch(console.error);
 
 module.exports = { sequelize, supabase };
