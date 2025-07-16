@@ -127,6 +127,119 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+// Detailed database debug endpoint
+app.get('/debug/db', async (req, res) => {
+  const { supabase } = require('./database/connection');
+  
+  try {
+    // Log environment variables (without revealing sensitive data)
+    console.log('🔍 Starting database debug...');
+    console.log('📊 Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+      hasDatabaseUrl: !!(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL),
+      supabaseUrlPrefix: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.substring(0, 30) + '...' : 'Not set',
+      databaseUrlPrefix: (process.env.SUPABASE_DB_URL || process.env.DATABASE_URL) ? 
+        (process.env.SUPABASE_DB_URL || process.env.DATABASE_URL).substring(0, 30) + '...' : 'Not set'
+    });
+    
+    // Test Sequelize connection
+    console.log('🔄 Testing Sequelize connection...');
+    await sequelize.authenticate();
+    console.log('✅ Sequelize connection successful');
+    
+    // Get database info
+    const dialectName = sequelize.getDialect();
+    const databaseName = sequelize.getDatabaseName();
+    
+    // Test Supabase client if available
+    let supabaseStatus = 'Not configured';
+    let supabaseError = null;
+    
+    if (supabase) {
+      try {
+        console.log('🔄 Testing Supabase client...');
+        const { data, error } = await supabase
+          .from('users')
+          .select('id')
+          .limit(1);
+        
+        if (error) {
+          supabaseStatus = `Error: ${error.message}`;
+          supabaseError = error;
+          console.log('❌ Supabase query error:', error);
+        } else {
+          supabaseStatus = 'Connected';
+          console.log('✅ Supabase connection successful');
+        }
+      } catch (supabaseErr) {
+        supabaseStatus = `Error: ${supabaseErr.message}`;
+        supabaseError = supabaseErr;
+        console.log('❌ Supabase connection error:', supabaseErr);
+      }
+    } else {
+      console.log('⚠️  Supabase client not initialized');
+    }
+    
+    // Test if we can create a simple table
+    let queryTestStatus = 'Not tested';
+    try {
+      await sequelize.query('SELECT 1 as test');
+      queryTestStatus = 'Query successful';
+    } catch (queryError) {
+      queryTestStatus = `Query failed: ${queryError.message}`;
+    }
+    
+    res.json({
+      success: true,
+      message: 'Database debug completed',
+      database: {
+        dialect: dialectName,
+        database: databaseName,
+        host: sequelize.config.host || 'N/A',
+        port: sequelize.config.port || 'N/A',
+        ssl: sequelize.config.dialectOptions?.ssl ? 'Enabled' : 'Disabled'
+      },
+      supabase: {
+        status: supabaseStatus,
+        url: process.env.SUPABASE_URL ? 'Configured' : 'Not configured',
+        error: supabaseError?.message || null
+      },
+      tests: {
+        sequelize: 'Connected',
+        query: queryTestStatus
+      },
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        hasSupabaseUrl: !!process.env.SUPABASE_URL,
+        hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+        hasDatabaseUrl: !!(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL)
+      }
+    });
+  } catch (error) {
+    console.error('❌ Database debug failed:', error);
+    console.error('❌ Error stack:', error.stack);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Database debug failed',
+      error: error.message,
+      details: {
+        name: error.name,
+        code: error.code || 'N/A',
+        stack: error.stack?.split('\n')[0] || 'N/A'
+      },
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        hasSupabaseUrl: !!process.env.SUPABASE_URL,
+        hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+        hasDatabaseUrl: !!(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL)
+      }
+    });
+  }
+});
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes); // Fallback for legacy paths

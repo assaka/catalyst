@@ -113,12 +113,24 @@ router.post('/migrate', async (req, res) => {
 // @desc    Test basic database connection
 // @access  Public (for debugging)
 router.get('/test-connection', async (req, res) => {
+  console.log('🔍 Starting database connection test...');
+  
   try {
-    console.log('Testing database connection...');
+    // Log environment variables (without revealing sensitive data)
+    console.log('📊 Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+      hasDatabaseUrl: !!(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL),
+      supabaseUrlPrefix: process.env.SUPABASE_URL ? process.env.SUPABASE_URL.substring(0, 30) + '...' : 'Not set',
+      databaseUrlPrefix: (process.env.SUPABASE_DB_URL || process.env.DATABASE_URL) ? 
+        (process.env.SUPABASE_DB_URL || process.env.DATABASE_URL).substring(0, 30) + '...' : 'Not set'
+    });
     
-    // Test basic connection
+    // Test Sequelize connection
+    console.log('🔄 Testing Sequelize connection...');
     await sequelize.authenticate();
-    console.log('✅ Database connection test passed');
+    console.log('✅ Sequelize connection successful');
     
     // Get database info
     const dialectName = sequelize.getDialect();
@@ -126,9 +138,11 @@ router.get('/test-connection', async (req, res) => {
     
     // Test Supabase client if available
     let supabaseStatus = 'Not configured';
+    let supabaseError = null;
+    
     if (supabase) {
       try {
-        // Test Supabase connection by querying a simple table
+        console.log('🔄 Testing Supabase client...');
         const { data, error } = await supabase
           .from('users')
           .select('id')
@@ -136,12 +150,27 @@ router.get('/test-connection', async (req, res) => {
         
         if (error) {
           supabaseStatus = `Error: ${error.message}`;
+          supabaseError = error;
+          console.log('❌ Supabase query error:', error);
         } else {
           supabaseStatus = 'Connected';
+          console.log('✅ Supabase connection successful');
         }
       } catch (supabaseError) {
         supabaseStatus = `Error: ${supabaseError.message}`;
+        console.log('❌ Supabase connection error:', supabaseError);
       }
+    } else {
+      console.log('⚠️  Supabase client not initialized');
+    }
+    
+    // Test if we can create a simple table
+    let tableTestStatus = 'Not tested';
+    try {
+      await sequelize.query('SELECT 1 as test');
+      tableTestStatus = 'Query successful';
+    } catch (queryError) {
+      tableTestStatus = `Query failed: ${queryError.message}`;
     }
     
     res.json({
@@ -151,11 +180,17 @@ router.get('/test-connection', async (req, res) => {
         dialect: dialectName,
         database: databaseName,
         host: sequelize.config.host || 'N/A',
-        port: sequelize.config.port || 'N/A'
+        port: sequelize.config.port || 'N/A',
+        ssl: sequelize.config.dialectOptions?.ssl ? 'Enabled' : 'Disabled'
       },
       supabase: {
         status: supabaseStatus,
-        url: process.env.SUPABASE_URL ? 'Configured' : 'Not configured'
+        url: process.env.SUPABASE_URL ? 'Configured' : 'Not configured',
+        error: supabaseError?.message || null
+      },
+      tests: {
+        sequelize: 'Connected',
+        query: tableTestStatus
       },
       environment: {
         NODE_ENV: process.env.NODE_ENV,
@@ -166,13 +201,16 @@ router.get('/test-connection', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Database connection failed:', error);
+    console.error('❌ Error stack:', error.stack);
+    
     res.status(500).json({
       success: false,
       message: 'Database connection failed',
       error: error.message,
       details: {
         name: error.name,
-        code: error.code || 'N/A'
+        code: error.code || 'N/A',
+        stack: error.stack?.split('\n')[0] || 'N/A'
       },
       environment: {
         NODE_ENV: process.env.NODE_ENV,
@@ -244,7 +282,7 @@ router.get('/debug', async (req, res) => {
 // @route   GET /api/stores
 // @desc    Get user's stores
 // @access  Private
-router.get('/', async (req, res) => {
+router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
@@ -287,7 +325,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/stores/:id
 // @desc    Get store by ID
 // @access  Private
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store = await Store.findByPk(req.params.id);
     
@@ -322,7 +360,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/stores
 // @desc    Create new store
 // @access  Private
-router.post('/', [
+router.post('/', authorize(['admin', 'store_owner']), [
   body('name').notEmpty().withMessage('Store name is required'),
   body('slug').optional().isString().isLength({ min: 1 }).withMessage('Slug cannot be empty if provided'),
   body('description').optional().isString()
@@ -429,7 +467,7 @@ router.post('/', [
 // @route   PUT /api/stores/:id
 // @desc    Update store
 // @access  Private
-router.put('/:id', [
+router.put('/:id', authorize(['admin', 'store_owner']), [
   body('name').optional().notEmpty().withMessage('Store name cannot be empty'),
   body('description').optional().isString()
 ], async (req, res) => {
@@ -478,7 +516,7 @@ router.put('/:id', [
 // @route   DELETE /api/stores/:id
 // @desc    Delete store
 // @access  Private
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const store = await Store.findByPk(req.params.id);
     

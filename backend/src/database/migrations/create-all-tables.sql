@@ -1,8 +1,27 @@
 -- Complete Database Migration Script for Catalyst E-commerce Platform
 -- This script creates all tables based on the Sequelize models
+-- Updated: 2025-01-16
+-- Compatible with: Supabase PostgreSQL
 
 -- Enable UUID extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Drop existing tables if they exist (for clean migration)
+-- Uncomment the following lines if you want to recreate all tables
+-- DROP TABLE IF EXISTS login_attempts CASCADE;
+-- DROP TABLE IF EXISTS taxes CASCADE;
+-- DROP TABLE IF EXISTS shipping_methods CASCADE;
+-- DROP TABLE IF EXISTS delivery_settings CASCADE;
+-- DROP TABLE IF EXISTS cms_pages CASCADE;
+-- DROP TABLE IF EXISTS coupons CASCADE;
+-- DROP TABLE IF EXISTS order_items CASCADE;
+-- DROP TABLE IF EXISTS orders CASCADE;
+-- DROP TABLE IF EXISTS products CASCADE;
+-- DROP TABLE IF EXISTS categories CASCADE;
+-- DROP TABLE IF EXISTS attributes CASCADE;
+-- DROP TABLE IF EXISTS attribute_sets CASCADE;
+-- DROP TABLE IF EXISTS stores CASCADE;
+-- DROP TABLE IF EXISTS users CASCADE;
 
 -- 1. USERS TABLE
 CREATE TABLE IF NOT EXISTS users (
@@ -20,6 +39,9 @@ CREATE TABLE IF NOT EXISTS users (
     password_reset_expires TIMESTAMP,
     last_login TIMESTAMP,
     role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('admin', 'store_owner', 'customer')),
+    account_type VARCHAR(20) DEFAULT 'individual' CHECK (account_type IN ('individual', 'agency')),
+    credits INTEGER DEFAULT 0,
+    last_credit_deduction_date TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -323,12 +345,67 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 15. CUSTOMERS TABLE (for store customers)
+CREATE TABLE IF NOT EXISTS customers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    store_id UUID NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    phone VARCHAR(20),
+    date_of_birth DATE,
+    gender VARCHAR(10),
+    notes TEXT,
+    total_spent DECIMAL(10,2) DEFAULT 0,
+    total_orders INTEGER DEFAULT 0,
+    average_order_value DECIMAL(10,2) DEFAULT 0,
+    last_order_date TIMESTAMP,
+    tags JSONB DEFAULT '[]',
+    addresses JSONB DEFAULT '[]',
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
+    UNIQUE(store_id, email)
+);
+
+-- 16. STORE_PLUGINS TABLE
+CREATE TABLE IF NOT EXISTS store_plugins (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    store_id UUID NOT NULL,
+    plugin_name VARCHAR(255) NOT NULL,
+    plugin_slug VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT true,
+    configuration JSONB DEFAULT '{}',
+    version VARCHAR(20) DEFAULT '1.0.0',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
+    UNIQUE(store_id, plugin_slug)
+);
+
+-- 17. CREDIT_TRANSACTIONS TABLE
+CREATE TABLE IF NOT EXISTS credit_transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL,
+    amount INTEGER NOT NULL,
+    transaction_type VARCHAR(20) NOT NULL CHECK (transaction_type IN ('credit', 'debit')),
+    description TEXT,
+    reference_id VARCHAR(255),
+    reference_type VARCHAR(50),
+    balance_before INTEGER NOT NULL,
+    balance_after INTEGER NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- CREATE INDEXES FOR BETTER PERFORMANCE
 
 -- Users indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
+CREATE INDEX IF NOT EXISTS idx_users_account_type ON users(account_type);
 
 -- Stores indexes
 CREATE INDEX IF NOT EXISTS idx_stores_slug ON stores(slug);
@@ -392,6 +469,24 @@ CREATE INDEX IF NOT EXISTS idx_taxes_is_active ON taxes(is_active);
 -- Delivery settings indexes
 CREATE INDEX IF NOT EXISTS idx_delivery_settings_store_id ON delivery_settings(store_id);
 
+-- Customers indexes
+CREATE INDEX IF NOT EXISTS idx_customers_store_id ON customers(store_id);
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+CREATE INDEX IF NOT EXISTS idx_customers_is_active ON customers(is_active);
+CREATE INDEX IF NOT EXISTS idx_customers_store_email ON customers(store_id, email);
+
+-- Store plugins indexes
+CREATE INDEX IF NOT EXISTS idx_store_plugins_store_id ON store_plugins(store_id);
+CREATE INDEX IF NOT EXISTS idx_store_plugins_slug ON store_plugins(plugin_slug);
+CREATE INDEX IF NOT EXISTS idx_store_plugins_is_active ON store_plugins(is_active);
+CREATE INDEX IF NOT EXISTS idx_store_plugins_store_slug ON store_plugins(store_id, plugin_slug);
+
+-- Credit transactions indexes
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_user_id ON credit_transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_created_at ON credit_transactions(created_at);
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_type ON credit_transactions(transaction_type);
+CREATE INDEX IF NOT EXISTS idx_credit_transactions_reference ON credit_transactions(reference_id, reference_type);
+
 -- CREATE TRIGGERS FOR UPDATED_AT COLUMNS
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -415,11 +510,95 @@ CREATE TRIGGER update_shipping_methods_updated_at BEFORE UPDATE ON shipping_meth
 CREATE TRIGGER update_taxes_updated_at BEFORE UPDATE ON taxes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_attributes_updated_at BEFORE UPDATE ON attributes FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_attribute_sets_updated_at BEFORE UPDATE ON attribute_sets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_store_plugins_updated_at BEFORE UPDATE ON store_plugins FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Insert default data
-INSERT INTO users (email, password, first_name, last_name, role, is_active, email_verified) 
-VALUES ('admin@catalyst.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'User', 'admin', true, true)
+INSERT INTO users (email, password, first_name, last_name, role, account_type, is_active, email_verified, credits) 
+VALUES 
+    ('admin@catalyst.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Admin', 'User', 'admin', 'agency', true, true, 1000),
+    ('demo@catalyst.com', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Demo', 'User', 'store_owner', 'individual', true, true, 100)
 ON CONFLICT (email) DO NOTHING;
+
+-- Insert a demo store for testing
+INSERT INTO stores (name, slug, description, owner_email, is_active, theme_color, currency, timezone)
+VALUES ('Demo Store', 'demo-store', 'A demo store for testing purposes', 'demo@catalyst.com', true, '#3B82F6', 'USD', 'UTC')
+ON CONFLICT (slug) DO NOTHING;
+
+-- Insert demo categories
+INSERT INTO categories (name, slug, description, is_active, sort_order, store_id)
+SELECT 'Electronics', 'electronics', 'Electronic devices and gadgets', true, 1, s.id
+FROM stores s WHERE s.slug = 'demo-store'
+ON CONFLICT (slug) DO NOTHING;
+
+INSERT INTO categories (name, slug, description, is_active, sort_order, store_id)
+SELECT 'Clothing', 'clothing', 'Fashion and apparel', true, 2, s.id
+FROM stores s WHERE s.slug = 'demo-store'
+ON CONFLICT (slug) DO NOTHING;
+
+-- Insert demo products
+INSERT INTO products (name, slug, sku, description, price, status, visibility, stock_quantity, store_id)
+SELECT 'Sample Product', 'sample-product', 'SKU-001', 'A sample product for testing', 29.99, 'active', 'visible', 100, s.id
+FROM stores s WHERE s.slug = 'demo-store'
+ON CONFLICT (slug) DO NOTHING;
+
+-- Insert demo shipping method
+INSERT INTO shipping_methods (name, description, is_active, type, flat_rate_cost, store_id)
+SELECT 'Standard Shipping', 'Standard shipping method', true, 'flat_rate', 9.99, s.id
+FROM stores s WHERE s.slug = 'demo-store'
+ON CONFLICT DO NOTHING;
+
+-- Insert demo tax settings
+INSERT INTO taxes (name, description, is_default, is_active, country_rates, store_id)
+SELECT 'Standard Tax', 'Standard tax rate', true, true, '[{"country": "US", "rate": 8.5}]'::jsonb, s.id
+FROM stores s WHERE s.slug = 'demo-store'
+ON CONFLICT DO NOTHING;
+
+-- Insert demo delivery settings
+INSERT INTO delivery_settings (store_id, enable_delivery_date, enable_comments, offset_days, max_advance_days)
+SELECT s.id, true, true, 1, 30
+FROM stores s WHERE s.slug = 'demo-store'
+ON CONFLICT DO NOTHING;
+
+-- Create database summary view
+CREATE OR REPLACE VIEW database_summary AS
+SELECT 
+    'users' as table_name,
+    COUNT(*) as row_count,
+    MAX(created_at) as last_created
+FROM users
+UNION ALL
+SELECT 
+    'stores' as table_name,
+    COUNT(*) as row_count,
+    MAX(created_at) as last_created
+FROM stores
+UNION ALL
+SELECT 
+    'products' as table_name,
+    COUNT(*) as row_count,
+    MAX(created_at) as last_created
+FROM products
+UNION ALL
+SELECT 
+    'categories' as table_name,
+    COUNT(*) as row_count,
+    MAX(created_at) as last_created
+FROM categories
+UNION ALL
+SELECT 
+    'orders' as table_name,
+    COUNT(*) as row_count,
+    MAX(created_at) as last_created
+FROM orders
+UNION ALL
+SELECT 
+    'customers' as table_name,
+    COUNT(*) as row_count,
+    MAX(created_at) as last_created
+FROM customers;
 
 -- Migration completed successfully
 SELECT 'Database migration completed successfully!' as message;
+SELECT 'Total tables created: 17' as info;
+SELECT 'Demo data inserted for testing' as note;
