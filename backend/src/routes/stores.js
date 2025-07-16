@@ -2,41 +2,184 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { Store } = require('../models');
 const { authorize } = require('../middleware/auth');
-const { sequelize } = require('../database/connection');
+const { sequelize, supabase } = require('../database/connection');
 const router = express.Router();
 
 // Initialize stores table on module load
 const initializeStoresTable = async () => {
   try {
-    console.log('Initializing stores table...');
+    console.log('🔄 Initializing stores table...');
+    
+    // First check if we can connect to the database
+    await sequelize.authenticate();
+    console.log('✅ Database connection verified');
+    
+    // Now sync the stores table
     await Store.sync({ alter: true });
     console.log('✅ Stores table initialized successfully');
+    
+    // Test if we can query the table
+    const storeCount = await Store.count();
+    console.log(`📊 Current stores count: ${storeCount}`);
+    
   } catch (error) {
     console.error('❌ Failed to initialize stores table:', error.message);
+    console.error('❌ Error details:', error.name, error.code);
   }
 };
 
 // Initialize table
 initializeStoresTable();
 
+// @route   GET /api/stores/health
+// @desc    Simple health check
+// @access  Public (for debugging)
+router.get('/health', async (req, res) => {
+  res.json({
+    success: true,
+    message: 'Stores API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
 // @route   GET /api/stores/setup
 // @desc    Setup stores table
 // @access  Public (for debugging)
 router.get('/setup', async (req, res) => {
   try {
-    console.log('Setting up stores table...');
+    console.log('🔄 Setting up stores table...');
+    
+    // Check database connection first
+    await sequelize.authenticate();
+    console.log('✅ Database connection verified');
+    
+    // Sync the stores table
     await Store.sync({ alter: true });
-    console.log('Stores table setup completed');
+    console.log('✅ Stores table setup completed');
+    
+    // Test table by counting records
+    const storeCount = await Store.count();
+    console.log(`📊 Current stores count: ${storeCount}`);
+    
     res.json({
       success: true,
-      message: 'Stores table setup completed'
+      message: 'Stores table setup completed',
+      storeCount: storeCount
     });
   } catch (error) {
-    console.error('Setup error:', error);
+    console.error('❌ Setup error:', error);
     res.status(500).json({
       success: false,
       message: 'Setup failed',
+      error: error.message,
+      details: {
+        name: error.name,
+        code: error.code
+      }
+    });
+  }
+});
+
+// @route   POST /api/stores/migrate
+// @desc    Run database migration for stores
+// @access  Public (for debugging)
+router.post('/migrate', async (req, res) => {
+  try {
+    console.log('🔄 Running database migration...');
+    
+    // Import all models to ensure they're synced
+    const { User, Store, Product, Category, Order, OrderItem, Coupon, CmsPage, Tax, ShippingMethod, DeliverySettings } = require('../models');
+    
+    // Sync all models in the correct order
+    await sequelize.sync({ alter: true });
+    console.log('✅ All tables synchronized');
+    
+    res.json({
+      success: true,
+      message: 'Database migration completed successfully'
+    });
+  } catch (error) {
+    console.error('❌ Migration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Migration failed',
       error: error.message
+    });
+  }
+});
+
+// @route   GET /api/stores/test-connection
+// @desc    Test basic database connection
+// @access  Public (for debugging)
+router.get('/test-connection', async (req, res) => {
+  try {
+    console.log('Testing database connection...');
+    
+    // Test basic connection
+    await sequelize.authenticate();
+    console.log('✅ Database connection test passed');
+    
+    // Get database info
+    const dialectName = sequelize.getDialect();
+    const databaseName = sequelize.getDatabaseName();
+    
+    // Test Supabase client if available
+    let supabaseStatus = 'Not configured';
+    if (supabase) {
+      try {
+        // Test Supabase connection by querying a simple table
+        const { data, error } = await supabase
+          .from('users')
+          .select('id')
+          .limit(1);
+        
+        if (error) {
+          supabaseStatus = `Error: ${error.message}`;
+        } else {
+          supabaseStatus = 'Connected';
+        }
+      } catch (supabaseError) {
+        supabaseStatus = `Error: ${supabaseError.message}`;
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: 'Database connection successful',
+      database: {
+        dialect: dialectName,
+        database: databaseName,
+        host: sequelize.config.host || 'N/A',
+        port: sequelize.config.port || 'N/A'
+      },
+      supabase: {
+        status: supabaseStatus,
+        url: process.env.SUPABASE_URL ? 'Configured' : 'Not configured'
+      },
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        hasSupabaseUrl: !!process.env.SUPABASE_URL,
+        hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+        hasDatabaseUrl: !!(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL)
+      }
+    });
+  } catch (error) {
+    console.error('❌ Database connection failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Database connection failed',
+      error: error.message,
+      details: {
+        name: error.name,
+        code: error.code || 'N/A'
+      },
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        hasSupabaseUrl: !!process.env.SUPABASE_URL,
+        hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+        hasDatabaseUrl: !!(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL)
+      }
     });
   }
 });
@@ -188,34 +331,22 @@ router.post('/', [
     console.log('Store creation request received:', req.body);
     console.log('User info:', { email: req.user.email, role: req.user.role });
     
-    // Test database connection and table existence
+    // Test database connection and ensure table exists
     try {
-      await Store.findAll({ limit: 1 });
-      console.log('Database connection test passed');
-    } catch (dbError) {
-      console.error('Database connection test failed:', dbError);
+      // First, make sure the table exists
+      await Store.sync({ alter: true });
+      console.log('✅ Stores table ensured');
       
-      // If table doesn't exist, try to create it
-      if (dbError.name === 'SequelizeDatabaseError' && dbError.message.includes('does not exist')) {
-        try {
-          console.log('Attempting to create stores table...');
-          await Store.sync({ alter: true });
-          console.log('Stores table created successfully');
-        } catch (syncError) {
-          console.error('Failed to create stores table:', syncError);
-          return res.status(500).json({
-            success: false,
-            message: 'Failed to create stores table',
-            error: syncError.message
-          });
-        }
-      } else {
-        return res.status(500).json({
-          success: false,
-          message: 'Database connection failed',
-          error: dbError.message
-        });
-      }
+      // Test basic query
+      await Store.findAll({ limit: 1 });
+      console.log('✅ Database connection test passed');
+    } catch (dbError) {
+      console.error('❌ Database connection test failed:', dbError);
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection failed',
+        error: dbError.message
+      });
     }
     
     const errors = validationResult(req);

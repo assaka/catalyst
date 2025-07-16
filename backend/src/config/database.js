@@ -5,7 +5,17 @@ const getDatabaseConfig = () => {
   const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
   
   if (!databaseUrl) {
-    throw new Error('Database URL not provided. Please set SUPABASE_DB_URL or DATABASE_URL environment variable.');
+    console.warn('⚠️  No database URL provided. Using SQLite for development.');
+    return {
+      dialect: 'sqlite',
+      storage: './database.sqlite',
+      logging: process.env.NODE_ENV === 'development' ? console.log : false,
+      define: {
+        timestamps: true,
+        underscored: true,
+        freezeTableName: true
+      }
+    };
   }
 
   // Parse connection string to handle IPv6 issues

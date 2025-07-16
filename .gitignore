@@ -28,3 +28,4 @@ dist-ssr
 
 # Database migration script (contains sensitive data)
 migration-script.sql
+create-all-tables.sql

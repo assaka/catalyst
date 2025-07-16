@@ -12,7 +12,8 @@
       "Bash(vercel:*)",
       "Bash(curl:*)",
       "Bash(npm run lint)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }

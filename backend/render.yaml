@@ -9,4 +9,33 @@ services:
         value: production
       - key: PORT
         value: 10000
+      # Supabase Configuration - Set these in Render Dashboard
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      # JWT Configuration
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      # CORS Configuration
+      - key: CORS_ORIGIN
+        value: https://catalyst-6va7w047u-hamids-projects-1928df2f.vercel.app
+      # Google OAuth Configuration
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://catalyst-backend-fzhu.onrender.com/api/auth/google/callback
+      # Session Configuration
+      - key: SESSION_SECRET
+        sync: false
     autoDeploy: true
