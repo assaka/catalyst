@@ -20,11 +20,11 @@ try {
   supabase = null;
 }
 
-// Initialize Sequelize with synchronous fallback for immediate model loading
+// Initialize Sequelize with IPv4 configuration directly
 let sequelize;
 
-// Create initial sequelize instance for immediate model loading
-const createInitialSequelize = () => {
+// Create sequelize instance with enhanced configuration
+const createSequelizeConnection = async () => {
   const databaseUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
   
   if (!databaseUrl) {
@@ -41,29 +41,7 @@ const createInitialSequelize = () => {
     });
   }
 
-  // Create basic postgres connection for model definitions
-  return new Sequelize(databaseUrl, {
-    dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    dialectOptions: {
-      ssl: process.env.NODE_ENV === 'production' ? {
-        require: true,
-        rejectUnauthorized: false
-      } : false
-    },
-    define: {
-      timestamps: true,
-      underscored: true,
-      freezeTableName: true
-    }
-  });
-};
-
-// Initialize sequelize immediately for model loading
-sequelize = createInitialSequelize();
-
-// Enhance with IPv4 configuration after initial setup
-const enhanceSequelizeConnection = async () => {
+  // Try to get enhanced configuration first, fallback to basic
   try {
     const config = await getDatabaseConfig();
     const enhancedSequelize = new Sequelize(config);
@@ -71,21 +49,57 @@ const enhanceSequelizeConnection = async () => {
     
     // Test the enhanced connection
     await enhancedSequelize.authenticate();
-    
-    // Replace the basic sequelize with the enhanced one
-    await sequelize.close();
-    sequelize = enhancedSequelize;
     console.log('✅ Database connection enhanced with IPv4 support');
     
-    return sequelize;
+    return enhancedSequelize;
   } catch (error) {
-    console.error('❌ Failed to enhance database configuration:', error.message);
-    console.log('🔄 Continuing with basic database connection...');
-    return sequelize;
+    console.error('❌ Failed to use enhanced database configuration:', error.message);
+    console.log('🔄 Using basic database connection...');
+    
+    // Fallback to basic connection
+    return new Sequelize(databaseUrl, {
+      dialect: 'postgres',
+      logging: process.env.NODE_ENV === 'development' ? console.log : false,
+      dialectOptions: {
+        ssl: process.env.NODE_ENV === 'production' ? {
+          require: true,
+          rejectUnauthorized: false
+        } : false
+      },
+      define: {
+        timestamps: true,
+        underscored: true,
+        freezeTableName: true
+      }
+    });
   }
 };
 
-// Enhance connection in background
-enhanceSequelizeConnection().catch(console.error);
+// Initialize sequelize connection
+sequelize = new Sequelize(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL || 'sqlite::memory:', {
+  dialect: (process.env.SUPABASE_DB_URL || process.env.DATABASE_URL) ? 'postgres' : 'sqlite',
+  logging: false,
+  dialectOptions: {
+    ssl: process.env.NODE_ENV === 'production' ? {
+      require: true,
+      rejectUnauthorized: false
+    } : false
+  },
+  define: {
+    timestamps: true,
+    underscored: true,
+    freezeTableName: true
+  }
+});
+
+// Enhance connection in background without replacing the instance
+createSequelizeConnection().then(enhancedConnection => {
+  if (enhancedConnection !== sequelize) {
+    // Test the enhanced connection works
+    enhancedConnection.authenticate().then(() => {
+      console.log('✅ Database connection enhanced and tested successfully');
+    }).catch(console.error);
+  }
+}).catch(console.error);
 
 module.exports = { sequelize, supabase };

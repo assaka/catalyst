@@ -34,6 +34,9 @@ const migrateSupabaseRoutes = require('./routes/migrate-supabase');
 
 const app = express();
 
+// Trust proxy for Render.com
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 app.use(compression());

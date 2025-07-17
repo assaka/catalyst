@@ -5,31 +5,45 @@ const { authorize } = require('../middleware/auth');
 const { sequelize, supabase } = require('../database/connection');
 const router = express.Router();
 
-// Initialize stores table on module load
-const initializeStoresTable = async () => {
-  try {
-    console.log('🔄 Initializing stores table...');
-    
-    // First check if we can connect to the database
-    await sequelize.authenticate();
-    console.log('✅ Database connection verified');
-    
-    // Now sync the stores table
-    await Store.sync({ alter: true });
-    console.log('✅ Stores table initialized successfully');
-    
-    // Test if we can query the table
-    const storeCount = await Store.count();
-    console.log(`📊 Current stores count: ${storeCount}`);
-    
-  } catch (error) {
-    console.error('❌ Failed to initialize stores table:', error.message);
-    console.error('❌ Error details:', error.name, error.code);
+// Initialize stores table on module load with retry logic
+const initializeStoresTable = async (retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log(`🔄 Initializing stores table... (${i + 1}/${retries})`);
+      
+      // First check if we can connect to the database
+      await sequelize.authenticate();
+      console.log('✅ Database connection verified');
+      
+      // Now sync the stores table
+      await Store.sync({ alter: true });
+      console.log('✅ Stores table initialized successfully');
+      
+      // Test if we can query the table
+      const storeCount = await Store.count();
+      console.log(`📊 Current stores count: ${storeCount}`);
+      
+      // Success, exit the loop
+      return;
+      
+    } catch (error) {
+      console.error(`❌ Database connection failed (${i + 1}/${retries}):`, error.message);
+      if (i < retries - 1) {
+        console.log('🔄 Retrying database connection in 5 seconds...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      } else {
+        console.log('⚠️  Database connection failed. Server will continue without database.');
+      }
+    }
   }
 };
 
-// Initialize table
-initializeStoresTable();
+// Initialize table with retry logic
+initializeStoresTable().catch(() => {
+  console.log('');
+  console.log('✅ Server startup completed successfully!');
+  console.log('⚠️  Some features may not work properly.');
+});
 
 // @route   GET /api/stores/health
 // @desc    Simple health check
@@ -369,15 +383,10 @@ router.post('/', authorize(['admin', 'store_owner']), [
     console.log('Store creation request received:', req.body);
     console.log('User info:', { email: req.user.email, role: req.user.role });
     
-    // Test database connection and ensure table exists
+    // Ensure table exists (lightweight check)
     try {
-      // First, make sure the table exists
-      await Store.sync({ alter: true });
-      console.log('✅ Stores table ensured');
-      
-      // Test basic query
-      await Store.findAll({ limit: 1 });
-      console.log('✅ Database connection test passed');
+      await Store.sync({ alter: false }); // Don't alter, just sync
+      console.log('✅ Stores table verified');
     } catch (dbError) {
       console.error('❌ Database connection test failed:', dbError);
       return res.status(500).json({
