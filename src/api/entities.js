@@ -14,38 +14,47 @@ class BaseEntity {
       paramsString: JSON.stringify(params)
     });
     
-    const queryString = new URLSearchParams(params).toString();
-    const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
-    
-    console.log(`🔍 BaseEntity.findAll() about to call API:`, {
-      endpoint: this.endpoint,
-      url,
-      queryString
-    });
-    
-    const response = await apiClient.get(url);
-    
-    console.log(`🔍 BaseEntity.findAll() received response:`, {
-      endpoint: this.endpoint,
-      responseType: typeof response,
-      isArray: Array.isArray(response),
-      responseLength: Array.isArray(response) ? response.length : 'N/A',
-      responseKeys: response && typeof response === 'object' ? Object.keys(response) : 'N/A',
-      responseSample: response && typeof response === 'object' ? JSON.stringify(response).substring(0, 200) : response
-    });
-    
-    // Ensure response is always an array
-    const result = Array.isArray(response) ? response : [];
-    
-    console.log(`🔍 BaseEntity.findAll() returning:`, {
-      endpoint: this.endpoint,
-      resultType: typeof result,
-      isArray: Array.isArray(result),
-      resultLength: result.length,
-      resultSample: JSON.stringify(result).substring(0, 200)
-    });
-    
-    return result;
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+      
+      console.log(`🔍 BaseEntity.findAll() about to call API:`, {
+        endpoint: this.endpoint,
+        url,
+        queryString
+      });
+      
+      const response = await apiClient.get(url);
+      
+      console.log(`🔍 BaseEntity.findAll() received response:`, {
+        endpoint: this.endpoint,
+        responseType: typeof response,
+        isArray: Array.isArray(response),
+        responseLength: Array.isArray(response) ? response.length : 'N/A',
+        responseKeys: response && typeof response === 'object' ? Object.keys(response) : 'N/A',
+        responseSample: response && typeof response === 'object' ? JSON.stringify(response).substring(0, 200) : response
+      });
+      
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+      
+      console.log(`🔍 BaseEntity.findAll() returning:`, {
+        endpoint: this.endpoint,
+        resultType: typeof result,
+        isArray: Array.isArray(result),
+        resultLength: result.length,
+        resultSample: JSON.stringify(result).substring(0, 200)
+      });
+      
+      return result;
+    } catch (error) {
+      console.warn(`⚠️ BaseEntity.findAll() error for ${this.endpoint}:`, error.message);
+      console.log(`🔍 BaseEntity.findAll() returning empty array due to error:`, {
+        endpoint: this.endpoint,
+        error: error.message
+      });
+      return [];
+    }
   }
 
   // Get single record by ID
@@ -80,28 +89,37 @@ class BaseEntity {
       paramsString: JSON.stringify(params)
     });
     
-    const result = await this.findAll(params);
-    
-    console.log(`🔍 BaseEntity.filter() received from findAll():`, {
-      endpoint: this.endpoint,
-      resultType: typeof result,
-      isArray: Array.isArray(result),
-      resultLength: Array.isArray(result) ? result.length : 'N/A',
-      resultSample: result && typeof result === 'object' ? JSON.stringify(result).substring(0, 200) : result
-    });
-    
-    // Double-check that result is an array
-    const finalResult = Array.isArray(result) ? result : [];
-    
-    console.log(`🔍 BaseEntity.filter() returning:`, {
-      endpoint: this.endpoint,
-      finalResultType: typeof finalResult,
-      isArray: Array.isArray(finalResult),
-      finalResultLength: finalResult.length,
-      finalResultSample: JSON.stringify(finalResult).substring(0, 200)
-    });
-    
-    return finalResult;
+    try {
+      const result = await this.findAll(params);
+      
+      console.log(`🔍 BaseEntity.filter() received from findAll():`, {
+        endpoint: this.endpoint,
+        resultType: typeof result,
+        isArray: Array.isArray(result),
+        resultLength: Array.isArray(result) ? result.length : 'N/A',
+        resultSample: result && typeof result === 'object' ? JSON.stringify(result).substring(0, 200) : result
+      });
+      
+      // Double-check that result is an array
+      const finalResult = Array.isArray(result) ? result : [];
+      
+      console.log(`🔍 BaseEntity.filter() returning:`, {
+        endpoint: this.endpoint,
+        finalResultType: typeof finalResult,
+        isArray: Array.isArray(finalResult),
+        finalResultLength: finalResult.length,
+        finalResultSample: JSON.stringify(finalResult).substring(0, 200)
+      });
+      
+      return finalResult;
+    } catch (error) {
+      console.warn(`⚠️ BaseEntity.filter() error for ${this.endpoint}:`, error.message);
+      console.log(`🔍 BaseEntity.filter() returning empty array due to error:`, {
+        endpoint: this.endpoint,
+        error: error.message
+      });
+      return [];
+    }
   }
 
   // Find one record (returns first match)

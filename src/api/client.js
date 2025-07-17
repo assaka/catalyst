@@ -109,6 +109,32 @@ class ApiClient {
         resultSample: result && typeof result === 'object' ? JSON.stringify(result).substring(0, 200) : result
       });
       
+      // Handle wrapped API responses - extract the actual data array
+      if (result && typeof result === 'object' && result.success && result.data) {
+        console.log(`🔍 API Client unwrapping success response:`, {
+          originalResult: result,
+          dataKeys: Object.keys(result.data),
+          extractedData: result.data
+        });
+        
+        // Extract the array from common response patterns
+        if (Array.isArray(result.data)) {
+          return result.data;
+        }
+        
+        // Handle paginated responses with arrays in data properties
+        const dataEntries = Object.entries(result.data);
+        for (const [key, value] of dataEntries) {
+          if (Array.isArray(value)) {
+            console.log(`🔍 API Client found array in data.${key}:`, value);
+            return value;
+          }
+        }
+        
+        // If no array found, return the data object wrapped in array
+        return [result.data];
+      }
+      
       return result;
     } catch (error) {
       console.error(`API request failed: ${method} ${url}`, error);
