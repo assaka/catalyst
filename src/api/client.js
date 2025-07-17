@@ -57,6 +57,17 @@ class ApiClient {
       config.body = JSON.stringify(data);
     }
 
+    // Debug logging for authentication issues
+    if (endpoint.includes('stores') || endpoint.includes('auth/me')) {
+      console.log(`🔍 API Request Debug:`, {
+        method,
+        url,
+        hasToken: !!this.getToken(),
+        tokenPrefix: this.getToken() ? this.getToken().substring(0, 20) + '...' : 'none',
+        headers: { ...headers, Authorization: headers.Authorization ? headers.Authorization.substring(0, 30) + '...' : 'none' }
+      });
+    }
+
     try {
       const response = await fetch(url, config);
       
@@ -67,6 +78,17 @@ class ApiClient {
       }
 
       const result = await response.json();
+
+      // Debug logging for authentication issues
+      if (endpoint.includes('stores') || endpoint.includes('auth/me')) {
+        console.log(`📥 API Response Debug:`, {
+          status: response.status,
+          ok: response.ok,
+          hasData: !!result,
+          dataType: Array.isArray(result) ? `array[${result.length}]` : typeof result,
+          errorMessage: result?.message || 'none'
+        });
+      }
 
       if (!response.ok) {
         // Handle API errors
