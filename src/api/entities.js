@@ -8,10 +8,44 @@ class BaseEntity {
 
   // Get all records with pagination and filters
   async findAll(params = {}) {
+    console.log(`🔍 BaseEntity.findAll() called:`, {
+      endpoint: this.endpoint,
+      params,
+      paramsString: JSON.stringify(params)
+    });
+    
     const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+    
+    console.log(`🔍 BaseEntity.findAll() about to call API:`, {
+      endpoint: this.endpoint,
+      url,
+      queryString
+    });
+    
     const response = await apiClient.get(url);
-    return response;
+    
+    console.log(`🔍 BaseEntity.findAll() received response:`, {
+      endpoint: this.endpoint,
+      responseType: typeof response,
+      isArray: Array.isArray(response),
+      responseLength: Array.isArray(response) ? response.length : 'N/A',
+      responseKeys: response && typeof response === 'object' ? Object.keys(response) : 'N/A',
+      responseSample: response && typeof response === 'object' ? JSON.stringify(response).substring(0, 200) : response
+    });
+    
+    // Ensure response is always an array
+    const result = Array.isArray(response) ? response : [];
+    
+    console.log(`🔍 BaseEntity.findAll() returning:`, {
+      endpoint: this.endpoint,
+      resultType: typeof result,
+      isArray: Array.isArray(result),
+      resultLength: result.length,
+      resultSample: JSON.stringify(result).substring(0, 200)
+    });
+    
+    return result;
   }
 
   // Get single record by ID
@@ -40,13 +74,42 @@ class BaseEntity {
 
   // Filter records (alias for findAll for compatibility)
   async filter(params = {}) {
-    return this.findAll(params);
+    console.log(`🔍 BaseEntity.filter() called:`, {
+      endpoint: this.endpoint,
+      params,
+      paramsString: JSON.stringify(params)
+    });
+    
+    const result = await this.findAll(params);
+    
+    console.log(`🔍 BaseEntity.filter() received from findAll():`, {
+      endpoint: this.endpoint,
+      resultType: typeof result,
+      isArray: Array.isArray(result),
+      resultLength: Array.isArray(result) ? result.length : 'N/A',
+      resultSample: result && typeof result === 'object' ? JSON.stringify(result).substring(0, 200) : result
+    });
+    
+    // Double-check that result is an array
+    const finalResult = Array.isArray(result) ? result : [];
+    
+    console.log(`🔍 BaseEntity.filter() returning:`, {
+      endpoint: this.endpoint,
+      finalResultType: typeof finalResult,
+      isArray: Array.isArray(finalResult),
+      finalResultLength: finalResult.length,
+      finalResultSample: JSON.stringify(finalResult).substring(0, 200)
+    });
+    
+    return finalResult;
   }
 
   // Find one record (returns first match)
   async findOne(params = {}) {
     const results = await this.findAll({ ...params, limit: 1 });
-    return results.length > 0 ? results[0] : null;
+    // Ensure results is an array before accessing length
+    const safeResults = Array.isArray(results) ? results : [];
+    return safeResults.length > 0 ? safeResults[0] : null;
   }
 }
 
@@ -142,7 +205,8 @@ class StoreService extends BaseEntity {
 
   // Get user's stores
   async getUserStores() {
-    return this.findAll();
+    const result = await this.findAll();
+    return Array.isArray(result) ? result : [];
   }
 }
 
@@ -154,17 +218,20 @@ class ProductService extends BaseEntity {
 
   // Search products
   async search(query, params = {}) {
-    return this.findAll({ ...params, search: query });
+    const result = await this.findAll({ ...params, search: query });
+    return Array.isArray(result) ? result : [];
   }
 
   // Get products by category
   async getByCategory(categoryId, params = {}) {
-    return this.findAll({ ...params, category_id: categoryId });
+    const result = await this.findAll({ ...params, category_id: categoryId });
+    return Array.isArray(result) ? result : [];
   }
 
   // Get featured products
   async getFeatured(params = {}) {
-    return this.findAll({ ...params, featured: true });
+    const result = await this.findAll({ ...params, featured: true });
+    return Array.isArray(result) ? result : [];
   }
 }
 
@@ -176,12 +243,14 @@ class CategoryService extends BaseEntity {
 
   // Get root categories
   async getRootCategories(params = {}) {
-    return this.findAll({ ...params, parent_id: null });
+    const result = await this.findAll({ ...params, parent_id: null });
+    return Array.isArray(result) ? result : [];
   }
 
   // Get child categories
   async getChildren(parentId, params = {}) {
-    return this.findAll({ ...params, parent_id: parentId });
+    const result = await this.findAll({ ...params, parent_id: parentId });
+    return Array.isArray(result) ? result : [];
   }
 }
 
@@ -193,7 +262,8 @@ class OrderService extends BaseEntity {
 
   // Get orders by status
   async getByStatus(status, params = {}) {
-    return this.findAll({ ...params, status });
+    const result = await this.findAll({ ...params, status });
+    return Array.isArray(result) ? result : [];
   }
 
   // Update order status

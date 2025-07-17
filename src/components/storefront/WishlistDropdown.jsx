@@ -59,12 +59,14 @@ export default function WishlistDropdown() {
       const sessionId = getSessionId();
       const filter = currentUser?.id ? { user_id: currentUser.id } : { session_id: sessionId };
 
-      const items = await retryApiCall(() => Wishlist.filter(filter));
+      const result = await retryApiCall(() => Wishlist.filter(filter));
+      const items = Array.isArray(result) ? result : [];
 
       if (items.length > 0) {
         const productIds = [...new Set(items.map(item => item.product_id))];
         await delay(500); // Stagger calls
-        const products = await retryApiCall(() => Product.filter({ id: { $in: productIds } }));
+        const productResult = await retryApiCall(() => Product.filter({ id: { $in: productIds } }));
+        const products = Array.isArray(productResult) ? productResult : [];
 
         const productLookup = products.reduce((acc, product) => {
           if (product) acc[product.id] = product;
@@ -109,7 +111,8 @@ export default function WishlistDropdown() {
     const filter = user?.id ? { user_id: user.id, product_id: productId } : { session_id: sessionId, product_id: productId };
 
     try {
-      const existingItems = await retryApiCall(() => Wishlist.filter(filter));
+      const result = await retryApiCall(() => Wishlist.filter(filter));
+      const existingItems = Array.isArray(result) ? result : [];
       if (existingItems.length > 0) {
         await retryApiCall(() => Wishlist.delete(existingItems[0].id));
         window.dispatchEvent(new CustomEvent('wishlistUpdated')); // Dispatch global event to trigger reload

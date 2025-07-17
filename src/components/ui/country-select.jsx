@@ -36,6 +36,16 @@ let countryData = defaultCountryData;
 
 export function CountrySelect({ value, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [] }) {
   const [open, setOpen] = useState(false);
+  
+  console.log(`🔍 CountrySelect render:`, {
+    value,
+    valueType: typeof value,
+    isValueArray: Array.isArray(value),
+    multiple,
+    allowedCountries,
+    allowedCountriesType: typeof allowedCountries,
+    isAllowedCountriesArray: Array.isArray(allowedCountries)
+  });
 
   const handleSelect = (currentValue) => {
     if (multiple) {
@@ -53,9 +63,28 @@ export function CountrySelect({ value, onChange, placeholder = "Select country..
   // Ensure countryData is always an array before filtering
   const safeCountryData = Array.isArray(countryData) ? countryData : defaultCountryData;
   
+  console.log(`🔍 CountrySelect filtering:`, {
+    countryData,
+    countryDataType: typeof countryData,
+    isCountryDataArray: Array.isArray(countryData),
+    safeCountryData,
+    safeCountryDataLength: safeCountryData.length,
+    allowedCountries,
+    allowedCountriesType: typeof allowedCountries,
+    isAllowedCountriesArray: Array.isArray(allowedCountries),
+    allowedCountriesLength: Array.isArray(allowedCountries) ? allowedCountries.length : 'N/A'
+  });
+  
   const filteredCountries = Array.isArray(allowedCountries) && allowedCountries.length > 0 
     ? safeCountryData.filter(c => c && c.value && allowedCountries.includes(c.value)) 
     : safeCountryData;
+    
+  console.log(`🔍 CountrySelect filtered result:`, {
+    filteredCountries,
+    filteredCountriesType: typeof filteredCountries,
+    isFilteredCountriesArray: Array.isArray(filteredCountries),
+    filteredCountriesLength: Array.isArray(filteredCountries) ? filteredCountries.length : 'N/A'
+  });
 
   const safeValue = multiple 
     ? (Array.isArray(value) ? value : (value ? [value] : []))

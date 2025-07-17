@@ -74,10 +74,12 @@ export default function MiniCart({ cartUpdateTrigger }) {
       
       if (user?.id) {
         // Load user's cart
-        cartData = await Cart.filter({ user_id: user.id });
+        const result = await Cart.filter({ user_id: user.id });
+        cartData = Array.isArray(result) ? result : [];
       } else {
         // Load guest cart
-        cartData = await Cart.filter({ session_id: sessionId });
+        const result = await Cart.filter({ session_id: sessionId });
+        cartData = Array.isArray(result) ? result : [];
       }
 
       console.log('MiniCart: Loaded cart data:', cartData);
@@ -89,8 +91,9 @@ export default function MiniCart({ cartUpdateTrigger }) {
         for (const item of cartData) {
           if (!productDetails[item.product_id]) {
             try {
-              const products = await Product.filter({ id: item.product_id });
-              if (products && products.length > 0) {
+              const result = await Product.filter({ id: item.product_id });
+              const products = Array.isArray(result) ? result : [];
+              if (products.length > 0) {
                 productDetails[item.product_id] = products[0];
               }
             } catch (error) {

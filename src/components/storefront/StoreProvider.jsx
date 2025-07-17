@@ -124,15 +124,52 @@ export const StoreProvider = ({ children }) => {
       const storeCacheKey = storeSlug ? `store-slug-${storeSlug}` : 'first-store';
       const stores = await cachedApiCall(storeCacheKey, async () => {
         if (storeSlug) {
-          const result = await Store.filter({ slug: storeSlug });
-          return Array.isArray(result) ? result : [];
+          console.log(`🔍 StoreProvider: About to call Store.filter with slug:`, storeSlug);
+          try {
+            const result = await Store.filter({ slug: storeSlug });
+            console.log(`🔍 StoreProvider: Store.filter returned:`, {
+              resultType: typeof result,
+              isArray: Array.isArray(result),
+              resultLength: Array.isArray(result) ? result.length : 'N/A',
+              result
+            });
+            return Array.isArray(result) ? result : [];
+          } catch (error) {
+            console.error(`❌ StoreProvider: Store.filter failed:`, error);
+            return [];
+          }
         } else {
-          const result = await Store.findAll({ limit: 1 });
-          return Array.isArray(result) ? result : [];
+          console.log(`🔍 StoreProvider: About to call Store.findAll with limit 1`);
+          try {
+            const result = await Store.findAll({ limit: 1 });
+            console.log(`🔍 StoreProvider: Store.findAll returned:`, {
+              resultType: typeof result,
+              isArray: Array.isArray(result),
+              resultLength: Array.isArray(result) ? result.length : 'N/A',
+              result
+            });
+            return Array.isArray(result) ? result : [];
+          } catch (error) {
+            console.error(`❌ StoreProvider: Store.findAll failed:`, error);
+            return [];
+          }
         }
       });
 
+      console.log(`🔍 StoreProvider: About to access stores[0]:`, {
+        storesType: typeof stores,
+        isArray: Array.isArray(stores),
+        storesLength: Array.isArray(stores) ? stores.length : 'N/A',
+        stores
+      });
+
       const currentStore = stores?.[0];
+      
+      console.log(`🔍 StoreProvider: currentStore extracted:`, {
+        currentStore,
+        hasStore: !!currentStore
+      });
+      
       if (!currentStore) {
         console.warn('No store found');
         setLoading(false);
@@ -168,7 +205,22 @@ export const StoreProvider = ({ children }) => {
         ...(currentStore.settings || {})
       };
       
+      console.log(`🔍 StoreProvider: About to set store:`, {
+        currentStore,
+        mergedSettings,
+        allowedCountries: mergedSettings.allowed_countries,
+        allowedCountriesType: typeof mergedSettings.allowed_countries,
+        isAllowedCountriesArray: Array.isArray(mergedSettings.allowed_countries)
+      });
+      
       setStore({ ...currentStore, settings: mergedSettings });
+      
+      console.log(`🔍 StoreProvider: About to setSelectedCountry:`, {
+        allowedCountries: mergedSettings.allowed_countries,
+        firstCountry: mergedSettings.allowed_countries?.[0],
+        fallback: 'US'
+      });
+      
       setSelectedCountry(mergedSettings.allowed_countries?.[0] || 'US');
 
       // Load SEO settings separately and with priority

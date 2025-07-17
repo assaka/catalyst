@@ -98,6 +98,17 @@ class ApiClient {
         throw error;
       }
 
+      console.log(`🔍 API Client Response Debug:`, {
+        method,
+        endpoint,
+        url,
+        resultType: typeof result,
+        isArray: Array.isArray(result),
+        resultLength: Array.isArray(result) ? result.length : 'N/A',
+        resultKeys: result && typeof result === 'object' ? Object.keys(result) : 'N/A',
+        resultSample: result && typeof result === 'object' ? JSON.stringify(result).substring(0, 200) : result
+      });
+      
       return result;
     } catch (error) {
       console.error(`API request failed: ${method} ${url}`, error);
