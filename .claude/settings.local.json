@@ -15,7 +15,8 @@
       "Bash(npm run lint:*)",
       "Bash(ls:*)",
       "WebFetch(domain:catalyst-backend-fzhu.onrender.com)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node debug-email-chars.js)"
     ],
     "deny": []
   }

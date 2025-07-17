@@ -1,6 +1,6 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
-const { Store } = require('../models');
+const { Store, User } = require('../models');
 const { authorize } = require('../middleware/auth');
 const { sequelize, supabase } = require('../database/connection');
 const router = express.Router();
@@ -405,6 +405,38 @@ router.post('/', authorize(['admin', 'store_owner']), [
     }
 
     console.log('Final store data to create:', storeData);
+    console.log('User email from JWT:', req.user.email);
+    console.log('User email type:', typeof req.user.email);
+    console.log('User email length:', req.user.email?.length);
+    
+    // Verify the user exists in the database before creating store
+    console.log('🔍 Verifying user exists before store creation...');
+    try {
+      const existingUser = await User.findOne({ where: { email: req.user.email } });
+      if (!existingUser) {
+        console.error('❌ User not found in database with email:', req.user.email);
+        return res.status(400).json({
+          success: false,
+          message: 'User not found. Please log in again.',
+          debug: {
+            userEmail: req.user.email,
+            userEmailType: typeof req.user.email
+          }
+        });
+      }
+      console.log('✅ User found in database:', {
+        id: existingUser.id,
+        email: existingUser.email,
+        emailMatch: existingUser.email === req.user.email
+      });
+    } catch (userCheckError) {
+      console.error('❌ Error checking user existence:', userCheckError);
+      return res.status(500).json({
+        success: false,
+        message: 'Database error while verifying user',
+        error: userCheckError.message
+      });
+    }
 
     // Check for duplicate slug
     const existingStore = await Store.findOne({ where: { slug: storeData.slug } });
