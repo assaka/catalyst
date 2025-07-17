@@ -1,70 +1,59 @@
-#!/usr/bin/env node
+// Set environment to production to use PostgreSQL
+process.env.DATABASE_URL = "postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres";
+process.env.NODE_ENV = "production";
 
-const { User, Store } = require('./src/models');
 const { sequelize } = require('./src/database/connection');
+const { Store, User } = require('./src/models');
 
 async function testStoreCreation() {
   try {
-    console.log('🔍 Testing store creation with foreign key constraint...');
+    console.log('🧪 Testing store creation...');
     
     await sequelize.authenticate();
     console.log('✅ Database connection successful');
     
-    // First, let's check if the user exists
-    const user = await User.findOne({ 
-      where: { email: 'hamidelabassi99@gmail.com' } 
-    });
+    // First verify the user exists
+    const userEmail = 'playamin998@gmail.com';
+    const user = await User.findOne({ where: { email: userEmail } });
     
     if (!user) {
-      console.log('❌ User not found! Creating test user...');
-      
-      // Create the user first
-      const newUser = await User.create({
-        email: 'hamidelabassi99@gmail.com',
-        password: 'testpassword123',
-        first_name: 'Hamid',
-        last_name: 'Abassi',
-        role: 'store_owner',
-        account_type: 'individual',
-        is_active: true,
-        email_verified: true
-      });
-      
-      console.log('✅ User created:', newUser.email);
-    } else {
-      console.log('✅ User found:', user.email);
+      console.error('❌ User not found:', userEmail);
+      return;
     }
     
-    // Now try to create a store
-    const testStore = {
+    console.log('✅ User found:', { id: user.id, email: user.email });
+    
+    // Test store creation
+    const storeData = {
       name: 'Test Store ' + Date.now(),
       slug: 'test-store-' + Date.now(),
-      description: 'Test store for foreign key testing',
-      owner_email: 'hamidelabassi99@gmail.com'
+      description: 'Test store created after fixing constraints',
+      owner_email: userEmail
     };
     
-    console.log('🔄 Creating test store...');
-    const store = await Store.create(testStore);
+    console.log('🏪 Creating store:', storeData);
     
-    console.log('✅ Store created successfully!');
-    console.log('Store ID:', store.id);
-    console.log('Store name:', store.name);
-    console.log('Owner email:', store.owner_email);
+    const store = await Store.create(storeData);
+    console.log('✅ Store created successfully:', {
+      id: store.id,
+      name: store.name,
+      slug: store.slug,
+      owner_email: store.owner_email
+    });
     
-    // Clean up - delete the test store
-    await store.destroy();
-    console.log('✅ Test store cleaned up');
+    // Verify the store exists
+    const createdStore = await Store.findByPk(store.id);
+    if (createdStore) {
+      console.log('✅ Store verification successful');
+    } else {
+      console.error('❌ Store verification failed');
+    }
+    
+    console.log('🎉 Test completed successfully!');
     
   } catch (error) {
-    console.error('❌ Error during test:', error.message);
-    
-    if (error.name === 'SequelizeForeignKeyConstraintError') {
-      console.error('🔍 Foreign key constraint error details:');
-      console.error('- Table:', error.table);
-      console.error('- Constraint:', error.constraint);
-      console.error('- Fields:', error.fields);
-      console.error('- Value:', error.value);
-    }
+    console.error('❌ Test failed:', error.message);
+    console.error('Error details:', error);
   } finally {
     await sequelize.close();
   }

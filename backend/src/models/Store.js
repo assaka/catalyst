@@ -120,6 +120,7 @@ const Store = sequelize.define('Store', {
     allowNull: true
   }
 }, {
+  tableName: 'stores',
   hooks: {
     beforeCreate: (store) => {
       if (!store.slug && store.name) {
@@ -132,8 +133,6 @@ const Store = sequelize.define('Store', {
       }
     }
   }
-}, {
-  tableName: 'stores'
 });
 
 module.exports = Store;

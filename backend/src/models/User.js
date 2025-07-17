@@ -65,6 +65,7 @@ const User = sequelize.define('User', {
     defaultValue: 'customer'
   }
 }, {
+  tableName: 'users',
   hooks: {
     beforeCreate: async (user) => {
       if (user.password) {
@@ -77,8 +78,6 @@ const User = sequelize.define('User', {
       }
     }
   }
-}, {
-  tableName: 'users'
 });
 
 User.prototype.comparePassword = async function(candidatePassword) {
