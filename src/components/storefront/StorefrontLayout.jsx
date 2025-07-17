@@ -265,7 +265,7 @@ export default function StorefrontLayout({ children }) {
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => {
-                                                    if (user.account_type === 'agency' || user.role === 'admin' || user.role==='store_owner') {
+                                                    if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
                                                         window.location.href = createPageUrl('Dashboard');
                                                     } else {
                                                         window.location.href = createPageUrl('CustomerDashboard');
@@ -328,7 +328,7 @@ export default function StorefrontLayout({ children }) {
                                                         <DropdownMenuLabel>My Account3 - {user.role} - {user.name} </DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
                                                         <DropdownMenuItem onClick={() => {
-                                                            if (user.account_type === 'agency' || user.role === 'admin' || user.role==='store_owner') {
+                                                            if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
                                                                 window.location.href = createPageUrl('Dashboard');
                                                             } else {
                                                                 window.location.href = createPageUrl('CustomerDashboard');

@@ -159,7 +159,7 @@ export default function Landing() {
                       <DropdownMenuLabel>My Account4 - {user.role} - {user.name}</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => {
-                        if (user.account_type === 'agency' || user.role === 'admin' || user.role==='store_owner') {
+                        if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
                           window.location.href = createPageUrl('Dashboard');
                         } else {
                           window.location.href = createPageUrl('CustomerDashboard');

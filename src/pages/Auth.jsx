@@ -62,7 +62,7 @@ export default function Auth() {
           return;
         }
 
-        if (user.role === 'admin' || user.role === 'store_owner') {
+        if (user.role === 'admin' || user.role === 'store_owner' || user.account_type === 'agency') {
           navigate(createPageUrl("Dashboard"));
         } else {
           navigate(createPageUrl("CustomerDashboard"));

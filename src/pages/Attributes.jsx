@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { Attribute } from "@/api/entities";
 import { AttributeSet } from "@/api/entities";
-import { Store } from "@/api/entities";
-import { User } from "@/api/entities"; // New import for User entity
+import { useStoreSelection } from "@/contexts/StoreSelectionContext";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import {
   Settings,
   Plus,
@@ -39,62 +39,70 @@ import AttributeForm from "../components/attributes/AttributeForm";
 import AttributeSetForm from "../components/attributes/AttributeSetForm";
 
 export default function Attributes() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [attributes, setAttributes] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
-  const [store, setStore] = useState(null); // Changed from 'stores' array to singular 'store' object
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingAttribute, setEditingAttribute] = useState(null); // Renamed from selectedAttribute
-  const [showForm, setShowForm] = useState(false); // Renamed from showAttributeForm
-  const [editingSet, setEditingSet] = useState(null); // Renamed from selectedAttributeSet
-  const [showSetForm, setShowSetForm] = useState(false); // Renamed from showAttributeSetForm
+  const [editingAttribute, setEditingAttribute] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingSet, setEditingSet] = useState(null);
+  const [showSetForm, setShowSetForm] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
+
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadData();
+      }
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
 
   const loadData = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("No store selected");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
-      // CRITICAL FIX: Get current user first, then filter by user's stores
-      const user = await User.me();
-      const userStores = await Store.findAll();
+      // Filter attributes and attribute sets by selected store
+      const [attributesData, setsData] = await Promise.all([
+        Attribute.filter({ store_id: storeId }),
+        AttributeSet.filter({ store_id: storeId })
+      ]);
 
-      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
-        const currentStore = userStores[0]; // Assuming a user manages one primary store or we pick the first
-        setStore(currentStore);
-
-        // Filter attributes and attribute sets by current store
-        const [attributesData, setsData] = await Promise.all([
-          Attribute.filter({ store_id: currentStore.id }),
-          AttributeSet.filter({ store_id: currentStore.id })
-        ]);
-
-        setAttributes(attributesData || []);
-        setAttributeSets(setsData || []);
-      } else {
-        setAttributes([]);
-        setAttributeSets([]);
-        setStore(null);
-        console.warn("No store found for user:", user.email);
-      }
+      setAttributes(attributesData || []);
+      setAttributeSets(setsData || []);
     } catch (error) {
       console.error("Error loading data:", error);
       setAttributes([]);
       setAttributeSets([]);
-      setStore(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateAttribute = async (attributeData) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      throw new Error("No store selected");
+    }
+
     try {
-      if (!store) {
-        throw new Error("No store available for creating attribute.");
-      }
-      await Attribute.create({ ...attributeData, store_id: store.id });
+      await Attribute.create({ ...attributeData, store_id: storeId });
       await loadData();
       setShowForm(false);
     } catch (error) {
@@ -103,12 +111,14 @@ export default function Attributes() {
   };
 
   const handleUpdateAttribute = async (attributeData) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      throw new Error("No store selected");
+    }
+
     try {
-      if (!store) {
-        throw new Error("No store available for updating attribute.");
-      }
-      const { id, ...updateData } = attributeData; // attributeData now includes the id
-      await Attribute.update(id, { ...updateData, store_id: store.id });
+      const { id, ...updateData } = attributeData;
+      await Attribute.update(id, { ...updateData, store_id: storeId });
       await loadData();
       setShowForm(false);
       setEditingAttribute(null);
@@ -128,12 +138,14 @@ export default function Attributes() {
     }
   };
 
-  const handleCreateSet = async (setData) => { // Renamed from handleCreateAttributeSet
+  const handleCreateSet = async (setData) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      throw new Error("No store selected");
+    }
+
     try {
-      if (!store) {
-        throw new Error("No store available for creating attribute set.");
-      }
-      await AttributeSet.create({ ...setData, store_id: store.id });
+      await AttributeSet.create({ ...setData, store_id: storeId });
       await loadData();
       setShowSetForm(false);
     } catch (error) {
@@ -141,13 +153,15 @@ export default function Attributes() {
     }
   };
 
-  const handleUpdateSet = async (setData) => { // Renamed from handleUpdateAttributeSet
+  const handleUpdateSet = async (setData) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      throw new Error("No store selected");
+    }
+
     try {
-      if (!store) {
-        throw new Error("No store available for updating attribute set.");
-      }
-      const { id, ...updateData } = setData; // setData now includes the id
-      await AttributeSet.update(id, { ...updateData, store_id: store.id });
+      const { id, ...updateData } = setData;
+      await AttributeSet.update(id, { ...updateData, store_id: storeId });
       await loadData();
       setShowSetForm(false);
       setEditingSet(null);
@@ -192,6 +206,16 @@ export default function Attributes() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (!selectedStore) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <NoStoreSelected message="Please select a store to manage attributes and attribute sets" />
+        </div>
       </div>
     );
   }
@@ -476,7 +500,6 @@ export default function Attributes() {
             </DialogHeader>
             <AttributeForm
               attribute={editingAttribute}
-              stores={store ? [store] : []} // Pass the single store in an array, if forms expect an array
               onSubmit={editingAttribute ? handleUpdateAttribute : handleCreateAttribute}
               onCancel={() => {
                 setShowForm(false);
@@ -497,7 +520,6 @@ export default function Attributes() {
             <AttributeSetForm
               attributeSet={editingSet}
               attributes={attributes}
-              stores={store ? [store] : []} // Pass the single store in an array, if forms expect an array
               onSubmit={editingSet ? handleUpdateSet : handleCreateSet}
               onCancel={() => {
                 setShowSetForm(false);

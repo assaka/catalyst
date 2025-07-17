@@ -6,6 +6,7 @@ import { createPageUrl } from "@/utils";
 import { User } from "@/api/entities";
 import { Store } from "@/api/entities";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
+import StoreSelector from '@/components/admin/StoreSelector';
 
 import {
   Menu,
@@ -633,6 +634,7 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       <div className="flex-1 flex flex-col">
+        {/* Mobile Header */}
         <div className="lg:hidden flex items-center justify-between h-16 px-4 bg-white border-b border-gray-200">
           <Button
             variant="ghost"
@@ -648,6 +650,16 @@ export default function Layout({ children, currentPageName }) {
             <span className="text-lg font-bold text-gray-900">Catalyst</span>
           </div>
           <div className="w-10" />
+        </div>
+
+        {/* Desktop Header with Store Selector */}
+        <div className="hidden lg:flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-xl font-semibold text-gray-900">{currentPageName || 'Dashboard'}</h1>
+          </div>
+          <div className="flex items-center space-x-4">
+            <StoreSelector />
+          </div>
         </div>
         
         {showWarning && (
