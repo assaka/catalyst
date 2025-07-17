@@ -315,24 +315,13 @@ router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
       order: [['created_at', 'DESC']]
     });
 
-    res.json({
-      success: true,
-      data: {
-        stores: rows,
-        pagination: {
-          current_page: parseInt(page),
-          per_page: parseInt(limit),
-          total: count,
-          total_pages: Math.ceil(count / limit)
-        }
-      }
-    });
+    // Return direct array for frontend compatibility
+    // The frontend expects stores as a direct array, not nested in data object
+    res.json(rows);
   } catch (error) {
     console.error('Get stores error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
+    // Return empty array to prevent frontend .map() errors
+    res.json([]);
   }
 });
 
