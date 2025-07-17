@@ -132,6 +132,8 @@ const Store = sequelize.define('Store', {
       }
     }
   }
+}, {
+  tableName: 'stores'
 });
 
 module.exports = Store;
