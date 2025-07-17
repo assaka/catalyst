@@ -50,7 +50,7 @@ export default function CouponsPage() {
       
       // CRITICAL FIX: Get current user first, then filter by user's stores
       const user = await User.me();
-      const userStores = await Store.filter({ owner_email: user.email }); // Fetch stores owned by the current user
+      const userStores = await Store.findAll(); // Fetch stores owned by the current user
       
       if (userStores && userStores.length > 0) {
         // Assuming the user is associated with the first store found, or primary store

@@ -70,7 +70,7 @@ export default function TaxPage() {
       const user = await User.me();
       console.log('Current user:', user.email);
 
-      const userStores = await retryApiCall(() => Store.filter({ owner_email: user.email }));
+      const userStores = await retryApiCall(() => Store.findAll());
       console.log('Found stores for user:', userStores);
 
       if (userStores && Array.isArray(userStores) && userStores.length > 0) {

@@ -158,7 +158,7 @@ export default function Dashboard() {
       
       // Removed await delay(500); for performance improvement
       
-      const storesData = await retryApiCall(() => Store.filter({ owner_email: userData.email }), 3, 1000);
+      const storesData = await retryApiCall(() => Store.findAll(), 3, 1000);
       setStores(storesData || []);
       
       let currentStore = null;

@@ -25,7 +25,7 @@ export default function CustomerActivityPage() {
       setLoading(true);
       
       const user = await User.me();
-      const stores = await Store.filter({ owner_email: user.email });
+      const stores = await Store.findAll();
       
       if (stores && stores.length > 0) {
         const currentStore = stores[0];

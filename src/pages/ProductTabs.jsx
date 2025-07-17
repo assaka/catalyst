@@ -50,7 +50,7 @@ export default function ProductTabs() {
       // CRITICAL FIX: Get current user first, then filter by user's stores
       const user = await User.me();
       // Assuming 'filter' method on Store can filter by owner_email
-      const userStores = await Store.filter({ owner_email: user.email });
+      const userStores = await Store.findAll();
 
       if (userStores && userStores.length > 0) {
         const currentStore = userStores[0]; // Take the first store found for the user

@@ -32,7 +32,7 @@ export default function ShippingMethodForm({ method, onSubmit, onCancel }) {
     try {
       // CRITICAL FIX: Only load current user's stores
       const user = await User.me();
-      const userStores = await Store.filter({ owner_email: user.email });
+      const userStores = await Store.findAll();
       
       setStores(Array.isArray(userStores) ? userStores : []);
       

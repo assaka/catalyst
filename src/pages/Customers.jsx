@@ -21,7 +21,7 @@ export default function Customers() {
         setLoading(true);
         try {
             const user = await User.me();
-            const stores = await Store.filter({ owner_id: user.id });
+            const stores = await Store.findAll();
 
             if (stores.length > 0) {
                 const store = stores[0];

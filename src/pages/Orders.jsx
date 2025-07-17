@@ -55,7 +55,7 @@ export default function Orders() { // Renamed from OrdersPage to Orders
       console.log('Current user:', user.email);
       
       // CRITICAL FIX: Filter stores by owner_email, not owner_id
-      const stores = await Store.filter({ owner_email: user.email });
+      const stores = await Store.findAll();
       console.log('Found stores for user:', stores);
 
       if (stores && stores.length > 0) { // Added null check for 'stores'

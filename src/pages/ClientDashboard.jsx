@@ -42,7 +42,7 @@ export default function ClientDashboard() {
       setUser(userData);
 
       // Load client's store
-      const stores = await Store.filter({ owner_id: userData.id });
+      const stores = await Store.findAll();
       if (stores.length > 0) {
         setStore(stores[0]);
 

@@ -68,7 +68,7 @@ export default function ShippingMethodsPage() {
     setLoading(true);
     try {
       const user = await User.me();
-      const stores = await retryApiCall(() => Store.filter({ owner_email: user.email }));
+      const stores = await retryApiCall(() => Store.findAll());
       
       if (stores && stores.length > 0) {
         const store = stores[0];

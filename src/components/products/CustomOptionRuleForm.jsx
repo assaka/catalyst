@@ -50,7 +50,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
         const user = await User.me();
         
         // Get user's stores only
-        const userStores = await Store.filter({ owner_email: user.email });
+        const userStores = await Store.findAll();
         setStores(Array.isArray(userStores) ? userStores : []);
         
         // Set default store if available

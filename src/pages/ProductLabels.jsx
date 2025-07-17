@@ -40,7 +40,7 @@ export default function ProductLabels() {
 
       if (user && user.email) {
         // Filter stores to only those owned by the current user
-        userStores = await Store.filter({ owner_email: user.email });
+        userStores = await Store.findAll();
         if (userStores && userStores.length > 0) {
           // For simplicity, we operate on the first store found for the user
           currentPrimaryStore = userStores[0]; 

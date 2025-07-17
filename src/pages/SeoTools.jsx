@@ -142,7 +142,7 @@ export default function SeoTools() {
       setLoading(true);
 
       const user = await User.me();
-      const storesData = await Store.filter({ owner_email: user.email });
+      const storesData = await Store.findAll();
 
       if (storesData && storesData.length > 0) {
         const currentStore = storesData[0];

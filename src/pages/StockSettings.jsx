@@ -55,7 +55,7 @@ export default function StockSettings() {
       setLoading(true);
       
       const user = await retryApiCall(() => User.me());
-      const stores = await retryApiCall(() => Store.filter({ owner_email: user.email }));
+      const stores = await retryApiCall(() => Store.findAll());
       
       if (!stores || stores.length === 0) {
         setSettings(null);

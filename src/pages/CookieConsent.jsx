@@ -71,7 +71,7 @@ export default function CookieConsent() {
       setUser(user); // Set user state
       console.log('Current user:', user.email);
       
-      const stores = await retryApiCall(() => Store.filter({ owner_email: user.email }));
+      const stores = await retryApiCall(() => Store.findAll());
       console.log('Found stores:', stores?.length || 0);
       
       if (!stores || stores.length === 0) {

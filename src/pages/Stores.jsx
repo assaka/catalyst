@@ -38,17 +38,10 @@ export default function Stores() {
       const userData = await User.me();
       setUser(userData);
 
-      if (userData.account_type === 'agency' || userData.role === 'admin') {
-        // For agency accounts and admin users, show all stores they own
-        const agencyStores = await Store.filter({ owner_email: userData.email });
-        setStores(agencyStores || []);
-        // The outline removes the loading of client stores (agency_id) and agency clients.
-        // setClients logic for agencies is also removed based on the outline.
-      } else {
-        // Regular client or store_owner - show their own stores
-        const userStores = await Store.filter({ owner_id: userData.id });
-        setStores(userStores || []);
-      }
+      // Backend API automatically filters stores by user's email from JWT token
+      // No need to pass filter parameters - the backend handles this
+      const userStores = await Store.findAll();
+      setStores(userStores || []);
     } catch (error) {
       console.error('Error loading stores:', error);
       // Set empty array on error to prevent "no stores" message from showing incorrectly

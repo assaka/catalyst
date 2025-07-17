@@ -52,7 +52,7 @@ export default function Categories() {
     setLoading(true);
     try {
       const user = await User.me(); // Fetch current user
-      const stores = await Store.filter({ owner_email: user.email }); // Filter stores by user's email
+      const stores = await Store.findAll(); // Filter stores by user's email
       if (stores && Array.isArray(stores) && stores.length > 0) { // Added check for stores array
         const store = stores[0]; // Assuming one store per user for this multi-tenancy setup
         setCurrentStore(store);

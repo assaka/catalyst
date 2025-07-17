@@ -163,7 +163,7 @@ export default function Layout({ children, currentPageName }) {
       
       const { StorePlugin } = await import("@/api/entities");
 
-      const userStores = await retryApiCall(() => Store.filter({ owner_email: user.email }));
+      const userStores = await retryApiCall(() => Store.findAll());
       
       if (userStores && Array.isArray(userStores) && userStores.length > 0) {
         const currentStore = userStores[0];

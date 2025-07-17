@@ -73,7 +73,7 @@ export default function Settings() {
       const user = await retryApiCall(() => User.me());
       console.log('Current user:', user.email);
       
-      const stores = await retryApiCall(() => Store.filter({ owner_email: user.email }));
+      const stores = await retryApiCall(() => Store.findAll());
       console.log('Stores for user:', stores);
       
       // Add proper validation before accessing array elements

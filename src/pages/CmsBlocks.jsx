@@ -33,7 +33,7 @@ export default function CmsBlocks() {
         return;
       }
 
-      const stores = await Store.filter({ owner_email: user.email });
+      const stores = await Store.findAll();
       if (stores && stores.length > 0) {
         const currentStore = stores[0]; // Assuming user has one primary store or we pick the first
         setStore(currentStore);
