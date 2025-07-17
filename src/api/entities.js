@@ -11,31 +11,31 @@ class BaseEntity {
     const queryString = new URLSearchParams(params).toString();
     const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
     const response = await apiClient.get(url);
-    return response.data;
+    return response;
   }
 
   // Get single record by ID
   async findById(id) {
     const response = await apiClient.get(`${this.endpoint}/${id}`);
-    return response.data;
+    return response;
   }
 
   // Create new record
   async create(data) {
     const response = await apiClient.post(this.endpoint, data);
-    return response.data;
+    return response;
   }
 
   // Update record by ID
   async update(id, data) {
     const response = await apiClient.put(`${this.endpoint}/${id}`, data);
-    return response.data;
+    return response;
   }
 
   // Delete record by ID
   async delete(id) {
     const response = await apiClient.delete(`${this.endpoint}/${id}`);
-    return response.data;
+    return response;
   }
 
   // Filter records (alias for findAll for compatibility)
@@ -54,10 +54,12 @@ class BaseEntity {
 class AuthService {
   async login(email, password, rememberMe = false) {
     const response = await apiClient.post('auth/login', { email, password, rememberMe });
-    if (response.data.token) {
+    if (response.data && response.data.token) {
       apiClient.setToken(response.data.token);
+    } else if (response.token) {
+      apiClient.setToken(response.token);
     }
-    return response.data;
+    return response.data || response;
   }
 
   googleLogin() {
@@ -66,10 +68,12 @@ class AuthService {
 
   async register(userData) {
     const response = await apiClient.post('auth/register', userData);
-    if (response.data.token) {
+    if (response.data && response.data.token) {
       apiClient.setToken(response.data.token);
+    } else if (response.token) {
+      apiClient.setToken(response.token);
     }
-    return response.data;
+    return response.data || response;
   }
 
   async logout() {
@@ -99,7 +103,7 @@ class AuthService {
 
   async me() {
     const response = await apiClient.get('auth/me');
-    return response.data;
+    return response.data || response;
   }
 
   async getCurrentUser() {
@@ -120,7 +124,7 @@ class UserService extends BaseEntity {
   // Get current user (alias for auth/me)
   async me() {
     const response = await apiClient.get('auth/me');
-    return response.data;
+    return response.data || response;
   }
 
   // Update profile
