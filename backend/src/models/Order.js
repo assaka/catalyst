@@ -149,6 +149,7 @@ const Order = sequelize.define('Order', {
     allowNull: true
   }
 }, {
+  tableName: 'orders',
   hooks: {
     beforeCreate: (order) => {
       if (!order.order_number) {
@@ -156,8 +157,6 @@ const Order = sequelize.define('Order', {
       }
     }
   }
-}, {
-  tableName: 'orders'
 });
 
 module.exports = Order;

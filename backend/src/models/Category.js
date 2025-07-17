@@ -85,6 +85,7 @@ const Category = sequelize.define('Category', {
     defaultValue: 0
   }
 }, {
+  tableName: 'categories',
   hooks: {
     beforeCreate: (category) => {
       if (!category.slug && category.name) {
@@ -97,8 +98,6 @@ const Category = sequelize.define('Category', {
       }
     }
   }
-}, {
-  tableName: 'categories'
 });
 
 module.exports = Category;

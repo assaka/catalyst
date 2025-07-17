@@ -150,6 +150,7 @@ const Product = sequelize.define('Product', {
     defaultValue: 0
   }
 }, {
+  tableName: 'products',
   hooks: {
     beforeCreate: (product) => {
       if (!product.slug && product.name) {
@@ -162,8 +163,6 @@ const Product = sequelize.define('Product', {
       }
     }
   }
-}, {
-  tableName: 'products'
 });
 
 module.exports = Product;

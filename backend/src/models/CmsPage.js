@@ -65,6 +65,7 @@ const CmsPage = sequelize.define('CmsPage', {
     defaultValue: 0
   }
 }, {
+  tableName: 'cms_pages',
   hooks: {
     beforeCreate: (page) => {
       if (!page.slug && page.title) {
@@ -77,8 +78,6 @@ const CmsPage = sequelize.define('CmsPage', {
       }
     }
   }
-}, {
-  tableName: 'cms_pages'
 });
 
 module.exports = CmsPage;
