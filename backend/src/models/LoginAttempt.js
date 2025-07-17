@@ -18,6 +18,15 @@ const LoginAttempt = sequelize.define('LoginAttempt', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  user_agent: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  action: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'login'
+  },
   success: {
     type: DataTypes.BOOLEAN,
     defaultValue: false

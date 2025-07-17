@@ -266,4 +266,46 @@ router.get('/google/callback', (req, res, next) => {
   })(req, res, next);
 });
 
+// @route   POST /api/auth/logout
+// @desc    Logout user and log the event
+// @access  Private
+router.post('/logout', require('../middleware/auth'), async (req, res) => {
+  try {
+    console.log('🔐 Logout request received for user:', req.user.email);
+    
+    // Log the logout event for security auditing
+    try {
+      await LoginAttempt.create({
+        email: req.user.email,
+        ip_address: req.ip || req.connection.remoteAddress,
+        user_agent: req.get('User-Agent'),
+        success: true,
+        action: 'logout',
+        attempted_at: new Date()
+      });
+      console.log('✅ Logout event logged successfully');
+    } catch (logError) {
+      console.error('❌ Failed to log logout event:', logError.message);
+      // Don't fail the logout if logging fails
+    }
+    
+    // In a JWT-based system, we can't invalidate tokens server-side without a blacklist
+    // For now, we'll just log the event and return success
+    // TODO: Implement token blacklisting for enhanced security
+    
+    res.json({
+      success: true,
+      message: 'Logged out successfully'
+    });
+    
+    console.log('✅ Logout successful for user:', req.user.email);
+  } catch (error) {
+    console.error('❌ Logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Logout failed'
+    });
+  }
+});
+
 module.exports = router;

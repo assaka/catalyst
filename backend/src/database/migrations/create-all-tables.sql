@@ -342,6 +342,8 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) NOT NULL,
     ip_address VARCHAR(45) NOT NULL,
+    user_agent TEXT,
+    action VARCHAR(50) DEFAULT 'login',
     success BOOLEAN DEFAULT false,
     attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

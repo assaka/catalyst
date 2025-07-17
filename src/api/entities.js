@@ -73,7 +73,21 @@ class AuthService {
   }
 
   async logout() {
+    try {
+      // Call backend logout endpoint to log the event
+      await apiClient.post('auth/logout');
+      console.log('✅ Backend logout successful');
+    } catch (error) {
+      console.error('❌ Backend logout failed:', error.message);
+      // Continue with client-side logout even if backend fails
+    }
+    
+    // Clear the token from client-side storage
     apiClient.setToken(null);
+    
+    // Clear any cached user data
+    localStorage.removeItem('user_data');
+    
     return { success: true };
   }
 

@@ -337,22 +337,15 @@ export default function StorefrontLayout({ children }) {
                                                             <span>Dashboard</span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => {
-                                                            User.logout();
-                                                            window.location.href = createPageUrl('Auth');
+                                                            import('../../utils/auth').then(({ handleLogout }) => {
+                                                                handleLogout();
+                                                            });
                                                         }}>
                                                             <LogOut className="mr-2 h-4 w-4" />
                                                             <span>Logout</span>
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
-                                                <Button
-                                                    onClick={() => {
-                                                        User.logout();
-                                                        window.location.href = createPageUrl('Auth');
-                                                    }}>
-                                                    <LogOut className="mr-2 h-4 w-4" />
-                                                    <span>Logout</span>
-                                                </Button>
                                             </div>
                                         ) : (
                                             <Button 
@@ -444,8 +437,9 @@ export default function StorefrontLayout({ children }) {
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    User.logout();
-                                                    window.location.href = createPageUrl('Auth');
+                                                    import('../../utils/auth').then(({ handleLogout }) => {
+                                                        handleLogout();
+                                                    });
                                                 }}
                                                 className="w-full flex items-center py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
                                             >
