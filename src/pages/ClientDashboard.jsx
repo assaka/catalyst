@@ -315,7 +315,16 @@ export default function ClientDashboard() {
 
         {/* Logout */}
         <div className="mt-8 text-center">
-          <Button variant="ghost" onClick={() => User.logout()}>
+          <Button variant="ghost" onClick={() => {
+            console.log('🔄 ClientDashboard logout clicked');
+            User.logout().then(() => {
+              console.log('✅ ClientDashboard logout completed, redirecting...');
+              window.location.href = '/auth';
+            }).catch(error => {
+              console.error('❌ ClientDashboard logout error:', error);
+              window.location.href = '/auth';
+            });
+          }}>
             Sign Out
           </Button>
         </div>

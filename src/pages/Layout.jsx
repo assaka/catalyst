@@ -529,7 +529,16 @@ export default function Layout({ children, currentPageName }) {
                     <Wallet className="mr-2 h-4 w-4" />
                     <span>Billing</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => User.logout()}>
+                <DropdownMenuItem onClick={() => {
+                    console.log('🔄 Layout logout clicked');
+                    User.logout().then(() => {
+                        console.log('✅ Layout logout completed, redirecting...');
+                        window.location.href = '/auth';
+                    }).catch(error => {
+                        console.error('❌ Layout logout error:', error);
+                        window.location.href = '/auth';
+                    });
+                }}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Logout</span>
                 </DropdownMenuItem>

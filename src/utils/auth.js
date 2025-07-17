@@ -13,18 +13,23 @@ export const handleLogout = async () => {
     console.log('🔄 Starting logout process...');
     
     // Call the logout API which handles backend logging and token cleanup
-    await User.logout();
+    const result = await User.logout();
+    console.log('✅ User.logout() result:', result);
     
     console.log('✅ Logout completed successfully');
     
     // Redirect to auth page
-    window.location.href = createPageUrl('Auth');
+    const authUrl = createPageUrl('Auth');
+    console.log('🔄 Redirecting to:', authUrl);
+    window.location.href = authUrl;
     
   } catch (error) {
     console.error('❌ Logout failed:', error);
     
     // Even if logout fails, redirect to auth page for security
-    window.location.href = createPageUrl('Auth');
+    const authUrl = createPageUrl('Auth');
+    console.log('🔄 Redirecting to auth page due to error:', authUrl);
+    window.location.href = authUrl;
   }
 };
 
