@@ -174,9 +174,10 @@ export const StoreProvider = ({ children }) => {
       // Load SEO settings separately and with priority
       try {
         const { SeoSetting } = await import('@/api/entities');
-        const seoSettingsData = await cachedApiCall(`seo-settings-${currentStore.id}`, () => 
-          SeoSetting.filter({ store_id: currentStore.id })
-        );
+        const seoSettingsData = await cachedApiCall(`seo-settings-${currentStore.id}`, async () => {
+          const result = await SeoSetting.filter({ store_id: currentStore.id });
+          return Array.isArray(result) ? result : [];
+        });
         
         if (seoSettingsData && seoSettingsData.length > 0) {
           const loadedSeoSettings = seoSettingsData[0];
@@ -233,12 +234,30 @@ export const StoreProvider = ({ children }) => {
 
       // Load other data with extreme caching - all in parallel with staggered delays
       const dataPromises = [
-        cachedApiCall(`taxes-${currentStore.id}`, () => Tax.filter({ store_id: currentStore.id })),
-        cachedApiCall(`categories-${currentStore.id}`, () => Category.filter({ store_id: currentStore.id })),
-        cachedApiCall(`labels-${currentStore.id}`, () => ProductLabel.filter({ store_id: currentStore.id, is_active: true })),
-        cachedApiCall(`attributes-${currentStore.id}`, () => Attribute.filter({ store_id: currentStore.id })),
-        cachedApiCall(`attr-sets-${currentStore.id}`, () => AttributeSet.filter({ store_id: currentStore.id })),
-        cachedApiCall(`seo-templates-${currentStore.id}`, () => SeoTemplate.filter({ store_id: currentStore.id }))
+        cachedApiCall(`taxes-${currentStore.id}`, async () => {
+          const result = await Tax.filter({ store_id: currentStore.id });
+          return Array.isArray(result) ? result : [];
+        }),
+        cachedApiCall(`categories-${currentStore.id}`, async () => {
+          const result = await Category.filter({ store_id: currentStore.id });
+          return Array.isArray(result) ? result : [];
+        }),
+        cachedApiCall(`labels-${currentStore.id}`, async () => {
+          const result = await ProductLabel.filter({ store_id: currentStore.id, is_active: true });
+          return Array.isArray(result) ? result : [];
+        }),
+        cachedApiCall(`attributes-${currentStore.id}`, async () => {
+          const result = await Attribute.filter({ store_id: currentStore.id });
+          return Array.isArray(result) ? result : [];
+        }),
+        cachedApiCall(`attr-sets-${currentStore.id}`, async () => {
+          const result = await AttributeSet.filter({ store_id: currentStore.id });
+          return Array.isArray(result) ? result : [];
+        }),
+        cachedApiCall(`seo-templates-${currentStore.id}`, async () => {
+          const result = await SeoTemplate.filter({ store_id: currentStore.id });
+          return Array.isArray(result) ? result : [];
+        })
       ];
       
       // Process all results
