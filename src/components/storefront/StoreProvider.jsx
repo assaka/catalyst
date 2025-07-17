@@ -124,9 +124,11 @@ export const StoreProvider = ({ children }) => {
       const storeCacheKey = storeSlug ? `store-slug-${storeSlug}` : 'first-store';
       const stores = await cachedApiCall(storeCacheKey, async () => {
         if (storeSlug) {
-          return await Store.filter({ slug: storeSlug });
+          const result = await Store.filter({ slug: storeSlug });
+          return Array.isArray(result) ? result : [];
         } else {
-          return await Store.list('-created_date', 1);
+          const result = await Store.findAll({ limit: 1 });
+          return Array.isArray(result) ? result : [];
         }
       });
 
