@@ -1025,7 +1025,7 @@ export default function Settings() {
                   <div className="space-y-2">
                     <Label>Select countries where your store operates</Label>
                     <CountrySelect
-                      value={store?.settings?.allowed_countries || []}
+                      value={Array.isArray(store?.settings?.allowed_countries) ? store.settings.allowed_countries : []}
                       onChange={(countries) => handleSettingsChange('allowed_countries', countries)}
                       placeholder="Select countries where your store operates..."
                       multiple={true}

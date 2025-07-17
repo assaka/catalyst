@@ -52,7 +52,7 @@ export default function ProductTabs() {
       // Assuming 'filter' method on Store can filter by owner_email
       const userStores = await Store.findAll();
 
-      if (userStores && userStores.length > 0) {
+      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
         const currentStore = userStores[0]; // Take the first store found for the user
         setStore(currentStore);
 

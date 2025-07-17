@@ -18,7 +18,13 @@
       "Bash(node:*)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node debug-email-chars.js)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node debug-constraints.js)",
-      "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -f cleanup-duplicate-tables.sql)"
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -f cleanup-duplicate-tables.sql)",
+      "Bash(grep:*)",
+      "Bash(for file in AttributeSet.js Coupon.js DeliverySettings.js OrderItem.js ShippingMethod.js Tax.js)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(tail:*)",
+      "Bash(done)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }

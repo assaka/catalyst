@@ -31,15 +31,8 @@ const defaultCountryData = [
 
 let countryData = defaultCountryData;
 
-// Try to import the full country list, fallback to default if it fails
-try {
-  const { countryData: importedCountryData } = require("./country-list-data");
-  if (Array.isArray(importedCountryData) && importedCountryData.length > 0) {
-    countryData = importedCountryData;
-  }
-} catch (error) {
-  console.warn("Failed to load full country data, using default list:", error);
-}
+// Simply use the default country data to avoid require() issues
+// The full country list can be loaded dynamically if needed
 
 export function CountrySelect({ value, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [] }) {
   const [open, setOpen] = useState(false);
@@ -61,13 +54,15 @@ export function CountrySelect({ value, onChange, placeholder = "Select country..
   const safeCountryData = Array.isArray(countryData) ? countryData : defaultCountryData;
   
   const filteredCountries = Array.isArray(allowedCountries) && allowedCountries.length > 0 
-    ? safeCountryData.filter(c => c && allowedCountries.includes(c.value)) 
+    ? safeCountryData.filter(c => c && c.value && allowedCountries.includes(c.value)) 
     : safeCountryData;
 
-  const safeValue = Array.isArray(value) ? value : (value ? [value] : []);
+  const safeValue = multiple 
+    ? (Array.isArray(value) ? value : (value ? [value] : []))
+    : value;
 
   const selectedLabels = multiple
-    ? safeValue
+    ? (Array.isArray(safeValue) ? safeValue : [])
         .map((v) => filteredCountries.find((country) => country && country.value === v)?.label)
         .filter(Boolean)
         .join(", ")
@@ -82,7 +77,7 @@ export function CountrySelect({ value, onChange, placeholder = "Select country..
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {(multiple ? safeValue.length > 0 : value) ? selectedLabels : placeholder}
+          {(multiple ? (Array.isArray(safeValue) && safeValue.length > 0) : value) ? selectedLabels : placeholder}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -96,7 +91,7 @@ export function CountrySelect({ value, onChange, placeholder = "Select country..
                 if (!country || !country.value) return null;
                 
                 const isSelected = multiple 
-                  ? safeValue.includes(country.value) 
+                  ? (Array.isArray(safeValue) && safeValue.includes(country.value))
                   : value === country.value;
                 
                 return (

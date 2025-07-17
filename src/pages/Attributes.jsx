@@ -61,7 +61,7 @@ export default function Attributes() {
       const user = await User.me();
       const userStores = await Store.findAll();
 
-      if (userStores && userStores.length > 0) {
+      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
         const currentStore = userStores[0]; // Assuming a user manages one primary store or we pick the first
         setStore(currentStore);
 

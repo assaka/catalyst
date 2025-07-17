@@ -52,7 +52,7 @@ export default function CouponsPage() {
       const user = await User.me();
       const userStores = await Store.findAll(); // Fetch stores owned by the current user
       
-      if (userStores && userStores.length > 0) {
+      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
         // Assuming the user is associated with the first store found, or primary store
         const currentStore = userStores[0]; 
         setStore(currentStore);

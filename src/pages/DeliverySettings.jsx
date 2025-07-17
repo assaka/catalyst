@@ -39,7 +39,7 @@ export default function DeliverySettings() { // Renamed the function component f
       // Filter stores by the current user's owner_email to ensure data isolation
       const userStores = await Store.findAll();
       
-      if (userStores && userStores.length > 0) {
+      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
         // Assume the first store found is the one relevant for delivery settings
         const currentStore = userStores[0];
         setStore(currentStore);
