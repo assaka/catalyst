@@ -156,6 +156,8 @@ const Order = sequelize.define('Order', {
       }
     }
   }
+}, {
+  tableName: 'orders'
 });
 
 module.exports = Order;

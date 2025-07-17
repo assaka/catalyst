@@ -96,6 +96,8 @@ const Coupon = sequelize.define('Coupon', {
     type: DataTypes.JSON,
     defaultValue: []
   }
+}, {
+  tableName: 'coupons'
 });
 
 module.exports = Coupon;

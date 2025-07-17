@@ -77,6 +77,8 @@ const CmsPage = sequelize.define('CmsPage', {
       }
     }
   }
+}, {
+  tableName: 'cms_pages'
 });
 
 module.exports = CmsPage;

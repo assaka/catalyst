@@ -76,6 +76,8 @@ const ShippingMethod = sequelize.define('ShippingMethod', {
     type: DataTypes.INTEGER,
     defaultValue: 0
   }
+}, {
+  tableName: 'shipping_methods'
 });
 
 module.exports = ShippingMethod;

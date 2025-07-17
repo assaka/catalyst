@@ -54,6 +54,8 @@ const OrderItem = sequelize.define('OrderItem', {
       key: 'id'
     }
   }
+}, {
+  tableName: 'order_items'
 });
 
 module.exports = OrderItem;

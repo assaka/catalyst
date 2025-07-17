@@ -162,6 +162,8 @@ const Product = sequelize.define('Product', {
       }
     }
   }
+}, {
+  tableName: 'products'
 });
 
 module.exports = Product;

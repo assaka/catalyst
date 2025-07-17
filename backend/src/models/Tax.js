@@ -37,6 +37,8 @@ const Tax = sequelize.define('Tax', {
       key: 'id'
     }
   }
+}, {
+  tableName: 'taxes'
 });
 
 module.exports = Tax;

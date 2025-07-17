@@ -55,6 +55,8 @@ const DeliverySettings = sequelize.define('DeliverySettings', {
       key: 'id'
     }
   }
+}, {
+  tableName: 'delivery_settings'
 });
 
 module.exports = DeliverySettings;

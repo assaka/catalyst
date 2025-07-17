@@ -62,6 +62,8 @@ const Attribute = sequelize.define('Attribute', {
       key: 'id'
     }
   }
+}, {
+  tableName: 'attributes'
 });
 
 module.exports = Attribute;

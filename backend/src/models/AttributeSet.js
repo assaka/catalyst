@@ -29,6 +29,8 @@ const AttributeSet = sequelize.define('AttributeSet', {
     type: DataTypes.JSON,
     defaultValue: []
   }
+}, {
+  tableName: 'attribute_sets'
 });
 
 module.exports = AttributeSet;
