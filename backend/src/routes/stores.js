@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { Store, User } = require('../models');
+const UserModel = require('../models/User'); // Direct import
 const { authorize } = require('../middleware/auth');
 const { sequelize, supabase } = require('../database/connection');
 const router = express.Router();
@@ -411,24 +412,63 @@ router.post('/', authorize(['admin', 'store_owner']), [
     
     // Verify the user exists in the database before creating store
     console.log('🔍 Verifying user exists before store creation...');
+    console.log('User model info:', {
+      name: User.name,
+      tableName: User.tableName,
+      tableNameFromOptions: User.options?.tableName
+    });
+    console.log('UserModel (direct) info:', {
+      name: UserModel.name,
+      tableName: UserModel.tableName,
+      tableNameFromOptions: UserModel.options?.tableName
+    });
+    
     try {
-      const existingUser = await User.findOne({ where: { email: req.user.email } });
+      // First, ensure the User model is synced
+      console.log('🔍 Syncing UserModel (direct)...');
+      await UserModel.sync({ alter: false });
+      console.log('✅ UserModel synced');
+      
+      // Try Sequelize User.findOne first
+      console.log('🔍 Trying UserModel.findOne...');
+      const existingUser = await UserModel.findOne({ where: { email: req.user.email } });
+      
       if (!existingUser) {
-        console.error('❌ User not found in database with email:', req.user.email);
-        return res.status(400).json({
-          success: false,
-          message: 'User not found. Please log in again.',
-          debug: {
-            userEmail: req.user.email,
-            userEmailType: typeof req.user.email
+        console.error('❌ User not found via Sequelize User.findOne');
+        
+        // Try direct SQL query as fallback
+        console.log('🔍 Trying direct SQL query...');
+        const [directResults] = await sequelize.query(
+          'SELECT id, email, role FROM users WHERE email = :email',
+          { 
+            replacements: { email: req.user.email },
+            type: sequelize.QueryTypes.SELECT
           }
+        );
+        
+        if (directResults.length > 0) {
+          console.log('✅ User found via direct SQL:', directResults[0]);
+          // Continue with store creation since user exists
+        } else {
+          console.error('❌ User not found in database with email:', req.user.email);
+          return res.status(400).json({
+            success: false,
+            message: 'User not found. Please log in again.',
+            debug: {
+              userEmail: req.user.email,
+              userEmailType: typeof req.user.email,
+              sequelizeResult: 'not found',
+              directSqlResult: 'not found'
+            }
+          });
+        }
+      } else {
+        console.log('✅ User found in database via Sequelize:', {
+          id: existingUser.id,
+          email: existingUser.email,
+          emailMatch: existingUser.email === req.user.email
         });
       }
-      console.log('✅ User found in database:', {
-        id: existingUser.id,
-        email: existingUser.email,
-        emailMatch: existingUser.email === req.user.email
-      });
     } catch (userCheckError) {
       console.error('❌ Error checking user existence:', userCheckError);
       return res.status(500).json({
