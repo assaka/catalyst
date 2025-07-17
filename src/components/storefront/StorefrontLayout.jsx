@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { handleLogout } from '@/utils/auth';
 import { Category } from '@/api/entities';
 import { Language } from '@/api/entities';
 import { StorePlugin } from '@/api/entities';
@@ -337,9 +338,7 @@ export default function StorefrontLayout({ children }) {
                                                             <span>Dashboard</span>
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onClick={() => {
-                                                            import('../../utils/auth').then(({ handleLogout }) => {
-                                                                handleLogout();
-                                                            });
+                                                            handleLogout();
                                                         }}>
                                                             <LogOut className="mr-2 h-4 w-4" />
                                                             <span>Logout</span>
@@ -437,9 +436,7 @@ export default function StorefrontLayout({ children }) {
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    import('../../utils/auth').then(({ handleLogout }) => {
-                                                        handleLogout();
-                                                    });
+                                                    handleLogout();
                                                 }}
                                                 className="w-full flex items-center py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
                                             >

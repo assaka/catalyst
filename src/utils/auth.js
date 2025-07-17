@@ -1,5 +1,5 @@
-import { User } from '../api/entities';
-import { createPageUrl } from '../utils/navigation';
+import { User } from '@/api/entities';
+import { createPageUrl } from '@/utils';
 
 /**
  * Standardized logout function that handles:
