@@ -3,8 +3,13 @@ class ApiClient {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
     this.apiVersion = import.meta.env.VITE_API_VERSION || 'v1';
-    this.token = localStorage.getItem('auth_token');
     this.isLoggedOut = false; // Track logout state
+    this.token = localStorage.getItem('auth_token');
+    
+    // If there's no token, consider user as logged out
+    if (!this.token) {
+      this.isLoggedOut = true;
+    }
   }
 
   // Set auth token
@@ -58,7 +63,7 @@ class ApiClient {
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
     // Prevent authenticated requests if user has been logged out
-    if (this.isLoggedOut && this.getToken()) {
+    if (this.isLoggedOut) {
       throw new Error('Session has been terminated. Please log in again.');
     }
     

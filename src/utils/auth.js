@@ -1,5 +1,6 @@
 import { Auth } from '@/api/entities';
 import { createPageUrl } from '@/utils';
+import apiClient from '@/api/client';
 
 /**
  * Standardized logout function that handles:
@@ -61,6 +62,10 @@ export const handleLogoutWithNavigate = async (navigate) => {
  * Check if user is authenticated
  */
 export const isAuthenticated = () => {
+  // Respect the logout state from apiClient
+  if (apiClient.isLoggedOut) {
+    return false;
+  }
   return !!localStorage.getItem('auth_token');
 };
 
