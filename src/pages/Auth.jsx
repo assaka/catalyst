@@ -29,18 +29,30 @@ export default function Auth() {
   });
 
   useEffect(() => {
+    console.log('🚀 Auth.jsx: useEffect triggered');
+    
     // Handle OAuth callback
     const token = searchParams.get('token');
     const oauth = searchParams.get('oauth');
     const errorParam = searchParams.get('error');
     const isGoogleOAuth = oauth === 'success';
 
+    console.log('🔍 Auth.jsx: URL params:', { 
+      hasToken: !!token, 
+      oauth, 
+      errorParam, 
+      isGoogleOAuth 
+    });
+
     if (token && oauth === 'success') {
+      console.log('🔄 Auth.jsx: OAuth success flow, setting token and checking auth');
       apiClient.setToken(token);
       checkAuthStatus(isGoogleOAuth);
     } else if (errorParam) {
+      console.log('🔄 Auth.jsx: Error param found, showing error');
       setError(getErrorMessage(errorParam));
     } else {
+      console.log('🔄 Auth.jsx: Normal flow, checking auth status');
       checkAuthStatus();
     }
 
@@ -65,14 +77,23 @@ export default function Auth() {
   };
 
   const checkAuthStatus = async (isGoogleOAuth = false) => {
+    console.log('🔍 Auth.jsx: checkAuthStatus called', { isGoogleOAuth });
+    console.log('🔍 Auth.jsx: apiClient state before check:', {
+      isLoggedOut: apiClient.isLoggedOut,
+      hasToken: !!apiClient.getToken()
+    });
+    
     try {
       // Check if user was just logged out (listen for logout events)
       if (apiClient.isLoggedOut) {
-        console.log('User was logged out, staying on auth page');
+        console.log('🚫 Auth.jsx: User was logged out, staying on auth page');
         return;
       }
       
+      console.log('🔍 Auth.jsx: Calling User.me()...');
       const user = await User.me();
+      console.log('✅ Auth.jsx: User.me() succeeded:', user ? 'user found' : 'no user');
+      
       if (user) {
         // For Google OAuth users without a role, set up basic account and skip onboarding
         if (!user.role && isGoogleOAuth) {
@@ -109,19 +130,24 @@ export default function Auth() {
         }
 
         // Regular flow for non-OAuth users or users that already have a role
+        console.log('🔍 Auth.jsx: Checking user role:', user.role);
         if (!user.role) {
+          console.log('🔄 Auth.jsx: No role found, redirecting to Onboarding');
           navigate(createPageUrl("Onboarding"));
           return;
         }
 
+        console.log('🔄 Auth.jsx: User has role, redirecting based on role/type');
         if (user.role === 'admin' || user.role === 'store_owner' || user.account_type === 'agency') {
+          console.log('🔄 Auth.jsx: Redirecting to Dashboard');
           navigate(createPageUrl("Dashboard"));
         } else {
+          console.log('🔄 Auth.jsx: Redirecting to CustomerDashboard');
           navigate(createPageUrl("CustomerDashboard"));
         }
       }
     } catch (error) {
-      console.log("User not authenticated, ready for login.");
+      console.log("❌ Auth.jsx: User not authenticated, ready for login:", error.message);
     }
   };
 

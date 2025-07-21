@@ -1,12 +1,22 @@
 // API Client for backend communication
 class ApiClient {
   constructor() {
+    console.log('🚀 ApiClient constructor called');
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
     this.apiVersion = import.meta.env.VITE_API_VERSION || 'v1';
     
     // Check if user was explicitly logged out (persists across page reloads)
-    this.isLoggedOut = localStorage.getItem('user_logged_out') === 'true';
-    this.token = localStorage.getItem('auth_token');
+    const logoutFlag = localStorage.getItem('user_logged_out');
+    const storedToken = localStorage.getItem('auth_token');
+    
+    console.log('🔍 ApiClient constructor state:', {
+      logoutFlag,
+      hasStoredToken: !!storedToken,
+      storedTokenPrefix: storedToken ? storedToken.substring(0, 20) + '...' : 'none'
+    });
+    
+    this.isLoggedOut = logoutFlag === 'true';
+    this.token = storedToken;
     
     // If user was logged out, don't load token even if it exists
     if (this.isLoggedOut) {
@@ -14,36 +24,62 @@ class ApiClient {
       console.log('🔍 ApiClient: User was previously logged out, ignoring token');
     } else if (!this.token) {
       this.isLoggedOut = true;
+      console.log('🔍 ApiClient: No token found, marking as logged out');
+    } else {
+      console.log('🔍 ApiClient: Token found and user not logged out, ready for authenticated requests');
     }
+    
+    console.log('🔍 ApiClient constructor final state:', {
+      isLoggedOut: this.isLoggedOut,
+      hasToken: !!this.token
+    });
   }
 
   // Set auth token
   setToken(token) {
+    console.log('🔧 setToken called with:', token ? 'new token' : 'null (logout)');
     this.token = token;
     if (token) {
       localStorage.setItem('auth_token', token);
       localStorage.removeItem('user_logged_out'); // Clear logout flag when setting new token
       this.isLoggedOut = false; // Reset logout state when setting new token
+      console.log('✅ Token set, user logged in');
     } else {
       localStorage.removeItem('auth_token');
       localStorage.setItem('user_logged_out', 'true'); // Persist logout state across page reloads
       // Ensure in-memory token is also cleared
       this.token = null;
       this.isLoggedOut = true; // Mark as logged out when clearing token
+      console.log('❌ Token cleared, user logged out, logout flag set');
     }
+    console.log('🔧 setToken final state:', {
+      isLoggedOut: this.isLoggedOut,
+      hasToken: !!this.token,
+      logoutFlagInStorage: localStorage.getItem('user_logged_out')
+    });
   }
 
   // Get auth token
   getToken() {
+    console.log('🔍 getToken called, state:', {
+      isLoggedOut: this.isLoggedOut,
+      hasToken: !!this.token
+    });
+    
     // If user has been logged out, don't return any token
     if (this.isLoggedOut) {
+      console.log('❌ getToken: User is logged out, returning null');
       return null;
     }
     // If token was explicitly set to null, don't fall back to localStorage
     if (this.token === null) {
+      console.log('❌ getToken: Token is null, returning null');
       return null;
     }
-    return this.token || localStorage.getItem('auth_token');
+    
+    const token = this.token || localStorage.getItem('auth_token');
+    console.log('✅ getToken: Returning token:', token ? 'found' : 'not found');
+    return token;
   }
 
   // Build full URL
@@ -69,8 +105,16 @@ class ApiClient {
 
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
+    console.log(`🌐 API request: ${method} ${endpoint}`);
+    console.log('🔍 Request state check:', {
+      isLoggedOut: this.isLoggedOut,
+      hasToken: !!this.token,
+      endpoint
+    });
+    
     // Prevent authenticated requests if user has been logged out
     if (this.isLoggedOut) {
+      console.log('❌ Request blocked: Session has been terminated');
       throw new Error('Session has been terminated. Please log in again.');
     }
     
