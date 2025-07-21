@@ -80,7 +80,10 @@ export default function Auth() {
     console.log('🔍 Auth.jsx: checkAuthStatus called', { isGoogleOAuth });
     console.log('🔍 Auth.jsx: apiClient state before check:', {
       isLoggedOut: apiClient.isLoggedOut,
-      hasToken: !!apiClient.getToken()
+      hasToken: !!apiClient.getToken(),
+      logoutFlagInStorage: localStorage.getItem('user_logged_out'),
+      tokenInStorage: localStorage.getItem('auth_token'),
+      allStorageKeys: Object.keys(localStorage)
     });
     
     try {
