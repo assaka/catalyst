@@ -159,21 +159,29 @@ class AuthService {
 
   async logout() {
     console.log('🚀 Auth.logout() called - START OF LOGOUT PROCESS');
+    console.log('🔍 Pre-logout state:', {
+      isLoggedOut: apiClient.isLoggedOut,
+      hasToken: !!apiClient.token,
+      tokenInStorage: localStorage.getItem('auth_token'),
+      logoutFlag: localStorage.getItem('user_logged_out')
+    });
     
+    console.log('🔄 Step 1: Calling backend logout endpoint...');
     try {
-      // Call backend logout endpoint to log the event
-      console.log('🔄 Calling backend logout endpoint...');
       await apiClient.post('auth/logout');
-      console.log('✅ Backend logout successful');
+      console.log('✅ Step 1 COMPLETE: Backend logout successful');
     } catch (error) {
-      console.error('❌ Backend logout failed:', error.message);
+      console.error('❌ Step 1 FAILED: Backend logout failed:', error.message);
+      console.error('Full error:', error);
       console.log('🔄 Continuing with client-side logout despite backend failure...');
     }
+
+    console.log('🔄 Step 2: Calling apiClient.setToken(null)...');
     
     // Clear the token from client-side storage
     console.log('🔄 CRITICAL: Clearing client-side token with setToken(null)...');
     apiClient.setToken(null);
-    console.log('✅ CRITICAL: Token cleared, checking state...');
+    console.log('✅ Step 2 COMPLETE: Token cleared, checking state...');
     console.log('🔍 Post-token-clear state:', {
       isLoggedOut: apiClient.isLoggedOut,
       hasToken: !!apiClient.token,
@@ -181,7 +189,7 @@ class AuthService {
     });
     
     // Clear all user-related cached data
-    console.log('🔄 Clearing all cached user data...');
+    console.log('🔄 Step 3: Clearing all cached user data...');
     localStorage.removeItem('user_data');
     localStorage.removeItem('selectedStoreId');
     localStorage.removeItem('storeProviderCache');
@@ -190,6 +198,7 @@ class AuthService {
     // Clear session IDs
     localStorage.removeItem('guest_session_id');
     localStorage.removeItem('cart_session_id');
+    console.log('✅ Step 3 COMPLETE: localStorage cleaned');
     
     // Note: We don't remove 'user_logged_out' here because setToken(null) already set it
     
