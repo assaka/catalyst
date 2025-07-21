@@ -45,8 +45,11 @@ class ApiClient {
       this.isLoggedOut = false; // Reset logout state when setting new token
       console.log('✅ Token set, user logged in');
     } else {
+      console.log('🔄 CRITICAL: Removing auth_token from localStorage...');
       localStorage.removeItem('auth_token');
+      console.log('🔄 CRITICAL: Setting user_logged_out=true in localStorage...');
       localStorage.setItem('user_logged_out', 'true'); // Persist logout state across page reloads
+      console.log('🔄 CRITICAL: Verifying logout flag was set:', localStorage.getItem('user_logged_out'));
       // Ensure in-memory token is also cleared
       this.token = null;
       this.isLoggedOut = true; // Mark as logged out when clearing token

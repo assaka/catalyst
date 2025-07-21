@@ -717,6 +717,8 @@ export default function Layout({ children, currentPageName }) {
                     onMouseUp={() => console.log('🖱️ Desktop logout mouse up')}
                     onClick={async (e) => {
                       console.log('🚨🚨🚨 DESKTOP LOGOUT CLICKED 🚨🚨🚨');
+                      e.preventDefault();
+                      e.stopPropagation();
                       console.log('🖥️ Desktop logout handler triggered', e);
                       console.log('🔍 Event details:', {
                         type: e.type,
@@ -727,31 +729,28 @@ export default function Layout({ children, currentPageName }) {
                       
                       try {
                         console.log('🖥️ About to call Auth.logout()...');
+                        console.log('🚫 DISABLING ALL REDIRECTS FOR DEBUGGING');
+                        
                         await Auth.logout();
+                        
                         console.log('✅ Desktop logout completed!');
                         console.log('🔍 LOGOUT VERIFICATION - Final state check:');
                         console.log('- isLoggedOut:', apiClient.isLoggedOut);
                         console.log('- hasToken:', !!apiClient.token);
                         console.log('- tokenInStorage:', localStorage.getItem('auth_token'));
                         console.log('- logoutFlagInStorage:', localStorage.getItem('user_logged_out'));
-                        console.log('🎉 LOGOUT PROCESS COMPLETE - READY FOR REDIRECT');
+                        console.log('🎉 LOGOUT PROCESS COMPLETE - NO REDIRECT FOR DEBUGGING');
+                        console.log('🔧 Manual redirect: window.location.href = "/auth"');
                         
-                        // Add a delay to see logs, then redirect
-                        setTimeout(() => {
-                          console.log('🖥️ Desktop redirect to /auth in 3 seconds...');
-                          setTimeout(() => {
-                            console.log('🖥️ Redirecting now...');
-                            window.location.href = '/auth';
-                          }, 3000);
-                        }, 1000);
                       } catch (error) {
                         console.error('❌ Desktop logout error:', error);
+                        console.error('❌ Error stack:', error.stack);
                         console.log('🔍 Error occurred, checking state anyway:');
                         console.log('- isLoggedOut:', apiClient.isLoggedOut);
                         console.log('- hasToken:', !!apiClient.token);
-                        setTimeout(() => {
-                          window.location.href = '/auth';
-                        }, 2000);
+                        console.log('- tokenInStorage:', localStorage.getItem('auth_token'));
+                        console.log('- logoutFlagInStorage:', localStorage.getItem('user_logged_out'));
+                        console.log('🚫 NO REDIRECT ON ERROR FOR DEBUGGING');
                       }
                     }}
                   >
