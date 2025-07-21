@@ -4,6 +4,7 @@ import React, { useState, useEffect, Fragment } from "react";
 import { NavLink, useLocation, useNavigate, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { User, Auth } from "@/api/entities";
+import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
