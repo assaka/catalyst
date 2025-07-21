@@ -708,37 +708,56 @@ export default function Layout({ children, currentPageName }) {
                   <span>Billing</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  data-testid="logout"
-                  onMouseEnter={() => console.log('🐭 Desktop logout hover detected')}
-                  onMouseDown={() => console.log('🖱️ Desktop logout mouse down')}
-                  onMouseUp={() => console.log('🖱️ Desktop logout mouse up')}
-                  onClick={async (e) => {
-                  console.log('🚨🚨🚨 DESKTOP LOGOUT CLICKED 🚨🚨🚨');
-                  console.log('🖥️ Desktop logout handler triggered', e);
-                  console.log('🔍 Event details:', {
-                    type: e.type,
-                    target: e.target,
-                    currentTarget: e.currentTarget,
-                    defaultPrevented: e.defaultPrevented
-                  });
-                  
-                  try {
-                    console.log('🖥️ About to call Auth.logout()...');
-                    await Auth.logout();
-                    console.log('✅ Desktop logout completed, redirecting...');
-                    // Add a small delay to ensure all cleanup is complete
-                    setTimeout(() => {
-                      console.log('🖥️ Desktop redirect to /auth');
-                      window.location.href = '/auth';
-                    }, 100);
-                  } catch (error) {
-                    console.error('❌ Desktop logout error:', error);
-                    window.location.href = '/auth';
-                  }
-                }}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
+                <DropdownMenuItem asChild>
+                  <button
+                    data-testid="logout"
+                    className="w-full flex items-center px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
+                    onMouseEnter={() => console.log('🐭 Desktop logout hover detected')}
+                    onMouseDown={() => console.log('🖱️ Desktop logout mouse down')}
+                    onMouseUp={() => console.log('🖱️ Desktop logout mouse up')}
+                    onClick={async (e) => {
+                      console.log('🚨🚨🚨 DESKTOP LOGOUT CLICKED 🚨🚨🚨');
+                      console.log('🖥️ Desktop logout handler triggered', e);
+                      console.log('🔍 Event details:', {
+                        type: e.type,
+                        target: e.target,
+                        currentTarget: e.currentTarget,
+                        defaultPrevented: e.defaultPrevented
+                      });
+                      
+                      try {
+                        console.log('🖥️ About to call Auth.logout()...');
+                        await Auth.logout();
+                        console.log('✅ Desktop logout completed!');
+                        console.log('🔍 LOGOUT VERIFICATION - Final state check:');
+                        console.log('- isLoggedOut:', apiClient.isLoggedOut);
+                        console.log('- hasToken:', !!apiClient.token);
+                        console.log('- tokenInStorage:', localStorage.getItem('auth_token'));
+                        console.log('- logoutFlagInStorage:', localStorage.getItem('user_logged_out'));
+                        console.log('🎉 LOGOUT PROCESS COMPLETE - READY FOR REDIRECT');
+                        
+                        // Add a delay to see logs, then redirect
+                        setTimeout(() => {
+                          console.log('🖥️ Desktop redirect to /auth in 3 seconds...');
+                          setTimeout(() => {
+                            console.log('🖥️ Redirecting now...');
+                            window.location.href = '/auth';
+                          }, 3000);
+                        }, 1000);
+                      } catch (error) {
+                        console.error('❌ Desktop logout error:', error);
+                        console.log('🔍 Error occurred, checking state anyway:');
+                        console.log('- isLoggedOut:', apiClient.isLoggedOut);
+                        console.log('- hasToken:', !!apiClient.token);
+                        setTimeout(() => {
+                          window.location.href = '/auth';
+                        }, 2000);
+                      }
+                    }}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </button>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
