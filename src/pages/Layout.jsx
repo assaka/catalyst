@@ -531,16 +531,19 @@ export default function Layout({ children, currentPageName }) {
                     <span>Billing</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => {
-                    console.log('🔄 Layout logout clicked');
+                    console.log('🚨🚨🚨 MOBILE LOGOUT CLICKED 🚨🚨🚨');
+                    console.log('📱 Mobile logout handler triggered');
                     try {
+                        console.log('📱 About to call Auth.logout()...');
                         await Auth.logout();
-                        console.log('✅ Layout logout completed, redirecting...');
+                        console.log('✅ Mobile logout completed, redirecting...');
                         // Add a small delay to ensure all cleanup is complete
                         setTimeout(() => {
+                            console.log('📱 Mobile redirect to /auth');
                             window.location.href = '/auth';
                         }, 100);
                     } catch (error) {
-                        console.error('❌ Layout logout error:', error);
+                        console.error('❌ Mobile logout error:', error);
                         window.location.href = '/auth';
                     }
                 }}>
@@ -689,12 +692,15 @@ export default function Layout({ children, currentPageName }) {
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={async () => {
-                  console.log('🔄 Desktop logout clicked');
+                  console.log('🚨🚨🚨 DESKTOP LOGOUT CLICKED 🚨🚨🚨');
+                  console.log('🖥️ Desktop logout handler triggered');
                   try {
+                    console.log('🖥️ About to call Auth.logout()...');
                     await Auth.logout();
                     console.log('✅ Desktop logout completed, redirecting...');
                     // Add a small delay to ensure all cleanup is complete
                     setTimeout(() => {
+                      console.log('🖥️ Desktop redirect to /auth');
                       window.location.href = '/auth';
                     }, 100);
                   } catch (error) {

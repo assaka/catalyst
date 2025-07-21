@@ -315,15 +315,21 @@ export default function ClientDashboard() {
 
         {/* Logout */}
         <div className="mt-8 text-center">
-          <Button variant="ghost" onClick={() => {
-            console.log('🔄 ClientDashboard logout clicked');
-            Auth.logout().then(() => {
-              console.log('✅ ClientDashboard logout completed, redirecting...');
+          <Button variant="ghost" onClick={async () => {
+            console.log('🚨🚨🚨 CLIENT DASHBOARD LOGOUT CLICKED 🚨🚨🚨');
+            console.log('🏢 Client logout handler triggered');
+            try {
+              console.log('🏢 About to call Auth.logout()...');
+              await Auth.logout();
+              console.log('✅ Client logout completed, redirecting...');
+              setTimeout(() => {
+                console.log('🏢 Client redirect to /auth');
+                window.location.href = '/auth';
+              }, 100);
+            } catch (error) {
+              console.error('❌ Client logout error:', error);
               window.location.href = '/auth';
-            }).catch(error => {
-              console.error('❌ ClientDashboard logout error:', error);
-              window.location.href = '/auth';
-            });
+            }
           }}>
             Sign Out
           </Button>

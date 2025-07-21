@@ -779,8 +779,17 @@ export default function CustomerDashboard() {
   };
 
   const handleLogout = async () => {
-    await Auth.logout();
-    navigate(createPageUrl('Storefront'));
+    console.log('🚨🚨🚨 CUSTOMER DASHBOARD LOGOUT CLICKED 🚨🚨🚨');
+    console.log('👤 Customer logout handler triggered');
+    try {
+      console.log('👤 About to call Auth.logout()...');
+      await Auth.logout();
+      console.log('✅ Customer logout completed, navigating...');
+      navigate(createPageUrl('Storefront'));
+    } catch (error) {
+      console.error('❌ Customer logout error:', error);
+      navigate(createPageUrl('Storefront'));
+    }
   };
 
   // New handleLogin function for guest view
