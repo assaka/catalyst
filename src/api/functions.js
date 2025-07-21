@@ -49,7 +49,7 @@ export const createStripeConnectLink = async (returnUrl, refreshUrl) => {
       return_url: returnUrl,
       refresh_url: refreshUrl
     });
-    return response.data;
+    return { data: response.data || response };
   } catch (error) {
     console.error('Error creating Stripe Connect link:', error);
     throw error;
@@ -59,7 +59,7 @@ export const createStripeConnectLink = async (returnUrl, refreshUrl) => {
 export const checkStripeConnectStatus = async () => {
   try {
     const response = await apiClient.get('payments/connect-status');
-    return response.data;
+    return { data: response.data || response };
   } catch (error) {
     console.error('Error checking Stripe Connect status:', error);
     throw error;

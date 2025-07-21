@@ -43,6 +43,16 @@ export default function Auth() {
     } else {
       checkAuthStatus();
     }
+
+    // Listen for logout events to prevent redirections after logout
+    const handleLogout = () => {
+      console.log('🔄 Auth page: User logged out, staying on auth page');
+      setError('');
+      setSuccess('');
+    };
+
+    window.addEventListener('userLoggedOut', handleLogout);
+    return () => window.removeEventListener('userLoggedOut', handleLogout);
   }, [searchParams]);
 
   const getErrorMessage = (error) => {
@@ -56,6 +66,12 @@ export default function Auth() {
 
   const checkAuthStatus = async (isGoogleOAuth = false) => {
     try {
+      // Check if user was just logged out (listen for logout events)
+      if (apiClient.isLoggedOut) {
+        console.log('User was logged out, staying on auth page');
+        return;
+      }
+      
       const user = await User.me();
       if (user) {
         // For Google OAuth users without a role, set up basic account and skip onboarding

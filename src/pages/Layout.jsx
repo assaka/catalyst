@@ -530,15 +530,19 @@ export default function Layout({ children, currentPageName }) {
                     <Wallet className="mr-2 h-4 w-4" />
                     <span>Billing</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
+                <DropdownMenuItem onClick={async () => {
                     console.log('🔄 Layout logout clicked');
-                    Auth.logout().then(() => {
+                    try {
+                        await Auth.logout();
                         console.log('✅ Layout logout completed, redirecting...');
-                        window.location.href = '/auth';
-                    }).catch(error => {
+                        // Add a small delay to ensure all cleanup is complete
+                        setTimeout(() => {
+                            window.location.href = '/auth';
+                        }, 100);
+                    } catch (error) {
                         console.error('❌ Layout logout error:', error);
                         window.location.href = '/auth';
-                    });
+                    }
                 }}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Logout</span>
@@ -684,15 +688,19 @@ export default function Layout({ children, currentPageName }) {
                   <span>Billing</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
+                <DropdownMenuItem onClick={async () => {
                   console.log('🔄 Desktop logout clicked');
-                  Auth.logout().then(() => {
+                  try {
+                    await Auth.logout();
                     console.log('✅ Desktop logout completed, redirecting...');
-                    window.location.href = '/auth';
-                  }).catch(error => {
+                    // Add a small delay to ensure all cleanup is complete
+                    setTimeout(() => {
+                      window.location.href = '/auth';
+                    }, 100);
+                  } catch (error) {
                     console.error('❌ Desktop logout error:', error);
                     window.location.href = '/auth';
-                  });
+                  }
                 }}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Logout</span>

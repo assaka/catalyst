@@ -83,7 +83,11 @@ function StripeConnectBanner() {
   const handleConnect = async () => {
     try {
       setConnecting(true);
-      const { data } = await createStripeConnectLink();
+      const currentUrl = window.location.origin + window.location.pathname;
+      const returnUrl = `${currentUrl}?stripe_return=true`;
+      const refreshUrl = `${currentUrl}?stripe_refresh=true`;
+      
+      const { data } = await createStripeConnectLink(returnUrl, refreshUrl);
       if (data?.url) {
         window.location.href = data.url;
       } else {
@@ -210,8 +214,12 @@ export default function Dashboard() {
       } else if (urlParams.has('stripe_refresh')) {
         // The link expired, trigger the flow again
         try {
+            const currentUrl = window.location.origin + window.location.pathname;
+            const returnUrl = `${currentUrl}?stripe_return=true`;
+            const refreshUrl = `${currentUrl}?stripe_refresh=true`;
+            
             // Assuming createStripeConnectLink returns { data: { url: string } }
-            const { data } = await createStripeConnectLink();
+            const { data } = await createStripeConnectLink(returnUrl, refreshUrl);
             if (data.url) {
                 window.location.href = data.url;
             } else {

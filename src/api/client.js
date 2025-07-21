@@ -12,15 +12,21 @@ class ApiClient {
     this.token = token;
     if (token) {
       localStorage.setItem('auth_token', token);
+      this.isLoggedOut = false; // Reset logout state when setting new token
     } else {
       localStorage.removeItem('auth_token');
       // Ensure in-memory token is also cleared
       this.token = null;
+      this.isLoggedOut = true; // Mark as logged out when clearing token
     }
   }
 
   // Get auth token
   getToken() {
+    // If user has been logged out, don't return any token
+    if (this.isLoggedOut) {
+      return null;
+    }
     // If token was explicitly set to null, don't fall back to localStorage
     if (this.token === null) {
       return null;
@@ -51,6 +57,11 @@ class ApiClient {
 
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
+    // Prevent authenticated requests if user has been logged out
+    if (this.isLoggedOut && this.getToken()) {
+      throw new Error('Session has been terminated. Please log in again.');
+    }
+    
     const url = this.buildUrl(endpoint);
     const headers = this.getHeaders(customHeaders);
 
