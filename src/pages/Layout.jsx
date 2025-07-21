@@ -127,6 +127,23 @@ export default function Layout({ children, currentPageName }) {
         await loadGTMConfig();
     }
     loadData();
+    
+    // Add global click detector to debug logout issues
+    const globalClickHandler = (e) => {
+      if (e.target.textContent?.includes('Logout') || e.target.closest('[data-testid="logout"]')) {
+        console.log('🎯 Global click detected on logout element!', {
+          target: e.target,
+          textContent: e.target.textContent,
+          classList: e.target.classList?.toString()
+        });
+      }
+    };
+    
+    document.addEventListener('click', globalClickHandler, true);
+    
+    return () => {
+      document.removeEventListener('click', globalClickHandler, true);
+    };
   }, []);
 
   const loadUserAndHandleCredits = async () => {
@@ -691,9 +708,21 @@ export default function Layout({ children, currentPageName }) {
                   <span>Billing</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={async () => {
+                <DropdownMenuItem 
+                  data-testid="logout"
+                  onMouseEnter={() => console.log('🐭 Desktop logout hover detected')}
+                  onMouseDown={() => console.log('🖱️ Desktop logout mouse down')}
+                  onMouseUp={() => console.log('🖱️ Desktop logout mouse up')}
+                  onClick={async (e) => {
                   console.log('🚨🚨🚨 DESKTOP LOGOUT CLICKED 🚨🚨🚨');
-                  console.log('🖥️ Desktop logout handler triggered');
+                  console.log('🖥️ Desktop logout handler triggered', e);
+                  console.log('🔍 Event details:', {
+                    type: e.type,
+                    target: e.target,
+                    currentTarget: e.currentTarget,
+                    defaultPrevented: e.defaultPrevented
+                  });
+                  
                   try {
                     console.log('🖥️ About to call Auth.logout()...');
                     await Auth.logout();
