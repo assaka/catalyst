@@ -66,12 +66,13 @@ class ApiClient {
   getToken() {
     console.log('🔍 getToken called, state:', {
       isLoggedOut: this.isLoggedOut,
-      hasToken: !!this.token
+      hasToken: !!this.token,
+      logoutFlag: localStorage.getItem('user_logged_out')
     });
     
-    // If user has been logged out, don't return any token
-    if (this.isLoggedOut) {
-      console.log('❌ getToken: User is logged out, returning null');
+    // Always check the logout flag in localStorage as well
+    if (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true') {
+      console.log('❌ getToken: User is logged out (flag check), returning null');
       return null;
     }
     // If token was explicitly set to null, don't fall back to localStorage
@@ -116,7 +117,7 @@ class ApiClient {
     });
     
     // Prevent authenticated requests if user has been logged out
-    if (this.isLoggedOut) {
+    if (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true') {
       console.log('❌ Request blocked: Session has been terminated');
       throw new Error('Session has been terminated. Please log in again.');
     }
@@ -297,9 +298,30 @@ class ApiClient {
       return false;
     }
   }
+
+  // Manual logout for testing
+  manualLogout() {
+    console.log('🔧 MANUAL LOGOUT: Forcing logout state');
+    localStorage.removeItem('auth_token');
+    localStorage.setItem('user_logged_out', 'true');
+    localStorage.removeItem('user_data');
+    localStorage.removeItem('selectedStoreId');
+    this.token = null;
+    this.isLoggedOut = true;
+    console.log('🔧 MANUAL LOGOUT: Complete');
+    console.log('🔍 Final state:', {
+      isLoggedOut: this.isLoggedOut,
+      hasToken: !!this.token,
+      logoutFlag: localStorage.getItem('user_logged_out'),
+      tokenInStorage: localStorage.getItem('auth_token')
+    });
+  }
 }
 
 // Create singleton instance
 const apiClient = new ApiClient();
+
+// Make apiClient globally accessible for debugging
+window.apiClient = apiClient;
 
 export default apiClient;
