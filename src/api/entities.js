@@ -185,6 +185,8 @@ class AuthService {
     localStorage.removeItem('guest_session_id');
     localStorage.removeItem('cart_session_id');
     
+    // Note: We don't remove 'user_logged_out' here because setToken(null) already set it
+    
     // Clear authentication cookies (if any exist)
     // This attempts to clear common auth cookie names
     document.cookie.split(";").forEach(cookie => {

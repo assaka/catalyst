@@ -93,4 +93,5 @@ export const clearAuthData = () => {
   localStorage.removeItem('onboarding_form_data');
   localStorage.removeItem('guest_session_id');
   localStorage.removeItem('cart_session_id');
+  localStorage.removeItem('user_logged_out'); // Clear logout flag for fresh start
 };

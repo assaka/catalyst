@@ -3,11 +3,16 @@ class ApiClient {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
     this.apiVersion = import.meta.env.VITE_API_VERSION || 'v1';
-    this.isLoggedOut = false; // Track logout state
+    
+    // Check if user was explicitly logged out (persists across page reloads)
+    this.isLoggedOut = localStorage.getItem('user_logged_out') === 'true';
     this.token = localStorage.getItem('auth_token');
     
-    // If there's no token, consider user as logged out
-    if (!this.token) {
+    // If user was logged out, don't load token even if it exists
+    if (this.isLoggedOut) {
+      this.token = null;
+      console.log('🔍 ApiClient: User was previously logged out, ignoring token');
+    } else if (!this.token) {
       this.isLoggedOut = true;
     }
   }
@@ -17,9 +22,11 @@ class ApiClient {
     this.token = token;
     if (token) {
       localStorage.setItem('auth_token', token);
+      localStorage.removeItem('user_logged_out'); // Clear logout flag when setting new token
       this.isLoggedOut = false; // Reset logout state when setting new token
     } else {
       localStorage.removeItem('auth_token');
+      localStorage.setItem('user_logged_out', 'true'); // Persist logout state across page reloads
       // Ensure in-memory token is also cleared
       this.token = null;
       this.isLoggedOut = true; // Mark as logged out when clearing token
