@@ -32,6 +32,7 @@ export default function Onboarding() {
 
             await User.updateMyUserData({
               account_type: 'agency', // Always set to agency now
+              role: 'store_owner',
               credits: 20,
               company_name: storedFormData.companyName,
               phone: storedFormData.phone,

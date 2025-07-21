@@ -61,6 +61,100 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
   }
 };
 
+// Stripe Connect Banner Component
+function StripeConnectBanner() {
+  const [stripeStatus, setStripeStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+
+  const checkStatus = async () => {
+    try {
+      setLoading(true);
+      const { data } = await checkStripeConnectStatus();
+      setStripeStatus(data);
+    } catch (error) {
+      console.error("Error checking Stripe status:", error);
+      setStripeStatus({ onboardingComplete: false });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    try {
+      setConnecting(true);
+      const { data } = await createStripeConnectLink();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        console.error("No Stripe Connect URL received");
+      }
+    } catch (error) {
+      console.error("Error creating Stripe Connect link:", error);
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  useEffect(() => {
+    checkStatus();
+  }, []);
+
+  // Don't show banner if Stripe is already connected
+  if (loading || stripeStatus?.onboardingComplete) {
+    return null;
+  }
+
+  return (
+    <Card className="mb-6 border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-50 to-yellow-50">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+              <CreditCard className="w-6 h-6 text-orange-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Connect Stripe to Accept Payments
+              </h3>
+              <p className="text-gray-600">
+                Set up your Stripe account to start accepting payments from customers. This is required to process orders.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Button variant="outline" onClick={checkStatus} disabled={loading}>
+              {loading ? (
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4 mr-2" />
+              )}
+              Refresh Status
+            </Button>
+            <Button 
+              onClick={handleConnect} 
+              disabled={connecting}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {connecting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Connect Stripe
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [stores, setStores] = useState([]); // Kept for general list of stores if needed
@@ -76,15 +170,25 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [stripeSuccessMessage, setStripeSuccessMessage] = useState('');
   const [checkingStripe, setCheckingStripe] = useState(false);
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
   const navigate = useNavigate();
 
 
   useEffect(() => {
     loadDashboardData();
 
+    // Handle setup completion from Google OAuth
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('setup') && urlParams.get('setup') === 'complete') {
+      setShowWelcomeMessage(true);
+      // Clean up URL
+      navigate(createPageUrl('Dashboard'), { replace: true });
+      // Auto-hide welcome message after 10 seconds
+      setTimeout(() => setShowWelcomeMessage(false), 10000);
+    }
+
     // Handle Stripe Connect return
     const handleStripeReturn = async () => {
-      const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.has('stripe_return')) {
         try {
           // Assuming checkStripeConnectStatus returns { data: { onboardingComplete: boolean } }
@@ -309,12 +413,33 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Welcome Message for new Google OAuth users */}
+        {showWelcomeMessage && (
+          <div className="mb-6 p-4 bg-blue-100 border border-blue-400 text-blue-800 rounded-lg flex items-center justify-between">
+            <div className="flex items-center">
+              <CheckCircle className="w-5 h-5 mr-2" />
+              <span>🎉 Welcome! Your account has been set up successfully. Connect Stripe below to start accepting payments.</span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowWelcomeMessage(false)}
+              className="text-blue-800 hover:text-blue-900"
+            >
+              ✕
+            </Button>
+          </div>
+        )}
+
         {stripeSuccessMessage && (
             <div className="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-center">
                 <CheckCircle className="w-5 h-5 mr-2" />
                 {stripeSuccessMessage}
             </div>
         )}
+
+        {/* Stripe Connect Banner */}
+        <StripeConnectBanner />
 
         {/* Setup Guide Component */}
         <SetupGuide store={store} />

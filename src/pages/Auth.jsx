@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Auth as AuthService, User } from "@/api/entities";
+import { Auth as AuthService, User, Store } from "@/api/entities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -33,10 +33,11 @@ export default function Auth() {
     const token = searchParams.get('token');
     const oauth = searchParams.get('oauth');
     const errorParam = searchParams.get('error');
+    const isGoogleOAuth = oauth === 'success';
 
     if (token && oauth === 'success') {
       apiClient.setToken(token);
-      checkAuthStatus();
+      checkAuthStatus(isGoogleOAuth);
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
@@ -53,10 +54,45 @@ export default function Auth() {
     return errorMessages[error] || 'An error occurred. Please try again.';
   };
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = async (isGoogleOAuth = false) => {
     try {
       const user = await User.me();
       if (user) {
+        // For Google OAuth users without a role, set up basic account and skip onboarding
+        if (!user.role && isGoogleOAuth) {
+          try {
+            // Set up basic account for Google OAuth users
+            await User.updateMyUserData({
+              account_type: 'agency',
+              role: 'store_owner',
+              credits: 20
+            });
+
+            // Create a default store if none exists
+            const stores = await User.getMyStores?.() || [];
+            if (stores.length === 0) {
+              const storeName = user.company_name || `${user.full_name}'s Store` || `${user.email} Store`;
+              const storeSlug = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+              await Store.create({
+                name: storeName,
+                slug: storeSlug,
+                owner_email: user.email,
+              });
+            }
+
+            // Redirect to Dashboard with a success message
+            navigate(createPageUrl("Dashboard") + "?setup=complete");
+            return;
+          } catch (setupError) {
+            console.error("Failed to setup Google OAuth user:", setupError);
+            // Fall back to onboarding if auto-setup fails
+            navigate(createPageUrl("Onboarding"));
+            return;
+          }
+        }
+
+        // Regular flow for non-OAuth users or users that already have a role
         if (!user.role) {
           navigate(createPageUrl("Onboarding"));
           return;
