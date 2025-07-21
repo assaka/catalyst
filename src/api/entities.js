@@ -158,7 +158,7 @@ class AuthService {
   }
 
   async logout() {
-    console.log('🔄 User.logout() called');
+    console.log('🔄 Auth.logout() called');
     
     try {
       // Call backend logout endpoint to log the event
@@ -174,11 +174,53 @@ class AuthService {
     console.log('🔄 Clearing client-side token...');
     apiClient.setToken(null);
     
-    // Clear any cached user data
-    console.log('🔄 Clearing cached user data...');
+    // Clear all user-related cached data
+    console.log('🔄 Clearing all cached user data...');
     localStorage.removeItem('user_data');
+    localStorage.removeItem('selectedStoreId');
+    localStorage.removeItem('storeProviderCache');
+    localStorage.removeItem('onboarding_form_data');
     
-    console.log('✅ User.logout() completed');
+    // Clear session IDs
+    localStorage.removeItem('guest_session_id');
+    localStorage.removeItem('cart_session_id');
+    
+    // Clear authentication cookies (if any exist)
+    // This attempts to clear common auth cookie names
+    document.cookie.split(";").forEach(cookie => {
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+      // Clear cookies that might be authentication related
+      if (name.toLowerCase().includes('auth') || 
+          name.toLowerCase().includes('session') || 
+          name.toLowerCase().includes('token') ||
+          name === 'connect.sid' || 
+          name === 'jwt') {
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
+        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+        console.log('🔄 Cleared cookie:', name);
+      }
+    });
+    
+    // Clear any other app-specific cache
+    // Keep cookie consent as it's user preference, not session data
+    
+    // Dispatch logout event to notify other components
+    window.dispatchEvent(new CustomEvent('userLoggedOut', { 
+      detail: { timestamp: new Date().toISOString() } 
+    }));
+    
+    // Debug: Log what's left in localStorage after cleanup
+    const remainingKeys = Object.keys(localStorage).filter(key => 
+      !key.includes('cookie_consent') // Exclude cookie consent keys
+    );
+    if (remainingKeys.length > 0) {
+      console.log('🔍 Remaining localStorage keys after logout:', remainingKeys);
+    } else {
+      console.log('✅ All relevant localStorage keys cleared');
+    }
+    
+    console.log('✅ Auth.logout() completed');
     return { success: true };
   }
 

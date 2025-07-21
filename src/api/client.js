@@ -4,6 +4,7 @@ class ApiClient {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
     this.apiVersion = import.meta.env.VITE_API_VERSION || 'v1';
     this.token = localStorage.getItem('auth_token');
+    this.isLoggedOut = false; // Track logout state
   }
 
   // Set auth token
@@ -13,11 +14,17 @@ class ApiClient {
       localStorage.setItem('auth_token', token);
     } else {
       localStorage.removeItem('auth_token');
+      // Ensure in-memory token is also cleared
+      this.token = null;
     }
   }
 
   // Get auth token
   getToken() {
+    // If token was explicitly set to null, don't fall back to localStorage
+    if (this.token === null) {
+      return null;
+    }
     return this.token || localStorage.getItem('auth_token');
   }
 

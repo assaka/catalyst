@@ -21,6 +21,19 @@ export const StoreSelectionProvider = ({ children }) => {
     loadStores();
   }, []);
 
+  // Listen for logout events and reset context
+  useEffect(() => {
+    const handleLogout = () => {
+      console.log('🏪 StoreSelection: User logged out, resetting context');
+      setAvailableStores([]);
+      setSelectedStore(null);
+      setLoading(true);
+    };
+
+    window.addEventListener('userLoggedOut', handleLogout);
+    return () => window.removeEventListener('userLoggedOut', handleLogout);
+  }, []);
+
   const loadStores = async () => {
     try {
       setLoading(true);

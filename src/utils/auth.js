@@ -83,4 +83,9 @@ export const getCurrentUser = () => {
 export const clearAuthData = () => {
   localStorage.removeItem('auth_token');
   localStorage.removeItem('user_data');
+  localStorage.removeItem('selectedStoreId');
+  localStorage.removeItem('storeProviderCache');
+  localStorage.removeItem('onboarding_form_data');
+  localStorage.removeItem('guest_session_id');
+  localStorage.removeItem('cart_session_id');
 };
