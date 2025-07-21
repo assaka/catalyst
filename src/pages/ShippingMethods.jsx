@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ShippingMethod } from "@/api/entities";
-import { Store } from "@/api/entities";
-import { User } from "@/api/entities";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import {
   Truck,
   Plus,
@@ -45,17 +45,31 @@ const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
 
 
 export default function ShippingMethodsPage() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [methods, setMethods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMethod, setSelectedMethod] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [currentStore, setCurrentStore] = useState(null);
   const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
+
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadData();
+      }
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
 
   useEffect(() => {
       if (flashMessage) {
@@ -65,42 +79,43 @@ export default function ShippingMethodsPage() {
   }, [flashMessage]);
 
   const loadData = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("ShippingMethodsPage: No store selected.");
+      setMethods([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const user = await User.me();
-      const stores = await retryApiCall(() => Store.findAll());
-      
-      if (stores && stores.length > 0) {
-        const store = stores[0];
-        setCurrentStore(store);
-        const shippingMethods = await retryApiCall(() => ShippingMethod.filter({ store_id: store.id }, "-created_date"));
-        setMethods(Array.isArray(shippingMethods) ? shippingMethods : []);
-      } else {
-        setMethods([]);
-        setCurrentStore(null);
-      }
+      console.log('Loading shipping methods for store:', storeId);
+      const shippingMethods = await retryApiCall(() => ShippingMethod.filter({ store_id: storeId }, "-created_date"));
+      setMethods(Array.isArray(shippingMethods) ? shippingMethods : []);
+      console.log('Loaded:', (shippingMethods || []).length, 'shipping methods');
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Error loading shipping methods data:", error);
       setMethods([]);
-      setCurrentStore(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSettingsChange = async (key, value) => {
-        if (!currentStore) return;
+        if (!selectedStore) {
+            console.warn("No store selected to update settings.");
+            return;
+        }
 
-        const newSettings = { ...(currentStore.settings || {}) };
+        const newSettings = { ...(selectedStore.settings || {}) };
         newSettings[key] = value;
         
         try {
-            await Store.update(currentStore.id, { settings: newSettings });
-            setCurrentStore(prevStore => ({
-                ...prevStore,
-                settings: newSettings,
-            }));
+            const { Store } = await import("@/api/entities");
+            await Store.update(selectedStore.id, { settings: newSettings });
+            console.log(`Settings for ${key} updated to ${value}`);
             setFlashMessage({ type: 'success', message: 'Setting updated successfully!' });
+            // The store context will handle the state update
         } catch (error) {
             console.error("Failed to update setting:", error);
             setFlashMessage({ type: 'error', message: 'Failed to update setting.' });
@@ -130,6 +145,10 @@ export default function ShippingMethodsPage() {
   const filteredMethods = methods.filter((method) =>
     method.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!selectedStore) {
+    return <NoStoreSelected />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -169,9 +188,9 @@ export default function ShippingMethodsPage() {
                     </div>
                     <Switch 
                         id="hide_shipping_costs" 
-                        checked={!!currentStore?.settings?.hide_shipping_costs} 
+                        checked={!!selectedStore?.settings?.hide_shipping_costs} 
                         onCheckedChange={(c) => handleSettingsChange('hide_shipping_costs', c)}
-                        disabled={!currentStore}
+                        disabled={!selectedStore}
                     />
                 </div>
             </CardContent>
@@ -252,7 +271,7 @@ export default function ShippingMethodsPage() {
               </DialogTitle>
             </DialogHeader>
             <ShippingMethodForm
-              storeId={currentStore?.id}
+              storeId={getSelectedStoreId()}
               method={selectedMethod}
               onSubmit={handleFormSubmit}
               onCancel={() => setShowForm(false)}

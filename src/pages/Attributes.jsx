@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Attribute } from "@/api/entities";
 import { AttributeSet } from "@/api/entities";
-import { useStoreSelection } from "@/contexts/StoreSelectionContext";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import {
   Settings,

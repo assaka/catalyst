@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Tax } from "@/api/entities";
-import { Store } from "@/api/entities";
-import { User } from "@/api/entities";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import {
   Receipt,
   Plus,
@@ -51,94 +51,87 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function TaxPage() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTax, setSelectedTax] = useState(null);
   const [showTaxForm, setShowTaxForm] = useState(false);
-  const [currentStore, setCurrentStore] = useState(null);
 
   useEffect(() => {
     document.title = "Tax Rules - Admin Dashboard";
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
+
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadData();
+      }
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
 
   const loadData = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("Tax: No store selected");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
-
-      const user = await User.me();
-      console.log('Current user:', user.email);
-
-      const userStores = await retryApiCall(() => Store.findAll());
-      console.log('Found stores for user:', userStores);
-
-      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
-        const store = userStores[0];
-        setCurrentStore(store);
-        console.log('Using store:', store.name, 'ID:', store.id);
-
-        try {
-          const taxData = await retryApiCall(() => Tax.filter({ store_id: store.id }, "-created_date"));
-          setTaxes(Array.isArray(taxData) ? taxData : []);
-          console.log('Loaded:', (taxData || []).length, 'tax rules');
-        } catch (dataError) {
-          console.error("Error loading tax data:", dataError);
-          setTaxes([]);
-        }
-      } else {
-        setTaxes([]);
-        setCurrentStore(null);
-        console.warn("TaxPage: Current user has no stores.");
-      }
+      const taxData = await retryApiCall(() => Tax.filter({ store_id: storeId }, "-created_date"));
+      setTaxes(Array.isArray(taxData) ? taxData : []);
+      console.log('Loaded:', (taxData || []).length, 'tax rules');
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("Error loading tax data:", error);
       setTaxes([]);
-      setCurrentStore(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handleSettingsChange = async (key, value) => {
-    if (!currentStore) {
+    if (!selectedStore) {
       console.warn("No store selected to update settings.");
       return;
     }
 
     // Create a deep copy of the settings object to avoid mutation issues
     // and ensure `settings` object exists if it's null/undefined
-    const newSettings = { ...(currentStore.settings || {}) };
+    const newSettings = { ...(selectedStore.settings || {}) };
 
     // Update the specific setting
     newSettings[key] = value;
 
     try {
       // Update the entire settings object in the store
-      await Store.update(currentStore.id, { settings: newSettings });
+      const { Store } = await import('@/api/entities');
+      await Store.update(selectedStore.id, { settings: newSettings });
 
-      // Update the local state to reflect the change immediately
-      setCurrentStore(prevStore => ({
-        ...prevStore,
-        settings: newSettings
-      }));
       console.log(`Settings for ${key} updated to ${value}`);
+      // Note: The store context will handle the state update
     } catch (error) {
       console.error("Failed to update tax settings:", error);
     }
   };
 
   const handleCreateTax = async (taxData) => {
-    try {
-      if (currentStore && !taxData.store_id) {
-        taxData.store_id = currentStore.id;
-      } else if (!currentStore) {
-        console.error("Cannot create tax rule: No store is selected or available.");
-        throw new Error("No store available to create tax rule under.");
-      }
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      throw new Error("No store selected");
+    }
 
-      console.log('Creating tax rule with store_id:', taxData.store_id);
-      await Tax.create(taxData);
+    try {
+      console.log('Creating tax rule with store_id:', storeId);
+      await Tax.create({ ...taxData, store_id: storeId });
       await loadData();
       setShowTaxForm(false);
     } catch (error) {
@@ -192,6 +185,10 @@ export default function TaxPage() {
     );
   }
 
+  if (!selectedStore) {
+    return <NoStoreSelected />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -206,7 +203,7 @@ export default function TaxPage() {
               setShowTaxForm(true);
             }}
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-            disabled={!currentStore}
+            disabled={!selectedStore}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Tax Rule
@@ -226,9 +223,9 @@ export default function TaxPage() {
               </div>
               <Switch
                 id="default_tax_included_in_prices"
-                checked={currentStore?.settings?.default_tax_included_in_prices || false}
+                checked={selectedStore?.settings?.default_tax_included_in_prices || false}
                 onCheckedChange={(checked) => handleSettingsChange('default_tax_included_in_prices', checked)}
-                disabled={!currentStore}
+                disabled={!selectedStore}
               />
             </div>
             <div className="flex items-center justify-between p-4 border rounded-lg bg-white">
@@ -238,9 +235,9 @@ export default function TaxPage() {
               </div>
               <Switch
                 id="display_tax_inclusive_prices"
-                checked={currentStore?.settings?.display_tax_inclusive_prices || false}
+                checked={selectedStore?.settings?.display_tax_inclusive_prices || false}
                 onCheckedChange={(checked) => handleSettingsChange('display_tax_inclusive_prices', checked)}
-                disabled={!currentStore}
+                disabled={!selectedStore}
               />
             </div>
             <div className="flex items-center justify-between p-4 border rounded-lg bg-white">
@@ -250,9 +247,9 @@ export default function TaxPage() {
               </div>
               <Switch
                 id="calculate_tax_after_discount"
-                checked={currentStore?.settings?.calculate_tax_after_discount !== false} // default to true if undefined/null
+                checked={selectedStore?.settings?.calculate_tax_after_discount !== false} // default to true if undefined/null
                 onCheckedChange={(checked) => handleSettingsChange('calculate_tax_after_discount', checked)}
-                disabled={!currentStore}
+                disabled={!selectedStore}
               />
             </div>
           </CardContent>
@@ -368,7 +365,7 @@ export default function TaxPage() {
                 <p className="text-gray-600 mb-6">
                   {searchQuery
                     ? "Try adjusting your search"
-                    : currentStore
+                    : selectedStore
                       ? "Start by adding your first tax rule to handle different tax rates"
                       : "You don't have any stores yet. Please create a store first to manage tax rules."}
                 </p>
@@ -378,7 +375,7 @@ export default function TaxPage() {
                     setShowTaxForm(true);
                   }}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-                  disabled={!currentStore}
+                  disabled={!selectedStore}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Tax Rule

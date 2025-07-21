@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from "react";
 import { CmsPage } from "@/api/entities";
-import { Store } from "@/api/entities";
 import { Product } from "@/api/entities";
-import { User } from "@/api/entities"; // Added User import
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { 
   FileText, 
   Plus, 
@@ -27,41 +27,59 @@ import FlashMessage from "../components/storefront/FlashMessage";
 import CmsPageForm from "../components/cms/CmsPageForm";
 
 export default function CmsPages() {
-  const [pages, setPages] = useState([]); // Renamed from cmsPages
-  const [store, setStore] = useState(null); // Renamed from stores, now singular
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const [pages, setPages] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingPage, setEditingPage] = useState(null); // Renamed from selectedPage
-  const [showForm, setShowForm] = useState(false); // Renamed from showPageForm
+  const [editingPage, setEditingPage] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
-    loadPages(); // Changed to loadPages
-  }, []);
+    if (selectedStore) {
+      loadPages();
+    }
+  }, [selectedStore]);
 
-  const loadPages = async () => { // Renamed from loadData
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadPages();
+      }
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
+
+  const loadPages = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("CmsPages: No store selected.");
+      setPages([]);
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const user = await User.me();
-      const stores = await Store.findAll();
-      if (stores && stores.length > 0) {
-        const currentStore = stores[0];
-        setStore(currentStore);
-        
-        const pagesData = await CmsPage.filter({ store_id: currentStore.id });
-        setPages(pagesData || []); // Updated state setter
-        
-        const productsData = await Product.filter({ store_id: currentStore.id });
-        setProducts(productsData || []);
-      } else {
-        setPages([]); // Updated state setter
-        setProducts([]);
-        setStore(null); // Ensure store is null if no store found
-        console.warn("No store found for user. Cannot load CMS pages or products.");
-      }
+      console.log('Loading CMS pages for store:', storeId);
+      
+      const [pagesData, productsData] = await Promise.all([
+        CmsPage.filter({ store_id: storeId }),
+        Product.filter({ store_id: storeId })
+      ]);
+      
+      setPages(pagesData || []);
+      setProducts(productsData || []);
+      console.log('Loaded:', (pagesData || []).length, 'CMS pages');
     } catch (error) {
       console.error("Error loading CMS pages:", error);
+      setPages([]);
+      setProducts([]);
       setFlashMessage({ type: 'error', message: 'Failed to load CMS pages.' });
     } finally {
       setLoading(false);
@@ -69,17 +87,20 @@ export default function CmsPages() {
   };
 
   const handleCreatePage = async (pageData) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setFlashMessage({ type: 'error', message: 'Cannot create page: No store selected.' });
+      return;
+    }
+
     try {
-      if (store && !pageData.store_id) { // Use singular 'store' state
-        pageData.store_id = store.id;
-      } else if (!store) {
-        setFlashMessage({ type: 'error', message: 'Cannot create page: No store associated with user.' });
-        return;
+      if (!pageData.store_id) {
+        pageData.store_id = storeId;
       }
       
       await CmsPage.create(pageData);
-      await loadPages(); // Changed to loadPages
-      setShowForm(false); // Updated state setter
+      await loadPages();
+      setShowForm(false);
       setFlashMessage({ type: 'success', message: 'CMS Page created successfully!' });
     } catch (error) {
       console.error("Error creating CMS page:", error);
@@ -89,10 +110,10 @@ export default function CmsPages() {
 
   const handleUpdatePage = async (pageData) => {
     try {
-      await CmsPage.update(editingPage.id, pageData); // Updated state variable
-      await loadPages(); // Changed to loadPages
-      setShowForm(false); // Updated state setter
-      setEditingPage(null); // Updated state setter
+      await CmsPage.update(editingPage.id, pageData);
+      await loadPages();
+      setShowForm(false);
+      setEditingPage(null);
       setFlashMessage({ type: 'success', message: 'CMS Page updated successfully!' });
     } catch (error) {
       console.error("Error updating CMS page:", error);
@@ -104,7 +125,7 @@ export default function CmsPages() {
     if (window.confirm("Are you sure you want to delete this CMS page?")) {
       try {
         await CmsPage.delete(pageId);
-        await loadPages(); // Changed to loadPages
+        await loadPages();
         setFlashMessage({ type: 'success', message: 'CMS Page deleted successfully!' });
       } catch (error) {
         console.error("Error deleting CMS page:", error);
@@ -123,6 +144,10 @@ export default function CmsPages() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  if (!selectedStore) {
+    return <NoStoreSelected />;
   }
 
   return (
@@ -211,7 +236,7 @@ export default function CmsPages() {
             </DialogHeader>
             <CmsPageForm
               page={editingPage} // Updated state variable
-              stores={store ? [store] : []} // Pass store as an array if it exists, otherwise empty array
+              stores={selectedStore ? [selectedStore] : []}
               products={products}
               onSubmit={editingPage ? handleUpdatePage : handleCreatePage} // Updated state variable
               onCancel={() => setShowForm(false)} // Updated state setter

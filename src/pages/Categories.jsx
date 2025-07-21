@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Category } from "@/api/entities";
-import { Store } from "@/api/entities";
-import { User } from "@/api/entities"; // Added User import
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { 
   Tag, 
   Plus, 
@@ -36,55 +36,60 @@ import {
 import CategoryForm from "../components/categories/CategoryForm";
 
 export default function Categories() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [categories, setCategories] = useState([]);
-  // const [stores, setStores] = useState([]); // Removed stores state
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
-  const [currentStore, setCurrentStore] = useState(null); // Added currentStore state
 
   useEffect(() => {
-    loadCategories(); // Renamed loadData to loadCategories
-  }, []);
+    if (selectedStore) {
+      loadCategories();
+    }
+  }, [selectedStore]);
 
-  const loadCategories = async () => { // Renamed from loadData
-    setLoading(true);
-    try {
-      const user = await User.me(); // Fetch current user
-      const stores = await Store.findAll(); // Filter stores by user's email
-      if (stores && Array.isArray(stores) && stores.length > 0) { // Added check for stores array
-        const store = stores[0]; // Assuming one store per user for this multi-tenancy setup
-        setCurrentStore(store);
-        // Load categories only for the current store
-        const categoriesData = await Category.filter({ store_id: store.id }, "sort_order");
-        setCategories(categoriesData || []); // Ensure categoriesData is an array
-      } else {
-        // No store found for the user, so no categories to display
-        setCurrentStore(null);
-        setCategories([]);
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadCategories();
       }
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
+
+  const loadCategories = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("No store selected");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const categoriesData = await Category.filter({ store_id: storeId }, "sort_order");
+      setCategories(categoriesData || []);
     } catch (error) {
-      console.error("Error loading data:", error);
-      setCurrentStore(null); // Reset store on error
-      setCategories([]); // Reset categories on error
+      console.error("Error loading categories:", error);
+      setCategories([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateCategory = async (categoryData) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      throw new Error("No store selected");
+    }
+
     try {
-      if (currentStore) { // Use currentStore for category assignment
-          categoryData.store_id = currentStore.id;
-      } else {
-          console.error("Cannot create category: No store associated with the user.");
-          // Optionally, display a user-friendly error message
-          return; // Prevent category creation if no store is set
-      }
-      
-      await Category.create(categoryData);
-      await loadCategories(); // Updated function name
+      await Category.create({ ...categoryData, store_id: storeId });
+      await loadCategories();
       setShowCategoryForm(false);
     } catch (error) {
       console.error("Error creating category:", error);
@@ -178,7 +183,7 @@ export default function Categories() {
               setShowCategoryForm(true);
             }}
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-            disabled={!canAddCategory} // Disable button if no store
+            disabled={!selectedStore}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Category
@@ -305,9 +310,7 @@ export default function Categories() {
               <p className="text-gray-600 mb-6">
                 {searchQuery 
                   ? "Try adjusting your search terms"
-                  : canAddCategory 
-                    ? "Start by creating your first product category"
-                    : "You need to set up a store first before adding categories."}
+                  : "Start by creating your first product category"}
               </p>
               <Button
                 onClick={() => {
@@ -315,7 +318,7 @@ export default function Categories() {
                   setShowCategoryForm(true);
                 }}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-                disabled={!canAddCategory} // Disable button if no store
+                disabled={!selectedStore}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Category
@@ -334,7 +337,7 @@ export default function Categories() {
             </DialogHeader>
             <CategoryForm
               category={selectedCategory}
-              stores={currentStore ? [currentStore] : []} // Passed currentStore as an array
+              stores={[]}
               onSubmit={selectedCategory ? handleUpdateCategory : handleCreateCategory}
               onCancel={() => {
                 setShowCategoryForm(false);

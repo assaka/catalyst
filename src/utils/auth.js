@@ -1,4 +1,4 @@
-import { User } from '@/api/entities';
+import { Auth } from '@/api/entities';
 import { createPageUrl } from '@/utils';
 
 /**
@@ -13,7 +13,7 @@ export const handleLogout = async () => {
     console.log('🔄 Starting logout process...');
     
     // Call the logout API which handles backend logging and token cleanup
-    const result = await User.logout();
+    const result = await Auth.logout();
     console.log('✅ User.logout() result:', result);
     
     console.log('✅ Logout completed successfully');
@@ -42,7 +42,7 @@ export const handleLogoutWithNavigate = async (navigate) => {
     console.log('🔄 Starting logout process...');
     
     // Call the logout API which handles backend logging and token cleanup
-    await User.logout();
+    await Auth.logout();
     
     console.log('✅ Logout completed successfully');
     

@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { Order } from "@/api/entities";
 import { OrderItem } from "@/api/entities";
 import { User } from "@/api/entities";
-import { Store } from "@/api/entities"; // Added Store entity import
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import {
   Search,
   ChevronDown,
@@ -34,76 +35,76 @@ import {
 } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 
-export default function Orders() { // Renamed from OrdersPage to Orders
+export default function Orders() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [orders, setOrders] = useState([]);
-  const [users, setUsers] = useState({}); // Keep users state for customer details
+  const [users, setUsers] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [openOrderId, setOpenOrderId] = useState(null);
-  const [error, setError] = useState(null); // Added error state
-  const [currentStore, setCurrentStore] = useState(null); // Added currentStore state
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    if (selectedStore) {
+      loadOrders();
+    }
+  }, [selectedStore]);
+
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadOrders();
+      }
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
 
   const loadOrders = async () => {
-    setLoading(true);
-    setError(null); // Clear previous errors
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("No store selected");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const user = await User.me(); // Fetch current user
-      console.log('Current user:', user.email);
-      
-      // CRITICAL FIX: Filter stores by owner_email, not owner_id
-      const stores = await Store.findAll();
-      console.log('Found stores for user:', stores);
+      setLoading(true);
+      setError(null);
 
-      if (stores && stores.length > 0) { // Added null check for 'stores'
-        const store = stores[0]; // For multi-tenancy, we assume the first store for simplicity
-        setCurrentStore(store);
-        console.log('Using store:', store.name, 'ID:', store.id);
+      // Fetch orders filtered by the store_id
+      const ordersData = await Order.filter({ store_id: storeId }, '-created_date');
+      console.log('Found orders:', ordersData?.length || 0);
+      setOrders(ordersData || []);
 
-        // Fetch orders filtered by the store_id
-        const ordersData = await Order.filter({ store_id: store.id }, '-created_date');
-        console.log('Found orders:', ordersData?.length || 0);
-        setOrders(ordersData || []); // Handle ordersData possibly being null/undefined
-
-        // Load user data for the customers in these orders
-        if (ordersData && ordersData.length > 0) { // Added null check for 'ordersData'
-          const userIds = [...new Set(ordersData.map(o => o.user_id).filter(Boolean))];
-          if (userIds.length > 0) {
-            try {
-              // Filter users by the IDs found in the fetched orders
-              const usersData = await User.filter({ id__in: userIds });
-              const usersMap = usersData.reduce((acc, u) => {
-                acc[u.id] = u;
-                return acc;
-              }, {});
-              setUsers(usersMap);
-            } catch (userError) {
-              console.error("Could not load user data for orders:", userError);
-              setUsers({}); // Ensure users is reset on error
-            }
-          } else {
+      // Load user data for the customers in these orders
+      if (ordersData && ordersData.length > 0) {
+        const userIds = [...new Set(ordersData.map(o => o.user_id).filter(Boolean))];
+        if (userIds.length > 0) {
+          try {
+            const usersData = await User.filter({ id__in: userIds });
+            const usersMap = usersData.reduce((acc, u) => {
+              acc[u.id] = u;
+              return acc;
+            }, {});
+            setUsers(usersMap);
+          } catch (userError) {
+            console.error("Could not load user data for orders:", userError);
             setUsers({});
           }
         } else {
           setUsers({});
         }
       } else {
-        // No stores found for this user
-        setOrders([]);
         setUsers({});
-        setCurrentStore(null);
-        setError(`No stores found for your account (${user.email}). Please ensure your user account has a store linked to it.`);
-        console.warn('No stores found for user:', user.email);
       }
     } catch (err) {
       console.error("Error loading orders:", err);
       setError("Failed to load orders. Please try again later.");
-      setOrders([]); // Clear orders on error
-      setUsers({}); // Clear users on error
-      setCurrentStore(null); // Clear current store on error
+      setOrders([]);
+      setUsers({});
     } finally {
       setLoading(false);
     }
@@ -148,13 +149,17 @@ export default function Orders() { // Renamed from OrdersPage to Orders
     );
   }
 
+  if (!selectedStore) {
+    return <NoStoreSelected />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
-            <p className="text-gray-600 mt-1">View and manage customer orders for {currentStore?.name || 'your store'}</p>
+            <p className="text-gray-600 mt-1">View and manage customer orders</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -164,7 +169,7 @@ export default function Orders() { // Renamed from OrdersPage to Orders
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 w-64"
-                disabled={!currentStore} // Disable search if no store is active
+                disabled={!selectedStore}
               />
             </div>
           </div>
@@ -177,15 +182,7 @@ export default function Orders() { // Renamed from OrdersPage to Orders
           </div>
         )}
 
-        {!loading && !currentStore && !error && (
-          <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative mb-8" role="alert">
-            <strong className="font-bold">No Store Found:</strong>
-            <span className="block sm:inline"> Your account is not associated with any store. Please ensure your user account has a store linked to it to view orders.</span>
-          </div>
-        )}
-
-        {currentStore && ( // Only render stats and table if a store is active
-          <>
+        <>
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <Card className="material-elevation-1 border-0">
@@ -366,7 +363,6 @@ export default function Orders() { // Renamed from OrdersPage to Orders
               </CardContent>
             </Card>
           </>
-        )}
       </div>
     </div>
   );

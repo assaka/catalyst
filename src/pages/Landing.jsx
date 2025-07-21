@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { User } from "@/api/entities";
+import { User, Auth } from "@/api/entities";
 import {
   ShoppingBag,
   Store,
@@ -169,7 +169,7 @@ export default function Landing() {
                         <span>Dashboard</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => {
-                        User.logout();
+                        Auth.logout();
                         window.location.href = createPageUrl('Auth');
                       }}>
                         <LogOut className="mr-2 h-4 w-4" />

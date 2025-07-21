@@ -1,36 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { Customer } from '@/api/entities';
-import { Store } from '@/api/entities';
-import { User } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import NoStoreSelected from '@/components/admin/NoStoreSelected';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Users, Search, Download } from 'lucide-react';
 
 export default function Customers() {
+    const { selectedStore, getSelectedStoreId } = useStoreSelection();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [currentStore, setCurrentStore] = useState(null);
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (selectedStore) {
+            loadData();
+        }
+    }, [selectedStore]);
+
+    // Listen for store changes
+    useEffect(() => {
+        const handleStoreChange = () => {
+            if (selectedStore) {
+                loadData();
+            }
+        };
+
+        window.addEventListener('storeSelectionChanged', handleStoreChange);
+        return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+    }, [selectedStore]);
 
     const loadData = async () => {
-        setLoading(true);
-        try {
-            const user = await User.me();
-            const stores = await Store.findAll();
+        const storeId = getSelectedStoreId();
+        if (!storeId) {
+            console.warn("No store selected");
+            setLoading(false);
+            return;
+        }
 
-            if (stores.length > 0) {
-                const store = stores[0];
-                setCurrentStore(store);
-                const customerData = await Customer.filter({ store_id: store.id }, '-last_order_date');
-                setCustomers(customerData || []);
-            } else {
-                setCustomers([]);
-            }
+        try {
+            setLoading(true);
+            const customerData = await Customer.filter({ store_id: storeId }, '-last_order_date');
+            setCustomers(customerData || []);
         } catch (error) {
             console.error("Error loading customers:", error);
             setCustomers([]);
@@ -72,6 +84,10 @@ export default function Customers() {
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
             </div>
         );
+    }
+
+    if (!selectedStore) {
+        return <NoStoreSelected />;
     }
 
     return (

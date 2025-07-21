@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { User } from "@/api/entities";
+import { User, Auth } from "@/api/entities";
 import { Order } from "@/api/entities";
 import { OrderItem } from "@/api/entities";
 import { Address } from "@/api/entities";
@@ -779,7 +779,7 @@ export default function CustomerDashboard() {
   };
 
   const handleLogout = async () => {
-    await User.logout();
+    await Auth.logout();
     navigate(createPageUrl('Storefront'));
   };
 

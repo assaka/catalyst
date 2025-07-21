@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MediaAsset } from '@/api/entities';
-import { Store } from '@/api/entities';
 import { UploadFile } from '@/api/integrations';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import NoStoreSelected from '@/components/admin/NoStoreSelected';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -41,45 +42,43 @@ const retryApiCall = async (apiCall, retries = 3, delayMs = 1000) => {
 };
 
 export default function ImageManager() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [assets, setAssets] = useState([]);
-  const [stores, setStores] = useState([]);
-  const [selectedStoreId, setSelectedStoreId] = useState('');
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
   const [copiedUrl, setCopiedUrl] = useState(null);
 
   useEffect(() => {
-    loadInitialData();
-  }, []);
-
-  useEffect(() => {
-    if (selectedStoreId) {
+    if (selectedStore) {
       loadAssets();
     }
-  }, [selectedStoreId]);
+  }, [selectedStore]);
 
-  const loadInitialData = async () => {
-    setLoading(true);
-    try {
-      const storesData = await retryApiCall(() => Store.list());
-      setStores(storesData || []);
-      if (storesData && storesData.length > 0) {
-        setSelectedStoreId(storesData[0].id);
-      } else {
-        setLoading(false);
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadAssets();
       }
-    } catch (error) {
-      console.error('Error loading stores:', error);
-      setFlashMessage({ type: 'error', message: 'Failed to load store data.' });
-      setLoading(false);
-    }
-  };
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
+
 
   const loadAssets = async () => {
-    setLoading(true);
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("No store selected");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const assetsData = await retryApiCall(() => MediaAsset.filter({ store_id: selectedStoreId }, "-created_date"));
+      setLoading(true);
+      const assetsData = await retryApiCall(() => MediaAsset.filter({ store_id: storeId }, "-created_date"));
       setAssets(assetsData || []);
     } catch (error) {
       console.error('Error loading media assets:', error);
@@ -91,7 +90,8 @@ export default function ImageManager() {
 
   const handleFileUpload = async (event) => {
     const file = event.target.files?.[0];
-    if (!file || !selectedStoreId) return;
+    const storeId = getSelectedStoreId();
+    if (!file || !storeId) return;
 
     setUploading(true);
     setFlashMessage(null);
@@ -104,7 +104,7 @@ export default function ImageManager() {
           file_type: file.type,
           file_size: file.size,
           alt_text: '',
-          store_id: selectedStoreId,
+          store_id: storeId,
         };
         await retryApiCall(() => MediaAsset.create(newAsset));
         setFlashMessage({ type: 'success', message: 'Image uploaded successfully!' });
@@ -139,6 +139,10 @@ export default function ImageManager() {
     setTimeout(() => setCopiedUrl(null), 2000);
   };
 
+  if (!selectedStore) {
+    return <NoStoreSelected />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
@@ -147,22 +151,6 @@ export default function ImageManager() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Image Manager</h1>
             <p className="text-gray-600 mt-1">Upload and manage your media assets.</p>
-          </div>
-          <div>
-            <Label htmlFor="store-select">Select Store</Label>
-            <Select value={selectedStoreId} onValueChange={setSelectedStoreId} disabled={stores.length === 0}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select a store" />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map(store => (
-                  <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {stores.length === 0 && !loading && (
-              <p className="text-sm text-gray-500 mt-1">No stores found. Please create a store first.</p>
-            )}
           </div>
         </div>
 
@@ -188,17 +176,17 @@ export default function ImageManager() {
                     type="file"
                     accept="image/*"
                     onChange={handleFileUpload}
-                    disabled={uploading || !selectedStoreId}
+                    disabled={uploading || !selectedStore}
                     className="hidden"
                     id="image-upload"
                   />
                   <label
                     htmlFor="image-upload"
-                    className={`cursor-pointer flex flex-col items-center ${!selectedStoreId || uploading ? 'cursor-not-allowed opacity-50' : ''}`}
+                    className={`cursor-pointer flex flex-col items-center ${!selectedStore || uploading ? 'cursor-not-allowed opacity-50' : ''}`}
                   >
                     <Upload className="w-8 h-8 text-gray-400 mb-2" />
                     <span className="text-sm text-gray-600">
-                      {uploading ? 'Uploading...' : (selectedStoreId ? 'Click to upload' : 'Select a store first')}
+                      {uploading ? 'Uploading...' : 'Click to upload'}
                     </span>
                   </label>
                   {uploading && <Loader2 className="w-6 h-6 animate-spin mx-auto mt-2" />}

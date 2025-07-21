@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { User } from "@/api/entities";
+import { User, Auth } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { Order } from "@/api/entities";
 import { CreditTransaction } from "@/api/entities";
@@ -317,7 +317,7 @@ export default function ClientDashboard() {
         <div className="mt-8 text-center">
           <Button variant="ghost" onClick={() => {
             console.log('🔄 ClientDashboard logout clicked');
-            User.logout().then(() => {
+            Auth.logout().then(() => {
               console.log('✅ ClientDashboard logout completed, redirecting...');
               window.location.href = '/auth';
             }).catch(error => {

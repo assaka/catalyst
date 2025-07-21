@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Fragment } from "react";
 import { NavLink, useLocation, useNavigate, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { User } from "@/api/entities";
+import { User, Auth } from "@/api/entities";
 import { Store } from "@/api/entities";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
@@ -532,7 +532,7 @@ export default function Layout({ children, currentPageName }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                     console.log('🔄 Layout logout clicked');
-                    User.logout().then(() => {
+                    Auth.logout().then(() => {
                         console.log('✅ Layout logout completed, redirecting...');
                         window.location.href = '/auth';
                     }).catch(error => {
@@ -659,6 +659,46 @@ export default function Layout({ children, currentPageName }) {
           </div>
           <div className="flex items-center space-x-4">
             <StoreSelector />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <UserIcon className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.name || 'User'}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {user?.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => window.open(createPageUrl("Storefront"), '_blank')}>
+                  <ShoppingBag className="mr-2 h-4 w-4" />
+                  <span>View Storefront</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(createPageUrl("Billing"))}>
+                  <Wallet className="mr-2 h-4 w-4" />
+                  <span>Billing</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => {
+                  console.log('🔄 Desktop logout clicked');
+                  Auth.logout().then(() => {
+                    console.log('✅ Desktop logout completed, redirecting...');
+                    window.location.href = '/auth';
+                  }).catch(error => {
+                    console.error('❌ Desktop logout error:', error);
+                    window.location.href = '/auth';
+                  });
+                }}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         

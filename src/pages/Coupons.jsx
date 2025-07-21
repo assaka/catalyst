@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from "react";
 import { Coupon } from "@/api/entities";
-import { Store } from "@/api/entities";
 import { Product } from "@/api/entities";
 import { Category } from "@/api/entities";
-import { User } from "@/api/entities"; // Import User entity for data isolation
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { 
   Percent, 
   Plus, 
@@ -30,59 +30,65 @@ import CouponForm from "../components/coupons/CouponForm";
 import FlashMessage from "../components/storefront/FlashMessage";
 
 export default function CouponsPage() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [coupons, setCoupons] = useState([]);
-  const [store, setStore] = useState(null); // Changed from 'stores' to 'store' (singular)
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [editingCoupon, setEditingCoupon] = useState(null); // Renamed from 'selectedCoupon'
-  const [showForm, setShowForm] = useState(false); // Renamed from 'showCouponForm'
+  const [editingCoupon, setEditingCoupon] = useState(null);
+  const [showForm, setShowForm] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
+
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadData();
+      }
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
 
   const loadData = async () => {
-    try {
-      setLoading(true);
-      
-      // CRITICAL FIX: Get current user first, then filter by user's stores
-      const user = await User.me();
-      const userStores = await Store.findAll(); // Fetch stores owned by the current user
-      
-      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
-        // Assuming the user is associated with the first store found, or primary store
-        const currentStore = userStores[0]; 
-        setStore(currentStore);
-        
-        // Filter all data by current store's ID
-        const [couponsData, categoriesData, productsData] = await Promise.all([
-          Coupon.filter({ store_id: currentStore.id }),
-          Category.filter({ store_id: currentStore.id }),
-          Product.filter({ store_id: currentStore.id })
-        ]);
-        
-        setCoupons(couponsData || []);
-        setCategories(categoriesData || []);
-        setProducts(productsData || []);
-      } else {
-        // If no store is found for the user, clear all related data and warn
-        setCoupons([]);
-        setCategories([]);
-        setProducts([]);
-        setStore(null);
-        console.warn("No store found for user:", user.email);
-        setFlashMessage({ type: 'error', message: 'No store found for your account. Please contact support.' });
-      }
-    } catch (error) {
-      console.error("Error loading data:", error);
-      // Ensure state is reset on error
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("CouponsPage: No store selected.");
       setCoupons([]);
       setCategories([]);
       setProducts([]);
-      setStore(null);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('Loading coupons data for store:', storeId);
+      
+      // Filter all data by selected store's ID
+      const [couponsData, categoriesData, productsData] = await Promise.all([
+        Coupon.filter({ store_id: storeId }),
+        Category.filter({ store_id: storeId }),
+        Product.filter({ store_id: storeId })
+      ]);
+      
+      setCoupons(couponsData || []);
+      setCategories(categoriesData || []);
+      setProducts(productsData || []);
+      console.log('Loaded:', (couponsData || []).length, 'coupons');
+    } catch (error) {
+      console.error("Error loading coupons data:", error);
+      setCoupons([]);
+      setCategories([]);
+      setProducts([]);
       setFlashMessage({ type: 'error', message: 'Failed to load data. Please try again.' });
     } finally {
       setLoading(false);
@@ -90,25 +96,26 @@ export default function CouponsPage() {
   };
 
   const handleSubmit = async (couponData) => {
-    if (!store) {
-      setFlashMessage({ type: 'error', message: 'Cannot save coupon: No associated store found.' });
-      return; // Prevent saving if no store is available
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setFlashMessage({ type: 'error', message: 'Cannot save coupon: No store selected.' });
+      return;
     }
     
     try {
       if (editingCoupon) {
         // Update existing coupon
-        await Coupon.update(editingCoupon.id, { ...couponData, store_id: store.id });
+        await Coupon.update(editingCoupon.id, { ...couponData, store_id: storeId });
         setFlashMessage({ type: 'success', message: 'Coupon updated successfully!' });
       } else {
         // Create new coupon
-        await Coupon.create({ ...couponData, store_id: store.id });
+        await Coupon.create({ ...couponData, store_id: storeId });
         setFlashMessage({ type: 'success', message: 'Coupon created successfully!' });
       }
       
-      await loadData(); // Reload data to reflect changes
-      setShowForm(false); // Close the form
-      setEditingCoupon(null); // Clear editing coupon state
+      await loadData();
+      setShowForm(false);
+      setEditingCoupon(null);
     } catch (error) {
       console.error(`Error ${editingCoupon ? 'updating' : 'creating'} coupon:`, error);
       setFlashMessage({ type: 'error', message: `Failed to ${editingCoupon ? 'update' : 'create'} coupon` });
@@ -174,6 +181,10 @@ export default function CouponsPage() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  if (!selectedStore) {
+    return <NoStoreSelected />;
   }
 
   return (
@@ -357,7 +368,7 @@ export default function CouponsPage() {
             </DialogHeader>
             <CouponForm
               coupon={editingCoupon}
-              stores={store ? [store] : []} // Pass the current user's store as an array if available
+              stores={selectedStore ? [selectedStore] : []}
               products={products}
               categories={categories}
               onSubmit={handleSubmit} // Use the combined handleSubmit function

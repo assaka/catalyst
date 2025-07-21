@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { CmsBlock } from "@/api/entities";
-import { Store } from "@/api/entities";
-import { User } from "@/api/entities"; // Added User import
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import CmsBlockForm from "@/components/cms/CmsBlockForm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,59 +12,73 @@ import { Plus, Edit, Trash2, FileText } from "lucide-react"; // Removed Eye, Cod
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function CmsBlocks() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [blocks, setBlocks] = useState([]);
-  const [store, setStore] = useState(null); // Changed from 'stores' array to single 'store' object
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [editingBlock, setEditingBlock] = useState(null); // Renamed from 'selectedBlock'
+  const [editingBlock, setEditingBlock] = useState(null);
 
   useEffect(() => {
-    loadBlocks(); // Call loadBlocks instead of loadData
-  }, []);
+    if (selectedStore) {
+      loadBlocks();
+    }
+  }, [selectedStore]);
 
-  const loadBlocks = async () => { // Renamed from loadData
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadBlocks();
+      }
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
+
+  const loadBlocks = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("CmsBlocks: No store selected.");
+      setBlocks([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const user = await User.me();
-      if (!user) {
-        console.error("User not found. Cannot load CMS blocks.");
-        setBlocks([]);
-        setStore(null);
-        return;
-      }
-
-      const stores = await Store.findAll();
-      if (stores && stores.length > 0) {
-        const currentStore = stores[0]; // Assuming user has one primary store or we pick the first
-        setStore(currentStore);
-        const blocksData = await CmsBlock.filter({ store_id: currentStore.id });
-        setBlocks(blocksData || []);
-      } else {
-        setBlocks([]);
-        setStore(null); // Ensure store is null if no store found
-        console.warn("No store found for user. CMS blocks cannot be loaded.");
-      }
+      console.log('Loading CMS blocks for store:', storeId);
+      const blocksData = await CmsBlock.filter({ store_id: storeId });
+      setBlocks(blocksData || []);
+      console.log('Loaded:', (blocksData || []).length, 'CMS blocks');
     } catch (error) {
       console.error("Error loading CMS blocks:", error);
+      setBlocks([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleFormSubmit = async (formData) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.error("Cannot save CMS block: No store selected.");
+      return;
+    }
+
     try {
       // Ensure the store_id is set for new blocks
-      if (!formData.store_id && store) {
-        formData.store_id = store.id;
+      if (!formData.store_id) {
+        formData.store_id = storeId;
       }
 
-      if (editingBlock) { // Changed from 'selectedBlock'
-        await CmsBlock.update(editingBlock.id, formData); // Changed from 'selectedBlock'
+      if (editingBlock) {
+        await CmsBlock.update(editingBlock.id, formData);
       } else {
         await CmsBlock.create(formData);
       }
       closeForm();
-      loadBlocks(); // Call loadBlocks
+      loadBlocks();
     } catch (error) {
       console.error("Failed to save CMS block", error);
     }
@@ -109,6 +123,10 @@ export default function CmsBlocks() {
     return '📄';
   };
 
+  if (!selectedStore) {
+    return <NoStoreSelected />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -120,7 +138,7 @@ export default function CmsBlocks() {
           <Button 
             onClick={() => handleEdit(null)}
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-            disabled={!store} // Disable "Add Block" if no store is found
+            disabled={!selectedStore}
           >
             <Plus className="mr-2 h-4 w-4" /> Add Block
           </Button>
@@ -190,7 +208,7 @@ export default function CmsBlocks() {
               <Button
                 onClick={() => handleEdit(null)}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-                disabled={!store} // Disable "Add Block" if no store is found
+                disabled={!selectedStore}
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Block
@@ -206,7 +224,7 @@ export default function CmsBlocks() {
             </DialogHeader>
             <CmsBlockForm
               block={editingBlock} // Changed from 'selectedBlock'
-              stores={store ? [store] : []} // Pass the single store object in an array for compatibility
+              stores={selectedStore ? [selectedStore] : []}
               onSubmit={handleFormSubmit}
               onCancel={closeForm}
             />

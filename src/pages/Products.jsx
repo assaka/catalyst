@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { Product } from "@/api/entities";
 import { Category } from "@/api/entities";
-import { Store } from "@/api/entities";
 import { Tax } from "@/api/entities";
-import { User } from "@/api/entities";
 import { Attribute } from "@/api/entities";
 import { AttributeSet } from "@/api/entities";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
+import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import {
   Package,
   Plus,
@@ -59,9 +59,9 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function Products() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [stores, setStores] = useState([]);
   const [taxes, setTaxes] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
@@ -76,89 +76,73 @@ export default function Products() {
     category: "all",
     priceRange: "all"
   });
-  const [currentStore, setCurrentStore] = useState(null);
 
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
+
+  // Listen for store changes
+  useEffect(() => {
+    const handleStoreChange = () => {
+      if (selectedStore) {
+        loadData();
+      }
+    };
+
+    window.addEventListener('storeSelectionChanged', handleStoreChange);
+    return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
+  }, [selectedStore]);
 
   const loadData = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn("No store selected");
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
 
-      const user = await User.me();
-      console.log('Current user:', user.email);
+      const [productsData, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
+        retryApiCall(() => Product.filter({ store_id: storeId }, "-created_date")).catch(() => []),
+        retryApiCall(() => Category.filter({ store_id: storeId })).catch(() => []),
+        retryApiCall(() => Tax.filter({ store_id: storeId })).catch(() => []),
+        retryApiCall(() => Attribute.filter({ store_id: storeId })).catch(() => []),
+        retryApiCall(() => AttributeSet.filter({ store_id: storeId })).catch(() => [])
+      ]);
 
-      const userStores = await retryApiCall(() => Store.findAll());
-      console.log('Found stores for user:', userStores);
+      setProducts(Array.isArray(productsData) ? productsData : []);
+      setCategories(Array.isArray(categoriesData) ? categoriesData : []);
+      setTaxes(Array.isArray(taxesData) ? taxesData : []);
+      setAttributes(Array.isArray(attributesData) ? attributesData : []);
+      setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
 
-      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
-        const store = userStores[0];
-        setCurrentStore(store);
-        setStores(userStores);
-        console.log('Using store:', store.name, 'ID:', store.id);
-
-        try {
-          const [productsData, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
-            retryApiCall(() => Product.filter({ store_id: store.id }, "-created_date")).catch(() => []),
-            retryApiCall(() => Category.filter({ store_id: store.id })).catch(() => []),
-            retryApiCall(() => Tax.filter({ store_id: store.id })).catch(() => []),
-            retryApiCall(() => Attribute.filter({ store_id: store.id })).catch(() => []),
-            retryApiCall(() => AttributeSet.filter({ store_id: store.id })).catch(() => [])
-          ]);
-
-          setProducts(Array.isArray(productsData) ? productsData : []);
-          setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-          setTaxes(Array.isArray(taxesData) ? taxesData : []);
-          setAttributes(Array.isArray(attributesData) ? attributesData : []);
-          setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
-
-          console.log('Loaded:', (productsData || []).length, 'products,', (attributeSetsData || []).length, 'attribute sets');
-        } catch (dataError) {
-          console.error("Error loading store data:", dataError);
-          // Set all to empty arrays on error
-          setProducts([]);
-          setCategories([]);
-          setTaxes([]);
-          setAttributes([]);
-          setAttributeSets([]);
-        }
-      } else {
-        setProducts([]);
-        setCategories([]);
-        setTaxes([]);
-        setStores([]);
-        setAttributes([]);
-        setAttributeSets([]);
-        setCurrentStore(null);
-        console.warn("ProductsPage: Current user has no stores.");
-      }
+      console.log('Loaded:', (productsData || []).length, 'products,', (attributeSetsData || []).length, 'attribute sets');
     } catch (error) {
       console.error("Error loading data:", error);
       setProducts([]);
       setCategories([]);
       setTaxes([]);
-      setStores([]);
       setAttributes([]);
       setAttributeSets([]);
-      setCurrentStore(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handleCreateProduct = async (productData) => {
-    try {
-      if (currentStore && !productData.store_id) {
-        productData.store_id = currentStore.id;
-      } else if (!currentStore) {
-        console.error("Cannot create product: No store is selected or available.");
-        throw new Error("No store available to create product under.");
-      }
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      throw new Error("No store selected");
+    }
 
-      console.log('Creating product with store_id:', productData.store_id);
-      await Product.create(productData);
+    try {
+      console.log('Creating product with store_id:', storeId);
+      await Product.create({ ...productData, store_id: storeId });
       await loadData();
       setShowProductForm(false);
     } catch (error) {
@@ -264,6 +248,10 @@ export default function Products() {
     );
   }
 
+  if (!selectedStore) {
+    return <NoStoreSelected />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -278,7 +266,7 @@ export default function Products() {
               setShowProductForm(true);
             }}
             className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-            disabled={!currentStore}
+            disabled={!selectedStore}
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Product
@@ -477,9 +465,7 @@ export default function Products() {
                 <p className="text-gray-600 mb-6">
                   {searchQuery || Object.values(filters).some(f => f !== "all")
                     ? "Try adjusting your search or filters"
-                    : currentStore
-                      ? "Start by adding your first product to your catalog"
-                      : "You don't have any stores yet. Please create a store first to manage products."}
+                    : "Start by adding your first product to your catalog"}
                 </p>
                 <Button
                   onClick={() => {
@@ -487,7 +473,7 @@ export default function Products() {
                     setShowProductForm(true);
                   }}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-                  disabled={!currentStore}
+                  disabled={!selectedStore}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Product
@@ -507,7 +493,7 @@ export default function Products() {
             <ProductForm
               product={selectedProduct}
               categories={categories}
-              stores={stores}
+              stores={[]}
               taxes={taxes}
               attributes={attributes}
               attributeSets={attributeSets}
