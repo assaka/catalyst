@@ -158,21 +158,27 @@ class AuthService {
   }
 
   async logout() {
-    console.log('🔄 Auth.logout() called');
+    console.log('🚀 Auth.logout() called - START OF LOGOUT PROCESS');
     
     try {
       // Call backend logout endpoint to log the event
-      console.log('🔄 Calling backend logout...');
+      console.log('🔄 Calling backend logout endpoint...');
       await apiClient.post('auth/logout');
       console.log('✅ Backend logout successful');
     } catch (error) {
       console.error('❌ Backend logout failed:', error.message);
-      // Continue with client-side logout even if backend fails
+      console.log('🔄 Continuing with client-side logout despite backend failure...');
     }
     
     // Clear the token from client-side storage
-    console.log('🔄 Clearing client-side token...');
+    console.log('🔄 CRITICAL: Clearing client-side token with setToken(null)...');
     apiClient.setToken(null);
+    console.log('✅ CRITICAL: Token cleared, checking state...');
+    console.log('🔍 Post-token-clear state:', {
+      isLoggedOut: apiClient.isLoggedOut,
+      hasToken: !!apiClient.token,
+      logoutFlagInStorage: localStorage.getItem('user_logged_out')
+    });
     
     // Clear all user-related cached data
     console.log('🔄 Clearing all cached user data...');
@@ -222,7 +228,14 @@ class AuthService {
       console.log('✅ All relevant localStorage keys cleared');
     }
     
-    console.log('✅ Auth.logout() completed');
+    console.log('🎉 Auth.logout() COMPLETED SUCCESSFULLY');
+    console.log('🔍 Final logout state verification:', {
+      isLoggedOut: apiClient.isLoggedOut,
+      hasToken: !!apiClient.token,
+      tokenInStorage: localStorage.getItem('auth_token'),
+      logoutFlagInStorage: localStorage.getItem('user_logged_out'),
+      allStorageKeys: Object.keys(localStorage)
+    });
     return { success: true };
   }
 
