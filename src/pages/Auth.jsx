@@ -139,22 +139,39 @@ export default function Auth() {
         if (!user.role) {
           console.log('🔄 Auth.jsx: No role found, setting default role to store_owner');
           try {
-            await User.update(user.id, {
+            const updateResponse = await User.update(user.id, {
               role: 'store_owner',
               account_type: 'agency'
             });
-            console.log('✅ Auth.jsx: Default role set successfully');
+            console.log('✅ Auth.jsx: Default role set successfully', updateResponse);
+            
+            // Refresh user data after update
+            console.log('🔄 Auth.jsx: Refreshing user data after role update...');
+            user = await User.me();
+            console.log('🔍 Auth.jsx: Updated user data:', user);
           } catch (error) {
             console.error('❌ Auth.jsx: Failed to set default role:', error);
           }
         }
 
         // Always redirect to appropriate dashboard based on role
-        console.log('🔄 Auth.jsx: Redirecting based on role/type');
+        console.log('🔄 Auth.jsx: FINAL REDIRECT DECISION');
+        console.log('🔍 Auth.jsx: Final user data for redirect:', {
+          role: user.role,
+          account_type: user.account_type,
+          id: user.id,
+          email: user.email
+        });
         
         // Store owners and admins go to main Dashboard
         if (user.role === 'store_owner' || user.role === 'admin' || user.account_type === 'agency' || !user.role) {
-          console.log('🔄 Auth.jsx: store_owner/admin -> Redirecting to Dashboard');
+          console.log('✅ Auth.jsx: store_owner/admin -> Redirecting to Dashboard');
+          console.log('🔍 Auth.jsx: Condition met:', {
+            'user.role === store_owner': user.role === 'store_owner',
+            'user.role === admin': user.role === 'admin', 
+            'user.account_type === agency': user.account_type === 'agency',
+            '!user.role': !user.role
+          });
           navigate(createPageUrl("Dashboard"));
         } 
         // Regular customers go to CustomerDashboard
