@@ -98,38 +98,33 @@ export default function Auth() {
       console.log('✅ Auth.jsx: User.me() succeeded:', user ? 'user found' : 'no user');
       
       if (user) {
-        // For Google OAuth users without a role, set up basic account and skip onboarding
-        if (!user.role && isGoogleOAuth) {
-          try {
-            // Set up basic account for Google OAuth users
-            await User.updateMyUserData({
-              account_type: 'agency',
-              role: 'store_owner',
-              credits: 20
-            });
-
-            // Create a default store if none exists
-            const stores = await User.getMyStores?.() || [];
-            if (stores.length === 0) {
-              const storeName = user.company_name || `${user.full_name}'s Store` || `${user.email} Store`;
-              const storeSlug = storeName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
-              await Store.create({
-                name: storeName,
-                slug: storeSlug,
-                owner_email: user.email,
+        // For Google OAuth users, ensure they have a role and redirect to Dashboard
+        if (isGoogleOAuth) {
+          console.log('🔍 Auth.jsx: Google OAuth user detected, role:', user.role);
+          
+          // If no role, set up the user as store_owner
+          if (!user.role) {
+            console.log('🔄 Auth.jsx: Google OAuth user has no role, setting store_owner...');
+            try {
+              // Use the backend PATCH route to set role
+              await apiClient.patch('auth/me', {
+                role: 'store_owner',
+                account_type: 'agency'
               });
+              console.log('✅ Auth.jsx: Google OAuth role set successfully');
+              
+              // Update user object
+              user.role = 'store_owner';
+              user.account_type = 'agency';
+            } catch (setupError) {
+              console.error("❌ Auth.jsx: Failed to set Google OAuth user role:", setupError);
             }
-
-            // Redirect to Dashboard with a success message
-            navigate(createPageUrl("Dashboard") + "?setup=complete");
-            return;
-          } catch (setupError) {
-            console.error("Failed to setup Google OAuth user:", setupError);
-            // Fall back to onboarding if auto-setup fails
-            navigate(createPageUrl("Onboarding"));
-            return;
           }
+
+          // Always redirect Google OAuth users to Dashboard
+          console.log('✅ Auth.jsx: Google OAuth -> Redirecting to Dashboard');
+          navigate(createPageUrl("Dashboard") + "?setup=complete");
+          return;
         }
 
         // Always redirect to dashboard for authenticated users
