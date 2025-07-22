@@ -107,17 +107,31 @@ export default function Auth() {
             console.log('🔄 Auth.jsx: Google OAuth user has no role, setting store_owner...');
             try {
               // Use the backend PATCH route to set role
-              await apiClient.patch('auth/me', {
+              const updateResponse = await apiClient.patch('auth/me', {
                 role: 'store_owner',
                 account_type: 'agency'
               });
-              console.log('✅ Auth.jsx: Google OAuth role set successfully');
+              console.log('✅ Auth.jsx: Google OAuth role set successfully', updateResponse);
               
-              // Update user object
-              user.role = 'store_owner';
-              user.account_type = 'agency';
+              // Fetch fresh user data to ensure we have the updated role
+              console.log('🔄 Auth.jsx: Fetching fresh user data after role update...');
+              const updatedUser = await User.me();
+              console.log('🔍 Auth.jsx: Fresh user data:', updatedUser);
+              
+              // Update user object with fresh data
+              user.role = updatedUser.role || 'store_owner';
+              user.account_type = updatedUser.account_type || 'agency';
+              
+              console.log('✅ Auth.jsx: User object updated with fresh data:', {
+                role: user.role,
+                account_type: user.account_type
+              });
             } catch (setupError) {
               console.error("❌ Auth.jsx: Failed to set Google OAuth user role:", setupError);
+              // Fallback: manually set the role even if backend update failed
+              user.role = 'store_owner';
+              user.account_type = 'agency';
+              console.log('🔄 Auth.jsx: Fallback role assignment applied');
             }
           }
 
@@ -155,28 +169,47 @@ export default function Auth() {
           role: user.role,
           account_type: user.account_type,
           id: user.id,
-          email: user.email
+          email: user.email,
+          fullUserObject: user
         });
         
+        // ENHANCED DEBUGGING - Log exact values and types
+        console.log('🔍 ENHANCED DEBUG - Exact user properties:');
+        console.log('- user.role (value):', user.role);
+        console.log('- user.role (type):', typeof user.role);
+        console.log('- user.account_type (value):', user.account_type);
+        console.log('- user.account_type (type):', typeof user.account_type);
+        console.log('- user.email:', user.email);
+        
         // Store owners and admins go to main Dashboard
-        if (user.role === 'store_owner' || user.role === 'admin' || user.account_type === 'agency' || !user.role) {
-          console.log('✅ Auth.jsx: store_owner/admin -> Redirecting to Dashboard');
-          console.log('🔍 Auth.jsx: Condition met:', {
-            'user.role === store_owner': user.role === 'store_owner',
-            'user.role === admin': user.role === 'admin', 
-            'user.account_type === agency': user.account_type === 'agency',
-            '!user.role': !user.role
-          });
+        const isStoreOwner = user.role === 'store_owner';
+        const isAdmin = user.role === 'admin';
+        const isAgency = user.account_type === 'agency';
+        const hasNoRole = !user.role;
+        
+        console.log('🔍 Auth.jsx: Individual condition checks:', {
+          'user.role === "store_owner"': isStoreOwner,
+          'user.role === "admin"': isAdmin, 
+          'user.account_type === "agency"': isAgency,
+          '!user.role': hasNoRole,
+          'ANY_CONDITION_TRUE': isStoreOwner || isAdmin || isAgency || hasNoRole
+        });
+        
+        if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
+          console.log('✅ Auth.jsx: store_owner/admin/agency -> Redirecting to Dashboard');
+          console.log('🎯 REDIRECTING TO DASHBOARD');
           navigate(createPageUrl("Dashboard"));
         } 
         // Regular customers go to CustomerDashboard
         else if (user.role === 'customer') {
           console.log('🔄 Auth.jsx: customer -> Redirecting to CustomerDashboard');
+          console.log('🎯 REDIRECTING TO CUSTOMER DASHBOARD');
           navigate(createPageUrl("CustomerDashboard"));
         }
         // Default fallback to Dashboard
         else {
           console.log('🔄 Auth.jsx: unknown role -> Redirecting to Dashboard');
+          console.log('🎯 REDIRECTING TO DASHBOARD (fallback)');
           navigate(createPageUrl("Dashboard"));
         }
       }
