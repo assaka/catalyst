@@ -151,12 +151,21 @@ export default function Auth() {
 
         // Always redirect to appropriate dashboard based on role
         console.log('🔄 Auth.jsx: Redirecting based on role/type');
-        if (user.role === 'admin' || user.role === 'store_owner' || user.account_type === 'agency' || !user.role) {
-          console.log('🔄 Auth.jsx: Redirecting to Dashboard');
+        
+        // Store owners and admins go to main Dashboard
+        if (user.role === 'store_owner' || user.role === 'admin' || user.account_type === 'agency' || !user.role) {
+          console.log('🔄 Auth.jsx: store_owner/admin -> Redirecting to Dashboard');
           navigate(createPageUrl("Dashboard"));
-        } else {
-          console.log('🔄 Auth.jsx: Redirecting to CustomerDashboard');
+        } 
+        // Regular customers go to CustomerDashboard
+        else if (user.role === 'customer') {
+          console.log('🔄 Auth.jsx: customer -> Redirecting to CustomerDashboard');
           navigate(createPageUrl("CustomerDashboard"));
+        }
+        // Default fallback to Dashboard
+        else {
+          console.log('🔄 Auth.jsx: unknown role -> Redirecting to Dashboard');
+          navigate(createPageUrl("Dashboard"));
         }
       }
     } catch (error) {
