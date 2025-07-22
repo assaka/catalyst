@@ -132,16 +132,26 @@ export default function Auth() {
           }
         }
 
-        // Regular flow for non-OAuth users or users that already have a role
-        console.log('🔍 Auth.jsx: Checking user role:', user.role);
+        // Always redirect to dashboard for authenticated users
+        console.log('🔍 Auth.jsx: User authenticated, checking role:', user.role);
+        
+        // If user has no role, set default role automatically
         if (!user.role) {
-          console.log('🔄 Auth.jsx: No role found, redirecting to Onboarding');
-          navigate(createPageUrl("Onboarding"));
-          return;
+          console.log('🔄 Auth.jsx: No role found, setting default role to store_owner');
+          try {
+            await User.update(user.id, {
+              role: 'store_owner',
+              account_type: 'agency'
+            });
+            console.log('✅ Auth.jsx: Default role set successfully');
+          } catch (error) {
+            console.error('❌ Auth.jsx: Failed to set default role:', error);
+          }
         }
 
-        console.log('🔄 Auth.jsx: User has role, redirecting based on role/type');
-        if (user.role === 'admin' || user.role === 'store_owner' || user.account_type === 'agency') {
+        // Always redirect to appropriate dashboard based on role
+        console.log('🔄 Auth.jsx: Redirecting based on role/type');
+        if (user.role === 'admin' || user.role === 'store_owner' || user.account_type === 'agency' || !user.role) {
           console.log('🔄 Auth.jsx: Redirecting to Dashboard');
           navigate(createPageUrl("Dashboard"));
         } else {
@@ -216,7 +226,9 @@ export default function Auth() {
           email: formData.email,
           password: formData.password,
           first_name: formData.firstName,
-          last_name: formData.lastName
+          last_name: formData.lastName,
+          role: 'store_owner',
+          account_type: 'agency'
         });
         if (response.success) {
           setSuccess("Registration successful! Redirecting...");

@@ -740,8 +740,12 @@ export default function Layout({ children, currentPageName }) {
                         console.log('- hasToken:', !!apiClient.token);
                         console.log('- tokenInStorage:', localStorage.getItem('auth_token'));
                         console.log('- logoutFlagInStorage:', localStorage.getItem('user_logged_out'));
-                        console.log('🎉 LOGOUT PROCESS COMPLETE - NO REDIRECT FOR DEBUGGING');
-                        console.log('🔧 Manual redirect: window.location.href = "/auth"');
+                        console.log('🎉 LOGOUT PROCESS COMPLETE - REDIRECTING IN 2 SECONDS');
+                        
+                        setTimeout(() => {
+                          console.log('🖥️ Redirecting to /auth...');
+                          window.location.href = '/auth';
+                        }, 2000);
                         
                       } catch (error) {
                         console.error('❌ Desktop logout error:', error);

@@ -63,7 +63,7 @@ router.post('/register', [
       });
     }
 
-    const { email, password, first_name, last_name, phone, role = 'customer' } = req.body;
+    const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency' } = req.body;
 
     // Check if user exists
     const existingUser = await User.findOne({ where: { email } });
@@ -81,7 +81,8 @@ router.post('/register', [
       first_name,
       last_name,
       phone,
-      role
+      role,
+      account_type
     });
 
     // Generate token
@@ -212,6 +213,43 @@ router.get('/me', require('../middleware/auth'), async (req, res) => {
     success: true,
     data: req.user
   });
+});
+
+// @route   PATCH /api/auth/me
+// @desc    Update current user
+// @access  Private
+router.patch('/me', require('../middleware/auth'), async (req, res) => {
+  try {
+    const { role, account_type } = req.body;
+    const updateData = {};
+    
+    if (role) updateData.role = role;
+    if (account_type) updateData.account_type = account_type;
+    
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No valid fields to update'
+      });
+    }
+    
+    await User.update(updateData, { where: { id: req.user.id } });
+    
+    // Fetch updated user
+    const updatedUser = await User.findByPk(req.user.id);
+    
+    res.json({
+      success: true,
+      data: updatedUser,
+      message: 'User updated successfully'
+    });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
 });
 
 // @route   GET /api/auth/google

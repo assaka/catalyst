@@ -316,6 +316,47 @@ class ApiClient {
       tokenInStorage: localStorage.getItem('auth_token')
     });
   }
+
+  // Manual role assignment for testing
+  async setUserRole(role = 'store_owner', accountType = 'agency') {
+    console.log('🔧 MANUAL ROLE: Setting user role to', role);
+    try {
+      const response = await this.patch('auth/me', {
+        role: role,
+        account_type: accountType
+      });
+      console.log('✅ MANUAL ROLE: Role set successfully', response);
+      return response;
+    } catch (error) {
+      console.error('❌ MANUAL ROLE: Failed to set role', error);
+      throw error;
+    }
+  }
+
+  // Fix existing user role immediately
+  async fixUserRole() {
+    console.log('🔧 FIXING USER ROLE: Checking current user...');
+    try {
+      const user = await this.get('auth/me');
+      console.log('Current user:', user);
+      
+      if (!user.role || user.role === 'customer') {
+        console.log('🔧 FIXING USER ROLE: Setting role to store_owner...');
+        const response = await this.patch('auth/me', {
+          role: 'store_owner',
+          account_type: 'agency'
+        });
+        console.log('✅ FIXED USER ROLE: Role updated successfully', response);
+        return response;
+      } else {
+        console.log('✅ User already has role:', user.role);
+        return user;
+      }
+    } catch (error) {
+      console.error('❌ FIXING USER ROLE: Failed', error);
+      throw error;
+    }
+  }
 }
 
 // Create singleton instance
