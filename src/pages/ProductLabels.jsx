@@ -2,8 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { ProductLabel } from '@/api/entities';
 import { Attribute } from '@/api/entities';
-import { Store } from '@/api/entities';
-import { User } from '@/api/entities'; // Added User import for data isolation
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import ProductLabelForm from '@/components/products/ProductLabelForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,76 +13,60 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 
 export default function ProductLabels() {
   const [labels, setLabels] = useState([]);
-  const [attributes, setAttributes] = useState([]); // Kept as ProductLabelForm requires this
-  const [stores, setStores] = useState([]); // Kept as ProductLabelForm requires this, now filtered by user
-  const [store, setStore] = useState(null); // Added to hold the current user's primary store
+  const [attributes, setAttributes] = useState([]);
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingLabel, setEditingLabel] = useState(null); // Renamed from selectedLabel for clarity
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // CRITICAL FIX: Get current user first, then filter data by user's associated stores
-      const user = await User.me();
-      
-      // Load global attributes (typically not user-specific)
-      const attributesData = await Attribute.list(); 
-      setAttributes(attributesData);
-
-      let userStores = [];
-      let currentPrimaryStore = null;
-
-      if (user && user.email) {
-        // Filter stores to only those owned by the current user
-        userStores = await Store.findAll();
-        if (userStores && userStores.length > 0) {
-          // For simplicity, we operate on the first store found for the user
-          currentPrimaryStore = userStores[0]; 
-        }
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        console.warn("No store selected");
+        setLoading(false);
+        return;
       }
       
-      setStores(userStores); // Set the filtered list of stores for the form
-      setStore(currentPrimaryStore); // Set the singular 'store' state for direct reference to the primary store
-
-      if (currentPrimaryStore) {
-        // Filter product labels by the current user's primary store ID
-        const labelsData = await ProductLabel.filter({ store_id: currentPrimaryStore.id });
-        setLabels(labelsData || []);
-      } else {
-        setLabels([]);
-        console.warn("No store found for user, or user not logged in:", user?.email || 'N/A');
-      }
+      // Load attributes and labels for the selected store
+      const [attributesData, labelsData] = await Promise.all([
+        Attribute.filter({ store_id: storeId }),
+        ProductLabel.filter({ store_id: storeId })
+      ]);
+      
+      setAttributes(attributesData || []);
+      setLabels(labelsData || []);
     } catch (error) {
-      console.error("Failed to load product labels or user data", error);
+      console.error("Failed to load product labels or attributes", error);
       setLabels([]);
       setAttributes([]);
-      setStores([]);
-      setStore(null); // Ensure store is null on error
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSubmit = async (labelData) => { // Renamed from handleFormSubmit, parameter renamed from formData to labelData
-    if (!store) { 
-      console.error("Cannot save product label: No associated store found for the current user.");
-      // Optionally, provide user feedback that no store is linked
+  const handleSubmit = async (labelData) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) { 
+      console.error("Cannot save product label: No store selected.");
       return;
     }
 
     try {
-      if (editingLabel) { // Check if we are editing an existing label
-        await ProductLabel.update(editingLabel.id, { ...labelData, store_id: store.id });
-      } else { // Otherwise, create a new label
-        await ProductLabel.create({ ...labelData, store_id: store.id });
+      if (editingLabel) {
+        await ProductLabel.update(editingLabel.id, { ...labelData, store_id: storeId });
+      } else {
+        await ProductLabel.create({ ...labelData, store_id: storeId });
       }
-      closeForm(); // Close the form after successful submission
-      loadData(); // Reload data to reflect changes
+      closeForm();
+      loadData();
     } catch (error) {
       console.error("Failed to save product label", error);
     }
@@ -260,16 +243,15 @@ export default function ProductLabels() {
         )}
 
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingLabel ? 'Edit Product Label' : 'Add New Product Label'}</DialogTitle>
             </DialogHeader>
             <ProductLabelForm
-              label={editingLabel} // Pass the label being edited
-              attributes={attributes} // Pass global attributes
-              stores={stores} // Pass the list of stores (filtered for the current user)
-              onSubmit={handleSubmit} // Pass the submission handler
-              onCancel={closeForm} // Pass the cancellation handler
+              label={editingLabel}
+              attributes={attributes}
+              onSubmit={handleSubmit}
+              onCancel={closeForm}
             />
           </DialogContent>
         </Dialog>

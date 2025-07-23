@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { X, Plus } from 'lucide-react';
 
-export default function ProductLabelForm({ label, attributes, stores, onSubmit, onCancel }) {
+export default function ProductLabelForm({ label, attributes, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: '',
     text: '',
@@ -22,7 +22,6 @@ export default function ProductLabelForm({ label, attributes, stores, onSubmit, 
       price_conditions: {}
     },
     is_active: true,
-    store_id: stores[0]?.id || ''
   });
 
   useEffect(() => {
@@ -38,10 +37,9 @@ export default function ProductLabelForm({ label, attributes, stores, onSubmit, 
           price_conditions: {}
         },
         is_active: label.is_active !== false,
-        store_id: label.store_id || stores[0]?.id || ''
       });
     }
-  }, [label, stores]);
+  }, [label]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -177,21 +175,6 @@ export default function ProductLabelForm({ label, attributes, stores, onSubmit, 
             />
           </div>
 
-          <div>
-            <Label htmlFor="store">Store</Label>
-            <Select value={formData.store_id} onValueChange={(value) => handleInputChange('store_id', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select store" />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map(store => (
-                  <SelectItem key={store.id} value={store.id}>
-                    {store.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="flex items-center space-x-2">
             <Switch

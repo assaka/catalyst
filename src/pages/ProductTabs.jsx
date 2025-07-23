@@ -85,8 +85,9 @@ export default function ProductTabs() {
 
   // Combined create and update into a single handleSubmit function
   const handleSubmit = async (tabData) => {
-    if (!store) {
-      setFlashMessage({ type: 'error', message: 'Operation failed: No active store found for your account.' });
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setFlashMessage({ type: 'error', message: 'Operation failed: No store selected.' });
       return;
     }
 
@@ -94,10 +95,10 @@ export default function ProductTabs() {
       if (editingTab) {
         // When editing, tabData will already contain the ID from the form
         const { id, ...updateData } = tabData;
-        await ProductTab.update(id, { ...updateData, store_id: store.id });
+        await ProductTab.update(id, { ...updateData, store_id: storeId });
         setFlashMessage({ type: 'success', message: 'Product tab updated successfully!' });
       } else {
-        await ProductTab.create({ ...tabData, store_id: store.id });
+        await ProductTab.create({ ...tabData, store_id: storeId });
         setFlashMessage({ type: 'success', message: 'Product tab created successfully!' });
       }
 
@@ -125,15 +126,16 @@ export default function ProductTabs() {
 
   const handleToggleStatus = async (tab) => {
     try {
-      if (!store) {
-        setFlashMessage({ type: 'error', message: 'Operation failed: No active store found for your account.' });
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        setFlashMessage({ type: 'error', message: 'Operation failed: No store selected.' });
         return;
       }
       // Ensure store_id is always included for data isolation
       await ProductTab.update(tab.id, {
         ...tab,
         is_active: !tab.is_active,
-        store_id: store.id // Explicitly include store_id in the update payload
+        store_id: storeId // Explicitly include store_id in the update payload
       });
       await loadData(); // Reload data after status change
       setFlashMessage({
@@ -326,7 +328,7 @@ export default function ProductTabs() {
 
         {/* Tab Form Dialog */}
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingTab ? 'Edit Product Tab' : 'Add New Product Tab'}
@@ -334,7 +336,6 @@ export default function ProductTabs() {
             </DialogHeader>
             <ProductTabForm
               tab={editingTab} // Pass the tab being edited (or null for new)
-              stores={store ? [store] : []} // Pass the current user's store as an array for the form
               attributes={attributes}
               attributeSets={attributeSets}
               onSubmit={handleSubmit} // Use the combined handleSubmit function

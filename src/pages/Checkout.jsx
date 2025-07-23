@@ -490,7 +490,7 @@ export default function Checkout() {
                     <DialogTrigger asChild>
                       <Button variant="outline">Already have an account?</Button>
                     </DialogTrigger>
-                    <DialogContent>
+                    <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                       <DialogHeader>
                         <DialogTitle>Login to Your Account</DialogTitle>
                         <DialogDescription>

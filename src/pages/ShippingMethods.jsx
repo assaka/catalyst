@@ -264,7 +264,7 @@ export default function ShippingMethodsPage() {
         </Card>
 
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {selectedMethod ? "Edit Shipping Method" : "Add New Shipping Method"}

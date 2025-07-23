@@ -158,7 +158,7 @@ export default function CustomOptionRules() {
         )}
 
         <Dialog open={showForm} onOpenChange={closeForm}>
-          <DialogContent className="max-w-3xl">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{selectedRule ? 'Edit' : 'Create'} Custom Option Rule</DialogTitle>
             </DialogHeader>

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
-export default function ProductTabForm({ tab, stores, attributes, attributeSets, onSubmit, onCancel }) {
+export default function ProductTabForm({ tab, attributes, attributeSets, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     title: "",
     content_type: "description",
@@ -23,7 +23,6 @@ export default function ProductTabForm({ tab, stores, attributes, attributeSets,
     attribute_set_ids: [],
     sort_order: 0,
     is_active: true,
-    store_id: (stores && stores.length > 0) ? stores[0]?.id || "" : ""
   });
   const [loading, setLoading] = useState(false);
 
@@ -38,10 +37,9 @@ export default function ProductTabForm({ tab, stores, attributes, attributeSets,
         attribute_set_ids: tab.attribute_set_ids || [],
         sort_order: tab.sort_order || 0,
         is_active: tab.is_active ?? true,
-        store_id: tab.store_id || (stores && stores.length > 0 ? stores[0]?.id || "" : "")
       });
     }
-  }, [tab, stores]);
+  }, [tab]);
 
   const handleInputChange = (field, value) => {
     console.log(`DEBUG: Changing ${field} to:`, value);
@@ -154,21 +152,6 @@ export default function ProductTabForm({ tab, stores, attributes, attributeSets,
               <Label htmlFor="is_active">Active</Label>
             </div>
 
-            <div>
-              <Label htmlFor="store">Store</Label>
-              <Select value={formData.store_id} onValueChange={(value) => handleInputChange("store_id", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select store" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stores.map((store) => (
-                    <SelectItem key={store.id} value={store.id}>
-                      {store.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </CardContent>
         </Card>
 
