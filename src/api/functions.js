@@ -43,11 +43,12 @@ export const stripeWebhook = async (payload, signature) => {
   }
 };
 
-export const createStripeConnectLink = async (returnUrl, refreshUrl) => {
+export const createStripeConnectLink = async (returnUrl, refreshUrl, storeId) => {
   try {
     const response = await apiClient.post('payments/connect-link', {
       return_url: returnUrl,
-      refresh_url: refreshUrl
+      refresh_url: refreshUrl,
+      store_id: storeId
     });
     return { data: response.data || response };
   } catch (error) {
@@ -56,9 +57,9 @@ export const createStripeConnectLink = async (returnUrl, refreshUrl) => {
   }
 };
 
-export const checkStripeConnectStatus = async () => {
+export const checkStripeConnectStatus = async (storeId) => {
   try {
-    const response = await apiClient.get('payments/connect-status');
+    const response = await apiClient.get(`payments/connect-status${storeId ? `?store_id=${storeId}` : ''}`);
     return { data: response.data || response };
   } catch (error) {
     console.error('Error checking Stripe Connect status:', error);

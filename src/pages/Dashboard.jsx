@@ -63,15 +63,16 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 // Stripe Connect Banner Component
-function StripeConnectBanner() {
+function StripeConnectBanner({ store }) {
   const [stripeStatus, setStripeStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [connecting, setConnecting] = useState(false);
 
   const checkStatus = async () => {
+    if (!store?.id) return;
     try {
       setLoading(true);
-      const { data } = await checkStripeConnectStatus();
+      const { data } = await checkStripeConnectStatus(store.id);
       setStripeStatus(data);
     } catch (error) {
       console.error("Error checking Stripe status:", error);
@@ -88,7 +89,7 @@ function StripeConnectBanner() {
       const returnUrl = `${currentUrl}?stripe_return=true`;
       const refreshUrl = `${currentUrl}?stripe_refresh=true`;
       
-      const { data } = await createStripeConnectLink(returnUrl, refreshUrl);
+      const { data } = await createStripeConnectLink(returnUrl, refreshUrl, store?.id);
       if (data?.url) {
         window.location.href = data.url;
       } else {
@@ -203,7 +204,7 @@ export default function Dashboard() {
       if (urlParams.has('stripe_return')) {
         try {
           // Assuming checkStripeConnectStatus returns { data: { onboardingComplete: boolean } }
-          const { data } = await checkStripeConnectStatus(); 
+          const { data } = await checkStripeConnectStatus(selectedStore?.id); 
           if (data.onboardingComplete) {
             setStripeSuccessMessage('Stripe account connected successfully!');
             // Re-load data to get updated store status
@@ -226,7 +227,7 @@ export default function Dashboard() {
             const refreshUrl = `${currentUrl}?stripe_refresh=true`;
             
             // Assuming createStripeConnectLink returns { data: { url: string } }
-            const { data } = await createStripeConnectLink(returnUrl, refreshUrl);
+            const { data } = await createStripeConnectLink(returnUrl, refreshUrl, selectedStore?.id);
             if (data.url) {
                 window.location.href = data.url;
             } else {
@@ -251,7 +252,7 @@ export default function Dashboard() {
       setCheckingStripe(true);
       setError(null); // Clear previous errors
       setStripeSuccessMessage(''); // Clear previous success messages
-      const { data } = await checkStripeConnectStatus();
+      const { data } = await checkStripeConnectStatus(selectedStore?.id);
       if (data.onboardingComplete) {
         setStripeSuccessMessage('Stripe account verified and connected successfully!');
         loadDashboardData();
@@ -453,7 +454,7 @@ export default function Dashboard() {
         )}
 
         {/* Stripe Connect Banner */}
-        <StripeConnectBanner />
+        <StripeConnectBanner store={store} />
 
         {/* Setup Guide Component */}
         <SetupGuide store={store} />

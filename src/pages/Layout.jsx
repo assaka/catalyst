@@ -191,11 +191,11 @@ export default function Layout({ children, currentPageName }) {
       const userStores = await retryApiCall(() => Store.findAll());
       
       if (userStores && Array.isArray(userStores) && userStores.length > 0) {
-        const currentStore = userStores[0];
+        const selectedStore = userStores[0];
         const storePlugins = await retryApiCall(() => 
           StorePlugin.filter({ 
             is_active: true, 
-            store_id: currentStore.id 
+            store_id: selectedStore.id 
           })
         );
         

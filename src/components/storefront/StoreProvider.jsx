@@ -163,14 +163,14 @@ export const StoreProvider = ({ children }) => {
         stores
       });
 
-      const currentStore = stores?.[0];
+      const selectedStore = stores?.[0];
       
-      console.log(`🔍 StoreProvider: currentStore extracted:`, {
-        currentStore,
-        hasStore: !!currentStore
+      console.log(`🔍 StoreProvider: selectedStore extracted:`, {
+        selectedStore,
+        hasStore: !!selectedStore
       });
       
-      if (!currentStore) {
+      if (!selectedStore) {
         console.warn('No store found');
         setLoading(false);
         return;
@@ -202,18 +202,18 @@ export const StoreProvider = ({ children }) => {
         cookie_consent: {
           enabled: false
         },
-        ...(currentStore.settings || {})
+        ...(selectedStore.settings || {})
       };
       
       console.log(`🔍 StoreProvider: About to set store:`, {
-        currentStore,
+        selectedStore,
         mergedSettings,
         allowedCountries: mergedSettings.allowed_countries,
         allowedCountriesType: typeof mergedSettings.allowed_countries,
         isAllowedCountriesArray: Array.isArray(mergedSettings.allowed_countries)
       });
       
-      setStore({ ...currentStore, settings: mergedSettings });
+      setStore({ ...selectedStore, settings: mergedSettings });
       
       console.log(`🔍 StoreProvider: About to setSelectedCountry:`, {
         allowedCountries: mergedSettings.allowed_countries,
@@ -226,8 +226,8 @@ export const StoreProvider = ({ children }) => {
       // Load SEO settings separately and with priority
       try {
         const { SeoSetting } = await import('@/api/entities');
-        const seoSettingsData = await cachedApiCall(`seo-settings-${currentStore.id}`, async () => {
-          const result = await SeoSetting.filter({ store_id: currentStore.id });
+        const seoSettingsData = await cachedApiCall(`seo-settings-${selectedStore.id}`, async () => {
+          const result = await SeoSetting.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         });
         
@@ -257,14 +257,14 @@ export const StoreProvider = ({ children }) => {
         } else {
           console.log('[StoreProvider] No SEO settings found, using defaults');
           setSeoSettings({
-            store_id: currentStore.id,
+            store_id: selectedStore.id,
             enable_rich_snippets: true,
             enable_open_graph: true,
             enable_twitter_cards: true,
             schema_settings: {
               enable_product_schema: true,
               enable_organization_schema: true,
-              organization_name: currentStore.name || '',
+              organization_name: selectedStore.name || '',
               organization_logo_url: '',
               social_profiles: []
             },
@@ -286,28 +286,28 @@ export const StoreProvider = ({ children }) => {
 
       // Load other data with extreme caching - all in parallel with staggered delays
       const dataPromises = [
-        cachedApiCall(`taxes-${currentStore.id}`, async () => {
-          const result = await Tax.filter({ store_id: currentStore.id });
+        cachedApiCall(`taxes-${selectedStore.id}`, async () => {
+          const result = await Tax.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         }),
-        cachedApiCall(`categories-${currentStore.id}`, async () => {
-          const result = await Category.filter({ store_id: currentStore.id });
+        cachedApiCall(`categories-${selectedStore.id}`, async () => {
+          const result = await Category.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         }),
-        cachedApiCall(`labels-${currentStore.id}`, async () => {
-          const result = await ProductLabel.filter({ store_id: currentStore.id, is_active: true });
+        cachedApiCall(`labels-${selectedStore.id}`, async () => {
+          const result = await ProductLabel.filter({ store_id: selectedStore.id, is_active: true });
           return Array.isArray(result) ? result : [];
         }),
-        cachedApiCall(`attributes-${currentStore.id}`, async () => {
-          const result = await Attribute.filter({ store_id: currentStore.id });
+        cachedApiCall(`attributes-${selectedStore.id}`, async () => {
+          const result = await Attribute.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         }),
-        cachedApiCall(`attr-sets-${currentStore.id}`, async () => {
-          const result = await AttributeSet.filter({ store_id: currentStore.id });
+        cachedApiCall(`attr-sets-${selectedStore.id}`, async () => {
+          const result = await AttributeSet.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         }),
-        cachedApiCall(`seo-templates-${currentStore.id}`, async () => {
-          const result = await SeoTemplate.filter({ store_id: currentStore.id });
+        cachedApiCall(`seo-templates-${selectedStore.id}`, async () => {
+          const result = await SeoTemplate.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         })
       ];
