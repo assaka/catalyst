@@ -8,6 +8,7 @@ const Order = require('./Order');
 const OrderItem = require('./OrderItem');
 const Coupon = require('./Coupon');
 const CmsPage = require('./CmsPage');
+const CmsBlock = require('./CmsBlock');
 const Tax = require('./Tax');
 const ShippingMethod = require('./ShippingMethod');
 const DeliverySettings = require('./DeliverySettings');
@@ -37,6 +38,7 @@ const defineAssociations = () => {
   Store.hasMany(Order, { foreignKey: 'store_id' });
   Store.hasMany(Coupon, { foreignKey: 'store_id' });
   Store.hasMany(CmsPage, { foreignKey: 'store_id' });
+  Store.hasMany(CmsBlock, { foreignKey: 'store_id' });
   Store.hasMany(Tax, { foreignKey: 'store_id' });
   Store.hasMany(ShippingMethod, { foreignKey: 'store_id' });
   Store.hasOne(DeliverySettings, { foreignKey: 'store_id' });
@@ -72,6 +74,9 @@ const defineAssociations = () => {
 
   // CmsPage associations
   CmsPage.belongsTo(Store, { foreignKey: 'store_id' });
+
+  // CmsBlock associations
+  CmsBlock.belongsTo(Store, { foreignKey: 'store_id' });
 
   // Tax associations
   Tax.belongsTo(Store, { foreignKey: 'store_id' });
@@ -135,6 +140,7 @@ module.exports = {
   OrderItem,
   Coupon,
   CmsPage,
+  CmsBlock,
   Tax,
   ShippingMethod,
   DeliverySettings,
