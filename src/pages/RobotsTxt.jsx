@@ -29,17 +29,16 @@ export default function RobotsTxt() {
             }
             setStore(selectedStore);
             const settings = await SeoSetting.filter({ store_id: selectedStore.id });
-                if (settings && settings.length > 0) {
-                    setSeoSetting(settings[0]);
-                    setRobotsTxt(settings[0].robots_txt_content || '');
-                }
+            if (settings && settings.length > 0) {
+                setSeoSetting(settings[0]);
+                setRobotsTxt(settings[0].robots_txt_content || '');
             }
         } catch (error) {
             console.error("Error loading data:", error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [selectedStore]);
 
     useEffect(() => {
         if (selectedStore) {
