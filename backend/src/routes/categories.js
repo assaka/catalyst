@@ -121,8 +121,15 @@ router.post('/', [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID')
 ], async (req, res) => {
   try {
+    console.log('🐛 POST /api/categories DEBUG:', {
+      body: req.body,
+      user: req.user?.email,
+      userRole: req.user?.role
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('🐛 Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         errors: errors.array()
@@ -133,6 +140,8 @@ router.post('/', [
 
     // Check store ownership
     const hasAccess = await checkStoreOwnership(store_id, req.user.email, req.user.role);
+    console.log('🐛 Store ownership check:', { store_id, hasAccess });
+    
     if (!hasAccess) {
       return res.status(403).json({
         success: false,
@@ -149,9 +158,11 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create category error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
