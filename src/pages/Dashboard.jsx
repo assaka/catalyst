@@ -5,6 +5,7 @@ import { Store } from "@/api/entities";
 import { Product } from "@/api/entities";
 import { Order } from "@/api/entities"; // Added Order import
 import { Customer } from "@/api/entities"; // Added Customer import
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { Link, useNavigate } from "react-router-dom"; // Added useNavigate import
 import { createPageUrl } from "@/utils";
 import { 
@@ -160,6 +161,7 @@ function StripeConnectBanner() {
 }
 
 export default function Dashboard() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [user, setUser] = useState(null);
   const [stores, setStores] = useState([]); // Kept for general list of stores if needed
   const [products, setProducts] = useState([]);
@@ -179,7 +181,12 @@ export default function Dashboard() {
 
 
   useEffect(() => {
-    loadDashboardData();
+    if (selectedStore) {
+      loadDashboardData();
+    }
+  }, [selectedStore]);
+
+  useEffect(() => {
 
     // Handle setup completion from Google OAuth
     const urlParams = new URLSearchParams(window.location.search);
@@ -270,21 +277,20 @@ export default function Dashboard() {
       
       // Removed await delay(500); for performance improvement
       
-      const storesData = await retryApiCall(() => Store.findAll(), 3, 1000);
-      setStores(storesData || []);
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        console.warn("No store selected");
+        setLoading(false);
+        return;
+      }
       
-      let currentStore = null;
-      if (storesData && Array.isArray(storesData) && storesData.length > 0) {
-        currentStore = storesData[0];
-        setStore(currentStore);
-        
-        // Removed await delay(500); for performance improvement
-        
-        const productsData = await retryApiCall(() => Product.filter({ store_id: currentStore.id }));
-        setProducts(productsData || []);
+      setStore(selectedStore);
+      
+      const productsData = await retryApiCall(() => Product.filter({ store_id: storeId }));
+      setProducts(productsData || []);
 
-        const allOrders = await retryApiCall(() => Order.filter({ store_id: currentStore.id }), 3, 1000);
-        const customers = await retryApiCall(() => Customer.filter({ store_id: currentStore.id }), 3, 1000);
+      const allOrders = await retryApiCall(() => Order.filter({ store_id: storeId }), 3, 1000);
+      const customers = await retryApiCall(() => Customer.filter({ store_id: storeId }), 3, 1000);
 
         const totalOrders = Array.isArray(allOrders) ? allOrders.length : 0;
         const totalRevenue = Array.isArray(allOrders) ? allOrders.reduce((sum, order) => sum + (order?.total_amount || 0), 0) : 0;

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -41,6 +42,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function Settings() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -49,8 +51,10 @@ export default function Settings() {
   const [savingStripe, setSavingStripe] = useState(false); // This state was in original, kept it.
 
   useEffect(() => {
-    loadStore();
-  }, []);
+    if (selectedStore) {
+      loadStore();
+    }
+  }, [selectedStore]);
 
   // Effect to clear flash messages after a few seconds
   useEffect(() => {
@@ -66,106 +70,18 @@ export default function Settings() {
     try {
       setLoading(true);
       
-      // Small delay to prevent immediate rate limiting
-      await delay(500); 
-      
-      // CRITICAL FIX: Get current user first, then filter stores by user
-      const user = await retryApiCall(() => User.me());
-      console.log('Current user:', user.email);
-      
-      const stores = await retryApiCall(() => Store.findAll());
-      console.log('Stores for user:', stores);
-      
-      // Add proper validation before accessing array elements
-      if (!stores || stores.length === 0) { // Updated validation
-        console.warn("No stores found for user:", user.email);
-        // Initialize with default empty store if none found
-        setStore({
-          id: null,
-          name: '',
-          description: '',
-          logo_url: '',
-          domain: '', 
-          custom_domain: '', // New field
-          domain_status: '', // New field
-          ssl_enabled: false, // New field
-          currency: 'USD',
-          timezone: 'UTC',
-          slug: '',
-          status: 'active', // Default status
-          contact_details: {
-            email: '', phone: '', address: '', city: '', state: '',
-            postal_code: '', country: 'US', support_email: ''
-          },
-          stripe_settings: {
-            enabled: false,
-            publishable_key: '',
-            secret_key: '',
-            webhook_secret: ''
-          },
-          brevo_settings: {
-            enabled: false,
-            api_key: '',
-            sender_email: '',
-            sender_name: ''
-          },
-          settings: {
-            enable_inventory: true, 
-            enable_reviews: true, 
-            hide_currency_category: false,
-            hide_currency_product: false, 
-            hide_header_cart: false, 
-            hide_header_checkout: false,
-            show_category_in_breadcrumb: true, 
-            show_permanent_search: true, 
-            hide_shipping_costs: false,
-            hide_quantity_selector: false, 
-            allowed_countries: ["US", "CA", "GB", "DE", "FR"],
-            require_shipping_address: true, 
-            collect_phone_number_at_checkout: false, 
-            allow_guest_checkout: true,
-            theme: { // Initialize theme with default button colors and font
-              primary_button_color: '#007bff',
-              secondary_button_color: '#6c757d',
-              font_family: 'Inter',
-            },
-            cookie_consent: { // Initialize cookie_consent with default fields
-              enabled: false,
-              message: 'We use cookies to ensure you get the best experience on our website. By continuing to use our site, you agree to our use of cookies.',
-              accept_button_text: 'Accept',
-              decline_button_text: 'Decline',
-              policy_link: '/privacy-policy',
-            },
-            analytics_settings: {}, // Initialize analytics_settings as an empty object
-            seo_settings: { // Initialize seo_settings as an empty object with default fields
-              meta_title_suffix: '',
-              meta_description: '',
-              meta_keywords: '',
-              robots_txt_content: '',
-              enable_rich_snippets_product: true, // Default to true
-              enable_rich_snippets_store: true, // Default to true
-              global_schema_markup_json: '', // Default empty string
-            },
-            // New settings fields defaults
-            default_tax_included_in_prices: false,
-            display_tax_inclusive_prices: false,
-            calculate_tax_after_discount: true,
-            display_out_of_stock: true,
-            enable_product_filters: false,
-            product_filter_attributes: [], // New: default product filter attributes
-            enable_credit_updates: false,
-            enable_coupon_rules: false, // New
-            allow_stacking_coupons: false, // New
-            hide_stock_quantity: false, // New
-            display_low_stock_threshold: 0, // New
-          }
-        });
+      if (!selectedStore) {
+        console.warn("No store selected");
         setLoading(false);
         return;
       }
       
-      const currentStore = stores[0];
-      console.log('Selected store:', currentStore.name, 'for user:', user.email);
+      const user = await retryApiCall(() => User.me());
+      console.log('Current user:', user.email);
+      console.log('Selected store:', selectedStore.name, 'for user:', user.email);
+      
+      // Use selectedStore directly instead of fetching all stores
+      const currentStore = selectedStore;
       console.log('Raw store settings from database:', currentStore.settings);
       
       // CRITICAL FIX: Use explicit checks instead of nullish coalescing with defaults

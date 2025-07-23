@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { PaymentMethod } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import { CountrySelect } from "@/components/ui/country-select";
 
 export default function PaymentMethods() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -61,25 +63,24 @@ export default function PaymentMethods() {
   ];
 
   useEffect(() => {
-    loadPaymentMethods();
-  }, []);
+    if (selectedStore) {
+      loadPaymentMethods();
+    }
+  }, [selectedStore]);
 
   const loadPaymentMethods = async () => {
     setLoading(true);
     try {
-      const user = await User.me();
-      const stores = await Store.findAll();
-      
-      if (stores && stores.length > 0) {
-        const currentStore = stores[0];
-        setStore(currentStore);
-        const methods = await PaymentMethod.filter({ store_id: currentStore.id }, 'sort_order');
-        setPaymentMethods(methods || []);
-      } else {
-        setPaymentMethods([]);
-        setStore(null);
-        console.warn("No store found for this user.");
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        console.warn("No store selected");
+        setLoading(false);
+        return;
       }
+      
+      setStore(selectedStore);
+      const methods = await PaymentMethod.filter({ store_id: storeId }, 'sort_order');
+      setPaymentMethods(methods || []);
     } catch (error) {
       console.error("Error loading payment methods:", error);
       setFlashMessage({ type: 'error', message: 'Failed to load payment methods' });

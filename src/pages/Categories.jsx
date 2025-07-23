@@ -156,7 +156,7 @@ export default function Categories() {
   }
 
   // Determine if adding a category is possible (i.e., a store is assigned to the user)
-  const canAddCategory = !!currentStore;
+  const canAddCategory = !!selectedStore;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -166,12 +166,12 @@ export default function Categories() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Categories</h1>
             <p className="text-gray-600 mt-1">Organize your product categories</p>
-            {currentStore && (
+            {selectedStore && (
               <p className="text-sm text-gray-500 mt-1">
-                Currently managing categories for store: <span className="font-semibold">{currentStore.name}</span>
+                Currently managing categories for store: <span className="font-semibold">{selectedStore.name}</span>
               </p>
             )}
-            {!currentStore && !loading && (
+            {!selectedStore && !loading && (
               <p className="text-sm text-red-500 mt-1">
                 No store found for your account. Please set up a store to add categories.
               </p>
