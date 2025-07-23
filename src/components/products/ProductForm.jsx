@@ -77,12 +77,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  
-  useEffect(() => {
-    if (stores && stores.length > 0) {
-      setCurrentStore(stores[0]);
-    }
-  }, [stores]);
 
   useEffect(() => {
     if (product) {
