@@ -150,6 +150,12 @@ export default function Layout({ children, currentPageName }) {
   const loadUserAndHandleCredits = async () => {
     try {
       let userData = await retryApiCall(() => User.me());
+      console.log('🔍 Layout.jsx: User data loaded:', {
+        email: userData?.email,
+        role: userData?.role,
+        account_type: userData?.account_type,
+        fullData: JSON.stringify(userData, null, 2)
+      });
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);

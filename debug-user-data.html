@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug User Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        pre {
+            background-color: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Debug User Data - Catalyst</h1>
+        
+        <div>
+            <h2>Current Token (from localStorage)</h2>
+            <pre id="token">Loading...</pre>
+        </div>
+
+        <div>
+            <h2>Decoded Token Data</h2>
+            <pre id="decodedToken">Loading...</pre>
+        </div>
+
+        <div>
+            <h2>User Data from /api/auth/me</h2>
+            <button onclick="fetchUserData()">Fetch User Data</button>
+            <button onclick="clearTokenAndReload()">Clear Token & Reload</button>
+            <pre id="userData">Click "Fetch User Data" to load</pre>
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://catalyst-backend-fzhu.onrender.com/api';
+        
+        // Display current token
+        function displayToken() {
+            const token = localStorage.getItem('auth_token');
+            document.getElementById('token').textContent = token || 'No token found';
+            
+            if (token) {
+                try {
+                    // Decode token
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                    const decoded = JSON.parse(jsonPayload);
+                    document.getElementById('decodedToken').textContent = JSON.stringify(decoded, null, 2);
+                } catch (e) {
+                    document.getElementById('decodedToken').textContent = 'Failed to decode token: ' + e.message;
+                }
+            } else {
+                document.getElementById('decodedToken').textContent = 'No token to decode';
+            }
+        }
+
+        // Fetch user data
+        async function fetchUserData() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                document.getElementById('userData').textContent = 'No token found. Please log in first.';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/auth/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                document.getElementById('userData').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.success && data.data) {
+                    const user = data.data;
+                    const redirectPath = determineRedirectPath(user);
+                    showMessage(`User role: ${user.role}, account_type: ${user.account_type || 'undefined'}\nWould redirect to: ${redirectPath}`, 'success');
+                }
+            } catch (error) {
+                document.getElementById('userData').textContent = 'Error: ' + error.message;
+                showMessage('Failed to fetch user data: ' + error.message, 'error');
+            }
+        }
+
+        // Determine redirect path based on user data
+        function determineRedirectPath(user) {
+            const isStoreOwner = user.role === 'store_owner';
+            const isAdmin = user.role === 'admin';
+            const isAgency = user.account_type === 'agency';
+            const hasNoRole = !user.role;
+            
+            if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
+                return '/dashboard';
+            } else if (user.role === 'customer') {
+                return '/customerdashboard';
+            } else {
+                return '/dashboard (fallback)';
+            }
+        }
+
+        // Clear token and reload
+        function clearTokenAndReload() {
+            localStorage.removeItem('auth_token');
+            localStorage.setItem('user_logged_out', 'true');
+            showMessage('Token cleared. Reloading page...', 'success');
+            setTimeout(() => location.reload(), 1000);
+        }
+
+        // Show message
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.className = type;
+            messageEl.textContent = text;
+        }
+
+        // Initial load
+        displayToken();
+    </script>
+</body>
+</html>

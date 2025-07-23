@@ -86,6 +86,22 @@ export default function Auth() {
       allStorageKeys: Object.keys(localStorage)
     });
     
+    // Debug: decode JWT token to see what's in it
+    const token = apiClient.getToken();
+    if (token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        const decodedToken = JSON.parse(jsonPayload);
+        console.log('🔍 Auth.jsx: Decoded JWT token:', decodedToken);
+      } catch (e) {
+        console.error('Failed to decode token:', e);
+      }
+    }
+    
     try {
       // Check if user was just logged out (listen for logout events)
       if (apiClient.isLoggedOut) {
@@ -96,6 +112,7 @@ export default function Auth() {
       console.log('🔍 Auth.jsx: Calling User.me()...');
       const user = await User.me();
       console.log('✅ Auth.jsx: User.me() succeeded:', user ? 'user found' : 'no user');
+      console.log('🔍 Auth.jsx: Full user data from User.me():', JSON.stringify(user, null, 2));
       
       if (user) {
         // For Google OAuth users, ensure they have a role and redirect to Dashboard
