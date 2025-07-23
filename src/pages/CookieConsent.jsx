@@ -85,7 +85,34 @@ export default function CookieConsent() {
       console.log('Found cookie settings:', cookieSettings?.length || 0);
       
       if (cookieSettings && cookieSettings.length > 0) {
-        setSettings(cookieSettings[0]);
+        // Ensure settings has all required properties
+        const loadedSettings = {
+          ...cookieSettings[0],
+          categories: cookieSettings[0].categories || [
+            {
+              id: "necessary",
+              name: "Necessary Cookies",
+              description: "These cookies are necessary for the website to function and cannot be switched off.",
+              required: true,
+              default_enabled: true
+            },
+            {
+              id: "analytics",
+              name: "Analytics Cookies", 
+              description: "These cookies help us understand how visitors interact with our website.",
+              required: false,
+              default_enabled: false
+            },
+            {
+              id: "marketing",
+              name: "Marketing Cookies",
+              description: "These cookies are used to deliver personalized advertisements.",
+              required: false,
+              default_enabled: false
+            }
+          ]
+        };
+        setSettings(loadedSettings);
       } else {
         // Create default settings with valid store_id
         const defaultSettings = {
@@ -447,7 +474,7 @@ export default function CookieConsent() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {settings.categories.map((category, index) => (
+                  {(settings.categories || []).map((category, index) => (
                     <Card key={category.id} className="p-4">
                       <div className="space-y-4">
                         <div className="flex items-center justify-between">
