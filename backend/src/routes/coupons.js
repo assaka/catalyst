@@ -54,6 +54,12 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
+    console.log('🐛 POST /api/coupons DEBUG:', {
+      body: req.body,
+      user: req.user?.email,
+      userRole: req.user?.role
+    });
+
     const { store_id } = req.body;
     const store = await Store.findByPk(store_id);
     
@@ -65,7 +71,36 @@ router.post('/', async (req, res) => {
     const coupon = await Coupon.create(req.body);
     res.status(201).json({ success: true, message: 'Coupon created successfully', data: coupon });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('Create coupon error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error name:', error.name);
+    
+    // Handle Sequelize validation errors
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: error.errors.map(err => ({
+          field: err.path,
+          message: err.message
+        }))
+      });
+    }
+    
+    // Handle unique constraint errors
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Duplicate entry',
+        error: 'A coupon with this code already exists'
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false, 
+      message: 'Server error',
+      error: error.message 
+    });
   }
 });
 
