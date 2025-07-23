@@ -24,7 +24,8 @@
       "Bash(do echo \"=== $file ===\")",
       "Bash(tail:*)",
       "Bash(done)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(true)"
     ],
     "deny": []
   }

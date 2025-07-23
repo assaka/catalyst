@@ -68,17 +68,9 @@ export default function ProductTabs() {
         AttributeSet.filter({ store_id: storeId })
       ]);
 
-        setTabs(tabsData || []);
-        setAttributes(attributesData || []);
-        setAttributeSets(setsData || []);
-      } else {
-        setTabs([]);
-        setAttributes([]);
-        setAttributeSets([]);
-        setStore(null); // No store found for the user
-        console.warn("No store found for user:", user.email);
-        setFlashMessage({ type: 'error', message: "No store associated with your account. Please create one or contact support." });
-      }
+      setTabs(tabsData || []);
+      setAttributes(attributesData || []);
+      setAttributeSets(setsData || []);
     } catch (error) {
       console.error("Error loading data:", error);
       setTabs([]);
