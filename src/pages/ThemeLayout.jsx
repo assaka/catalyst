@@ -44,26 +44,21 @@ export default function ThemeLayout() {
                 return;
             }
 
-            setStore(selectedStore);
-                const stores = await retryApiCall(() => Store.findAll());
-                if (stores && stores.length > 0) {
-                    const currentStore = stores[0];
-                    // Ensure settings object and its nested properties exist with defaults
-                    const settings = {
-                        ...(currentStore.settings || {}),
-                        theme: {
-                            primary_button_color: '#007bff',
-                            secondary_button_color: '#6c757d',
-                            add_to_cart_button_color: '#28a745',
-                            view_cart_button_color: '#17a2b8',
-                            checkout_button_color: '#007bff',
-                            place_order_button_color: '#28a745',
-                            font_family: 'Inter',
-                            ...((currentStore.settings || {}).theme || {})
-                        },
-                    };
-                    setStore({ ...currentStore, settings });
-                }
+            // Ensure settings object and its nested properties exist with defaults
+            const settings = {
+                ...(selectedStore.settings || {}),
+                theme: {
+                    primary_button_color: '#007bff',
+                    secondary_button_color: '#6c757d',
+                    add_to_cart_button_color: '#28a745',
+                    view_cart_button_color: '#17a2b8',
+                    checkout_button_color: '#007bff',
+                    place_order_button_color: '#28a745',
+                    font_family: 'Inter',
+                    ...((selectedStore.settings || {}).theme || {})
+                },
+            };
+            setStore({ ...selectedStore, settings });
             } catch (error) {
                 console.error("Failed to load store:", error);
                 setFlashMessage({ type: 'error', message: 'Could not load store settings.' });

@@ -81,47 +81,46 @@ export default function Settings() {
       console.log('Selected store:', selectedStore.name, 'for user:', user.email);
       
       // Use selectedStore directly instead of fetching all stores
-      const currentStore = selectedStore;
-      console.log('Raw store settings from database:', currentStore.settings);
+      console.log('Raw store settings from database:', selectedStore.settings);
       
       // CRITICAL FIX: Use explicit checks instead of nullish coalescing with defaults
       // This ensures that false values are preserved from the database
-      const settings = currentStore.settings || {};
+      const settings = selectedStore.settings || {};
       
       setStore({
-        id: currentStore.id,
-        name: currentStore.name || '',
-        description: currentStore.description || '',
-        logo_url: currentStore.logo_url || '',
-        domain: currentStore.domain || '', // Keep existing domain if it's used internally
-        custom_domain: currentStore.custom_domain || currentStore.domain || '', // Map existing domain to custom_domain
-        domain_status: currentStore.domain_status || '',
-        ssl_enabled: currentStore.ssl_enabled || false,
-        currency: currentStore.currency || 'USD',
-        timezone: currentStore.timezone || 'UTC',
-        slug: currentStore.slug || '',
-        status: currentStore.status || 'active', // Default status
+        id: selectedStore.id,
+        name: selectedStore.name || '',
+        description: selectedStore.description || '',
+        logo_url: selectedStore.logo_url || '',
+        domain: selectedStore.domain || '', // Keep existing domain if it's used internally
+        custom_domain: selectedStore.custom_domain || selectedStore.domain || '', // Map existing domain to custom_domain
+        domain_status: selectedStore.domain_status || '',
+        ssl_enabled: selectedStore.ssl_enabled || false,
+        currency: selectedStore.currency || 'USD',
+        timezone: selectedStore.timezone || 'UTC',
+        slug: selectedStore.slug || '',
+        status: selectedStore.status || 'active', // Default status
         contact_details: {
-          email: currentStore.contact_details?.email || '', // Safely access
-          phone: currentStore.contact_details?.phone || '',
-          address: currentStore.contact_details?.address || '',
-          city: currentStore.contact_details?.city || '',
-          state: currentStore.contact_details?.state || '',
-          postal_code: currentStore.contact_details?.postal_code || '',
-          country: currentStore.contact_details?.country || 'US', // Default to US
-          support_email: currentStore.contact_details?.support_email || '',
+          email: selectedStore.contact_details?.email || '', // Safely access
+          phone: selectedStore.contact_details?.phone || '',
+          address: selectedStore.contact_details?.address || '',
+          city: selectedStore.contact_details?.city || '',
+          state: selectedStore.contact_details?.state || '',
+          postal_code: selectedStore.contact_details?.postal_code || '',
+          country: selectedStore.contact_details?.country || 'US', // Default to US
+          support_email: selectedStore.contact_details?.support_email || '',
         },
         stripe_settings: {
-          enabled: currentStore.stripe_settings?.enabled || false,
-          publishable_key: currentStore.stripe_settings?.publishable_key || '',
-          secret_key: currentStore.stripe_settings?.secret_key || '',
-          webhook_secret: currentStore.stripe_settings?.webhook_secret || ''
+          enabled: selectedStore.stripe_settings?.enabled || false,
+          publishable_key: selectedStore.stripe_settings?.publishable_key || '',
+          secret_key: selectedStore.stripe_settings?.secret_key || '',
+          webhook_secret: selectedStore.stripe_settings?.webhook_secret || ''
         },
         brevo_settings: {
-          enabled: currentStore.brevo_settings?.enabled || false,
-          api_key: currentStore.brevo_settings?.api_key || '',
-          sender_email: currentStore.brevo_settings?.sender_email || '',
-          sender_name: currentStore.brevo_settings?.sender_name || ''
+          enabled: selectedStore.brevo_settings?.enabled || false,
+          api_key: selectedStore.brevo_settings?.api_key || '',
+          sender_email: selectedStore.brevo_settings?.sender_email || '',
+          sender_name: selectedStore.brevo_settings?.sender_name || ''
         },
         settings: {
           // CRITICAL FIX: Check if value exists in database first, then use default
