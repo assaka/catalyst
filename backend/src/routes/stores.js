@@ -611,8 +611,17 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
   body('description').optional().isString()
 ], async (req, res) => {
   try {
+    console.log('🐛 PUT /api/stores/:id DEBUG:', {
+      storeId: req.params.id,
+      body: req.body,
+      user: req.user?.email,
+      userRole: req.user?.role,
+      bodySize: JSON.stringify(req.body).length
+    });
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         errors: errors.array()
@@ -622,6 +631,7 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
     const store = await Store.findByPk(req.params.id);
     
     if (!store) {
+      console.log('❌ Store not found with ID:', req.params.id);
       return res.status(404).json({
         success: false,
         message: 'Store not found'
@@ -630,13 +640,22 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
 
     // Check ownership
     if (req.user.role !== 'admin' && store.owner_email !== req.user.email) {
+      console.log('❌ Access denied. Store owner:', store.owner_email, 'User:', req.user.email);
       return res.status(403).json({
         success: false,
         message: 'Access denied'
       });
     }
 
+    console.log('🔄 Updating store with data:', {
+      storeId: req.params.id,
+      hasSettings: !!req.body.settings,
+      settingsKeys: req.body.settings ? Object.keys(req.body.settings) : [],
+      otherFields: Object.keys(req.body).filter(key => key !== 'settings')
+    });
+
     await store.update(req.body);
+    console.log('✅ Store updated successfully');
 
     res.json({
       success: true,
@@ -645,9 +664,25 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
     });
   } catch (error) {
     console.error('Update store error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error name:', error.name);
+    
+    // Handle Sequelize validation errors
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: error.errors.map(err => ({
+          field: err.path,
+          message: err.message
+        }))
+      });
+    }
+    
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });

@@ -1,5 +1,5 @@
 const express = require('express');
-const { SeoSettings } = require('../models');
+const { SeoSettings, Store } = require('../models');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -16,6 +16,17 @@ router.get('/', auth, async (req, res) => {
         success: false,
         message: 'store_id is required'
       });
+    }
+
+    // Check store ownership
+    if (req.user.role !== 'admin') {
+      const store = await Store.findByPk(store_id);
+      if (!store || store.owner_email !== req.user.email) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     let seoSettings = await SeoSettings.findOne({ where: { store_id } });
@@ -48,6 +59,12 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.post('/', auth, async (req, res) => {
   try {
+    console.log('🐛 POST /api/seo-settings DEBUG:', {
+      body: req.body,
+      user: req.user?.email,
+      userRole: req.user?.role
+    });
+
     const { store_id } = req.body;
 
     if (!store_id) {
@@ -57,15 +74,30 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    // Check store ownership
+    if (req.user.role !== 'admin') {
+      const store = await Store.findByPk(store_id);
+      if (!store || store.owner_email !== req.user.email) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
     let seoSettings = await SeoSettings.findOne({ where: { store_id } });
 
     if (seoSettings) {
       // Update existing settings
+      console.log('🔄 Updating existing SEO settings for store:', store_id);
       await seoSettings.update(req.body);
     } else {
       // Create new settings
+      console.log('✨ Creating new SEO settings for store:', store_id);
       seoSettings = await SeoSettings.create(req.body);
     }
+
+    console.log('✅ SEO settings saved successfully:', seoSettings.id);
 
     res.json({
       success: true,
@@ -73,9 +105,12 @@ router.post('/', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Save SEO settings error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error name:', error.name);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
@@ -85,7 +120,16 @@ router.post('/', auth, async (req, res) => {
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
   try {
-    const seoSettings = await SeoSettings.findByPk(req.params.id);
+    console.log('🐛 PUT /api/seo-settings/:id DEBUG:', {
+      id: req.params.id,
+      body: req.body,
+      user: req.user?.email,
+      userRole: req.user?.role
+    });
+
+    const seoSettings = await SeoSettings.findByPk(req.params.id, {
+      include: [{ model: Store, attributes: ['id', 'owner_email'] }]
+    });
 
     if (!seoSettings) {
       return res.status(404).json({
@@ -94,16 +138,30 @@ router.put('/:id', auth, async (req, res) => {
       });
     }
 
+    // Check store ownership
+    if (req.user.role !== 'admin' && seoSettings.Store.owner_email !== req.user.email) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    console.log('🔄 Updating SEO settings with ID:', req.params.id);
     await seoSettings.update(req.body);
+    console.log('✅ SEO settings updated successfully');
+
     res.json({
       success: true,
       data: seoSettings
     });
   } catch (error) {
     console.error('Update SEO settings error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error name:', error.name);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
