@@ -44,6 +44,7 @@ const attributeSetRoutes = require('./routes/attribute-sets');
 const productLabelRoutes = require('./routes/product-labels');
 const paymentRoutes = require('./routes/payments');
 const paymentMethodRoutes = require('./routes/payment-methods');
+const cookieConsentRoutes = require('./routes/cookie-consent-settings');
 
 const app = express();
 
@@ -458,6 +459,7 @@ app.use('/api/attribute-sets', attributeSetRoutes);
 app.use('/api/product-labels', productLabelRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/payment-methods', authMiddleware, paymentMethodRoutes);
+app.use('/api/cookie-consent-settings', authMiddleware, cookieConsentRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
