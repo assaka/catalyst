@@ -85,7 +85,9 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     try {
       const submitData = {
         ...formData,
-        sort_order: parseInt(formData.sort_order) || 0
+        sort_order: parseInt(formData.sort_order) || 0,
+        // Convert empty string to null for UUID fields
+        parent_id: formData.parent_id || null
       };
 
       await onSubmit(submitData);
