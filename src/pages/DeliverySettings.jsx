@@ -40,36 +40,29 @@ export default function DeliverySettings() { // Renamed the function component f
       }
 
       setStore(selectedStore);
-        // Filter delivery settings by this specific store's ID
-        const existingSettings = await DeliverySettingsEntity.filter({ store_id: storeId });
-        
-        if (existingSettings && existingSettings.length > 0) {
-          setDeliverySettings(existingSettings[0]);
-        } else {
-          // If no settings exist for this store, create and set default ones
-          const defaultSettings = {
-            store_id: storeId,
-            enable_delivery_date: true,
-            enable_comments: true,
-            offset_days: 1,
-            max_advance_days: 30,
-            blocked_dates: [],
-            blocked_weekdays: [],
-            out_of_office_start: '',
-            out_of_office_end: '',
-            delivery_time_slots: [
-              { start_time: '09:00', end_time: '12:00', is_active: true },
-              { start_time: '13:00', end_time: '17:00', is_active: true }
-            ]
-          };
-          setDeliverySettings(defaultSettings);
-        }
+      // Filter delivery settings by this specific store's ID
+      const existingSettings = await DeliverySettingsEntity.filter({ store_id: storeId });
+      
+      if (existingSettings && existingSettings.length > 0) {
+        setDeliverySettings(existingSettings[0]);
       } else {
-        // No store found for the authenticated user
-        setStore(null);
-        setDeliverySettings(null); // No settings to load if no store is associated
-        setFlashMessage({ type: 'info', message: 'No store found for your account. Please create a store first to configure delivery settings.' });
-        console.warn("No store found for user:", user.email);
+        // If no settings exist for this store, create and set default ones
+        const defaultSettings = {
+          store_id: storeId,
+          enable_delivery_date: true,
+          enable_comments: true,
+          offset_days: 1,
+          max_advance_days: 30,
+          blocked_dates: [],
+          blocked_weekdays: [],
+          out_of_office_start: '',
+          out_of_office_end: '',
+          delivery_time_slots: [
+            { start_time: '09:00', end_time: '12:00', is_active: true },
+            { start_time: '13:00', end_time: '17:00', is_active: true }
+          ]
+        };
+        setDeliverySettings(defaultSettings);
       }
     } catch (error) {
       console.error("Error loading delivery settings:", error);

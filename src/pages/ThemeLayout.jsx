@@ -59,15 +59,13 @@ export default function ThemeLayout() {
                 },
             };
             setStore({ ...selectedStore, settings });
-            } catch (error) {
-                console.error("Failed to load store:", error);
-                setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadStore();
-    }, []);
+        } catch (error) {
+            console.error("Failed to load store:", error);
+            setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if (flashMessage) {
