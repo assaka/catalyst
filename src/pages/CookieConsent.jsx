@@ -178,7 +178,16 @@ export default function CookieConsent() {
   const handleSave = async () => {
     // Check if settings or store are null, or if store doesn't have an ID (which is required for saving)
     const storeId = getSelectedStoreId();
+    console.log('🍪 Cookie consent save DEBUG:', {
+      hasSettings: !!settings,
+      storeId,
+      settingsId: settings?.id,
+      settingsKeys: settings ? Object.keys(settings) : [],
+      settingsStoreId: settings?.store_id
+    });
+    
     if (!settings || !storeId) {
+      console.log('❌ Cookie consent save failed: missing settings or store ID');
       setFlashMessage({ type: 'error', message: 'Settings not loaded or no store found. Cannot save.' });
       return;
     }
@@ -186,18 +195,29 @@ export default function CookieConsent() {
     setSaving(true);
     
     try {
+      console.log('🔄 Saving cookie consent settings...', {
+        isUpdate: !!settings.id,
+        settingsData: settings
+      });
+      
       if (settings.id) {
+        console.log('🔄 Updating existing cookie consent settings:', settings.id);
         await retryApiCall(() => CookieConsentSettings.update(settings.id, settings));
+        console.log('✅ Cookie consent settings updated successfully');
       } else {
+        console.log('✨ Creating new cookie consent settings');
         // If settings.id is null, it's a new setting. The store_id should already be populated from loadData's defaultSettings.
         const created = await retryApiCall(() => CookieConsentSettings.create(settings));
+        console.log('✅ Cookie consent settings created:', created);
         setSettings({ ...settings, id: created.id });
       }
       
       setFlashMessage({ type: 'success', message: 'Cookie consent settings saved successfully!' });
       
     } catch (error) {
-      console.error('Failed to save cookie consent settings:', error);
+      console.error('❌ Failed to save cookie consent settings:', error);
+      console.error('Error details:', error.message);
+      console.error('Error response:', error.response);
       setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.message}` });
     } finally {
       setSaving(false);
