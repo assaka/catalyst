@@ -338,7 +338,6 @@ export default function Categories() {
             <div className="overflow-y-auto flex-1 px-1">
               <CategoryForm
                 category={selectedCategory}
-                stores={[]}
                 onSubmit={selectedCategory ? handleUpdateCategory : handleCreateCategory}
                 onCancel={() => {
                   setShowCategoryForm(false);

@@ -20,7 +20,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-export default function CategoryForm({ category, stores, onSubmit, onCancel, parentCategories }) {
+export default function CategoryForm({ category, onSubmit, onCancel, parentCategories }) {
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -30,7 +30,6 @@ export default function CategoryForm({ category, stores, onSubmit, onCancel, par
     sort_order: 0,
     is_active: true,
     hide_in_menu: false,
-    store_id: stores[0]?.id || "",
     // New SEO fields
     meta_title: "",
     meta_description: "",
@@ -50,7 +49,6 @@ export default function CategoryForm({ category, stores, onSubmit, onCancel, par
         sort_order: category.sort_order || 0,
         is_active: category.is_active !== undefined ? category.is_active : true,
         hide_in_menu: category.hide_in_menu || false,
-        store_id: category.store_id || stores[0]?.id || "",
         // New SEO fields
         meta_title: category.meta_title || "",
         meta_description: category.meta_description || "",
@@ -58,7 +56,7 @@ export default function CategoryForm({ category, stores, onSubmit, onCancel, par
         meta_robots_tag: category.meta_robots_tag || "index, follow"
       });
     }
-  }, [category, stores]);
+  }, [category]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -171,24 +169,6 @@ export default function CategoryForm({ category, stores, onSubmit, onCancel, par
           />
         </div>
 
-        <div>
-          <Label htmlFor="store">Store</Label>
-          <Select
-            value={formData.store_id || ""}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, store_id: value }))}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select store" />
-            </SelectTrigger>
-            <SelectContent>
-              {stores.map((store) => (
-                <SelectItem key={store.id} value={store.id}>
-                  {store.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
