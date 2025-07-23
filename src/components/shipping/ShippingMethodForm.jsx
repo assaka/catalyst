@@ -6,10 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CountrySelect } from '@/components/ui/country-select';
-import { Store } from '@/api/entities';
-import { User } from '@/api/entities';
-
-export default function ShippingMethodForm({ method, onSubmit, onCancel }) {
+export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: '',
     is_active: true,
@@ -18,35 +15,11 @@ export default function ShippingMethodForm({ method, onSubmit, onCancel }) {
     free_shipping_min_order: 0,
     availability: 'all',
     countries: [],
-    store_id: ''
   });
 
-  const [stores, setStores] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadUserStores();
-  }, []);
 
-  const loadUserStores = async () => {
-    try {
-      // CRITICAL FIX: Only load current user's stores
-      const user = await User.me();
-      const userStores = await Store.findAll();
-      
-      setStores(Array.isArray(userStores) ? userStores : []);
-      
-      // Set default store if available and no method is being edited
-      if (!method && userStores && userStores.length > 0) {
-        setFormData(prev => ({ ...prev, store_id: userStores[0].id }));
-      }
-    } catch (error) {
-      console.error("Error loading user stores:", error);
-      setStores([]);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (method) {
@@ -58,7 +31,6 @@ export default function ShippingMethodForm({ method, onSubmit, onCancel }) {
         free_shipping_min_order: method.free_shipping_min_order || 0,
         availability: method.availability || 'all',
         countries: Array.isArray(method.countries) ? method.countries : [],
-        store_id: method.store_id || ''
       });
     }
   }, [method]);
@@ -66,13 +38,13 @@ export default function ShippingMethodForm({ method, onSubmit, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.store_id) {
-      alert('Please select a store');
+    if (!storeId) {
+      alert('No store selected');
       return;
     }
 
     try {
-      await onSubmit(formData);
+      await onSubmit({ ...formData, store_id: storeId });
     } catch (error) {
       console.error('Error submitting shipping method:', error);
     }
@@ -97,28 +69,6 @@ export default function ShippingMethodForm({ method, onSubmit, onCancel }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <Label htmlFor="store_id">Store *</Label>
-            <Select
-              value={formData.store_id}
-              onValueChange={(value) => handleInputChange('store_id', value)}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select store" />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map(store => (
-                  <SelectItem key={store.id} value={store.id}>
-                    {store.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {stores.length === 0 && (
-              <p className="text-sm text-red-600 mt-1">No stores found. Please create a store first.</p>
-            )}
-          </div>
 
           <div>
             <Label htmlFor="name">Method Name *</Label>
@@ -216,7 +166,7 @@ export default function ShippingMethodForm({ method, onSubmit, onCancel }) {
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={stores.length === 0}>
+            <Button type="submit" disabled={!storeId}>
               {method ? 'Update Method' : 'Create Method'}
             </Button>
           </div>

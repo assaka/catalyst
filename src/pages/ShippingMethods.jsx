@@ -122,11 +122,23 @@ export default function ShippingMethodsPage() {
         }
     };
 
-  const handleFormSubmit = async () => {
-    setShowForm(false);
-    setSelectedMethod(null);
-    await loadData();
-    setFlashMessage({ type: 'success', message: `Shipping method ${selectedMethod ? 'updated' : 'created'} successfully!` });
+  const handleFormSubmit = async (formData) => {
+    try {
+      if (selectedMethod) {
+        await ShippingMethod.update(selectedMethod.id, formData);
+        setFlashMessage({ type: 'success', message: 'Shipping method updated successfully!' });
+      } else {
+        await ShippingMethod.create(formData);
+        setFlashMessage({ type: 'success', message: 'Shipping method created successfully!' });
+      }
+      
+      setShowForm(false);
+      setSelectedMethod(null);
+      await loadData();
+    } catch (error) {
+      console.error('Error saving shipping method:', error);
+      setFlashMessage({ type: 'error', message: 'Failed to save shipping method.' });
+    }
   };
 
   const handleEdit = (method) => {
