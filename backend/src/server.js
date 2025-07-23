@@ -31,6 +31,17 @@ const dbInitRoutes = require('./routes/db-init');
 const dbSetupRoutes = require('./routes/db-setup');
 const migrateRoutes = require('./routes/migrate');
 const migrateSupabaseRoutes = require('./routes/migrate-supabase');
+const customerRoutes = require('./routes/customers');
+const cartRoutes = require('./routes/cart');
+const wishlistRoutes = require('./routes/wishlist');
+const languageRoutes = require('./routes/languages');
+const customerActivityRoutes = require('./routes/customer-activity');
+const storePluginRoutes = require('./routes/store-plugins');
+const seoSettingsRoutes = require('./routes/seo-settings');
+const seoTemplateRoutes = require('./routes/seo-templates');
+const attributeSetRoutes = require('./routes/attribute-sets');
+const productLabelRoutes = require('./routes/product-labels');
+const paymentRoutes = require('./routes/payments');
 
 const app = express();
 
@@ -274,7 +285,10 @@ app.post('/debug/migrate', async (req, res) => {
     console.log('🔄 Running database migration...');
     
     // Import all models to ensure they're synced
-    const { User, Store, Product, Category, Order, OrderItem, Coupon, CmsPage, Tax, ShippingMethod, DeliverySettings } = require('./models');
+    const { 
+      User, Store, Product, Category, Order, OrderItem, Coupon, CmsPage, Tax, ShippingMethod, DeliverySettings,
+      Customer, Cart, Wishlist, Language, CustomerActivity, StorePlugin, SeoSettings, SeoTemplate, ProductLabel
+    } = require('./models');
     
     // Sync all models in the correct order
     await sequelize.sync({ alter: true });
@@ -427,6 +441,19 @@ app.use('/api/db-init', dbInitRoutes);
 app.use('/api/db-setup', dbSetupRoutes);
 app.use('/api/migrate', migrateRoutes);
 app.use('/api/migrate-supabase', migrateSupabaseRoutes);
+
+// New endpoint routes
+app.use('/api/customers', customerRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/languages', languageRoutes);
+app.use('/api/customer-activity', customerActivityRoutes);
+app.use('/api/store-plugins', storePluginRoutes);
+app.use('/api/seo-settings', seoSettingsRoutes);
+app.use('/api/seo-templates', seoTemplateRoutes);
+app.use('/api/attribute-sets', attributeSetRoutes);
+app.use('/api/product-labels', productLabelRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
