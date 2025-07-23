@@ -250,7 +250,9 @@ class AuthService {
 
   async me() {
     const response = await apiClient.get('auth/me');
-    return response.data || response;
+    const data = response.data || response;
+    // Handle case where data is returned as an array
+    return Array.isArray(data) ? data[0] : data;
   }
 
   async getCurrentUser() {
@@ -271,7 +273,9 @@ class UserService extends BaseEntity {
   // Get current user (alias for auth/me)
   async me() {
     const response = await apiClient.get('auth/me');
-    return response.data || response;
+    const data = response.data || response;
+    // Handle case where data is returned as an array
+    return Array.isArray(data) ? data[0] : data;
   }
 
   // Update profile

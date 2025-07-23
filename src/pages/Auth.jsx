@@ -110,9 +110,15 @@ export default function Auth() {
       }
       
       console.log('🔍 Auth.jsx: Calling User.me()...');
-      const user = await User.me();
+      let user = await User.me();
       console.log('✅ Auth.jsx: User.me() succeeded:', user ? 'user found' : 'no user');
       console.log('🔍 Auth.jsx: Full user data from User.me():', JSON.stringify(user, null, 2));
+      
+      // Handle case where user is returned as an array
+      if (Array.isArray(user)) {
+        console.log('🔍 Auth.jsx: User data was an array, extracting first element');
+        user = user[0];
+      }
       
       if (user) {
         // For Google OAuth users, ensure they have a role and redirect to Dashboard
