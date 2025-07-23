@@ -101,7 +101,12 @@ export default function Categories() {
       setShowCategoryForm(false);
     } catch (error) {
       console.error("Error creating category:", error);
-      console.error("Error details:", error.response?.data);
+      console.error("Error status:", error.status);
+      console.error("Error data:", error.data);
+      console.error("Error message:", error.message);
+      
+      // Show user-friendly error
+      alert(`Failed to create category: ${error.message || 'Unknown error'}`);
     }
   };
 
