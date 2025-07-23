@@ -81,7 +81,9 @@ export default function CookieConsent() {
       setStore(selectedStore);
       
       // Load cookie consent settings
+      console.log('🔍 Loading cookie consent settings for store:', selectedStore.id);
       const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: selectedStore.id }));
+      console.log('📊 Raw cookie consent settings from API:', cookieSettings);
       console.log('Found cookie settings:', cookieSettings?.length || 0);
       
       if (cookieSettings && cookieSettings.length > 0) {
@@ -121,6 +123,7 @@ export default function CookieConsent() {
             default_enabled: category.default_enabled ?? false
           }))
         };
+        console.log('✅ Final cookie consent settings being set:', loadedSettings);
         setSettings(loadedSettings);
       } else {
         // Create default settings with valid store_id

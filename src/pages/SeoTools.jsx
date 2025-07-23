@@ -152,11 +152,15 @@ export default function SeoTools() {
 
       setStore(selectedStore);
 
+        console.log('🔍 Loading SEO settings for store:', selectedStore.id);
         const settingsData = await SeoSetting.filter({ store_id: selectedStore.id });
+        console.log('📊 Raw SEO settings from API:', settingsData);
 
         if (settingsData && settingsData.length > 0) {
           const loadedSettings = settingsData[0];
-          setSeoSettings(prev => ({
+          console.log('🔄 Processing loaded SEO settings:', loadedSettings);
+          
+          const newSettings = {
             ...prev,
             ...loadedSettings,
             hreflang_settings: Array.isArray(loadedSettings.hreflang_settings) ? loadedSettings.hreflang_settings : [],
@@ -164,8 +168,12 @@ export default function SeoTools() {
             open_graph_settings: loadedSettings.open_graph_settings || prev.open_graph_settings,
             twitter_card_settings: loadedSettings.twitter_card_settings || prev.twitter_card_settings,
             store_id: selectedStore.id
-          }));
+          };
+          
+          console.log('✅ Final SEO settings being set:', newSettings);
+          setSeoSettings(newSettings);
         } else {
+          console.log('⚠️ No existing SEO settings found, using defaults');
           setSeoSettings(prev => ({
             ...prev,
             store_id: selectedStore.id
