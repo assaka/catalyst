@@ -19,6 +19,7 @@ export default function AttributeSetForm({ attributeSet, attributes, onSubmit, o
   useEffect(() => {
     if (attributeSet) {
       setFormData({
+        id: attributeSet.id,
         name: attributeSet.name || '',
         description: attributeSet.description || '',
         attribute_ids: attributeSet.attribute_ids || [],

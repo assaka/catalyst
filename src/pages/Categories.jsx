@@ -329,21 +329,23 @@ export default function Categories() {
 
         {/* Category Form Dialog */}
         <Dialog open={showCategoryForm} onOpenChange={setShowCategoryForm}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>
                 {selectedCategory ? 'Edit Category' : 'Add New Category'}
               </DialogTitle>
             </DialogHeader>
-            <CategoryForm
-              category={selectedCategory}
-              stores={[]}
-              onSubmit={selectedCategory ? handleUpdateCategory : handleCreateCategory}
-              onCancel={() => {
-                setShowCategoryForm(false);
-                setSelectedCategory(null);
-              }}
-            />
+            <div className="overflow-y-auto flex-1 px-1">
+              <CategoryForm
+                category={selectedCategory}
+                stores={[]}
+                onSubmit={selectedCategory ? handleUpdateCategory : handleCreateCategory}
+                onCancel={() => {
+                  setShowCategoryForm(false);
+                  setSelectedCategory(null);
+                }}
+              />
+            </div>
           </DialogContent>
         </Dialog>
       </div>
