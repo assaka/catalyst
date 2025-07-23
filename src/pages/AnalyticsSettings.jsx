@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -26,6 +27,7 @@ const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
 };
 
 export default function AnalyticsSettings() {
+    const { selectedStore, getSelectedStoreId } = useStoreSelection();
     const [store, setStore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -34,23 +36,22 @@ export default function AnalyticsSettings() {
     useEffect(() => {
         const loadStore = async () => {
             try {
-                const user = await User.me();
-                const stores = await retryApiCall(() => Store.findAll());
-                if (stores && stores.length > 0) {
-                    const currentStore = stores[0];
-                    setStore({
-                        ...currentStore,
-                        settings: {
-                            ...(currentStore.settings || {}),
-                            analytics_settings: {
-                                enable_google_tag_manager: false,
-                                gtm_id: '',
-                                google_ads_id: '',
-                                ...(currentStore.settings?.analytics_settings || {})
-                            }
-                        }
-                    });
+                if (!selectedStore) {
+                    setLoading(false);
+                    return;
                 }
+                setStore({
+                    ...selectedStore,
+                    settings: {
+                        ...(selectedStore.settings || {}),
+                        analytics_settings: {
+                            enable_google_tag_manager: false,
+                            gtm_id: '',
+                            google_ads_id: '',
+                            ...(selectedStore.settings?.analytics_settings || {})
+                        }
+                    }
+                });
             } catch (error) {
                 console.error("Failed to load store:", error);
                 setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
@@ -58,8 +59,10 @@ export default function AnalyticsSettings() {
                 setLoading(false);
             }
         };
-        loadStore();
-    }, []);
+        if (selectedStore) {
+            loadStore();
+        }
+    }, [selectedStore]);
 
     const handleAnalyticsChange = (key, value) => {
         setStore(prev => ({
@@ -75,10 +78,11 @@ export default function AnalyticsSettings() {
     };
 
     const handleSave = async () => {
-        if (!store) return;
+        const storeId = getSelectedStoreId();
+        if (!storeId || !store) return;
         setSaving(true);
         try {
-            await retryApiCall(() => Store.update(store.id, { settings: store.settings }));
+            await retryApiCall(() => Store.update(storeId, { settings: store.settings }));
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
         } catch (error) {
             console.error("Failed to save settings:", error);

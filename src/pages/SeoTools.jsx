@@ -41,9 +41,11 @@ import {
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { InvokeLLM } from "@/api/integrations";
 import { useStore } from "@/components/storefront/StoreProvider";
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 
 export default function SeoTools() {
   const location = useLocation();
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -126,8 +128,10 @@ export default function SeoTools() {
   const [attributeSets, setAttributeSets] = useState([]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -141,14 +145,14 @@ export default function SeoTools() {
     try {
       setLoading(true);
 
-      const user = await User.me();
-      const storesData = await Store.findAll();
+      if (!selectedStore) {
+        setLoading(false);
+        return;
+      }
 
-      if (storesData && storesData.length > 0) {
-        const currentStore = storesData[0];
-        setStore(currentStore);
+      setStore(selectedStore);
 
-        const settingsData = await SeoSetting.filter({ store_id: currentStore.id });
+        const settingsData = await SeoSetting.filter({ store_id: selectedStore.id });
 
         if (settingsData && settingsData.length > 0) {
           const loadedSettings = settingsData[0];
@@ -159,21 +163,21 @@ export default function SeoTools() {
             schema_settings: loadedSettings.schema_settings || prev.schema_settings,
             open_graph_settings: loadedSettings.open_graph_settings || prev.open_graph_settings,
             twitter_card_settings: loadedSettings.twitter_card_settings || prev.twitter_card_settings,
-            store_id: currentStore.id
+            store_id: selectedStore.id
           }));
         } else {
           setSeoSettings(prev => ({
             ...prev,
-            store_id: currentStore.id
+            store_id: selectedStore.id
           }));
         }
 
         try {
           const [templatesData, redirectsData, categoriesData, attributeSetsData] = await Promise.all([
-            SeoTemplate.filter({ store_id: currentStore.id }).catch(() => []),
-            Redirect.filter({ store_id: currentStore.id }).catch(() => []),
-            Category.filter({ store_id: currentStore.id }).catch(() => []),
-            AttributeSet.filter({ store_id: currentStore.id }).catch(() => [])
+            SeoTemplate.filter({ store_id: selectedStore.id }).catch(() => []),
+            Redirect.filter({ store_id: selectedStore.id }).catch(() => []),
+            Category.filter({ store_id: selectedStore.id }).catch(() => []),
+            AttributeSet.filter({ store_id: selectedStore.id }).catch(() => [])
           ]);
 
           setTemplates(Array.isArray(templatesData) ? templatesData : []);
@@ -191,13 +195,6 @@ export default function SeoTools() {
 
         await generateSeoReport();
 
-      } else {
-        console.warn("No store found for the current user.");
-        setFlashMessage({ type: 'error', message: 'No store found. Please create a store first.' });
-        setLoading(false);
-        return;
-      }
-
     } catch (error) {
       console.error("Error loading SEO data:", error);
       setFlashMessage({ type: 'error', message: 'Failed to load SEO data: ' + error.message });
@@ -208,11 +205,12 @@ export default function SeoTools() {
 
   const generateSeoReport = async () => {
     try {
-      if (!store?.id) return;
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
 
-      const products = await Product.filter({ store_id: store.id });
-      const categories = await Category.filter({ store_id: store.id });
-      const pages = await CmsPage.filter({ store_id: store.id });
+      const products = await Product.filter({ store_id: storeId });
+      const categories = await Category.filter({ store_id: storeId });
+      const pages = await CmsPage.filter({ store_id: storeId });
 
       const totalPages = (products?.length || 0) + (categories?.length || 0) + (pages?.length || 0);
       const allPages = [...(products || []), ...(categories || []), ...(pages || [])];
@@ -247,14 +245,15 @@ export default function SeoTools() {
   };
 
   const handleSaveSettings = async () => {
-    if (!store) {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
       setFlashMessage({ type: 'error', message: 'No store found. Please refresh the page.' });
       return;
     }
 
     setSaving(true);
     try {
-      const existingSettings = await SeoSetting.filter({ store_id: store.id });
+      const existingSettings = await SeoSetting.filter({ store_id: storeId });
 
       const payload = {
         default_meta_title: seoSettings.default_meta_title || '',
@@ -274,7 +273,7 @@ export default function SeoTools() {
         schema_settings: seoSettings.schema_settings,
         open_graph_settings: seoSettings.open_graph_settings,
         twitter_card_settings: seoSettings.twitter_card_settings,
-        store_id: store.id
+        store_id: storeId
       };
 
       let result;
@@ -313,7 +312,7 @@ export default function SeoTools() {
         meta_description: templateForm.meta_description,
         meta_keywords: templateForm.meta_keywords,
         conditions: templateForm.conditions,
-        store_id: store.id
+        store_id: storeId
       };
 
       if (editingTemplate) {
@@ -368,7 +367,7 @@ export default function SeoTools() {
         from_url: redirectForm.from_url,
         to_url: redirectForm.to_url,
         type: redirectForm.type,
-        store_id: store.id
+        store_id: storeId
       };
 
       if (editingRedirect) {
@@ -462,11 +461,12 @@ export default function SeoTools() {
 
   const generateXmlSitemap = async () => {
     try {
-      if (!store?.id) return;
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
 
-      const products = await Product.filter({ status: 'active', store_id: store.id });
-      const categories = await Category.filter({ is_active: true, store_id: store.id });
-      const pages = await CmsPage.filter({ is_active: true, store_id: store.id });
+      const products = await Product.filter({ status: 'active', store_id: storeId });
+      const categories = await Category.filter({ is_active: true, store_id: storeId });
+      const pages = await CmsPage.filter({ is_active: true, store_id: storeId });
 
       let sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -553,7 +553,8 @@ export default function SeoTools() {
 
   const updateRobotsContent = async () => {
     try {
-      if (!store) {
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
         setFlashMessage({ type: 'error', message: 'No store found. Cannot update robots.txt.' });
         return;
       }
@@ -561,9 +562,9 @@ export default function SeoTools() {
       setUpdatingRobots(true);
 
       const [products, categories, cmsPages] = await Promise.all([
-        Product.filter({ store_id: store.id }),
-        Category.filter({ store_id: store.id }),
-        CmsPage.filter({ store_id: store.id })
+        Product.filter({ store_id: storeId }),
+        Category.filter({ store_id: storeId }),
+        CmsPage.filter({ store_id: storeId })
       ]);
 
       let specificDisallowRules = [];
@@ -615,7 +616,7 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
       const updatedSettings = {
         ...seoSettings,
         robots_txt_content: finalContent,
-        store_id: store.id
+        store_id: storeId
       };
 
       if (seoSettings?.id) {
@@ -623,7 +624,7 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
       } else {
         await SeoSetting.create({
           ...updatedSettings,
-          store_id: store.id
+          store_id: storeId
         });
       }
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { DeliverySettings as DeliverySettingsEntity } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities"; // New import for user authentication
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { Calendar, Clock, Settings, Plus, Trash2 } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 
 export default function DeliverySettings() { // Renamed the function component from DeliverySettingsPage
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [deliverySettings, setDeliverySettings] = useState(null); // Changed state variable name, initialized to null
   const [store, setStore] = useState(null); // Tracks the current user's store, initialized to null
   const [loading, setLoading] = useState(true);
@@ -21,38 +23,32 @@ export default function DeliverySettings() { // Renamed the function component f
   const [newBlockedDate, setNewBlockedDate] = useState('');
 
   useEffect(() => {
-    loadDeliverySettings(); // Call the refactored data loading function
-  }, []);
+    if (selectedStore) {
+      loadDeliverySettings(); // Call the refactored data loading function
+    }
+  }, [selectedStore]);
 
   const loadDeliverySettings = async () => {
     try {
       setLoading(true);
       
-      // CRITICAL FIX: Get current user first, then filter by user's stores for data isolation
-      const user = await User.me();
-      if (!user) {
-        setFlashMessage({ type: 'error', message: 'Authentication required. Please log in.' });
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        console.warn("No store selected");
         setLoading(false);
         return;
       }
 
-      // Filter stores by the current user's owner_email to ensure data isolation
-      const userStores = await Store.findAll();
-      
-      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
-        // Assume the first store found is the one relevant for delivery settings
-        const currentStore = userStores[0];
-        setStore(currentStore);
-        
+      setStore(selectedStore);
         // Filter delivery settings by this specific store's ID
-        const existingSettings = await DeliverySettingsEntity.filter({ store_id: currentStore.id });
+        const existingSettings = await DeliverySettingsEntity.filter({ store_id: storeId });
         
         if (existingSettings && existingSettings.length > 0) {
           setDeliverySettings(existingSettings[0]);
         } else {
           // If no settings exist for this store, create and set default ones
           const defaultSettings = {
-            store_id: currentStore.id,
+            store_id: storeId,
             enable_delivery_date: true,
             enable_comments: true,
             offset_days: 1,

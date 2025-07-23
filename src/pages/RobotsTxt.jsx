@@ -5,12 +5,14 @@ import { Category } from '@/api/entities';
 import { CmsPage } from '@/api/entities';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Save, Bot, RefreshCw } from 'lucide-react';
 
 export default function RobotsTxt() {
+    const { selectedStore, getSelectedStoreId } = useStoreSelection();
     const [robotsTxt, setRobotsTxt] = useState('');
     const [seoSetting, setSeoSetting] = useState(null);
     const [store, setStore] = useState(null);
@@ -21,12 +23,12 @@ export default function RobotsTxt() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const user = await User.me();
-            const stores = await Store.findAll();
-            if (stores && stores.length > 0) {
-                const currentStore = stores[0];
-                setStore(currentStore);
-                const settings = await SeoSetting.filter({ store_id: currentStore.id });
+            if (!selectedStore) {
+                setLoading(false);
+                return;
+            }
+            setStore(selectedStore);
+            const settings = await SeoSetting.filter({ store_id: selectedStore.id });
                 if (settings && settings.length > 0) {
                     setSeoSetting(settings[0]);
                     setRobotsTxt(settings[0].robots_txt_content || '');
@@ -40,18 +42,21 @@ export default function RobotsTxt() {
     }, []);
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        if (selectedStore) {
+            loadData();
+        }
+    }, [selectedStore, loadData]);
 
     const generateRobotsTxt = async () => {
         setGenerating(true);
         try {
-            if (!store) return;
+            const storeId = getSelectedStoreId();
+            if (!storeId) return;
 
             const [products, categories, pages] = await Promise.all([
-                Product.filter({ store_id: store.id, "seo.meta_robots_tag": "noindex, nofollow" }),
-                Category.filter({ store_id: store.id, meta_robots_tag: "noindex, nofollow" }),
-                CmsPage.filter({ store_id: store.id, meta_robots_tag: "noindex, nofollow" })
+                Product.filter({ store_id: storeId, "seo.meta_robots_tag": "noindex, nofollow" }),
+                Category.filter({ store_id: storeId, meta_robots_tag: "noindex, nofollow" }),
+                CmsPage.filter({ store_id: storeId, meta_robots_tag: "noindex, nofollow" })
             ]);
 
             const defaultRules = [
@@ -62,7 +67,7 @@ export default function RobotsTxt() {
                 'Disallow: /cart/',
                 'Disallow: /account/',
                 'Disallow: /login',
-                `Sitemap: ${store.custom_domain || store.domain}/sitemap.xml`
+                `Sitemap: ${selectedStore.custom_domain || selectedStore.domain}/sitemap.xml`
             ].join('\n');
 
             let newContent = [defaultRules];
@@ -91,10 +96,11 @@ export default function RobotsTxt() {
     const handleSave = async () => {
         setSaving(true);
         try {
+            const storeId = getSelectedStoreId();
             if (seoSetting) {
                 await SeoSetting.update(seoSetting.id, { robots_txt_content: robotsTxt });
-            } else if (store) {
-                await SeoSetting.create({ store_id: store.id, robots_txt_content: robotsTxt });
+            } else if (storeId) {
+                await SeoSetting.create({ store_id: storeId, robots_txt_content: robotsTxt });
             }
             // Optionally, show a success message
         } catch (error) {
@@ -141,7 +147,7 @@ export default function RobotsTxt() {
                         <Button 
                             variant="outline" 
                             onClick={generateRobotsTxt} 
-                            disabled={generating || !store}
+                            disabled={generating || !selectedStore}
                         >
                             {generating ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
                             Update with Product Rules

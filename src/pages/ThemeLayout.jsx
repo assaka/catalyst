@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -22,15 +23,28 @@ const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
 };
 
 export default function ThemeLayout() {
+    const { selectedStore, getSelectedStoreId } = useStoreSelection();
     const [store, setStore] = useState(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [flashMessage, setFlashMessage] = useState(null);
 
     useEffect(() => {
-        const loadStore = async () => {
-            try {
-                const user = await User.me();
+        if (selectedStore) {
+            loadStore();
+        }
+    }, [selectedStore]);
+
+    const loadStore = async () => {
+        try {
+            const storeId = getSelectedStoreId();
+            if (!storeId) {
+                console.warn("No store selected");
+                setLoading(false);
+                return;
+            }
+
+            setStore(selectedStore);
                 const stores = await retryApiCall(() => Store.findAll());
                 if (stores && stores.length > 0) {
                     const currentStore = stores[0];

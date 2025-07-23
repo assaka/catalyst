@@ -5,6 +5,7 @@ import { Store } from "@/api/entities";
 import { Attribute } from "@/api/entities";
 import { AttributeSet } from "@/api/entities";
 import { User } from "@/api/entities"; // Import User entity
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import {
   Package,
   Plus,
@@ -29,6 +30,7 @@ import FlashMessage from "../components/storefront/FlashMessage";
 import ProductTabForm from "../components/products/ProductTabForm";
 
 export default function ProductTabs() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [tabs, setTabs] = useState([]); // Renamed from productTabs
   const [attributes, setAttributes] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
@@ -40,29 +42,31 @@ export default function ProductTabs() {
   const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
 
   const loadData = async () => {
     try {
       setLoading(true);
 
-      // CRITICAL FIX: Get current user first, then filter by user's stores
-      const user = await User.me();
-      // Assuming 'filter' method on Store can filter by owner_email
-      const userStores = await Store.findAll();
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        console.warn("No store selected");
+        setLoading(false);
+        return;
+      }
 
-      if (userStores && Array.isArray(userStores) && userStores.length > 0) {
-        const currentStore = userStores[0]; // Take the first store found for the user
-        setStore(currentStore);
+      setStore(selectedStore);
 
-        // Filter all data by current store's ID
-        const [tabsData, attributesData, setsData] = await Promise.all([
-          // Assuming ProductTab.filter can take a sort parameter as the second argument
-          ProductTab.filter({ store_id: currentStore.id }, "sort_order"),
-          Attribute.filter({ store_id: currentStore.id }),
-          AttributeSet.filter({ store_id: currentStore.id })
-        ]);
+      // Filter all data by current store's ID
+      const [tabsData, attributesData, setsData] = await Promise.all([
+        // Assuming ProductTab.filter can take a sort parameter as the second argument
+        ProductTab.filter({ store_id: storeId }, "sort_order"),
+        Attribute.filter({ store_id: storeId }),
+        AttributeSet.filter({ store_id: storeId })
+      ]);
 
         setTabs(tabsData || []);
         setAttributes(attributesData || []);

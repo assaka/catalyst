@@ -6,6 +6,7 @@ import { CookieConsentSettings } from '@/api/entities';
 import { CookieConsent as CookieConsentEntity } from '@/api/entities';
 import { User } from '@/api/entities';
 import { Store } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -42,6 +43,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function CookieConsent() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [settings, setSettings] = useState(null);
   const [consentLogs, setConsentLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,8 +53,10 @@ export default function CookieConsent() {
   const [user, setUser] = useState(null); // Added user state
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
 
   useEffect(() => {
     if (flashMessage) {
@@ -67,27 +71,18 @@ export default function CookieConsent() {
     try {
       setLoading(true);
       
-      const user = await retryApiCall(() => User.me());
-      setUser(user); // Set user state
-      console.log('Current user:', user.email);
-      
-      const stores = await retryApiCall(() => Store.findAll());
-      console.log('Found stores:', stores?.length || 0);
-      
-      if (!stores || stores.length === 0) {
-        console.warn("No stores found for user:", user.email);
+      if (!selectedStore) {
         setStore(null);
         setSettings(null);
         setLoading(false);
         return;
       }
       
-      const currentStore = stores[0];
-      console.log('Using store:', currentStore.name);
-      setStore(currentStore);
+      console.log('Using store:', selectedStore.name);
+      setStore(selectedStore);
       
       // Load cookie consent settings
-      const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: currentStore.id }));
+      const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: selectedStore.id }));
       console.log('Found cookie settings:', cookieSettings?.length || 0);
       
       if (cookieSettings && cookieSettings.length > 0) {
@@ -95,7 +90,7 @@ export default function CookieConsent() {
       } else {
         // Create default settings with valid store_id
         const defaultSettings = {
-          store_id: currentStore.id,
+          store_id: selectedStore.id,
           enabled: false,
           gdpr_mode: true,
           auto_detect_country: true,
@@ -142,7 +137,7 @@ export default function CookieConsent() {
       
       // Load consent logs
       try {
-        const logs = await retryApiCall(() => CookieConsentEntity.filter({ store_id: currentStore.id }));
+        const logs = await retryApiCall(() => CookieConsentEntity.filter({ store_id: selectedStore.id }));
         setConsentLogs(Array.isArray(logs) ? logs.slice(0, 100) : []);
       } catch (error) {
         console.warn('Failed to load consent logs:', error);
@@ -162,7 +157,8 @@ export default function CookieConsent() {
 
   const handleSave = async () => {
     // Check if settings or store are null, or if store doesn't have an ID (which is required for saving)
-    if (!settings || !store || !store.id) {
+    const storeId = getSelectedStoreId();
+    if (!settings || !storeId) {
       setFlashMessage({ type: 'error', message: 'Settings not loaded or no store found. Cannot save.' });
       return;
     }

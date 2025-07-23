@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -32,14 +33,17 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function StockSettings() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
 
   useEffect(() => {
-    loadStore();
-  }, []);
+    if (selectedStore) {
+      loadStore();
+    }
+  }, [selectedStore]);
 
   useEffect(() => {
     if (flashMessage) {
@@ -54,21 +58,17 @@ export default function StockSettings() {
     try {
       setLoading(true);
       
-      const user = await retryApiCall(() => User.me());
-      const stores = await retryApiCall(() => Store.findAll());
-      
-      if (!stores || stores.length === 0) {
+      if (!selectedStore) {
         setSettings(null);
         setLoading(false);
         return;
       }
       
-      const currentStore = stores[0];
-      const storeSettings = currentStore.settings || {};
+      const storeSettings = selectedStore.settings || {};
       
       setSettings({
-        id: currentStore.id,
-        name: currentStore.name,
+        id: selectedStore.id,
+        name: selectedStore.name,
         enable_inventory: storeSettings.hasOwnProperty('enable_inventory') ? storeSettings.enable_inventory : true,
         display_out_of_stock: storeSettings.hasOwnProperty('display_out_of_stock') ? storeSettings.display_out_of_stock : true,
         hide_stock_quantity: storeSettings.hasOwnProperty('hide_stock_quantity') ? storeSettings.hide_stock_quantity : false,
@@ -95,7 +95,8 @@ export default function StockSettings() {
   };
 
   const handleSave = async () => {
-    if (!settings || !settings.id) {
+    const storeId = getSelectedStoreId();
+    if (!settings || !storeId) {
       setFlashMessage({ type: 'error', message: 'Store data not loaded. Cannot save.' });
       return;
     }
@@ -118,7 +119,7 @@ export default function StockSettings() {
         }
       };
 
-      await retryApiCall(() => Store.update(settings.id, payload));
+      await retryApiCall(() => Store.update(storeId, payload));
       
       setFlashMessage({ type: 'success', message: 'Stock settings saved successfully!' });
       

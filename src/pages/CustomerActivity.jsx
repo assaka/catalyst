@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { CustomerActivity } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Eye, ShoppingCart, Search, Heart, CreditCard, Package } from "lucide-react";
 
 export default function CustomerActivityPage() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [activities, setActivities] = useState([]);
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,27 +19,25 @@ export default function CustomerActivityPage() {
   const [activityFilter, setActivityFilter] = useState("all");
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (selectedStore) {
+      loadData();
+    }
+  }, [selectedStore]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       
-      const user = await User.me();
-      const stores = await Store.findAll();
-      
-      if (stores && stores.length > 0) {
-        const currentStore = stores[0];
-        setStore(currentStore);
-        
-        const activitiesData = await CustomerActivity.filter({ store_id: currentStore.id }, '-created_date');
-        setActivities(activitiesData || []);
-      } else {
+      if (!selectedStore) {
         setActivities([]);
         setStore(null);
-        console.warn("No store found for user:", user.email);
+        setLoading(false);
+        return;
       }
+      
+      setStore(selectedStore);
+      const activitiesData = await CustomerActivity.filter({ store_id: selectedStore.id }, '-created_date');
+      setActivities(activitiesData || []);
     } catch (error) {
       console.error("Error loading customer activity:", error);
       setActivities([]);
