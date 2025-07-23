@@ -22,6 +22,7 @@ const StorePlugin = require('./StorePlugin');
 const SeoSettings = require('./SeoSettings');
 const SeoTemplate = require('./SeoTemplate');
 const ProductLabel = require('./ProductLabel');
+const PaymentMethod = require('./PaymentMethod');
 
 // Define associations
 const defineAssociations = () => {
@@ -124,6 +125,10 @@ const defineAssociations = () => {
   // ProductLabel associations
   ProductLabel.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(ProductLabel, { foreignKey: 'store_id' });
+
+  // PaymentMethod associations
+  PaymentMethod.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(PaymentMethod, { foreignKey: 'store_id' });
 };
 
 // Initialize associations
@@ -153,5 +158,6 @@ module.exports = {
   StorePlugin,
   SeoSettings,
   SeoTemplate,
-  ProductLabel
+  ProductLabel,
+  PaymentMethod
 };

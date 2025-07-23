@@ -43,6 +43,7 @@ const seoTemplateRoutes = require('./routes/seo-templates');
 const attributeSetRoutes = require('./routes/attribute-sets');
 const productLabelRoutes = require('./routes/product-labels');
 const paymentRoutes = require('./routes/payments');
+const paymentMethodRoutes = require('./routes/payment-methods');
 
 const app = express();
 
@@ -456,6 +457,7 @@ app.use('/api/seo-templates', seoTemplateRoutes);
 app.use('/api/attribute-sets', attributeSetRoutes);
 app.use('/api/product-labels', productLabelRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/payment-methods', authMiddleware, paymentMethodRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
