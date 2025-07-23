@@ -273,7 +273,18 @@ export default function Auth() {
       if (isLogin) {
         const response = await AuthService.login(formData.email, formData.password, formData.rememberMe);
         if (response.success) {
-          checkAuthStatus();
+          // Check user role from response and redirect accordingly
+          const userRole = response.data?.user?.role || response.user?.role;
+          console.log('🔍 Login successful, user role:', userRole);
+          
+          if (userRole === 'store_owner' || userRole === 'admin' || !userRole) {
+            navigate(createPageUrl("Dashboard"));
+          } else if (userRole === 'customer') {
+            navigate(createPageUrl("CustomerDashboard"));
+          } else {
+            // Fallback to checkAuthStatus
+            checkAuthStatus();
+          }
         }
       } else {
         const response = await AuthService.register({
@@ -286,7 +297,11 @@ export default function Auth() {
         });
         if (response.success) {
           setSuccess("Registration successful! Redirecting...");
-          setTimeout(() => checkAuthStatus(), 1500);
+          // Since we explicitly set role as store_owner during registration,
+          // redirect directly to Dashboard
+          setTimeout(() => {
+            navigate(createPageUrl("Dashboard"));
+          }, 1500);
         }
       }
     } catch (error) {
