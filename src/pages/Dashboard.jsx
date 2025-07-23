@@ -293,22 +293,17 @@ export default function Dashboard() {
       const allOrders = await retryApiCall(() => Order.filter({ store_id: storeId }), 3, 1000);
       const customers = await retryApiCall(() => Customer.filter({ store_id: storeId }), 3, 1000);
 
-        const totalOrders = Array.isArray(allOrders) ? allOrders.length : 0;
-        const totalRevenue = Array.isArray(allOrders) ? allOrders.reduce((sum, order) => sum + (order?.total_amount || 0), 0) : 0;
-        const totalProductsCount = Array.isArray(productsData) ? productsData.length : 0;
-        const totalCustomers = Array.isArray(customers) ? customers.length : 0;
+      const totalOrders = Array.isArray(allOrders) ? allOrders.length : 0;
+      const totalRevenue = Array.isArray(allOrders) ? allOrders.reduce((sum, order) => sum + (order?.total_amount || 0), 0) : 0;
+      const totalProductsCount = Array.isArray(productsData) ? productsData.length : 0;
+      const totalCustomers = Array.isArray(customers) ? customers.length : 0;
 
-        setStats({
-          totalRevenue,
-          totalOrders,
-          totalProducts: totalProductsCount,
-          totalCustomers
-        });
-      } else {
-        setStore(null);
-        setProducts([]);
-        setStats({ totalRevenue: 0, totalOrders: 0, totalProducts: 0, totalCustomers: 0 });
-      }
+      setStats({
+        totalRevenue,
+        totalOrders,
+        totalProducts: totalProductsCount,
+        totalCustomers
+      });
     } catch (error) {
       console.error("Error loading dashboard data:", error);
       setError("Failed to load dashboard data. Please try refreshing the page.");
