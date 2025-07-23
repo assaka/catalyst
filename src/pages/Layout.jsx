@@ -409,8 +409,6 @@ export default function Layout({ children, currentPageName }) {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
   };
   
-  const hasNoCredits = (user?.credits || 0) <= 0;
-  const showWarning = hasNoCredits && user?.account_type === 'agency';
 
 
   return (
@@ -657,7 +655,7 @@ export default function Layout({ children, currentPageName }) {
                             : 'text-gray-700 hover:bg-gray-100'
                         }`;
                     
-                    if (item.path === "Billing" && showWarning) {
+                    if (item.path === "Billing") {
                         itemClass += " animate-pulse bg-red-50 text-red-700";
                     }
 
@@ -791,16 +789,8 @@ export default function Layout({ children, currentPageName }) {
           </div>
         </div>
         
-        {showWarning && (
-            <div className="bg-red-600 text-white text-center p-2 text-sm z-10">
-                You have no credits. Your store is inactive. 
-                <Link to={createPageUrl("Billing")} className="font-bold underline ml-2 hover:text-red-100">
-                    Please Add Credits
-                </Link>
-            </div>
-        )}
 
-        <div className={`flex-1 ${showWarning ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className="flex-1">
           {children}
         </div>
       </div>

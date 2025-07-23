@@ -54,6 +54,12 @@ export default function Stores() {
   const handleCreateStore = async () => {
     setCreateError('');
     
+    // Check credits before proceeding (only for agency users)
+    if (user?.account_type === 'agency' && user?.role !== 'admin' && (user?.credits || 0) <= 0) {
+      setCreateError('You need at least 1 credit to create a store. Each store costs 1 credit per day.');
+      return;
+    }
+    
     // Dynamically generate slug if not provided, to ensure validation works
     // and to align with previous functionality where slug was derived from name.
     // The outline removed the generation but added validation for slug.
@@ -216,12 +222,10 @@ export default function Stores() {
                 />
               </div>
 
-              {/* The credit deduction logic was removed from handleCreateStore by the outline,
-                  so this note might be less relevant or requires re-evaluation of business logic. */}
-              {user?.account_type === 'agency' && stores.length > 0 && (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                  <p className="text-sm text-yellow-800">
-                    <strong>Note:</strong> Additional stores cost 10 credits per month.
+              {user?.account_type === 'agency' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-800">
+                    <strong>Store Pricing:</strong> Each store costs 1 credit per day to maintain.
                     You have {user?.credits || 0} credits remaining.
                   </p>
                 </div>
@@ -233,10 +237,7 @@ export default function Stores() {
                 </Button>
                 <Button
                   onClick={handleCreateStore}
-                  // The disabled condition for credits is retained based on the previous implementation,
-                  // but the credit deduction itself was removed from handleCreateStore in the outline.
-                  // Admin users should not be restricted by credits
-                  disabled={!newStore.name || (user?.account_type === 'agency' && user?.role !== 'admin' && stores.length > 0 && (user?.credits || 0) < 10)}
+                  disabled={!newStore.name}
                 >
                   Create Store
                 </Button>

@@ -118,6 +118,11 @@ const Store = sequelize.define('Store', {
   meta_keywords: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  // Stripe Connect
+  stripe_account_id: {
+    type: DataTypes.STRING,
+    allowNull: true
   }
 }, {
   tableName: 'stores',
