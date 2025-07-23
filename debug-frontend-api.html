@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Frontend API</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        pre { background-color: #f8f9fa; padding: 10px; overflow-x: auto; }
+        button { margin: 5px; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Frontend API Debug Tool</h1>
+    
+    <div>
+        <h3>Authentication Token</h3>
+        <input type="text" id="token" placeholder="Enter JWT token" style="width: 500px;">
+        <button onclick="saveToken()">Save Token</button>
+        <button onclick="loadTokenFromStorage()">Load from Storage</button>
+    </div>
+    
+    <div>
+        <h3>API Tests</h3>
+        <button onclick="testAuth()">Test Auth (/api/auth/me)</button>
+        <button onclick="testStores()">Test Stores (/api/stores)</button>
+        <button onclick="testStoresDebug()">Test Stores Debug (/api/stores/debug)</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        function saveToken() {
+            const token = document.getElementById('token').value;
+            if (token) {
+                localStorage.setItem('auth_token', token);
+                addResult('Token saved to localStorage', 'success');
+            }
+        }
+        
+        function loadTokenFromStorage() {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                document.getElementById('token').value = token;
+                addResult('Token loaded from localStorage', 'success');
+            } else {
+                addResult('No token found in localStorage', 'error');
+            }
+        }
+        
+        function getToken() {
+            return document.getElementById('token').value || localStorage.getItem('auth_token');
+        }
+        
+        function addResult(content, type = '') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = content;
+            results.appendChild(div);
+        }
+        
+        async function makeApiCall(endpoint, description) {
+            const token = getToken();
+            if (!token) {
+                addResult(`❌ ${description}: No token provided`, 'error');
+                return;
+            }
+            
+            try {
+                addResult(`🔄 ${description}: Making request...`);
+                
+                const response = await fetch(endpoint, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                const responseText = await response.text();
+                let responseData;
+                
+                try {
+                    responseData = JSON.parse(responseText);
+                } catch (e) {
+                    responseData = responseText;
+                }
+                
+                if (response.ok) {
+                    addResult(`✅ ${description} Success (${response.status}):
+                        <pre>${JSON.stringify(responseData, null, 2)}</pre>`, 'success');
+                } else {
+                    addResult(`❌ ${description} Error (${response.status}):
+                        <pre>${JSON.stringify(responseData, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ${description} Network Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAuth() {
+            await makeApiCall('/api/auth/me', 'Auth Test');
+        }
+        
+        async function testStores() {
+            await makeApiCall('/api/stores', 'Stores API');
+        }
+        
+        async function testStoresDebug() {
+            await makeApiCall('/api/stores/debug', 'Stores Debug API');
+        }
+        
+        // Load token on page load
+        window.onload = function() {
+            loadTokenFromStorage();
+        };
+    </script>
+</body>
+</html>

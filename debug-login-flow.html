@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Login Flow</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .result { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        pre { background-color: #f8f9fa; padding: 10px; overflow-x: auto; }
+        button { margin: 5px; padding: 10px; }
+        input { margin: 5px; padding: 8px; width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>Login Flow Debug Tool</h1>
+    
+    <div class="section">
+        <h3>1. Login Test</h3>
+        <div>
+            <input type="email" id="email" value="playamin998@gmail.com" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button onclick="testLogin()">Test Login</button>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h3>2. Token Management</h3>
+        <button onclick="checkStoredToken()">Check Stored Token</button>
+        <button onclick="clearToken()">Clear Token</button>
+        <button onclick="decodeToken()">Decode Token</button>
+    </div>
+    
+    <div class="section">
+        <h3>3. API Tests</h3>
+        <button onclick="testAuthMe()">Test /api/auth/me</button>
+        <button onclick="testStores()">Test /api/stores</button>
+        <button onclick="testStoresWithDebug()">Test /api/stores/debug</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        const API_BASE_URL = 'https://catalyst-backend-fzhu.onrender.com';
+        
+        function addResult(content, type = '') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong><br>${content}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        function getAuthHeaders() {
+            const token = localStorage.getItem('auth_token');
+            return {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            };
+        }
+        
+        async function testLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                addResult('❌ Please enter both email and password', 'error');
+                return;
+            }
+            
+            try {
+                addResult(`🔄 Attempting login for ${email}...`);
+                
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password }),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ Login successful! 
+                        <br>Token received: ${data.token ? 'YES' : 'NO'}
+                        <br>User: ${data.user?.email} (${data.user?.role})
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                    
+                    if (data.token) {
+                        localStorage.setItem('auth_token', data.token);
+                        addResult('💾 Token saved to localStorage', 'success');
+                    }
+                } else {
+                    addResult(`❌ Login failed (${response.status}): 
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Login error: ${error.message}`, 'error');
+            }
+        }
+        
+        function checkStoredToken() {
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                addResult(`✅ Token found in localStorage:
+                    <br>Length: ${token.length} characters
+                    <br>First 50 chars: ${token.substring(0, 50)}...
+                    <br>Last 50 chars: ...${token.substring(token.length - 50)}`, 'success');
+            } else {
+                addResult('❌ No token found in localStorage', 'error');
+            }
+        }
+        
+        function clearToken() {
+            localStorage.removeItem('auth_token');
+            addResult('🗑️ Token cleared from localStorage', 'warning');
+        }
+        
+        function decodeToken() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) {
+                addResult('❌ No token to decode', 'error');
+                return;
+            }
+            
+            try {
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    addResult('❌ Invalid token format (not 3 parts)', 'error');
+                    return;
+                }
+                
+                const header = JSON.parse(atob(parts[0]));
+                const payload = JSON.parse(atob(parts[1]));
+                
+                const now = Math.floor(Date.now() / 1000);
+                const isExpired = payload.exp && payload.exp < now;
+                
+                addResult(`📋 Token decoded:
+                    <br><strong>Header:</strong> <pre>${JSON.stringify(header, null, 2)}</pre>
+                    <br><strong>Payload:</strong> <pre>${JSON.stringify(payload, null, 2)}</pre>
+                    <br><strong>Expires:</strong> ${payload.exp ? new Date(payload.exp * 1000).toLocaleString() : 'No expiration'}
+                    <br><strong>Status:</strong> ${isExpired ? '❌ EXPIRED' : '✅ Valid'}`, 
+                    isExpired ? 'error' : 'success');
+            } catch (error) {
+                addResult(`❌ Token decode error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAuthMe() {
+            try {
+                addResult('🔄 Testing /api/auth/me...');
+                
+                const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ Auth test successful:
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                } else {
+                    addResult(`❌ Auth test failed (${response.status}):
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Auth test error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testStores() {
+            try {
+                addResult('🔄 Testing /api/stores...');
+                
+                const response = await fetch(`${API_BASE_URL}/api/stores`, {
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const storeCount = Array.isArray(data) ? data.length : 'Unknown';
+                    addResult(`✅ Stores test successful - Found ${storeCount} stores:
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                } else {
+                    addResult(`❌ Stores test failed (${response.status}):
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Stores test error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testStoresWithDebug() {
+            try {
+                addResult('🔄 Testing /api/stores/debug...');
+                
+                const response = await fetch(`${API_BASE_URL}/api/stores/debug`, {
+                    method: 'GET',
+                    headers: getAuthHeaders(),
+                    credentials: 'include'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ Stores debug successful:
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'success');
+                } else {
+                    addResult(`❌ Stores debug failed (${response.status}):
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ Stores debug error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-check token on page load
+        window.onload = function() {
+            addResult('🚀 Debug tool loaded. Ready to test!', 'success');
+            checkStoredToken();
+        };
+    </script>
+</body>
+</html>

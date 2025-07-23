@@ -230,8 +230,25 @@ export default function Layout({ children, currentPageName }) {
   
   // Handle admin pages
   if (isAdminPage) {
+      console.log('🔍 Layout.jsx: Admin page access check:', {
+          isAdminPage,
+          isLoading,
+          user: user ? {
+              email: user.email,
+              role: user.role,
+              account_type: user.account_type
+          } : null,
+          conditions: {
+              'user.account_type !== "agency"': user?.account_type !== 'agency',
+              'user.role !== "admin"': user?.role !== 'admin',
+              'user.role !== "store_owner"': user?.role !== 'store_owner',
+              'ALL CONDITIONS': user && (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner')
+          }
+      });
+      
       if (!isLoading && (!user || (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner'))) {
           const destination = user ? "CustomerDashboard" : "Landing";
+          console.log('❌ Layout.jsx: Unauthorized access to admin page, redirecting to:', destination);
           navigate(createPageUrl(destination));
           return (
               <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">

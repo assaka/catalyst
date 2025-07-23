@@ -9,7 +9,7 @@ const router = express.Router();
 const generateToken = (user, rememberMe = false) => {
   const expiresIn = rememberMe ? '30d' : (process.env.JWT_EXPIRES_IN || '24h');
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
+    { id: user.id, email: user.email, role: user.role, account_type: user.account_type },
     process.env.JWT_SECRET,
     { expiresIn }
   );
