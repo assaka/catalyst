@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,8 +36,8 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 1000) => {
 };
 
 export default function ProductForm({ product, categories, stores, taxes, attributes: passedAttributes, attributeSets: passedAttributeSets, onSubmit, onCancel }) {
+  const { selectedStore } = useStoreSelection();
   const [flashMessage, setFlashMessage] = useState(null);
-  const [currentStore, setCurrentStore] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -266,13 +267,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     e.preventDefault();
     setLoading(true);
 
-    if (!currentStore && (!stores || stores.length === 0)) {
+    if (!selectedStore && (!stores || stores.length === 0)) {
       setFlashMessage({ type: 'error', message: 'No store available for product creation/update.' });
       setLoading(false);
       return;
     }
 
-    const storeToUse = currentStore || stores[0];
+    const storeToUse = selectedStore || stores[0];
 
     try {
       const payload = {
