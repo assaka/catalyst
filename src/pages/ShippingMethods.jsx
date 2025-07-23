@@ -238,8 +238,8 @@ export default function ShippingMethodsPage() {
                           </Badge>
                           <span>•</span>
                           <span>
-                            {method.type === 'flat_rate' ? `$${method.flat_rate_cost?.toFixed(2)} Flat Rate` : 
-                             `Free over $${method.free_shipping_min_order?.toFixed(2)}`}
+                            {method.type === 'flat_rate' ? `$${parseFloat(method.flat_rate_cost || 0).toFixed(2)} Flat Rate` : 
+                             `Free over $${parseFloat(method.free_shipping_min_order || 0).toFixed(2)}`}
                           </span>
                         </div>
                       </div>

@@ -28,7 +28,7 @@ export default function PaymentMethods() {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    provider: 'manual',
+    type: 'credit_card',
     is_active: true,
     description: '',
     icon_url: '',
@@ -42,21 +42,21 @@ export default function PaymentMethods() {
     {
       name: "Stripe (Online Payments)",
       code: "stripe",
-      provider: "stripe",
+      type: "stripe",
       description: "Accept credit cards, debit cards, and more via Stripe.",
       icon_url: "https://js.stripe.com/v3/fingerprinted/img/stripe-logo-blurple-fed4f31ce.svg"
     },
     {
       name: "Cash on Delivery",
       code: "cod",
-      provider: "manual",
+      type: "cash_on_delivery",
       description: "Pay with cash upon delivery.",
       icon_url: ""
     },
     {
       name: "Bank Transfer",
       code: "bank_transfer",
-      provider: "manual",
+      type: "bank_transfer",
       description: "Pay via a manual bank transfer.",
       icon_url: ""
     }
@@ -128,7 +128,7 @@ export default function PaymentMethods() {
     setFormData({
       name: method.name,
       code: method.code,
-      provider: method.provider,
+      type: method.type || 'other',
       is_active: method.is_active,
       description: method.description || '',
       icon_url: method.icon_url || '',
@@ -157,7 +157,7 @@ export default function PaymentMethods() {
     setFormData({
       name: '', 
       code: '', 
-      provider: 'manual',
+      type: 'other',
       is_active: true, 
       description: '', 
       icon_url: '', 
@@ -267,7 +267,7 @@ export default function PaymentMethods() {
                       {method.icon_url ? (
                         <img src={method.icon_url} alt={method.name} className="w-8 h-8 object-contain" />
                       ) : (
-                        method.provider === 'stripe' ? (
+                        method.type === 'stripe' ? (
                           <CreditCard className="w-6 h-6 text-gray-600" />
                         ) : (
                           <Banknote className="w-6 h-6 text-gray-600" />
@@ -278,8 +278,8 @@ export default function PaymentMethods() {
                       <h3 className="font-semibold text-lg">{method.name}</h3>
                       <p className="text-gray-600">{method.description}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <Badge variant={method.provider === 'stripe' ? 'default' : 'secondary'}>
-                          {method.provider}
+                        <Badge variant={method.type === 'stripe' ? 'default' : 'secondary'}>
+                          {method.type}
                         </Badge>
                         <Badge variant={method.is_active ? 'default' : 'secondary'}>
                           {method.is_active ? 'Active' : 'Inactive'}
@@ -346,14 +346,19 @@ export default function PaymentMethods() {
                 </div>
 
                 <div>
-                  <Label htmlFor="provider">Provider</Label>
-                  <Select value={formData.provider} onValueChange={(value) => setFormData({ ...formData, provider: value })}>
+                  <Label htmlFor="type">Payment Type</Label>
+                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="manual">Offline Method</SelectItem>
+                      <SelectItem value="credit_card">Credit Card</SelectItem>
+                      <SelectItem value="debit_card">Debit Card</SelectItem>
+                      <SelectItem value="paypal">PayPal</SelectItem>
                       <SelectItem value="stripe">Stripe</SelectItem>
+                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                      <SelectItem value="cash_on_delivery">Cash on Delivery</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
