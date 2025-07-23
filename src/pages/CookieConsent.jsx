@@ -85,10 +85,15 @@ export default function CookieConsent() {
       console.log('Found cookie settings:', cookieSettings?.length || 0);
       
       if (cookieSettings && cookieSettings.length > 0) {
-        // Ensure settings has all required properties
+        // Ensure settings has all required properties with proper boolean defaults
         const loadedSettings = {
           ...cookieSettings[0],
-          categories: cookieSettings[0].categories || [
+          // Ensure all boolean properties have proper defaults
+          enabled: cookieSettings[0].enabled || false,
+          gdpr_mode: cookieSettings[0].gdpr_mode ?? true,
+          auto_detect_country: cookieSettings[0].auto_detect_country ?? true,
+          audit_enabled: cookieSettings[0].audit_enabled ?? true,
+          categories: (cookieSettings[0].categories || [
             {
               id: "necessary",
               name: "Necessary Cookies",
@@ -110,7 +115,11 @@ export default function CookieConsent() {
               required: false,
               default_enabled: false
             }
-          ]
+          ]).map(category => ({
+            ...category,
+            required: category.required ?? false,
+            default_enabled: category.default_enabled ?? false
+          }))
         };
         setSettings(loadedSettings);
       } else {
@@ -354,7 +363,7 @@ export default function CookieConsent() {
                     </div>
                     <Switch
                       id="enabled"
-                      checked={settings.enabled}
+                      checked={settings?.enabled || false}
                       onCheckedChange={(checked) => setSettings({ ...settings, enabled: checked })}
                     />
                   </div>
@@ -366,7 +375,7 @@ export default function CookieConsent() {
                     </div>
                     <Switch
                       id="gdpr_mode"
-                      checked={settings.gdpr_mode}
+                      checked={settings?.gdpr_mode ?? true}
                       onCheckedChange={(checked) => setSettings({ ...settings, gdpr_mode: checked })}
                     />
                   </div>
@@ -378,7 +387,7 @@ export default function CookieConsent() {
                     </div>
                     <Switch
                       id="auto_detect_country"
-                      checked={settings.auto_detect_country}
+                      checked={settings?.auto_detect_country ?? true}
                       onCheckedChange={(checked) => setSettings({ ...settings, auto_detect_country: checked })}
                     />
                   </div>
@@ -540,7 +549,7 @@ export default function CookieConsent() {
                           <div className="flex items-center space-x-2">
                             <Switch
                               id={`required-${index}`}
-                              checked={category.required}
+                              checked={category?.required || false}
                               onCheckedChange={(checked) => handleCategoryChange(index, 'required', checked)}
                               disabled={category.id === 'essential'}
                             />
@@ -549,7 +558,7 @@ export default function CookieConsent() {
                           <div className="flex items-center space-x-2">
                             <Switch
                               id={`default-${index}`}
-                              checked={category.default_enabled}
+                              checked={category?.default_enabled || false}
                               onCheckedChange={(checked) => handleCategoryChange(index, 'default_enabled', checked)}
                             />
                             <Label htmlFor={`default-${index}`}>Enabled by Default</Label>
@@ -634,7 +643,7 @@ export default function CookieConsent() {
                       Export CSV
                     </Button>
                     <Switch
-                      checked={settings.audit_enabled}
+                      checked={settings?.audit_enabled ?? true}
                       onCheckedChange={(checked) => setSettings({ ...settings, audit_enabled: checked })}
                     />
                   </div>
