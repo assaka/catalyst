@@ -59,14 +59,19 @@ router.post('/', async (req, res) => {
   try {
     const { session_id, store_id, items, user_id } = req.body;
 
-    if (!session_id || !store_id) {
+    if ((!session_id && !user_id) || !store_id) {
       return res.status(400).json({
         success: false,
-        message: 'session_id and store_id are required'
+        message: 'store_id and either session_id or user_id are required'
       });
     }
 
-    let cart = await Cart.findOne({ where: { session_id } });
+    let cart;
+    if (user_id) {
+      cart = await Cart.findOne({ where: { user_id } });
+    } else {
+      cart = await Cart.findOne({ where: { session_id } });
+    }
 
     if (cart) {
       // Update existing cart
