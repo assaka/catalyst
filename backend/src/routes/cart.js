@@ -4,6 +4,50 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// Debug endpoint to test database connection
+router.get('/debug', async (req, res) => {
+  try {
+    console.log('Cart debug - testing database connection');
+    
+    // Test basic database query
+    const { sequelize } = require('../database/connection');
+    await sequelize.authenticate();
+    console.log('Cart debug - database connection OK');
+    
+    // Test Cart model
+    const cartCount = await Cart.count();
+    console.log('Cart debug - cart count:', cartCount);
+    
+    // Test creating a simple cart
+    const testCart = await Cart.create({
+      session_id: 'debug-test-' + Date.now(),
+      items: []
+    });
+    console.log('Cart debug - created test cart:', testCart.id);
+    
+    // Clean up
+    await testCart.destroy();
+    console.log('Cart debug - cleaned up test cart');
+    
+    res.json({
+      success: true,
+      message: 'Cart debug tests passed',
+      cartCount
+    });
+  } catch (error) {
+    console.error('Cart debug - error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Cart debug failed',
+      error: error.message,
+      details: {
+        name: error.name,
+        code: error.code
+      }
+    });
+  }
+});
+
 // @route   GET /api/cart
 // @desc    Get cart by session_id or user_id
 // @access  Public
