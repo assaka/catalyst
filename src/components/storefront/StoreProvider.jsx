@@ -399,7 +399,12 @@ export const StoreProvider = ({ children }) => {
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`categories-${selectedStore.id}`, async () => {
-          const result = await Category.filter({ store_id: selectedStore.id });
+          console.log('🏷️ StoreProvider: About to call Category.filter with store_id:', selectedStore.id);
+          // Use a high limit to get all categories for the storefront
+          const result = await Category.filter({ store_id: selectedStore.id, limit: 1000 });
+          console.log('🏷️ StoreProvider: Category.filter raw result:', result);
+          console.log('🏷️ StoreProvider: Category.filter result type:', typeof result);
+          console.log('🏷️ StoreProvider: Category.filter is array?', Array.isArray(result));
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`labels-${selectedStore.id}`, async () => {
@@ -426,6 +431,11 @@ export const StoreProvider = ({ children }) => {
       setTaxes(results[0].status === 'fulfilled' ? (results[0].value || []) : []);
       
       const categoriesResult = results[1].status === 'fulfilled' ? (results[1].value || []) : [];
+      console.log('🏷️ StoreProvider: Categories loaded from API:', categoriesResult);
+      console.log('🏷️ StoreProvider: Categories count:', categoriesResult.length);
+      if (categoriesResult.length > 0) {
+        console.log('🏷️ StoreProvider: Sample category structure:', categoriesResult[0]);
+      }
       setCategories(categoriesResult);
       
       setProductLabels(results[2].status === 'fulfilled' ? (results[2].value || []) : []);

@@ -3,12 +3,17 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 
 export default function CategoryNav({ categories }) {
+    console.log('🏷️ CategoryNav: All categories received:', categories);
+    
     if (!categories || categories.length === 0) {
+        console.log('🏷️ CategoryNav: No categories provided');
         return null;
     }
 
     // Show all categories that are not hidden in menu (both parent and child categories)
     const visibleCategories = categories.filter(c => !c.hide_in_menu);
+    console.log('🏷️ CategoryNav: Visible categories after filter:', visibleCategories);
+    console.log('🏷️ CategoryNav: Hidden categories:', categories.filter(c => c.hide_in_menu));
     
     return (
         <nav className="hidden md:flex items-center space-x-2">
