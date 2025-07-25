@@ -25,7 +25,9 @@
       "Bash(tail:*)",
       "Bash(done)",
       "Bash(mv:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(find:*)",
+      "Bash(npm run migrate:*)"
     ],
     "deny": []
   }

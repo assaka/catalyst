@@ -5,6 +5,7 @@ import { createPageUrl } from '@/utils';
 import { Cart } from '@/api/entities';
 import { Product } from '@/api/entities';
 import { User } from '@/api/entities';
+import { useStore } from '@/components/storefront/StoreProvider';
 import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/popover';
 
 export default function MiniCart({ cartUpdateTrigger }) {
+  const { store } = useStore();
   const [cartItems, setCartItems] = useState([]);
   const [cartProducts, setCartProducts] = useState({});
   const [loading, setLoading] = useState(false);
@@ -70,27 +72,37 @@ export default function MiniCart({ cartUpdateTrigger }) {
         localStorage.setItem('cart_session_id', sessionId);
       }
 
-      let cartData = [];
+      let cartItems = [];
       
       if (user?.id) {
         // Load user's cart
         const result = await Cart.filter({ user_id: user.id });
-        cartData = Array.isArray(result) ? result : [];
-        console.log('🛒 MiniCart: Loaded user cart:', cartData);
+        const carts = Array.isArray(result) ? result : [];
+        console.log('🛒 MiniCart: Loaded user cart records:', carts);
+        
+        // Extract items from cart records
+        if (carts.length > 0 && carts[0].items) {
+          cartItems = Array.isArray(carts[0].items) ? carts[0].items : [];
+        }
       } else {
         // Load guest cart
         const result = await Cart.filter({ session_id: sessionId });
-        cartData = Array.isArray(result) ? result : [];
-        console.log('🛒 MiniCart: Loaded guest cart:', cartData);
+        const carts = Array.isArray(result) ? result : [];
+        console.log('🛒 MiniCart: Loaded guest cart records:', carts);
+        
+        // Extract items from cart records
+        if (carts.length > 0 && carts[0].items) {
+          cartItems = Array.isArray(carts[0].items) ? carts[0].items : [];
+        }
       }
 
-      console.log('MiniCart: Loaded cart data:', cartData);
-      setCartItems(Array.isArray(cartData) ? cartData : []);
+      console.log('🛒 MiniCart: Extracted cart items:', cartItems);
+      setCartItems(cartItems);
 
       // Load product details for cart items
-      if (cartData && cartData.length > 0) {
+      if (cartItems && cartItems.length > 0) {
         const productDetails = {};
-        for (const item of cartData) {
+        for (const item of cartItems) {
           if (!productDetails[item.product_id]) {
             try {
               const result = await Product.filter({ id: item.product_id });
@@ -121,7 +133,30 @@ export default function MiniCart({ cartUpdateTrigger }) {
     }
 
     try {
-      await Cart.update(cartItemId, { quantity: newQuantity });
+      // Update the local cart items array
+      const updatedItems = cartItems.map(item => 
+        item.id === cartItemId ? { ...item, quantity: newQuantity } : item
+      );
+
+      // Find the cart record and update it
+      let sessionId = localStorage.getItem('cart_session_id');
+      if (!sessionId) {
+        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('cart_session_id', sessionId);
+      }
+
+      const updateData = { 
+        items: updatedItems,
+        store_id: store?.id
+      };
+      if (user?.id) {
+        updateData.user_id = user.id;
+      } else {
+        updateData.session_id = sessionId;
+      }
+
+      // Post updated items back to cart
+      await Cart.create(updateData);
       await loadCart();
       
       // Dispatch update event
@@ -133,7 +168,28 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   const removeItem = async (cartItemId) => {
     try {
-      await Cart.delete(cartItemId);
+      // Remove item from local cart items array
+      const updatedItems = cartItems.filter(item => item.id !== cartItemId);
+
+      // Find the cart record and update it
+      let sessionId = localStorage.getItem('cart_session_id');
+      if (!sessionId) {
+        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('cart_session_id', sessionId);
+      }
+
+      const updateData = { 
+        items: updatedItems,
+        store_id: store?.id
+      };
+      if (user?.id) {
+        updateData.user_id = user.id;
+      } else {
+        updateData.session_id = sessionId;
+      }
+
+      // Post updated items back to cart
+      await Cart.create(updateData);
       await loadCart();
       
       // Dispatch update event

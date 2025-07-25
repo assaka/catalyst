@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.post('/', async (req, res) => {
   try {
-    const { session_id, store_id, items, user_id } = req.body;
+    const { session_id, store_id, items, user_id, product_id, quantity, price, selected_attributes, selected_options } = req.body;
 
     if ((!session_id && !user_id) || !store_id) {
       return res.status(400).json({
@@ -73,12 +73,48 @@ router.post('/', async (req, res) => {
       cart = await Cart.findOne({ where: { session_id } });
     }
 
+    let cartItems = [];
+
+    if (cart) {
+      // Get existing items
+      cartItems = Array.isArray(cart.items) ? cart.items : [];
+    }
+
+    // If individual item fields are provided, add as new item
+    if (product_id && quantity) {
+      const newItem = {
+        id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        product_id,
+        quantity: parseInt(quantity) || 1,
+        price: parseFloat(price) || 0,
+        selected_attributes: selected_attributes || {},
+        selected_options: selected_options || []
+      };
+
+      // Check if item with same product_id and options already exists
+      const existingItemIndex = cartItems.findIndex(item => 
+        item.product_id === product_id && 
+        JSON.stringify(item.selected_options) === JSON.stringify(selected_options)
+      );
+
+      if (existingItemIndex >= 0) {
+        // Update quantity of existing item
+        cartItems[existingItemIndex].quantity += newItem.quantity;
+      } else {
+        // Add new item
+        cartItems.push(newItem);
+      }
+    } else if (items) {
+      // Use provided items array
+      cartItems = items;
+    }
+
     if (cart) {
       // Update existing cart
       await cart.update({
-        items: items || cart.items,
+        items: cartItems,
         user_id: user_id || cart.user_id,
-        ...req.body
+        store_id: store_id || cart.store_id
       });
     } else {
       // Create new cart
@@ -86,8 +122,7 @@ router.post('/', async (req, res) => {
         session_id,
         store_id,
         user_id,
-        items: items || [],
-        ...req.body
+        items: cartItems
       });
     }
 
