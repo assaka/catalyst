@@ -382,7 +382,7 @@ export default function Cart() {
                     <div className="lg:grid lg:grid-cols-3 lg:gap-8">
                         <div className="lg:col-span-2">
                             <Card>
-                                <CardContent className="p-0 divide-y divide-gray-200">
+                                <CardContent className="px-4 divide-y divide-gray-200">
                                     {cartItems.map(item => {
                                         const product = item.product;
                                         if (!product) return null;
