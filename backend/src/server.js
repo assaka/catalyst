@@ -284,6 +284,65 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+// Test cookie consent settings endpoint
+app.get('/debug/test-cookie-settings', async (req, res) => {
+  try {
+    const { CookieConsentSettings } = require('./models');
+    
+    // Test if table exists and can be queried
+    const count = await CookieConsentSettings.count();
+    
+    // Test table structure
+    const attributes = CookieConsentSettings.getTableName ? 
+      Object.keys(CookieConsentSettings.rawAttributes) : 
+      'Unknown';
+    
+    res.json({
+      success: true,
+      message: 'CookieConsentSettings table is accessible',
+      recordCount: count,
+      attributes: attributes
+    });
+  } catch (error) {
+    console.error('❌ CookieConsentSettings test failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'CookieConsentSettings table test failed',
+      error: error.message,
+      stack: error.stack?.split('\n').slice(0, 5)
+    });
+  }
+});
+
+// Cookie consent settings migration endpoint
+app.post('/debug/migrate-cookie-settings', async (req, res) => {
+  try {
+    console.log('🔄 Running CookieConsentSettings migration...');
+    
+    const { CookieConsentSettings } = require('./models');
+    
+    // Sync CookieConsentSettings table
+    await CookieConsentSettings.sync({ alter: true });
+    console.log('✅ CookieConsentSettings table synced successfully');
+    
+    // Test the table
+    const count = await CookieConsentSettings.count();
+    
+    res.json({
+      success: true,
+      message: 'CookieConsentSettings migration completed successfully',
+      recordCount: count
+    });
+  } catch (error) {
+    console.error('❌ CookieConsentSettings migration failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'CookieConsentSettings migration failed',
+      error: error.message
+    });
+  }
+});
+
 // Consent logs migration endpoint
 app.post('/debug/migrate-consent', async (req, res) => {
   try {
