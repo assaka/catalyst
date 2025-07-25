@@ -426,8 +426,6 @@ export const StoreProvider = ({ children }) => {
       setTaxes(results[0].status === 'fulfilled' ? (results[0].value || []) : []);
       
       const categoriesResult = results[1].status === 'fulfilled' ? (results[1].value || []) : [];
-      console.log('🏷️ StoreProvider: Categories API result:', results[1]);
-      console.log('🏷️ StoreProvider: Setting categories:', categoriesResult);
       setCategories(categoriesResult);
       
       setProductLabels(results[2].status === 'fulfilled' ? (results[2].value || []) : []);

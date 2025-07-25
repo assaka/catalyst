@@ -209,7 +209,7 @@ class ApiClient {
         // Handle paginated responses with arrays in data properties (only for list endpoints)
         const dataEntries = Object.entries(result.data);
         for (const [key, value] of dataEntries) {
-          if (Array.isArray(value) && key !== 'categories' && key !== 'gdpr_countries') {
+          if (Array.isArray(value) && key !== 'gdpr_countries') {
             console.log(`🔍 API Client found array in data.${key}:`, value);
             return value;
           }
