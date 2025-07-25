@@ -5,6 +5,7 @@ import { createPageUrl } from "@/utils";
 import { Product } from "@/api/entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
+import couponService from "@/services/couponService";
 import { PaymentMethod } from "@/api/entities";
 import { ShippingMethod } from "@/api/entities";
 import { Address } from "@/api/entities";
@@ -88,6 +89,24 @@ export default function Checkout() {
   useEffect(() => {
     loadCheckoutData();
   }, [store?.id, storeLoading]);
+
+  // Load applied coupon from service on mount
+  useEffect(() => {
+    const storedCoupon = couponService.getAppliedCoupon();
+    if (storedCoupon) {
+      console.log('🎟️ Checkout: Loading stored coupon:', storedCoupon.name);
+      setAppliedCoupon(storedCoupon);
+    }
+
+    // Listen for coupon changes from other components
+    const unsubscribe = couponService.addListener((coupon) => {
+      console.log('🎟️ Checkout: Received coupon update:', coupon?.name || 'removed');
+      setAppliedCoupon(coupon);
+      setCouponError(''); // Clear any errors when coupon changes
+    });
+
+    return unsubscribe;
+  }, []);
 
   // Listen for cart updates from other components
   useEffect(() => {
@@ -199,6 +218,15 @@ export default function Checkout() {
           }
         }
         setCartProducts(productDetails);
+        
+        // Validate applied coupon when cart contents change
+        if (appliedCoupon) {
+          validateAppliedCoupon(appliedCoupon, cartItems, productDetails);
+        }
+      } else if (appliedCoupon) {
+        // Clear coupon if cart is empty
+        console.log('🎟️ Checkout: Clearing coupon because cart is empty');
+        couponService.removeAppliedCoupon();
       }
     } catch (error) {
       console.error('Failed to load cart items:', error);
@@ -297,6 +325,52 @@ export default function Checkout() {
     }
   };
 
+  // Validate that applied coupon is still valid for current cart contents
+  const validateAppliedCoupon = (coupon, cartItems, productDetails) => {
+    if (!coupon || !cartItems || cartItems.length === 0) return;
+
+    try {
+      // Check if coupon applies to products in cart
+      if (coupon.applicable_products && coupon.applicable_products.length > 0) {
+        const hasApplicableProduct = cartItems.some(item => 
+          coupon.applicable_products.includes(item.product_id)
+        );
+        if (!hasApplicableProduct) {
+          console.log('🎟️ Checkout: Removing coupon - no applicable products in cart');
+          couponService.removeAppliedCoupon();
+          return;
+        }
+      }
+
+      // Check if coupon applies to categories in cart
+      if (coupon.applicable_categories && coupon.applicable_categories.length > 0) {
+        const hasApplicableCategory = cartItems.some(item => {
+          const product = productDetails[item.product_id];
+          return product?.category_ids?.some(catId => 
+            coupon.applicable_categories.includes(catId)
+          );
+        });
+        if (!hasApplicableCategory) {
+          console.log('🎟️ Checkout: Removing coupon - no applicable categories in cart');
+          couponService.removeAppliedCoupon();
+          return;
+        }
+      }
+
+      // Check minimum purchase amount
+      const subtotal = calculateSubtotal();
+      if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
+        console.log('🎟️ Checkout: Removing coupon - minimum purchase amount not met');
+        couponService.removeAppliedCoupon();
+        return;
+      }
+
+      console.log('🎟️ Checkout: Coupon is still valid for current cart');
+    } catch (error) {
+      console.error('Error validating applied coupon:', error);
+    }
+  };
+
   // Coupon handling functions
   const handleApplyCoupon = async () => {
     if (!couponCode) {
@@ -383,9 +457,16 @@ export default function Checkout() {
           }
         }
         
-        setAppliedCoupon(coupon);
-        setCouponCode(''); // Clear the input after successful application
+        // Use coupon service to persist and sync coupon
+        const result = couponService.setAppliedCoupon(coupon);
+        if (result.success) {
+          setAppliedCoupon(coupon);
+          setCouponCode(''); // Clear the input after successful application
+        } else {
+          setCouponError('Failed to apply coupon. Please try again.');
+        }
       } else {
+        setAppliedCoupon(null);
         setCouponError("Invalid or expired coupon code.");
       }
     } catch (error) {
@@ -395,9 +476,12 @@ export default function Checkout() {
   };
 
   const handleRemoveCoupon = () => {
-    setAppliedCoupon(null);
-    setCouponCode('');
-    setCouponError('');
+    const result = couponService.removeAppliedCoupon();
+    if (result.success) {
+      setAppliedCoupon(null);
+      setCouponCode('');
+      setCouponError('');
+    }
   };
 
   const handleCouponKeyPress = (e) => {

@@ -7,6 +7,7 @@ import { Product } from '@/api/entities';
 import { Coupon } from '@/api/entities';
 import { User } from '@/api/entities';
 import cartService from '@/services/cartService';
+import couponService from '@/services/couponService';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
@@ -108,6 +109,23 @@ export default function Cart() {
         }
     }, [storeLoading, store?.id]);
 
+    // Load applied coupon from service on mount
+    useEffect(() => {
+        const storedCoupon = couponService.getAppliedCoupon();
+        if (storedCoupon) {
+            console.log('🎟️ Cart: Loading stored coupon:', storedCoupon.name);
+            setAppliedCoupon(storedCoupon);
+        }
+
+        // Listen for coupon changes from other components
+        const unsubscribe = couponService.addListener((coupon) => {
+            console.log('🎟️ Cart: Received coupon update:', coupon?.name || 'removed');
+            setAppliedCoupon(coupon);
+        });
+
+        return unsubscribe;
+    }, []);
+
     // Listen for cart updates from other components (like MiniCart)
     useEffect(() => {
         const handleCartUpdate = (event) => {
@@ -182,6 +200,11 @@ export default function Cart() {
             
             if (!cartItems || cartItems.length === 0) {
                 setCartItems([]);
+                // Clear applied coupon when cart is empty
+                if (appliedCoupon) {
+                    console.log('🎟️ Cart: Clearing coupon because cart is empty');
+                    couponService.removeAppliedCoupon();
+                }
                 if (showLoader) setLoading(false);
                 return;
             }
@@ -200,6 +223,11 @@ export default function Cart() {
             
             setCartItems(populatedCart);
             setHasLoadedInitialData(true);
+            
+            // Validate applied coupon when cart contents change
+            if (appliedCoupon) {
+                validateAppliedCoupon(appliedCoupon, populatedCart);
+            }
         } catch (error) {
             console.error("Error loading cart:", error);
             setFlashMessage({ type: 'error', message: "Could not load your cart. Please try refreshing." });
@@ -269,6 +297,57 @@ export default function Cart() {
         } catch (error) {
             console.error("Error removing item:", error);
             setFlashMessage({ type: 'error', message: "Failed to remove item." });
+        }
+    };
+
+    // Validate that applied coupon is still valid for current cart contents
+    const validateAppliedCoupon = (coupon, cartItems) => {
+        if (!coupon || !cartItems || cartItems.length === 0) return;
+
+        try {
+            // Check if coupon applies to products in cart
+            if (coupon.applicable_products && coupon.applicable_products.length > 0) {
+                const hasApplicableProduct = cartItems.some(item => 
+                    coupon.applicable_products.includes(item.product_id)
+                );
+                if (!hasApplicableProduct) {
+                    console.log('🎟️ Cart: Removing coupon - no applicable products in cart');
+                    couponService.removeAppliedCoupon();
+                    setFlashMessage({ type: 'warning', message: `Coupon "${coupon.name}" was removed because it doesn't apply to current cart items.` });
+                    return;
+                }
+            }
+
+            // Check if coupon applies to categories in cart
+            if (coupon.applicable_categories && coupon.applicable_categories.length > 0) {
+                const hasApplicableCategory = cartItems.some(item => 
+                    item.product?.category_ids?.some(catId => 
+                        coupon.applicable_categories.includes(catId)
+                    )
+                );
+                if (!hasApplicableCategory) {
+                    console.log('🎟️ Cart: Removing coupon - no applicable categories in cart');
+                    couponService.removeAppliedCoupon();
+                    setFlashMessage({ type: 'warning', message: `Coupon "${coupon.name}" was removed because it doesn't apply to current cart items.` });
+                    return;
+                }
+            }
+
+            // Check minimum purchase amount
+            const subtotal = calculateSubtotal();
+            if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
+                console.log('🎟️ Cart: Removing coupon - minimum purchase amount not met');
+                couponService.removeAppliedCoupon();
+                setFlashMessage({ 
+                    type: 'warning', 
+                    message: `Coupon "${coupon.name}" was removed because the minimum order amount of ${currencySymbol}${safeToFixed(coupon.min_purchase_amount)} is no longer met.` 
+                });
+                return;
+            }
+
+            console.log('🎟️ Cart: Coupon is still valid for current cart');
+        } catch (error) {
+            console.error('Error validating applied coupon:', error);
         }
     };
 
@@ -363,9 +442,15 @@ export default function Cart() {
                     }
                 }
                 
-                setAppliedCoupon(coupon);
-                setFlashMessage({ type: 'success', message: `Coupon "${coupon.name}" applied!` });
-                setCouponCode(''); // Clear the input after successful application
+                // Use coupon service to persist and sync coupon
+                const result = couponService.setAppliedCoupon(coupon);
+                if (result.success) {
+                    setAppliedCoupon(coupon);
+                    setFlashMessage({ type: 'success', message: `Coupon "${coupon.name}" applied!` });
+                    setCouponCode(''); // Clear the input after successful application
+                } else {
+                    setFlashMessage({ type: 'error', message: 'Failed to apply coupon. Please try again.' });
+                }
             } else {
                 setAppliedCoupon(null);
                 setFlashMessage({ type: 'error', message: "Invalid or expired coupon code." });
@@ -377,9 +462,12 @@ export default function Cart() {
     };
 
     const handleRemoveCoupon = () => {
-        setAppliedCoupon(null);
-        setCouponCode('');
-        setFlashMessage({ type: 'success', message: "Coupon removed." });
+        const result = couponService.removeAppliedCoupon();
+        if (result.success) {
+            setAppliedCoupon(null);
+            setCouponCode('');
+            setFlashMessage({ type: 'success', message: "Coupon removed." });
+        }
     };
 
     const handleCouponKeyPress = (e) => {
