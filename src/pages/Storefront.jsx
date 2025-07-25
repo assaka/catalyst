@@ -338,15 +338,15 @@ export default function Storefront() {
                             {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                               <>
                                 <p className="font-bold text-red-600 text-3xl">
-                                  {!settings?.hide_currency_category && '$'}{Math.min(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                                  {!settings?.hide_currency_category && '$'}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                                 </p>
                                 <p className="text-gray-500 line-through text-xl">
-                                  {!settings?.hide_currency_category && '$'}{Math.max(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                                  {!settings?.hide_currency_category && '$'}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                                 </p>
                               </>
                             ) : (
                               <p className="font-bold text-gray-800 text-lg">
-                                {!settings?.hide_currency_category && '$'}{parseFloat(product.price).toFixed(2)}
+                                {!settings?.hide_currency_category && '$'}{parseFloat(product.price || 0).toFixed(2)}
                               </p>
                             )}
                           </div>
@@ -475,15 +475,15 @@ export default function Storefront() {
                                       {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                                         <>
                                           <p className="font-bold text-red-600 text-3xl">
-                                            {!settings?.hide_currency_category && '$'}{Math.min(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                                            {!settings?.hide_currency_category && '$'}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                                           </p>
                                           <p className="text-gray-500 line-through text-xl">
-                                            {!settings?.hide_currency_category && '$'}{Math.max(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                                            {!settings?.hide_currency_category && '$'}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                                           </p>
                                         </>
                                       ) : (
                                         <p className="font-bold text-gray-800 text-lg">
-                                          {!settings?.hide_currency_category && '$'}{parseFloat(product.price).toFixed(2)}
+                                          {!settings?.hide_currency_category && '$'}{parseFloat(product.price || 0).toFixed(2)}
                                         </p>
                                       )}
                                     </div>
