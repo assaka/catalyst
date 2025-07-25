@@ -79,9 +79,21 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.post('/', async (req, res) => {
   try {
+    console.log('Cart POST - received request:', {
+      body: req.body,
+      sessionId: req.body.session_id,
+      storeId: req.body.store_id,
+      productId: req.body.product_id
+    });
+
     const { session_id, store_id, items, user_id, product_id, quantity, price, selected_attributes, selected_options } = req.body;
 
     if ((!session_id && !user_id) || !store_id) {
+      console.log('Cart POST - validation failed:', {
+        hasSessionId: !!session_id,
+        hasUserId: !!user_id,
+        hasStoreId: !!store_id
+      });
       return res.status(400).json({
         success: false,
         message: 'store_id and either session_id or user_id are required'
@@ -90,20 +102,26 @@ router.post('/', async (req, res) => {
 
     let cart;
     if (user_id) {
+      console.log('Cart POST - looking for user cart:', user_id);
       cart = await Cart.findOne({ where: { user_id } });
     } else {
+      console.log('Cart POST - looking for session cart:', session_id);
       cart = await Cart.findOne({ where: { session_id } });
     }
+
+    console.log('Cart POST - found existing cart:', !!cart);
 
     let cartItems = [];
 
     if (cart) {
       // Get existing items
       cartItems = Array.isArray(cart.items) ? cart.items : [];
+      console.log('Cart POST - existing items count:', cartItems.length);
     }
 
     // If individual item fields are provided, add as new item
     if (product_id && quantity) {
+      console.log('Cart POST - adding individual item:', { product_id, quantity });
       const newItem = {
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         product_id,
@@ -122,23 +140,28 @@ router.post('/', async (req, res) => {
       if (existingItemIndex >= 0) {
         // Update quantity of existing item
         cartItems[existingItemIndex].quantity += newItem.quantity;
+        console.log('Cart POST - updated existing item quantity');
       } else {
         // Add new item
         cartItems.push(newItem);
+        console.log('Cart POST - added new item');
       }
     } else if (items) {
       // Use provided items array
       cartItems = items;
+      console.log('Cart POST - using provided items array, count:', items.length);
     }
 
     console.log('Cart POST - before save:', {
       cartId: cart?.id,
       itemsToSave: cartItems,
-      itemsLength: cartItems.length
+      itemsLength: cartItems.length,
+      storeId: store_id
     });
 
     if (cart) {
       // Update existing cart
+      console.log('Cart POST - updating existing cart');
       await cart.update({
         items: cartItems,
         user_id: user_id || cart.user_id,
@@ -146,6 +169,7 @@ router.post('/', async (req, res) => {
       });
     } else {
       // Create new cart
+      console.log('Cart POST - creating new cart');
       cart = await Cart.create({
         session_id,
         store_id,
@@ -165,10 +189,21 @@ router.post('/', async (req, res) => {
       data: cart
     });
   } catch (error) {
-    console.error('Update cart error:', error);
+    console.error('Cart POST - error occurred:', error);
+    console.error('Cart POST - error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      code: error.code
+    });
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? {
+        name: error.name,
+        code: error.code
+      } : undefined
     });
   }
 });
