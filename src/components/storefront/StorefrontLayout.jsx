@@ -93,9 +93,13 @@ export default function StorefrontLayout({ children }) {
                 setLanguages(Array.isArray(langData) ? langData : []);
 
                 await delay(200 + Math.random() * 300);
-                const plugins = await retryApiCall(() => StorePlugin.getPublic({ plugin_slug: 'google-tag-manager' }));
-                if (Array.isArray(plugins) && plugins.length > 0 && plugins[0].configuration?.gtm_script) {
-                    setGtmScript(plugins[0].configuration.gtm_script);
+                try {
+                    const plugins = await retryApiCall(() => StorePlugin.getPublic({ plugin_slug: 'google-tag-manager' }), 2, 1000, []);
+                    if (Array.isArray(plugins) && plugins.length > 0 && plugins[0].configuration?.gtm_script) {
+                        setGtmScript(plugins[0].configuration.gtm_script);
+                    }
+                } catch (error) {
+                    console.warn('StorefrontLayout: Could not load GTM plugin, skipping:', error.message);
                 }
                 
                 try {
