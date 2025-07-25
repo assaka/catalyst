@@ -129,10 +129,22 @@ export default function StockSettings() {
 
       const result = await retryApiCall(() => Store.update(storeId, payload));
       console.log('🔍 DEBUG StockSettings - Save result:', result);
+      console.log('🔍 DEBUG StockSettings - Save result settings:', result?.[0]?.settings);
+      console.log('🔍 DEBUG StockSettings - Save result stock_settings:', result?.[0]?.settings?.stock_settings);
+      console.log('🔍 DEBUG StockSettings - Save result in_stock_label:', result?.[0]?.settings?.stock_settings?.in_stock_label);
+      
+      // Clear any potential cache
+      try {
+        localStorage.removeItem('storeProviderCache');
+        sessionStorage.removeItem('storeProviderCache');
+        console.log('🔍 DEBUG StockSettings - Cleared cache after save');
+      } catch (e) {
+        console.warn('Failed to clear cache:', e);
+      }
       
       setFlashMessage({ type: 'success', message: 'Stock settings saved successfully!' });
       
-      await delay(1000);
+      await delay(2000); // Increased delay to ensure backend processing
       await loadStore();
       
     } catch (error) {
