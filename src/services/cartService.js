@@ -135,16 +135,6 @@ class CartService {
         throw new Error('Store ID is required');
       }
 
-      // Prevent updating cart with empty items unless explicitly clearing
-      if (!items || (Array.isArray(items) && items.length === 0)) {
-        console.warn('🛒 CartService.updateCart: Preventing update with empty items array');
-        // Get current cart to verify if it's actually empty
-        const currentCart = await this.getCart();
-        if (currentCart.success && currentCart.items && currentCart.items.length > 0) {
-          console.error('🛒 CartService.updateCart: Attempted to clear non-empty cart - blocking update');
-          return { success: false, error: 'Cannot update cart with empty items when cart has items' };
-        }
-      }
 
       const cartData = {
         store_id: storeId,
