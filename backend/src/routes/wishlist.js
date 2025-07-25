@@ -52,17 +52,22 @@ router.post('/', async (req, res) => {
   try {
     const { session_id, store_id, product_id, user_id } = req.body;
 
-    if (!session_id || !store_id || !product_id) {
+    if ((!session_id && !user_id) || !store_id || !product_id) {
       return res.status(400).json({
         success: false,
-        message: 'session_id, store_id, and product_id are required'
+        message: 'store_id, product_id, and either session_id or user_id are required'
       });
     }
 
     // Check if item already exists
-    const existing = await Wishlist.findOne({
-      where: { session_id, product_id }
-    });
+    const whereClause = { product_id };
+    if (user_id) {
+      whereClause.user_id = user_id;
+    } else {
+      whereClause.session_id = session_id;
+    }
+
+    const existing = await Wishlist.findOne({ where: whereClause });
 
     if (existing) {
       return res.status(400).json({

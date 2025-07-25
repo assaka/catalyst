@@ -9,7 +9,7 @@ const Cart = sequelize.define('Cart', {
   },
   session_id: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: true
   },
   store_id: {

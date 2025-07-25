@@ -9,7 +9,7 @@ const Wishlist = sequelize.define('Wishlist', {
   },
   session_id: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true
   },
   store_id: {
     type: DataTypes.UUID,
