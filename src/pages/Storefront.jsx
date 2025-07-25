@@ -291,7 +291,7 @@ export default function Storefront() {
               <p className="text-xl mb-8">{store?.description || "Discover amazing products"}</p>
               {categories.length > 0 && (
                 <Link to={createPageUrl('Storefront') + `?category=${categories[0]?.slug}`}>
-                  <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+                  <Button size="lg" className="btn-primary text-white">
                     Shop Now
                   </Button>
                 </Link>
@@ -407,7 +407,7 @@ export default function Storefront() {
                             {getStockLabel(product)}
                           </Badge>
                         </div>
-                        <Button asChild className="w-full mt-3" disabled={product.stock_quantity <= 0 && !product.infinite_stock}>
+                        <Button asChild className="w-full mt-3 btn-primary" disabled={product.stock_quantity <= 0 && !product.infinite_stock}>
                           <Link to={createPageUrl(`ProductDetail`) + `?slug=${product.slug}`}>
                             <ShoppingCart className="w-4 h-4 mr-2" /> View Product
                           </Link>
@@ -545,7 +545,7 @@ export default function Storefront() {
                                         {getStockLabel(product)}
                                     </Badge>
                                 </div>
-                                <Button asChild className="w-full" disabled={product.stock_quantity <= 0 && !product.infinite_stock}>
+                                <Button asChild className="w-full btn-primary" disabled={product.stock_quantity <= 0 && !product.infinite_stock}>
                                     <Link to={createPageUrl(`ProductDetail`) + `?slug=${product.slug}`}>
                                         <ShoppingCart className="w-4 h-4 mr-2" /> View Product
                                     </Link>

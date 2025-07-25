@@ -96,7 +96,29 @@ export default function ThemeLayout() {
         setSaving(true);
         try {
             await retryApiCall(() => Store.update(store.id, { settings: store.settings }));
-            setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
+            
+            // Clear the StoreProvider cache to force reload of theme settings
+            const storeSlug = store.slug;
+            const storeCacheKey = storeSlug ? `store-slug-${storeSlug}` : 'first-store';
+            
+            // Clear from localStorage cache
+            try {
+                const stored = localStorage.getItem('storeProviderCache');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    delete parsed[storeCacheKey];
+                    localStorage.setItem('storeProviderCache', JSON.stringify(parsed));
+                }
+            } catch (e) {
+                console.warn('Failed to clear cache from storage');
+            }
+            
+            // Trigger a page reload to ensure theme changes are applied immediately
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            
+            setFlashMessage({ type: 'success', message: 'Settings saved successfully! Page will refresh to apply changes...' });
         } catch (error) {
             console.error("Failed to save settings:", error);
             setFlashMessage({ type: 'error', message: 'Failed to save settings.' });

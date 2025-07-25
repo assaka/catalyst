@@ -344,7 +344,6 @@ export default function Cart() {
         return { subtotal: calculatedSubtotal, discount: disc, tax: taxAmount, total: totalAmount };
     }, [cartItems, appliedCoupon, getProductTaxRate, calculateSubtotal]);
 
-    const checkoutBtnSettings = settings?.checkout_button;
 
     // Wait for both store data and cart data to load
     if (loading || storeLoading) {
@@ -495,17 +494,11 @@ export default function Cart() {
                                                 size="lg" 
                                                 className="w-full"
                                                 style={{
-                                                    backgroundColor: checkoutBtnSettings?.background_color || '#059669',
-                                                    color: checkoutBtnSettings?.text_color || '#FFFFFF',
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.target.style.backgroundColor = checkoutBtnSettings?.hover_background_color || '#047857';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.target.style.backgroundColor = checkoutBtnSettings?.background_color || '#059669';
+                                                    backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
+                                                    color: '#FFFFFF',
                                                 }}
                                             >
-                                                {checkoutBtnSettings?.text || 'Proceed to Checkout'}
+                                                Proceed to Checkout
                                             </Button>
                                         </Link>
                                     </div>
