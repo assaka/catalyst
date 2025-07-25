@@ -51,7 +51,7 @@ const SimpleProductCard = ({ product }) => (
                     <Link to={createPageUrl(`ProductDetail?id=${product.id}`)}>{product.name}</Link>
                 </h3>
                 <div className="flex items-center justify-between mt-4">
-                    <p className="font-bold text-xl text-gray-900">${(product.sale_price || product.price || 0).toFixed(2)}</p>
+                    <p className="font-bold text-xl text-gray-900">${parseFloat(product.sale_price || product.price || 0).toFixed(2)}</p>
                 </div>
             </div>
         </CardContent>

@@ -62,7 +62,16 @@ export default function Storefront() {
           featuredCacheKey, 
           () => Product.filter({ store_id: store.id, featured: true, status: 'active' }, '-created_date', 12)
         );
-        setFeaturedProducts(ensureArray(featuredData));
+        const featuredArray = ensureArray(featuredData);
+        if (featuredArray.length > 0) {
+          console.log('🔍 Stock Debug - Featured product sample:', {
+            name: featuredArray[0].name,
+            stock_quantity: featuredArray[0].stock_quantity,
+            infinite_stock: featuredArray[0].infinite_stock,
+            manage_stock: featuredArray[0].manage_stock
+          });
+        }
+        setFeaturedProducts(featuredArray);
         setProducts([]);
       } else {
         let category = null;

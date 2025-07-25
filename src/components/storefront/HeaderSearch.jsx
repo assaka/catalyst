@@ -142,7 +142,7 @@ export default function HeaderSearch() {
                         SKU: {product.sku}
                       </p>
                       <p className="text-sm font-semibold text-gray-900">
-                        ${(product.sale_price || product.price).toFixed(2)}
+                        ${parseFloat(product.sale_price || product.price || 0).toFixed(2)}
                       </p>
                     </div>
                   </div>
