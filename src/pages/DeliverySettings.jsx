@@ -89,13 +89,29 @@ export default function DeliverySettings() { // Renamed the function component f
       let result;
       if (deliverySettings.id) {
         // If deliverySettings already has an ID, it means it exists in the DB, so update
+        console.log('📝 Updating delivery settings:', deliverySettings.id, settingsToSave);
         result = await DeliverySettingsEntity.update(deliverySettings.id, settingsToSave);
+        console.log('✅ Update result:', result);
       } else {
         // Otherwise, it's a new set of settings for this store, so create
+        console.log('✨ Creating new delivery settings:', settingsToSave);
         result = await DeliverySettingsEntity.create(settingsToSave);
+        console.log('✅ Create result:', result);
       }
-      setDeliverySettings(result); // Update state with the saved/created settings (especially if new ID generated)
-      setFlashMessage({ type: 'success', message: 'Delivery settings saved successfully!' });
+      
+      // Verify the result
+      if (result && result.id) {
+        setDeliverySettings(result); // Update state with the saved/created settings (especially if new ID generated)
+        setFlashMessage({ type: 'success', message: 'Delivery settings saved successfully!' });
+        
+        // Reload to confirm persistence
+        setTimeout(() => {
+          loadDeliverySettings();
+        }, 1000);
+      } else {
+        console.error('⚠️ Unexpected response format:', result);
+        setFlashMessage({ type: 'warning', message: 'Settings may not have saved correctly. Please refresh.' });
+      }
     } catch (error) {
       console.error("Error saving delivery settings:", error);
       setFlashMessage({ type: 'error', message: 'Failed to save settings.' });

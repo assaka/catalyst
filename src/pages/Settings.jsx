@@ -363,7 +363,20 @@ export default function Settings() {
         },
       };
       
+      // Also include other store fields that might need updating
       const payload = {
+        name: store.name,
+        description: store.description,
+        logo_url: store.logo_url,
+        custom_domain: store.custom_domain,
+        contact_email: store.contact_email,
+        contact_phone: store.contact_phone,
+        address_line1: store.address_line1,
+        address_line2: store.address_line2,
+        city: store.city,
+        state: store.state,
+        zip_code: store.zip_code,
+        country: store.country,
         settings: settingsPayload
       };
 
@@ -371,7 +384,14 @@ export default function Settings() {
       const result = await retryApiCall(() => Store.update(store.id, payload));
       console.log('Save result:', result);
       
-      setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
+      // Verify the settings were actually saved
+      if (result && result.settings) {
+        console.log('✅ Settings confirmed in response:', result.settings);
+        setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
+      } else {
+        console.warn('⚠️ Settings not found in response, reloading to verify...');
+        setFlashMessage({ type: 'warning', message: 'Settings saved, verifying...' });
+      }
       
       // Small delay then reload to confirm save
       await delay(1000);
