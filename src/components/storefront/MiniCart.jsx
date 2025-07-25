@@ -77,22 +77,34 @@ export default function MiniCart({ cartUpdateTrigger }) {
       if (user?.id) {
         // Load user's cart
         const result = await Cart.filter({ user_id: user.id });
-        const carts = Array.isArray(result) ? result : [];
-        console.log('🛒 MiniCart: Loaded user cart records:', carts);
+        console.log('🛒 MiniCart: Loaded user cart result:', result);
         
-        // Extract items from cart records
-        if (carts.length > 0 && carts[0].items) {
-          cartItems = Array.isArray(carts[0].items) ? carts[0].items : [];
+        // Handle different response formats
+        if (Array.isArray(result)) {
+          // If result is an array of items (new format)
+          if (result.length > 0 && result[0].product_id) {
+            cartItems = result;
+          } 
+          // If result is an array of cart records (old format)
+          else if (result.length > 0 && result[0].items) {
+            cartItems = Array.isArray(result[0].items) ? result[0].items : [];
+          }
         }
       } else {
         // Load guest cart
         const result = await Cart.filter({ session_id: sessionId });
-        const carts = Array.isArray(result) ? result : [];
-        console.log('🛒 MiniCart: Loaded guest cart records:', carts);
+        console.log('🛒 MiniCart: Loaded guest cart result:', result);
         
-        // Extract items from cart records
-        if (carts.length > 0 && carts[0].items) {
-          cartItems = Array.isArray(carts[0].items) ? carts[0].items : [];
+        // Handle different response formats
+        if (Array.isArray(result)) {
+          // If result is an array of items (new format)
+          if (result.length > 0 && result[0].product_id) {
+            cartItems = result;
+          }
+          // If result is an array of cart records (old format)
+          else if (result.length > 0 && result[0].items) {
+            cartItems = Array.isArray(result[0].items) ? result[0].items : [];
+          }
         }
       }
 
