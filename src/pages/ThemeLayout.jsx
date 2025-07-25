@@ -238,13 +238,13 @@ export default function ThemeLayout() {
                         <CardContent className="space-y-3">
                             <div className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>
-                                    <Label htmlFor="hide_header_cart">Hide Cart in Header</Label>
+                                    <Label htmlFor="hide_header_cart">Hide header in Cart</Label>
                                 </div>
                                 <Switch id="hide_header_cart" checked={!!store.settings.hide_header_cart} onCheckedChange={(c) => handleSettingsChange('hide_header_cart', c)} />
                             </div>
                             <div className="flex items-center justify-between p-3 border rounded-lg">
                                 <div>
-                                    <Label htmlFor="hide_header_checkout">Hide Checkout in Header</Label>
+                                    <Label htmlFor="hide_header_checkout">Hide header in Checkout</Label>
                                 </div>
                                 <Switch id="hide_header_checkout" checked={!!store.settings.hide_header_checkout} onCheckedChange={(c) => handleSettingsChange('hide_header_checkout', c)} />
                             </div>
