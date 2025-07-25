@@ -284,6 +284,62 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
+// Consent logs migration endpoint
+app.post('/debug/migrate-consent', async (req, res) => {
+  try {
+    console.log('🔄 Running ConsentLog migration...');
+    
+    const { ConsentLog } = require('./models');
+    
+    // Just sync ConsentLog table
+    await ConsentLog.sync({ force: false });
+    console.log('✅ ConsentLog table synced successfully');
+    
+    res.json({
+      success: true,
+      message: 'ConsentLog migration completed successfully'
+    });
+  } catch (error) {
+    console.error('❌ ConsentLog migration failed:', error);
+    
+    // Try manual creation
+    try {
+      await sequelize.query(`
+        CREATE TABLE IF NOT EXISTS consent_logs (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          session_id VARCHAR(255) NOT NULL,
+          user_id UUID,
+          store_id UUID NOT NULL,
+          ip_address VARCHAR(45),
+          user_agent TEXT,
+          consent_given BOOLEAN NOT NULL,
+          categories_accepted JSONB NOT NULL DEFAULT '[]'::jsonb,
+          country_code VARCHAR(2),
+          consent_method VARCHAR(20) NOT NULL,
+          page_url TEXT,
+          created_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          CONSTRAINT fk_consent_logs_store FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
+          CONSTRAINT fk_consent_logs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+          CONSTRAINT chk_consent_method CHECK (consent_method IN ('accept_all', 'reject_all', 'custom'))
+        );
+      `);
+      
+      res.json({
+        success: true,
+        message: 'ConsentLog table created manually'
+      });
+    } catch (manualError) {
+      res.status(500).json({
+        success: false,
+        message: 'ConsentLog migration failed',
+        error: manualError.message
+      });
+    }
+  }
+});
+
 // Public database migration endpoint
 app.post('/debug/migrate', async (req, res) => {
   try {
