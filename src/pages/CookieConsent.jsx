@@ -277,16 +277,27 @@ export default function CookieConsent() {
       // Handle array response from API client
       const normalizedResult = Array.isArray(result) ? result[0] : result;
       
-      // Update local state with response data instead of reloading
-      if (normalizedResult && normalizedResult.data) {
-        const updatedSettings = mapBackendToFrontend(normalizedResult.data);
-        setSettings(updatedSettings);
-        console.log('✅ Local cookie consent settings updated with response data');
-      } else if (normalizedResult && normalizedResult.id) {
-        // Fallback if result.data is not available - map the result directly
+      console.log('🔍 API Response structure:', {
+        isArray: Array.isArray(result),
+        normalizedResult,
+        hasData: !!normalizedResult?.data,
+        hasId: !!normalizedResult?.id,
+        keys: normalizedResult ? Object.keys(normalizedResult) : []
+      });
+      
+      // The API client returns [settingsObject] for single objects
+      // So normalizedResult should be the actual settings object from the database
+      if (normalizedResult && normalizedResult.id) {
+        // This is the settings object from database - map it to frontend format
         const updatedSettings = mapBackendToFrontend(normalizedResult);
+        console.log('🔄 Backend data from API:', normalizedResult);
+        console.log('🔄 Mapped settings for state update:', updatedSettings);
         setSettings(updatedSettings);
-        console.log('✅ Local cookie consent settings updated with direct result data');
+        console.log('✅ Local cookie consent settings state updated');
+      } else {
+        console.warn('⚠️ Unexpected API response structure, reloading data instead');
+        console.warn('Response details:', normalizedResult);
+        await loadData(); // Fallback to reload if response structure is unexpected
       }
       
       setFlashMessage({ type: 'success', message: 'Cookie consent settings saved successfully!' });
