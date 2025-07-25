@@ -695,7 +695,7 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
     res.json({
       success: true,
       message: 'Store updated successfully',
-      data: store
+      data: verifyStore // Use the verification query result instead of the reloaded store
     });
   } catch (error) {
     console.error('Update store error:', error);

@@ -90,8 +90,18 @@ export default function Settings() {
       let storeData;
       if (forceRefresh) {
         console.log('🔄 Force refreshing store data from API...');
-        storeData = await retryApiCall(() => Store.findById(selectedStore.id));
+        const apiResponse = await retryApiCall(() => Store.findById(selectedStore.id));
+        
+        // Handle array response from API client
+        storeData = Array.isArray(apiResponse) ? apiResponse[0] : apiResponse;
         console.log('📥 Fresh store data from API:', storeData);
+        
+        if (!storeData || !storeData.id) {
+          console.error('❌ Invalid store data returned from API:', apiResponse);
+          setFlashMessage({ type: 'error', message: 'Failed to reload store data from API.' });
+          setLoading(false);
+          return;
+        }
         
         // Update the StoreSelectionContext with fresh data
         console.log('🔄 Updating StoreSelectionContext with fresh store data...');
@@ -419,7 +429,10 @@ export default function Settings() {
         payload.settings = JSON.parse(payload.settings);
       }
       
-      const result = await retryApiCall(() => Store.update(store.id, payload));
+      const apiResult = await retryApiCall(() => Store.update(store.id, payload));
+      
+      // Handle array response from API client
+      const result = Array.isArray(apiResult) ? apiResult[0] : apiResult;
       console.log('Save result:', result);
       console.log('Result settings:', result?.settings);
       
