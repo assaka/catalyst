@@ -4,7 +4,7 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// Debug endpoint to test database connection
+// Debug endpoint to test database connection and list stores
 router.get('/debug', async (req, res) => {
   try {
     console.log('Cart debug - testing database connection');
@@ -18,21 +18,25 @@ router.get('/debug', async (req, res) => {
     const cartCount = await Cart.count();
     console.log('Cart debug - cart count:', cartCount);
     
-    // Test creating a simple cart
-    const testCart = await Cart.create({
-      session_id: 'debug-test-' + Date.now(),
-      items: []
+    // List available stores
+    const { Store } = require('../models');
+    const stores = await Store.findAll({ 
+      attributes: ['id', 'name', 'slug'],
+      limit: 10 
     });
-    console.log('Cart debug - created test cart:', testCart.id);
+    console.log('Cart debug - available stores:', stores.length);
     
-    // Clean up
-    await testCart.destroy();
-    console.log('Cart debug - cleaned up test cart');
-    
+    const storeList = stores.map(store => ({
+      id: store.id,
+      name: store.name,
+      slug: store.slug
+    }));
+
     res.json({
       success: true,
       message: 'Cart debug tests passed',
-      cartCount
+      cartCount,
+      stores: storeList
     });
   } catch (error) {
     console.error('Cart debug - error:', error);
@@ -132,7 +136,7 @@ router.post('/', async (req, res) => {
 
     const { session_id, store_id, items, user_id, product_id, quantity, price, selected_attributes, selected_options } = req.body;
 
-    if (!session_id && !user_id) {
+    if ((!session_id && !user_id) || !store_id) {
       console.log('Cart POST - validation failed:', {
         hasSessionId: !!session_id,
         hasUserId: !!user_id,
@@ -140,7 +144,7 @@ router.post('/', async (req, res) => {
       });
       return res.status(400).json({
         success: false,
-        message: 'Either session_id or user_id is required'
+        message: 'store_id and either session_id or user_id are required'
       });
     }
 
