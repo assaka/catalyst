@@ -121,11 +121,26 @@ const mapFrontendToBackend = (frontendSettings) => {
     reject_button_text: frontendSettings.reject_all_text,
     settings_button_text: frontendSettings.manage_preferences_text,
     privacy_policy_url: frontendSettings.privacy_policy_url,
+    privacy_policy_text: frontendSettings.privacy_policy_text,
     banner_position: frontendSettings.banner_position,
+    consent_expiry_days: frontendSettings.consent_expiry_days,
+    show_close_button: frontendSettings.show_close_button,
+    // GDPR and compliance settings
+    gdpr_mode: frontendSettings.gdpr_mode,
+    auto_detect_country: frontendSettings.auto_detect_country,
+    audit_enabled: frontendSettings.audit_enabled,
+    // Cookie categories (individual fields + JSON)
     necessary_cookies: true, // Always true
     analytics_cookies: analyticsCategory?.default_enabled || false,
     marketing_cookies: marketingCategory?.default_enabled || false,
     functional_cookies: functionalCategory?.default_enabled || false,
+    categories: frontendSettings.categories,
+    gdpr_countries: frontendSettings.gdpr_countries,
+    // Integration settings
+    google_analytics_id: frontendSettings.google_analytics_id,
+    google_tag_manager_id: frontendSettings.google_tag_manager_id,
+    custom_css: frontendSettings.custom_css,
+    // Theme settings
     theme: frontendSettings.theme || "light",
     primary_color: frontendSettings.primary_color || "#007bff",
     background_color: frontendSettings.background_color || "#ffffff",
@@ -240,16 +255,31 @@ export default function CookieConsent() {
         backendData: backendSettings
       });
       
+      let result;
       if (settings.id) {
         console.log('🔄 Updating existing cookie consent settings:', settings.id);
-        await retryApiCall(() => CookieConsentSettings.update(settings.id, backendSettings));
+        result = await retryApiCall(() => CookieConsentSettings.update(settings.id, backendSettings));
         console.log('✅ Cookie consent settings updated successfully');
       } else {
         console.log('✨ Creating new cookie consent settings');
         // If settings.id is null, it's a new setting. The store_id should already be populated from loadData's defaultSettings.
-        const created = await retryApiCall(() => CookieConsentSettings.create(backendSettings));
-        console.log('✅ Cookie consent settings created:', created);
-        setSettings({ ...settings, id: created.id });
+        result = await retryApiCall(() => CookieConsentSettings.create(backendSettings));
+        console.log('✅ Cookie consent settings created:', result);
+      }
+      
+      // Handle array response from API client
+      const normalizedResult = Array.isArray(result) ? result[0] : result;
+      
+      // Update local state with response data instead of reloading
+      if (normalizedResult && normalizedResult.data) {
+        const updatedSettings = mapBackendToFrontend(normalizedResult.data);
+        setSettings(updatedSettings);
+        console.log('✅ Local cookie consent settings updated with response data');
+      } else if (normalizedResult && normalizedResult.id) {
+        // Fallback if result.data is not available - map the result directly
+        const updatedSettings = mapBackendToFrontend(normalizedResult);
+        setSettings(updatedSettings);
+        console.log('✅ Local cookie consent settings updated with direct result data');
       }
       
       setFlashMessage({ type: 'success', message: 'Cookie consent settings saved successfully!' });

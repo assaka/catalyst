@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
 
     res.json({
       success: true,
-      data: { cookie_consent_settings: settings }
+      data: settings
     });
   } catch (error) {
     console.error('Get cookie consent settings error:', error);

@@ -69,6 +69,53 @@ const CookieConsentSettings = sequelize.define('CookieConsentSettings', {
     type: DataTypes.STRING,
     defaultValue: '#333333'
   },
+  // GDPR and compliance settings
+  gdpr_mode: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  auto_detect_country: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  audit_enabled: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  consent_expiry_days: {
+    type: DataTypes.INTEGER,
+    defaultValue: 365
+  },
+  show_close_button: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  privacy_policy_text: {
+    type: DataTypes.STRING,
+    defaultValue: 'Privacy Policy'
+  },
+  // JSON fields for complex data
+  categories: {
+    type: DataTypes.JSON,
+    allowNull: true
+  },
+  gdpr_countries: {
+    type: DataTypes.JSON,
+    allowNull: true
+  },
+  // Integration settings
+  google_analytics_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  google_tag_manager_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  custom_css: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
   // Foreign key
   store_id: {
     type: DataTypes.UUID,
