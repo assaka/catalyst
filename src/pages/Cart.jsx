@@ -7,7 +7,6 @@ import { Product } from '@/api/entities';
 import { Coupon } from '@/api/entities';
 import { User } from '@/api/entities';
 import cartService from '@/services/cartService';
-import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
@@ -515,9 +514,6 @@ export default function Cart() {
                         </div>
                     </div>
                 )}
-                <div className="mt-12">
-                  <CmsBlockRenderer position="after_content" page="storefront_cart" />
-                </div>
                 <div className="mt-12">
                   <RecommendedProducts />
                 </div>

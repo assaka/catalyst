@@ -8,7 +8,6 @@ import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import ProductLabelComponent from "@/components/storefront/ProductLabel";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import LayeredNavigation from "@/components/storefront/LayeredNavigation";
-import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import {
   ShoppingCart,
   Package,
@@ -227,8 +226,6 @@ export default function Storefront() {
         pageTitle={pageTitle}
       />
       
-      <CmsBlockRenderer position="header" page={isHomepage ? "storefront_home" : "storefront_category"} />
-      <CmsBlockRenderer position="before_content" page={isHomepage ? "storefront_home" : "storefront_category"} />
       
       {isHomepage ? (
         <div className="max-w-7xl mx-auto">
@@ -518,7 +515,6 @@ export default function Storefront() {
         </>
       )}
       
-      <CmsBlockRenderer position="after_content" page={isHomepage ? "storefront_home" : "storefront_category"} />
     </div>
   );
 }
