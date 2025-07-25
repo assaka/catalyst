@@ -130,6 +130,8 @@ router.post('/', async (req, res) => {
 
     // If individual item fields are provided, add as new item
     if (product_id && quantity) {
+      console.log('Cart POST - Adding individual item, existing cartItems:', JSON.stringify(cartItems));
+      
       const newItem = {
         id: `item_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         product_id,
@@ -139,40 +141,51 @@ router.post('/', async (req, res) => {
         selected_options: selected_options || []
       };
 
+      console.log('Cart POST - New item to add:', JSON.stringify(newItem));
+
       // Check if item with same product_id and options already exists
       const existingItemIndex = cartItems.findIndex(item => 
         item.product_id === product_id && 
         JSON.stringify(item.selected_options) === JSON.stringify(selected_options)
       );
 
+      console.log('Cart POST - Existing item index:', existingItemIndex);
+
       if (existingItemIndex >= 0) {
         // Update quantity of existing item
         cartItems[existingItemIndex].quantity += newItem.quantity;
+        console.log('Cart POST - Updated existing item quantity');
       } else {
         // Add new item
         cartItems.push(newItem);
+        console.log('Cart POST - Added new item, cartItems now:', JSON.stringify(cartItems));
       }
     } else if (items !== undefined && !product_id) {
       // Only use provided items array if no individual product is being added
       cartItems = Array.isArray(items) ? items : [];
+      console.log('Cart POST - Using provided items array:', JSON.stringify(cartItems));
     }
 
     if (cart) {
       // Update existing cart
+      console.log('Cart POST - Updating existing cart with items:', JSON.stringify(cartItems));
       await cart.update({
         items: cartItems,
         user_id: user_id || cart.user_id,
         store_id: store_id || cart.store_id
       });
       await cart.reload();
+      console.log('Cart POST - After reload, cart items:', JSON.stringify(cart.items));
     } else {
       // Create new cart
+      console.log('Cart POST - Creating new cart with items:', JSON.stringify(cartItems));
       cart = await Cart.create({
         session_id,
         store_id,
         user_id,
         items: cartItems
       });
+      console.log('Cart POST - After create, cart items:', JSON.stringify(cart.items));
     }
 
     // Additional logging to debug data persistence
