@@ -5,25 +5,31 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/cart
-// @desc    Get cart by session_id
+// @desc    Get cart by session_id or user_id
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const { session_id } = req.query;
+    const { session_id, user_id } = req.query;
 
-    if (!session_id) {
+    if (!session_id && !user_id) {
       return res.status(400).json({
         success: false,
-        message: 'session_id is required'
+        message: 'session_id or user_id is required'
       });
     }
 
-    let cart = await Cart.findOne({ where: { session_id } });
+    let cart;
+    if (user_id) {
+      cart = await Cart.findOne({ where: { user_id } });
+    } else {
+      cart = await Cart.findOne({ where: { session_id } });
+    }
 
     if (!cart) {
       // Return empty cart structure
       cart = {
-        session_id,
+        session_id: session_id || null,
+        user_id: user_id || null,
         items: [],
         subtotal: 0,
         tax: 0,
