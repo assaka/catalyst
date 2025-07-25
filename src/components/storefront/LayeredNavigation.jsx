@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -14,17 +15,39 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
     const [selectedFilters, setSelectedFilters] = useState({});
     const [priceRange, setPriceRange] = useState([0, 1000]);
 
-    // FIXED: Calculate price range from products
+    // Debug logging
+    console.log('🔍 LayeredNavigation: Props received:', {
+        productsCount: products?.length || 0,
+        attributesCount: attributes?.length || 0,
+        sampleProduct: products?.[0],
+        sampleAttribute: attributes?.[0]
+    });
+
+    // FIXED: Calculate price range from products considering compare_price
     const { minPrice, maxPrice } = useMemo(() => {
         if (!products || products.length === 0) return { minPrice: 0, maxPrice: 1000 };
         
-        const prices = products.map(p => parseFloat(p.price || 0)).filter(p => p > 0);
+        const prices = [];
+        products.forEach(p => {
+            const price = parseFloat(p.price || 0);
+            if (price > 0) prices.push(price);
+            
+            // Also consider compare_price if it exists and is different
+            const comparePrice = parseFloat(p.compare_price || 0);
+            if (comparePrice > 0 && comparePrice !== price) {
+                prices.push(comparePrice);
+            }
+        });
+        
         if (prices.length === 0) return { minPrice: 0, maxPrice: 1000 };
         
-        return {
+        const calculatedRange = {
             minPrice: Math.floor(Math.min(...prices)),
             maxPrice: Math.ceil(Math.max(...prices))
         };
+        
+        console.log('🔍 LayeredNavigation: Price range calculated:', calculatedRange);
+        return calculatedRange;
     }, [products]);
 
     // Initialize price range when products change
@@ -60,9 +83,28 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
         });
     };
 
+    // Clear all filters function
+    const clearAllFilters = () => {
+        setSelectedFilters({});
+        setPriceRange([minPrice, maxPrice]);
+    };
+
+    // Check if any filters are active
+    const hasActiveFilters = Object.keys(selectedFilters).length > 0 || 
+                           (priceRange[0] !== minPrice || priceRange[1] !== maxPrice);
+
     // FIXED: Extract ALL attribute values from products including all options
     const filterOptions = useMemo(() => {
-        if (!products || !attributes) return {};
+        if (!products || !attributes) {
+            console.log('🔍 LayeredNavigation: No products or attributes for filter options');
+            return {};
+        }
+        
+        console.log('🔍 LayeredNavigation: Building filter options from:', {
+            productsCount: products.length,
+            attributesCount: attributes.length,
+            filterableAttributes: attributes.filter(a => a.is_filterable)
+        });
         
         const options = {};
         attributes.forEach(attr => {
@@ -102,10 +144,12 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                         name: attr.name,
                         values: Array.from(values).sort()
                     };
+                    console.log(`🔍 LayeredNavigation: Found ${values.size} values for attribute ${attr.name}:`, Array.from(values));
                 }
             }
         });
         
+        console.log('🔍 LayeredNavigation: Final filter options:', options);
         return options;
     }, [products, attributes]);
 
@@ -125,7 +169,19 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Filter By</CardTitle>
+                <div className="flex justify-between items-center">
+                    <CardTitle>Filter By</CardTitle>
+                    {hasActiveFilters && (
+                        <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={clearAllFilters}
+                            className="text-xs"
+                        >
+                            Clear All
+                        </Button>
+                    )}
+                </div>
             </CardHeader>
             <CardContent>
                 <Accordion type="multiple" defaultValue={['price', ...Object.keys(filterOptions)]} className="w-full">
@@ -162,18 +218,30 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                             <AccordionTrigger className="font-semibold">{name}</AccordionTrigger>
                             <AccordionContent>
                                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                                    {values.map(value => (
-                                        <div key={value} className="flex items-center space-x-2">
-                                            <Checkbox
-                                                id={`attr-${code}-${value}`}
-                                                checked={selectedFilters[code]?.includes(value) || false}
-                                                onCheckedChange={(checked) => handleAttributeChange(code, value, checked)}
-                                            />
-                                            <Label htmlFor={`attr-${code}-${value}`} className="text-sm">
-                                                {value}
-                                            </Label>
-                                        </div>
-                                    ))}
+                                    {values.map(value => {
+                                        // Count products that have this attribute value
+                                        const productCount = products.filter(p => {
+                                            const productAttributes = p.attributes || p.attribute_values || {};
+                                            const attributeValue = productAttributes[code] || p[code];
+                                            return String(attributeValue) === String(value);
+                                        }).length;
+                                        
+                                        return (
+                                            <div key={value} className="flex items-center justify-between">
+                                                <div className="flex items-center space-x-2">
+                                                    <Checkbox
+                                                        id={`attr-${code}-${value}`}
+                                                        checked={selectedFilters[code]?.includes(value) || false}
+                                                        onCheckedChange={(checked) => handleAttributeChange(code, value, checked)}
+                                                    />
+                                                    <Label htmlFor={`attr-${code}-${value}`} className="text-sm">
+                                                        {value}
+                                                    </Label>
+                                                </div>
+                                                <span className="text-xs text-gray-400">({productCount})</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </AccordionContent>
                         </AccordionItem>

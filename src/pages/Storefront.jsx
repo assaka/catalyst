@@ -138,19 +138,42 @@ export default function Storefront() {
     if (Object.keys(activeFilters).length === 0) return currentProducts;
 
     return currentProducts.filter(product => {
+      // Price range filtering - consider both price and compare_price
       if (activeFilters.priceRange) {
         const [min, max] = activeFilters.priceRange;
-        const price = parseFloat(product.price || 0);
+        let price = parseFloat(product.price || 0);
+        
+        // Use the lowest price if compare_price exists and is lower
+        if (product.compare_price && parseFloat(product.compare_price) > 0) {
+          price = Math.min(price, parseFloat(product.compare_price));
+        }
+        
         if (price < min || price > max) {
           return false;
         }
       }
 
+      // Attribute filtering - check multiple possible attribute locations
       for (const key in activeFilters) {
-        if (key !== 'priceRange' && product.attributes) {
+        if (key !== 'priceRange') {
           const filterValues = activeFilters[key];
-          const productValue = product.attributes[key];
-          if (filterValues && !filterValues.includes(productValue)) {
+          if (!filterValues || filterValues.length === 0) continue;
+          
+          // Look for attribute value in multiple possible locations
+          const productAttributes = product.attributes || product.attribute_values || {};
+          let productValue = productAttributes[key] || product[key];
+          
+          // Handle undefined/null values
+          if (productValue === undefined || productValue === null) {
+            return false;
+          }
+          
+          // Convert to string for comparison
+          productValue = String(productValue);
+          
+          // Check if any of the filter values match
+          const hasMatch = filterValues.some(filterVal => String(filterVal) === productValue);
+          if (!hasMatch) {
             return false;
           }
         }
