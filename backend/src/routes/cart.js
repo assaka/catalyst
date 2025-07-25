@@ -230,4 +230,27 @@ router.delete('/', async (req, res) => {
   }
 });
 
+// Debug route to check raw cart data
+router.get('/debug/:id', async (req, res) => {
+  try {
+    const cart = await Cart.findByPk(req.params.id);
+    console.log('DEBUG - Raw cart from DB:', JSON.stringify(cart, null, 2));
+    res.json({
+      success: true,
+      data: cart,
+      debug: {
+        items: cart?.items,
+        itemsType: typeof cart?.items,
+        itemsLength: cart?.items ? cart.items.length : 0
+      }
+    });
+  } catch (error) {
+    console.error('Debug cart error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 module.exports = router;
