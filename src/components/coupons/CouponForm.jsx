@@ -135,12 +135,19 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
     if (submitData.max_discount_amount === '') submitData.max_discount_amount = null;
     if (submitData.usage_limit === '') submitData.usage_limit = null;
     
-    // Convert dates to ISO format
+    // Convert dates to ISO format or null if empty
     if (submitData.start_date) {
-      submitData.start_date = new Date(submitData.start_date).toISOString();
+      const startDate = new Date(submitData.start_date);
+      submitData.start_date = isNaN(startDate.getTime()) ? null : startDate.toISOString();
+    } else {
+      submitData.start_date = null;
     }
+    
     if (submitData.end_date) {
-      submitData.end_date = new Date(submitData.end_date).toISOString();
+      const endDate = new Date(submitData.end_date);
+      submitData.end_date = isNaN(endDate.getTime()) ? null : endDate.toISOString();
+    } else {
+      submitData.end_date = null;
     }
 
     if (coupon?.id) {
@@ -333,22 +340,26 @@ export default function CouponForm({ coupon, onSubmit, onCancel, storeId }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="start_date">Start Date</Label>
+              <Label htmlFor="start_date">Start Date (Optional)</Label>
               <Input
                 id="start_date"
                 type="date"
                 value={formData.start_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                placeholder="No start date"
               />
+              <p className="text-sm text-gray-500 mt-1">Leave empty for immediate activation</p>
             </div>
             <div>
-              <Label htmlFor="end_date">End Date</Label>
+              <Label htmlFor="end_date">End Date (Optional)</Label>
               <Input
                 id="end_date"
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                placeholder="No end date"
               />
+              <p className="text-sm text-gray-500 mt-1">Leave empty for no expiration</p>
             </div>
           </div>
         </CardContent>
