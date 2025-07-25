@@ -27,7 +27,8 @@
       "Bash(mv:*)",
       "Bash(true)",
       "Bash(find:*)",
-      "Bash(npm run migrate:*)"
+      "Bash(npm run migrate:*)",
+      "Bash(cd backend)"
     ],
     "deny": []
   }
