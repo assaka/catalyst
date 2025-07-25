@@ -42,7 +42,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function Settings() {
-  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId, selectStore } = useStoreSelection();
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -76,6 +76,13 @@ export default function Settings() {
         return;
       }
       
+      if (!selectedStore.id) {
+        console.error("Selected store has no ID:", selectedStore);
+        setFlashMessage({ type: 'error', message: 'Invalid store selection. Please select a store.' });
+        setLoading(false);
+        return;
+      }
+      
       const user = await retryApiCall(() => User.me());
       console.log('Current user:', user.email);
       
@@ -85,6 +92,14 @@ export default function Settings() {
         console.log('🔄 Force refreshing store data from API...');
         storeData = await retryApiCall(() => Store.findById(selectedStore.id));
         console.log('📥 Fresh store data from API:', storeData);
+        
+        // Update the StoreSelectionContext with fresh data
+        console.log('🔄 Updating StoreSelectionContext with fresh store data...');
+        selectStore(storeData);
+        
+        // Ensure the store ID is preserved in localStorage
+        localStorage.setItem('selectedStoreId', storeData.id);
+        console.log('✅ Store ID preserved in localStorage:', storeData.id);
       } else {
         storeData = selectedStore;
         console.log('Using cached store data:', storeData.name);
@@ -419,6 +434,22 @@ export default function Settings() {
       
       // Small delay then reload to confirm save with force refresh
       await delay(1000);
+      
+      // Double-check that we still have a selected store before reloading
+      if (!selectedStore || !selectedStore.id) {
+        console.error('⚠️ Lost store selection after save, attempting to restore from localStorage');
+        const savedStoreId = localStorage.getItem('selectedStoreId');
+        if (savedStoreId) {
+          console.log('🔄 Restoring store selection from localStorage:', savedStoreId);
+          // Don't reload if we can't restore store selection
+          setFlashMessage({ type: 'warning', message: 'Settings saved but page reload skipped to preserve store selection.' });
+        } else {
+          console.error('❌ No store ID found in localStorage either');
+          setFlashMessage({ type: 'error', message: 'Settings saved but lost store selection. Please refresh the page.' });
+        }
+        return;
+      }
+      
       await loadStore(true); // Force refresh from API
       
     } catch (error) {
