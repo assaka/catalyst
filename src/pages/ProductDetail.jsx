@@ -114,7 +114,7 @@ export default function ProductDetail() {
               items: [{
                 item_id: foundProduct.id,
                 item_name: foundProduct.name,
-                price: parseFloat(foundProduct.price).toFixed(2),
+                price: parseFloat(foundProduct.price || 0).toFixed(2),
                 item_brand: foundProduct.brand, // Assuming product has a brand field
                 item_category: categories.find(cat => cat.id === foundProduct.category_ids?.[0])?.name || '', // Find category name
                 currency: settings?.currency_code || 'USD'
@@ -242,7 +242,7 @@ export default function ProductDetail() {
             items: [{
               item_id: product.id,
               item_name: product.name,
-              price: parseFloat(basePrice).toFixed(2),
+              price: parseFloat(basePrice || 0).toFixed(2),
               quantity: quantity,
               item_brand: product.brand,
               item_category: categories.find(cat => cat.id === product.category_ids?.[0])?.name || '',
@@ -502,15 +502,15 @@ export default function ProductDetail() {
                 {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                   <>
                     <span className="text-3xl font-bold text-red-600">
-                      {!settings?.hide_currency_product && currencySymbol}{Math.min(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                      {!settings?.hide_currency_product && currencySymbol}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                     </span>
                     <span className="text-xl text-gray-500 line-through">
-                      {!settings?.hide_currency_product && currencySymbol}{Math.max(parseFloat(product.price), parseFloat(product.compare_price)).toFixed(2)}
+                      {!settings?.hide_currency_product && currencySymbol}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                     </span>
                   </>
                 ) : (
                   <span className="text-3xl font-bold text-green-600">
-                    {!settings?.hide_currency_product && currencySymbol}{parseFloat(product.price).toFixed(2)}
+                    {!settings?.hide_currency_product && currencySymbol}{parseFloat(product.price || 0).toFixed(2)}
                   </span>
                 )}
               </div>

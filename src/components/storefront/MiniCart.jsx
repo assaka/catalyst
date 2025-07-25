@@ -283,7 +283,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
                   if (!item.price) {
                     basePrice = parseFloat(product.price || 0);
                     if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
-                      basePrice = Math.min(parseFloat(product.price), parseFloat(product.compare_price));
+                      basePrice = Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
                     }
                   }
 
@@ -301,7 +301,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
                         {item.selected_options && item.selected_options.length > 0 && (
                           <div className="text-xs text-gray-500 mt-1">
                             {item.selected_options.map((option, idx) => (
-                              <div key={idx}>+ {option.name} (+${parseFloat(option.price).toFixed(2)})</div>
+                              <div key={idx}>+ {option.name} (+${parseFloat(option.price || 0).toFixed(2)})</div>
                             ))}
                           </div>
                         )}

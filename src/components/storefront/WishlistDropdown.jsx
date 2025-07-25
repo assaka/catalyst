@@ -154,7 +154,7 @@ export default function WishlistDropdown() {
                     <Link to={createPageUrl(`ProductDetail?id=${item.product_id}`)}>
                       <p className="text-sm font-medium truncate hover:underline">{item.product?.name}</p>
                     </Link>
-                    <p className="text-sm text-gray-500">${item.product?.price?.toFixed(2)}</p>
+                    <p className="text-sm text-gray-500">${parseFloat(item.product?.price || 0).toFixed(2)}</p>
                   </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveFromWishlist(item.product_id)}>
                     <X className="h-4 w-4" />

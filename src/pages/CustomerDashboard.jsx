@@ -158,7 +158,7 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts }) => {
                 <CardContent className="p-4 flex flex-col items-center text-center">
                   <img src={item.product.images?.[0]} alt={item.product.name} className="w-32 h-32 object-cover mb-2 rounded-lg" />
                   <p className="font-semibold">{item.product.name}</p>
-                  <p className="text-sm text-gray-600">${item.product.price.toFixed(2)}</p>
+                  <p className="text-sm text-gray-600">${parseFloat(item.product?.price || 0).toFixed(2)}</p>
                   <Button variant="destructive" size="sm" className="mt-2" onClick={() => handleRemove(item.id)}>Remove</Button>
                 </CardContent>
               </Card>

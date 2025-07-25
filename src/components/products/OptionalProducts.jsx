@@ -39,7 +39,7 @@ export default function OptionalProducts({ products, onAdd }) {
               />
               <div>
                 <p className="font-medium">{product.name}</p>
-                <p className="text-gray-600">${product.price.toFixed(2)}</p>
+                <p className="text-gray-600">${parseFloat(product.price || 0).toFixed(2)}</p>
               </div>
             </div>
             <Button size="sm" variant="outline" onClick={() => onAdd(product)}>
