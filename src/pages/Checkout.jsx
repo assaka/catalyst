@@ -193,15 +193,27 @@ export default function Checkout() {
   };
 
   const calculateSubtotal = () => {
-    return cartItems.reduce((total, item) => {
+    const subtotal = cartItems.reduce((total, item) => {
       const product = cartProducts[item.product_id];
       const itemPrice = calculateItemPrice(item, product);
-      return total + (itemPrice * item.quantity);
+      const lineTotal = itemPrice * item.quantity;
+      return total + (isNaN(lineTotal) ? 0 : lineTotal);
     }, 0);
+    return isNaN(subtotal) ? 0 : subtotal;
   };
 
   const getTotalAmount = () => {
-    return calculateSubtotal() + shippingCost + taxAmount;
+    const subtotal = calculateSubtotal();
+    const shipping = isNaN(shippingCost) ? 0 : shippingCost;
+    const tax = isNaN(taxAmount) ? 0 : taxAmount;
+    const total = subtotal + shipping + tax;
+    return isNaN(total) ? 0 : total;
+  };
+
+  // Safe number formatter to prevent toFixed errors
+  const formatPrice = (value) => {
+    const num = parseFloat(value);
+    return isNaN(num) ? '0.00' : num.toFixed(2);
   };
 
   const calculateShippingCost = (method) => {
@@ -422,12 +434,12 @@ export default function Checkout() {
                             />
                             <div className="flex-1">
                               <h4 className="font-medium">{product.name}</h4>
-                              <p className="text-sm text-gray-500">${basePrice.toFixed(2)} each</p>
+                              <p className="text-sm text-gray-500">${formatPrice(basePrice)} each</p>
                               
                               {item.selected_options && item.selected_options.length > 0 && (
                                 <div className="text-xs text-gray-500 mt-1">
                                   {item.selected_options.map((option, idx) => (
-                                    <div key={idx}>+ {option.name} (+${parseFloat(option.price).toFixed(2)})</div>
+                                    <div key={idx}>+ {option.name} (+${formatPrice(option.price)})</div>
                                   ))}
                                 </div>
                               )}
@@ -435,7 +447,7 @@ export default function Checkout() {
                               <p className="text-sm text-gray-600 mt-1">Qty: {item.quantity}</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold">${itemTotal.toFixed(2)}</p>
+                              <p className="font-semibold">${formatPrice(itemTotal)}</p>
                             </div>
                           </div>
                         );
@@ -449,26 +461,26 @@ export default function Checkout() {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>${calculateSubtotal().toFixed(2)}</span>
+                  <span>${formatPrice(calculateSubtotal())}</span>
                 </div>
                 
                 {shippingCost > 0 && (
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>${shippingCost.toFixed(2)}</span>
+                    <span>${formatPrice(shippingCost)}</span>
                   </div>
                 )}
                 
                 {taxAmount > 0 && (
                   <div className="flex justify-between">
                     <span>Tax</span>
-                    <span>${taxAmount.toFixed(2)}</span>
+                    <span>${formatPrice(taxAmount)}</span>
                   </div>
                 )}
                 
                 <div className="flex justify-between text-xl font-bold border-t pt-2">
                   <span>Total</span>
-                  <span>${getTotalAmount().toFixed(2)}</span>
+                  <span>${formatPrice(getTotalAmount())}</span>
                 </div>
               </div>
             </CardContent>
@@ -483,7 +495,7 @@ export default function Checkout() {
               color: '#FFFFFF',
             }}
           >
-            {isProcessing ? 'Processing...' : `Place Order - $${getTotalAmount().toFixed(2)}`}
+            {isProcessing ? 'Processing...' : `Place Order - $${formatPrice(getTotalAmount())}`}
           </Button>
         </div>
 
@@ -650,7 +662,7 @@ export default function Checkout() {
                         <span className="font-medium">
                           {method.type === 'free_shipping' && calculateSubtotal() >= (method.free_shipping_min_order || 0) 
                             ? 'Free' 
-                            : `$${(method.flat_rate_cost || 0).toFixed(2)}`
+                            : `$${formatPrice(method.flat_rate_cost || 0)}`
                           }
                         </span>
                       </label>
