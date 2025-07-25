@@ -223,6 +223,7 @@ export const StoreProvider = ({ children }) => {
         hide_header_checkout: false,
         hide_quantity_selector: false,
         hide_stock_quantity: false,
+        show_stock_label: true,
         show_permanent_search: true,
         currency_code: selectedStore.currency || 'USD',
         currency_symbol: getCurrencySymbol(selectedStore.currency || 'USD'),

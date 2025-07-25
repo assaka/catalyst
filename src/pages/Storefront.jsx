@@ -160,8 +160,9 @@ export default function Storefront() {
 
   // Helper function to get stock label based on settings and quantity
   const getStockLabel = (product) => {
-    // Check if stock quantity should be hidden
-    const hideStockQuantity = settings?.hide_stock_quantity || false;
+    // Check if stock labels should be shown at all
+    const showStockLabel = settings?.show_stock_label !== false;
+    if (!showStockLabel) return null;
     
     // Default behavior if no stock settings are found
     if (!store?.settings?.stock_settings) {
@@ -188,26 +189,13 @@ export default function Storefront() {
     // Handle low stock
     const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
     if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
-      let label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
-      // If hiding stock quantity, remove the quantity placeholder and show generic low stock message
-      if (hideStockQuantity) {
-        label = label.replace(', just {quantity} left', '').replace('just {quantity} left', '').replace('{quantity}', '').trim();
-        if (label === 'Low stock' || label.length === 0) return "Low Stock";
-        return label;
-      }
+      const label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
       return label.replace('{quantity}', product.stock_quantity.toString());
     }
     
     // Handle regular in stock
-    let label = stockSettings.in_stock_label || "In Stock";
-    // If hiding stock quantity, remove any quantity placeholders
-    if (hideStockQuantity) {
-      label = label.replace('{quantity}', '').replace(/\s+/g, ' ').trim();
-      if (label.length === 0) return "In Stock";
-    } else {
-      label = label.replace('{quantity}', product.stock_quantity.toString());
-    }
-    return label;
+    const label = stockSettings.in_stock_label || "In Stock";
+    return label.replace('{quantity}', product.stock_quantity.toString());
   };
 
   // Helper function to get stock variant (for styling)
