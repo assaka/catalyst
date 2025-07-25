@@ -43,19 +43,14 @@ router.get('/', async (req, res) => {
 
     let cart;
     if (user_id) {
-      console.log('Cart GET - Looking for cart with user_id:', user_id);
       cart = await Cart.findOne({ where: { user_id } });
-      console.log('Cart GET - Found cart for user_id:', cart ? cart.id : 'null');
     } else {
-      console.log('Cart GET - Looking for cart with session_id:', session_id);
       cart = await Cart.findOne({ where: { session_id } });
-      console.log('Cart GET - Found cart for session_id:', cart ? cart.id : 'null');
     }
     
     // If no cart found but both session_id and user_id were provided,
     // try finding by either field (for cases where cart was created with one but accessed with both)
     if (!cart && session_id && user_id) {
-      console.log('Cart GET - No cart found, trying OR query with both session_id and user_id');
       const { Op } = require('sequelize');
       cart = await Cart.findOne({ 
         where: { 
@@ -65,7 +60,6 @@ router.get('/', async (req, res) => {
           ]
         }
       });
-      console.log('Cart GET - OR query result:', cart ? cart.id : 'null');
     }
 
     if (!cart) {
@@ -164,30 +158,23 @@ router.post('/', async (req, res) => {
     }
 
     if (cart) {
-      // Update existing cart
-      console.log('Cart POST - Updating existing cart:', cart.id);
-      console.log('Cart POST - Current items before update:', JSON.stringify(cart.items));
-      console.log('Cart POST - New items to set:', JSON.stringify(cartItems));
-      
-      await cart.update({
-        items: cartItems,
+      // Update existing cart - ensure items is properly set as JSON
+      const updateData = {
+        items: JSON.parse(JSON.stringify(cartItems)), // Ensure proper JSON serialization
         user_id: user_id || cart.user_id,
         store_id: store_id || cart.store_id
-      });
+      };
       
-      // Force reload to get the updated data from database
+      await cart.update(updateData);
       await cart.reload();
-      console.log('Cart POST - Items after reload:', JSON.stringify(cart.items));
     } else {
       // Create new cart
-      console.log('Cart POST - Creating new cart with items:', JSON.stringify(cartItems));
       cart = await Cart.create({
         session_id,
         store_id,
         user_id,
-        items: cartItems
+        items: JSON.parse(JSON.stringify(cartItems)) // Ensure proper JSON serialization
       });
-      console.log('Cart POST - Created cart with items:', JSON.stringify(cart.items));
     }
 
     // Additional logging to debug data persistence
