@@ -169,8 +169,13 @@ router.post('/', async (req, res) => {
     }
 
     if (cart) {
-      // Update existing cart
+      // Update existing cart - force JSON column update by setting to null first
       console.log('Cart POST - Updating existing cart with items:', JSON.stringify(cartItems));
+      await cart.update({
+        items: null,
+        user_id: user_id || cart.user_id,
+        store_id: store_id || cart.store_id
+      });
       await cart.update({
         items: cartItems,
         user_id: user_id || cart.user_id,
