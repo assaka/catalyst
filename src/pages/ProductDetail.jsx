@@ -21,6 +21,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import CustomOptions from "@/components/storefront/CustomOptions";
 import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import RecommendedProducts from "@/components/storefront/RecommendedProducts";
+import Breadcrumb from "@/components/storefront/Breadcrumb";
 
 // Product Label Component
 const ProductLabelComponent = ({ label }) => {
@@ -380,6 +381,52 @@ export default function ProductDetail() {
 
   const currencySymbol = settings?.currency_symbol || '$';
 
+  // Build breadcrumb items for product pages
+  const getBreadcrumbItems = () => {
+    if (!product) return [];
+    
+    const items = [];
+    
+    // Add category hierarchy if product has categories
+    if (product.category_ids && product.category_ids.length > 0) {
+      const primaryCategoryId = product.category_ids[0];
+      const primaryCategory = categories.find(c => c.id === primaryCategoryId);
+      
+      if (primaryCategory) {
+        // Build category hierarchy
+        let category = primaryCategory;
+        const categoryChain = [category];
+        
+        // Find parent categories
+        while (category?.parent_id) {
+          const parent = categories.find(c => c.id === category.parent_id);
+          if (parent) {
+            categoryChain.unshift(parent);
+            category = parent;
+          } else {
+            break;
+          }
+        }
+        
+        // Add category items to breadcrumb
+        categoryChain.forEach(cat => {
+          items.push({
+            name: cat.name,
+            url: createPageUrl(`Storefront?category=${cat.slug}`)
+          });
+        });
+      }
+    }
+    
+    // Add current product as last item
+    items.push({
+      name: product.name,
+      url: createPageUrl(`ProductDetail?slug=${product.slug}`)
+    });
+    
+    return items;
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {flashMessage && (
@@ -393,6 +440,8 @@ export default function ProductDetail() {
         pageData={product}
         pageTitle={product?.name}
       />
+
+      <Breadcrumb items={getBreadcrumbItems()} />
 
       <div className="grid md:grid-cols-2 gap-8">
         {/* Product Images */}

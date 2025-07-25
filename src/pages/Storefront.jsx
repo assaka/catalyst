@@ -8,6 +8,7 @@ import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import ProductLabelComponent from "@/components/storefront/ProductLabel";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import LayeredNavigation from "@/components/storefront/LayeredNavigation";
+import Breadcrumb from "@/components/storefront/Breadcrumb";
 import {
   ShoppingCart,
   Package,
@@ -222,6 +223,34 @@ export default function Storefront() {
   const pageTitle = isHomepage ? "Welcome to our Store" : 
                    currentCategory?.name || (categorySlug ? "Category Not Found" : "All Products");
 
+  // Build breadcrumb items for category pages
+  const getBreadcrumbItems = () => {
+    if (isHomepage || !currentCategory) return [];
+    
+    const items = [];
+    
+    // Build hierarchy from current category up to root
+    let category = currentCategory;
+    const categoryChain = [category];
+    
+    // Find parent categories
+    while (category?.parent_id) {
+      const parent = categories.find(c => c.id === category.parent_id);
+      if (parent) {
+        categoryChain.unshift(parent);
+        category = parent;
+      } else {
+        break;
+      }
+    }
+    
+    // Convert to breadcrumb items
+    return categoryChain.map((cat, index) => ({
+      name: cat.name,
+      url: createPageUrl(`Storefront?category=${cat.slug}`)
+    }));
+  };
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8">
       <SeoHeadManager 
@@ -377,6 +406,7 @@ export default function Storefront() {
       ) : (
         <>
           <div className="mb-8 max-w-7xl mx-auto">
+            <Breadcrumb items={getBreadcrumbItems()} />
             <h1 className="text-4xl font-bold">{pageTitle}</h1>
             {currentCategory?.description && (
               <p className="text-gray-600 mt-2">{currentCategory.description}</p>
