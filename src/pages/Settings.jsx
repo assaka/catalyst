@@ -395,8 +395,18 @@ export default function Settings() {
       };
 
       console.log('Saving settings payload with explicit fields:', payload);
+      console.log('Settings object type:', typeof payload.settings);
+      console.log('Settings object sample:', JSON.stringify(payload.settings).substring(0, 200));
+      
+      // Ensure settings is a proper object
+      if (typeof payload.settings === 'string') {
+        console.warn('⚠️ Settings was a string, parsing to object');
+        payload.settings = JSON.parse(payload.settings);
+      }
+      
       const result = await retryApiCall(() => Store.update(store.id, payload));
       console.log('Save result:', result);
+      console.log('Result settings:', result?.settings);
       
       // Verify the settings were actually saved
       if (result && result.settings) {

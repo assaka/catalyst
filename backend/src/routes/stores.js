@@ -656,17 +656,41 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
     });
     
     // Log current settings before update
-    console.log('📝 Current store settings before update:', store.settings);
+    console.log('📝 Current store settings before update:', JSON.stringify(store.settings));
+    console.log('📝 Settings type:', typeof store.settings);
+    console.log('📝 Incoming settings:', JSON.stringify(req.body.settings));
+    console.log('📝 Incoming settings type:', typeof req.body.settings);
 
-    await store.update(req.body);
-    console.log('✅ Store updated successfully');
+    // Update the store directly
+    if (req.body.settings) {
+      console.log('🔧 Updating settings field directly');
+      await store.update({ settings: req.body.settings });
+      console.log('✅ Settings field updated');
+    }
+    
+    // Update other fields if they exist
+    const otherFields = { ...req.body };
+    delete otherFields.settings;
+    
+    if (Object.keys(otherFields).length > 0) {
+      console.log('🔧 Updating other fields:', Object.keys(otherFields));
+      await store.update(otherFields);
+      console.log('✅ Other fields updated');
+    }
+    
+    console.log('✅ Store update completed');
     
     // Reload the store to get the updated data
     await store.reload();
     console.log('🔄 Reloaded store data:', {
       hasSettings: !!store.settings,
-      settingsKeys: store.settings ? Object.keys(store.settings) : []
+      settingsKeys: store.settings ? Object.keys(store.settings) : [],
+      settingsData: JSON.stringify(store.settings)
     });
+    
+    // Double-check by querying directly
+    const verifyStore = await Store.findByPk(store.id);
+    console.log('🔍 Verification query - settings:', JSON.stringify(verifyStore.settings));
 
     res.json({
       success: true,
