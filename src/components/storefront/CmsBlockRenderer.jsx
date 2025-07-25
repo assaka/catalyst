@@ -46,7 +46,7 @@ const loadCmsBlocksWithCache = async () => {
   }
 
   // Create new request
-  const requestPromise = retryApiCall(() => CmsBlock.list())
+  const requestPromise = retryApiCall(() => CmsBlock.findAll())
     .then(blocks => {
       const result = blocks || [];
       cmsBlockCache.set('all', result);
