@@ -42,7 +42,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function Settings() {
-  const { selectedStore, getSelectedStoreId, selectStore } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,7 +66,7 @@ export default function Settings() {
     }
   }, [flashMessage]);
 
-  const loadStore = async (forceRefresh = false) => {
+  const loadStore = async () => {
     try {
       setLoading(true);
       
@@ -86,34 +86,9 @@ export default function Settings() {
       const user = await retryApiCall(() => User.me());
       console.log('Current user:', user.email);
       
-      // If forceRefresh is true or we need fresh data, fetch from API
-      let storeData;
-      if (forceRefresh) {
-        console.log('🔄 Force refreshing store data from API...');
-        const apiResponse = await retryApiCall(() => Store.findById(selectedStore.id));
-        
-        // Handle array response from API client
-        storeData = Array.isArray(apiResponse) ? apiResponse[0] : apiResponse;
-        console.log('📥 Fresh store data from API:', storeData);
-        
-        if (!storeData || !storeData.id) {
-          console.error('❌ Invalid store data returned from API:', apiResponse);
-          setFlashMessage({ type: 'error', message: 'Failed to reload store data from API.' });
-          setLoading(false);
-          return;
-        }
-        
-        // Update the StoreSelectionContext with fresh data
-        console.log('🔄 Updating StoreSelectionContext with fresh store data...');
-        selectStore(storeData);
-        
-        // Ensure the store ID is preserved in localStorage
-        localStorage.setItem('selectedStoreId', storeData.id);
-        console.log('✅ Store ID preserved in localStorage:', storeData.id);
-      } else {
-        storeData = selectedStore;
-        console.log('Using cached store data:', storeData.name);
-      }
+      // Use selectedStore data directly - no need for force refresh
+      const storeData = selectedStore;
+      console.log('Using store data from context:', storeData.name);
       
       // Use fresh store data
       console.log('Raw store settings from database:', storeData.settings);
@@ -436,34 +411,43 @@ export default function Settings() {
       console.log('Save result:', result);
       console.log('Result settings:', result?.settings);
       
-      // Verify the settings were actually saved
+      // Update our local store state with the response data
       if (result && result.settings) {
-        console.log('✅ Settings confirmed in response:', result.settings);
+        console.log('✅ Settings confirmed in response, updating local state');
         setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
+        
+        // Update local store state with the fresh data from the response
+        // Map the backend response to frontend structure just like loadStore does
+        const settings = result.settings || {};
+        
+        setStore({
+          ...store, // Keep existing store data
+          settings: {
+            // Update with the fresh settings from the response
+            enable_inventory: settings.hasOwnProperty('enable_inventory') ? settings.enable_inventory : true,
+            enable_reviews: settings.hasOwnProperty('enable_reviews') ? settings.enable_reviews : true,
+            hide_currency_category: settings.hasOwnProperty('hide_currency_category') ? settings.hide_currency_category : false,
+            hide_currency_product: settings.hasOwnProperty('hide_currency_product') ? settings.hide_currency_product : false,
+            hide_header_cart: settings.hasOwnProperty('hide_header_cart') ? settings.hide_header_cart : false,
+            hide_header_checkout: settings.hasOwnProperty('hide_header_checkout') ? settings.hide_header_checkout : false,
+            show_category_in_breadcrumb: settings.hasOwnProperty('show_category_in_breadcrumb') ? settings.show_category_in_breadcrumb : true,
+            show_permanent_search: settings.hasOwnProperty('show_permanent_search') ? settings.show_permanent_search : true,
+            hide_shipping_costs: settings.hasOwnProperty('hide_shipping_costs') ? settings.hide_shipping_costs : false,
+            hide_quantity_selector: settings.hasOwnProperty('hide_quantity_selector') ? settings.hide_quantity_selector : false,
+            require_shipping_address: settings.hasOwnProperty('require_shipping_address') ? settings.require_shipping_address : true,
+            collect_phone_number_at_checkout: settings.hasOwnProperty('collect_phone_number_at_checkout') ? settings.collect_phone_number_at_checkout : false,
+            allow_guest_checkout: settings.hasOwnProperty('allow_guest_checkout') ? settings.allow_guest_checkout : true,
+            allowed_countries: settings.allowed_countries || ["US", "CA", "GB", "DE", "FR"],
+            // Include all other settings...
+            ...settings
+          }
+        });
+        
+        console.log('✅ Local store state updated with fresh settings');
       } else {
-        console.warn('⚠️ Settings not found in response, reloading to verify...');
-        setFlashMessage({ type: 'warning', message: 'Settings saved, verifying...' });
+        console.warn('⚠️ Settings not found in response');
+        setFlashMessage({ type: 'warning', message: 'Settings saved but response unclear. Please refresh to verify.' });
       }
-      
-      // Small delay then reload to confirm save with force refresh
-      await delay(1000);
-      
-      // Double-check that we still have a selected store before reloading
-      if (!selectedStore || !selectedStore.id) {
-        console.error('⚠️ Lost store selection after save, attempting to restore from localStorage');
-        const savedStoreId = localStorage.getItem('selectedStoreId');
-        if (savedStoreId) {
-          console.log('🔄 Restoring store selection from localStorage:', savedStoreId);
-          // Don't reload if we can't restore store selection
-          setFlashMessage({ type: 'warning', message: 'Settings saved but page reload skipped to preserve store selection.' });
-        } else {
-          console.error('❌ No store ID found in localStorage either');
-          setFlashMessage({ type: 'error', message: 'Settings saved but lost store selection. Please refresh the page.' });
-        }
-        return;
-      }
-      
-      await loadStore(true); // Force refresh from API
       
     } catch (error) {
       console.error('Failed to save settings:', error);
