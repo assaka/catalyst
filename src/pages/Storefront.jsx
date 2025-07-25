@@ -40,6 +40,10 @@ export default function Storefront() {
   const [searchParams] = useSearchParams();
   
   const categorySlug = searchParams.get('category') || slug;
+  
+  // DEBUG: Add page type debugging
+  console.log('🔍 DEBUG Storefront - isHomepage:', !categorySlug);
+  console.log('🔍 DEBUG Storefront - categorySlug:', categorySlug);
 
   const categories = useMemo(() => storeCategories || [], [storeCategories]);
 
