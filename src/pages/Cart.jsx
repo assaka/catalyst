@@ -80,6 +80,7 @@ export default function Cart() {
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState(null);
     const [flashMessage, setFlashMessage] = useState(null);
+    const [hasLoadedInitialData, setHasLoadedInitialData] = useState(false);
     
     const [quantityUpdates, setQuantityUpdates] = useState({});
 
@@ -98,8 +99,8 @@ export default function Cart() {
         const updateCartQuantities = async () => {
             if (Object.keys(quantityUpdates).length === 0) return;
             
-            // Don't update if we're still loading initial data
-            if (loading) return;
+            // Don't update if we're still loading initial data or haven't loaded yet
+            if (loading || !hasLoadedInitialData) return;
 
             try {
                 if (!store?.id) {
@@ -131,7 +132,7 @@ export default function Cart() {
         };
         
         updateCartQuantities();
-    }, [quantityUpdates, loading], 1500);
+    }, [quantityUpdates, loading, hasLoadedInitialData], 1500);
 
     const loadCartData = async (showLoader = true) => {
         if (showLoader) setLoading(true);
@@ -166,10 +167,12 @@ export default function Cart() {
             }).filter(item => item.product); // Ensure product exists
             
             setCartItems(populatedCart);
+            setHasLoadedInitialData(true);
         } catch (error) {
             console.error("Error loading cart:", error);
             setFlashMessage({ type: 'error', message: "Could not load your cart. Please try refreshing." });
             setCartItems([]); // Set to empty array on error
+            setHasLoadedInitialData(true);
         } finally {
             if (showLoader) setLoading(false);
         }

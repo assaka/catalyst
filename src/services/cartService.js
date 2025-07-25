@@ -3,6 +3,7 @@ class CartService {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
     this.endpoint = `${this.baseURL}/api/cart`;
+    this.isAddingItem = false;
   }
 
   // Get session ID consistently
@@ -75,6 +76,9 @@ class CartService {
         throw new Error('Store ID is required');
       }
 
+      // Set flag to prevent updates while adding
+      this.isAddingItem = true;
+
       const sessionId = this.getSessionId();
       console.log('🛒 CartService.addItem: Using session_id approach:', sessionId);
 
@@ -112,19 +116,22 @@ class CartService {
         console.log('🛒 CartService.addItem: Dispatching cartUpdated event');
         window.dispatchEvent(new CustomEvent('cartUpdated'));
         
-        // Small delay to ensure event propagates
+        // Small delay to ensure event propagates and clear flag
         setTimeout(() => {
           console.log('🛒 CartService.addItem: Dispatching delayed cartUpdated event');
           window.dispatchEvent(new CustomEvent('cartUpdated'));
-        }, 100);
+          this.isAddingItem = false;
+        }, 500);
         
         return { success: true, cart: result.data };
       }
 
       console.error('🛒 CartService.addItem: API returned error:', result.message);
+      this.isAddingItem = false;
       return { success: false, error: result.message };
     } catch (error) {
       console.error('🛒 CartService.addItem error:', error);
+      this.isAddingItem = false;
       return { success: false, error: error.message };
     }
   }
@@ -132,6 +139,12 @@ class CartService {
   // Update cart (for quantity changes, removals, etc.) - simplified to always use session_id approach
   async updateCart(items, storeId) {
     try {
+      // Don't update cart while adding items
+      if (this.isAddingItem) {
+        console.log('🛒 CartService.updateCart: Skipping update - item is being added');
+        return { success: true, cart: null };
+      }
+
       const sessionId = this.getSessionId();
 
       if (!storeId) {

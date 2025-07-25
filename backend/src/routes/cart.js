@@ -152,9 +152,9 @@ router.post('/', async (req, res) => {
         // Add new item
         cartItems.push(newItem);
       }
-    } else if (items) {
-      // Use provided items array
-      cartItems = items;
+    } else if (items !== undefined && !product_id) {
+      // Only use provided items array if no individual product is being added
+      cartItems = Array.isArray(items) ? items : [];
     }
 
     if (cart) {
