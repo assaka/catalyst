@@ -22,7 +22,7 @@ export default function CustomOptionRules() {
   const loadRules = async () => {
     setLoading(true);
     try {
-      const data = await CustomOptionRule.list('-created_date');
+      const data = await CustomOptionRule.list('-created_at');
       setRules(data);
     } catch (error) {
       console.error("Failed to load rules", error);
