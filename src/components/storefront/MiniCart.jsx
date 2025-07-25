@@ -74,46 +74,24 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
       let cartItems = [];
       
+      // Use direct API call instead of Cart.filter() since cart endpoint has different structure
+      const params = new URLSearchParams();
       if (user?.id) {
-        // Load user's cart using GET endpoint
-        const result = await Cart.filter({ user_id: user.id });
-        console.log('🛒 MiniCart: Loaded user cart result:', result);
-        
-        // The cart API returns the cart object directly with items array
-        if (result && result.items) {
-          cartItems = Array.isArray(result.items) ? result.items : [];
-        } else if (Array.isArray(result)) {
-          // Handle array response (multiple carts or items)
-          if (result.length > 0) {
-            if (result[0].product_id) {
-              // Array of items
-              cartItems = result;
-            } else if (result[0].items) {
-              // Array of cart objects
-              cartItems = Array.isArray(result[0].items) ? result[0].items : [];
-            }
-          }
-        }
+        params.append('user_id', user.id);
       } else {
-        // Load guest cart using GET endpoint
-        const result = await Cart.filter({ session_id: sessionId });
-        console.log('🛒 MiniCart: Loaded guest cart result:', result);
-        
-        // The cart API returns the cart object directly with items array
-        if (result && result.items) {
-          cartItems = Array.isArray(result.items) ? result.items : [];
-        } else if (Array.isArray(result)) {
-          // Handle array response (multiple carts or items)
-          if (result.length > 0) {
-            if (result[0].product_id) {
-              // Array of items
-              cartItems = result;
-            } else if (result[0].items) {
-              // Array of cart objects
-              cartItems = Array.isArray(result[0].items) ? result[0].items : [];
-            }
-          }
-        }
+        params.append('session_id', sessionId);
+      }
+      
+      const apiUrl = `${import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/cart?${params.toString()}`;
+      console.log('🛒 MiniCart: Calling cart API directly:', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      const result = await response.json();
+      console.log('🛒 MiniCart: Direct API response:', result);
+      
+      if (result.success && result.data && result.data.items) {
+        cartItems = Array.isArray(result.data.items) ? result.data.items : [];
+        console.log('🛒 MiniCart: Extracted cart items:', cartItems);
       }
 
       console.log('🛒 MiniCart: Extracted cart items:', cartItems);
