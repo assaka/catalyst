@@ -516,6 +516,26 @@ CREATE TRIGGER update_attribute_sets_updated_at BEFORE UPDATE ON attribute_sets 
 CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_store_plugins_updated_at BEFORE UPDATE ON store_plugins FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- 18. CUSTOM OPTION RULES TABLE
+CREATE TABLE IF NOT EXISTS custom_option_rules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    display_label VARCHAR(255) DEFAULT 'Custom Options',
+    is_active BOOLEAN DEFAULT true,
+    conditions JSONB DEFAULT '{}',
+    optional_product_ids JSONB DEFAULT '[]',
+    store_id UUID NOT NULL REFERENCES stores(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index for custom option rules
+CREATE INDEX IF NOT EXISTS idx_custom_option_rules_store_id ON custom_option_rules(store_id);
+CREATE INDEX IF NOT EXISTS idx_custom_option_rules_is_active ON custom_option_rules(is_active);
+
+-- Create trigger for custom option rules
+CREATE TRIGGER update_custom_option_rules_updated_at BEFORE UPDATE ON custom_option_rules FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Insert default data
 INSERT INTO users (email, password, first_name, last_name, role, account_type, is_active, email_verified, credits) 
 VALUES 
@@ -603,5 +623,5 @@ FROM customers;
 
 -- Migration completed successfully
 SELECT 'Database migration completed successfully!' as message;
-SELECT 'Total tables created: 17' as info;
+SELECT 'Total tables created: 18' as info;
 SELECT 'Demo data inserted for testing' as note;

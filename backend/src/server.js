@@ -47,6 +47,7 @@ const paymentRoutes = require('./routes/payments');
 const paymentMethodRoutes = require('./routes/payment-methods');
 const cookieConsentRoutes = require('./routes/cookie-consent-settings');
 const consentLogRoutes = require('./routes/consent-logs');
+const customOptionRuleRoutes = require('./routes/custom-option-rules');
 
 const app = express();
 
@@ -606,6 +607,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/payment-methods', authMiddleware, paymentMethodRoutes);
 app.use('/api/cookie-consent-settings', authMiddleware, cookieConsentRoutes);
 app.use('/api/consent-logs', authMiddleware, consentLogRoutes);
+app.use('/api/custom-option-rules', authMiddleware, customOptionRuleRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
