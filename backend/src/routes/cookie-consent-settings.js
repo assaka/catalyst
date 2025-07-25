@@ -128,9 +128,15 @@ router.post('/', [
     });
   } catch (error) {
     console.error('Create cookie consent settings error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', JSON.stringify(req.body, null, 2));
+    
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message,
+      details: error.errors?.map(e => ({field: e.path, message: e.message})) || null
     });
   }
 });

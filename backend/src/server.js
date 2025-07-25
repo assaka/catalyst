@@ -314,6 +314,32 @@ app.get('/debug/test-cookie-settings', async (req, res) => {
   }
 });
 
+// Test cookie consent creation endpoint
+app.post('/debug/test-cookie-create', async (req, res) => {
+  try {
+    const { CookieConsentSettings } = require('./models');
+    
+    console.log('🔍 Test cookie create - received data:', JSON.stringify(req.body, null, 2));
+    
+    // Try to create with the exact data sent
+    const settings = await CookieConsentSettings.create(req.body);
+    
+    res.json({
+      success: true,
+      message: 'CookieConsentSettings created successfully',
+      data: settings
+    });
+  } catch (error) {
+    console.error('❌ Test cookie create failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'CookieConsentSettings creation failed',
+      error: error.message,
+      validationErrors: error.errors?.map(e => ({field: e.path, message: e.message})) || null
+    });
+  }
+});
+
 // Cookie consent settings migration endpoint
 app.post('/debug/migrate-cookie-settings', async (req, res) => {
   try {
