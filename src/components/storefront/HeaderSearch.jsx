@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Product } from '@/api/entities';
+import { useStore } from '@/components/storefront/StoreProvider';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,11 @@ import { Card, CardContent } from '@/components/ui/card';
 
 export default function HeaderSearch() {
   const navigate = useNavigate();
+  const { settings } = useStore();
+  
+  // Get currency symbol from settings
+  const currencySymbol = settings?.currency_symbol || '$';
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [showResults, setShowResults] = useState(false);
@@ -142,7 +148,14 @@ export default function HeaderSearch() {
                         SKU: {product.sku}
                       </p>
                       <p className="text-sm font-semibold text-gray-900">
-                        ${parseFloat(product.sale_price || product.price || 0).toFixed(2)}
+                        {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
+                          <>
+                            <span className="text-red-600">{currencySymbol}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}</span>
+                            <span className="text-gray-500 line-through ml-1 text-xs">{currencySymbol}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}</span>
+                          </>
+                        ) : (
+                          <span>{currencySymbol}{parseFloat(product.price || 0).toFixed(2)}</span>
+                        )}
                       </p>
                     </div>
                   </div>

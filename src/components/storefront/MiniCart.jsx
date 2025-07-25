@@ -16,6 +16,9 @@ import {
 
 export default function MiniCart({ cartUpdateTrigger }) {
   const { store, settings } = useStore();
+  
+  // Get currency symbol from settings
+  const currencySymbol = settings?.currency_symbol || '$';
   const [cartItems, setCartItems] = useState([]);
   const [cartProducts, setCartProducts] = useState({});
   const [loading, setLoading] = useState(false);
@@ -267,12 +270,12 @@ export default function MiniCart({ cartUpdateTrigger }) {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{product.name}</p>
-                        <p className="text-sm text-gray-500">${basePrice.toFixed(2)} each</p>
+                        <p className="text-sm text-gray-500">{currencySymbol}{basePrice.toFixed(2)} each</p>
                         
                         {item.selected_options && item.selected_options.length > 0 && (
                           <div className="text-xs text-gray-500 mt-1">
                             {item.selected_options.map((option, idx) => (
-                              <div key={idx}>+ {option.name} (+${parseFloat(option.price || 0).toFixed(2)})</div>
+                              <div key={idx}>+ {option.name} (+{currencySymbol}{parseFloat(option.price || 0).toFixed(2)})</div>
                             ))}
                           </div>
                         )}
@@ -312,7 +315,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
               
               <div className="border-t pt-3">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="font-semibold">Total: ${getTotalPrice().toFixed(2)}</span>
+                  <span className="font-semibold">Total: {currencySymbol}{getTotalPrice().toFixed(2)}</span>
                 </div>
                 
                 <div className="space-y-2">
