@@ -97,20 +97,17 @@ export default function ThemeLayout() {
         try {
             await retryApiCall(() => Store.update(store.id, { settings: store.settings }));
             
-            // Clear the StoreProvider cache to force reload of theme settings
-            const storeSlug = store.slug;
-            const storeCacheKey = storeSlug ? `store-slug-${storeSlug}` : 'first-store';
-            
-            // Clear from localStorage cache
+            // Clear ALL StoreProvider cache to force reload of settings
             try {
-                const stored = localStorage.getItem('storeProviderCache');
-                if (stored) {
-                    const parsed = JSON.parse(stored);
-                    delete parsed[storeCacheKey];
-                    localStorage.setItem('storeProviderCache', JSON.stringify(parsed));
-                }
+                // Clear all cache from localStorage
+                localStorage.removeItem('storeProviderCache');
+                
+                // Also clear sessionStorage if any
+                sessionStorage.removeItem('storeProviderCache');
+                
+                console.log('Cleared all store cache to apply new settings');
             } catch (e) {
-                console.warn('Failed to clear cache from storage');
+                console.warn('Failed to clear cache from storage:', e);
             }
             
             // Trigger a page reload to ensure theme changes are applied immediately

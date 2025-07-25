@@ -451,8 +451,17 @@ export const StoreProvider = ({ children }) => {
       setProductLabels(results[2].status === 'fulfilled' ? (results[2].value || []) : []);
       
       const attrData = results[3].status === 'fulfilled' ? (results[3].value || []) : [];
+      console.log('🔍 StoreProvider: Attributes loaded from API:', attrData);
+      console.log('🔍 StoreProvider: Attributes count:', attrData.length);
+      if (attrData.length > 0) {
+        console.log('🔍 StoreProvider: Sample attribute structure:', attrData[0]);
+      }
       setAttributes(attrData);
-      setFilterableAttributes(attrData.filter(a => a?.is_filterable));
+      
+      const filterableAttrs = attrData.filter(a => a?.is_filterable);
+      console.log('🔍 StoreProvider: Filterable attributes:', filterableAttrs);
+      console.log('🔍 StoreProvider: Filterable attributes count:', filterableAttrs.length);
+      setFilterableAttributes(filterableAttrs);
       
       setAttributeSets(results[4].status === 'fulfilled' ? (results[4].value || []) : []);
       setSeoTemplates(results[5].status === 'fulfilled' ? (results[5].value || []) : []);

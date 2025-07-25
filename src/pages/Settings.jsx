@@ -416,6 +416,21 @@ export default function Settings() {
         console.log('✅ Settings confirmed in response, updating local state');
         setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
         
+        // Clear ALL StoreProvider cache to force reload of settings
+        try {
+          localStorage.removeItem('storeProviderCache');
+          sessionStorage.removeItem('storeProviderCache');
+          console.log('Cleared all store cache after saving settings');
+          
+          // Force reload of the page after a short delay to ensure settings are applied
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+          
+        } catch (e) {
+          console.warn('Failed to clear cache from storage:', e);
+        }
+        
         // Update local store state with the fresh data from the response
         // Map the backend response to frontend structure just like loadStore does
         const settings = result.settings || {};
