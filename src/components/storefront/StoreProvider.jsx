@@ -8,6 +8,7 @@ import { ProductLabel } from '@/api/entities';
 import { Attribute } from '@/api/entities';
 import { AttributeSet } from '@/api/entities';
 import { SeoTemplate } from '@/api/entities';
+import { CookieConsentSettings } from '@/api/entities';
 // Removed SeoSetting import as it's now dynamically imported within fetchStoreData
 
 const StoreContext = createContext(null);
@@ -282,6 +283,76 @@ export const StoreProvider = ({ children }) => {
       } catch (error) {
         console.error('[StoreProvider] Error loading SEO settings:', error);
         setSeoSettings(null);
+      }
+
+      // Load cookie consent settings and update store settings
+      try {
+        const cookieConsentData = await cachedApiCall(`cookie-consent-${selectedStore.id}`, async () => {
+          const result = await CookieConsentSettings.filter({ store_id: selectedStore.id });
+          return Array.isArray(result) ? result : [];
+        });
+        
+        if (cookieConsentData && cookieConsentData.length > 0) {
+          const cookieSettings = cookieConsentData[0];
+          console.log('[StoreProvider] Loaded cookie consent settings:', cookieSettings);
+          
+          // Map backend cookie settings to frontend format
+          const frontendCookieSettings = {
+            enabled: cookieSettings.is_enabled || false,
+            gdpr_mode: cookieSettings.gdpr_mode ?? true,
+            auto_detect_country: cookieSettings.auto_detect_country ?? true,
+            banner_message: cookieSettings.banner_text || "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
+            accept_all_text: cookieSettings.accept_button_text || "Accept All",
+            reject_all_text: cookieSettings.reject_button_text || "Reject All",
+            manage_preferences_text: cookieSettings.settings_button_text || "Cookie Settings",
+            privacy_policy_text: cookieSettings.privacy_policy_text || "Privacy Policy",
+            privacy_policy_url: cookieSettings.privacy_policy_url || "/privacy-policy",
+            banner_position: cookieSettings.banner_position || "bottom",
+            show_close_button: cookieSettings.show_close_button ?? true,
+            consent_expiry_days: cookieSettings.consent_expiry_days || 365,
+            categories: cookieSettings.categories || [
+              {
+                id: "necessary",
+                name: "Necessary Cookies",
+                description: "These cookies are necessary for the website to function and cannot be switched off.",
+                required: true,
+                default_enabled: true
+              },
+              {
+                id: "analytics",
+                name: "Analytics Cookies", 
+                description: "These cookies help us understand how visitors interact with our website.",
+                required: false,
+                default_enabled: cookieSettings.analytics_cookies || false
+              },
+              {
+                id: "marketing",
+                name: "Marketing Cookies",
+                description: "These cookies are used to deliver personalized advertisements.",
+                required: false,
+                default_enabled: cookieSettings.marketing_cookies || false
+              },
+              {
+                id: "functional",
+                name: "Functional Cookies",
+                description: "These cookies enable enhanced functionality and personalization.",
+                required: false,
+                default_enabled: cookieSettings.functional_cookies || false
+              }
+            ],
+            gdpr_countries: cookieSettings.gdpr_countries || ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"],
+            custom_css: cookieSettings.custom_css || ""
+          };
+          
+          // Update the store settings with loaded cookie consent settings
+          mergedSettings.cookie_consent = frontendCookieSettings;
+          setStore({ ...selectedStore, settings: mergedSettings });
+          console.log('[StoreProvider] Updated store with cookie consent settings');
+        } else {
+          console.log('[StoreProvider] No cookie consent settings found, using defaults');
+        }
+      } catch (error) {
+        console.error('[StoreProvider] Error loading cookie consent settings:', error);
       }
 
       // Load other data with extreme caching - all in parallel with staggered delays
