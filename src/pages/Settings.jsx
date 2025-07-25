@@ -394,9 +394,11 @@ export default function Settings() {
         settings: settingsPayload
       };
 
-      console.log('Saving settings payload with explicit fields:', payload);
-      console.log('Settings object type:', typeof payload.settings);
-      console.log('Settings object sample:', JSON.stringify(payload.settings).substring(0, 200));
+      console.log('🔍 DEBUG Settings - Saving settings payload with explicit fields:', payload);
+      console.log('🔍 DEBUG Settings - Settings object type:', typeof payload.settings);
+      console.log('🔍 DEBUG Settings - Settings object sample:', JSON.stringify(payload.settings).substring(0, 500));
+      console.log('🔍 DEBUG Settings - hide_currency_category value being saved:', payload.settings.hide_currency_category);
+      console.log('🔍 DEBUG Settings - hide_quantity_selector value being saved:', payload.settings.hide_quantity_selector);
       
       // Ensure settings is a proper object
       if (typeof payload.settings === 'string') {
@@ -408,8 +410,10 @@ export default function Settings() {
       
       // Handle array response from API client
       const result = Array.isArray(apiResult) ? apiResult[0] : apiResult;
-      console.log('Save result:', result);
-      console.log('Result settings:', result?.settings);
+      console.log('🔍 DEBUG Settings - Save result:', result);
+      console.log('🔍 DEBUG Settings - Result settings:', result?.settings);
+      console.log('🔍 DEBUG Settings - API returned hide_currency_category:', result?.settings?.hide_currency_category);
+      console.log('🔍 DEBUG Settings - API returned hide_quantity_selector:', result?.settings?.hide_quantity_selector);
       
       // Update our local store state with the response data
       if (result && result.settings) {

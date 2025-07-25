@@ -95,7 +95,10 @@ export default function ThemeLayout() {
         if (!store) return;
         setSaving(true);
         try {
-            await retryApiCall(() => Store.update(store.id, { settings: store.settings }));
+            console.log('🔍 DEBUG ThemeLayout - About to save settings:', store.settings);
+            console.log('🔍 DEBUG ThemeLayout - Store ID:', store.id);
+            const result = await retryApiCall(() => Store.update(store.id, { settings: store.settings }));
+            console.log('🔍 DEBUG ThemeLayout - Save result:', result);
             
             // Clear ALL StoreProvider cache to force reload of settings
             try {
