@@ -41,6 +41,98 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
   }
 };
 
+// Field mapping functions for frontend <-> backend compatibility
+const mapBackendToFrontend = (backendSettings) => {
+  if (!backendSettings) return null;
+  
+  return {
+    id: backendSettings.id,
+    store_id: backendSettings.store_id,
+    enabled: backendSettings.is_enabled,
+    gdpr_mode: backendSettings.gdpr_mode ?? true,
+    auto_detect_country: backendSettings.auto_detect_country ?? true,
+    audit_enabled: backendSettings.audit_enabled ?? true,
+    banner_message: backendSettings.banner_text || "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
+    accept_all_text: backendSettings.accept_button_text || "Accept All",
+    reject_all_text: backendSettings.reject_button_text || "Reject All",
+    manage_preferences_text: backendSettings.settings_button_text || "Cookie Settings",
+    privacy_policy_text: backendSettings.privacy_policy_text || "Privacy Policy",
+    privacy_policy_url: backendSettings.privacy_policy_url || "/privacy-policy",
+    banner_position: backendSettings.banner_position || "bottom",
+    show_close_button: backendSettings.show_close_button ?? true,
+    consent_expiry_days: backendSettings.consent_expiry_days || 365,
+    categories: backendSettings.categories || [
+      {
+        id: "necessary",
+        name: "Necessary Cookies",
+        description: "These cookies are necessary for the website to function and cannot be switched off.",
+        required: true,
+        default_enabled: true
+      },
+      {
+        id: "analytics",
+        name: "Analytics Cookies",
+        description: "These cookies help us understand how visitors interact with our website.",
+        required: false,
+        default_enabled: backendSettings.analytics_cookies || false
+      },
+      {
+        id: "marketing",
+        name: "Marketing Cookies",
+        description: "These cookies are used to deliver personalized advertisements.",
+        required: false,
+        default_enabled: backendSettings.marketing_cookies || false
+      },
+      {
+        id: "functional",
+        name: "Functional Cookies",
+        description: "These cookies enable enhanced functionality and personalization.",
+        required: false,
+        default_enabled: backendSettings.functional_cookies || false
+      }
+    ],
+    gdpr_countries: backendSettings.gdpr_countries || ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"],
+    google_analytics_id: backendSettings.google_analytics_id || "",
+    google_tag_manager_id: backendSettings.google_tag_manager_id || "",
+    custom_css: backendSettings.custom_css || "",
+    // Theme settings
+    theme: backendSettings.theme || "light",
+    primary_color: backendSettings.primary_color || "#007bff",
+    background_color: backendSettings.background_color || "#ffffff",
+    text_color: backendSettings.text_color || "#333333"
+  };
+};
+
+const mapFrontendToBackend = (frontendSettings) => {
+  if (!frontendSettings) return null;
+  
+  // Extract category settings
+  const categories = frontendSettings.categories || [];
+  const analyticsCategory = categories.find(c => c.id === "analytics");
+  const marketingCategory = categories.find(c => c.id === "marketing"); 
+  const functionalCategory = categories.find(c => c.id === "functional");
+  
+  return {
+    id: frontendSettings.id,
+    store_id: frontendSettings.store_id,
+    is_enabled: frontendSettings.enabled || false,
+    banner_text: frontendSettings.banner_message,
+    accept_button_text: frontendSettings.accept_all_text,
+    reject_button_text: frontendSettings.reject_all_text,
+    settings_button_text: frontendSettings.manage_preferences_text,
+    privacy_policy_url: frontendSettings.privacy_policy_url,
+    banner_position: frontendSettings.banner_position,
+    necessary_cookies: true, // Always true
+    analytics_cookies: analyticsCategory?.default_enabled || false,
+    marketing_cookies: marketingCategory?.default_enabled || false,
+    functional_cookies: functionalCategory?.default_enabled || false,
+    theme: frontendSettings.theme || "light",
+    primary_color: frontendSettings.primary_color || "#007bff",
+    background_color: frontendSettings.background_color || "#ffffff",
+    text_color: frontendSettings.text_color || "#333333"
+  };
+};
+
 export default function CookieConsent() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [settings, setSettings] = useState(null);
@@ -87,89 +179,21 @@ export default function CookieConsent() {
       console.log('Found cookie settings:', cookieSettings?.length || 0);
       
       if (cookieSettings && cookieSettings.length > 0) {
-        // Ensure settings has all required properties with proper boolean defaults
-        const loadedSettings = {
-          ...cookieSettings[0],
-          // Ensure all boolean properties have proper defaults
-          enabled: cookieSettings[0].enabled || false,
-          gdpr_mode: cookieSettings[0].gdpr_mode ?? true,
-          auto_detect_country: cookieSettings[0].auto_detect_country ?? true,
-          audit_enabled: cookieSettings[0].audit_enabled ?? true,
-          categories: (cookieSettings[0].categories || [
-            {
-              id: "necessary",
-              name: "Necessary Cookies",
-              description: "These cookies are necessary for the website to function and cannot be switched off.",
-              required: true,
-              default_enabled: true
-            },
-            {
-              id: "analytics",
-              name: "Analytics Cookies", 
-              description: "These cookies help us understand how visitors interact with our website.",
-              required: false,
-              default_enabled: false
-            },
-            {
-              id: "marketing",
-              name: "Marketing Cookies",
-              description: "These cookies are used to deliver personalized advertisements.",
-              required: false,
-              default_enabled: false
-            }
-          ]).map(category => ({
-            ...category,
-            required: category.required ?? false,
-            default_enabled: category.default_enabled ?? false
-          }))
-        };
-        console.log('✅ Final cookie consent settings being set:', loadedSettings);
-        setSettings(loadedSettings);
+        // Map backend fields to frontend fields
+        const mappedSettings = mapBackendToFrontend(cookieSettings[0]);
+        console.log('✅ Final cookie consent settings being set:', mappedSettings);
+        setSettings(mappedSettings);
       } else {
-        // Create default settings with valid store_id
-        const defaultSettings = {
+        // Create default settings with valid store_id - use the same structure as mapBackendToFrontend
+        const defaultSettings = mapBackendToFrontend({
           store_id: selectedStore.id,
-          enabled: false,
+          is_enabled: false,
           gdpr_mode: true,
           auto_detect_country: true,
-          gdpr_countries: ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"],
-          banner_message: "We use cookies to enhance your browsing experience, serve personalized content, and analyze our traffic. By clicking 'Accept All', you consent to our use of cookies.",
-          accept_all_text: "Accept All",
-          reject_all_text: "Reject All",
-          manage_preferences_text: "Manage Preferences",
-          privacy_policy_text: "Privacy Policy",
-          privacy_policy_url: "/privacy-policy",
-          banner_position: "bottom",
-          show_close_button: true,
-          consent_expiry_days: 365,
-          categories: [
-            {
-              id: "essential",
-              name: "Essential Cookies",
-              description: "These cookies are necessary for the website to function and cannot be switched off.",
-              required: true,
-              default_enabled: true
-            },
-            {
-              id: "analytics",
-              name: "Analytics Cookies", 
-              description: "These cookies help us understand how visitors interact with our website.",
-              required: false,
-              default_enabled: false
-            },
-            {
-              id: "marketing",
-              name: "Marketing Cookies",
-              description: "These cookies are used to deliver personalized advertisements.",
-              required: false,
-              default_enabled: false
-            }
-          ],
-          google_analytics_id: "",
-          google_tag_manager_id: "",
-          custom_css: "",
-          audit_enabled: true
-        };
+          analytics_cookies: false,
+          marketing_cookies: false,
+          functional_cookies: false
+        });
         setSettings(defaultSettings);
       }
       
@@ -207,19 +231,23 @@ export default function CookieConsent() {
     setSaving(true);
     
     try {
+      // Map frontend settings to backend format
+      const backendSettings = mapFrontendToBackend(settings);
+      
       console.log('🔄 Saving cookie consent settings...', {
         isUpdate: !!settings.id,
-        settingsData: settings
+        frontendData: settings,
+        backendData: backendSettings
       });
       
       if (settings.id) {
         console.log('🔄 Updating existing cookie consent settings:', settings.id);
-        await retryApiCall(() => CookieConsentSettings.update(settings.id, settings));
+        await retryApiCall(() => CookieConsentSettings.update(settings.id, backendSettings));
         console.log('✅ Cookie consent settings updated successfully');
       } else {
         console.log('✨ Creating new cookie consent settings');
         // If settings.id is null, it's a new setting. The store_id should already be populated from loadData's defaultSettings.
-        const created = await retryApiCall(() => CookieConsentSettings.create(settings));
+        const created = await retryApiCall(() => CookieConsentSettings.create(backendSettings));
         console.log('✅ Cookie consent settings created:', created);
         setSettings({ ...settings, id: created.id });
       }
@@ -554,7 +582,7 @@ export default function CookieConsent() {
                               id={`required-${index}`}
                               checked={category?.required || false}
                               onCheckedChange={(checked) => handleCategoryChange(index, 'required', checked)}
-                              disabled={category.id === 'essential'}
+                              disabled={category.id === 'necessary'}
                             />
                             <Label htmlFor={`required-${index}`}>Required</Label>
                           </div>
