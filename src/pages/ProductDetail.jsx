@@ -219,6 +219,7 @@ export default function ProductDetail() {
 
       const cartItem = {
         session_id: sessionId,
+        store_id: store?.id,
         product_id: product.id,
         quantity: quantity,
         price: basePrice, // Store the correct sale price
