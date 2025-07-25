@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { CookieConsentSettings } from '@/api/entities';
+import { CookieConsentSettings, ConsentLog } from '@/api/entities';
 import { User } from '@/api/entities';
 import { Store } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
@@ -212,8 +212,15 @@ export default function CookieConsent() {
         setSettings(defaultSettings);
       }
       
-      // Note: Consent logs functionality not implemented yet
-      setConsentLogs([]);
+      // Load consent logs
+      try {
+        const logs = await retryApiCall(() => ConsentLog.filter({ store_id: selectedStore.id }));
+        console.log('📊 Consent logs loaded:', logs?.length || 0);
+        setConsentLogs(logs || []);
+      } catch (logError) {
+        console.warn('Failed to load consent logs (non-critical):', logError);
+        setConsentLogs([]);
+      }
       
     } catch (error) {
       console.error('Failed to load cookie consent data:', error);

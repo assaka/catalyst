@@ -116,7 +116,29 @@ export default function CookieConsentBanner() {
       new Date(Date.now() + ((cookieSettings?.consent_expiry_days || 365) * 24 * 60 * 60 * 1000)).toISOString()
     );
     
-    console.log('Consent saved:', categories);
+    console.log('Consent saved locally:', categories);
+    
+    // Save consent to backend for audit purposes
+    try {
+      const consentMethod = categories.length === (cookieSettings?.categories?.length || 0) ? 'accept_all' : 
+                           categories.filter(cat => !cookieSettings?.categories?.find(c => c.id === cat && c.required)).length === 0 ? 'reject_all' : 
+                           'custom';
+      
+      await ConsentLog.create({
+        store_id: store?.id,
+        session_id: sessionId,
+        user_id: user?.id || null,
+        consent_given: consentGiven,
+        categories_accepted: categories,
+        country_code: userCountry,
+        consent_method: consentMethod,
+        page_url: window.location.href
+      });
+      
+      console.log('Consent saved to backend for audit');
+    } catch (error) {
+      console.warn('Failed to save consent to backend (non-critical):', error);
+    }
     
     setShowBanner(false);
     setShowPreferences(false);

@@ -37,6 +37,7 @@ class CartService {
       params.append('session_id', sessionId);
 
       console.log('🛒 CartService.getCart: Fetching cart with session_id:', sessionId);
+      console.log('🛒 CartService.getCart: Full URL:', `${this.endpoint}?${params.toString()}`);
       
       const response = await fetch(`${this.endpoint}?${params.toString()}`);
       
@@ -78,6 +79,7 @@ class CartService {
 
       const sessionId = this.getSessionId();
       console.log('🛒 CartService.addItem: Using session_id approach:', sessionId);
+      console.log('🛒 CartService.addItem: Current localStorage session_id:', localStorage.getItem('cart_session_id'));
 
       const cartData = {
         store_id: storeId,
@@ -153,6 +155,7 @@ class CartService {
       console.log('🛒 CartService.updateCart: Updating cart:', cartData);
       console.log('🛒 CartService.updateCart: Items count:', items?.length || 0);
       console.log('🛒 CartService.updateCart: Items detail:', JSON.stringify(items));
+      console.log('🛒 CartService.updateCart: Session ID:', sessionId);
 
       const response = await fetch(this.endpoint, {
         method: 'POST',

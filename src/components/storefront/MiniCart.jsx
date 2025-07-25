@@ -154,7 +154,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
       const updatedItems = cartItems.filter(item => item.id !== cartItemId);
 
       console.log('🛒 MiniCart: Removing item, updated items:', updatedItems);
-      const result = await cartService.updateCartExplicit(updatedItems, store.id);
+      const result = await cartService.updateCart(updatedItems, store.id);
       
       if (result.success) {
         await loadCart();

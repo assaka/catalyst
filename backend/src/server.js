@@ -292,7 +292,8 @@ app.post('/debug/migrate', async (req, res) => {
     // Import all models to ensure they're synced
     const { 
       User, Store, Product, Category, Order, OrderItem, Coupon, CmsPage, Tax, ShippingMethod, DeliverySettings,
-      Customer, Cart, Wishlist, Language, CustomerActivity, StorePlugin, SeoSettings, SeoTemplate, ProductLabel
+      Customer, Cart, Wishlist, Language, CustomerActivity, StorePlugin, SeoSettings, SeoTemplate, ProductLabel,
+      ConsentLog
     } = require('./models');
     
     // Sync all models in the correct order
