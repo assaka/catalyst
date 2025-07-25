@@ -63,6 +63,7 @@ router.get('/', async (req, res) => {
     }
 
     if (!cart) {
+      console.log('Cart GET - No cart found, returning empty cart');
       // Return empty cart structure
       cart = {
         session_id: session_id || null,
@@ -74,15 +75,17 @@ router.get('/', async (req, res) => {
         discount: 0,
         total: 0
       };
+    } else {
+      console.log('Cart GET - found cart:', {
+        id: cart.id,
+        session_id: cart.session_id,
+        user_id: cart.user_id,
+        items: cart.items,
+        itemsType: typeof cart.items,
+        itemsLength: cart.items ? cart.items.length : 0,
+        rawItems: JSON.stringify(cart.items)
+      });
     }
-
-    console.log('Cart GET - found cart:', {
-      id: cart.id,
-      session_id: cart.session_id,
-      user_id: cart.user_id,
-      items: cart.items,
-      itemsLength: cart.items ? cart.items.length : 0
-    });
 
     res.json({
       success: true,
@@ -155,12 +158,14 @@ router.post('/', async (req, res) => {
     }
 
     if (cart) {
-      // Update existing cart
+      // Update existing cart with explicit reload to ensure data consistency
       await cart.update({
         items: cartItems,
         user_id: user_id || cart.user_id,
         store_id: store_id || cart.store_id
       });
+      // Force reload to get the updated data from database
+      await cart.reload();
     } else {
       // Create new cart
       cart = await Cart.create({
@@ -170,6 +175,11 @@ router.post('/', async (req, res) => {
         items: cartItems
       });
     }
+
+    // Additional logging to debug data persistence
+    console.log('Cart after save - ID:', cart.id);
+    console.log('Cart after save - Items:', JSON.stringify(cart.items));
+    console.log('Cart after save - Items length:', cart.items ? cart.items.length : 0);
 
     res.json({
       success: true,

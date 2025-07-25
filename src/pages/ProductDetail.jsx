@@ -243,7 +243,11 @@ export default function ProductDetail() {
       }
 
       console.log('🛒 ProductDetail: Adding to cart:', cartItem);
-      await Cart.create(cartItem);
+      const result = await Cart.create(cartItem);
+      console.log('🛒 ProductDetail: Cart create result:', result);
+
+      // Small delay to prevent race conditions with cart retrieval
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       // Send Google Analytics 'add_to_cart' event
       if (window.dataLayer) {

@@ -75,35 +75,43 @@ export default function MiniCart({ cartUpdateTrigger }) {
       let cartItems = [];
       
       if (user?.id) {
-        // Load user's cart
+        // Load user's cart using GET endpoint
         const result = await Cart.filter({ user_id: user.id });
         console.log('🛒 MiniCart: Loaded user cart result:', result);
         
-        // Handle different response formats
-        if (Array.isArray(result)) {
-          // If result is an array of items (new format)
-          if (result.length > 0 && result[0].product_id) {
-            cartItems = result;
-          } 
-          // If result is an array of cart records (old format)
-          else if (result.length > 0 && result[0].items) {
-            cartItems = Array.isArray(result[0].items) ? result[0].items : [];
+        // The cart API returns the cart object directly with items array
+        if (result && result.items) {
+          cartItems = Array.isArray(result.items) ? result.items : [];
+        } else if (Array.isArray(result)) {
+          // Handle array response (multiple carts or items)
+          if (result.length > 0) {
+            if (result[0].product_id) {
+              // Array of items
+              cartItems = result;
+            } else if (result[0].items) {
+              // Array of cart objects
+              cartItems = Array.isArray(result[0].items) ? result[0].items : [];
+            }
           }
         }
       } else {
-        // Load guest cart
+        // Load guest cart using GET endpoint
         const result = await Cart.filter({ session_id: sessionId });
         console.log('🛒 MiniCart: Loaded guest cart result:', result);
         
-        // Handle different response formats
-        if (Array.isArray(result)) {
-          // If result is an array of items (new format)
-          if (result.length > 0 && result[0].product_id) {
-            cartItems = result;
-          }
-          // If result is an array of cart records (old format)
-          else if (result.length > 0 && result[0].items) {
-            cartItems = Array.isArray(result[0].items) ? result[0].items : [];
+        // The cart API returns the cart object directly with items array
+        if (result && result.items) {
+          cartItems = Array.isArray(result.items) ? result.items : [];
+        } else if (Array.isArray(result)) {
+          // Handle array response (multiple carts or items)
+          if (result.length > 0) {
+            if (result[0].product_id) {
+              // Array of items
+              cartItems = result;
+            } else if (result[0].items) {
+              // Array of cart objects
+              cartItems = Array.isArray(result[0].items) ? result[0].items : [];
+            }
           }
         }
       }
