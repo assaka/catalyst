@@ -191,25 +191,31 @@ class ApiClient {
       if (result && typeof result === 'object' && result.success && result.data) {
         console.log(`🔍 API Client unwrapping success response:`, {
           originalResult: result,
-          dataKeys: Object.keys(result.data),
+          dataKeys: result.data ? Object.keys(result.data) : [],
           extractedData: result.data
         });
         
-        // Extract the array from common response patterns
+        // If data is already an array, return it directly (for list responses)
         if (Array.isArray(result.data)) {
           return result.data;
         }
         
-        // Handle paginated responses with arrays in data properties
+        // If data is an object with an 'id' field, it's a single record - wrap in array
+        if (result.data && typeof result.data === 'object' && result.data.id) {
+          console.log(`🔍 API Client: Single object response, wrapping in array`);
+          return [result.data];
+        }
+        
+        // Handle paginated responses with arrays in data properties (only for list endpoints)
         const dataEntries = Object.entries(result.data);
         for (const [key, value] of dataEntries) {
-          if (Array.isArray(value)) {
+          if (Array.isArray(value) && key !== 'categories' && key !== 'gdpr_countries') {
             console.log(`🔍 API Client found array in data.${key}:`, value);
             return value;
           }
         }
         
-        // If no array found, return the data object wrapped in array
+        // Default: return the data object wrapped in array
         return [result.data];
       }
       
