@@ -2,9 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Cart } from "@/api/entities";
 import { Product } from "@/api/entities";
 import { User } from "@/api/entities";
+import cartService from "@/services/cartService";
 import { PaymentMethod } from "@/api/entities";
 import { ShippingMethod } from "@/api/entities";
 import { Address } from "@/api/entities";
@@ -138,40 +138,13 @@ export default function Checkout() {
       let sessionId = localStorage.getItem('cart_session_id');
       if (!sessionId) return;
 
-      let cartItems = [];
+      // Use simplified cart service (session-based approach)
+      const cartResult = await cartService.getCart();
+      console.log('🛒 Checkout: Cart service result:', cartResult);
       
-      if (user?.id) {
-        // Load user's cart
-        const result = await Cart.filter({ user_id: user.id });
-        console.log('🛒 Checkout: Loaded user cart result:', result);
-        
-        // Handle different response formats
-        if (Array.isArray(result)) {
-          // If result is an array of items (new format)
-          if (result.length > 0 && result[0].product_id) {
-            cartItems = result;
-          } 
-          // If result is an array of cart records (old format)
-          else if (result.length > 0 && result[0].items) {
-            cartItems = Array.isArray(result[0].items) ? result[0].items : [];
-          }
-        }
-      } else {
-        // Load guest cart
-        const result = await Cart.filter({ session_id: sessionId });
-        console.log('🛒 Checkout: Loaded guest cart result:', result);
-        
-        // Handle different response formats
-        if (Array.isArray(result)) {
-          // If result is an array of items (new format)
-          if (result.length > 0 && result[0].product_id) {
-            cartItems = result;
-          }
-          // If result is an array of cart records (old format)
-          else if (result.length > 0 && result[0].items) {
-            cartItems = Array.isArray(result[0].items) ? result[0].items : [];
-          }
-        }
+      let cartItems = [];
+      if (cartResult.success && cartResult.items) {
+        cartItems = cartResult.items;
       }
 
       console.log('🛒 Checkout: Extracted cart items:', cartItems);
@@ -206,10 +179,12 @@ export default function Checkout() {
     if (!product) return 0;
     
     let basePrice = parseFloat(item.price || 0);
-    if (!item.price) {
+    if (!item.price || isNaN(basePrice)) {
       basePrice = parseFloat(product.price || 0);
+      if (isNaN(basePrice)) basePrice = 0;
       if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
-        basePrice = Math.min(parseFloat(product.price), parseFloat(product.compare_price));
+        basePrice = Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
+        if (isNaN(basePrice)) basePrice = 0;
       }
     }
     
@@ -426,10 +401,12 @@ export default function Checkout() {
                         if (!product) return null;
                         
                         let basePrice = parseFloat(item.price || 0);
-                        if (!item.price) {
+                        if (!item.price || isNaN(basePrice)) {
                           basePrice = parseFloat(product.price || 0);
+                          if (isNaN(basePrice)) basePrice = 0;
                           if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
-                            basePrice = Math.min(parseFloat(product.price), parseFloat(product.compare_price));
+                            basePrice = Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
+                            if (isNaN(basePrice)) basePrice = 0;
                           }
                         }
                         

@@ -3,10 +3,10 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useStore } from '@/components/storefront/StoreProvider';
-import { Cart as CartEntity } from '@/api/entities';
 import { Product } from '@/api/entities';
 import { Coupon } from '@/api/entities';
 import { User } from '@/api/entities';
+import cartService from '@/services/cartService';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
@@ -105,30 +105,15 @@ export default function Cart() {
                     return;
                 }
 
-                // Get current user and session info
-                const currentUser = await retryApiCall(() => User.me().catch(() => null));
-                const sessionId = getSessionId();
-
                 // Create updated items array with new quantities
                 const updatedItems = cartItems.map(item => {
                     const newQuantity = quantityUpdates[item.id];
                     return newQuantity ? { ...item, quantity: newQuantity } : item;
                 });
 
-                const updateData = { 
-                    items: updatedItems,
-                    store_id: store.id
-                };
-                
-                if (currentUser?.id) {
-                    updateData.user_id = currentUser.id;
-                } else {
-                    updateData.session_id = sessionId;
-                }
-
-                // Use POST to update cart
-                console.log('🛒 Cart: Updating cart with data:', updateData);
-                const result = await retryApiCall(() => CartEntity.create(updateData));
+                // Use simplified cart service
+                console.log('🛒 Cart: Updating cart with items:', updatedItems);
+                const result = await cartService.updateCart(updatedItems, store.id);
                 console.log('🛒 Cart: Update result:', result);
                 setQuantityUpdates({});
                 await delay(500);
@@ -148,44 +133,13 @@ export default function Cart() {
     const loadCartData = async (showLoader = true) => {
         if (showLoader) setLoading(true);
         try {
-            // Determine if a user is logged in
-            const currentUser = await retryApiCall(() => User.me().catch(() => null));
-            const sessionId = getSessionId();
+            // Use simplified cart service (session-based approach)
+            const cartResult = await cartService.getCart();
+            console.log('🛒 Cart: Cart service result:', cartResult);
             
             let cartItems = [];
-            
-            if (currentUser?.id) {
-                // Load user's cart
-                const result = await retryApiCall(() => CartEntity.filter({ user_id: currentUser.id }));
-                console.log('🛒 Cart: Loaded user cart result:', result);
-                
-                // Handle different response formats
-                if (Array.isArray(result)) {
-                    // If result is an array of items (new format)
-                    if (result.length > 0 && result[0].product_id) {
-                        cartItems = result;
-                    } 
-                    // If result is an array of cart records (old format)
-                    else if (result.length > 0 && result[0].items) {
-                        cartItems = Array.isArray(result[0].items) ? result[0].items : [];
-                    }
-                }
-            } else {
-                // Load guest cart
-                const result = await retryApiCall(() => CartEntity.filter({ session_id: sessionId }));
-                console.log('🛒 Cart: Loaded guest cart result:', result);
-                
-                // Handle different response formats
-                if (Array.isArray(result)) {
-                    // If result is an array of items (new format)
-                    if (result.length > 0 && result[0].product_id) {
-                        cartItems = result;
-                    }
-                    // If result is an array of cart records (old format)
-                    else if (result.length > 0 && result[0].items) {
-                        cartItems = Array.isArray(result[0].items) ? result[0].items : [];
-                    }
-                }
+            if (cartResult.success && cartResult.items) {
+                cartItems = cartResult.items;
             }
 
             console.log('🛒 Cart: Extracted cart items:', cartItems);
@@ -243,27 +197,12 @@ export default function Cart() {
                 return;
             }
 
-            // Get current user and session info
-            const currentUser = await retryApiCall(() => User.me().catch(() => null));
-            const sessionId = getSessionId();
-
             // Remove item from local cart items array
             const updatedItems = cartItems.filter(item => item.id !== itemId);
 
-            const updateData = { 
-                items: updatedItems,
-                store_id: store.id
-            };
-            
-            if (currentUser?.id) {
-                updateData.user_id = currentUser.id;
-            } else {
-                updateData.session_id = sessionId;
-            }
-
-            // Use POST to update cart
-            console.log('🛒 Cart: Removing item from cart with data:', updateData);
-            const result = await retryApiCall(() => CartEntity.create(updateData));
+            // Use simplified cart service
+            console.log('🛒 Cart: Removing item from cart, updated items:', updatedItems);
+            const result = await cartService.updateCart(updatedItems, store.id);
             console.log('🛒 Cart: Remove result:', result);
             await delay(500);
             loadCartData(false);
