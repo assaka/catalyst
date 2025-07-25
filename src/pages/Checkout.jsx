@@ -81,9 +81,17 @@ export default function Checkout() {
 
   // Listen for cart updates from other components
   useEffect(() => {
-    const handleCartUpdate = () => {
-      console.log('🛒 Checkout: Cart update event received');
-      loadCartItems();
+    const handleCartUpdate = (event) => {
+      console.log('🛒 Checkout: Cart update event received', event);
+      console.log('🛒 Checkout: Current page URL:', window.location.pathname);
+      console.log('🛒 Checkout: Loading state:', loading);
+      
+      if (!loading) {
+        console.log('🛒 Checkout: Reloading cart items due to external update');
+        loadCartItems();
+      } else {
+        console.log('🛒 Checkout: Skipping reload - page is loading');
+      }
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
@@ -91,7 +99,7 @@ export default function Checkout() {
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
     };
-  }, []);
+  }, [loading]);
 
   const loadCheckoutData = async () => {
     try {

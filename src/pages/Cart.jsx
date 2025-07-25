@@ -95,6 +95,28 @@ export default function Cart() {
         }
     }, [storeLoading, store?.id]);
 
+    // Listen for cart updates from other components (like MiniCart)
+    useEffect(() => {
+        const handleCartUpdate = (event) => {
+            console.log('🛒 Cart: Cart update event received from other component', event);
+            console.log('🛒 Cart: Current page URL:', window.location.pathname);
+            
+            // Only reload if we're not currently processing our own updates
+            if (!loading && hasLoadedInitialData) {
+                console.log('🛒 Cart: Reloading cart data due to external update');
+                loadCartData(false); // Reload without showing loader
+            } else {
+                console.log('🛒 Cart: Skipping reload - page is loading or not ready');
+            }
+        };
+
+        window.addEventListener('cartUpdated', handleCartUpdate);
+        
+        return () => {
+            window.removeEventListener('cartUpdated', handleCartUpdate);
+        };
+    }, [loading, hasLoadedInitialData]);
+
     useDebouncedEffect(() => {
         const updateCartQuantities = async () => {
             if (Object.keys(quantityUpdates).length === 0) return;

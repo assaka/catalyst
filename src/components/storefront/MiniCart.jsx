@@ -132,6 +132,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
       setCartItems(updatedItems);
 
       // Dispatch immediate update for other components
+      console.log('🛒 MiniCart: Dispatching cartUpdated event');
       window.dispatchEvent(new CustomEvent('cartUpdated'));
 
       console.log('🛒 MiniCart: Updating quantity with items:', updatedItems);
@@ -162,6 +163,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
       setCartItems(updatedItems);
 
       // Dispatch immediate update for other components
+      console.log('🛒 MiniCart: Dispatching cartUpdated event');
       window.dispatchEvent(new CustomEvent('cartUpdated'));
 
       console.log('🛒 MiniCart: Removing item, updated items:', updatedItems);
