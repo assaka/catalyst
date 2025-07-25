@@ -90,8 +90,13 @@ export default function Checkout() {
         
         // Load user addresses if logged in
         if (userData?.id) {
-          const addresses = await Address.filter({ user_id: userData.id });
-          setUserAddresses(addresses || []);
+          try {
+            const addresses = await Address.filter({ user_id: userData.id });
+            setUserAddresses(addresses || []);
+          } catch (error) {
+            console.warn('Addresses API not available:', error);
+            setUserAddresses([]);
+          }
         }
       } catch (error) {
         setUser(null);
@@ -133,31 +138,62 @@ export default function Checkout() {
       let sessionId = localStorage.getItem('cart_session_id');
       if (!sessionId) return;
 
-      const filter = { session_id: sessionId };
+      let cartItems = [];
+      
       if (user?.id) {
-        filter.user_id = user.id;
-      }
-
-      const items = await Cart.filter(filter);
-      setCartItems(items || []);
-
-      // Load product details
-      if (items && items.length > 0) {
-        const productIds = [...new Set(items.map(item => item.product_id))];
-        const products = {};
+        // Load user's cart
+        const result = await Cart.filter({ user_id: user.id });
+        console.log('🛒 Checkout: Loaded user cart result:', result);
         
-        for (const productId of productIds) {
-          try {
-            const productList = await Product.filter({ id: productId });
-            if (productList && productList.length > 0) {
-              products[productId] = productList[0];
-            }
-          } catch (error) {
-            console.warn(`Failed to load product ${productId}:`, error);
+        // Handle different response formats
+        if (Array.isArray(result)) {
+          // If result is an array of items (new format)
+          if (result.length > 0 && result[0].product_id) {
+            cartItems = result;
+          } 
+          // If result is an array of cart records (old format)
+          else if (result.length > 0 && result[0].items) {
+            cartItems = Array.isArray(result[0].items) ? result[0].items : [];
           }
         }
+      } else {
+        // Load guest cart
+        const result = await Cart.filter({ session_id: sessionId });
+        console.log('🛒 Checkout: Loaded guest cart result:', result);
         
-        setCartProducts(products);
+        // Handle different response formats
+        if (Array.isArray(result)) {
+          // If result is an array of items (new format)
+          if (result.length > 0 && result[0].product_id) {
+            cartItems = result;
+          }
+          // If result is an array of cart records (old format)
+          else if (result.length > 0 && result[0].items) {
+            cartItems = Array.isArray(result[0].items) ? result[0].items : [];
+          }
+        }
+      }
+
+      console.log('🛒 Checkout: Extracted cart items:', cartItems);
+      setCartItems(cartItems);
+
+      // Load product details for cart items
+      if (cartItems && cartItems.length > 0) {
+        const productDetails = {};
+        for (const item of cartItems) {
+          if (!productDetails[item.product_id]) {
+            try {
+              const result = await Product.filter({ id: item.product_id });
+              const products = Array.isArray(result) ? result : [];
+              if (products.length > 0) {
+                productDetails[item.product_id] = products[0];
+              }
+            } catch (error) {
+              console.warn(`Failed to load product ${item.product_id}:`, error);
+            }
+          }
+        }
+        setCartProducts(productDetails);
       }
     } catch (error) {
       console.error('Failed to load cart items:', error);

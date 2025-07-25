@@ -167,7 +167,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
         updateData.session_id = sessionId;
       }
 
-      // Post updated items back to cart
+      // Use POST to update cart (not PUT with item ID)
+      console.log('🛒 MiniCart: Updating cart with data:', updateData);
       await Cart.create(updateData);
       await loadCart();
       
@@ -200,7 +201,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
         updateData.session_id = sessionId;
       }
 
-      // Post updated items back to cart
+      // Use POST to update cart
+      console.log('🛒 MiniCart: Removing item from cart with data:', updateData);
       await Cart.create(updateData);
       await loadCart();
       

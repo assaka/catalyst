@@ -99,14 +99,36 @@ export default function Cart() {
             if (Object.keys(quantityUpdates).length === 0) return;
 
             try {
-                const updates = Object.entries(quantityUpdates).map(([id, quantity]) => 
-                    retryApiCall(() => CartEntity.update(id, { quantity }))
-                );
+                // Get current user and session info
+                const currentUser = await retryApiCall(() => User.me().catch(() => null));
+                const sessionId = getSessionId();
 
-                await Promise.all(updates);
+                // Create updated items array with new quantities
+                const updatedItems = cartItems.map(item => {
+                    const newQuantity = quantityUpdates[item.id];
+                    return newQuantity ? { ...item, quantity: newQuantity } : item;
+                });
+
+                const updateData = { 
+                    items: updatedItems,
+                    store_id: cartItems[0]?.store_id // Get store_id from first item
+                };
+                
+                if (currentUser?.id) {
+                    updateData.user_id = currentUser.id;
+                } else {
+                    updateData.session_id = sessionId;
+                }
+
+                // Use POST to update cart
+                console.log('🛒 Cart: Updating cart with data:', updateData);
+                await retryApiCall(() => CartEntity.create(updateData));
                 setQuantityUpdates({});
                 await delay(1000);
                 loadCartData(false);
+                
+                // Dispatch update event
+                window.dispatchEvent(new CustomEvent('cartUpdated'));
             } catch (error) {
                 console.error("Error updating cart quantities:", error);
                 setFlashMessage({ type: 'error', message: "Failed to update cart quantities." });
@@ -122,21 +144,55 @@ export default function Cart() {
             // Determine if a user is logged in
             const currentUser = await retryApiCall(() => User.me().catch(() => null));
             const sessionId = getSessionId();
-            // Use user_id if logged in, otherwise use session_id for guest carts
-            const filter = currentUser ? { user_id: currentUser.id } : { session_id: sessionId };
             
-            const rawCartItems = await retryApiCall(() => CartEntity.filter(filter));
+            let cartItems = [];
             
-            if (!rawCartItems || rawCartItems.length === 0) {
+            if (currentUser?.id) {
+                // Load user's cart
+                const result = await retryApiCall(() => CartEntity.filter({ user_id: currentUser.id }));
+                console.log('🛒 Cart: Loaded user cart result:', result);
+                
+                // Handle different response formats
+                if (Array.isArray(result)) {
+                    // If result is an array of items (new format)
+                    if (result.length > 0 && result[0].product_id) {
+                        cartItems = result;
+                    } 
+                    // If result is an array of cart records (old format)
+                    else if (result.length > 0 && result[0].items) {
+                        cartItems = Array.isArray(result[0].items) ? result[0].items : [];
+                    }
+                }
+            } else {
+                // Load guest cart
+                const result = await retryApiCall(() => CartEntity.filter({ session_id: sessionId }));
+                console.log('🛒 Cart: Loaded guest cart result:', result);
+                
+                // Handle different response formats
+                if (Array.isArray(result)) {
+                    // If result is an array of items (new format)
+                    if (result.length > 0 && result[0].product_id) {
+                        cartItems = result;
+                    }
+                    // If result is an array of cart records (old format)
+                    else if (result.length > 0 && result[0].items) {
+                        cartItems = Array.isArray(result[0].items) ? result[0].items : [];
+                    }
+                }
+            }
+
+            console.log('🛒 Cart: Extracted cart items:', cartItems);
+            
+            if (!cartItems || cartItems.length === 0) {
                 setCartItems([]);
                 if (showLoader) setLoading(false);
                 return;
             }
 
-            const productIds = rawCartItems.map(item => item.product_id);
+            const productIds = [...new Set(cartItems.map(item => item.product_id))];
             const products = await retryApiCall(() => Product.filter({ id: { $in: productIds } }));
             
-            const populatedCart = rawCartItems.map(item => {
+            const populatedCart = cartItems.map(item => {
                 const productDetails = (products || []).find(p => p.id === item.product_id);
                 return { 
                     ...item, 
@@ -174,7 +230,27 @@ export default function Cart() {
     // Renamed from handleRemoveItem to removeItem
     const removeItem = async (itemId) => {
         try {
-            await retryApiCall(() => CartEntity.delete(itemId));
+            // Get current user and session info
+            const currentUser = await retryApiCall(() => User.me().catch(() => null));
+            const sessionId = getSessionId();
+
+            // Remove item from local cart items array
+            const updatedItems = cartItems.filter(item => item.id !== itemId);
+
+            const updateData = { 
+                items: updatedItems,
+                store_id: cartItems[0]?.store_id // Get store_id from first item
+            };
+            
+            if (currentUser?.id) {
+                updateData.user_id = currentUser.id;
+            } else {
+                updateData.session_id = sessionId;
+            }
+
+            // Use POST to update cart
+            console.log('🛒 Cart: Removing item from cart with data:', updateData);
+            await retryApiCall(() => CartEntity.create(updateData));
             loadCartData(false);
             window.dispatchEvent(new CustomEvent('cartUpdated'));
             setFlashMessage({ type: 'success', message: "Item removed from cart." });
