@@ -205,6 +205,16 @@ export default function ProductDetail() {
     try {
       setLoading(true);
 
+      // Validate store context
+      if (!store?.id) {
+        console.error('ProductDetail: No store context available');
+        setFlashMessage({
+          type: 'error',
+          message: 'Store information not available. Please refresh the page.'
+        });
+        return;
+      }
+
       let sessionId = localStorage.getItem('cart_session_id');
       if (!sessionId) {
         sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -219,7 +229,7 @@ export default function ProductDetail() {
 
       const cartItem = {
         session_id: sessionId,
-        store_id: store?.id,
+        store_id: store.id,
         product_id: product.id,
         quantity: quantity,
         price: basePrice, // Store the correct sale price
@@ -231,7 +241,7 @@ export default function ProductDetail() {
         cartItem.user_id = user.id;
       }
 
-      console.log('Adding to cart with correct price:', cartItem);
+      console.log('🛒 ProductDetail: Adding to cart:', cartItem);
       await Cart.create(cartItem);
 
       // Send Google Analytics 'add_to_cart' event
