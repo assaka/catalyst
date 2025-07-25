@@ -66,6 +66,10 @@ export default function StockSettings() {
       
       const storeSettings = selectedStore.settings || {};
       
+      console.log('🔍 DEBUG StockSettings - Loading store settings:', JSON.stringify(storeSettings, null, 2));
+      console.log('🔍 DEBUG StockSettings - Stock settings from DB:', storeSettings.stock_settings);
+      console.log('🔍 DEBUG StockSettings - in_stock_label from DB:', storeSettings.stock_settings?.in_stock_label);
+      
       setSettings({
         id: selectedStore.id,
         name: selectedStore.name,
@@ -119,7 +123,12 @@ export default function StockSettings() {
         }
       };
 
-      await retryApiCall(() => Store.update(storeId, payload));
+      console.log('🔍 DEBUG StockSettings - Saving payload:', JSON.stringify(payload, null, 2));
+      console.log('🔍 DEBUG StockSettings - in_stock_label being saved:', settings.in_stock_label);
+      console.log('🔍 DEBUG StockSettings - Stock settings object:', payload.settings.stock_settings);
+
+      const result = await retryApiCall(() => Store.update(storeId, payload));
+      console.log('🔍 DEBUG StockSettings - Save result:', result);
       
       setFlashMessage({ type: 'success', message: 'Stock settings saved successfully!' });
       
