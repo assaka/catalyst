@@ -81,6 +81,18 @@ class BaseEntity {
     return response;
   }
 
+  // List records with optional ordering (alias for findAll)
+  async list(orderBy = null, limit = null) {
+    const params = {};
+    if (orderBy) {
+      params.order_by = orderBy;
+    }
+    if (limit) {
+      params.limit = limit;
+    }
+    return this.findAll(params);
+  }
+
   // Filter records (alias for findAll for compatibility)
   async filter(params = {}) {
     console.log(`🔍 BaseEntity.filter() called:`, {
