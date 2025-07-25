@@ -50,9 +50,15 @@ const CategoryMenuItem = ({ category, allCategories }) => {
 
 
 export default function CategoryNav({ categories }) {
-    if (!categories || categories.length === 0) return null;
+    console.log('🏷️ CategoryNav received categories:', categories);
+    
+    if (!categories || categories.length === 0) {
+        console.log('🏷️ CategoryNav: No categories to display');
+        return null;
+    }
 
     const topLevelCategories = categories.filter(c => !c.parent_id && !c.hide_in_menu);
+    console.log('🏷️ CategoryNav: Top level categories:', topLevelCategories);
     
     return (
         <nav className="hidden md:flex items-center space-x-2">

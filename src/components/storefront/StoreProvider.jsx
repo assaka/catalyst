@@ -189,6 +189,7 @@ export const StoreProvider = ({ children }) => {
         hide_header_cart: false,
         hide_header_checkout: false,
         hide_quantity_selector: false,
+        hide_stock_quantity: false,
         show_permanent_search: true,
         show_category_in_breadcrumb: true,
         theme: {
