@@ -211,7 +211,18 @@ export default function Checkout() {
     }
     
     const optionsPrice = (item.selected_options || []).reduce((sum, option) => sum + (parseFloat(option.price) || 0), 0);
-    return basePrice + optionsPrice;
+    const finalPrice = basePrice + optionsPrice;
+    
+    console.log('🛒 Checkout calculateItemPrice:', {
+      itemPrice: item.price,
+      productPrice: product.price,
+      basePrice,
+      optionsPrice,
+      finalPrice,
+      itemId: item.id
+    });
+    
+    return finalPrice;
   };
 
   const calculateSubtotal = () => {
@@ -219,8 +230,19 @@ export default function Checkout() {
       const product = cartProducts[item.product_id];
       const itemPrice = calculateItemPrice(item, product);
       const lineTotal = itemPrice * item.quantity;
+      
+      console.log('🛒 Checkout calculateSubtotal line:', {
+        itemId: item.id,
+        itemPrice,
+        quantity: item.quantity,
+        lineTotal,
+        runningTotal: total + (isNaN(lineTotal) ? 0 : lineTotal)
+      });
+      
       return total + (isNaN(lineTotal) ? 0 : lineTotal);
     }, 0);
+    
+    console.log('🛒 Checkout final subtotal:', subtotal);
     return isNaN(subtotal) ? 0 : subtotal;
   };
 
@@ -229,6 +251,16 @@ export default function Checkout() {
     const shipping = isNaN(shippingCost) ? 0 : shippingCost;
     const tax = isNaN(taxAmount) ? 0 : taxAmount;
     const total = subtotal + shipping + tax;
+    
+    console.log('🛒 Checkout getTotalAmount:', {
+      subtotal,
+      shipping,
+      tax,
+      total,
+      shippingCostRaw: shippingCost,
+      taxAmountRaw: taxAmount
+    });
+    
     return isNaN(total) ? 0 : total;
   };
 
