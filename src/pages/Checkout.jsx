@@ -689,6 +689,7 @@ export default function Checkout() {
                     value={shippingAddress.country}
                     onChange={(country) => setShippingAddress(prev => ({ ...prev, country }))}
                     placeholder="Select country..."
+                    allowedCountries={settings?.allowed_countries}
                   />
                 </div>
               )}
@@ -832,6 +833,7 @@ export default function Checkout() {
                           value={billingAddress.country}
                           onChange={(country) => setBillingAddress(prev => ({ ...prev, country }))}
                           placeholder="Select country..."
+                          allowedCountries={settings?.allowed_countries}
                         />
                       </div>
                     )}

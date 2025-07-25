@@ -261,6 +261,7 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
             <CountrySelect
               value={addressForm.country || ''}
               onValueChange={(value) => handleInputChange('country', value)}
+              allowedCountries={settings?.allowed_countries}
             />
           </div>
           

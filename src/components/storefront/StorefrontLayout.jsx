@@ -315,7 +315,11 @@ export default function StorefrontLayout({ children }) {
                                             </Select>
                                         )}
                                         {settings.allowed_countries && Array.isArray(settings.allowed_countries) && settings.allowed_countries.length > 1 && (
-                                            <CountrySelect value={selectedCountry} onValueChange={setSelectedCountry} />
+                                            <CountrySelect 
+                                                value={selectedCountry} 
+                                                onValueChange={setSelectedCountry} 
+                                                allowedCountries={settings.allowed_countries}
+                                            />
                                         )}
                                         {user ? (
                                             <div>
@@ -423,7 +427,11 @@ export default function StorefrontLayout({ children }) {
                                     )}
                                     {settings.allowed_countries && Array.isArray(settings.allowed_countries) && settings.allowed_countries.length > 1 && (
                                         <div className="pt-3 mt-3 border-t border-gray-200">
-                                            <CountrySelect value={selectedCountry} onValueChange={setSelectedCountry} />
+                                            <CountrySelect 
+                                                value={selectedCountry} 
+                                                onValueChange={setSelectedCountry} 
+                                                allowedCountries={settings.allowed_countries}
+                                            />
                                         </div>
                                     )}
                                     

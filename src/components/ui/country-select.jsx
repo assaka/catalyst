@@ -14,38 +14,20 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { countries } from "./country-list-data";
 
-// Default country data in case import fails
-const defaultCountryData = [
-  { value: "US", label: "United States" },
-  { value: "CA", label: "Canada" },
-  { value: "GB", label: "United Kingdom" },
-  { value: "DE", label: "Germany" },
-  { value: "FR", label: "France" },
-  { value: "AU", label: "Australia" },
-  { value: "JP", label: "Japan" },
-  { value: "BR", label: "Brazil" },
-  { value: "IN", label: "India" },
-  { value: "CN", label: "China" },
-];
+// Transform the country data to match expected format
+const countryData = countries.map(country => ({
+  value: country.code,
+  label: country.name,
+  flag: country.flag
+}));
 
-let countryData = defaultCountryData;
-
-// Simply use the default country data to avoid require() issues
-// The full country list can be loaded dynamically if needed
-
-export function CountrySelect({ value, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [] }) {
+export function CountrySelect({ value, onValueChange, onChange, placeholder = "Select country...", multiple = false, allowedCountries = [] }) {
   const [open, setOpen] = useState(false);
   
-  console.log(`🔍 CountrySelect render:`, {
-    value,
-    valueType: typeof value,
-    isValueArray: Array.isArray(value),
-    multiple,
-    allowedCountries,
-    allowedCountriesType: typeof allowedCountries,
-    isAllowedCountriesArray: Array.isArray(allowedCountries)
-  });
+  // Use onValueChange if provided, otherwise use onChange for backward compatibility
+  const handleChange = onValueChange || onChange;
 
   const handleSelect = (currentValue) => {
     if (multiple) {
@@ -53,38 +35,17 @@ export function CountrySelect({ value, onChange, placeholder = "Select country..
       const newValues = currentValues.includes(currentValue)
         ? currentValues.filter((v) => v !== currentValue)
         : [...currentValues, currentValue];
-      onChange(newValues);
+      handleChange(newValues);
     } else {
-      onChange(currentValue === value ? "" : currentValue);
+      handleChange(currentValue === value ? "" : currentValue);
       setOpen(false);
     }
   };
   
-  // Ensure countryData is always an array before filtering
-  const safeCountryData = Array.isArray(countryData) ? countryData : defaultCountryData;
-  
-  console.log(`🔍 CountrySelect filtering:`, {
-    countryData,
-    countryDataType: typeof countryData,
-    isCountryDataArray: Array.isArray(countryData),
-    safeCountryData,
-    safeCountryDataLength: safeCountryData.length,
-    allowedCountries,
-    allowedCountriesType: typeof allowedCountries,
-    isAllowedCountriesArray: Array.isArray(allowedCountries),
-    allowedCountriesLength: Array.isArray(allowedCountries) ? allowedCountries.length : 'N/A'
-  });
-  
+  // Filter countries based on allowed countries from store settings
   const filteredCountries = Array.isArray(allowedCountries) && allowedCountries.length > 0 
-    ? safeCountryData.filter(c => c && c.value && allowedCountries.includes(c.value)) 
-    : safeCountryData;
-    
-  console.log(`🔍 CountrySelect filtered result:`, {
-    filteredCountries,
-    filteredCountriesType: typeof filteredCountries,
-    isFilteredCountriesArray: Array.isArray(filteredCountries),
-    filteredCountriesLength: Array.isArray(filteredCountries) ? filteredCountries.length : 'N/A'
-  });
+    ? countryData.filter(country => allowedCountries.includes(country.value)) 
+    : countryData;
 
   const safeValue = multiple 
     ? (Array.isArray(value) ? value : (value ? [value] : []))
@@ -134,6 +95,7 @@ export function CountrySelect({ value, onChange, placeholder = "Select country..
                         isSelected ? "opacity-100" : "opacity-0"
                       }`}
                     />
+                    <span className="mr-2">{country.flag}</span>
                     {country.label}
                   </CommandItem>
                 );
