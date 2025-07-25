@@ -232,15 +232,26 @@ export default function Storefront() {
       return stockSettings.out_of_stock_label || "Out of Stock";
     }
     
+    // Check if stock quantity should be hidden
+    const hideStockQuantity = settings?.hide_stock_quantity === true;
+    
     // Handle low stock
     const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
     if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
       const label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
+      if (hideStockQuantity) {
+        // Remove quantity placeholder when hiding stock quantity
+        return label.replace(/ \{quantity\}| \({quantity}\)|\({quantity}\)/g, '');
+      }
       return label.replace('{quantity}', product.stock_quantity.toString());
     }
     
     // Handle regular in stock
     const label = stockSettings.in_stock_label || "In Stock";
+    if (hideStockQuantity) {
+      // Remove quantity placeholder when hiding stock quantity
+      return label.replace(/ \{quantity\}| \({quantity}\)|\({quantity}\)/g, '');
+    }
     return label.replace('{quantity}', product.stock_quantity.toString());
   };
 

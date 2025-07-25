@@ -381,6 +381,70 @@ export default function ProductDetail() {
 
   const currencySymbol = settings?.currency_symbol || '$';
 
+  // Helper function to get stock label based on settings and quantity
+  const getStockLabel = (product) => {
+    // Check if stock labels should be shown at all
+    const showStockLabel = settings?.show_stock_label !== false;
+    if (!showStockLabel) return null;
+    
+    // Default behavior if no stock settings are found
+    if (!store?.settings?.stock_settings) {
+      if (product.stock_quantity <= 0 && !product.infinite_stock) {
+        return "Out of Stock";
+      }
+      return "In Stock";
+    }
+
+    const stockSettings = store.settings.stock_settings;
+
+    // Handle infinite stock
+    if (product.infinite_stock) {
+      const label = stockSettings.in_stock_label || "In Stock";
+      // Remove quantity placeholder if present, as it's not applicable
+      return label.replace(/ \{quantity\}| \({quantity}\)|\({quantity}\)/g, '');
+    }
+    
+    // Handle out of stock
+    if (product.stock_quantity <= 0) {
+      return stockSettings.out_of_stock_label || "Out of Stock";
+    }
+    
+    // Check if stock quantity should be hidden
+    const hideStockQuantity = settings?.hide_stock_quantity === true;
+    
+    // Handle low stock
+    const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
+    if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
+      const label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
+      if (hideStockQuantity) {
+        // Remove quantity placeholder when hiding stock quantity
+        return label.replace(/ \{quantity\}| \({quantity}\)|\({quantity}\)/g, '');
+      }
+      return label.replace('{quantity}', product.stock_quantity.toString());
+    }
+    
+    // Handle regular in stock
+    const label = stockSettings.in_stock_label || "In Stock";
+    if (hideStockQuantity) {
+      // Remove quantity placeholder when hiding stock quantity
+      return label.replace(/ \{quantity\}| \({quantity}\)|\({quantity}\)/g, '');
+    }
+    return label.replace('{quantity}', product.stock_quantity.toString());
+  };
+
+  // Helper function to get stock variant (for styling)
+  const getStockVariant = (product) => {
+    if (product.infinite_stock) return "outline";
+    if (product.stock_quantity <= 0) return "destructive";
+    
+    const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
+    if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
+      return "secondary"; // Warning color for low stock
+    }
+    
+    return "outline"; // Default for in stock
+  };
+
   // Build breadcrumb items for product pages
   const getBreadcrumbItems = () => {
     if (!product) return [];
@@ -559,9 +623,11 @@ export default function ProductDetail() {
               </div>
             </div>
             {/* Stock status badge, updated to reflect track_stock setting */}
-            <Badge variant={isInStock ? "outline" : "destructive"} className="mb-2">
-              {isInStock ? "In Stock" : "Out of Stock"}
-            </Badge>
+            {getStockLabel(product) && (
+              <Badge variant={getStockVariant(product)} className="mb-2">
+                {getStockLabel(product)}
+              </Badge>
+            )}
             {product?.sku && (
               <p className="text-sm text-gray-600">SKU: {product.sku}</p>
             )}
