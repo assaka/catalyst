@@ -28,7 +28,8 @@
       "Bash(true)",
       "Bash(find:*)",
       "Bash(npm run migrate:*)",
-      "Bash(cd backend)"
+      "Bash(cd backend)",
+      "Bash(git revert:*)"
     ],
     "deny": []
   }

@@ -13,6 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { formatPrice, safeToFixed } from '@/utils/priceUtils';
 
 export default function MiniCart({ cartUpdateTrigger }) {
   const { store, settings } = useStore();
@@ -195,23 +196,24 @@ export default function MiniCart({ cartUpdateTrigger }) {
       if (!product) return total;
       
       // Use the stored price from cart (which should be the sale price)
-      let itemPrice = parseFloat(item.price || 0);
+      let itemPrice = formatPrice(item.price);
       
       // If no stored price, calculate from product (use sale price if available)
       if (!item.price) {
-        itemPrice = parseFloat(product.price || 0);
-        if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
-          itemPrice = Math.min(parseFloat(product.price), parseFloat(product.compare_price));
+        itemPrice = formatPrice(product.price);
+        const comparePrice = formatPrice(product.compare_price);
+        if (comparePrice > 0 && comparePrice !== formatPrice(product.price)) {
+          itemPrice = Math.min(formatPrice(product.price), comparePrice);
         }
       }
       
       // Add selected options price
       if (item.selected_options && Array.isArray(item.selected_options)) {
-        const optionsPrice = item.selected_options.reduce((sum, option) => sum + (parseFloat(option.price) || 0), 0);
+        const optionsPrice = item.selected_options.reduce((sum, option) => sum + formatPrice(option.price), 0);
         itemPrice += optionsPrice;
       }
       
-      return total + (itemPrice * item.quantity);
+      return total + (itemPrice * formatPrice(item.quantity));
     }, 0);
   };
 
@@ -251,13 +253,14 @@ export default function MiniCart({ cartUpdateTrigger }) {
                   if (!product) return null;
                   
                   // Use the stored price from cart (which should be the sale price)
-                  let basePrice = parseFloat(item.price || 0);
+                  let basePrice = formatPrice(item.price);
                   
                   // If no stored price, calculate from product (use sale price if available)
                   if (!item.price) {
-                    basePrice = parseFloat(product.price || 0);
-                    if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
-                      basePrice = Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
+                    basePrice = formatPrice(product.price);
+                    const comparePrice = formatPrice(product.compare_price);
+                    if (comparePrice > 0 && comparePrice !== formatPrice(product.price)) {
+                      basePrice = Math.min(formatPrice(product.price), comparePrice);
                     }
                   }
 
@@ -270,12 +273,12 @@ export default function MiniCart({ cartUpdateTrigger }) {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{product.name}</p>
-                        <p className="text-sm text-gray-500">{currencySymbol}{basePrice.toFixed(2)} each</p>
+                        <p className="text-sm text-gray-500">{currencySymbol}{safeToFixed(basePrice)} each</p>
                         
                         {item.selected_options && item.selected_options.length > 0 && (
                           <div className="text-xs text-gray-500 mt-1">
                             {item.selected_options.map((option, idx) => (
-                              <div key={idx}>+ {option.name} (+{currencySymbol}{parseFloat(option.price || 0).toFixed(2)})</div>
+                              <div key={idx}>+ {option.name} (+{currencySymbol}{safeToFixed(option.price)})</div>
                             ))}
                           </div>
                         )}
@@ -315,7 +318,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
               
               <div className="border-t pt-3">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="font-semibold">Total: {currencySymbol}{getTotalPrice().toFixed(2)}</span>
+                  <span className="font-semibold">Total: {currencySymbol}{safeToFixed(getTotalPrice())}</span>
                 </div>
                 
                 <div className="space-y-2">

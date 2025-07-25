@@ -27,6 +27,17 @@ const getSessionId = () => {
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Safe number formatting helper
+const formatPrice = (value) => {
+    const num = parseFloat(value);
+    return isNaN(num) ? 0 : num;
+};
+
+const safeToFixed = (value, decimals = 2) => {
+    const num = formatPrice(value);
+    return num.toFixed(decimals);
+};
+
 // Global request queue to manage API calls
 let globalRequestQueue = Promise.resolve();
 
@@ -317,7 +328,7 @@ export default function Cart() {
                 if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
                     setFlashMessage({ 
                         type: 'error', 
-                        message: `Minimum order amount of ${currencySymbol}${coupon.min_purchase_amount} required for this coupon.` 
+                        message: `Minimum order amount of ${currencySymbol}${safeToFixed(coupon.min_purchase_amount)} required for this coupon.` 
                     });
                     return;
                 }
@@ -390,17 +401,17 @@ export default function Cart() {
     const calculateItemTotal = useCallback((item, product) => {
         if (!item || !product) return 0;
 
-        let basePrice = parseFloat(item.price); // Try to use price stored in the cart item itself
-        if (isNaN(basePrice) || basePrice <= 0) { // If item.price is not a valid positive number
-            basePrice = parseFloat(product.sale_price || product.price || 0); // Fallback to product's current sale_price or price
+        let basePrice = formatPrice(item.price); // Try to use price stored in the cart item itself
+        if (basePrice <= 0) { // If item.price is not a valid positive number
+            basePrice = formatPrice(product.sale_price || product.price || 0); // Fallback to product's current sale_price or price
         }
         
         let optionsPrice = 0;
         if (item.selected_options && Array.isArray(item.selected_options)) {
-            optionsPrice = item.selected_options.reduce((sum, option) => sum + (parseFloat(option.price) || 0), 0);
+            optionsPrice = item.selected_options.reduce((sum, option) => sum + formatPrice(option.price), 0);
         }
         
-        return (basePrice + optionsPrice) * (item.quantity || 1);
+        return (basePrice + optionsPrice) * (formatPrice(item.quantity) || 1);
     }, []);
 
     const calculateSubtotal = useCallback(() => {
@@ -416,13 +427,13 @@ export default function Cart() {
         let disc = 0;
         if (appliedCoupon) {
             if (appliedCoupon.discount_type === 'fixed') {
-                disc = appliedCoupon.discount_value || 0;
+                disc = formatPrice(appliedCoupon.discount_value);
             } else if (appliedCoupon.discount_type === 'percentage') {
-                disc = calculatedSubtotal * ((appliedCoupon.discount_value || 0) / 100);
+                disc = calculatedSubtotal * (formatPrice(appliedCoupon.discount_value) / 100);
                 
                 // Apply max discount limit if specified
-                if (appliedCoupon.max_discount_amount && disc > appliedCoupon.max_discount_amount) {
-                    disc = appliedCoupon.max_discount_amount;
+                if (appliedCoupon.max_discount_amount && disc > formatPrice(appliedCoupon.max_discount_amount)) {
+                    disc = formatPrice(appliedCoupon.max_discount_amount);
                 }
             } else if (appliedCoupon.discount_type === 'free_shipping') {
                 // For free shipping, the discount is 0 here but would be applied to shipping cost
@@ -441,16 +452,16 @@ export default function Cart() {
             if (!item || !item.product) return acc;
             const taxRate = getProductTaxRate(item.product);
 
-            let basePrice = parseFloat(item.price);
-            if (isNaN(basePrice) || basePrice <= 0) {
-                basePrice = parseFloat(item.product.sale_price || item.product.price || 0);
+            let basePrice = formatPrice(item.price);
+            if (basePrice <= 0) {
+                basePrice = formatPrice(item.product.sale_price || item.product.price);
             }
             let optionsPrice = 0;
             if (item.selected_options && Array.isArray(item.selected_options)) {
-                optionsPrice = item.selected_options.reduce((sum, opt) => sum + (parseFloat(opt.price) || 0), 0);
+                optionsPrice = item.selected_options.reduce((sum, opt) => sum + formatPrice(opt.price), 0);
             }
             
-            const taxableAmount = (basePrice + optionsPrice) * (item.quantity || 1);
+            const taxableAmount = (basePrice + optionsPrice) * (formatPrice(item.quantity) || 1);
             
             return acc + (taxableAmount * taxRate);
         }, 0);
@@ -502,18 +513,19 @@ export default function Cart() {
 
                                         // Logic for basePrice for display, as per outline's intent
                                         let basePriceForDisplay;
-                                        const itemPriceAsNumber = parseFloat(item.price);
+                                        const itemPriceAsNumber = formatPrice(item.price);
 
-                                        if (!isNaN(itemPriceAsNumber) && itemPriceAsNumber > 0) {
+                                        if (itemPriceAsNumber > 0) {
                                             // Use the stored price from cart if it's a valid positive number
                                             basePriceForDisplay = itemPriceAsNumber;
                                         } else {
                                             // Fallback to product's current pricing if cart item price is invalid/missing/zero
-                                            let productCurrentPrice = parseFloat(product.sale_price || product.price || 0);
+                                            let productCurrentPrice = formatPrice(product.sale_price || product.price);
                                             
                                             // Apply outline's compare_price logic: if compare_price is lower than current product price, use it
-                                            if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) < productCurrentPrice) {
-                                                basePriceForDisplay = parseFloat(product.compare_price);
+                                            const comparePrice = formatPrice(product.compare_price);
+                                            if (comparePrice > 0 && comparePrice < productCurrentPrice) {
+                                                basePriceForDisplay = comparePrice;
                                             } else {
                                                 basePriceForDisplay = productCurrentPrice;
                                             }
@@ -530,12 +542,12 @@ export default function Cart() {
                                                 />
                                                 <div className="flex-1">
                                                     <h3 className="text-lg font-semibold">{product.name}</h3>
-                                                    <p className="text-gray-600">{currencySymbol}{basePriceForDisplay.toFixed(2)} each</p>
+                                                    <p className="text-gray-600">{currencySymbol}{safeToFixed(basePriceForDisplay)} each</p>
                                                     
                                                     {item.selected_options && item.selected_options.length > 0 && (
                                                         <div className="text-sm text-gray-500 mt-1">
                                                             {item.selected_options.map((option, idx) => (
-                                                                <div key={idx}>+ {option.name} (+{currencySymbol}{parseFloat(option.price || 0).toFixed(2)})</div>
+                                                                <div key={idx}>+ {option.name} (+{currencySymbol}{safeToFixed(option.price)})</div>
                                                             ))}
                                                         </div>
                                                     )}
@@ -567,7 +579,7 @@ export default function Cart() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-xl font-bold">{currencySymbol}{itemTotal.toFixed(2)}</p>
+                                                    <p className="text-xl font-bold">{currencySymbol}{safeToFixed(itemTotal)}</p>
                                                 </div>
                                             </div>
                                         );
@@ -600,8 +612,8 @@ export default function Cart() {
                                                 <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
                                                 <p className="text-xs text-green-600">
                                                     {appliedCoupon.discount_type === 'fixed' 
-                                                        ? `${currencySymbol}${appliedCoupon.discount_value} off`
-                                                        : `${appliedCoupon.discount_value}% off`
+                                                        ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
+                                                        : `${safeToFixed(appliedCoupon.discount_value)}% off`
                                                     }
                                                 </p>
                                             </div>
@@ -620,14 +632,14 @@ export default function Cart() {
                             <Card>
                                 <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="flex justify-between"><span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span></div>
                                     {discount > 0 && (
-                                        <div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{currencySymbol}{discount.toFixed(2)}</span></div>
+                                        <div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span></div>
                                     )}
-                                    <div className="flex justify-between"><span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span></div>
                                     <div className="flex justify-between text-lg font-semibold border-t pt-4">
                                         <span>Total</span>
-                                        <span>{currencySymbol}{total.toFixed(2)}</span>
+                                        <span>{currencySymbol}{safeToFixed(total)}</span>
                                     </div>
                                     <div className="border-t mt-6 pt-6">
                                         <Link to={createPageUrl('Checkout')}>
