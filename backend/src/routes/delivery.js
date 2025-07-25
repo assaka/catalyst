@@ -62,10 +62,14 @@ router.post('/', async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
+    console.log('🔄 Creating delivery settings:', req.body);
     const deliverySettings = await DeliverySettings.create(req.body);
+    console.log('✅ Delivery settings created:', deliverySettings.id);
+    
     res.status(201).json({ success: true, message: 'Delivery settings created successfully', data: deliverySettings });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('❌ Create delivery settings error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
@@ -80,11 +84,15 @@ router.put('/:id', async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
+    console.log('🔄 Updating delivery settings:', req.params.id, req.body);
     await deliverySettings.update(req.body);
     await deliverySettings.reload(); // Reload to get updated data
+    console.log('✅ Delivery settings updated successfully');
+    
     res.json({ success: true, message: 'Delivery settings updated successfully', data: deliverySettings });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('❌ Update delivery settings error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 

@@ -55,8 +55,8 @@ export default function DeliverySettings() { // Renamed the function component f
           max_advance_days: 30,
           blocked_dates: [],
           blocked_weekdays: [],
-          out_of_office_start: '',
-          out_of_office_end: '',
+          out_of_office_start: null,
+          out_of_office_end: null,
           delivery_time_slots: [
             { start_time: '09:00', end_time: '12:00', is_active: true },
             { start_time: '13:00', end_time: '17:00', is_active: true }
@@ -84,17 +84,25 @@ export default function DeliverySettings() { // Renamed the function component f
     setSaving(true);
     try {
       // Ensure store_id is correctly set on the settings object before saving
-      const settingsToSave = { ...deliverySettings, store_id: store.id };
+      // Clean up empty date strings
+      const settingsToSave = { 
+        ...deliverySettings, 
+        store_id: store.id,
+        out_of_office_start: deliverySettings.out_of_office_start || null,
+        out_of_office_end: deliverySettings.out_of_office_end || null
+      };
+      
+      console.log('🔧 Prepared settings for save:', settingsToSave);
       
       let result;
       if (deliverySettings.id) {
         // If deliverySettings already has an ID, it means it exists in the DB, so update
-        console.log('📝 Updating delivery settings:', deliverySettings.id, settingsToSave);
+        console.log('📝 Updating delivery settings:', deliverySettings.id);
         result = await DeliverySettingsEntity.update(deliverySettings.id, settingsToSave);
         console.log('✅ Update result:', result);
       } else {
         // Otherwise, it's a new set of settings for this store, so create
-        console.log('✨ Creating new delivery settings:', settingsToSave);
+        console.log('✨ Creating new delivery settings');
         result = await DeliverySettingsEntity.create(settingsToSave);
         console.log('✅ Create result:', result);
       }

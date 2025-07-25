@@ -111,14 +111,15 @@ export default function Settings() {
         slug: storeData.slug || '',
         status: storeData.status || 'active', // Default status
         contact_details: {
-          email: storeData.contact_details?.email || '', // Safely access
-          phone: storeData.contact_details?.phone || '',
-          address: storeData.contact_details?.address || '',
-          city: storeData.contact_details?.city || '',
-          state: storeData.contact_details?.state || '',
-          postal_code: storeData.contact_details?.postal_code || '',
-          country: storeData.contact_details?.country || 'US', // Default to US
-          support_email: storeData.contact_details?.support_email || '',
+          email: storeData.contact_email || '', // Map from flat structure
+          phone: storeData.contact_phone || '',
+          address: storeData.address_line1 || '',
+          address_line2: storeData.address_line2 || '',
+          city: storeData.city || '',
+          state: storeData.state || '',
+          postal_code: storeData.postal_code || '',
+          country: storeData.country || 'US', // Default to US
+          support_email: storeData.contact_email || '', // Use contact_email as support_email
         },
         stripe_settings: {
           enabled: storeData.stripe_settings?.enabled || false,
@@ -374,19 +375,22 @@ export default function Settings() {
       };
       
       // Also include other store fields that might need updating
+      // Map contact_details back to flat structure
       const payload = {
         name: store.name,
         description: store.description,
         logo_url: store.logo_url,
         custom_domain: store.custom_domain,
-        contact_email: store.contact_email,
-        contact_phone: store.contact_phone,
-        address_line1: store.address_line1,
-        address_line2: store.address_line2,
-        city: store.city,
-        state: store.state,
-        zip_code: store.zip_code,
-        country: store.country,
+        contact_email: store.contact_details?.email || store.contact_email,
+        contact_phone: store.contact_details?.phone || store.contact_phone,
+        address_line1: store.contact_details?.address || store.address_line1,
+        address_line2: store.contact_details?.address_line2 || store.address_line2,
+        city: store.contact_details?.city || store.city,
+        state: store.contact_details?.state || store.state,
+        postal_code: store.contact_details?.postal_code || store.postal_code,
+        country: store.contact_details?.country || store.country,
+        timezone: store.timezone,
+        currency: store.currency,
         settings: settingsPayload
       };
 
