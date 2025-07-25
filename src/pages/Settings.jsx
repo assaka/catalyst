@@ -952,62 +952,6 @@ export default function Settings() {
                 <Separator />
 
                 <div>
-                  <h4 className="font-medium text-gray-800 mb-4">Inventory & Stock</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <Label htmlFor="enable_inventory" className="font-medium">Enable Inventory Management</Label>
-                        <p className="text-sm text-gray-500">Track inventory levels for products</p>
-                      </div>
-                      <Switch 
-                        id="enable_inventory" 
-                        checked={store?.settings?.enable_inventory !== undefined ? store.settings.enable_inventory : true} 
-                        onCheckedChange={(checked) => handleSettingsChange('enable_inventory', checked)} 
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <Label htmlFor="display_out_of_stock" className="font-medium">Display Out of Stock Products</Label>
-                        <p className="text-sm text-gray-500">Show products that are out of stock on category and search pages</p>
-                      </div>
-                      <Switch 
-                        id="display_out_of_stock" 
-                        checked={store?.settings?.display_out_of_stock !== undefined ? store.settings.display_out_of_stock : true} 
-                        onCheckedChange={(checked) => handleSettingsChange('display_out_of_stock', checked)} 
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <Label htmlFor="hide_stock_quantity" className="font-medium">Hide Stock Quantity</Label>
-                        <p className="text-sm text-gray-500">Hide the exact stock number from customers</p>
-                      </div>
-                      <Switch 
-                        id="hide_stock_quantity" 
-                        checked={store?.settings?.hide_stock_quantity !== undefined ? store.settings.hide_stock_quantity : false} 
-                        onCheckedChange={(checked) => handleSettingsChange('hide_stock_quantity', checked)} 
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="display_low_stock_threshold">Low Stock Display Threshold</Label>
-                      <Input
-                        id="display_low_stock_threshold"
-                        type="number"
-                        value={store?.settings?.display_low_stock_threshold || 0}
-                        onChange={(e) => handleSettingsChange('display_low_stock_threshold', parseInt(e.target.value) || 0)}
-                        min="0"
-                        className="mt-1"
-                      />
-                      <p className="text-sm text-gray-500 mt-1">Show low stock warning when quantity falls below this number (0 = disabled)</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
                   <h4 className="font-medium text-gray-800 mb-4">Allowed Countries for Shipping/Billing</h4>
                   <div className="space-y-2">
                     <Label>Select countries where your store operates</Label>
