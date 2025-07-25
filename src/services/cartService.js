@@ -28,24 +28,24 @@ class CartService {
     }
   }
 
-  // Get cart
+  // Get cart - simplified to always use session_id approach
   async getCart() {
     try {
-      const user = await this.getCurrentUser();
       const sessionId = this.getSessionId();
       
       const params = new URLSearchParams();
-      if (user?.id) {
-        params.append('user_id', user.id);
-      } else {
-        params.append('session_id', sessionId);
-      }
+      params.append('session_id', sessionId);
 
-      console.log('🛒 CartService.getCart: Fetching cart with params:', params.toString());
+      console.log('🛒 CartService.getCart: Fetching cart with session_id:', sessionId);
       
       const response = await fetch(`${this.endpoint}?${params.toString()}`);
-      const result = await response.json();
       
+      if (!response.ok) {
+        console.error('🛒 CartService.getCart: HTTP error:', response.status);
+        return { success: false, cart: null, items: [] };
+      }
+      
+      const result = await response.json();
       console.log('🛒 CartService.getCart: Response:', result);
       
       if (result.success && result.data) {
@@ -63,19 +63,11 @@ class CartService {
     }
   }
 
-  // Add item to cart
+  // Add item to cart - simplified to always use session_id approach
   async addItem(productId, quantity = 1, price = 0, selectedOptions = [], storeId) {
     try {
       console.log('🛒 CartService.addItem: Starting with params:', {
         productId, quantity, price, selectedOptions, storeId
-      });
-
-      const user = await this.getCurrentUser();
-      const sessionId = this.getSessionId();
-
-      console.log('🛒 CartService.addItem: Got user and session:', {
-        userId: user?.id || 'null',
-        sessionId
       });
 
       if (!storeId) {
@@ -83,22 +75,19 @@ class CartService {
         throw new Error('Store ID is required');
       }
 
+      const sessionId = this.getSessionId();
+      console.log('🛒 CartService.addItem: Using session_id approach:', sessionId);
+
       const cartData = {
         store_id: storeId,
         product_id: productId,
         quantity: parseInt(quantity),
         price: parseFloat(price),
-        selected_options: selectedOptions
+        selected_options: selectedOptions,
+        session_id: sessionId // Always use session_id for simplicity
       };
 
-      if (user?.id) {
-        cartData.user_id = user.id;
-      } else {
-        cartData.session_id = sessionId;
-      }
-
       console.log('🛒 CartService.addItem: Final cart data:', cartData);
-      console.log('🛒 CartService.addItem: Making request to:', this.endpoint);
 
       const response = await fetch(this.endpoint, {
         method: 'POST',
@@ -107,6 +96,12 @@ class CartService {
       });
 
       console.log('🛒 CartService.addItem: Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🛒 CartService.addItem: HTTP error:', response.status, errorText);
+        return { success: false, error: `HTTP ${response.status}: ${errorText}` };
+      }
 
       const result = await response.json();
       console.log('🛒 CartService.addItem: Response data:', result);
@@ -133,10 +128,9 @@ class CartService {
     }
   }
 
-  // Update cart (for quantity changes, removals, etc.)
+  // Update cart (for quantity changes, removals, etc.) - simplified to always use session_id approach
   async updateCart(items, storeId) {
     try {
-      const user = await this.getCurrentUser();
       const sessionId = this.getSessionId();
 
       if (!storeId) {
@@ -145,14 +139,9 @@ class CartService {
 
       const cartData = {
         store_id: storeId,
-        items: items
+        items: items,
+        session_id: sessionId // Always use session_id for simplicity
       };
-
-      if (user?.id) {
-        cartData.user_id = user.id;
-      } else {
-        cartData.session_id = sessionId;
-      }
 
       console.log('🛒 CartService.updateCart: Updating cart:', cartData);
 
@@ -161,6 +150,12 @@ class CartService {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cartData)
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🛒 CartService.updateCart: HTTP error:', response.status, errorText);
+        return { success: false, error: `HTTP ${response.status}: ${errorText}` };
+      }
 
       const result = await response.json();
       console.log('🛒 CartService.updateCart: Response:', result);

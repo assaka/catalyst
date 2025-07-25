@@ -158,14 +158,12 @@ router.post('/', async (req, res) => {
     }
 
     if (cart) {
-      // Update existing cart - ensure items is properly set as JSON
-      const updateData = {
-        items: JSON.parse(JSON.stringify(cartItems)), // Ensure proper JSON serialization
+      // Update existing cart
+      await cart.update({
+        items: cartItems,
         user_id: user_id || cart.user_id,
         store_id: store_id || cart.store_id
-      };
-      
-      await cart.update(updateData);
+      });
       await cart.reload();
     } else {
       // Create new cart
@@ -173,7 +171,7 @@ router.post('/', async (req, res) => {
         session_id,
         store_id,
         user_id,
-        items: JSON.parse(JSON.stringify(cartItems)) // Ensure proper JSON serialization
+        items: cartItems
       });
     }
 
