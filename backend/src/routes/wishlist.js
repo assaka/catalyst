@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
       include: [
         {
           model: require('../models').Product,
-          attributes: ['id', 'name', 'price', 'image_url', 'slug']
+          attributes: ['id', 'name', 'price', 'images', 'slug']
         }
       ],
       order: [['added_at', 'DESC']]

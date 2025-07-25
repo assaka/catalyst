@@ -76,10 +76,12 @@ export default function MiniCart({ cartUpdateTrigger }) {
         // Load user's cart
         const result = await Cart.filter({ user_id: user.id });
         cartData = Array.isArray(result) ? result : [];
+        console.log('🛒 MiniCart: Loaded user cart:', cartData);
       } else {
         // Load guest cart
         const result = await Cart.filter({ session_id: sessionId });
         cartData = Array.isArray(result) ? result : [];
+        console.log('🛒 MiniCart: Loaded guest cart:', cartData);
       }
 
       console.log('MiniCart: Loaded cart data:', cartData);
