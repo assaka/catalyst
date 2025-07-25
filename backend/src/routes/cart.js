@@ -88,7 +88,7 @@ router.post('/', async (req, res) => {
 
     const { session_id, store_id, items, user_id, product_id, quantity, price, selected_attributes, selected_options } = req.body;
 
-    if ((!session_id && !user_id) || !store_id) {
+    if (!session_id && !user_id) {
       console.log('Cart POST - validation failed:', {
         hasSessionId: !!session_id,
         hasUserId: !!user_id,
@@ -96,7 +96,7 @@ router.post('/', async (req, res) => {
       });
       return res.status(400).json({
         success: false,
-        message: 'store_id and either session_id or user_id are required'
+        message: 'Either session_id or user_id is required'
       });
     }
 
