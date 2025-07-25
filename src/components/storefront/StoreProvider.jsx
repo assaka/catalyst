@@ -49,6 +49,39 @@ const saveCacheToStorage = () => {
 // Initialize cache from storage
 loadCacheFromStorage();
 
+// Helper function to get currency symbol from currency code
+const getCurrencySymbol = (currencyCode) => {
+  const currencyMap = {
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'JPY': '¥',
+    'CAD': 'C$',
+    'AUD': 'A$',
+    'CHF': 'CHF',
+    'CNY': '¥',
+    'SEK': 'kr',
+    'NOK': 'kr',
+    'MXN': '$',
+    'INR': '₹',
+    'KRW': '₩',
+    'SGD': 'S$',
+    'HKD': 'HK$',
+    'BRL': 'R$',
+    'ZAR': 'R',
+    'RUB': '₽',
+    'PLN': 'zł',
+    'CZK': 'Kč',
+    'HUF': 'Ft',
+    'RON': 'lei',
+    'BGN': 'лв',
+    'HRK': 'kn',
+    'DKK': 'kr',
+    'TRY': '₺'
+  };
+  return currencyMap[currencyCode] || '$';
+};
+
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Ultra-aggressive caching - return stale data immediately, refresh in background
@@ -191,6 +224,8 @@ export const StoreProvider = ({ children }) => {
         hide_quantity_selector: false,
         hide_stock_quantity: false,
         show_permanent_search: true,
+        currency_code: selectedStore.currency || 'USD',
+        currency_symbol: getCurrencySymbol(selectedStore.currency || 'USD'),
         show_category_in_breadcrumb: true,
         theme: {
           primary_button_color: '#007bff',

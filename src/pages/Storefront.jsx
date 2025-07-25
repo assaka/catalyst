@@ -160,6 +160,9 @@ export default function Storefront() {
 
   // Helper function to get stock label based on settings and quantity
   const getStockLabel = (product) => {
+    // Check if stock quantity should be hidden
+    const hideStockQuantity = settings?.hide_stock_quantity || false;
+    
     // Default behavior if no stock settings are found
     if (!store?.settings?.stock_settings) {
       if (product.stock_quantity <= 0 && !product.infinite_stock) {
@@ -185,13 +188,26 @@ export default function Storefront() {
     // Handle low stock
     const lowStockThreshold = product.low_stock_threshold || settings?.display_low_stock_threshold || 0;
     if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
-      const label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
+      let label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
+      // If hiding stock quantity, remove the quantity placeholder and show generic low stock message
+      if (hideStockQuantity) {
+        label = label.replace(', just {quantity} left', '').replace('just {quantity} left', '').replace('{quantity}', '').trim();
+        if (label === 'Low stock' || label.length === 0) return "Low Stock";
+        return label;
+      }
       return label.replace('{quantity}', product.stock_quantity.toString());
     }
     
     // Handle regular in stock
-    const label = stockSettings.in_stock_label || "In Stock";
-    return label.replace('{quantity}', product.stock_quantity.toString());
+    let label = stockSettings.in_stock_label || "In Stock";
+    // If hiding stock quantity, remove any quantity placeholders
+    if (hideStockQuantity) {
+      label = label.replace('{quantity}', '').replace(/\s+/g, ' ').trim();
+      if (label.length === 0) return "In Stock";
+    } else {
+      label = label.replace('{quantity}', product.stock_quantity.toString());
+    }
+    return label;
   };
 
   // Helper function to get stock variant (for styling)
@@ -335,15 +351,15 @@ export default function Storefront() {
                             {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                               <>
                                 <p className="font-bold text-red-600 text-3xl">
-                                  {!settings?.hide_currency_category && '$'}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                  {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                                 </p>
                                 <p className="text-gray-500 line-through text-xl">
-                                  {!settings?.hide_currency_category && '$'}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                  {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                                 </p>
                               </>
                             ) : (
                               <p className="font-bold text-gray-800 text-lg">
-                                {!settings?.hide_currency_category && '$'}{parseFloat(product.price || 0).toFixed(2)}
+                                {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
                               </p>
                             )}
                           </div>
@@ -472,15 +488,15 @@ export default function Storefront() {
                                       {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                                         <>
                                           <p className="font-bold text-red-600 text-3xl">
-                                            {!settings?.hide_currency_category && '$'}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                            {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                                           </p>
                                           <p className="text-gray-500 line-through text-xl">
-                                            {!settings?.hide_currency_category && '$'}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                            {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                                           </p>
                                         </>
                                       ) : (
                                         <p className="font-bold text-gray-800 text-lg">
-                                          {!settings?.hide_currency_category && '$'}{parseFloat(product.price || 0).toFixed(2)}
+                                          {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
                                         </p>
                                       )}
                                     </div>
