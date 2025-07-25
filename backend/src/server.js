@@ -605,7 +605,7 @@ app.use('/api/product-tabs', productTabRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/payment-methods', authMiddleware, paymentMethodRoutes);
 app.use('/api/cookie-consent-settings', authMiddleware, cookieConsentRoutes);
-app.use('/api/consent-logs', consentLogRoutes);
+app.use('/api/consent-logs', authMiddleware, consentLogRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

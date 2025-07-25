@@ -97,6 +97,14 @@ router.get('/', async (req, res) => {
     const { store_id, limit = 50, offset = 0 } = req.query;
     const where = {};
     
+    // Ensure user is authenticated
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+    
     // Filter by store ownership
     if (req.user.role !== 'admin') {
       const userStores = await Store.findAll({
@@ -126,9 +134,11 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Get consent logs error:', error);
+    console.error('Error details:', error.message);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
