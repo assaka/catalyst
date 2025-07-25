@@ -93,7 +93,7 @@ export default function StorefrontLayout({ children }) {
                 setLanguages(Array.isArray(langData) ? langData : []);
 
                 await delay(200 + Math.random() * 300);
-                const plugins = await retryApiCall(() => StorePlugin.filter({ plugin_slug: 'google-tag-manager', is_active: true }));
+                const plugins = await retryApiCall(() => StorePlugin.getPublic({ plugin_slug: 'google-tag-manager' }));
                 if (Array.isArray(plugins) && plugins.length > 0 && plugins[0].configuration?.gtm_script) {
                     setGtmScript(plugins[0].configuration.gtm_script);
                 }

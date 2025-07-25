@@ -387,7 +387,28 @@ export const TaxType = new BaseEntity('tax-types');
 export const Service = new BaseEntity('services');
 export const CustomOptionRule = new BaseEntity('custom-option-rules');
 export const Plugin = new BaseEntity('plugins');
-export const StorePlugin = new BaseEntity('store-plugins');
+class StorePluginEntity extends BaseEntity {
+  constructor() {
+    super('store-plugins');
+  }
+
+  // Public method to get active plugins without authentication
+  async getPublic(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const url = queryString ? `${this.endpoint}/public?${queryString}` : `${this.endpoint}/public`;
+    
+    try {
+      const response = await apiClient.get(url);
+      const plugins = response?.data?.store_plugins || response?.store_plugins || response || [];
+      return Array.isArray(plugins) ? plugins : [];
+    } catch (error) {
+      console.warn(`Failed to load public store plugins:`, error.message);
+      return [];
+    }
+  }
+}
+
+export const StorePlugin = new StorePluginEntity();
 export const Language = new BaseEntity('languages');
 export const SeoTemplate = new BaseEntity('seo-templates');
 export const SeoSetting = new BaseEntity('seo-settings');

@@ -4,6 +4,35 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// @route   GET /api/store-plugins/public
+// @desc    Get active store plugins for public use
+// @access  Public
+router.get('/public', async (req, res) => {
+  try {
+    const { store_id, plugin_slug } = req.query;
+    
+    const whereClause = { is_active: true }; // Only return active plugins
+    if (store_id) whereClause.store_id = store_id;
+    if (plugin_slug) whereClause.plugin_slug = plugin_slug;
+
+    const plugins = await StorePlugin.findAll({
+      where: whereClause,
+      order: [['plugin_name', 'ASC']]
+    });
+
+    res.json({
+      success: true,
+      data: { store_plugins: plugins }
+    });
+  } catch (error) {
+    console.error('Get public store plugins error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   GET /api/store-plugins
 // @desc    Get store plugins
 // @access  Private
