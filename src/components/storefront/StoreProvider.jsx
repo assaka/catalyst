@@ -433,10 +433,20 @@ export const StoreProvider = ({ children }) => {
       const categoriesResult = results[1].status === 'fulfilled' ? (results[1].value || []) : [];
       console.log('🏷️ StoreProvider: Categories loaded from API:', categoriesResult);
       console.log('🏷️ StoreProvider: Categories count:', categoriesResult.length);
-      if (categoriesResult.length > 0) {
-        console.log('🏷️ StoreProvider: Sample category structure:', categoriesResult[0]);
+      
+      // Handle the case where API returns nested structure like {categories: [...], pagination: {...}}
+      let processedCategories = categoriesResult;
+      if (categoriesResult.length === 1 && categoriesResult[0]?.categories && Array.isArray(categoriesResult[0].categories)) {
+        console.log('🏷️ StoreProvider: Detected nested category structure, extracting categories array');
+        processedCategories = categoriesResult[0].categories;
+        console.log('🏷️ StoreProvider: Extracted categories:', processedCategories);
       }
-      setCategories(categoriesResult);
+      
+      console.log('🏷️ StoreProvider: Final processed categories count:', processedCategories.length);
+      if (processedCategories.length > 0) {
+        console.log('🏷️ StoreProvider: Sample processed category:', processedCategories[0]);
+      }
+      setCategories(processedCategories);
       
       setProductLabels(results[2].status === 'fulfilled' ? (results[2].value || []) : []);
       
