@@ -1,10 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../config/database');
-const { authenticateToken } = require('../middleware/auth');
+const { supabase } = require('../database/connection');
+const authMiddleware = require('../middleware/auth');
 
 // Apply authentication middleware to all routes
-router.use(authenticateToken);
+router.use(authMiddleware);
 
 // Health check route for debugging
 router.get('/health', async (req, res) => {
