@@ -105,6 +105,7 @@ class CartService {
 
       const result = await response.json();
       console.log('🛒 CartService.addItem: Response data:', result);
+      console.log('🛒 CartService.addItem: Cart items in response:', result.data?.items);
 
       if (result.success) {
         // Dispatch cart update event
@@ -144,6 +145,8 @@ class CartService {
       };
 
       console.log('🛒 CartService.updateCart: Updating cart:', cartData);
+      console.log('🛒 CartService.updateCart: Items count:', items?.length || 0);
+      console.log('🛒 CartService.updateCart: Items detail:', JSON.stringify(items));
 
       const response = await fetch(this.endpoint, {
         method: 'POST',

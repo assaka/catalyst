@@ -85,18 +85,21 @@ export default function Cart() {
 
     useEffect(() => {
         // Wait for store data to load before loading cart
-        if (!storeLoading) {
+        if (!storeLoading && store?.id) {
             const timeoutId = setTimeout(() => {
                 loadCartData();
             }, 1000); // Reduced delay
             
             return () => clearTimeout(timeoutId);
         }
-    }, [storeLoading]);
+    }, [storeLoading, store?.id]);
 
     useDebouncedEffect(() => {
         const updateCartQuantities = async () => {
             if (Object.keys(quantityUpdates).length === 0) return;
+            
+            // Don't update if we're still loading initial data
+            if (loading) return;
 
             try {
                 if (!store?.id) {
@@ -128,7 +131,7 @@ export default function Cart() {
         };
         
         updateCartQuantities();
-    }, [quantityUpdates], 1500);
+    }, [quantityUpdates, loading], 1500);
 
     const loadCartData = async (showLoader = true) => {
         if (showLoader) setLoading(true);
@@ -194,6 +197,12 @@ export default function Cart() {
             if (!store?.id) {
                 console.error('🛒 Cart: No store context available for remove');
                 setFlashMessage({ type: 'error', message: "Store context not available." });
+                return;
+            }
+
+            // Don't update if we don't have valid cart items loaded
+            if (!cartItems || cartItems.length === 0) {
+                console.error('🛒 Cart: No cart items to remove from');
                 return;
             }
 

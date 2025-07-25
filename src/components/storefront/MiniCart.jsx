@@ -20,22 +20,37 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [cartProducts, setCartProducts] = useState({});
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [loadTimeout, setLoadTimeout] = useState(null);
 
   // Load cart on mount and when triggered
   useEffect(() => {
     loadCart();
   }, [cartUpdateTrigger]);
 
-  // Listen for cart updates
+  // Listen for cart updates with debouncing
   useEffect(() => {
     const handleCartUpdate = () => {
       console.log('MiniCart: Cart update event received');
-      loadCart();
+      // Debounce cart loading to prevent race conditions
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+      }
+      const timeout = setTimeout(() => {
+        loadCart();
+      }, 300);
+      setLoadTimeout(timeout);
     };
     
     const handleStorageChange = () => {
       console.log('MiniCart: Storage change event received');
-      loadCart();
+      // Debounce cart loading to prevent race conditions
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+      }
+      const timeout = setTimeout(() => {
+        loadCart();
+      }, 300);
+      setLoadTimeout(timeout);
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
@@ -44,8 +59,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
       window.removeEventListener('storage', handleStorageChange);
+      if (loadTimeout) {
+        clearTimeout(loadTimeout);
+      }
     };
-  }, []);
+  }, [loadTimeout]);
 
   const loadCart = async () => {
     try {
