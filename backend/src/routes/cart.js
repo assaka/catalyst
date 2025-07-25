@@ -105,7 +105,9 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.post('/', async (req, res) => {
   try {
+    console.log('Cart POST - Full request body:', JSON.stringify(req.body));
     const { session_id, store_id, items, user_id, product_id, quantity, price, selected_attributes, selected_options } = req.body;
+    console.log('Cart POST - Parsed fields:', { session_id, store_id, items, user_id, product_id, quantity, price });
 
     if ((!session_id && !user_id) || !store_id) {
       return res.status(400).json({
