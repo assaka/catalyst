@@ -228,7 +228,6 @@ export default function ProductDetail() {
       }
 
       const cartItem = {
-        session_id: sessionId,
         store_id: store.id,
         product_id: product.id,
         quantity: quantity,
@@ -239,6 +238,8 @@ export default function ProductDetail() {
 
       if (user?.id) {
         cartItem.user_id = user.id;
+      } else {
+        cartItem.session_id = sessionId;
       }
 
       console.log('🛒 ProductDetail: Adding to cart:', cartItem);
