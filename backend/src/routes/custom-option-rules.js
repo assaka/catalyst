@@ -6,6 +6,11 @@ const { authenticateToken } = require('../middleware/auth');
 // Apply authentication middleware to all routes
 router.use(authenticateToken);
 
+// Health check route for debugging
+router.get('/health', async (req, res) => {
+  res.json({ status: 'OK', message: 'Custom option rules API is working' });
+});
+
 // Get all custom option rules
 router.get('/', async (req, res) => {
   try {
