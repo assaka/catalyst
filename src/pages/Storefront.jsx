@@ -25,6 +25,10 @@ const ensureArray = (data) => {
 
 export default function Storefront() {
   const { store, settings, loading: storeLoading, productLabels, categories: storeCategories, filterableAttributes } = useStore();
+  
+  // DEBUG: Log settings received in Storefront
+  console.log('🔍 DEBUG Storefront - settings received:', settings);
+  console.log('🔍 DEBUG Storefront - hide_currency_category:', settings?.hide_currency_category);
   const [products, setProducts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [currentCategory, setCurrentCategory] = useState(null);

@@ -210,6 +210,10 @@ export const StoreProvider = ({ children }) => {
         return;
       }
 
+      // DEBUG: Log the actual settings from database
+      console.log('🔍 DEBUG: selectedStore.settings from database:', selectedStore.settings);
+      console.log('🔍 DEBUG: selectedStore.settings type:', typeof selectedStore.settings);
+      
       // Set store with merged settings
       const mergedSettings = {
         enable_inventory: true,
@@ -242,6 +246,12 @@ export const StoreProvider = ({ children }) => {
         },
         ...(selectedStore.settings || {})
       };
+      
+      // DEBUG: Log the final merged settings
+      console.log('🔍 DEBUG: Final mergedSettings:', mergedSettings);
+      console.log('🔍 DEBUG: hide_currency_category final value:', mergedSettings.hide_currency_category);
+      console.log('🔍 DEBUG: hide_quantity_selector final value:', mergedSettings.hide_quantity_selector);
+      console.log('🔍 DEBUG: show_category_in_breadcrumb final value:', mergedSettings.show_category_in_breadcrumb);
       
       console.log(`🔍 StoreProvider: About to set store:`, {
         selectedStore,
