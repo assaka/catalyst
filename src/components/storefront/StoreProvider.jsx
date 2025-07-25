@@ -412,7 +412,11 @@ export const StoreProvider = ({ children }) => {
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`attributes-${selectedStore.id}`, async () => {
+          console.log('🔍 StoreProvider: About to call Attribute.filter with store_id:', selectedStore.id);
           const result = await Attribute.filter({ store_id: selectedStore.id });
+          console.log('🔍 StoreProvider: Attribute.filter raw result:', result);
+          console.log('🔍 StoreProvider: Attribute.filter result type:', typeof result);
+          console.log('🔍 StoreProvider: Attribute.filter is array?', Array.isArray(result));
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`attr-sets-${selectedStore.id}`, async () => {
