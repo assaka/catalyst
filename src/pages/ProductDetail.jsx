@@ -547,7 +547,7 @@ export default function ProductDetail() {
           {/* Quantity, Add to Cart, and Wishlist */}
           <div className="border-t pt-6">
             <div className="flex items-center space-x-4">
-              {!settings?.hide_quantity_selector && (
+              {!settings?.hide_stock_quantity && (
                 <div className="flex items-center space-x-2">
                   <label htmlFor="quantity-input" className="font-medium text-sm">Qty:</label>
                   <div className="flex items-center border rounded-lg overflow-hidden">
