@@ -97,10 +97,6 @@ export default function Cart() {
 
     useDebouncedEffect(() => {
         const updateCartQuantities = async () => {
-            // Temporarily disable all cart updates from Cart page to debug
-            console.log('🛒 Cart: Cart page updates temporarily disabled for debugging');
-            return;
-            
             if (Object.keys(quantityUpdates).length === 0) return;
 
             try {
@@ -183,11 +179,15 @@ export default function Cart() {
     const updateQuantity = (itemId, newQuantity) => {
         const quantity = Math.max(1, newQuantity);
         
+        // Update local state immediately for instant UI response
         setCartItems(currentItems =>
             currentItems.map(item =>
                 item.id === itemId ? { ...item, quantity } : item
             )
         );
+
+        // Dispatch immediate update for other components
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
 
         setQuantityUpdates(currentUpdates => ({
             ...currentUpdates,
@@ -216,16 +216,20 @@ export default function Cart() {
                 return;
             }
 
-            // Remove item from local cart items array
+            // Update local state immediately for instant UI response
             const updatedItems = cartItems.filter(item => item.id !== itemId);
-
-            // Use explicit cart service for legitimate removal
-            console.log('🛒 Cart: Removing item from cart, updated items:', updatedItems);
-            const result = await cartService.updateCartExplicit(updatedItems, store.id);
-            console.log('🛒 Cart: Remove result:', result);
-            await delay(500);
-            loadCartData(false);
+            setCartItems(updatedItems);
+            
+            // Dispatch immediate update for other components
             window.dispatchEvent(new CustomEvent('cartUpdated'));
+
+            // Use simplified cart service
+            console.log('🛒 Cart: Removing item from cart, updated items:', updatedItems);
+            const result = await cartService.updateCart(updatedItems, store.id);
+            console.log('🛒 Cart: Remove result:', result);
+            
+            // Reload data in background without showing loader
+            loadCartData(false);
             setFlashMessage({ type: 'success', message: "Item removed from cart." });
         } catch (error) {
             console.error("Error removing item:", error);

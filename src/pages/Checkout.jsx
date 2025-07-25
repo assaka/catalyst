@@ -79,6 +79,20 @@ export default function Checkout() {
     loadCheckoutData();
   }, [store?.id, storeLoading]);
 
+  // Listen for cart updates from other components
+  useEffect(() => {
+    const handleCartUpdate = () => {
+      console.log('🛒 Checkout: Cart update event received');
+      loadCartItems();
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    
+    return () => {
+      window.removeEventListener('cartUpdated', handleCartUpdate);
+    };
+  }, []);
+
   const loadCheckoutData = async () => {
     try {
       setLoading(true);

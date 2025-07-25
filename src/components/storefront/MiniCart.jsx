@@ -125,18 +125,25 @@ export default function MiniCart({ cartUpdateTrigger }) {
         return;
       }
 
-      // Update the local cart items array
+      // Update local state immediately for instant UI response
       const updatedItems = cartItems.map(item => 
         item.id === cartItemId ? { ...item, quantity: newQuantity } : item
       );
+      setCartItems(updatedItems);
+
+      // Dispatch immediate update for other components
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
 
       console.log('🛒 MiniCart: Updating quantity with items:', updatedItems);
       const result = await cartService.updateCart(updatedItems, store.id);
       
       if (result.success) {
+        // Reload in background to sync with server
         await loadCart();
       } else {
         console.error('Failed to update quantity:', result.error);
+        // Revert local state on error
+        await loadCart();
       }
     } catch (error) {
       console.error('Failed to update quantity:', error);
@@ -150,16 +157,23 @@ export default function MiniCart({ cartUpdateTrigger }) {
         return;
       }
 
-      // Remove item from local cart items array
+      // Update local state immediately for instant UI response
       const updatedItems = cartItems.filter(item => item.id !== cartItemId);
+      setCartItems(updatedItems);
+
+      // Dispatch immediate update for other components
+      window.dispatchEvent(new CustomEvent('cartUpdated'));
 
       console.log('🛒 MiniCart: Removing item, updated items:', updatedItems);
       const result = await cartService.updateCart(updatedItems, store.id);
       
       if (result.success) {
+        // Reload in background to sync with server
         await loadCart();
       } else {
         console.error('Failed to remove item:', result.error);
+        // Revert local state on error
+        await loadCart();
       }
     } catch (error) {
       console.error('Failed to remove item:', error);
