@@ -24,6 +24,20 @@ router.get('/', async (req, res) => {
     } else {
       cart = await Cart.findOne({ where: { session_id } });
     }
+    
+    // If no cart found but both session_id and user_id were provided,
+    // try finding by either field (for cases where cart was created with one but accessed with both)
+    if (!cart && session_id && user_id) {
+      const { Op } = require('sequelize');
+      cart = await Cart.findOne({ 
+        where: { 
+          [Op.or]: [
+            { session_id: session_id },
+            { user_id: user_id }
+          ]
+        }
+      });
+    }
 
     if (!cart) {
       // Return empty cart structure
@@ -38,6 +52,14 @@ router.get('/', async (req, res) => {
         total: 0
       };
     }
+
+    console.log('Cart GET - found cart:', {
+      id: cart.id,
+      session_id: cart.session_id,
+      user_id: cart.user_id,
+      items: cart.items,
+      itemsLength: cart.items ? cart.items.length : 0
+    });
 
     res.json({
       success: true,
@@ -109,6 +131,12 @@ router.post('/', async (req, res) => {
       cartItems = items;
     }
 
+    console.log('Cart POST - before save:', {
+      cartId: cart?.id,
+      itemsToSave: cartItems,
+      itemsLength: cartItems.length
+    });
+
     if (cart) {
       // Update existing cart
       await cart.update({
@@ -125,6 +153,12 @@ router.post('/', async (req, res) => {
         items: cartItems
       });
     }
+
+    console.log('Cart POST - after save:', {
+      cartId: cart.id,
+      savedItems: cart.items,
+      savedItemsLength: cart.items ? cart.items.length : 0
+    });
 
     res.json({
       success: true,
