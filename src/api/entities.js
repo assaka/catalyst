@@ -414,6 +414,7 @@ export const SeoTemplate = new BaseEntity('seo-templates');
 export const SeoSetting = new BaseEntity('seo-settings');
 export const CreditTransaction = new BaseEntity('credit-transactions');
 export const CookieConsentSettings = new BaseEntity('cookie-consent-settings');
+export const ConsentLog = new BaseEntity('consent-logs');
 export const PriceAlertSubscription = new BaseEntity('price-alert-subscriptions');
 export const StockAlertSubscription = new BaseEntity('stock-alert-subscriptions');
 export const PaymentMethod = new BaseEntity('payment-methods');

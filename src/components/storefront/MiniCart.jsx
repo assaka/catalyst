@@ -20,22 +20,23 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [cartProducts, setCartProducts] = useState({});
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [loadCartTimeout, setLoadCartTimeout] = useState(null);
 
   // Load cart on mount and when triggered
   useEffect(() => {
     loadCart();
   }, [cartUpdateTrigger]);
 
-  // Listen for cart updates
+  // Listen for cart updates with debouncing
   useEffect(() => {
     const handleCartUpdate = () => {
       console.log('MiniCart: Cart update event received');
-      loadCart();
+      debouncedLoadCart();
     };
     
     const handleStorageChange = () => {
       console.log('MiniCart: Storage change event received');
-      loadCart();
+      debouncedLoadCart();
     };
 
     window.addEventListener('cartUpdated', handleCartUpdate);
@@ -44,8 +45,24 @@ export default function MiniCart({ cartUpdateTrigger }) {
     return () => {
       window.removeEventListener('cartUpdated', handleCartUpdate);
       window.removeEventListener('storage', handleStorageChange);
+      if (loadCartTimeout) {
+        clearTimeout(loadCartTimeout);
+      }
     };
   }, []);
+
+  // Debounced load cart to prevent multiple rapid calls
+  const debouncedLoadCart = () => {
+    if (loadCartTimeout) {
+      clearTimeout(loadCartTimeout);
+    }
+    
+    const timeout = setTimeout(() => {
+      loadCart();
+    }, 300); // 300ms debounce
+    
+    setLoadCartTimeout(timeout);
+  };
 
   const loadCart = async () => {
     try {
@@ -137,7 +154,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
       const updatedItems = cartItems.filter(item => item.id !== cartItemId);
 
       console.log('🛒 MiniCart: Removing item, updated items:', updatedItems);
-      const result = await cartService.updateCart(updatedItems, store.id);
+      const result = await cartService.updateCartExplicit(updatedItems, store.id);
       
       if (result.success) {
         await loadCart();

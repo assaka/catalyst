@@ -24,6 +24,7 @@ const SeoTemplate = require('./SeoTemplate');
 const ProductLabel = require('./ProductLabel');
 const PaymentMethod = require('./PaymentMethod');
 const CookieConsentSettings = require('./CookieConsentSettings');
+const ConsentLog = require('./ConsentLog');
 
 // Define associations
 const defineAssociations = () => {
@@ -134,6 +135,11 @@ const defineAssociations = () => {
   // CookieConsentSettings associations
   CookieConsentSettings.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasOne(CookieConsentSettings, { foreignKey: 'store_id' });
+
+  // ConsentLog associations
+  ConsentLog.belongsTo(Store, { foreignKey: 'store_id' });
+  ConsentLog.belongsTo(User, { foreignKey: 'user_id' });
+  Store.hasMany(ConsentLog, { foreignKey: 'store_id' });
 };
 
 // Initialize associations
@@ -165,5 +171,6 @@ module.exports = {
   SeoTemplate,
   ProductLabel,
   PaymentMethod,
-  CookieConsentSettings
+  CookieConsentSettings,
+  ConsentLog
 };

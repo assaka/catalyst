@@ -97,10 +97,11 @@ export default function Cart() {
 
     useDebouncedEffect(() => {
         const updateCartQuantities = async () => {
-            if (Object.keys(quantityUpdates).length === 0) return;
+            // Temporarily disable all cart updates from Cart page to debug
+            console.log('🛒 Cart: Cart page updates temporarily disabled for debugging');
+            return;
             
-            // Don't update if we're still loading initial data or haven't loaded yet
-            if (loading || !hasLoadedInitialData) return;
+            if (Object.keys(quantityUpdates).length === 0) return;
 
             try {
                 if (!store?.id) {
@@ -132,7 +133,7 @@ export default function Cart() {
         };
         
         updateCartQuantities();
-    }, [quantityUpdates, loading, hasLoadedInitialData], 1500);
+    }, [quantityUpdates], 1500);
 
     const loadCartData = async (showLoader = true) => {
         if (showLoader) setLoading(true);
@@ -209,12 +210,18 @@ export default function Cart() {
                 return;
             }
 
+            // Don't remove if we're still loading initial data
+            if (loading || !hasLoadedInitialData) {
+                console.log('🛒 Cart: Skipping remove - still loading initial data');
+                return;
+            }
+
             // Remove item from local cart items array
             const updatedItems = cartItems.filter(item => item.id !== itemId);
 
-            // Use simplified cart service
+            // Use explicit cart service for legitimate removal
             console.log('🛒 Cart: Removing item from cart, updated items:', updatedItems);
-            const result = await cartService.updateCart(updatedItems, store.id);
+            const result = await cartService.updateCartExplicit(updatedItems, store.id);
             console.log('🛒 Cart: Remove result:', result);
             await delay(500);
             loadCartData(false);

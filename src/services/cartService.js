@@ -3,7 +3,6 @@ class CartService {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
     this.endpoint = `${this.baseURL}/api/cart`;
-    this.isAddingItem = false;
   }
 
   // Get session ID consistently
@@ -76,8 +75,6 @@ class CartService {
         throw new Error('Store ID is required');
       }
 
-      // Set flag to prevent updates while adding
-      this.isAddingItem = true;
 
       const sessionId = this.getSessionId();
       console.log('🛒 CartService.addItem: Using session_id approach:', sessionId);
@@ -116,22 +113,13 @@ class CartService {
         console.log('🛒 CartService.addItem: Dispatching cartUpdated event');
         window.dispatchEvent(new CustomEvent('cartUpdated'));
         
-        // Small delay to ensure event propagates and clear flag
-        setTimeout(() => {
-          console.log('🛒 CartService.addItem: Dispatching delayed cartUpdated event');
-          window.dispatchEvent(new CustomEvent('cartUpdated'));
-          this.isAddingItem = false;
-        }, 500);
-        
         return { success: true, cart: result.data };
       }
 
       console.error('🛒 CartService.addItem: API returned error:', result.message);
-      this.isAddingItem = false;
       return { success: false, error: result.message };
     } catch (error) {
       console.error('🛒 CartService.addItem error:', error);
-      this.isAddingItem = false;
       return { success: false, error: error.message };
     }
   }
@@ -139,16 +127,21 @@ class CartService {
   // Update cart (for quantity changes, removals, etc.) - simplified to always use session_id approach
   async updateCart(items, storeId) {
     try {
-      // Don't update cart while adding items
-      if (this.isAddingItem) {
-        console.log('🛒 CartService.updateCart: Skipping update - item is being added');
-        return { success: true, cart: null };
-      }
-
       const sessionId = this.getSessionId();
 
       if (!storeId) {
         throw new Error('Store ID is required');
+      }
+
+      // Prevent updating cart with empty items unless explicitly clearing
+      if (!items || (Array.isArray(items) && items.length === 0)) {
+        console.warn('🛒 CartService.updateCart: Preventing update with empty items array');
+        // Get current cart to verify if it's actually empty
+        const currentCart = await this.getCart();
+        if (currentCart.success && currentCart.items && currentCart.items.length > 0) {
+          console.error('🛒 CartService.updateCart: Attempted to clear non-empty cart - blocking update');
+          return { success: false, error: 'Cannot update cart with empty items when cart has items' };
+        }
       }
 
       const cartData = {
@@ -189,25 +182,57 @@ class CartService {
     }
   }
 
-  // Clear cart
-  async clearCart() {
+  // Clear cart (explicit clearing operation)
+  async clearCart(storeId) {
+    try {
+      // Use updateCart with empty array for explicit clearing
+      return await this.updateCartExplicit([], storeId);
+    } catch (error) {
+      console.error('CartService.clearCart error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Update cart without safety checks (for explicit clearing operations)
+  async updateCartExplicit(items, storeId) {
     try {
       const sessionId = this.getSessionId();
-      
-      const response = await fetch(`${this.endpoint}?session_id=${sessionId}`, {
-        method: 'DELETE'
+
+      if (!storeId) {
+        throw new Error('Store ID is required');
+      }
+
+      const cartData = {
+        store_id: storeId,
+        items: items,
+        session_id: sessionId
+      };
+
+      console.log('🛒 CartService.updateCartExplicit: Explicit update with:', cartData);
+
+      const response = await fetch(this.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cartData)
       });
 
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('🛒 CartService.updateCartExplicit: HTTP error:', response.status, errorText);
+        return { success: false, error: `HTTP ${response.status}: ${errorText}` };
+      }
+
       const result = await response.json();
-      
+      console.log('🛒 CartService.updateCartExplicit: Response:', result);
+
       if (result.success) {
         window.dispatchEvent(new CustomEvent('cartUpdated'));
-        return { success: true };
+        return { success: true, cart: result.data };
       }
 
       return { success: false, error: result.message };
     } catch (error) {
-      console.error('CartService.clearCart error:', error);
+      console.error('CartService.updateCartExplicit error:', error);
       return { success: false, error: error.message };
     }
   }
