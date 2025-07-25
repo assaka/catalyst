@@ -387,8 +387,8 @@ export default function ProductDetail() {
     
     const items = [];
     
-    // Add category hierarchy if product has categories
-    if (product.category_ids && product.category_ids.length > 0) {
+    // Add category hierarchy if product has categories and setting is enabled
+    if (settings?.show_category_in_breadcrumb && product.category_ids && product.category_ids.length > 0) {
       const primaryCategoryId = product.category_ids[0];
       const primaryCategory = categories.find(c => c.id === primaryCategoryId);
       
@@ -596,7 +596,7 @@ export default function ProductDetail() {
           {/* Quantity, Add to Cart, and Wishlist */}
           <div className="border-t pt-6">
             <div className="flex items-center space-x-4">
-              {!settings?.hide_stock_quantity && (
+              {!settings?.hide_quantity_selector && (
                 <div className="flex items-center space-x-2">
                   <label htmlFor="quantity-input" className="font-medium text-sm">Qty:</label>
                   <div className="flex items-center border rounded-lg overflow-hidden">

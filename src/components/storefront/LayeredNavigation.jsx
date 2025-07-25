@@ -64,6 +64,15 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
             filtersToSend.priceRange = priceRange;
         }
         
+        console.log('🔍 LayeredNavigation: Sending filters:', {
+            selectedFilters,
+            priceRange,
+            minPrice,
+            maxPrice,
+            isPriceRangeActive: priceRange[0] !== minPrice || priceRange[1] !== maxPrice,
+            filtersToSend
+        });
+        
         onFilterChange(filtersToSend);
     }, [selectedFilters, priceRange, minPrice, maxPrice, onFilterChange]);
     
@@ -85,8 +94,20 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
 
     // Clear all filters function
     const clearAllFilters = () => {
+        console.log('🔍 LayeredNavigation: Clearing all filters');
         setSelectedFilters({});
         setPriceRange([minPrice, maxPrice]);
+    };
+
+    // Handle price range change with debugging
+    const handlePriceRangeChange = (newRange) => {
+        console.log('🔍 LayeredNavigation: Price range changed:', {
+            oldRange: priceRange,
+            newRange,
+            minPrice,
+            maxPrice
+        });
+        setPriceRange(newRange);
     };
 
     // Check if any filters are active
@@ -108,16 +129,46 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
         
         const options = {};
         attributes.forEach(attr => {
+            console.log(`🔍 LayeredNavigation: Processing attribute:`, {
+                name: attr.name,
+                code: attr.code,
+                is_filterable: attr.is_filterable,
+                options: attr.options
+            });
+            
             if (attr.is_filterable) {
                 const values = new Set();
                 
-                // Add values from products
+                // Add values from products - try multiple possible attribute keys
                 products.forEach(p => {
                     const productAttributes = p.attributes || p.attribute_values || {};
-                    const attributeValue = productAttributes[attr.code] || 
-                                         productAttributes[attr.name] || 
-                                         p[attr.code] || 
-                                         p[attr.name];
+                    
+                    // Try multiple possible keys for the attribute
+                    const possibleKeys = [
+                        attr.code,
+                        attr.name,
+                        attr.code?.toLowerCase(),
+                        attr.name?.toLowerCase(),
+                        attr.code?.replace(/[_-]/g, ''),
+                        attr.name?.replace(/[_-]/g, '')
+                    ];
+                    
+                    let attributeValue = null;
+                    for (const key of possibleKeys) {
+                        if (key && (productAttributes[key] !== undefined || p[key] !== undefined)) {
+                            attributeValue = productAttributes[key] || p[key];
+                            break;
+                        }
+                    }
+                    
+                    if (attr.code === 'color' || attr.name === 'color' || attr.name?.toLowerCase() === 'color') {
+                        console.log(`🎨 Color attribute value for product ${p.name}:`, {
+                            possibleKeys,
+                            attributeValue,
+                            productAttributes,
+                            productDirectProps: Object.keys(p).filter(k => k.toLowerCase().includes('color'))
+                        });
+                    }
                     
                     if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
                         if (Array.isArray(attributeValue)) {
@@ -196,7 +247,7 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                                         max={maxPrice}
                                         step={1}
                                         value={priceRange}
-                                        onValueChange={setPriceRange}
+                                        onValueChange={handlePriceRangeChange}
                                         className="w-full"
                                     />
                                 </div>

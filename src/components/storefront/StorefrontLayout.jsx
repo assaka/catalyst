@@ -154,10 +154,10 @@ export default function StorefrontLayout({ children }) {
     }
 
     const path = location.pathname.toLowerCase();
-    // FIXED: Apply store settings properly
-    const hideHeaderCart = settings?.hide_header_cart && path.includes('/cart');
-    const hideHeaderCheckout = settings?.hide_header_checkout && path.includes('/checkout');
-    const hideHeader = hideHeaderCart || hideHeaderCheckout;
+    // FIXED: Apply store settings properly  
+    const hideHeaderOnCart = settings?.hide_header_cart && path.includes('/cart');
+    const hideHeaderOnCheckout = settings?.hide_header_checkout && path.includes('/checkout');
+    const hideHeader = hideHeaderOnCart || hideHeaderOnCheckout;
 
     const getCurrentPage = () => {
         if (path.includes('/cart')) return 'storefront_cart';
@@ -290,7 +290,9 @@ export default function StorefrontLayout({ children }) {
                                             </Button>
                                         )}
                                         <WishlistDropdown />
-                                        <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
+                                        {!settings?.hide_header_cart && (
+                                            <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
+                                        )}
                                      </div>
 
                                      <div className="hidden md:flex items-center space-x-3">
@@ -361,7 +363,9 @@ export default function StorefrontLayout({ children }) {
                                             </Button>
                                         )}
                                         <WishlistDropdown />
-                                        <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
+                                        {!settings?.hide_header_cart && (
+                                            <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
+                                        )}
                                      </div>
 
                                      <Button

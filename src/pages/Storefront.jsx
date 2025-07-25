@@ -159,9 +159,23 @@ export default function Storefront() {
           const filterValues = activeFilters[key];
           if (!filterValues || filterValues.length === 0) continue;
           
-          // Look for attribute value in multiple possible locations
+          // Look for attribute value in multiple possible locations with various key formats
           const productAttributes = product.attributes || product.attribute_values || {};
-          let productValue = productAttributes[key] || product[key];
+          
+          // Try multiple possible keys for the attribute (matching LayeredNavigation logic)
+          const possibleKeys = [
+            key,
+            key.toLowerCase(),
+            key.replace(/[_-]/g, '')
+          ];
+          
+          let productValue = null;
+          for (const possibleKey of possibleKeys) {
+            if (productAttributes[possibleKey] !== undefined || product[possibleKey] !== undefined) {
+              productValue = productAttributes[possibleKey] || product[possibleKey];
+              break;
+            }
+          }
           
           // Handle undefined/null values
           if (productValue === undefined || productValue === null) {

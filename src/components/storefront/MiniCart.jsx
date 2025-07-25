@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/popover';
 
 export default function MiniCart({ cartUpdateTrigger }) {
-  const { store } = useStore();
+  const { store, settings } = useStore();
   const [cartItems, setCartItems] = useState([]);
   const [cartProducts, setCartProducts] = useState({});
   const [loading, setLoading] = useState(false);
@@ -321,11 +321,13 @@ export default function MiniCart({ cartUpdateTrigger }) {
                       View Cart
                     </Link>
                   </Button>
-                  <Button asChild className="w-full btn-checkout" onClick={() => setIsOpen(false)}>
-                    <Link to={createPageUrl('Checkout')}>
-                      Checkout
-                    </Link>
-                  </Button>
+                  {!settings?.hide_header_checkout && (
+                    <Button asChild className="w-full btn-checkout" onClick={() => setIsOpen(false)}>
+                      <Link to={createPageUrl('Checkout')}>
+                        Checkout
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </div>
             </>
