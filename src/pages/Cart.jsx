@@ -74,6 +74,9 @@ export default function Cart() {
     const navigate = useNavigate();
     // Use StoreProvider data instead of making separate API calls
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
+    
+    // Get currency symbol from settings
+    const currencySymbol = settings?.currency_symbol || '$';
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [couponCode, setCouponCode] = useState('');
@@ -414,12 +417,12 @@ export default function Cart() {
                                                 />
                                                 <div className="flex-1">
                                                     <h3 className="text-lg font-semibold">{product.name}</h3>
-                                                    <p className="text-gray-600">${basePriceForDisplay.toFixed(2)} each</p>
+                                                    <p className="text-gray-600">{currencySymbol}{basePriceForDisplay.toFixed(2)} each</p>
                                                     
                                                     {item.selected_options && item.selected_options.length > 0 && (
                                                         <div className="text-sm text-gray-500 mt-1">
                                                             {item.selected_options.map((option, idx) => (
-                                                                <div key={idx}>+ {option.name} (+${parseFloat(option.price || 0).toFixed(2)})</div>
+                                                                <div key={idx}>+ {option.name} (+{currencySymbol}{parseFloat(option.price || 0).toFixed(2)})</div>
                                                             ))}
                                                         </div>
                                                     )}
@@ -451,7 +454,7 @@ export default function Cart() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-xl font-bold">${itemTotal.toFixed(2)}</p>
+                                                    <p className="text-xl font-bold">{currencySymbol}{itemTotal.toFixed(2)}</p>
                                                 </div>
                                             </div>
                                         );
@@ -479,14 +482,14 @@ export default function Cart() {
                             <Card>
                                 <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                    <div className="flex justify-between"><span>Subtotal</span><span>${subtotal.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span>Subtotal</span><span>{currencySymbol}{subtotal.toFixed(2)}</span></div>
                                     {discount > 0 && (
-                                        <div className="flex justify-between"><span>Discount</span><span className="text-green-600">-${discount.toFixed(2)}</span></div>
+                                        <div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{currencySymbol}{discount.toFixed(2)}</span></div>
                                     )}
-                                    <div className="flex justify-between"><span>Tax</span><span>${tax.toFixed(2)}</span></div>
+                                    <div className="flex justify-between"><span>Tax</span><span>{currencySymbol}{tax.toFixed(2)}</span></div>
                                     <div className="flex justify-between text-lg font-semibold border-t pt-4">
                                         <span>Total</span>
-                                        <span>${total.toFixed(2)}</span>
+                                        <span>{currencySymbol}{total.toFixed(2)}</span>
                                     </div>
                                     <div className="border-t mt-6 pt-6">
                                         <Link to={createPageUrl('Checkout')}>

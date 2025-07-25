@@ -5,6 +5,7 @@ import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingCart } from 'lucide-react';
+import { useStore } from '@/components/storefront/StoreProvider';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -36,10 +37,10 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
 };
 
 // A simplified ProductCard for this component
-const SimpleProductCard = ({ product }) => (
+const SimpleProductCard = ({ product, settings }) => (
     <Card className="group overflow-hidden">
         <CardContent className="p-0">
-            <Link to={createPageUrl(`ProductDetail?id=${product.id}`)}>
+            <Link to={createPageUrl(`ProductDetail?slug=${product.slug}`)}>
                 <img
                     src={product.images?.[0] || 'https://placehold.co/400x400?text=No+Image'}
                     alt={product.name}
@@ -48,10 +49,25 @@ const SimpleProductCard = ({ product }) => (
             </Link>
             <div className="p-4">
                 <h3 className="font-semibold text-lg truncate mt-1">
-                    <Link to={createPageUrl(`ProductDetail?id=${product.id}`)}>{product.name}</Link>
+                    <Link to={createPageUrl(`ProductDetail?slug=${product.slug}`)}>{product.name}</Link>
                 </h3>
                 <div className="flex items-center justify-between mt-4">
-                    <p className="font-bold text-xl text-gray-900">${parseFloat(product.sale_price || product.price || 0).toFixed(2)}</p>
+                    <div className="flex items-baseline gap-2">
+                        {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
+                            <>
+                                <p className="font-bold text-red-600 text-xl">
+                                    {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                </p>
+                                <p className="text-gray-500 line-through text-sm">
+                                    {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                </p>
+                            </>
+                        ) : (
+                            <p className="font-bold text-xl text-gray-900">
+                                {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
+                            </p>
+                        )}
+                    </div>
                 </div>
             </div>
         </CardContent>
@@ -59,6 +75,7 @@ const SimpleProductCard = ({ product }) => (
 );
 
 export default function RecommendedProducts() {
+    const { settings } = useStore();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -87,7 +104,7 @@ export default function RecommendedProducts() {
             <h2 className="text-3xl font-bold text-center mb-8">You Might Also Like</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {products.map(product => (
-                    <SimpleProductCard key={product.id} product={product} />
+                    <SimpleProductCard key={product.id} product={product} settings={settings} />
                 ))}
             </div>
         </div>

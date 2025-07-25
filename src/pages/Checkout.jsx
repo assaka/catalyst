@@ -32,6 +32,9 @@ import {
 
 export default function Checkout() {
   const { store, settings, loading: storeLoading } = useStore();
+  
+  // Get currency symbol from settings
+  const currencySymbol = settings?.currency_symbol || '$';
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [cartProducts, setCartProducts] = useState({});
@@ -488,12 +491,12 @@ export default function Checkout() {
                             />
                             <div className="flex-1">
                               <h4 className="font-medium">{product.name}</h4>
-                              <p className="text-sm text-gray-500">${formatPrice(basePrice)} each</p>
+                              <p className="text-sm text-gray-500">{currencySymbol}{formatPrice(basePrice)} each</p>
                               
                               {item.selected_options && item.selected_options.length > 0 && (
                                 <div className="text-xs text-gray-500 mt-1">
                                   {item.selected_options.map((option, idx) => (
-                                    <div key={idx}>+ {option.name} (+${formatPrice(option.price)})</div>
+                                    <div key={idx}>+ {option.name} (+{currencySymbol}{formatPrice(option.price)})</div>
                                   ))}
                                 </div>
                               )}
@@ -501,7 +504,7 @@ export default function Checkout() {
                               <p className="text-sm text-gray-600 mt-1">Qty: {item.quantity}</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold">${formatPrice(itemTotal)}</p>
+                              <p className="font-semibold">{currencySymbol}{formatPrice(itemTotal)}</p>
                             </div>
                           </div>
                         );
@@ -515,26 +518,26 @@ export default function Checkout() {
               <div className="border-t pt-4 space-y-2">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>${formatPrice(calculateSubtotal())}</span>
+                  <span>{currencySymbol}{formatPrice(calculateSubtotal())}</span>
                 </div>
                 
                 {shippingCost > 0 && (
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>${formatPrice(shippingCost)}</span>
+                    <span>{currencySymbol}{formatPrice(shippingCost)}</span>
                   </div>
                 )}
                 
                 {taxAmount > 0 && (
                   <div className="flex justify-between">
                     <span>Tax</span>
-                    <span>${formatPrice(taxAmount)}</span>
+                    <span>{currencySymbol}{formatPrice(taxAmount)}</span>
                   </div>
                 )}
                 
                 <div className="flex justify-between text-xl font-bold border-t pt-2">
                   <span>Total</span>
-                  <span>${formatPrice(getTotalAmount())}</span>
+                  <span>{currencySymbol}{formatPrice(getTotalAmount())}</span>
                 </div>
               </div>
             </CardContent>
@@ -549,7 +552,7 @@ export default function Checkout() {
               color: '#FFFFFF',
             }}
           >
-            {isProcessing ? 'Processing...' : `Place Order - $${formatPrice(getTotalAmount())}`}
+            {isProcessing ? 'Processing...' : `Place Order - ${currencySymbol}${formatPrice(getTotalAmount())}`}
           </Button>
         </div>
 
@@ -716,7 +719,7 @@ export default function Checkout() {
                         <span className="font-medium">
                           {method.type === 'free_shipping' && calculateSubtotal() >= (method.free_shipping_min_order || 0) 
                             ? 'Free' 
-                            : `$${formatPrice(method.flat_rate_cost || 0)}`
+                            : `${currencySymbol}${formatPrice(method.flat_rate_cost || 0)}`
                           }
                         </span>
                       </label>
