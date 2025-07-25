@@ -248,8 +248,8 @@ export default function Checkout() {
 
   const getTotalAmount = () => {
     const subtotal = calculateSubtotal();
-    const shipping = isNaN(shippingCost) ? 0 : shippingCost;
-    const tax = isNaN(taxAmount) ? 0 : taxAmount;
+    const shipping = isNaN(parseFloat(shippingCost)) ? 0 : parseFloat(shippingCost);
+    const tax = isNaN(parseFloat(taxAmount)) ? 0 : parseFloat(taxAmount);
     const total = subtotal + shipping + tax;
     
     console.log('🛒 Checkout getTotalAmount:', {
@@ -278,10 +278,10 @@ export default function Checkout() {
       if (subtotal >= (method.free_shipping_min_order || 0)) {
         setShippingCost(0);
       } else {
-        setShippingCost(method.flat_rate_cost || 0);
+        setShippingCost(parseFloat(method.flat_rate_cost) || 0);
       }
     } else if (method.type === 'flat_rate') {
-      setShippingCost(method.flat_rate_cost || 0);
+      setShippingCost(parseFloat(method.flat_rate_cost) || 0);
     }
   };
 
