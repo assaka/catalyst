@@ -651,11 +651,22 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
       storeId: req.params.id,
       hasSettings: !!req.body.settings,
       settingsKeys: req.body.settings ? Object.keys(req.body.settings) : [],
+      settingsValues: req.body.settings ? JSON.stringify(req.body.settings).substring(0, 200) : 'none',
       otherFields: Object.keys(req.body).filter(key => key !== 'settings')
     });
+    
+    // Log current settings before update
+    console.log('📝 Current store settings before update:', store.settings);
 
     await store.update(req.body);
     console.log('✅ Store updated successfully');
+    
+    // Reload the store to get the updated data
+    await store.reload();
+    console.log('🔄 Reloaded store data:', {
+      hasSettings: !!store.settings,
+      settingsKeys: store.settings ? Object.keys(store.settings) : []
+    });
 
     res.json({
       success: true,

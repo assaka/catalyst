@@ -66,7 +66,7 @@ export default function Settings() {
     }
   }, [flashMessage]);
 
-  const loadStore = async () => {
+  const loadStore = async (forceRefresh = false) => {
     try {
       setLoading(true);
       
@@ -78,49 +78,59 @@ export default function Settings() {
       
       const user = await retryApiCall(() => User.me());
       console.log('Current user:', user.email);
-      console.log('Selected store:', selectedStore.name, 'for user:', user.email);
       
-      // Use selectedStore directly instead of fetching all stores
-      console.log('Raw store settings from database:', selectedStore.settings);
+      // If forceRefresh is true or we need fresh data, fetch from API
+      let storeData;
+      if (forceRefresh) {
+        console.log('🔄 Force refreshing store data from API...');
+        storeData = await retryApiCall(() => Store.findById(selectedStore.id));
+        console.log('📥 Fresh store data from API:', storeData);
+      } else {
+        storeData = selectedStore;
+        console.log('Using cached store data:', storeData.name);
+      }
+      
+      // Use fresh store data
+      console.log('Raw store settings from database:', storeData.settings);
       
       // CRITICAL FIX: Use explicit checks instead of nullish coalescing with defaults
       // This ensures that false values are preserved from the database
-      const settings = selectedStore.settings || {};
+      const settings = storeData.settings || {};
       
       setStore({
-        id: selectedStore.id,
-        name: selectedStore.name || '',
-        description: selectedStore.description || '',
-        logo_url: selectedStore.logo_url || '',
-        domain: selectedStore.domain || '', // Keep existing domain if it's used internally
-        custom_domain: selectedStore.custom_domain || selectedStore.domain || '', // Map existing domain to custom_domain
-        domain_status: selectedStore.domain_status || '',
-        ssl_enabled: selectedStore.ssl_enabled || false,
-        currency: selectedStore.currency || 'USD',
-        timezone: selectedStore.timezone || 'UTC',
-        slug: selectedStore.slug || '',
-        status: selectedStore.status || 'active', // Default status
+        id: storeData.id,
+        name: storeData.name || '',
+        description: storeData.description || '',
+        logo_url: storeData.logo_url || '',
+        domain: storeData.domain || '', // Keep existing domain if it's used internally
+        custom_domain: storeData.custom_domain || storeData.domain || '', // Map existing domain to custom_domain
+        domain_status: storeData.domain_status || '',
+        ssl_enabled: storeData.ssl_enabled || false,
+        currency: storeData.currency || 'USD',
+        timezone: storeData.timezone || 'UTC',
+        slug: storeData.slug || '',
+        status: storeData.status || 'active', // Default status
         contact_details: {
-          email: selectedStore.contact_details?.email || '', // Safely access
-          phone: selectedStore.contact_details?.phone || '',
-          address: selectedStore.contact_details?.address || '',
-          city: selectedStore.contact_details?.city || '',
-          state: selectedStore.contact_details?.state || '',
-          postal_code: selectedStore.contact_details?.postal_code || '',
-          country: selectedStore.contact_details?.country || 'US', // Default to US
-          support_email: selectedStore.contact_details?.support_email || '',
+          email: storeData.contact_details?.email || '', // Safely access
+          phone: storeData.contact_details?.phone || '',
+          address: storeData.contact_details?.address || '',
+          city: storeData.contact_details?.city || '',
+          state: storeData.contact_details?.state || '',
+          postal_code: storeData.contact_details?.postal_code || '',
+          country: storeData.contact_details?.country || 'US', // Default to US
+          support_email: storeData.contact_details?.support_email || '',
         },
         stripe_settings: {
-          enabled: selectedStore.stripe_settings?.enabled || false,
-          publishable_key: selectedStore.stripe_settings?.publishable_key || '',
-          secret_key: selectedStore.stripe_settings?.secret_key || '',
-          webhook_secret: selectedStore.stripe_settings?.webhook_secret || ''
+          enabled: storeData.stripe_settings?.enabled || false,
+          publishable_key: storeData.stripe_settings?.publishable_key || '',
+          secret_key: storeData.stripe_settings?.secret_key || '',
+          webhook_secret: storeData.stripe_settings?.webhook_secret || ''
         },
         brevo_settings: {
-          enabled: selectedStore.brevo_settings?.enabled || false,
-          api_key: selectedStore.brevo_settings?.api_key || '',
-          sender_email: selectedStore.brevo_settings?.sender_email || '',
-          sender_name: selectedStore.brevo_settings?.sender_name || ''
+          enabled: storeData.brevo_settings?.enabled || false,
+          api_key: storeData.brevo_settings?.api_key || '',
+          sender_email: storeData.brevo_settings?.sender_email || '',
+          sender_name: storeData.brevo_settings?.sender_name || ''
         },
         settings: {
           // CRITICAL FIX: Check if value exists in database first, then use default
@@ -393,9 +403,9 @@ export default function Settings() {
         setFlashMessage({ type: 'warning', message: 'Settings saved, verifying...' });
       }
       
-      // Small delay then reload to confirm save
+      // Small delay then reload to confirm save with force refresh
       await delay(1000);
-      await loadStore();
+      await loadStore(true); // Force refresh from API
       
     } catch (error) {
       console.error('Failed to save settings:', error);

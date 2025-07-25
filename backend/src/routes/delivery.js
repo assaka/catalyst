@@ -81,6 +81,7 @@ router.put('/:id', async (req, res) => {
     }
 
     await deliverySettings.update(req.body);
+    await deliverySettings.reload(); // Reload to get updated data
     res.json({ success: true, message: 'Delivery settings updated successfully', data: deliverySettings });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
