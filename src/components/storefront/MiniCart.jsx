@@ -49,17 +49,20 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   const loadCart = async () => {
     try {
+      console.log('🛒 MiniCart.loadCart: Starting...');
       setLoading(true);
       
       // Use simplified cart service
       const cartResult = await cartService.getCart();
-      console.log('🛒 MiniCart: Cart service result:', cartResult);
+      console.log('🛒 MiniCart.loadCart: Cart service result:', cartResult);
       
       if (cartResult.success && cartResult.items) {
+        console.log('🛒 MiniCart.loadCart: Setting cart items:', cartResult.items);
         setCartItems(cartResult.items);
         
         // Load product details for cart items
         if (cartResult.items.length > 0) {
+          console.log('🛒 MiniCart.loadCart: Loading product details for', cartResult.items.length, 'items');
           const productDetails = {};
           for (const item of cartResult.items) {
             if (!productDetails[item.product_id]) {
@@ -74,19 +77,22 @@ export default function MiniCart({ cartUpdateTrigger }) {
               }
             }
           }
+          console.log('🛒 MiniCart.loadCart: Loaded product details:', Object.keys(productDetails));
           setCartProducts(productDetails);
         }
       } else {
+        console.log('🛒 MiniCart.loadCart: No items found, clearing cart');
         setCartItems([]);
         setCartProducts({});
       }
 
     } catch (error) {
-      console.error('Failed to load cart:', error);
+      console.error('🛒 MiniCart.loadCart: Error loading cart:', error);
       setCartItems([]);
       setCartProducts({});
     } finally {
       setLoading(false);
+      console.log('🛒 MiniCart.loadCart: Finished');
     }
   };
 

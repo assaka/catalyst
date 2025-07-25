@@ -290,7 +290,7 @@ export default function StorefrontLayout({ children }) {
                                             </Button>
                                         )}
                                         <WishlistDropdown />
-                                        <MiniCart />
+                                        <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
                                      </div>
 
                                      <div className="hidden md:flex items-center space-x-3">
@@ -361,7 +361,7 @@ export default function StorefrontLayout({ children }) {
                                             </Button>
                                         )}
                                         <WishlistDropdown />
-                                        <MiniCart />
+                                        <MiniCart cartUpdateTrigger={cartUpdateTrigger} />
                                      </div>
 
                                      <Button

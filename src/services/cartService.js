@@ -19,8 +19,11 @@ class CartService {
   async getCurrentUser() {
     try {
       const { User } = await import('@/api/entities');
-      return await User.me();
+      const user = await User.me();
+      console.log('🛒 CartService.getCurrentUser: User found:', user?.id || 'null');
+      return user;
     } catch (error) {
+      console.log('🛒 CartService.getCurrentUser: No user (guest mode)');
       return null;
     }
   }
@@ -63,10 +66,20 @@ class CartService {
   // Add item to cart
   async addItem(productId, quantity = 1, price = 0, selectedOptions = [], storeId) {
     try {
+      console.log('🛒 CartService.addItem: Starting with params:', {
+        productId, quantity, price, selectedOptions, storeId
+      });
+
       const user = await this.getCurrentUser();
       const sessionId = this.getSessionId();
 
+      console.log('🛒 CartService.addItem: Got user and session:', {
+        userId: user?.id || 'null',
+        sessionId
+      });
+
       if (!storeId) {
+        console.error('🛒 CartService.addItem: Store ID is required');
         throw new Error('Store ID is required');
       }
 
@@ -84,7 +97,8 @@ class CartService {
         cartData.session_id = sessionId;
       }
 
-      console.log('🛒 CartService.addItem: Adding item:', cartData);
+      console.log('🛒 CartService.addItem: Final cart data:', cartData);
+      console.log('🛒 CartService.addItem: Making request to:', this.endpoint);
 
       const response = await fetch(this.endpoint, {
         method: 'POST',
@@ -92,18 +106,29 @@ class CartService {
         body: JSON.stringify(cartData)
       });
 
+      console.log('🛒 CartService.addItem: Response status:', response.status);
+
       const result = await response.json();
-      console.log('🛒 CartService.addItem: Response:', result);
+      console.log('🛒 CartService.addItem: Response data:', result);
 
       if (result.success) {
         // Dispatch cart update event
+        console.log('🛒 CartService.addItem: Dispatching cartUpdated event');
         window.dispatchEvent(new CustomEvent('cartUpdated'));
+        
+        // Small delay to ensure event propagates
+        setTimeout(() => {
+          console.log('🛒 CartService.addItem: Dispatching delayed cartUpdated event');
+          window.dispatchEvent(new CustomEvent('cartUpdated'));
+        }, 100);
+        
         return { success: true, cart: result.data };
       }
 
+      console.error('🛒 CartService.addItem: API returned error:', result.message);
       return { success: false, error: result.message };
     } catch (error) {
-      console.error('CartService.addItem error:', error);
+      console.error('🛒 CartService.addItem error:', error);
       return { success: false, error: error.message };
     }
   }
