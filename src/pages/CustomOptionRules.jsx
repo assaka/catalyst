@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { CustomOptionRule } from '@/api/entities';
 import CustomOptionRuleForm from '@/components/products/CustomOptionRuleForm';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,22 +11,38 @@ import { Plus, Edit, Trash2, Settings, Filter } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function CustomOptionRules() {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [rules, setRules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
 
   useEffect(() => {
-    loadRules();
-  }, []);
+    if (selectedStore) {
+      loadRules();
+    }
+  }, [selectedStore]);
 
   const loadRules = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.warn('No store selected');
+      setRules([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
-      const data = await CustomOptionRule.list('-created_at');
-      setRules(data);
+      const data = await CustomOptionRule.filter({ 
+        store_id: storeId,
+        order_by: '-created_at'
+      });
+      console.log('Loaded custom option rules:', data);
+      setRules(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load rules", error);
+      setRules([]);
     } finally {
       setLoading(false);
     }

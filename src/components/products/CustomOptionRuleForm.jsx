@@ -6,8 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Category } from '@/api/entities';
 import { AttributeSet } from '@/api/entities';
 import { Attribute } from '@/api/entities';
-import { Store } from '@/api/entities';
-import { User } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { X, ChevronsUpDown, Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +14,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  
   const [formData, setFormData] = useState({
     name: '',
     display_label: 'Custom Options',
@@ -33,7 +34,6 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
   const [attributeSets, setAttributeSets] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Multi-select states
@@ -42,43 +42,41 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
   const [showAttributeConditionForm, setShowAttributeConditionForm] = useState(false);
   const [newAttributeCondition, setNewAttributeCondition] = useState({ attribute_code: '', attribute_value: '' });
 
-  // Load static data and user stores on component mount
+  // Load static data using selected store
   useEffect(() => {
     const loadStaticData = async () => {
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        console.warn('No store selected');
+        return;
+      }
+
       try {
-        // Get current user first
-        const user = await User.me();
+        // Set store ID in form data
+        setFormData(prev => ({ ...prev, store_id: storeId }));
         
-        // Get user's stores only
-        const userStores = await Store.findAll();
-        setStores(Array.isArray(userStores) ? userStores : []);
+        // Load store-specific data
+        const [attributeSetsData, attributesData, categoriesData] = await Promise.all([
+          AttributeSet.filter({ store_id: storeId }).catch(() => []),
+          Attribute.filter({ store_id: storeId }).catch(() => []),
+          Category.filter({ store_id: storeId }).catch(() => [])
+        ]);
         
-        // Set default store if available
-        if (userStores && userStores.length > 0) {
-          const defaultStore = userStores[0];
-          setFormData(prev => ({ ...prev, store_id: defaultStore.id }));
-          
-          // Load store-specific data
-          const [attributeSetsData, attributesData, categoriesData] = await Promise.all([
-            AttributeSet.filter({ store_id: defaultStore.id }).catch(() => []),
-            Attribute.filter({ store_id: defaultStore.id }).catch(() => []),
-            Category.filter({ store_id: defaultStore.id }).catch(() => [])
-          ]);
-          
-          setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
-          setAttributes(Array.isArray(attributesData) ? attributesData : []);
-          setCategories(Array.isArray(categoriesData) ? categoriesData : []);
-        }
+        setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
+        setAttributes(Array.isArray(attributesData) ? attributesData : []);
+        setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       } catch (error) {
         console.error("Error loading static data:", error);
-        setStores([]);
         setAttributeSets([]);
         setAttributes([]);
         setCategories([]);
       }
     };
-    loadStaticData();
-  }, []);
+
+    if (selectedStore) {
+      loadStaticData();
+    }
+  }, [selectedStore]);
 
   // Load custom option products whenever store_id changes
   useEffect(() => {
@@ -254,34 +252,13 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="store">Store *</Label>
-                <select
-                  id="store"
-                  value={formData.store_id}
-                  onChange={(e) => handleInputChange('store_id', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select Store</option>
-                  {stores.map(store => (
-                    <option key={store.id} value={store.id}>{store.name}</option>
-                  ))}
-                </select>
-                {stores.length === 0 && (
-                  <p className="text-sm text-red-600 mt-1">Please create a store first before adding custom option rules.</p>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_active"
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => handleInputChange('is_active', checked)}
-                />
-                <Label htmlFor="is_active">Active</Label>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="is_active"
+                checked={formData.is_active}
+                onCheckedChange={(checked) => handleInputChange('is_active', checked)}
+              />
+              <Label htmlFor="is_active">Active</Label>
             </div>
 
             {/* Custom Options Selection Card */}
