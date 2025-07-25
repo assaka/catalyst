@@ -145,6 +145,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
     }
 
     try {
+      if (!store?.id) {
+        console.error('🛒 MiniCart: No store context available for update');
+        return;
+      }
+
       // Update the local cart items array
       const updatedItems = cartItems.map(item => 
         item.id === cartItemId ? { ...item, quantity: newQuantity } : item
@@ -159,7 +164,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
       const updateData = { 
         items: updatedItems,
-        store_id: store?.id
+        store_id: store.id
       };
       if (user?.id) {
         updateData.user_id = user.id;
@@ -169,7 +174,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
       // Use POST to update cart (not PUT with item ID)
       console.log('🛒 MiniCart: Updating cart with data:', updateData);
-      await Cart.create(updateData);
+      const result = await Cart.create(updateData);
+      console.log('🛒 MiniCart: Update result:', result);
+      
+      // Small delay before reloading
+      await new Promise(resolve => setTimeout(resolve, 200));
       await loadCart();
       
       // Dispatch update event
@@ -181,6 +190,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   const removeItem = async (cartItemId) => {
     try {
+      if (!store?.id) {
+        console.error('🛒 MiniCart: No store context available for remove');
+        return;
+      }
+
       // Remove item from local cart items array
       const updatedItems = cartItems.filter(item => item.id !== cartItemId);
 
@@ -193,7 +207,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
       const updateData = { 
         items: updatedItems,
-        store_id: store?.id
+        store_id: store.id
       };
       if (user?.id) {
         updateData.user_id = user.id;
@@ -203,7 +217,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
       // Use POST to update cart
       console.log('🛒 MiniCart: Removing item from cart with data:', updateData);
-      await Cart.create(updateData);
+      const result = await Cart.create(updateData);
+      console.log('🛒 MiniCart: Remove result:', result);
+      
+      // Small delay before reloading
+      await new Promise(resolve => setTimeout(resolve, 200));
       await loadCart();
       
       // Dispatch update event

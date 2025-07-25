@@ -18,10 +18,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 
 const getSessionId = () => {
-  let sid = localStorage.getItem('guest_session_id');
+  let sid = localStorage.getItem('cart_session_id');
   if (!sid) {
-    sid = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('guest_session_id', sid);
+    sid = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('cart_session_id', sid);
   }
   return sid;
 };
@@ -74,7 +74,7 @@ const useDebouncedEffect = (effect, deps, delay) => {
 export default function Cart() {
     const navigate = useNavigate();
     // Use StoreProvider data instead of making separate API calls
-    const { settings, taxes, selectedCountry, loading: storeLoading } = useStore();
+    const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [couponCode, setCouponCode] = useState('');
@@ -99,6 +99,12 @@ export default function Cart() {
             if (Object.keys(quantityUpdates).length === 0) return;
 
             try {
+                if (!store?.id) {
+                    console.error('🛒 Cart: No store context available for update');
+                    setFlashMessage({ type: 'error', message: "Store context not available." });
+                    return;
+                }
+
                 // Get current user and session info
                 const currentUser = await retryApiCall(() => User.me().catch(() => null));
                 const sessionId = getSessionId();
@@ -111,7 +117,7 @@ export default function Cart() {
 
                 const updateData = { 
                     items: updatedItems,
-                    store_id: cartItems[0]?.store_id // Get store_id from first item
+                    store_id: store.id
                 };
                 
                 if (currentUser?.id) {
@@ -122,9 +128,10 @@ export default function Cart() {
 
                 // Use POST to update cart
                 console.log('🛒 Cart: Updating cart with data:', updateData);
-                await retryApiCall(() => CartEntity.create(updateData));
+                const result = await retryApiCall(() => CartEntity.create(updateData));
+                console.log('🛒 Cart: Update result:', result);
                 setQuantityUpdates({});
-                await delay(1000);
+                await delay(500);
                 loadCartData(false);
                 
                 // Dispatch update event
@@ -230,6 +237,12 @@ export default function Cart() {
     // Renamed from handleRemoveItem to removeItem
     const removeItem = async (itemId) => {
         try {
+            if (!store?.id) {
+                console.error('🛒 Cart: No store context available for remove');
+                setFlashMessage({ type: 'error', message: "Store context not available." });
+                return;
+            }
+
             // Get current user and session info
             const currentUser = await retryApiCall(() => User.me().catch(() => null));
             const sessionId = getSessionId();
@@ -239,7 +252,7 @@ export default function Cart() {
 
             const updateData = { 
                 items: updatedItems,
-                store_id: cartItems[0]?.store_id // Get store_id from first item
+                store_id: store.id
             };
             
             if (currentUser?.id) {
@@ -250,7 +263,9 @@ export default function Cart() {
 
             // Use POST to update cart
             console.log('🛒 Cart: Removing item from cart with data:', updateData);
-            await retryApiCall(() => CartEntity.create(updateData));
+            const result = await retryApiCall(() => CartEntity.create(updateData));
+            console.log('🛒 Cart: Remove result:', result);
+            await delay(500);
             loadCartData(false);
             window.dispatchEvent(new CustomEvent('cartUpdated'));
             setFlashMessage({ type: 'success', message: "Item removed from cart." });
