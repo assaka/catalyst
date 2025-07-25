@@ -2,10 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Cart } from '@/api/entities';
 import { Product } from '@/api/entities';
-import { User } from '@/api/entities';
 import { useStore } from '@/components/storefront/StoreProvider';
+import cartService from '@/services/cartService';
 import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,25 +20,11 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const [cartProducts, setCartProducts] = useState({});
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [user, setUser] = useState(null);
-
-  // Load user once
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = await User.me();
-        setUser(userData);
-      } catch (error) {
-        setUser(null);
-      }
-    };
-    loadUser();
-  }, []);
 
   // Load cart on mount and when triggered
   useEffect(() => {
     loadCart();
-  }, [user, cartUpdateTrigger]);
+  }, [cartUpdateTrigger]);
 
   // Listen for cart updates
   useEffect(() => {
@@ -60,65 +45,46 @@ export default function MiniCart({ cartUpdateTrigger }) {
       window.removeEventListener('cartUpdated', handleCartUpdate);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [user]);
+  }, []);
 
   const loadCart = async () => {
     try {
       setLoading(true);
       
-      let sessionId = localStorage.getItem('cart_session_id');
-      if (!sessionId) {
-        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('cart_session_id', sessionId);
-      }
-
-      let cartItems = [];
+      // Use simplified cart service
+      const cartResult = await cartService.getCart();
+      console.log('🛒 MiniCart: Cart service result:', cartResult);
       
-      // Use direct API call instead of Cart.filter() since cart endpoint has different structure
-      const params = new URLSearchParams();
-      if (user?.id) {
-        params.append('user_id', user.id);
-      } else {
-        params.append('session_id', sessionId);
-      }
-      
-      const apiUrl = `${import.meta.env.VITE_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/cart?${params.toString()}`;
-      console.log('🛒 MiniCart: Calling cart API directly:', apiUrl);
-      
-      const response = await fetch(apiUrl);
-      const result = await response.json();
-      console.log('🛒 MiniCart: Direct API response:', result);
-      
-      if (result.success && result.data && result.data.items) {
-        cartItems = Array.isArray(result.data.items) ? result.data.items : [];
-        console.log('🛒 MiniCart: Extracted cart items:', cartItems);
-      }
-
-      console.log('🛒 MiniCart: Extracted cart items:', cartItems);
-      setCartItems(cartItems);
-
-      // Load product details for cart items
-      if (cartItems && cartItems.length > 0) {
-        const productDetails = {};
-        for (const item of cartItems) {
-          if (!productDetails[item.product_id]) {
-            try {
-              const result = await Product.filter({ id: item.product_id });
-              const products = Array.isArray(result) ? result : [];
-              if (products.length > 0) {
-                productDetails[item.product_id] = products[0];
+      if (cartResult.success && cartResult.items) {
+        setCartItems(cartResult.items);
+        
+        // Load product details for cart items
+        if (cartResult.items.length > 0) {
+          const productDetails = {};
+          for (const item of cartResult.items) {
+            if (!productDetails[item.product_id]) {
+              try {
+                const result = await Product.filter({ id: item.product_id });
+                const products = Array.isArray(result) ? result : [];
+                if (products.length > 0) {
+                  productDetails[item.product_id] = products[0];
+                }
+              } catch (error) {
+                console.warn(`Failed to load product ${item.product_id}:`, error);
               }
-            } catch (error) {
-              console.warn(`Failed to load product ${item.product_id}:`, error);
             }
           }
+          setCartProducts(productDetails);
         }
-        setCartProducts(productDetails);
+      } else {
+        setCartItems([]);
+        setCartProducts({});
       }
 
     } catch (error) {
       console.error('Failed to load cart:', error);
       setCartItems([]);
+      setCartProducts({});
     } finally {
       setLoading(false);
     }
@@ -141,34 +107,14 @@ export default function MiniCart({ cartUpdateTrigger }) {
         item.id === cartItemId ? { ...item, quantity: newQuantity } : item
       );
 
-      // Find the cart record and update it
-      let sessionId = localStorage.getItem('cart_session_id');
-      if (!sessionId) {
-        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('cart_session_id', sessionId);
-      }
-
-      const updateData = { 
-        items: updatedItems,
-        store_id: store.id
-      };
-      if (user?.id) {
-        updateData.user_id = user.id;
+      console.log('🛒 MiniCart: Updating quantity with items:', updatedItems);
+      const result = await cartService.updateCart(updatedItems, store.id);
+      
+      if (result.success) {
+        await loadCart();
       } else {
-        updateData.session_id = sessionId;
+        console.error('Failed to update quantity:', result.error);
       }
-
-      // Use POST to update cart (not PUT with item ID)
-      console.log('🛒 MiniCart: Updating cart with data:', updateData);
-      const result = await Cart.create(updateData);
-      console.log('🛒 MiniCart: Update result:', result);
-      
-      // Small delay before reloading
-      await new Promise(resolve => setTimeout(resolve, 200));
-      await loadCart();
-      
-      // Dispatch update event
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
     } catch (error) {
       console.error('Failed to update quantity:', error);
     }
@@ -184,34 +130,14 @@ export default function MiniCart({ cartUpdateTrigger }) {
       // Remove item from local cart items array
       const updatedItems = cartItems.filter(item => item.id !== cartItemId);
 
-      // Find the cart record and update it
-      let sessionId = localStorage.getItem('cart_session_id');
-      if (!sessionId) {
-        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('cart_session_id', sessionId);
-      }
-
-      const updateData = { 
-        items: updatedItems,
-        store_id: store.id
-      };
-      if (user?.id) {
-        updateData.user_id = user.id;
+      console.log('🛒 MiniCart: Removing item, updated items:', updatedItems);
+      const result = await cartService.updateCart(updatedItems, store.id);
+      
+      if (result.success) {
+        await loadCart();
       } else {
-        updateData.session_id = sessionId;
+        console.error('Failed to remove item:', result.error);
       }
-
-      // Use POST to update cart
-      console.log('🛒 MiniCart: Removing item from cart with data:', updateData);
-      const result = await Cart.create(updateData);
-      console.log('🛒 MiniCart: Remove result:', result);
-      
-      // Small delay before reloading
-      await new Promise(resolve => setTimeout(resolve, 200));
-      await loadCart();
-      
-      // Dispatch update event
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
     } catch (error) {
       console.error('Failed to remove item:', error);
     }

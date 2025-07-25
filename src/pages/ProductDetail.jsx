@@ -3,8 +3,8 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Product } from "@/api/entities";
-import { Cart } from "@/api/entities";
 import { User } from "@/api/entities";
+import cartService from "@/services/cartService";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import {
@@ -215,71 +215,50 @@ export default function ProductDetail() {
         return;
       }
 
-      let sessionId = localStorage.getItem('cart_session_id');
-      if (!sessionId) {
-        sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('cart_session_id', sessionId);
-      }
-
       // Calculate correct base price (use sale price if available)
       let basePrice = parseFloat(product.price);
       if (product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price)) {
         basePrice = Math.min(parseFloat(product.price), parseFloat(product.compare_price));
       }
 
-      const cartItem = {
-        store_id: store.id,
-        product_id: product.id,
-        quantity: quantity,
-        price: basePrice, // Store the correct sale price
-        selected_attributes: product.attributes || {},
-        selected_options: selectedOptions.length > 0 ? selectedOptions : []
-      };
+      console.log('🛒 ProductDetail: Adding to cart with simplified service');
+      const result = await cartService.addItem(
+        product.id,
+        quantity,
+        basePrice,
+        selectedOptions,
+        store.id
+      );
+      
+      if (result.success) {
+        // Send Google Analytics 'add_to_cart' event
+        if (window.dataLayer) {
+          window.dataLayer.push({
+            event: 'add_to_cart',
+            ecommerce: {
+              items: [{
+                item_id: product.id,
+                item_name: product.name,
+                price: parseFloat(basePrice || 0).toFixed(2),
+                quantity: quantity,
+                item_brand: product.brand,
+                item_category: categories.find(cat => cat.id === product.category_ids?.[0])?.name || '',
+                currency: settings?.currency_code || 'USD'
+              }]
+            }
+          });
+        }
 
-      if (user?.id) {
-        cartItem.user_id = user.id;
+        setFlashMessage({
+          type: 'success',
+          message: `${product.name} added to cart successfully!`
+        });
       } else {
-        cartItem.session_id = sessionId;
-      }
-
-      console.log('🛒 ProductDetail: Adding to cart:', cartItem);
-      const result = await Cart.create(cartItem);
-      console.log('🛒 ProductDetail: Cart create result:', result);
-
-      // Small delay to prevent race conditions with cart retrieval
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Send Google Analytics 'add_to_cart' event
-      if (window.dataLayer) {
-        window.dataLayer.push({
-          event: 'add_to_cart',
-          ecommerce: {
-            items: [{
-              item_id: product.id,
-              item_name: product.name,
-              price: parseFloat(basePrice || 0).toFixed(2),
-              quantity: quantity,
-              item_brand: product.brand,
-              item_category: categories.find(cat => cat.id === product.category_ids?.[0])?.name || '',
-              currency: settings?.currency_code || 'USD'
-            }]
-          }
+        setFlashMessage({
+          type: 'error',
+          message: result.error || 'Failed to add product to cart. Please try again.'
         });
       }
-
-      // Force cart update by dispatching events
-      window.dispatchEvent(new CustomEvent('cartUpdated'));
-      window.dispatchEvent(new Event('storage'));
-
-      // Small delay to ensure events propagate
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('cartUpdated'));
-      }, 100);
-
-      setFlashMessage({
-        type: 'success',
-        message: `${product.name} added to cart successfully!`
-      });
 
     } catch (error) {
       console.error('Failed to add to cart:', error);
