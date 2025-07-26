@@ -466,6 +466,13 @@ router.post('/webhook', async (req, res) => {
       }
       
       break;
+    case 'payment_intent.succeeded':
+      console.log('Payment succeeded, but no order creation needed for this event type');
+      console.log('Note: Orders should be created from checkout.session.completed events');
+      break;
+    case 'payment_intent.created':
+      console.log('Payment intent created, no action needed');
+      break;
     default:
       console.log(`Unhandled event type ${event.type}`);
   }
@@ -485,10 +492,23 @@ async function createOrderFromCheckoutSession(session) {
     
     console.log('Creating order for store_id:', store_id);
     
-    // Get line items from the session
+    // Get store to determine if we need Connect account context
+    const store = await Store.findByPk(store_id);
+    if (!store) {
+      throw new Error(`Store not found: ${store_id}`);
+    }
+    
+    // Prepare Stripe options for Connect account if needed
+    const stripeOptions = {};
+    if (store.stripe_account_id) {
+      stripeOptions.stripeAccount = store.stripe_account_id;
+      console.log('Using Connect account for session retrieval:', store.stripe_account_id);
+    }
+    
+    // Get line items from the session with correct account context
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
       expand: ['data.price.product']
-    });
+    }, stripeOptions);
     
     // Calculate order totals from session
     const subtotal = session.amount_subtotal / 100; // Convert from cents
