@@ -14,7 +14,8 @@
       "type": "string",
       "enum": [
         "flat_rate",
-        "free_shipping"
+        "free_shipping",
+        "dhl"
       ],
       "default": "flat_rate"
     },
@@ -25,6 +26,27 @@
     "free_shipping_min_order": {
       "type": "number",
       "description": "Minimum order amount for free shipping. Used if type is 'free_shipping'."
+    },
+    "dhl_api_key": {
+      "type": "string",
+      "description": "DHL API key for rate calculation. Used if type is 'dhl'."
+    },
+    "dhl_api_secret": {
+      "type": "string",
+      "description": "DHL API secret for rate calculation. Used if type is 'dhl'."
+    },
+    "dhl_account_number": {
+      "type": "string",
+      "description": "DHL account number. Used if type is 'dhl'."
+    },
+    "dhl_service_type": {
+      "type": "string",
+      "enum": [
+        "domestic",
+        "international"
+      ],
+      "default": "domestic",
+      "description": "DHL service type. Used if type is 'dhl'."
     },
     "availability": {
       "type": "string",

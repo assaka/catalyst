@@ -13,6 +13,10 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
     type: 'flat_rate',
     flat_rate_cost: 0,
     free_shipping_min_order: 0,
+    dhl_api_key: '',
+    dhl_api_secret: '',
+    dhl_account_number: '',
+    dhl_service_type: 'domestic',
     availability: 'all',
     countries: [],
   });
@@ -29,6 +33,10 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
         type: method.type || 'flat_rate',
         flat_rate_cost: method.flat_rate_cost || 0,
         free_shipping_min_order: method.free_shipping_min_order || 0,
+        dhl_api_key: method.dhl_api_key || '',
+        dhl_api_secret: method.dhl_api_secret || '',
+        dhl_account_number: method.dhl_account_number || '',
+        dhl_service_type: method.dhl_service_type || 'domestic',
         availability: method.availability || 'all',
         countries: Array.isArray(method.countries) ? method.countries : [],
       });
@@ -102,6 +110,7 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
               <SelectContent>
                 <SelectItem value="flat_rate">Flat Rate</SelectItem>
                 <SelectItem value="free_shipping">Free Shipping</SelectItem>
+                <SelectItem value="dhl">DHL Shipping</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -131,6 +140,61 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
                 value={formData.free_shipping_min_order}
                 onChange={(e) => handleInputChange('free_shipping_min_order', parseFloat(e.target.value) || 0)}
               />
+            </div>
+          )}
+
+          {formData.type === 'dhl' && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="dhl_api_key">DHL API Key *</Label>
+                <Input
+                  id="dhl_api_key"
+                  type="password"
+                  value={formData.dhl_api_key}
+                  onChange={(e) => handleInputChange('dhl_api_key', e.target.value)}
+                  placeholder="Enter your DHL API key"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="dhl_api_secret">DHL API Secret *</Label>
+                <Input
+                  id="dhl_api_secret"
+                  type="password"
+                  value={formData.dhl_api_secret}
+                  onChange={(e) => handleInputChange('dhl_api_secret', e.target.value)}
+                  placeholder="Enter your DHL API secret"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="dhl_account_number">DHL Account Number *</Label>
+                <Input
+                  id="dhl_account_number"
+                  value={formData.dhl_account_number}
+                  onChange={(e) => handleInputChange('dhl_account_number', e.target.value)}
+                  placeholder="Enter your DHL account number"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="dhl_service_type">Service Type</Label>
+                <Select
+                  value={formData.dhl_service_type}
+                  onValueChange={(value) => handleInputChange('dhl_service_type', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="domestic">Domestic</SelectItem>
+                    <SelectItem value="international">International</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
 

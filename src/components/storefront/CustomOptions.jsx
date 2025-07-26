@@ -32,7 +32,12 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                 is_active: true 
             });
 
-            console.log('🎯 CustomOptions: Found rules:', rules);
+            console.log('🎯 CustomOptions: Found rules:', rules.map(r => ({
+                id: r.id,
+                name: r.name,
+                conditions: r.conditions,
+                optional_product_ids: r.optional_product_ids
+            })));
 
             // Find applicable rules for this product
             // Only evaluate rules if we have a valid product with an ID
@@ -45,7 +50,20 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
 
             const applicableRules = rules.filter(rule => isRuleApplicable(rule, product));
             
-            console.log('🎯 CustomOptions: Applicable rules:', applicableRules);
+            console.log('🎯 CustomOptions: Applicable rules:', applicableRules.map(r => ({
+                id: r.id,
+                name: r.name,
+                conditions: r.conditions
+            })));
+            
+            console.log('🎯 CustomOptions: Current product details:', {
+                id: product.id,
+                name: product.name,
+                sku: product.sku,
+                slug: product.slug,
+                category_ids: product.category_ids,
+                attribute_set_id: product.attribute_set_id
+            });
 
             if (applicableRules.length === 0) {
                 setCustomOptions([]);
@@ -82,7 +100,12 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                         }
                     }
 
-                    console.log('🎯 CustomOptions: Loaded option products:', optionProducts);
+                    console.log('🎯 CustomOptions: Loaded option products:', optionProducts.map(p => ({
+                        id: p.id,
+                        name: p.name,
+                        sku: p.sku,
+                        is_custom_option: p.is_custom_option
+                    })));
                     setCustomOptions(optionProducts);
                 } catch (error) {
                     console.error('Error loading custom option products:', error);
