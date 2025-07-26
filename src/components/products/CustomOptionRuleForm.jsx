@@ -214,7 +214,30 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     return attribute?.options || [];
   };
 
-  const isFormValid = formData.name && formData.optional_product_ids?.length > 0 && formData.store_id;
+  // Validate that rule has meaningful conditions to prevent it from applying to all products
+  const hasValidConditions = () => {
+    const { categories, attribute_sets, skus, attribute_conditions } = formData.conditions || {};
+    return (
+      (categories && categories.length > 0) ||
+      (attribute_sets && attribute_sets.length > 0) ||
+      (skus && skus.length > 0) ||
+      (attribute_conditions && attribute_conditions.length > 0)
+    );
+  };
+
+  const isFormValid = formData.name && 
+                     formData.optional_product_ids?.length > 0 && 
+                     formData.store_id &&
+                     hasValidConditions();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!isFormValid) {
+      alert('Please fill in all required fields and add at least one condition (category, attribute set, SKU, or attribute condition).');
+      return;
+    }
+    onSubmit(formData);
+  };
 
   return (
     <div className="space-y-6">
@@ -310,8 +333,13 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
 
             {/* Conditions */}
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Conditions (Optional)</h3>
-              <p className="text-sm text-gray-600">Leave empty to apply to all products</p>
+              <h3 className="text-lg font-medium">Conditions (Required)</h3>
+              <p className="text-sm text-gray-600">
+                At least one condition must be specified to define which products should show these custom options.
+                {!hasValidConditions() && (
+                  <span className="text-red-600 font-medium"> Please add at least one condition below.</span>
+                )}
+              </p>
 
               {/* Categories */}
               <div>
