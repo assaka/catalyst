@@ -46,7 +46,7 @@ router.get('/', async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
     
-    res.json({ custom_option_rules: data || [] });
+    res.json(data || []);
   } catch (error) {
     console.error('Error in GET /custom-option-rules:', error);
     res.status(500).json({ error: 'Internal server error' });
