@@ -14,6 +14,10 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const componentCache = new Map();
 const COMPONENT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Global rate limiting flag to prevent all instances from hitting API simultaneously
+let globalRateLimitFlag = false;
+let globalRateLimitTimeout = null;
+
 const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 5000) => {
   for (let i = 0; i < maxRetries; i++) {
     try {
@@ -45,8 +49,8 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 5000) => {
 };
 
 // Optimized data fetcher that combines and caches multiple API calls
-const fetchRecommendationData = async (storeId) => {
-  const cacheKey = `recommendations-data-${storeId}`;
+const fetchRecommendationData = async (storeId, context = 'default') => {
+  const cacheKey = `recommendations-data-${storeId}-${context}`;
   const now = Date.now();
   
   // Check component cache first
@@ -167,9 +171,9 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
 
     useEffect(() => {
         const fetchData = async () => {
-            // Skip if we've hit rate limits recently
-            if (rateLimitHit) {
-                console.log('RecommendedProducts: Skipping due to recent rate limit');
+            // Skip if we've hit rate limits recently (local or global)
+            if (rateLimitHit || globalRateLimitFlag) {
+                console.log('RecommendedProducts: Skipping due to rate limit (local or global)');
                 setLoading(false);
                 return;
             }
@@ -178,6 +182,15 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
             const currentStoreId = store?.id || storeId;
             if (!currentStoreId) {
                 console.warn('RecommendedProducts: No store ID available');
+                setLoading(false);
+                return;
+            }
+            
+            // Skip if we have provided products and no current product (CMS page case)
+            // This prevents unnecessary API calls on CMS pages
+            if (providedProducts && !currentProduct) {
+                console.log('RecommendedProducts: Using provided products, skipping API calls');
+                setProducts(providedProducts.slice(0, 4));
                 setLoading(false);
                 return;
             }
@@ -206,7 +219,9 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
                     }
                 } else {
                     // Use optimized combined fetcher for cart + featured products
-                    const { cartItems: fetchedCartItems, featuredProducts } = await fetchRecommendationData(currentStoreId);
+                    // Create context-aware cache key
+                    const context = currentProduct ? 'product-detail' : 'general';
+                    const { cartItems: fetchedCartItems, featuredProducts } = await fetchRecommendationData(currentStoreId, context);
                     
                     cartItems = fetchedCartItems;
                     cartProductIds = cartItems.map(item => item.product_id);
@@ -254,8 +269,19 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
                 // Check if this is a rate limiting error
                 if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
                     setRateLimitHit(true);
-                    // Reset rate limit flag after 5 minutes
-                    setTimeout(() => setRateLimitHit(false), 5 * 60 * 1000);
+                    // Set global rate limit flag to prevent all instances from trying
+                    globalRateLimitFlag = true;
+                    
+                    // Clear existing timeout if any
+                    if (globalRateLimitTimeout) {
+                        clearTimeout(globalRateLimitTimeout);
+                    }
+                    
+                    // Reset both flags after 5 minutes
+                    globalRateLimitTimeout = setTimeout(() => {
+                        setRateLimitHit(false);
+                        globalRateLimitFlag = false;
+                    }, 5 * 60 * 1000);
                 }
                 
                 setProducts([]);
@@ -266,19 +292,25 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
         
         fetchData();
         
-        // Listen for cart updates to refresh recommendations (but not if rate limited)
-        const handleCartUpdate = () => {
-            if (!rateLimitHit) {
-                fetchData();
-            }
-        };
-        
-        window.addEventListener('cartUpdated', handleCartUpdate);
+        // Only listen for cart updates on product detail pages (not on cart/cms pages)
+        // This prevents excessive API calls when cart updates
+        let cartUpdateHandler = null;
+        if (currentProduct) {
+            cartUpdateHandler = () => {
+                if (!rateLimitHit) {
+                    // Debounce cart updates to prevent rapid-fire API calls
+                    setTimeout(() => fetchData(), 1000);
+                }
+            };
+            window.addEventListener('cartUpdated', cartUpdateHandler);
+        }
         
         return () => {
-            window.removeEventListener('cartUpdated', handleCartUpdate);
+            if (cartUpdateHandler) {
+                window.removeEventListener('cartUpdated', cartUpdateHandler);
+            }
         };
-    }, [currentProduct, providedProducts, selectedOptions, rateLimitHit, store?.id, storeId]);
+    }, [currentProduct?.id, providedProducts, rateLimitHit, store?.id]); // Removed selectedOptions to reduce triggers
 
     if (loading || products.length === 0) {
         return null;
