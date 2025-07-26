@@ -582,8 +582,8 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/stores', authMiddleware, storeRoutes);
 app.use('/api/products', authMiddleware, productRoutes);
 app.use('/api/categories', authMiddleware, categoryRoutes);
-app.use('/api/orders', authMiddleware, orderRoutes);
-// Public order lookup by payment reference
+
+// Public order lookup by payment reference (MUST be before authenticated routes)
 app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) => {
   try {
     const { Order, Store } = require('./models');
@@ -625,6 +625,9 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
     });
   }
 });
+
+// Now register authenticated order routes
+app.use('/api/orders', authMiddleware, orderRoutes);
 app.use('/api/coupons', authMiddleware, couponRoutes);
 app.use('/api/attributes', authMiddleware, attributeRoutes);
 app.use('/api/cms', authMiddleware, cmsRoutes);

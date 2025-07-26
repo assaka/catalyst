@@ -301,19 +301,43 @@ router.post('/create-checkout', async (req, res) => {
       });
     }
 
+    // Get store currency
+    const storeCurrency = store.currency || 'usd';
+    
     // Create line items for Stripe
     const line_items = items.map(item => {
-      const unit_amount = Math.round((item.price + (item.options_total || 0)) * 100); // Convert to cents
+      // Calculate base price
+      let basePrice = item.price || 0;
+      
+      // Add custom options to the price
+      let optionsTotal = 0;
+      let optionsDescription = '';
+      
+      if (item.selected_options && item.selected_options.length > 0) {
+        item.selected_options.forEach(option => {
+          optionsTotal += option.price || 0;
+          if (optionsDescription) optionsDescription += ', ';
+          optionsDescription += option.name;
+        });
+      }
+      
+      const totalPrice = basePrice + optionsTotal;
+      const unit_amount = Math.round(totalPrice * 100); // Convert to cents
       
       // Handle different name formats from frontend
-      const productName = item.product_name || 
-                         item.name || 
-                         item.product?.name || 
-                         'Product';
+      let productName = item.product_name || 
+                       item.name || 
+                       item.product?.name || 
+                       'Product';
+      
+      // Add options to product name if any
+      if (optionsDescription) {
+        productName += ` (${optionsDescription})`;
+      }
       
       return {
         price_data: {
-          currency: 'usd',
+          currency: storeCurrency.toLowerCase(),
           product_data: {
             name: productName,
             description: item.description || item.product?.description || undefined,
@@ -351,25 +375,51 @@ router.post('/create-checkout', async (req, res) => {
       sessionConfig.customer_email = customer_email;
     }
 
-    // Add shipping if address is provided
-    if (shipping_address) {
+    // Pre-fill customer details if we have shipping address
+    if (shipping_address && (shipping_address.full_name || shipping_address.street || shipping_address.address)) {
+      // Handle different address formats
+      const customerName = shipping_address.full_name || shipping_address.name || '';
+      const line1 = shipping_address.street || shipping_address.address || shipping_address.address_line1 || '';
+      const line2 = shipping_address.address_line2 || '';
+      const city = shipping_address.city || '';
+      const state = shipping_address.state || shipping_address.province || '';
+      const postal_code = shipping_address.postal_code || shipping_address.zip || '';
+      const country = shipping_address.country || 'US';
+      
+      // Set up shipping options
+      sessionConfig.shipping_options = [
+        {
+          shipping_rate_data: {
+            type: 'fixed_amount',
+            fixed_amount: {
+              amount: 0,
+              currency: storeCurrency.toLowerCase(),
+            },
+            display_name: 'Standard Shipping',
+            delivery_estimate: {
+              minimum: {
+                unit: 'business_day',
+                value: 5,
+              },
+              maximum: {
+                unit: 'business_day',
+                value: 7,
+              },
+            },
+          },
+        },
+      ];
+      
+      // Pre-fill the shipping address
       sessionConfig.shipping_address_collection = {
-        allowed_countries: ['US', 'CA', 'GB', 'AU'] // Add more countries as needed
+        allowed_countries: ['US', 'CA', 'GB', 'AU', 'NL', 'DE', 'FR', 'ES', 'IT']
       };
       
-      // If we have a specific address, we could pre-fill it
-      if (shipping_address.name || shipping_address.address_line1) {
-        sessionConfig.customer_details = {
-          address: {
-            line1: shipping_address.address_line1 || '',
-            line2: shipping_address.address_line2 || '',
-            city: shipping_address.city || '',
-            state: shipping_address.state || '',
-            postal_code: shipping_address.postal_code || '',
-            country: shipping_address.country || 'US'
-          },
-          name: shipping_address.name || ''
-        };
+      // Pre-fill customer information
+      if (customerName || line1) {
+        sessionConfig.customer_creation = 'if_required';
+        // Note: Stripe doesn't allow pre-filling address in checkout.sessions.create
+        // But we can set the customer email and they'll need to confirm address
       }
     }
 
