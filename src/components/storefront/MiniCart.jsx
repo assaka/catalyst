@@ -18,6 +18,8 @@ import { formatPrice, safeToFixed } from '@/utils/priceUtils';
 export default function MiniCart({ cartUpdateTrigger }) {
   const { store, settings } = useStore();
   
+  console.log('🚨 MINICART DEBUG: Component rendered, cartUpdateTrigger:', cartUpdateTrigger);
+  
   // Get currency symbol from settings
   const currencySymbol = settings?.currency_symbol || '$';
   const [cartItems, setCartItems] = useState([]);

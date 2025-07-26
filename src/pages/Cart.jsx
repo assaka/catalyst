@@ -87,6 +87,8 @@ export default function Cart() {
     // Use StoreProvider data instead of making separate API calls
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
     
+    console.log('🚨 CART DEBUG: Cart component rendered');
+    
     // Get currency symbol from settings
     const currencySymbol = settings?.currency_symbol || '$';
     const [cartItems, setCartItems] = useState([]);

@@ -30,21 +30,30 @@ class CartService {
   async getCart() {
     try {
       const sessionId = this.getSessionId();
-      console.log('🔍 DEBUG CartService: Session ID:', sessionId);
+      console.log('🚨 CART SERVICE DEBUG: getCart called, Session ID:', sessionId);
       
       const params = new URLSearchParams();
       params.append('session_id', sessionId);
+      params.append('_t', Date.now()); // Cache buster
       
-      const response = await fetch(`${this.endpoint}?${params.toString()}`);
-      console.log('🔍 DEBUG CartService: API Response Status:', response.status);
+      const fullUrl = `${this.endpoint}?${params.toString()}`;
+      console.log('🚨 CART SERVICE DEBUG: Full API URL:', fullUrl);
+      
+      const response = await fetch(fullUrl, {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      console.log('🚨 CART SERVICE DEBUG: API Response Status:', response.status);
       
       if (!response.ok) {
-        console.error('CartService.getCart: HTTP error:', response.status);
+        console.error('🚨 CART SERVICE ERROR: HTTP error:', response.status);
         return { success: false, cart: null, items: [] };
       }
       
       const result = await response.json();
-      console.log('🔍 DEBUG CartService: API Response Data:', result);
+      console.log('🚨 CART SERVICE DEBUG: API Response Data:', result);
       
       if (result.success && result.data) {
         return {

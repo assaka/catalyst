@@ -38,10 +38,8 @@ export default function CustomOptionRules() {
         store_id: storeId,
         order_by: '-created_at'
       });
-      console.log('Loaded custom option rules:', data);
       setRules(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Failed to load rules", error);
       setRules([]);
     } finally {
       setLoading(false);

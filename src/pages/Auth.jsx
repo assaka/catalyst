@@ -29,36 +29,24 @@ export default function Auth() {
   });
 
   useEffect(() => {
-    console.log('🚀 Auth.jsx: useEffect triggered');
-    
+
     // Handle OAuth callback
     const token = searchParams.get('token');
     const oauth = searchParams.get('oauth');
     const errorParam = searchParams.get('error');
     const isGoogleOAuth = oauth === 'success';
 
-    console.log('🔍 Auth.jsx: URL params:', { 
-      hasToken: !!token, 
-      oauth, 
-      errorParam, 
-      isGoogleOAuth 
-    });
-
     if (token && oauth === 'success') {
-      console.log('🔄 Auth.jsx: OAuth success flow, setting token and checking auth');
       apiClient.setToken(token);
       checkAuthStatus(isGoogleOAuth);
     } else if (errorParam) {
-      console.log('🔄 Auth.jsx: Error param found, showing error');
       setError(getErrorMessage(errorParam));
     } else {
-      console.log('🔄 Auth.jsx: Normal flow, checking auth status');
       checkAuthStatus();
     }
 
     // Listen for logout events to prevent redirections after logout
     const handleLogout = () => {
-      console.log('🔄 Auth page: User logged out, staying on auth page');
       setError('');
       setSuccess('');
     };
@@ -77,15 +65,7 @@ export default function Auth() {
   };
 
   const checkAuthStatus = async (isGoogleOAuth = false) => {
-    console.log('🔍 Auth.jsx: checkAuthStatus called', { isGoogleOAuth });
-    console.log('🔍 Auth.jsx: apiClient state before check:', {
-      isLoggedOut: apiClient.isLoggedOut,
-      hasToken: !!apiClient.getToken(),
-      logoutFlagInStorage: localStorage.getItem('user_logged_out'),
-      tokenInStorage: localStorage.getItem('auth_token'),
-      allStorageKeys: Object.keys(localStorage)
-    });
-    
+
     // Debug: decode JWT token to see what's in it
     const token = apiClient.getToken();
     if (token) {
@@ -96,7 +76,6 @@ export default function Auth() {
           return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
         }).join(''));
         const decodedToken = JSON.parse(jsonPayload);
-        console.log('🔍 Auth.jsx: Decoded JWT token:', decodedToken);
       } catch (e) {
         console.error('Failed to decode token:', e);
       }
@@ -105,7 +84,6 @@ export default function Auth() {
     try {
       // Check if user was just logged out (listen for logout events)
       if (apiClient.isLoggedOut) {
-        console.log('🚫 Auth.jsx: User was logged out, staying on auth page');
         return;
       }
       
