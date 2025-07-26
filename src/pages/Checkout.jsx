@@ -101,13 +101,11 @@ export default function Checkout() {
   useEffect(() => {
     const storedCoupon = couponService.getAppliedCoupon();
     if (storedCoupon) {
-      console.log('🎟️ Checkout: Loading stored coupon:', storedCoupon.name);
       setAppliedCoupon(storedCoupon);
     }
 
     // Listen for coupon changes from other components
     const unsubscribe = couponService.addListener((coupon) => {
-      console.log('🎟️ Checkout: Received coupon update:', coupon?.name || 'removed');
       setAppliedCoupon(coupon);
       setCouponError(''); // Clear any errors when coupon changes
     });
@@ -118,15 +116,10 @@ export default function Checkout() {
   // Listen for cart updates from other components
   useEffect(() => {
     const handleCartUpdate = (event) => {
-      console.log('🛒 Checkout: Cart update event received', event);
-      console.log('🛒 Checkout: Current page URL:', window.location.pathname);
-      console.log('🛒 Checkout: Loading state:', loading);
       
       if (!loading) {
-        console.log('🛒 Checkout: Reloading cart items due to external update');
         loadCartItems();
       } else {
-        console.log('🛒 Checkout: Skipping reload - page is loading');
       }
     };
 
@@ -173,17 +166,6 @@ export default function Checkout() {
         DeliverySettings.filter({ store_id: store.id })
       ]);
 
-      console.log('🚚 Checkout: Loaded shipping methods:', {
-        count: shippingData?.length || 0,
-        methods: shippingData?.map(m => ({
-          id: m.id,
-          name: m.name,
-          is_active: m.is_active,
-          type: m.type,
-          availability: m.availability,
-          countries: m.countries
-        })) || []
-      });
 
       setPaymentMethods(paymentData || []);
       setShippingMethods(shippingData || []);
@@ -212,14 +194,12 @@ export default function Checkout() {
 
       // Use simplified cart service (session-based approach)
       const cartResult = await cartService.getCart();
-      console.log('🛒 Checkout: Cart service result:', cartResult);
       
       let cartItems = [];
       if (cartResult.success && cartResult.items) {
         cartItems = cartResult.items;
       }
 
-      console.log('🛒 Checkout: Extracted cart items:', cartItems);
       setCartItems(cartItems);
 
       // Load product details for cart items
@@ -246,7 +226,6 @@ export default function Checkout() {
         }
       } else if (appliedCoupon) {
         // Clear coupon if cart is empty
-        console.log('🎟️ Checkout: Clearing coupon because cart is empty');
         couponService.removeAppliedCoupon();
       }
     } catch (error) {
@@ -272,14 +251,6 @@ export default function Checkout() {
     const optionsPrice = (item.selected_options || []).reduce((sum, option) => sum + (parseFloat(option.price) || 0), 0);
     const finalPrice = basePrice + optionsPrice;
     
-    console.log('🛒 Checkout calculateItemPrice:', {
-      itemPrice: item.price,
-      productPrice: product.price,
-      basePrice,
-      optionsPrice,
-      finalPrice,
-      itemId: item.id
-    });
     
     return finalPrice;
   };
@@ -290,18 +261,10 @@ export default function Checkout() {
       const itemPrice = calculateItemPrice(item, product);
       const lineTotal = itemPrice * item.quantity;
       
-      console.log('🛒 Checkout calculateSubtotal line:', {
-        itemId: item.id,
-        itemPrice,
-        quantity: item.quantity,
-        lineTotal,
-        runningTotal: total + (isNaN(lineTotal) ? 0 : lineTotal)
-      });
       
       return total + (isNaN(lineTotal) ? 0 : lineTotal);
     }, 0);
     
-    console.log('🛒 Checkout final subtotal:', subtotal);
     return isNaN(subtotal) ? 0 : subtotal;
   };
 
@@ -312,15 +275,6 @@ export default function Checkout() {
     const tax = isNaN(parseFloat(taxAmount)) ? 0 : parseFloat(taxAmount);
     const total = subtotal - discount + shipping + tax;
     
-    console.log('🛒 Checkout getTotalAmount:', {
-      subtotal,
-      discount,
-      shipping,
-      tax,
-      total,
-      shippingCostRaw: shippingCost,
-      taxAmountRaw: taxAmount
-    });
     
     return isNaN(total) ? 0 : total;
   };
@@ -357,7 +311,6 @@ export default function Checkout() {
           coupon.applicable_products.includes(item.product_id)
         );
         if (!hasApplicableProduct) {
-          console.log('🎟️ Checkout: Removing coupon - no applicable products in cart');
           couponService.removeAppliedCoupon();
           return;
         }
@@ -372,7 +325,6 @@ export default function Checkout() {
           );
         });
         if (!hasApplicableCategory) {
-          console.log('🎟️ Checkout: Removing coupon - no applicable categories in cart');
           couponService.removeAppliedCoupon();
           return;
         }
@@ -381,12 +333,10 @@ export default function Checkout() {
       // Check minimum purchase amount
       const subtotal = calculateSubtotal();
       if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
-        console.log('🎟️ Checkout: Removing coupon - minimum purchase amount not met');
         couponService.removeAppliedCoupon();
         return;
       }
 
-      console.log('🎟️ Checkout: Coupon is still valid for current cart');
     } catch (error) {
       console.error('Error validating applied coupon:', error);
     }
@@ -406,7 +356,6 @@ export default function Checkout() {
     
     try {
       setCouponError('');
-      console.log('🎟️ Checkout: Applying coupon:', couponCode, 'for store:', store.id);
       
       const coupons = await Coupon.filter({ 
         code: couponCode, 
@@ -414,11 +363,9 @@ export default function Checkout() {
         store_id: store.id 
       });
       
-      console.log('🎟️ Checkout: Coupon API response:', coupons);
       
       if (coupons && coupons.length > 0) {
         const coupon = coupons[0];
-        console.log('🎟️ Checkout: Found coupon:', coupon);
         
         // Check if coupon is still valid (not expired)
         if (coupon.end_date) {
@@ -560,31 +507,15 @@ export default function Checkout() {
   const getEligibleShippingMethods = () => {
     const country = getShippingCountry();
     
-    console.log('🚚 Checkout: Filtering shipping methods:', {
-      currentCountry: country,
-      totalMethods: shippingMethods.length,
-      methods: shippingMethods.map(m => ({
-        id: m.id,
-        name: m.name,
-        availability: m.availability,
-        countries: m.countries
-      }))
-    });
 
     const eligible = shippingMethods.filter(method => {
       const isEligible = method.availability === 'all' || 
         (method.availability === 'specific_countries' && method.countries && method.countries.includes(country));
       
-      console.log(`🚚 Method "${method.name}": ${isEligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}`, {
-        availability: method.availability,
-        countries: method.countries,
-        currentCountry: country
-      });
       
       return isEligible;
     });
 
-    console.log('🚚 Checkout: Eligible shipping methods:', eligible.map(m => m.name));
     return eligible;
   };
 

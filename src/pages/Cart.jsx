@@ -113,13 +113,11 @@ export default function Cart() {
     useEffect(() => {
         const storedCoupon = couponService.getAppliedCoupon();
         if (storedCoupon) {
-            console.log('🎟️ Cart: Loading stored coupon:', storedCoupon.name);
             setAppliedCoupon(storedCoupon);
         }
 
         // Listen for coupon changes from other components
         const unsubscribe = couponService.addListener((coupon) => {
-            console.log('🎟️ Cart: Received coupon update:', coupon?.name || 'removed');
             setAppliedCoupon(coupon);
         });
 
@@ -129,15 +127,11 @@ export default function Cart() {
     // Listen for cart updates from other components (like MiniCart)
     useEffect(() => {
         const handleCartUpdate = (event) => {
-            console.log('🛒 Cart: Cart update event received from other component', event);
-            console.log('🛒 Cart: Current page URL:', window.location.pathname);
             
             // Only reload if we're not currently processing our own updates
             if (!loading && hasLoadedInitialData) {
-                console.log('🛒 Cart: Reloading cart data due to external update');
                 loadCartData(false); // Reload without showing loader
             } else {
-                console.log('🛒 Cart: Skipping reload - page is loading or not ready');
             }
         };
 
@@ -166,9 +160,7 @@ export default function Cart() {
                 });
 
                 // Use simplified cart service
-                console.log('🛒 Cart: Updating cart with items:', updatedItems);
                 const result = await cartService.updateCart(updatedItems, store.id);
-                console.log('🛒 Cart: Update result:', result);
                 setQuantityUpdates({});
                 await delay(500);
                 loadCartData(false);
@@ -189,20 +181,17 @@ export default function Cart() {
         try {
             // Use simplified cart service (session-based approach)
             const cartResult = await cartService.getCart();
-            console.log('🛒 Cart: Cart service result:', cartResult);
             
             let cartItems = [];
             if (cartResult.success && cartResult.items) {
                 cartItems = cartResult.items;
             }
 
-            console.log('🛒 Cart: Extracted cart items:', cartItems);
             
             if (!cartItems || cartItems.length === 0) {
                 setCartItems([]);
                 // Clear applied coupon when cart is empty
                 if (appliedCoupon) {
-                    console.log('🎟️ Cart: Clearing coupon because cart is empty');
                     couponService.removeAppliedCoupon();
                 }
                 if (showLoader) setLoading(false);
@@ -287,9 +276,7 @@ export default function Cart() {
             window.dispatchEvent(new CustomEvent('cartUpdated'));
 
             // Use simplified cart service
-            console.log('🛒 Cart: Removing item from cart, updated items:', updatedItems);
             const result = await cartService.updateCart(updatedItems, store.id);
-            console.log('🛒 Cart: Remove result:', result);
             
             // Reload data in background without showing loader
             loadCartData(false);
@@ -311,7 +298,6 @@ export default function Cart() {
                     coupon.applicable_products.includes(item.product_id)
                 );
                 if (!hasApplicableProduct) {
-                    console.log('🎟️ Cart: Removing coupon - no applicable products in cart');
                     couponService.removeAppliedCoupon();
                     setFlashMessage({ type: 'warning', message: `Coupon "${coupon.name}" was removed because it doesn't apply to current cart items.` });
                     return;
@@ -326,7 +312,6 @@ export default function Cart() {
                     )
                 );
                 if (!hasApplicableCategory) {
-                    console.log('🎟️ Cart: Removing coupon - no applicable categories in cart');
                     couponService.removeAppliedCoupon();
                     setFlashMessage({ type: 'warning', message: `Coupon "${coupon.name}" was removed because it doesn't apply to current cart items.` });
                     return;
@@ -336,7 +321,6 @@ export default function Cart() {
             // Check minimum purchase amount
             const subtotal = calculateSubtotal();
             if (coupon.min_purchase_amount && subtotal < coupon.min_purchase_amount) {
-                console.log('🎟️ Cart: Removing coupon - minimum purchase amount not met');
                 couponService.removeAppliedCoupon();
                 setFlashMessage({ 
                     type: 'warning', 
@@ -345,7 +329,6 @@ export default function Cart() {
                 return;
             }
 
-            console.log('🎟️ Cart: Coupon is still valid for current cart');
         } catch (error) {
             console.error('Error validating applied coupon:', error);
         }
@@ -363,7 +346,6 @@ export default function Cart() {
         }
         
         try {
-            console.log('🎟️ Cart: Applying coupon:', couponCode, 'for store:', store.id);
             
             const coupons = await retryApiCall(() => Coupon.filter({ 
                 code: couponCode, 
@@ -371,11 +353,9 @@ export default function Cart() {
                 store_id: store.id 
             }));
             
-            console.log('🎟️ Cart: Coupon API response:', coupons);
             
             if (coupons && coupons.length > 0) {
                 const coupon = coupons[0];
-                console.log('🎟️ Cart: Found coupon:', coupon);
                 
                 // Check if coupon is still valid (not expired)
                 if (coupon.end_date) {

@@ -26,9 +26,6 @@ const ensureArray = (data) => {
 export default function Storefront() {
   const { store, settings, loading: storeLoading, productLabels, categories: storeCategories, filterableAttributes } = useStore();
   
-  // DEBUG: Log settings received in Storefront
-  console.log('🔍 DEBUG Storefront - settings received:', settings);
-  console.log('🔍 DEBUG Storefront - hide_currency_category:', settings?.hide_currency_category);
   const [products, setProducts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [currentCategory, setCurrentCategory] = useState(null);
@@ -41,9 +38,6 @@ export default function Storefront() {
   
   const categorySlug = searchParams.get('category') || slug;
   
-  // DEBUG: Add page type debugging
-  console.log('🔍 DEBUG Storefront - isHomepage:', !categorySlug);
-  console.log('🔍 DEBUG Storefront - categorySlug:', categorySlug);
 
   const categories = useMemo(() => storeCategories || [], [storeCategories]);
 
@@ -61,7 +55,6 @@ export default function Storefront() {
       setActiveFilters({});
       if (!store) return;
 
-      console.log('Storefront: Loading data...', isHome ? 'homepage' : `category: ${categorySlug}`);
 
       if (isHome) {
         setCurrentCategory(null);
@@ -71,14 +64,6 @@ export default function Storefront() {
           () => Product.filter({ store_id: store.id, featured: true, status: 'active' }, '-created_date', 12)
         );
         const featuredArray = ensureArray(featuredData);
-        if (featuredArray.length > 0) {
-          console.log('🔍 Stock Debug - Featured product sample:', {
-            name: featuredArray[0].name,
-            stock_quantity: featuredArray[0].stock_quantity,
-            infinite_stock: featuredArray[0].infinite_stock,
-            manage_stock: featuredArray[0].manage_stock
-          });
-        }
         setFeaturedProducts(featuredArray);
         setProducts([]);
       } else {
@@ -108,14 +93,11 @@ export default function Storefront() {
             });
             
             if (exact && exact.length > 0) {
-              console.log(`Found ${exact?.length || 0} products for category ${category.name} via exact filter.`);
               return exact;
             }
           } catch (e) {
-            console.warn('Storefront: Exact category filter failed, trying alternative:', e);
           }
           
-          console.log('Storefront: Trying manual category filtering...');
           const allProducts = await cachedApiCall(`all-active-products-${store.id}`, () => 
             Product.filter({ store_id: store.id, status: 'active' })
           );
@@ -125,7 +107,6 @@ export default function Storefront() {
             Array.isArray(product.category_ids) && 
             product.category_ids.includes(category.id)
           );
-          console.log(`Storefront: Manual filtering found ${filtered.length} products`);
           return filtered;
         });
         

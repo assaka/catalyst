@@ -21,10 +21,8 @@ class CouponService {
         try {
             if (coupon) {
                 localStorage.setItem(this.storageKey, JSON.stringify(coupon));
-                console.log('🎟️ CouponService: Coupon applied and stored:', coupon.name);
             } else {
                 localStorage.removeItem(this.storageKey);
-                console.log('🎟️ CouponService: Coupon removed from storage');
             }
             
             // Notify all listeners about the change
@@ -45,18 +43,15 @@ class CouponService {
     // Add listener for coupon changes
     addListener(callback) {
         this.listeners.add(callback);
-        console.log('🎟️ CouponService: Added listener, total listeners:', this.listeners.size);
         
         // Return unsubscribe function
         return () => {
             this.listeners.delete(callback);
-            console.log('🎟️ CouponService: Removed listener, total listeners:', this.listeners.size);
         };
     }
 
     // Notify all listeners of coupon changes
     notifyListeners(coupon) {
-        console.log('🎟️ CouponService: Notifying', this.listeners.size, 'listeners of coupon change');
         this.listeners.forEach(callback => {
             try {
                 callback(coupon);

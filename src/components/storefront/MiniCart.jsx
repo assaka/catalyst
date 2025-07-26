@@ -34,12 +34,10 @@ export default function MiniCart({ cartUpdateTrigger }) {
   // Listen for cart updates with debouncing
   useEffect(() => {
     const handleCartUpdate = () => {
-      console.log('MiniCart: Cart update event received');
       debouncedLoadCart();
     };
     
     const handleStorageChange = () => {
-      console.log('MiniCart: Storage change event received');
       debouncedLoadCart();
     };
 
@@ -70,63 +68,49 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   const loadCart = async () => {
     try {
-      console.log('🛒 MiniCart.loadCart: Starting...');
       setLoading(true);
       
       // Use simplified cart service
       const cartResult = await cartService.getCart();
-      console.log('🛒 MiniCart.loadCart: Cart service result:', cartResult);
       
       if (cartResult.success && cartResult.items) {
-        console.log('🛒 MiniCart.loadCart: Setting cart items:', cartResult.items);
         setCartItems(cartResult.items);
         
         // Load product details for cart items
         if (cartResult.items.length > 0) {
-          console.log('🛒 MiniCart.loadCart: Loading product details for', cartResult.items.length, 'items');
           const productDetails = {};
           for (const item of cartResult.items) {
             if (!productDetails[item.product_id]) {
               try {
-                console.log(`🔧 MiniCart: Loading product for ID: ${item.product_id}`);
                 const result = await Product.filter({ id: item.product_id });
                 const products = Array.isArray(result) ? result : [];
-                console.log(`🔧 MiniCart: API returned for ID ${item.product_id}:`, products.map(p => ({
-                  id: p.id,
-                  name: p.name,
-                  slug: p.slug
-                })));
                 if (products.length > 0) {
                   const foundProduct = products[0];
                   if (foundProduct.id === item.product_id) {
                     productDetails[item.product_id] = foundProduct;
-                    console.log(`🔧 MiniCart: Correctly mapped product ${item.product_id} -> ${foundProduct.name}`);
                   } else {
-                    console.error(`🔧 MiniCart: ID MISMATCH! Requested: ${item.product_id}, Got: ${foundProduct.id} (${foundProduct.name})`);
+                    console.error(`MiniCart: ID MISMATCH! Requested: ${item.product_id}, Got: ${foundProduct.id} (${foundProduct.name})`);
                     // Don't add mismatched product
                   }
                 }
               } catch (error) {
-                console.warn(`Failed to load product ${item.product_id}:`, error);
+                console.error(`Failed to load product ${item.product_id}:`, error);
               }
             }
           }
-          console.log('🛒 MiniCart.loadCart: Loaded product details:', Object.keys(productDetails));
           setCartProducts(productDetails);
         }
       } else {
-        console.log('🛒 MiniCart.loadCart: No items found, clearing cart');
         setCartItems([]);
         setCartProducts({});
       }
 
     } catch (error) {
-      console.error('🛒 MiniCart.loadCart: Error loading cart:', error);
+      console.error('MiniCart: Error loading cart:', error);
       setCartItems([]);
       setCartProducts({});
     } finally {
       setLoading(false);
-      console.log('🛒 MiniCart.loadCart: Finished');
     }
   };
 
@@ -138,7 +122,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
     try {
       if (!store?.id) {
-        console.error('🛒 MiniCart: No store context available for update');
+        console.error('MiniCart: No store context available for update');
         return;
       }
 
@@ -149,10 +133,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
       setCartItems(updatedItems);
 
       // Dispatch immediate update for other components
-      console.log('🛒 MiniCart: Dispatching cartUpdated event');
       window.dispatchEvent(new CustomEvent('cartUpdated'));
 
-      console.log('🛒 MiniCart: Updating quantity with items:', updatedItems);
       const result = await cartService.updateCart(updatedItems, store.id);
       
       if (result.success) {
@@ -171,7 +153,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
   const removeItem = async (cartItemId) => {
     try {
       if (!store?.id) {
-        console.error('🛒 MiniCart: No store context available for remove');
+        console.error('MiniCart: No store context available for remove');
         return;
       }
 
@@ -180,10 +162,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
       setCartItems(updatedItems);
 
       // Dispatch immediate update for other components
-      console.log('🛒 MiniCart: Dispatching cartUpdated event');
       window.dispatchEvent(new CustomEvent('cartUpdated'));
 
-      console.log('🛒 MiniCart: Removing item, updated items:', updatedItems);
       const result = await cartService.updateCart(updatedItems, store.id);
       
       if (result.success) {
@@ -262,24 +242,10 @@ export default function MiniCart({ cartUpdateTrigger }) {
             <>
               <div className="space-y-3 max-h-60 overflow-y-auto">
                 {cartItems.map((item) => {
-                  console.log('🔧 MiniCart: Rendering item:', {
-                    itemId: item.id,
-                    productId: item.product_id,
-                    selectedOptions: item.selected_options,
-                    itemPrice: item.price
-                  });
-                  
                   const product = cartProducts[item.product_id];
                   if (!product) {
-                    console.log('🔧 MiniCart: No product found for ID:', item.product_id);
                     return null;
                   }
-                  
-                  console.log('🔧 MiniCart: Product details:', {
-                    productId: product.id,
-                    productName: product.name,
-                    productSlug: product.slug
-                  });
                   
                   // Use the stored price from cart (which should be the sale price)
                   let basePrice = formatPrice(item.price);

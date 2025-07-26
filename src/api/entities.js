@@ -8,51 +8,18 @@ class BaseEntity {
 
   // Get all records with pagination and filters
   async findAll(params = {}) {
-    console.log(`🔍 BaseEntity.findAll() called:`, {
-      endpoint: this.endpoint,
-      params,
-      paramsString: JSON.stringify(params)
-    });
-    
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
       
-      console.log(`🔍 BaseEntity.findAll() about to call API:`, {
-        endpoint: this.endpoint,
-        url,
-        queryString
-      });
-      
       const response = await apiClient.get(url);
-      
-      console.log(`🔍 BaseEntity.findAll() received response:`, {
-        endpoint: this.endpoint,
-        responseType: typeof response,
-        isArray: Array.isArray(response),
-        responseLength: Array.isArray(response) ? response.length : 'N/A',
-        responseKeys: response && typeof response === 'object' ? Object.keys(response) : 'N/A',
-        responseSample: response && typeof response === 'object' ? JSON.stringify(response).substring(0, 200) : response
-      });
       
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
       
-      console.log(`🔍 BaseEntity.findAll() returning:`, {
-        endpoint: this.endpoint,
-        resultType: typeof result,
-        isArray: Array.isArray(result),
-        resultLength: result.length,
-        resultSample: JSON.stringify(result).substring(0, 200)
-      });
-      
       return result;
     } catch (error) {
-      console.warn(`⚠️ BaseEntity.findAll() error for ${this.endpoint}:`, error.message);
-      console.log(`🔍 BaseEntity.findAll() returning empty array due to error:`, {
-        endpoint: this.endpoint,
-        error: error.message
-      });
+      console.error(`BaseEntity.findAll() error for ${this.endpoint}:`, error.message);
       return [];
     }
   }
@@ -95,41 +62,15 @@ class BaseEntity {
 
   // Filter records (alias for findAll for compatibility)
   async filter(params = {}) {
-    console.log(`🔍 BaseEntity.filter() called:`, {
-      endpoint: this.endpoint,
-      params,
-      paramsString: JSON.stringify(params)
-    });
-    
     try {
       const result = await this.findAll(params);
-      
-      console.log(`🔍 BaseEntity.filter() received from findAll():`, {
-        endpoint: this.endpoint,
-        resultType: typeof result,
-        isArray: Array.isArray(result),
-        resultLength: Array.isArray(result) ? result.length : 'N/A',
-        resultSample: result && typeof result === 'object' ? JSON.stringify(result).substring(0, 200) : result
-      });
       
       // Double-check that result is an array
       const finalResult = Array.isArray(result) ? result : [];
       
-      console.log(`🔍 BaseEntity.filter() returning:`, {
-        endpoint: this.endpoint,
-        finalResultType: typeof finalResult,
-        isArray: Array.isArray(finalResult),
-        finalResultLength: finalResult.length,
-        finalResultSample: JSON.stringify(finalResult).substring(0, 200)
-      });
-      
       return finalResult;
     } catch (error) {
-      console.warn(`⚠️ BaseEntity.filter() error for ${this.endpoint}:`, error.message);
-      console.log(`🔍 BaseEntity.filter() returning empty array due to error:`, {
-        endpoint: this.endpoint,
-        error: error.message
-      });
+      console.error(`BaseEntity.filter() error for ${this.endpoint}:`, error.message);
       return [];
     }
   }
@@ -170,38 +111,16 @@ class AuthService {
   }
 
   async logout() {
-    console.log('🚀 Auth.logout() called - START OF LOGOUT PROCESS');
-    console.log('🔍 Pre-logout state:', {
-      isLoggedOut: apiClient.isLoggedOut,
-      hasToken: !!apiClient.token,
-      tokenInStorage: localStorage.getItem('auth_token'),
-      logoutFlag: localStorage.getItem('user_logged_out')
-    });
-    
-    console.log('🔄 Step 1: Calling backend logout endpoint...');
     try {
       await apiClient.post('auth/logout');
-      console.log('✅ Step 1 COMPLETE: Backend logout successful');
     } catch (error) {
-      console.error('❌ Step 1 FAILED: Backend logout failed:', error.message);
-      console.error('Full error:', error);
-      console.log('🔄 Continuing with client-side logout despite backend failure...');
+      console.error('Backend logout failed:', error.message);
     }
 
-    console.log('🔄 Step 2: Calling apiClient.setToken(null)...');
-    
     // Clear the token from client-side storage
-    console.log('🔄 CRITICAL: Clearing client-side token with setToken(null)...');
     apiClient.setToken(null);
-    console.log('✅ Step 2 COMPLETE: Token cleared, checking state...');
-    console.log('🔍 Post-token-clear state:', {
-      isLoggedOut: apiClient.isLoggedOut,
-      hasToken: !!apiClient.token,
-      logoutFlagInStorage: localStorage.getItem('user_logged_out')
-    });
     
     // Clear all user-related cached data
-    console.log('🔄 Step 3: Clearing all cached user data...');
     localStorage.removeItem('user_data');
     localStorage.removeItem('selectedStoreId');
     localStorage.removeItem('storeProviderCache');
@@ -210,9 +129,6 @@ class AuthService {
     // Clear session IDs
     localStorage.removeItem('guest_session_id');
     localStorage.removeItem('cart_session_id');
-    console.log('✅ Step 3 COMPLETE: localStorage cleaned');
-    
-    // Note: We don't remove 'user_logged_out' here because setToken(null) already set it
     
     // Clear authentication cookies (if any exist)
     // This attempts to clear common auth cookie names
@@ -227,36 +143,14 @@ class AuthService {
           name === 'jwt') {
         document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=" + window.location.hostname;
         document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
-        console.log('🔄 Cleared cookie:', name);
       }
     });
-    
-    // Clear any other app-specific cache
-    // Keep cookie consent as it's user preference, not session data
     
     // Dispatch logout event to notify other components
     window.dispatchEvent(new CustomEvent('userLoggedOut', { 
       detail: { timestamp: new Date().toISOString() } 
     }));
     
-    // Debug: Log what's left in localStorage after cleanup
-    const remainingKeys = Object.keys(localStorage).filter(key => 
-      !key.includes('cookie_consent') // Exclude cookie consent keys
-    );
-    if (remainingKeys.length > 0) {
-      console.log('🔍 Remaining localStorage keys after logout:', remainingKeys);
-    } else {
-      console.log('✅ All relevant localStorage keys cleared');
-    }
-    
-    console.log('🎉 Auth.logout() COMPLETED SUCCESSFULLY');
-    console.log('🔍 Final logout state verification:', {
-      isLoggedOut: apiClient.isLoggedOut,
-      hasToken: !!apiClient.token,
-      tokenInStorage: localStorage.getItem('auth_token'),
-      logoutFlagInStorage: localStorage.getItem('user_logged_out'),
-      allStorageKeys: Object.keys(localStorage)
-    });
     return { success: true };
   }
 
@@ -415,7 +309,7 @@ class StorePluginEntity extends BaseEntity {
       const plugins = response?.data?.store_plugins || response?.store_plugins || response || [];
       return Array.isArray(plugins) ? plugins : [];
     } catch (error) {
-      console.warn(`Failed to load public store plugins:`, error.message);
+      console.error(`Failed to load public store plugins:`, error.message);
       return [];
     }
   }

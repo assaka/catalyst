@@ -247,7 +247,6 @@ export default function ProductDetail() {
         basePrice = Math.min(parseFloat(product.price), parseFloat(product.compare_price));
       }
 
-      console.log('🛒 ProductDetail: Adding to cart with simplified service');
       const result = await cartService.addItem(
         product.id,
         quantity,
@@ -356,7 +355,6 @@ export default function ProductDetail() {
 
   // useCallback is used to memoize handleOptionChange, preventing unnecessary re-renders in CustomOptions
   const handleOptionChange = useCallback((newSelectedOptions) => {
-    console.log('🎯 ProductDetail: Custom options changed:', newSelectedOptions);
     setSelectedOptions(newSelectedOptions);
   }, []); // Empty dependency array ensures this function is stable
 

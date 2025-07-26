@@ -158,51 +158,27 @@ export const StoreProvider = ({ children }) => {
       const storeCacheKey = storeSlug ? `store-slug-${storeSlug}` : 'first-store';
       const stores = await cachedApiCall(storeCacheKey, async () => {
         if (storeSlug) {
-          console.log(`🔍 StoreProvider: About to call Store.filter with slug:`, storeSlug);
           try {
             const result = await Store.filter({ slug: storeSlug });
-            console.log(`🔍 StoreProvider: Store.filter returned:`, {
-              resultType: typeof result,
-              isArray: Array.isArray(result),
-              resultLength: Array.isArray(result) ? result.length : 'N/A',
-              result
-            });
             return Array.isArray(result) ? result : [];
           } catch (error) {
-            console.error(`❌ StoreProvider: Store.filter failed:`, error);
+            console.error(`StoreProvider: Store.filter failed:`, error);
             return [];
           }
         } else {
-          console.log(`🔍 StoreProvider: About to call Store.findAll with limit 1`);
           try {
             const result = await Store.findAll({ limit: 1 });
-            console.log(`🔍 StoreProvider: Store.findAll returned:`, {
-              resultType: typeof result,
-              isArray: Array.isArray(result),
-              resultLength: Array.isArray(result) ? result.length : 'N/A',
-              result
-            });
             return Array.isArray(result) ? result : [];
           } catch (error) {
-            console.error(`❌ StoreProvider: Store.findAll failed:`, error);
+            console.error(`StoreProvider: Store.findAll failed:`, error);
             return [];
           }
         }
       });
 
-      console.log(`🔍 StoreProvider: About to access stores[0]:`, {
-        storesType: typeof stores,
-        isArray: Array.isArray(stores),
-        storesLength: Array.isArray(stores) ? stores.length : 'N/A',
-        stores
-      });
 
       const selectedStore = stores?.[0];
       
-      console.log(`🔍 StoreProvider: selectedStore extracted:`, {
-        selectedStore,
-        hasStore: !!selectedStore
-      });
       
       if (!selectedStore) {
         console.warn('No store found');
@@ -210,9 +186,6 @@ export const StoreProvider = ({ children }) => {
         return;
       }
 
-      // DEBUG: Log the actual settings from database
-      console.log('🔍 DEBUG: selectedStore.settings from database:', selectedStore.settings);
-      console.log('🔍 DEBUG: selectedStore.settings type:', typeof selectedStore.settings);
       
       // Set store with merged settings
       const mergedSettings = {
@@ -247,27 +220,10 @@ export const StoreProvider = ({ children }) => {
         ...(selectedStore.settings || {})
       };
       
-      // DEBUG: Log the final merged settings
-      console.log('🔍 DEBUG: Final mergedSettings:', mergedSettings);
-      console.log('🔍 DEBUG: hide_currency_category final value:', mergedSettings.hide_currency_category);
-      console.log('🔍 DEBUG: hide_quantity_selector final value:', mergedSettings.hide_quantity_selector);
-      console.log('🔍 DEBUG: show_category_in_breadcrumb final value:', mergedSettings.show_category_in_breadcrumb);
       
-      console.log(`🔍 StoreProvider: About to set store:`, {
-        selectedStore,
-        mergedSettings,
-        allowedCountries: mergedSettings.allowed_countries,
-        allowedCountriesType: typeof mergedSettings.allowed_countries,
-        isAllowedCountriesArray: Array.isArray(mergedSettings.allowed_countries)
-      });
       
       setStore({ ...selectedStore, settings: mergedSettings });
       
-      console.log(`🔍 StoreProvider: About to setSelectedCountry:`, {
-        allowedCountries: mergedSettings.allowed_countries,
-        firstCountry: mergedSettings.allowed_countries?.[0],
-        fallback: 'US'
-      });
       
       setSelectedCountry(mergedSettings.allowed_countries?.[0] || 'US');
 
@@ -281,7 +237,6 @@ export const StoreProvider = ({ children }) => {
         
         if (seoSettingsData && seoSettingsData.length > 0) {
           const loadedSeoSettings = seoSettingsData[0];
-          console.log('[StoreProvider] Loaded SEO settings:', loadedSeoSettings);
           setSeoSettings({
             ...loadedSeoSettings,
             // Ensure nested objects exist with defaults
@@ -303,7 +258,6 @@ export const StoreProvider = ({ children }) => {
             hreflang_settings: Array.isArray(loadedSeoSettings.hreflang_settings) ? loadedSeoSettings.hreflang_settings : []
           });
         } else {
-          console.log('[StoreProvider] No SEO settings found, using defaults');
           setSeoSettings({
             store_id: selectedStore.id,
             enable_rich_snippets: true,
@@ -341,7 +295,6 @@ export const StoreProvider = ({ children }) => {
         
         if (cookieConsentData && cookieConsentData.length > 0) {
           const cookieSettings = cookieConsentData[0];
-          console.log('[StoreProvider] Loaded cookie consent settings:', cookieSettings);
           
           // Map backend cookie settings to frontend format
           const frontendCookieSettings = {
@@ -394,9 +347,7 @@ export const StoreProvider = ({ children }) => {
           // Update the store settings with loaded cookie consent settings
           mergedSettings.cookie_consent = frontendCookieSettings;
           setStore({ ...selectedStore, settings: mergedSettings });
-          console.log('[StoreProvider] Updated store with cookie consent settings');
         } else {
-          console.log('[StoreProvider] No cookie consent settings found, using defaults');
         }
       } catch (error) {
         console.error('[StoreProvider] Error loading cookie consent settings:', error);
@@ -409,12 +360,7 @@ export const StoreProvider = ({ children }) => {
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`categories-${selectedStore.id}`, async () => {
-          console.log('🏷️ StoreProvider: About to call Category.filter with store_id:', selectedStore.id);
-          // Use a high limit to get all categories for the storefront
           const result = await Category.filter({ store_id: selectedStore.id, limit: 1000 });
-          console.log('🏷️ StoreProvider: Category.filter raw result:', result);
-          console.log('🏷️ StoreProvider: Category.filter result type:', typeof result);
-          console.log('🏷️ StoreProvider: Category.filter is array?', Array.isArray(result));
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`labels-${selectedStore.id}`, async () => {
@@ -422,11 +368,7 @@ export const StoreProvider = ({ children }) => {
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`attributes-${selectedStore.id}`, async () => {
-          console.log('🔍 StoreProvider: About to call Attribute.filter with store_id:', selectedStore.id);
           const result = await Attribute.filter({ store_id: selectedStore.id });
-          console.log('🔍 StoreProvider: Attribute.filter raw result:', result);
-          console.log('🔍 StoreProvider: Attribute.filter result type:', typeof result);
-          console.log('🔍 StoreProvider: Attribute.filter is array?', Array.isArray(result));
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`attr-sets-${selectedStore.id}`, async () => {
@@ -445,36 +387,20 @@ export const StoreProvider = ({ children }) => {
       setTaxes(results[0].status === 'fulfilled' ? (results[0].value || []) : []);
       
       const categoriesResult = results[1].status === 'fulfilled' ? (results[1].value || []) : [];
-      console.log('🏷️ StoreProvider: Categories loaded from API:', categoriesResult);
-      console.log('🏷️ StoreProvider: Categories count:', categoriesResult.length);
       
       // Handle the case where API returns nested structure like {categories: [...], pagination: {...}}
       let processedCategories = categoriesResult;
       if (categoriesResult.length === 1 && categoriesResult[0]?.categories && Array.isArray(categoriesResult[0].categories)) {
-        console.log('🏷️ StoreProvider: Detected nested category structure, extracting categories array');
         processedCategories = categoriesResult[0].categories;
-        console.log('🏷️ StoreProvider: Extracted categories:', processedCategories);
-      }
-      
-      console.log('🏷️ StoreProvider: Final processed categories count:', processedCategories.length);
-      if (processedCategories.length > 0) {
-        console.log('🏷️ StoreProvider: Sample processed category:', processedCategories[0]);
       }
       setCategories(processedCategories);
       
       setProductLabels(results[2].status === 'fulfilled' ? (results[2].value || []) : []);
       
       const attrData = results[3].status === 'fulfilled' ? (results[3].value || []) : [];
-      console.log('🔍 StoreProvider: Attributes loaded from API:', attrData);
-      console.log('🔍 StoreProvider: Attributes count:', attrData.length);
-      if (attrData.length > 0) {
-        console.log('🔍 StoreProvider: Sample attribute structure:', attrData[0]);
-      }
       setAttributes(attrData);
       
       const filterableAttrs = attrData.filter(a => a?.is_filterable);
-      console.log('🔍 StoreProvider: Filterable attributes:', filterableAttrs);
-      console.log('🔍 StoreProvider: Filterable attributes count:', filterableAttrs.length);
       setFilterableAttributes(filterableAttrs);
       
       setAttributeSets(results[4].status === 'fulfilled' ? (results[4].value || []) : []);

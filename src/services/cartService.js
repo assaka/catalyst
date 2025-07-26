@@ -20,10 +20,8 @@ class CartService {
     try {
       const { User } = await import('@/api/entities');
       const user = await User.me();
-      console.log('🛒 CartService.getCurrentUser: User found:', user?.id || 'null');
       return user;
     } catch (error) {
-      console.log('🛒 CartService.getCurrentUser: No user (guest mode)');
       return null;
     }
   }
@@ -35,19 +33,15 @@ class CartService {
       
       const params = new URLSearchParams();
       params.append('session_id', sessionId);
-
-      console.log('🛒 CartService.getCart: Fetching cart with session_id:', sessionId);
-      console.log('🛒 CartService.getCart: Full URL:', `${this.endpoint}?${params.toString()}`);
       
       const response = await fetch(`${this.endpoint}?${params.toString()}`);
       
       if (!response.ok) {
-        console.error('🛒 CartService.getCart: HTTP error:', response.status);
+        console.error('CartService.getCart: HTTP error:', response.status);
         return { success: false, cart: null, items: [] };
       }
       
       const result = await response.json();
-      console.log('🛒 CartService.getCart: Response:', result);
       
       if (result.success && result.data) {
         return {
@@ -67,19 +61,12 @@ class CartService {
   // Add item to cart - simplified to always use session_id approach
   async addItem(productId, quantity = 1, price = 0, selectedOptions = [], storeId) {
     try {
-      console.log('🛒 CartService.addItem: Starting with params:', {
-        productId, quantity, price, selectedOptions, storeId
-      });
-
       if (!storeId) {
-        console.error('🛒 CartService.addItem: Store ID is required');
+        console.error('CartService.addItem: Store ID is required');
         throw new Error('Store ID is required');
       }
 
-
       const sessionId = this.getSessionId();
-      console.log('🛒 CartService.addItem: Using session_id approach:', sessionId);
-      console.log('🛒 CartService.addItem: Current localStorage session_id:', localStorage.getItem('cart_session_id'));
 
       const cartData = {
         store_id: storeId,
@@ -90,35 +77,28 @@ class CartService {
         session_id: sessionId // Always use session_id for simplicity
       };
 
-      console.log('🛒 CartService.addItem: Final cart data:', cartData);
-
       const response = await fetch(this.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cartData)
       });
 
-      console.log('🛒 CartService.addItem: Response status:', response.status);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🛒 CartService.addItem: HTTP error:', response.status, errorText);
+        console.error('CartService.addItem: HTTP error:', response.status, errorText);
         return { success: false, error: `HTTP ${response.status}: ${errorText}` };
       }
 
       const result = await response.json();
-      console.log('🛒 CartService.addItem: Response data:', result);
-      console.log('🛒 CartService.addItem: Cart items in response:', result.data?.items);
 
       if (result.success) {
         // Dispatch cart update event
-        console.log('🛒 CartService.addItem: Dispatching cartUpdated event');
         window.dispatchEvent(new CustomEvent('cartUpdated'));
         
         return { success: true, cart: result.data };
       }
 
-      console.error('🛒 CartService.addItem: API returned error:', result.message);
+      console.error('CartService.addItem: API returned error:', result.message);
       return { success: false, error: result.message };
     } catch (error) {
       console.error('🛒 CartService.addItem error:', error);
@@ -142,11 +122,6 @@ class CartService {
         session_id: sessionId // Always use session_id for simplicity
       };
 
-      console.log('🛒 CartService.updateCart: Updating cart:', cartData);
-      console.log('🛒 CartService.updateCart: Items count:', items?.length || 0);
-      console.log('🛒 CartService.updateCart: Items detail:', JSON.stringify(items));
-      console.log('🛒 CartService.updateCart: Session ID:', sessionId);
-
       const response = await fetch(this.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -155,12 +130,11 @@ class CartService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🛒 CartService.updateCart: HTTP error:', response.status, errorText);
+        console.error('CartService.updateCart: HTTP error:', response.status, errorText);
         return { success: false, error: `HTTP ${response.status}: ${errorText}` };
       }
 
       const result = await response.json();
-      console.log('🛒 CartService.updateCart: Response:', result);
 
       if (result.success) {
         // Dispatch cart update event
@@ -201,8 +175,6 @@ class CartService {
         session_id: sessionId
       };
 
-      console.log('🛒 CartService.updateCartExplicit: Explicit update with:', cartData);
-
       const response = await fetch(this.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -211,12 +183,11 @@ class CartService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('🛒 CartService.updateCartExplicit: HTTP error:', response.status, errorText);
+        console.error('CartService.updateCartExplicit: HTTP error:', response.status, errorText);
         return { success: false, error: `HTTP ${response.status}: ${errorText}` };
       }
 
       const result = await response.json();
-      console.log('🛒 CartService.updateCartExplicit: Response:', result);
 
       if (result.success) {
         window.dispatchEvent(new CustomEvent('cartUpdated'));
