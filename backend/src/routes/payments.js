@@ -381,12 +381,8 @@ router.post('/create-checkout', async (req, res) => {
       }
     };
 
-    // Add customer email if provided
-    if (customer_email) {
-      sessionConfig.customer_email = customer_email;
-    }
-
     // Pre-fill customer details if we have shipping address
+    let customerCreated = false;
     if (shipping_address && (shipping_address.full_name || shipping_address.street || shipping_address.address)) {
       // Handle different address formats
       const customerName = shipping_address.full_name || shipping_address.name || '';
@@ -486,11 +482,17 @@ router.post('/create-checkout', async (req, res) => {
           }
           
           sessionConfig.customer = customer.id;
+          customerCreated = true;
+          console.log('Created/found customer:', customer.id);
         } catch (customerError) {
           console.log('Could not create/find customer, using email only:', customerError.message);
-          sessionConfig.customer_email = customer_email;
         }
       }
+    }
+
+    // Add customer email if provided and no customer was created
+    if (customer_email && !customerCreated) {
+      sessionConfig.customer_email = customer_email;
     }
 
     // Use Connect account if available
