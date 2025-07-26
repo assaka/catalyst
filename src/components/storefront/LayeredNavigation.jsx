@@ -224,7 +224,7 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
     return (
         <Card>
             <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center h-5">
                     <CardTitle>Filter By</CardTitle>
                     {hasActiveFilters && (
                         <Button 
