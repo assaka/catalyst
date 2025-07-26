@@ -581,8 +581,21 @@ router.post('/create-checkout', async (req, res) => {
       console.log('Creating checkout session WITHOUT Connect account');
     }
 
+    // Log the session config for debugging
+    console.log('Creating Stripe session with config:', {
+      success_url: sessionConfig.success_url,
+      cancel_url: sessionConfig.cancel_url,
+      metadata: sessionConfig.metadata
+    });
+
     // Create checkout session
     const session = await stripe.checkout.sessions.create(sessionConfig, stripeOptions);
+
+    console.log('Created Stripe session:', {
+      id: session.id,
+      url: session.url,
+      success_url: session.success_url
+    });
 
     res.json({
       success: true,

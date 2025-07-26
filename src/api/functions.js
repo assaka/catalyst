@@ -42,7 +42,7 @@ export const createStripeCheckout = async (checkoutData) => {
     const requestPayload = {
       items: cartItems, // Map cartItems to items
       store_id: store?.id,
-      success_url: `${window.location.origin}/order-success`,
+      success_url: `${window.location.origin}/order-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${window.location.origin}/cart`,
       customer_email: email,
       shipping_address: shippingAddress,
@@ -64,6 +64,13 @@ export const createStripeCheckout = async (checkoutData) => {
     // Ensure we return the data
     const result = response.data || response;
     console.log('Returning result:', result);
+    
+    // Store session ID for fallback on order-success page
+    if (result.data?.session_id) {
+      localStorage.setItem('stripe_session_id', result.data.session_id);
+      console.log('Stored session ID in localStorage:', result.data.session_id);
+    }
+    
     return result;
   } catch (error) {
     console.error('Error creating Stripe checkout:', error);

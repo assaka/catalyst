@@ -11,7 +11,29 @@ import { CheckCircle, Package, MapPin, Calendar, Clock, MessageCircle, Mail, Pho
 export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('order');
-  const sessionId = searchParams.get('session_id');
+  let sessionId = searchParams.get('session_id');
+  
+  // Fallback methods to get session ID
+  if (!sessionId) {
+    // Try to get from URL hash
+    const hash = window.location.hash;
+    if (hash.includes('session_id=')) {
+      sessionId = hash.split('session_id=')[1]?.split('&')[0];
+    }
+    
+    // Try to get from full URL if it contains session_id
+    const fullUrl = window.location.href;
+    if (fullUrl.includes('session_id=')) {
+      sessionId = fullUrl.split('session_id=')[1]?.split('&')[0];
+    }
+    
+    // Try alternative parameter names
+    if (!sessionId) {
+      sessionId = searchParams.get('session') || 
+                 searchParams.get('checkout_session_id') || 
+                 searchParams.get('payment_intent');
+    }
+  }
   
   const [order, setOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
@@ -32,8 +54,20 @@ export default function OrderSuccess() {
       console.log('Loading order by sessionId:', sessionId);
       loadOrderFromSession();
     } else {
-      console.log('No orderId or sessionId found, setting loading to false');
-      setLoading(false);
+      console.log('No orderId or sessionId found');
+      
+      // Try to get session ID from localStorage as final fallback
+      const storedSessionId = localStorage.getItem('stripe_session_id') || 
+                              localStorage.getItem('last_checkout_session');
+      
+      if (storedSessionId) {
+        console.log('Found stored session ID:', storedSessionId);
+        // Try to load order with stored session ID
+        loadOrderFromStoredSession(storedSessionId);
+      } else {
+        console.log('No stored session ID found, setting loading to false');
+        setLoading(false);
+      }
     }
   }, [orderId, sessionId]);
 
@@ -99,6 +133,43 @@ export default function OrderSuccess() {
       }
     } catch (error) {
       console.error('Error loading order from session:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadOrderFromStoredSession = async (storedSessionId) => {
+    try {
+      console.log('Loading order from stored session ID:', storedSessionId);
+      const url = `${import.meta.env.VITE_API_BASE_URL}/api/orders/by-payment-reference/${storedSessionId}`;
+      console.log('Fetching order from stored session:', url);
+      
+      const response = await fetch(url);
+      console.log('Stored session response status:', response.status);
+      
+      const result = await response.json();
+      console.log('Stored session response result:', result);
+      
+      if (response.ok && result.success && result.data) {
+        const orderData = result.data;
+        console.log('Order data found from stored session:', orderData);
+        setOrder(orderData);
+
+        const itemsData = await OrderItem.filter({ order_id: orderData.id });
+        setOrderItems(itemsData);
+
+        const productIds = [...new Set(itemsData.map(item => item.product_id))];
+        const productsData = await Product.filter({ id: { $in: productIds } });
+        const productsMap = {};
+        productsData.forEach(product => {
+          productsMap[product.id] = product;
+        });
+        setOrderProducts(productsMap);
+      } else {
+        console.log('No order found with stored session ID');
+      }
+    } catch (error) {
+      console.error('Error loading order from stored session:', error);
     } finally {
       setLoading(false);
     }
