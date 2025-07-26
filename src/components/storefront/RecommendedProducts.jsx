@@ -10,7 +10,7 @@ import cartService from '@/services/cartService';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
+const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 5000) => {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await apiCall();
@@ -20,15 +20,18 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
                          error.message?.includes('429') ||
                          error.detail?.includes('Rate limit');
       
-      if (isRateLimit && i < maxRetries - 1) {
-        const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 1000;
-        console.warn(`RecommendedProducts: Rate limit hit, waiting ${delayTime.toFixed(0)}ms before retry ${i + 1}/${maxRetries}`);
+      const isCorsError = error.message?.includes('CORS') || 
+                         error.message?.includes('Failed to fetch');
+      
+      if ((isRateLimit || isCorsError) && i < maxRetries - 1) {
+        const delayTime = baseDelay * Math.pow(2, i) + Math.random() * 2000;
+        console.warn(`RecommendedProducts: Network error, waiting ${delayTime.toFixed(0)}ms before retry ${i + 1}/${maxRetries}`, error.message);
         await delay(delayTime);
         continue;
       }
       
-      if (isRateLimit) {
-        console.error('RecommendedProducts: Rate limit exceeded after all retries');
+      if (isRateLimit || isCorsError) {
+        console.error('RecommendedProducts: Network error exceeded after all retries, falling back to empty recommendations');
         return [];
       }
       
