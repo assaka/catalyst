@@ -443,19 +443,27 @@ router.post('/create-checkout', async (req, res) => {
       };
       
       // Try to create a customer with prefilled data for better experience
+      // Note: For Connect accounts, we need to create the customer in the same account context
       if (customer_email && customerName) {
         try {
-          // First check if customer already exists
+          // Determine Stripe options for Connect account
+          const customerStripeOptions = {};
+          if (store.stripe_account_id) {
+            customerStripeOptions.stripeAccount = store.stripe_account_id;
+          }
+          
+          // First check if customer already exists in the appropriate account
           const customers = await stripe.customers.list({
             email: customer_email,
             limit: 1
-          });
+          }, customerStripeOptions);
           
           let customer;
           if (customers.data.length > 0) {
             customer = customers.data[0];
+            console.log('Found existing customer:', customer.id);
           } else {
-            // Create new customer with address
+            // Create new customer with address in the appropriate account
             customer = await stripe.customers.create({
               email: customer_email,
               name: customerName,
@@ -478,12 +486,12 @@ router.post('/create-checkout', async (req, res) => {
                   country: country
                 }
               } : undefined
-            });
+            }, customerStripeOptions);
+            console.log('Created new customer:', customer.id);
           }
           
           sessionConfig.customer = customer.id;
           customerCreated = true;
-          console.log('Created/found customer:', customer.id);
         } catch (customerError) {
           console.log('Could not create/find customer, using email only:', customerError.message);
         }
