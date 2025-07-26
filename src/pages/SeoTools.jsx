@@ -249,10 +249,6 @@ export default function SeoTools() {
 
   const handleSaveSettings = async () => {
     const storeId = getSelectedStoreId();
-      storeId,
-      hasSettings: !!seoSettings,
-      settingsKeys: seoSettings ? Object.keys(seoSettings) : []
-    });
     
     if (!storeId) {
       setFlashMessage({ type: 'error', message: 'No store found. Please refresh the page.' });
