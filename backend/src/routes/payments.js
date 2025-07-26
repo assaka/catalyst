@@ -304,25 +304,13 @@ router.post('/create-checkout', async (req, res) => {
     // Get store currency
     const storeCurrency = store.currency || 'usd';
     
-    // Create line items for Stripe
-    const line_items = items.map(item => {
-      // Calculate base price
-      let basePrice = item.price || 0;
-      
-      // Add custom options to the price
-      let optionsTotal = 0;
-      let optionsDescription = '';
-      
-      if (item.selected_options && item.selected_options.length > 0) {
-        item.selected_options.forEach(option => {
-          optionsTotal += option.price || 0;
-          if (optionsDescription) optionsDescription += ', ';
-          optionsDescription += option.name;
-        });
-      }
-      
-      const totalPrice = basePrice + optionsTotal;
-      const unit_amount = Math.round(totalPrice * 100); // Convert to cents
+    // Create line items for Stripe - separate main product and custom options
+    const line_items = [];
+    
+    items.forEach(item => {
+      // Main product line item
+      const basePrice = item.price || 0;
+      const unit_amount = Math.round(basePrice * 100); // Convert to cents
       
       // Handle different name formats from frontend
       let productName = item.product_name || 
@@ -330,12 +318,8 @@ router.post('/create-checkout', async (req, res) => {
                        item.product?.name || 
                        'Product';
       
-      // Add options to product name if any
-      if (optionsDescription) {
-        productName += ` (${optionsDescription})`;
-      }
-      
-      return {
+      // Add main product line item
+      line_items.push({
         price_data: {
           currency: storeCurrency.toLowerCase(),
           product_data: {
@@ -345,13 +329,40 @@ router.post('/create-checkout', async (req, res) => {
             metadata: {
               product_id: item.product_id?.toString() || '',
               sku: item.sku || item.product?.sku || '',
-              selected_options: JSON.stringify(item.selected_options || [])
+              item_type: 'main_product'
             }
           },
           unit_amount: unit_amount,
         },
         quantity: item.quantity || 1,
-      };
+      });
+      
+      // Add separate line items for each custom option
+      if (item.selected_options && item.selected_options.length > 0) {
+        item.selected_options.forEach(option => {
+          if (option.price && option.price > 0) {
+            const optionUnitAmount = Math.round(option.price * 100); // Convert to cents
+            
+            line_items.push({
+              price_data: {
+                currency: storeCurrency.toLowerCase(),
+                product_data: {
+                  name: `${productName} - ${option.name}`,
+                  description: `Custom option for ${productName}`,
+                  metadata: {
+                    product_id: item.product_id?.toString() || '',
+                    option_name: option.name,
+                    parent_product: productName,
+                    item_type: 'custom_option'
+                  }
+                },
+                unit_amount: optionUnitAmount,
+              },
+              quantity: item.quantity || 1,
+            });
+          }
+        });
+      }
     });
 
     // Build checkout session configuration
@@ -386,7 +397,7 @@ router.post('/create-checkout', async (req, res) => {
       const postal_code = shipping_address.postal_code || shipping_address.zip || '';
       const country = shipping_address.country || 'US';
       
-      // Set up shipping options
+      // Set up shipping options with free shipping
       sessionConfig.shipping_options = [
         {
           shipping_rate_data: {
@@ -395,11 +406,11 @@ router.post('/create-checkout', async (req, res) => {
               amount: 0,
               currency: storeCurrency.toLowerCase(),
             },
-            display_name: 'Standard Shipping',
+            display_name: 'Free Standard Shipping',
             delivery_estimate: {
               minimum: {
                 unit: 'business_day',
-                value: 5,
+                value: 3,
               },
               maximum: {
                 unit: 'business_day',
@@ -408,18 +419,77 @@ router.post('/create-checkout', async (req, res) => {
             },
           },
         },
+        {
+          shipping_rate_data: {
+            type: 'fixed_amount',
+            fixed_amount: {
+              amount: 1500, // $15.00
+              currency: storeCurrency.toLowerCase(),
+            },
+            display_name: 'Express Shipping',
+            delivery_estimate: {
+              minimum: {
+                unit: 'business_day',
+                value: 1,
+              },
+              maximum: {
+                unit: 'business_day',
+                value: 2,
+              },
+            },
+          },
+        },
       ];
       
-      // Pre-fill the shipping address
+      // Enable shipping address collection
       sessionConfig.shipping_address_collection = {
-        allowed_countries: ['US', 'CA', 'GB', 'AU', 'NL', 'DE', 'FR', 'ES', 'IT']
+        allowed_countries: ['US', 'CA', 'GB', 'AU', 'NL', 'DE', 'FR', 'ES', 'IT', 'BE', 'AT', 'CH']
       };
       
-      // Pre-fill customer information
-      if (customerName || line1) {
-        sessionConfig.customer_creation = 'if_required';
-        // Note: Stripe doesn't allow pre-filling address in checkout.sessions.create
-        // But we can set the customer email and they'll need to confirm address
+      // Try to create a customer with prefilled data for better experience
+      if (customer_email && customerName) {
+        try {
+          // First check if customer already exists
+          const customers = await stripe.customers.list({
+            email: customer_email,
+            limit: 1
+          });
+          
+          let customer;
+          if (customers.data.length > 0) {
+            customer = customers.data[0];
+          } else {
+            // Create new customer with address
+            customer = await stripe.customers.create({
+              email: customer_email,
+              name: customerName,
+              address: line1 ? {
+                line1: line1,
+                line2: line2 || undefined,
+                city: city || undefined,
+                state: state || undefined,
+                postal_code: postal_code || undefined,
+                country: country
+              } : undefined,
+              shipping: (customerName && line1) ? {
+                name: customerName,
+                address: {
+                  line1: line1,
+                  line2: line2 || undefined,
+                  city: city || undefined,
+                  state: state || undefined,
+                  postal_code: postal_code || undefined,
+                  country: country
+                }
+              } : undefined
+            });
+          }
+          
+          sessionConfig.customer = customer.id;
+        } catch (customerError) {
+          console.log('Could not create/find customer, using email only:', customerError.message);
+          sessionConfig.customer_email = customer_email;
+        }
       }
     }
 
@@ -563,6 +633,7 @@ async function createOrderFromCheckoutSession(session) {
     // Calculate order totals from session
     const subtotal = session.amount_subtotal / 100; // Convert from cents
     const tax_amount = (session.total_details?.amount_tax || 0) / 100;
+    const shipping_cost = (session.total_details?.amount_shipping || 0) / 100;
     const total_amount = session.amount_total / 100;
     
     // Generate order number
@@ -582,7 +653,7 @@ async function createOrderFromCheckoutSession(session) {
       shipping_address: session.shipping_details?.address || session.customer_details?.address || {},
       subtotal: subtotal,
       tax_amount: tax_amount,
-      shipping_cost: 0, // Add shipping logic if needed
+      shipping_cost: shipping_cost,
       discount_amount: (session.total_details?.amount_discount || 0) / 100,
       total_amount: total_amount,
       currency: session.currency.toUpperCase(),
@@ -596,22 +667,53 @@ async function createOrderFromCheckoutSession(session) {
       coupon_code: coupon_code || null
     });
     
-    // Create order items
+    // Group line items by product and reconstruct order items
+    const productMap = new Map();
+    
     for (const lineItem of lineItems.data) {
       const productMetadata = lineItem.price.product.metadata || {};
-      const selectedOptions = productMetadata.selected_options ? 
-        JSON.parse(productMetadata.selected_options) : [];
+      const itemType = productMetadata.item_type || 'main_product';
+      const productId = productMetadata.product_id;
+      
+      if (itemType === 'main_product') {
+        // Main product line item
+        productMap.set(productId, {
+          product_id: productId,
+          product_name: lineItem.price.product.name,
+          product_sku: productMetadata.sku || '',
+          quantity: lineItem.quantity,
+          unit_price: lineItem.price.unit_amount / 100,
+          base_total: lineItem.amount_total / 100,
+          selected_options: []
+        });
+      } else if (itemType === 'custom_option') {
+        // Custom option line item
+        if (productMap.has(productId)) {
+          const product = productMap.get(productId);
+          product.selected_options.push({
+            name: productMetadata.option_name,
+            price: lineItem.price.unit_amount / 100,
+            total: lineItem.amount_total / 100
+          });
+        }
+      }
+    }
+    
+    // Create order items from grouped data
+    for (const [productId, productData] of productMap) {
+      const optionsTotal = productData.selected_options.reduce((sum, opt) => sum + opt.total, 0);
+      const totalPrice = productData.base_total + optionsTotal;
       
       await OrderItem.create({
         order_id: order.id,
-        product_id: productMetadata.product_id,
-        product_name: lineItem.description,
-        product_sku: productMetadata.sku || '',
-        quantity: lineItem.quantity,
-        unit_price: lineItem.price.unit_amount / 100,
-        total_price: (lineItem.amount_total / 100),
+        product_id: productData.product_id,
+        product_name: productData.product_name,
+        product_sku: productData.product_sku,
+        quantity: productData.quantity,
+        unit_price: (productData.unit_price + (productData.selected_options.reduce((sum, opt) => sum + opt.price, 0))),
+        total_price: totalPrice,
         product_attributes: {
-          selected_options: selectedOptions
+          selected_options: productData.selected_options
         }
       });
     }

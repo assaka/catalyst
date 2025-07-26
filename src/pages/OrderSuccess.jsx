@@ -51,7 +51,7 @@ export default function OrderSuccess() {
   const loadOrderFromSession = async () => {
     try {
       // Use public endpoint to find order by payment reference (session_id)
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders/by-payment-reference/${sessionId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/orders/by-payment-reference/${sessionId}`);
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data) {
