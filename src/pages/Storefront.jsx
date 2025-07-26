@@ -418,27 +418,25 @@ export default function Storefront() {
                           </Link>
                         </h3>
                         <p className="text-sm text-gray-500 mb-3 h-10 overflow-hidden">{product.short_description}</p>
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-baseline gap-2">
-                            {/* FIXED: Inverted price logic to always show lowest price first */}
-                            {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
-                              <>
-                                <p className="font-bold text-red-600 text-3xl">
-                                  {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
-                                </p>
-                                <p className="text-gray-500 line-through text-xl">
-                                  {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
-                                </p>
-                              </>
-                            ) : (
-                              <p className="font-bold text-gray-800 text-lg">
-                                {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
+                        <Badge variant={getStockVariant(product)}>
+                          {getStockLabel(product)}
+                        </Badge>
+                        <div className="py-4 flex items-baseline gap-2">
+                          {/* FIXED: Inverted price logic to always show lowest price first */}
+                          {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
+                            <>
+                              <p className="font-bold text-red-600 text-3xl">
+                                {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                               </p>
-                            )}
-                          </div>
-                          <Badge variant={getStockVariant(product)}>
-                            {getStockLabel(product)}
-                          </Badge>
+                              <p className="text-gray-500 line-through text-xl">
+                                {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="font-bold text-gray-800 text-lg">
+                              {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
+                            </p>
+                          )}
                         </div>
                         <Button asChild className="w-full mt-3 btn-primary" disabled={product.stock_quantity <= 0 && !product.infinite_stock}>
                           <Link to={createPageUrl(`ProductDetail`) + `?slug=${product.slug}`}>
@@ -556,27 +554,25 @@ export default function Storefront() {
                                   </Link>
                                 </h3>
                                 <p className="text-sm text-gray-500 mb-3 h-10 overflow-hidden">{product.short_description}</p>
-                                <div className="flex justify-between items-center mb-4">
-                                    <div className="flex items-baseline gap-2">
-                                      {/* FIXED: Inverted price logic to always show lowest price first */}
-                                      {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
-                                        <>
-                                          <p className="font-bold text-red-600 text-3xl">
-                                            {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
-                                          </p>
-                                          <p className="text-gray-500 line-through text-xl">
-                                            {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
-                                          </p>
-                                        </>
-                                      ) : (
-                                        <p className="font-bold text-gray-800 text-lg">
-                                          {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
+                                <Badge variant={getStockVariant(product)}>
+                                  {getStockLabel(product)}
+                                </Badge>
+                                <div className="flex items-baseline gap-2 my-4">
+                                  {/* FIXED: Inverted price logic to always show lowest price first */}
+                                  {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
+                                      <>
+                                        <p className="font-bold text-red-600 text-3xl">
+                                          {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
                                         </p>
-                                      )}
-                                    </div>
-                                    <Badge variant={getStockVariant(product)}>
-                                        {getStockLabel(product)}
-                                    </Badge>
+                                        <p className="text-gray-500 line-through text-xl">
+                                          {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                        </p>
+                                      </>
+                                  ) : (
+                                      <p className="font-bold text-gray-800 text-lg">
+                                        {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
+                                      </p>
+                                  )}
                                 </div>
                                 <Button asChild className="w-full btn-primary" disabled={product.stock_quantity <= 0 && !product.infinite_stock}>
                                     <Link to={createPageUrl(`ProductDetail`) + `?slug=${product.slug}`}>
