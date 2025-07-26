@@ -17,7 +17,7 @@ const checkStoreOwnership = async (storeId, userEmail, userRole) => {
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id, category_id, status, search, slug, sku } = req.query;
+    const { page = 1, limit = 10, store_id, category_id, status, search, slug, sku, id } = req.query;
     const offset = (page - 1) * limit;
 
 
@@ -69,6 +69,9 @@ router.get('/', async (req, res) => {
     }
     if (sku) {
       where.sku = sku;
+    }
+    if (id) {
+      where.id = id;
     }
     if (search) {
       where[Op.or] = [
