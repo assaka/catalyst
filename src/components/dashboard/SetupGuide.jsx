@@ -36,7 +36,16 @@ export const SetupGuide = ({ store }) => {
                 console.log("Attempting to create new Stripe account");
                 const accountResponse = await createStripeConnectAccount(store.id);
                 console.log("Connect account response:", accountResponse);
-                onboardingUrl = accountResponse.data?.onboarding_url;
+                console.log("Account response data structure:", JSON.stringify(accountResponse.data, null, 2));
+                
+                // Handle both object and array response structures
+                if (Array.isArray(accountResponse.data)) {
+                    onboardingUrl = accountResponse.data[0]?.onboarding_url;
+                    console.log("Extracted onboarding URL from array:", onboardingUrl);
+                } else {
+                    onboardingUrl = accountResponse.data?.onboarding_url;
+                    console.log("Extracted onboarding URL from object:", onboardingUrl);
+                }
             } catch (accountError) {
                 console.log("Account creation failed:", accountError.message);
                 
@@ -49,7 +58,18 @@ export const SetupGuide = ({ store }) => {
                     
                     const linkResponse = await createStripeConnectLink(returnUrl, refreshUrl, store.id);
                     console.log("Connect link response:", linkResponse);
-                    onboardingUrl = linkResponse.data?.url;
+                    console.log("Response data structure:", JSON.stringify(linkResponse.data, null, 2));
+                    
+                    // Handle both object and array response structures
+                    if (Array.isArray(linkResponse.data)) {
+                        // If data is an array, get the first item
+                        onboardingUrl = linkResponse.data[0]?.url;
+                        console.log("Extracted URL from array:", onboardingUrl);
+                    } else {
+                        // If data is an object, use the url property
+                        onboardingUrl = linkResponse.data?.url;
+                        console.log("Extracted URL from object:", onboardingUrl);
+                    }
                 } else {
                     throw accountError; // Re-throw if it's a different error
                 }
