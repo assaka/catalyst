@@ -839,10 +839,10 @@ export default function Checkout() {
                   </div>
                 )}
                 
-                {shippingCost > 0 && (
+                {selectedShippingMethod && (
                   <div className="flex justify-between">
                     <span>Shipping</span>
-                    <span>{currencySymbol}{formatPrice(shippingCost)}</span>
+                    <span>{shippingCost > 0 ? `${currencySymbol}${formatPrice(shippingCost)}` : 'Free'}</span>
                   </div>
                 )}
                 
