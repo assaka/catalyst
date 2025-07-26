@@ -615,8 +615,13 @@ export default function Checkout() {
         sessionId: localStorage.getItem('cart_session_id')
       };
 
+      console.log('Calling createStripeCheckout with:', checkoutData);
       const response = await createStripeCheckout(checkoutData);
       console.log('Checkout response:', response);
+      
+      if (!response) {
+        throw new Error('No response from checkout API');
+      }
       
       // The response is already the data object, not wrapped
       const checkoutUrl = response.checkout_url || response.url;

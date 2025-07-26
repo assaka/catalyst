@@ -17,6 +17,8 @@ export const createPaymentIntent = async (amount, currency = 'usd', metadata = {
 
 export const createStripeCheckout = async (checkoutData) => {
   try {
+    console.log('Creating Stripe checkout with data:', checkoutData);
+    
     // Extract data from checkoutData object
     const {
       cartItems,
@@ -45,10 +47,18 @@ export const createStripeCheckout = async (checkoutData) => {
       delivery_instructions: deliveryComments
     };
 
+    console.log('Request payload:', requestPayload);
+    
     const response = await apiClient.post('payments/create-checkout', requestPayload);
-    return response.data;
+    console.log('API response:', response);
+    
+    // Ensure we return the data
+    const result = response.data || response;
+    console.log('Returning result:', result);
+    return result;
   } catch (error) {
     console.error('Error creating Stripe checkout:', error);
+    console.error('Error response:', error.response);
     throw error;
   }
 };
