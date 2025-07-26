@@ -405,7 +405,13 @@ router.post('/create-checkout', async (req, res) => {
 // @desc    Handle Stripe webhooks
 // @access  Public
 router.post('/webhook', async (req, res) => {
-  console.log('Webhook received');
+  console.log('=== WEBHOOK RECEIVED ===');
+  console.log('Headers:', Object.keys(req.headers));
+  console.log('Body type:', typeof req.body);
+  console.log('Body length:', req.body ? req.body.length : 'undefined');
+  console.log('Request IP:', req.ip);
+  console.log('User-Agent:', req.headers['user-agent']);
+  
   const sig = req.headers['stripe-signature'];
   
   if (!sig) {
