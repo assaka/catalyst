@@ -83,6 +83,7 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [cartItems, setCartItems] = useState([]);
+    const [rateLimitHit, setRateLimitHit] = useState(false);
 
     // Helper function to compare two option arrays
     const areOptionsEqual = (options1, options2) => {
@@ -103,14 +104,30 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
 
     useEffect(() => {
         const fetchData = async () => {
+            // Skip if we've hit rate limits recently
+            if (rateLimitHit) {
+                console.log('RecommendedProducts: Skipping due to recent rate limit');
+                setLoading(false);
+                return;
+            }
+            
             try {
-                await delay(800);
+                // Add progressive delay to spread out API calls
+                const randomDelay = 3000 + Math.random() * 2000; // 3-5 seconds
+                await delay(randomDelay);
                 
                 // Get cart items to exclude from recommendations
-                const cartResult = await cartService.getCart();
-                const cartItems = cartResult.items || [];
-                const cartProductIds = cartItems.map(item => item.product_id);
-                setCartItems(cartProductIds);
+                let cartItems = [];
+                let cartProductIds = [];
+                
+                try {
+                    const cartResult = await cartService.getCart();
+                    cartItems = cartResult.items || [];
+                    cartProductIds = cartItems.map(item => item.product_id);
+                    setCartItems(cartProductIds);
+                } catch (cartError) {
+                    console.warn('RecommendedProducts: Failed to load cart data, continuing without cart exclusions');
+                }
                 
                 let productsToFilter = [];
                 
@@ -118,9 +135,14 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
                 if (providedProducts && Array.isArray(providedProducts)) {
                     productsToFilter = providedProducts;
                 } else {
-                    // Otherwise fetch featured products
-                    const recommended = await retryApiCall(() => Product.filter({ is_featured: true }, '-created_date', 8));
-                    productsToFilter = recommended || [];
+                    // Otherwise fetch featured products with retry logic
+                    try {
+                        const recommended = await retryApiCall(() => Product.filter({ is_featured: true }, '-created_date', 8));
+                        productsToFilter = recommended || [];
+                    } catch (productError) {
+                        console.warn('RecommendedProducts: Failed to load featured products, showing empty recommendations');
+                        productsToFilter = [];
+                    }
                 }
                 
                 // Filter out current product, cart items, and products with same custom options
@@ -159,6 +181,14 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
                 setProducts(filteredProducts.slice(0, 4));
             } catch (error) {
                 console.error("Failed to load recommended products:", error);
+                
+                // Check if this is a rate limiting error
+                if (error.message?.includes('429') || error.message?.includes('Too Many Requests')) {
+                    setRateLimitHit(true);
+                    // Reset rate limit flag after 5 minutes
+                    setTimeout(() => setRateLimitHit(false), 5 * 60 * 1000);
+                }
+                
                 setProducts([]);
             } finally {
                 setLoading(false);
@@ -167,9 +197,11 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
         
         fetchData();
         
-        // Listen for cart updates to refresh recommendations
+        // Listen for cart updates to refresh recommendations (but not if rate limited)
         const handleCartUpdate = () => {
-            fetchData();
+            if (!rateLimitHit) {
+                fetchData();
+            }
         };
         
         window.addEventListener('cartUpdated', handleCartUpdate);
@@ -177,7 +209,7 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
         return () => {
             window.removeEventListener('cartUpdated', handleCartUpdate);
         };
-    }, [currentProduct, providedProducts, selectedOptions]);
+    }, [currentProduct, providedProducts, selectedOptions, rateLimitHit]);
 
     if (loading || products.length === 0) {
         return null;
