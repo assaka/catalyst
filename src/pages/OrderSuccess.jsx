@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Package, MapPin, Calendar, Clock, MessageCircle, Mail, Phone, Truck, User as UserIcon, Download, Share2, Copy, CreditCard, Gift, UserPlus } from 'lucide-react';
 
 export default function OrderSuccess() {
+  console.log('OrderSuccess component loaded - Version: Comprehensive 2.0');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const orderId = searchParams.get('order');
@@ -411,6 +412,9 @@ export default function OrderSuccess() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Success Header */}
         <div className="text-center mb-8">
+          {/* Temporary Debug Info */}
+          <div className="mb-2 text-xs text-gray-500 bg-yellow-100 p-1 rounded">OrderSuccess v2.0 - Comprehensive</div>
+          
           <div className="bg-white rounded-2xl shadow-lg p-8 mb-8">
             <div className="flex items-center justify-center mb-6">
               <div className="relative">

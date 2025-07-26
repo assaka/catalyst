@@ -385,7 +385,8 @@ router.post('/create-checkout', async (req, res) => {
         coupon_code: applied_coupon?.code || coupon_code || '',
         discount_amount: discount_amount?.toString() || '0',
         shipping_method_name: shipping_method?.name || selected_shipping_method || '',
-        shipping_method_id: shipping_method?.id?.toString() || ''
+        shipping_method_id: shipping_method?.id?.toString() || '',
+        shipping_cost: shipping_cost?.toString() || '0'
       }
     };
 
@@ -762,6 +763,21 @@ async function createOrderFromCheckoutSession(session) {
         console.log('Could not retrieve shipping rate:', shippingRateError.message);
       }
     }
+    
+    // Final fallback: check if shipping cost was passed in metadata 
+    if (shipping_cost === 0 && session.metadata?.shipping_cost) {
+      try {
+        const metadataShippingCost = parseFloat(session.metadata.shipping_cost);
+        if (!isNaN(metadataShippingCost) && metadataShippingCost > 0) {
+          shipping_cost = metadataShippingCost;
+          console.log('Using shipping cost from metadata:', shipping_cost);
+        }
+      } catch (metadataError) {
+        console.log('Could not parse shipping cost from metadata:', metadataError.message);
+      }
+    }
+    
+    console.log('Final shipping cost used:', shipping_cost);
     
     // Generate order number
     const timestamp = Date.now();
