@@ -438,14 +438,21 @@ router.post('/webhook', async (req, res) => {
     case 'checkout.session.completed':
       const session = event.data.object;
       console.log('Processing checkout.session.completed for session:', session.id);
+      console.log('Session metadata:', session.metadata);
+      console.log('Session customer details:', session.customer_details);
       
       try {
         // Create order from checkout session
         const order = await createOrderFromCheckoutSession(session);
-        console.log('Order created successfully:', order.order_number);
+        console.log('Order created successfully with ID:', order.id, 'Order Number:', order.order_number);
       } catch (error) {
-        console.error('Error creating order from webhook:', error);
-        console.error('Error stack:', error.stack);
+        console.error('Error creating order from checkout session:', error);
+        console.error('Error details:', {
+          message: error.message,
+          name: error.name,
+          code: error.code,
+          sql: error.sql
+        });
         return res.status(500).json({ error: 'Failed to create order' });
       }
       
@@ -460,7 +467,14 @@ router.post('/webhook', async (req, res) => {
 // Helper function to create order from Stripe checkout session
 async function createOrderFromCheckoutSession(session) {
   try {
-    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code } = session.metadata;
+    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code } = session.metadata || {};
+    
+    // Validate store_id
+    if (!store_id) {
+      throw new Error('store_id not found in session metadata');
+    }
+    
+    console.log('Creating order for store_id:', store_id);
     
     // Get line items from the session
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
@@ -469,19 +483,27 @@ async function createOrderFromCheckoutSession(session) {
     
     // Calculate order totals from session
     const subtotal = session.amount_subtotal / 100; // Convert from cents
-    const tax_amount = session.amount_tax / 100;
+    const tax_amount = (session.total_details?.amount_tax || 0) / 100;
     const total_amount = session.amount_total / 100;
+    
+    // Generate order number
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const order_number = `ORD-${timestamp}-${randomStr}`;
+    
+    console.log('Generated order_number:', order_number);
     
     // Create the order
     const order = await Order.create({
-      store_id: store_id,
+      order_number: order_number,
+      store_id: parseInt(store_id), // Ensure it's a number
       customer_email: session.customer_email || session.customer_details?.email,
       customer_phone: session.customer_details?.phone,
       billing_address: session.customer_details?.address || {},
       shipping_address: session.shipping_details?.address || session.customer_details?.address || {},
       subtotal: subtotal,
       tax_amount: tax_amount,
-      shipping_amount: 0, // Add shipping logic if needed
+      shipping_cost: 0, // Add shipping logic if needed
       discount_amount: (session.total_details?.amount_discount || 0) / 100,
       total_amount: total_amount,
       currency: session.currency.toUpperCase(),
