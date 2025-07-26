@@ -16,8 +16,6 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
     const [priceRange, setPriceRange] = useState([0, 1000]);
 
 
-    if (!attributes || attributes.length === 0) {
-    }
 
     // FIXED: Calculate price range from products considering compare_price
     const { minPrice, maxPrice } = useMemo(() => {

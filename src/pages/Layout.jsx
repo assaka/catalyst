@@ -132,10 +132,7 @@ export default function Layout({ children, currentPageName }) {
     // Add global click detector to debug logout issues
     const globalClickHandler = (e) => {
       if (e.target.textContent?.includes('Logout') || e.target.closest('[data-testid="logout"]')) {
-          target: e.target,
-          textContent: e.target.textContent,
-          classList: e.target.classList?.toString()
-        });
+        // Logout click detected
       }
     };
     
@@ -149,11 +146,6 @@ export default function Layout({ children, currentPageName }) {
   const loadUserAndHandleCredits = async () => {
     try {
       let userData = await retryApiCall(() => User.me());
-        email: userData?.email,
-        role: userData?.role,
-        account_type: userData?.account_type,
-        fullData: JSON.stringify(userData, null, 2)
-      });
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -232,21 +224,6 @@ export default function Layout({ children, currentPageName }) {
   
   // Handle admin pages
   if (isAdminPage) {
-          isAdminPage,
-          isLoading,
-          user: user ? {
-              email: user.email,
-              role: user.role,
-              account_type: user.account_type
-          } : null,
-          conditions: {
-              'user.account_type !== "agency"': user?.account_type !== 'agency',
-              'user.role !== "admin"': user?.role !== 'admin',
-              'user.role !== "store_owner"': user?.role !== 'store_owner',
-              'ALL CONDITIONS': user && (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner')
-          }
-      });
-      
       if (!isLoading && (!user || (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner'))) {
           const destination = user ? "CustomerDashboard" : "Landing";
           navigate(createPageUrl(destination));
@@ -726,11 +703,6 @@ export default function Layout({ children, currentPageName }) {
                     onClick={async (e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                        type: e.type,
-                        target: e.target,
-                        currentTarget: e.currentTarget,
-                        defaultPrevented: e.defaultPrevented
-                      });
                       
                       try {
                         
