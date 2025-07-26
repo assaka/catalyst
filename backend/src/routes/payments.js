@@ -305,16 +305,22 @@ router.post('/create-checkout', async (req, res) => {
     const line_items = items.map(item => {
       const unit_amount = Math.round((item.price + (item.options_total || 0)) * 100); // Convert to cents
       
+      // Handle different name formats from frontend
+      const productName = item.product_name || 
+                         item.name || 
+                         item.product?.name || 
+                         'Product';
+      
       return {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: item.product_name || item.name,
-            description: item.description || undefined,
-            images: item.image_url ? [item.image_url] : undefined,
+            name: productName,
+            description: item.description || item.product?.description || undefined,
+            images: item.image_url ? [item.image_url] : item.product?.image_url ? [item.product.image_url] : undefined,
             metadata: {
               product_id: item.product_id?.toString() || '',
-              sku: item.sku || '',
+              sku: item.sku || item.product?.sku || '',
               selected_options: JSON.stringify(item.selected_options || [])
             }
           },
