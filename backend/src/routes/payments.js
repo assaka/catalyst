@@ -374,15 +374,15 @@ router.post('/create-checkout', async (req, res) => {
     }
 
     // Use Connect account if available
-    const stripeOptions = {};
     // TEMPORARILY DISABLED FOR WEBHOOK TESTING
+    // const stripeOptions = {};
     // if (store.stripe_account_id) {
     //   stripeOptions.stripeAccount = store.stripe_account_id;
     // }
     console.log('Creating checkout session WITHOUT Connect account for webhook testing');
 
     // Create checkout session
-    const session = await stripe.checkout.sessions.create(sessionConfig, stripeOptions);
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     res.json({
       success: true,
