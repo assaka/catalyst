@@ -6,7 +6,7 @@ import { Product } from '@/api/entities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { CheckCircle, Package, MapPin, Calendar, Clock, MessageCircle } from 'lucide-react';
+import { CheckCircle, Package, MapPin, Calendar, Clock, MessageCircle, Mail, Phone, Truck } from 'lucide-react';
 
 export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
@@ -357,7 +357,85 @@ export default function OrderSuccess() {
               </CardContent>
             </Card>
           )}
+
+          {/* Contact Information */}
+          <Card className="material-elevation-1 border-0 mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Mail className="w-5 h-5 mr-2" />
+                Need Help?
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-gray-600 mb-3">
+                If you have any questions about your order or need to make changes, please contact us:
+              </p>
+              <div className="space-y-2">
+                <div className="flex items-center text-sm">
+                  <Mail className="w-4 h-4 mr-2 text-gray-500" />
+                  <span>Email: support@yourstore.com</span>
+                </div>
+                <div className="flex items-center text-sm">
+                  <Phone className="w-4 h-4 mr-2 text-gray-500" />
+                  <span>Phone: 1-800-123-4567</span>
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <p className="text-xs text-blue-800">
+                  <strong>Order Reference:</strong> Please have your order number #{order.order_number} ready when contacting us.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+      </div>
+
+      {/* Next Steps Section */}
+      <div className="mt-12 text-center">
+        <Card className="material-elevation-1 border-0 bg-gradient-to-r from-blue-50 to-purple-50">
+          <CardContent className="p-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">What Happens Next?</h2>
+            <div className="grid md:grid-cols-3 gap-6 text-center">
+              <div>
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Package className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Order Processing</h3>
+                <p className="text-sm text-gray-600">
+                  We'll prepare your order and send you a confirmation email with tracking information.
+                </p>
+              </div>
+              <div>
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Truck className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Shipping</h3>
+                <p className="text-sm text-gray-600">
+                  Your order will be carefully packed and shipped to your delivery address.
+                </p>
+              </div>
+              <div>
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Delivery</h3>
+                <p className="text-sm text-gray-600">
+                  {order.delivery_date 
+                    ? `Expected delivery on ${new Date(order.delivery_date).toLocaleDateString()}`
+                    : "You'll receive your order according to the shipping method selected."
+                  }
+                </p>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-sm text-gray-600">
+                A confirmation email has been sent to your email address with all the details.
+                You can track your order status in your account dashboard.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
