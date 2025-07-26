@@ -128,6 +128,11 @@ export default function ProductDetail() {
             foundProductName: foundProduct.name,
             foundProductSku: foundProduct.sku
           });
+          // Show "not found" instead of wrong product
+          console.log('🚨 Setting product to null due to slug mismatch');
+          setProduct(null);
+          setLoading(false);
+          return;
         }
         
         setProduct(foundProduct);
