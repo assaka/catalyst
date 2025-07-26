@@ -62,104 +62,6 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
   }
 };
 
-// Stripe Connect Banner Component
-function StripeConnectBanner({ store }) {
-  const [stripeStatus, setStripeStatus] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [connecting, setConnecting] = useState(false);
-
-  const checkStatus = async () => {
-    if (!store?.id) return;
-    try {
-      setLoading(true);
-      const { data } = await checkStripeConnectStatus(store.id);
-      setStripeStatus(data);
-    } catch (error) {
-      console.error("Error checking Stripe status:", error);
-      setStripeStatus({ onboardingComplete: false });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleConnect = async () => {
-    try {
-      setConnecting(true);
-      const currentUrl = window.location.origin + window.location.pathname;
-      const returnUrl = `${currentUrl}?stripe_return=true`;
-      const refreshUrl = `${currentUrl}?stripe_refresh=true`;
-      
-      const { data } = await createStripeConnectLink(returnUrl, refreshUrl, store?.id);
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        console.error("No Stripe Connect URL received");
-      }
-    } catch (error) {
-      console.error("Error creating Stripe Connect link:", error);
-    } finally {
-      setConnecting(false);
-    }
-  };
-
-  useEffect(() => {
-    checkStatus();
-  }, []);
-
-  // Don't show banner if Stripe is already connected
-  if (loading || stripeStatus?.onboardingComplete) {
-    return null;
-  }
-
-  return (
-    <Card className="mb-6 border-l-4 border-l-orange-500 bg-gradient-to-r from-orange-50 to-yellow-50">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-              <CreditCard className="w-6 h-6 text-orange-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Connect Stripe to Accept Payments
-              </h3>
-              <p className="text-gray-600">
-                Set up your Stripe account to start accepting payments from customers. This is required to process orders.
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button variant="outline" onClick={checkStatus} disabled={loading}>
-              {loading ? (
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4 mr-2" />
-              )}
-              Refresh Status
-            </Button>
-            <Button 
-              onClick={handleConnect} 
-              disabled={connecting}
-              className="bg-orange-600 hover:bg-orange-700 text-white"
-            >
-              {connecting ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Connecting...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Connect Stripe
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 export default function Dashboard() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -176,7 +78,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stripeSuccessMessage, setStripeSuccessMessage] = useState('');
-  const [checkingStripe, setCheckingStripe] = useState(false);
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
   const navigate = useNavigate();
 
@@ -246,26 +147,6 @@ export default function Dashboard() {
 
   }, []);
 
-  // Manual completion function
-  const handleManualStripeCheck = async () => {
-    try {
-      setCheckingStripe(true);
-      setError(null); // Clear previous errors
-      setStripeSuccessMessage(''); // Clear previous success messages
-      const { data } = await checkStripeConnectStatus(selectedStore?.id);
-      if (data.onboardingComplete) {
-        setStripeSuccessMessage('Stripe account verified and connected successfully!');
-        loadDashboardData();
-      } else {
-        setError('Stripe connection is not yet complete. Please finish the onboarding process.');
-      }
-    } catch (err) {
-      console.error("Error checking Stripe status:", err);
-      setError('Failed to check Stripe connection status.');
-    } finally {
-      setCheckingStripe(false);
-    }
-  };
 
   const loadDashboardData = async () => {
     try {
@@ -331,19 +212,6 @@ export default function Dashboard() {
             <RefreshCw className="w-4 h-4 mr-2" />
             Try Again
           </Button>
-          <Button variant="outline" onClick={handleManualStripeCheck} disabled={checkingStripe}>
-            {checkingStripe ? (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                Checking...
-              </>
-            ) : (
-              <>
-                <CreditCard className="w-4 h-4 mr-2" />
-                Check Stripe Status
-              </>
-            )}
-          </Button>
         </div>
       </div>
     );
@@ -371,13 +239,6 @@ export default function Dashboard() {
       link: "Settings",
       color: "bg-purple-500"
     },
-    {
-      title: "Payment Setup",
-      description: "Connect Stripe for payments",
-      icon: CreditCard,
-      link: "Settings", // Assuming Settings page has payment setup
-      color: "bg-orange-500"
-    }
   ];
 
   return (
@@ -395,24 +256,6 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                onClick={handleManualStripeCheck}
-                disabled={checkingStripe}
-                className="material-ripple"
-              >
-                {checkingStripe ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                    Checking...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-4 h-4 mr-2" />
-                    Check Stripe Status
-                  </>
-                )}
-              </Button>
               <Link to={createPageUrl("Products")}>
                 <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1">
                   <Plus className="w-4 h-4 mr-2" />
@@ -448,8 +291,6 @@ export default function Dashboard() {
             </div>
         )}
 
-        {/* Stripe Connect Banner */}
-        <StripeConnectBanner store={store} />
 
         {/* Setup Guide Component */}
         <SetupGuide store={store} />

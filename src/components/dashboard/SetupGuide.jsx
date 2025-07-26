@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle, CreditCard, RefreshCw } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus } from '@/api/functions';
 
 export const SetupGuide = ({ store }) => {
     const navigate = useNavigate();
+    const [connecting, setConnecting] = useState(false);
 
     if (!store) {
         return null;
@@ -17,34 +18,41 @@ export const SetupGuide = ({ store }) => {
     const isStripeConnected = store.stripe_connect_onboarding_complete === true;
 
     const handleConnectStripe = async () => {
-        try {
-            if (!store?.id) {
-                console.error("Store ID is required");
-                return;
-            }
+        if (!store?.id) {
+            console.error("Store ID is required");
+            return;
+        }
 
-            // First check if store already has a Stripe account
-            const status = await checkStripeConnectStatus(store.id);
-            console.log("Stripe status:", status);
+        setConnecting(true);
+        
+        try {
+            console.log("Starting Stripe Connect flow for store:", store.id);
             
+            // Try to create account first - if it exists, we'll get an error we can handle
             let onboardingUrl;
             
-            if (status.data?.connected && status.data?.account_id) {
-                // Account exists, create onboarding link
-                console.log("Existing account found, creating onboarding link");
-                const currentUrl = window.location.origin + window.location.pathname;
-                const returnUrl = `${currentUrl}?stripe_return=true`;
-                const refreshUrl = `${currentUrl}?stripe_refresh=true`;
-                
-                const linkResponse = await createStripeConnectLink(returnUrl, refreshUrl, store.id);
-                console.log("Connect link response:", linkResponse);
-                onboardingUrl = linkResponse.data?.url;
-            } else {
-                // No account exists, create new account
-                console.log("No account found, creating new account");
+            try {
+                // First try to create a new account
+                console.log("Attempting to create new Stripe account");
                 const accountResponse = await createStripeConnectAccount(store.id);
                 console.log("Connect account response:", accountResponse);
                 onboardingUrl = accountResponse.data?.onboarding_url;
+            } catch (accountError) {
+                console.log("Account creation failed:", accountError.message);
+                
+                // If account already exists, try to create an onboarding link
+                if (accountError.message?.includes("already exists")) {
+                    console.log("Account exists, creating onboarding link");
+                    const currentUrl = window.location.origin + window.location.pathname;
+                    const returnUrl = `${currentUrl}?stripe_return=true`;
+                    const refreshUrl = `${currentUrl}?stripe_refresh=true`;
+                    
+                    const linkResponse = await createStripeConnectLink(returnUrl, refreshUrl, store.id);
+                    console.log("Connect link response:", linkResponse);
+                    onboardingUrl = linkResponse.data?.url;
+                } else {
+                    throw accountError; // Re-throw if it's a different error
+                }
             }
 
             console.log("Final onboarding URL:", onboardingUrl);
@@ -53,9 +61,13 @@ export const SetupGuide = ({ store }) => {
                 window.location.href = onboardingUrl;
             } else {
                 console.error("Failed to get Stripe onboarding URL");
+                alert("Unable to connect to Stripe. Please try again or contact support.");
             }
         } catch (error) {
             console.error("Error setting up Stripe connect:", error);
+            alert("An error occurred while setting up Stripe. Please try again.");
+        } finally {
+            setConnecting(false);
         }
     };
 
@@ -107,8 +119,25 @@ export const SetupGuide = ({ store }) => {
                             variant={isStripeConnected ? "secondary" : "default"} 
                             size="sm" 
                             onClick={handleConnectStripe}
+                            disabled={connecting}
+                            className={!isStripeConnected ? "bg-orange-600 hover:bg-orange-700 text-white" : ""}
                         >
-                            {isStripeConnected ? 'Connected' : 'Connect Stripe'}
+                            {connecting ? (
+                                <>
+                                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                    Connecting...
+                                </>
+                            ) : isStripeConnected ? (
+                                <>
+                                    <CheckCircle className="w-4 h-4 mr-2" />
+                                    Connected
+                                </>
+                            ) : (
+                                <>
+                                    <CreditCard className="w-4 h-4 mr-2" />
+                                    Connect Stripe
+                                </>
+                            )}
                         </Button>
                     </li>
                 </ul>
