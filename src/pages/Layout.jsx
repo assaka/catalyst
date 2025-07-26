@@ -132,7 +132,6 @@ export default function Layout({ children, currentPageName }) {
     // Add global click detector to debug logout issues
     const globalClickHandler = (e) => {
       if (e.target.textContent?.includes('Logout') || e.target.closest('[data-testid="logout"]')) {
-        console.log('🎯 Global click detected on logout element!', {
           target: e.target,
           textContent: e.target.textContent,
           classList: e.target.classList?.toString()
@@ -150,7 +149,6 @@ export default function Layout({ children, currentPageName }) {
   const loadUserAndHandleCredits = async () => {
     try {
       let userData = await retryApiCall(() => User.me());
-      console.log('🔍 Layout.jsx: User data loaded:', {
         email: userData?.email,
         role: userData?.role,
         account_type: userData?.account_type,
@@ -175,7 +173,6 @@ export default function Layout({ children, currentPageName }) {
       
       setUser(userData);
     } catch (error) {
-      console.log("User not authenticated");
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -207,7 +204,6 @@ export default function Layout({ children, currentPageName }) {
         }
       }
     } catch (error) {
-      console.log("GTM not configured", error);
     }
   };
 
@@ -236,7 +232,6 @@ export default function Layout({ children, currentPageName }) {
   
   // Handle admin pages
   if (isAdminPage) {
-      console.log('🔍 Layout.jsx: Admin page access check:', {
           isAdminPage,
           isLoading,
           user: user ? {
@@ -254,7 +249,6 @@ export default function Layout({ children, currentPageName }) {
       
       if (!isLoading && (!user || (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner'))) {
           const destination = user ? "CustomerDashboard" : "Landing";
-          console.log('❌ Layout.jsx: Unauthorized access to admin page, redirecting to:', destination);
           navigate(createPageUrl(destination));
           return (
               <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
@@ -570,15 +564,10 @@ export default function Layout({ children, currentPageName }) {
                     <span>Billing</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => {
-                    console.log('🚨🚨🚨 MOBILE LOGOUT CLICKED 🚨🚨🚨');
-                    console.log('📱 Mobile logout handler triggered');
                     try {
-                        console.log('📱 About to call Auth.logout()...');
                         await Auth.logout();
-                        console.log('✅ Mobile logout completed, redirecting...');
                         // Add a small delay to ensure all cleanup is complete
                         setTimeout(() => {
-                            console.log('📱 Mobile redirect to /auth');
                             window.location.href = '/auth';
                         }, 100);
                     } catch (error) {
@@ -734,15 +723,9 @@ export default function Layout({ children, currentPageName }) {
                   <button
                     data-testid="logout"
                     className="w-full flex items-center px-2 py-1.5 text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground"
-                    onMouseEnter={() => console.log('🐭 Desktop logout hover detected')}
-                    onMouseDown={() => console.log('🖱️ Desktop logout mouse down')}
-                    onMouseUp={() => console.log('🖱️ Desktop logout mouse up')}
                     onClick={async (e) => {
-                      console.log('🚨🚨🚨 DESKTOP LOGOUT CLICKED 🚨🚨🚨');
                       e.preventDefault();
                       e.stopPropagation();
-                      console.log('🖥️ Desktop logout handler triggered', e);
-                      console.log('🔍 Event details:', {
                         type: e.type,
                         target: e.target,
                         currentTarget: e.currentTarget,
@@ -750,33 +733,17 @@ export default function Layout({ children, currentPageName }) {
                       });
                       
                       try {
-                        console.log('🖥️ About to call Auth.logout()...');
-                        console.log('🚫 DISABLING ALL REDIRECTS FOR DEBUGGING');
                         
                         await Auth.logout();
                         
-                        console.log('✅ Desktop logout completed!');
-                        console.log('🔍 LOGOUT VERIFICATION - Final state check:');
-                        console.log('- isLoggedOut:', apiClient.isLoggedOut);
-                        console.log('- hasToken:', !!apiClient.token);
-                        console.log('- tokenInStorage:', localStorage.getItem('auth_token'));
-                        console.log('- logoutFlagInStorage:', localStorage.getItem('user_logged_out'));
-                        console.log('🎉 LOGOUT PROCESS COMPLETE - REDIRECTING IN 2 SECONDS');
                         
                         setTimeout(() => {
-                          console.log('🖥️ Redirecting to /auth...');
                           window.location.href = '/auth';
                         }, 2000);
                         
                       } catch (error) {
                         console.error('❌ Desktop logout error:', error);
                         console.error('❌ Error stack:', error.stack);
-                        console.log('🔍 Error occurred, checking state anyway:');
-                        console.log('- isLoggedOut:', apiClient.isLoggedOut);
-                        console.log('- hasToken:', !!apiClient.token);
-                        console.log('- tokenInStorage:', localStorage.getItem('auth_token'));
-                        console.log('- logoutFlagInStorage:', localStorage.getItem('user_logged_out'));
-                        console.log('🚫 NO REDIRECT ON ERROR FOR DEBUGGING');
                       }
                     }}
                   >

@@ -18,7 +18,6 @@ import { formatPrice, safeToFixed } from '@/utils/priceUtils';
 export default function MiniCart({ cartUpdateTrigger }) {
   const { store, settings } = useStore();
   
-  console.log('🚨 MINICART DEBUG: Component rendered, cartUpdateTrigger:', cartUpdateTrigger);
   
   // Get currency symbol from settings
   const currencySymbol = settings?.currency_symbol || '$';
@@ -30,7 +29,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   // Load cart on mount and when triggered
   useEffect(() => {
-    console.log('🚨 MINICART DEBUG: useEffect triggered, loading cart...');
     loadCart();
   }, [cartUpdateTrigger]);
 
@@ -75,10 +73,8 @@ export default function MiniCart({ cartUpdateTrigger }) {
       
       // Use simplified cart service
       const cartResult = await cartService.getCart();
-      console.log('🔍 DEBUG: Cart service result:', cartResult);
       
       if (cartResult.success && cartResult.items) {
-        console.log('🔍 DEBUG: Cart items found:', cartResult.items.length);
         setCartItems(cartResult.items);
         
         // Load product details for cart items
@@ -106,7 +102,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
           setCartProducts(productDetails);
         }
       } else {
-        console.log('🔍 DEBUG: No cart items or cart service failed');
         setCartItems([]);
         setCartProducts({});
       }

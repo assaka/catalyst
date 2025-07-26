@@ -84,7 +84,6 @@ export default function Stores() {
         owner_email: user.email
       };
       
-      console.log('Creating store with data:', storeRequest);
       
       await Store.create(storeRequest);
 

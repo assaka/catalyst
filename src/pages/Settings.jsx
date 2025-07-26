@@ -84,14 +84,11 @@ export default function Settings() {
       }
       
       const user = await retryApiCall(() => User.me());
-      console.log('Current user:', user.email);
       
       // Use selectedStore data directly - no need for force refresh
       const storeData = selectedStore;
-      console.log('Using store data from context:', storeData.name);
       
       // Use fresh store data
-      console.log('Raw store settings from database:', storeData.settings);
       
       // CRITICAL FIX: Use explicit checks instead of nullish coalescing with defaults
       // This ensures that false values are preserved from the database
@@ -186,7 +183,6 @@ export default function Settings() {
         }
       });
       
-      console.log('Loaded settings with proper false values preserved:', {
         enable_inventory: settings.hasOwnProperty('enable_inventory') ? settings.enable_inventory : true,
         enable_reviews: settings.hasOwnProperty('enable_reviews') ? settings.enable_reviews : true,
         show_category_in_breadcrumb: settings.hasOwnProperty('show_category_in_breadcrumb') ? settings.show_category_in_breadcrumb : true,
@@ -259,7 +255,6 @@ export default function Settings() {
   };
 
   const handleSettingsChange = (key, value) => {
-    // Removed specific console.log for individual switches to align with outline pattern
     setStore((prev) => ({
       ...prev, 
       settings: {
@@ -319,7 +314,6 @@ export default function Settings() {
     setSaving(true);
     
     try {
-      console.log('Current store settings before save:', store.settings);
       
       // Create a more explicit payload to ensure all boolean fields are included
       const settingsPayload = {
@@ -394,11 +388,6 @@ export default function Settings() {
         settings: settingsPayload
       };
 
-      console.log('🔍 DEBUG Settings - Saving settings payload with explicit fields:', payload);
-      console.log('🔍 DEBUG Settings - Settings object type:', typeof payload.settings);
-      console.log('🔍 DEBUG Settings - Settings object sample:', JSON.stringify(payload.settings).substring(0, 500));
-      console.log('🔍 DEBUG Settings - hide_currency_category value being saved:', payload.settings.hide_currency_category);
-      console.log('🔍 DEBUG Settings - hide_quantity_selector value being saved:', payload.settings.hide_quantity_selector);
       
       // Ensure settings is a proper object
       if (typeof payload.settings === 'string') {
@@ -410,21 +399,15 @@ export default function Settings() {
       
       // Handle array response from API client
       const result = Array.isArray(apiResult) ? apiResult[0] : apiResult;
-      console.log('🔍 DEBUG Settings - Save result:', result);
-      console.log('🔍 DEBUG Settings - Result settings:', result?.settings);
-      console.log('🔍 DEBUG Settings - API returned hide_currency_category:', result?.settings?.hide_currency_category);
-      console.log('🔍 DEBUG Settings - API returned hide_quantity_selector:', result?.settings?.hide_quantity_selector);
       
       // Update our local store state with the response data
       if (result && result.settings) {
-        console.log('✅ Settings confirmed in response, updating local state');
         setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
         
         // Clear ALL StoreProvider cache to force reload of settings
         try {
           localStorage.removeItem('storeProviderCache');
           sessionStorage.removeItem('storeProviderCache');
-          console.log('Cleared all store cache after saving settings');
           
           // Force reload of the page after a short delay to ensure settings are applied
           setTimeout(() => {
@@ -462,7 +445,6 @@ export default function Settings() {
           }
         });
         
-        console.log('✅ Local store state updated with fresh settings');
       } else {
         console.warn('⚠️ Settings not found in response');
         setFlashMessage({ type: 'warning', message: 'Settings saved but response unclear. Please refresh to verify.' });

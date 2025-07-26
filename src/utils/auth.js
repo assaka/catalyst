@@ -11,17 +11,13 @@ import apiClient from '@/api/client';
  */
 export const handleLogout = async () => {
   try {
-    console.log('🔄 Starting logout process...');
     
     // Call the logout API which handles backend logging and token cleanup
     const result = await Auth.logout();
-    console.log('✅ User.logout() result:', result);
     
-    console.log('✅ Logout completed successfully');
     
     // Redirect to auth page
     const authUrl = createPageUrl('Auth');
-    console.log('🔄 Redirecting to:', authUrl);
     window.location.href = authUrl;
     
   } catch (error) {
@@ -29,7 +25,6 @@ export const handleLogout = async () => {
     
     // Even if logout fails, redirect to auth page for security
     const authUrl = createPageUrl('Auth');
-    console.log('🔄 Redirecting to auth page due to error:', authUrl);
     window.location.href = authUrl;
   }
 };
@@ -40,12 +35,10 @@ export const handleLogout = async () => {
  */
 export const handleLogoutWithNavigate = async (navigate) => {
   try {
-    console.log('🔄 Starting logout process...');
     
     // Call the logout API which handles backend logging and token cleanup
     await Auth.logout();
     
-    console.log('✅ Logout completed successfully');
     
     // Navigate to auth page using React Router
     navigate('/auth');

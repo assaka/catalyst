@@ -24,7 +24,6 @@ export const StoreSelectionProvider = ({ children }) => {
   // Listen for logout events and reset context
   useEffect(() => {
     const handleLogout = () => {
-      console.log('🏪 StoreSelection: User logged out, resetting context');
       setAvailableStores([]);
       setSelectedStore(null);
       setLoading(true);
@@ -40,7 +39,6 @@ export const StoreSelectionProvider = ({ children }) => {
       const stores = await Store.findAll();
       const storesArray = Array.isArray(stores) ? stores : [];
       
-      console.log('🏪 StoreSelection: Loaded stores:', storesArray);
       
       setAvailableStores(storesArray);
       
@@ -66,7 +64,6 @@ export const StoreSelectionProvider = ({ children }) => {
   };
 
   const selectStore = (store) => {
-    console.log('🏪 StoreSelection: Selecting store:', store);
     setSelectedStore(store);
     localStorage.setItem('selectedStoreId', store.id);
     

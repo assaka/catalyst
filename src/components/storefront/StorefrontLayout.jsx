@@ -115,7 +115,6 @@ export default function StorefrontLayout({ children }) {
                 }
 
             } catch (error) {
-                console.log("StorefrontLayout: Failed to fetch initial data", error);
                 setUser(null);
                 setUserLoading(false);
             }

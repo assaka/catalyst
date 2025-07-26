@@ -185,7 +185,6 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     setLoading(true);
     
     try {
-      console.log("Submitting form data:", formData);
       await onSubmit(formData);
     } catch (error) {
       console.error("Error submitting form:", error);

@@ -9,7 +9,6 @@ if (typeof window !== 'undefined' && !window.dataLayer) {
 
 export const pushToDataLayer = (event) => {
   if (typeof window !== 'undefined' && window.dataLayer) {
-    console.log('Pushing to dataLayer:', event);
     window.dataLayer.push(event);
     
     // Also dispatch a custom event for debugging
@@ -84,7 +83,6 @@ export const trackActivity = async (activityType, data = {}) => {
     
     // Only track if we have store_id to prevent validation errors
     if (storeId) {
-      console.log('Tracking activity:', activityData);
       await CustomerActivity.create(activityData);
     } else {
       console.warn('Skipping activity tracking - no store_id available');
@@ -125,7 +123,6 @@ export default function DataLayerManager() {
 
     // Add event listener for debugging
     const handleDataLayerPush = (e) => {
-      console.log('DataLayer Event:', e.detail);
     };
     
     window.addEventListener('dataLayerPush', handleDataLayerPush);

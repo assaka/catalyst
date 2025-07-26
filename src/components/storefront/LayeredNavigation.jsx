@@ -15,16 +15,8 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
     const [selectedFilters, setSelectedFilters] = useState({});
     const [priceRange, setPriceRange] = useState([0, 1000]);
 
-    // Debug logging
-    console.log('🔍 LayeredNavigation: Props received:', {
-        productsCount: products?.length || 0,
-        attributesCount: attributes?.length || 0,
-        sampleProduct: products?.[0],
-        sampleAttribute: attributes?.[0]
-    });
 
     if (!attributes || attributes.length === 0) {
-        console.log('⚠️ LayeredNavigation: No attributes received - this explains why no filters show up');
     }
 
     // FIXED: Calculate price range from products considering compare_price
@@ -50,7 +42,6 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
             maxPrice: Math.ceil(Math.max(...prices))
         };
         
-        console.log('🔍 LayeredNavigation: Price range calculated:', calculatedRange);
         return calculatedRange;
     }, [products]);
 
@@ -68,14 +59,6 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
             filtersToSend.priceRange = priceRange;
         }
         
-        console.log('🔍 LayeredNavigation: Sending filters:', {
-            selectedFilters,
-            priceRange,
-            minPrice,
-            maxPrice,
-            isPriceRangeActive: priceRange[0] !== minPrice || priceRange[1] !== maxPrice,
-            filtersToSend
-        });
         
         onFilterChange(filtersToSend);
     }, [selectedFilters, priceRange, minPrice, maxPrice, onFilterChange]);
@@ -98,19 +81,12 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
 
     // Clear all filters function
     const clearAllFilters = () => {
-        console.log('🔍 LayeredNavigation: Clearing all filters');
         setSelectedFilters({});
         setPriceRange([minPrice, maxPrice]);
     };
 
     // Handle price range change with debugging
     const handlePriceRangeChange = (newRange) => {
-        console.log('🔍 LayeredNavigation: Price range changed:', {
-            oldRange: priceRange,
-            newRange,
-            minPrice,
-            maxPrice
-        });
         setPriceRange(newRange);
     };
 
@@ -121,24 +97,12 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
     // FIXED: Extract ALL attribute values from products including all options
     const filterOptions = useMemo(() => {
         if (!products || !attributes) {
-            console.log('🔍 LayeredNavigation: No products or attributes for filter options');
             return {};
         }
         
-        console.log('🔍 LayeredNavigation: Building filter options from:', {
-            productsCount: products.length,
-            attributesCount: attributes.length,
-            filterableAttributes: attributes.filter(a => a.is_filterable)
-        });
         
         const options = {};
         attributes.forEach(attr => {
-            console.log(`🔍 LayeredNavigation: Processing attribute:`, {
-                name: attr.name,
-                code: attr.code,
-                is_filterable: attr.is_filterable,
-                options: attr.options
-            });
             
             if (attr.is_filterable) {
                 const values = new Set();
@@ -164,16 +128,7 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                             break;
                         }
                     }
-                    
-                    if (attr.code === 'color' || attr.name === 'color' || attr.name?.toLowerCase() === 'color') {
-                        console.log(`🎨 Color attribute value for product ${p.name}:`, {
-                            possibleKeys,
-                            attributeValue,
-                            productAttributes,
-                            productDirectProps: Object.keys(p).filter(k => k.toLowerCase().includes('color'))
-                        });
-                    }
-                    
+
                     if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
                         if (Array.isArray(attributeValue)) {
                             attributeValue.forEach(val => {
@@ -199,12 +154,10 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                         name: attr.name,
                         values: Array.from(values).sort()
                     };
-                    console.log(`🔍 LayeredNavigation: Found ${values.size} values for attribute ${attr.name}:`, Array.from(values));
                 }
             }
         });
         
-        console.log('🔍 LayeredNavigation: Final filter options:', options);
         return options;
     }, [products, attributes]);
 

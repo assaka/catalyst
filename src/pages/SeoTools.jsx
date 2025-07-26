@@ -152,13 +152,10 @@ export default function SeoTools() {
 
       setStore(selectedStore);
 
-        console.log('🔍 Loading SEO settings for store:', selectedStore.id);
         const settingsData = await SeoSetting.filter({ store_id: selectedStore.id });
-        console.log('📊 Raw SEO settings from API:', settingsData);
 
         if (settingsData && settingsData.length > 0) {
           const loadedSettings = settingsData[0];
-          console.log('🔄 Processing loaded SEO settings:', loadedSettings);
           
           const newSettings = {
             ...prev,
@@ -170,10 +167,8 @@ export default function SeoTools() {
             store_id: selectedStore.id
           };
           
-          console.log('✅ Final SEO settings being set:', newSettings);
           setSeoSettings(newSettings);
         } else {
-          console.log('⚠️ No existing SEO settings found, using defaults');
           setSeoSettings(prev => ({
             ...prev,
             store_id: selectedStore.id
@@ -254,23 +249,19 @@ export default function SeoTools() {
 
   const handleSaveSettings = async () => {
     const storeId = getSelectedStoreId();
-    console.log('🔍 SEO settings save DEBUG:', {
       storeId,
       hasSettings: !!seoSettings,
       settingsKeys: seoSettings ? Object.keys(seoSettings) : []
     });
     
     if (!storeId) {
-      console.log('❌ SEO settings save failed: no store ID');
       setFlashMessage({ type: 'error', message: 'No store found. Please refresh the page.' });
       return;
     }
 
     setSaving(true);
     try {
-      console.log('🔄 Loading existing SEO settings for store:', storeId);
       const existingSettings = await SeoSetting.filter({ store_id: storeId });
-      console.log('📊 Existing SEO settings found:', existingSettings?.length || 0);
 
       const payload = {
         default_meta_title: seoSettings.default_meta_title || '',
@@ -293,20 +284,14 @@ export default function SeoTools() {
         store_id: storeId
       };
 
-      console.log('📤 SEO settings payload:', payload);
 
       let result;
       if (existingSettings && existingSettings.length > 0) {
-        console.log('🔄 Updating existing SEO settings with ID:', existingSettings[0].id);
         result = await SeoSetting.update(existingSettings[0].id, payload);
-        console.log('✅ SEO settings updated successfully');
       } else {
-        console.log('✨ Creating new SEO settings');
         result = await SeoSetting.create(payload);
-        console.log('✅ SEO settings created successfully');
       }
 
-      console.log('🎉 SEO save result:', result);
       setFlashMessage({ type: 'success', message: 'Settings saved! The page will now reload to apply changes.' });
 
       setTimeout(() => {

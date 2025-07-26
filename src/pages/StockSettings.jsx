@@ -66,9 +66,6 @@ export default function StockSettings() {
       
       const storeSettings = selectedStore.settings || {};
       
-      console.log('🔍 DEBUG StockSettings - Loading store settings:', JSON.stringify(storeSettings, null, 2));
-      console.log('🔍 DEBUG StockSettings - Stock settings from DB:', storeSettings.stock_settings);
-      console.log('🔍 DEBUG StockSettings - in_stock_label from DB:', storeSettings.stock_settings?.in_stock_label);
       
       setSettings({
         id: selectedStore.id,
@@ -123,21 +120,13 @@ export default function StockSettings() {
         }
       };
 
-      console.log('🔍 DEBUG StockSettings - Saving payload:', JSON.stringify(payload, null, 2));
-      console.log('🔍 DEBUG StockSettings - in_stock_label being saved:', settings.in_stock_label);
-      console.log('🔍 DEBUG StockSettings - Stock settings object:', payload.settings.stock_settings);
 
       const result = await retryApiCall(() => Store.update(storeId, payload));
-      console.log('🔍 DEBUG StockSettings - Save result:', result);
-      console.log('🔍 DEBUG StockSettings - Save result settings:', result?.[0]?.settings);
-      console.log('🔍 DEBUG StockSettings - Save result stock_settings:', result?.[0]?.settings?.stock_settings);
-      console.log('🔍 DEBUG StockSettings - Save result in_stock_label:', result?.[0]?.settings?.stock_settings?.in_stock_label);
       
       // Clear any potential cache
       try {
         localStorage.removeItem('storeProviderCache');
         sessionStorage.removeItem('storeProviderCache');
-        console.log('🔍 DEBUG StockSettings - Cleared cache after save');
       } catch (e) {
         console.warn('Failed to clear cache:', e);
       }

@@ -30,14 +30,12 @@ class CartService {
   async getCart() {
     try {
       const sessionId = this.getSessionId();
-      console.log('🚨 CART SERVICE DEBUG: getCart called, Session ID:', sessionId);
       
       const params = new URLSearchParams();
       params.append('session_id', sessionId);
       params.append('_t', Date.now()); // Cache buster
       
       const fullUrl = `${this.endpoint}?${params.toString()}`;
-      console.log('🚨 CART SERVICE DEBUG: Full API URL:', fullUrl);
       
       const response = await fetch(fullUrl, {
         cache: 'no-cache',
@@ -45,7 +43,6 @@ class CartService {
           'Cache-Control': 'no-cache'
         }
       });
-      console.log('🚨 CART SERVICE DEBUG: API Response Status:', response.status);
       
       if (!response.ok) {
         console.error('🚨 CART SERVICE ERROR: HTTP error:', response.status);
@@ -53,7 +50,6 @@ class CartService {
       }
       
       const result = await response.json();
-      console.log('🚨 CART SERVICE DEBUG: API Response Data:', result);
       
       if (result.success && result.data) {
         return {

@@ -30,7 +30,11 @@
       "Bash(npm run migrate:*)",
       "Bash(cd backend)",
       "Bash(git revert:*)",
-      "WebFetch(domain:catalyst-pearl.vercel.app)"
+      "WebFetch(domain:catalyst-pearl.vercel.app)",
+      "Bash(sed:*)",
+      "Bash(git checkout:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"Cleaning $file\")"
     ],
     "deny": []
   }

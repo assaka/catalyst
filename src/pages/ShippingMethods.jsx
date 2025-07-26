@@ -89,10 +89,8 @@ export default function ShippingMethodsPage() {
 
     setLoading(true);
     try {
-      console.log('Loading shipping methods for store:', storeId);
       const shippingMethods = await retryApiCall(() => ShippingMethod.filter({ store_id: storeId }, "-created_date"));
       setMethods(Array.isArray(shippingMethods) ? shippingMethods : []);
-      console.log('Loaded:', (shippingMethods || []).length, 'shipping methods');
     } catch (error) {
       console.error("Error loading shipping methods data:", error);
       setMethods([]);
@@ -113,7 +111,6 @@ export default function ShippingMethodsPage() {
         try {
             const { Store } = await import("@/api/entities");
             await Store.update(selectedStore.id, { settings: newSettings });
-            console.log(`Settings for ${key} updated to ${value}`);
             setFlashMessage({ type: 'success', message: 'Setting updated successfully!' });
             // The store context will handle the state update
         } catch (error) {

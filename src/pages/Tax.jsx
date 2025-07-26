@@ -89,7 +89,6 @@ export default function TaxPage() {
       setLoading(true);
       const taxData = await retryApiCall(() => Tax.filter({ store_id: storeId }, "-created_date"));
       setTaxes(Array.isArray(taxData) ? taxData : []);
-      console.log('Loaded:', (taxData || []).length, 'tax rules');
     } catch (error) {
       console.error("Error loading tax data:", error);
       setTaxes([]);
@@ -116,7 +115,6 @@ export default function TaxPage() {
       const { Store } = await import('@/api/entities');
       await Store.update(selectedStore.id, { settings: newSettings });
 
-      console.log(`Settings for ${key} updated to ${value}`);
       // Note: The store context will handle the state update
     } catch (error) {
       console.error("Failed to update tax settings:", error);
@@ -130,7 +128,6 @@ export default function TaxPage() {
     }
 
     try {
-      console.log('Creating tax rule with store_id:', storeId);
       await Tax.create({ ...taxData, store_id: storeId });
       await loadData();
       setShowTaxForm(false);
@@ -143,7 +140,6 @@ export default function TaxPage() {
   const handleUpdateTax = async (taxData) => {
     try {
       const { id, ...updateData } = taxData;
-      console.log("[Tax.js] Updating tax rule", id, "with data:", updateData);
 
       await Tax.update(id, updateData);
       await loadData();

@@ -40,7 +40,6 @@ export default function ProductTabForm({ tab, attributes, attributeSets, onSubmi
   }, [tab]);
 
   const handleInputChange = (field, value) => {
-    console.log(`DEBUG: Changing ${field} to:`, value);
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -48,7 +47,6 @@ export default function ProductTabForm({ tab, attributes, attributeSets, onSubmi
   };
 
   const handleAttributeToggle = (attributeCode) => {
-    console.log("DEBUG: Toggling attribute:", attributeCode);
     setFormData(prev => ({
       ...prev,
       attribute_codes: prev.attribute_codes.includes(attributeCode)
@@ -58,15 +56,10 @@ export default function ProductTabForm({ tab, attributes, attributeSets, onSubmi
   };
 
   const handleAttributeSetToggle = (attributeSetId) => {
-    console.log("DEBUG: Toggling attribute set:", attributeSetId);
-    console.log("DEBUG: Current attribute_set_ids:", formData.attribute_set_ids);
-
     setFormData(prev => {
       const newAttributeSetIds = prev.attribute_set_ids.includes(attributeSetId)
         ? prev.attribute_set_ids.filter(id => id !== attributeSetId)
         : [...prev.attribute_set_ids, attributeSetId];
-
-      console.log("DEBUG: New attribute_set_ids:", newAttributeSetIds);
 
       return {
         ...prev,
@@ -84,9 +77,6 @@ export default function ProductTabForm({ tab, attributes, attributeSets, onSubmi
         ...formData,
         sort_order: parseInt(formData.sort_order) || 0
       };
-
-      console.log("DEBUG: Submitting product tab data:", submitData);
-      console.log("DEBUG: Final attribute_set_ids:", submitData.attribute_set_ids);
 
       await onSubmit(submitData);
     } catch (error) {

@@ -68,7 +68,6 @@ export default function Plugins() {
       // Add Google Tag Manager plugin if it doesn't exist
       const gtmPlugin = pluginsData.find(p => p.slug === 'google-tag-manager');
       if (!gtmPlugin) {
-        console.log("Creating Google Tag Manager plugin...");
         const newGtmPlugin = await Plugin.create({
           name: "Google Tag Manager",
           slug: "google-tag-manager",

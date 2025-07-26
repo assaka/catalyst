@@ -37,7 +37,6 @@ export default function CookieConsentBanner() {
 
   useEffect(() => {
     if (store?.id && settings?.cookie_consent) {
-      console.log('Cookie consent settings:', settings.cookie_consent);
       detectUserCountry();
       loadUser();
       checkExistingConsent();
@@ -65,14 +64,12 @@ export default function CookieConsentBanner() {
     if (consent && consentExpiry) {
       const expiryDate = new Date(consentExpiry);
       if (expiryDate > new Date()) {
-        console.log('Valid consent exists, not showing banner');
         return;
       }
     }
     
     // Show banner if should be shown
     if (shouldShowBanner()) {
-      console.log('Showing cookie consent banner');
       setShowBanner(true);
       
       // Initialize selected categories
@@ -116,7 +113,6 @@ export default function CookieConsentBanner() {
       new Date(Date.now() + ((cookieSettings?.consent_expiry_days || 365) * 24 * 60 * 60 * 1000)).toISOString()
     );
     
-    console.log('Consent saved locally:', categories);
     
     // Save consent to backend for audit purposes
     try {
@@ -135,7 +131,6 @@ export default function CookieConsentBanner() {
         page_url: window.location.href
       });
       
-      console.log('Consent saved to backend for audit');
     } catch (error) {
       console.warn('Failed to save consent to backend (non-critical):', error);
     }

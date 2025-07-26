@@ -61,7 +61,6 @@ export default function Onboarding() {
           console.error('An unexpected error occurred during post-OAuth setup:', error);
           setError('Failed to complete account setup. Please try again or sign in.');
         } else {
-          console.log("Onboarding page: User is not authenticated, awaiting login.");
         }
       }
     };

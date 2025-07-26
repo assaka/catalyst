@@ -7,14 +7,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
     useEffect(() => {
         // Don't proceed if we don't have store data yet
         if (!store || !store.id) {
-            console.log('[SEO] Waiting for store data...');
             return;
         }
 
-        console.log('[SEO] Setting up meta tags for page:', pageType, pageTitle);
-        console.log('[SEO] Store data:', store);
-        console.log('[SEO] SEO Settings:', seoSettings);
-        console.log('[SEO] Page data:', pageData);
         
         // Default values
         const defaultTitle = store?.name ? `${pageTitle} | ${store.name}` : pageTitle;
@@ -35,7 +30,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                        seoSettings?.open_graph_settings?.default_image_url || 
                        store?.logo_url;
 
-        console.log('[SEO] Generated meta data:', { title, description, keywords, robotsTag, ogImage });
 
         // Update document title
         document.title = title;
@@ -43,7 +37,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Function to update or create meta tag
         const updateMetaTag = (name, content, property = false) => {
             if (!content) {
-                console.log(`[SEO] Skipping empty meta tag: ${name}`);
                 return;
             }
             
@@ -58,11 +51,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     metaTag.setAttribute('name', name);
                 }
                 document.head.appendChild(metaTag);
-                console.log('[SEO] Created new meta tag:', name);
             }
             
             metaTag.setAttribute('content', content);
-            console.log('[SEO] Updated meta tag:', name, '=', content);
         };
 
         // Update basic meta tags
@@ -73,12 +64,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Open Graph Tags (check if enabled - default to true if seoSettings not loaded yet)
         const enableOpenGraph = seoSettings?.enable_open_graph !== false;
         if (enableOpenGraph) {
-            console.log('[SEO] Setting Open Graph tags...', seoSettings?.open_graph_settings);
             updateMetaTag('og:title', title, true);
             updateMetaTag('og:description', description, true);
             updateMetaTag('og:type', pageType === 'product' ? 'product' : 'website', true);
             if (ogImage) {
-                console.log('[SEO] Setting OG image:', ogImage);
                 updateMetaTag('og:image', ogImage, true);
                 updateMetaTag('og:image:alt', `${title} - ${store.name}`, true);
             }
@@ -88,20 +77,17 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             // Facebook App ID if provided
             if (seoSettings?.open_graph_settings?.facebook_app_id) {
                 updateMetaTag('fb:app_id', seoSettings.open_graph_settings.facebook_app_id, true);
-                console.log('[SEO] Added Facebook App ID:', seoSettings.open_graph_settings.facebook_app_id);
             }
         }
 
         // Twitter Card Tags (check if enabled - default to true if seoSettings not loaded yet)
         const enableTwitterCards = seoSettings?.enable_twitter_cards !== false;
         if (enableTwitterCards) {
-            console.log('[SEO] Setting Twitter Card tags...', seoSettings?.twitter_card_settings);
             const cardType = seoSettings?.twitter_card_settings?.card_type || 'summary_large_image';
             updateMetaTag('twitter:card', cardType);
             updateMetaTag('twitter:title', title);
             updateMetaTag('twitter:description', description);
             if (ogImage) {
-                console.log('[SEO] Setting Twitter image:', ogImage);
                 updateMetaTag('twitter:image', ogImage);
                 updateMetaTag('twitter:image:alt', `${title} - ${store.name}`);
             }
@@ -112,7 +98,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     ? seoSettings.twitter_card_settings.site_username 
                     : `@${seoSettings.twitter_card_settings.site_username}`;
                 updateMetaTag('twitter:site', username);
-                console.log('[SEO] Added Twitter site:', username);
             }
         }
 
@@ -121,13 +106,11 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         
         // Product-specific Schema.org structured data
         if (enableRichSnippets && pageType === 'product' && pageData) {
-            console.log('[SEO] Adding product structured data...');
             
             // Remove existing schema first
             const existingSchema = document.querySelector('script[type="application/ld+json"][data-type="product"]');
             if (existingSchema) {
                 existingSchema.remove();
-                console.log('[SEO] Removed existing product schema');
             }
             
             const enableProductSchema = seoSettings?.schema_settings?.enable_product_schema !== false;
@@ -159,13 +142,11 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
                 script.textContent = JSON.stringify(structuredData);
                 document.head.appendChild(script);
-                console.log('[SEO] Added product structured data:', structuredData);
             }
         }
 
         // Organization structured data for non-product pages
         if (enableRichSnippets && pageType !== 'product' && store) {
-            console.log('[SEO] Adding organization structured data...');
             
             // Remove existing schema first
             const existingSchema = document.querySelector('script[type="application/ld+json"][data-type="organization"]');
@@ -202,13 +183,11 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
                 script.textContent = JSON.stringify(structuredData);
                 document.head.appendChild(script);
-                console.log('[SEO] Added organization structured data:', structuredData);
             }
         }
 
         // Website structured data for homepage
         if (enableRichSnippets && pageType === 'homepage' && store) {
-            console.log('[SEO] Adding website structured data...');
             
             // Remove existing schema first
             const existingSchema = document.querySelector('script[type="application/ld+json"][data-type="website"]');
@@ -230,14 +209,11 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
             script.textContent = JSON.stringify(structuredData);
             document.head.appendChild(script);
-            console.log('[SEO] Added website structured data:', structuredData);
         }
 
-        console.log('[SEO] Meta tag setup complete');
 
         // Cleanup function
         return () => {
-            console.log('[SEO] Cleaning up meta tags for:', pageType);
         };
     }, [pageType, pageData, pageTitle, pageDescription, imageUrl, store, seoSettings, seoTemplates]);
 
