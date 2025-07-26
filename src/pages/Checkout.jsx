@@ -83,7 +83,7 @@ export default function Checkout() {
   
   const [shippingCost, setShippingCost] = useState(0);
   const [taxAmount, setTaxAmount] = useState(0);
-  const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryDate, setDeliveryDate] = useState(null);
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
   const [deliveryComments, setDeliveryComments] = useState('');
   const [deliverySettings, setDeliverySettings] = useState(null);
@@ -596,51 +596,48 @@ export default function Checkout() {
     });
   };
 
-  const getAvailableDeliveryDates = () => {
-    if (!deliverySettings) return [];
+  const getDeliveryDateConstraints = () => {
+    if (!deliverySettings) return { fromDate: new Date(), toDate: new Date() };
 
     const today = new Date();
     const offsetDays = deliverySettings.offset_days || 1;
     const maxAdvanceDays = deliverySettings.max_advance_days || 30;
+
+    const fromDate = new Date(today);
+    fromDate.setDate(today.getDate() + offsetDays);
+
+    const toDate = new Date(today);
+    toDate.setDate(today.getDate() + maxAdvanceDays);
+
+    return { fromDate, toDate };
+  };
+
+  const isDateDisabled = (date) => {
+    if (!deliverySettings) return true;
+
+    const { fromDate, toDate } = getDeliveryDateConstraints();
+    
+    // Disable dates outside the allowed range
+    if (date < fromDate || date > toDate) return true;
+
+    const dateString = date.toISOString().split('T')[0];
+    const weekday = date.getDay();
     const blockedDates = deliverySettings.blocked_dates || [];
     const blockedWeekdays = deliverySettings.blocked_weekdays || [];
 
-    const availableDates = [];
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() + offsetDays);
+    // Disable if date is specifically blocked
+    if (blockedDates.includes(dateString)) return true;
+    
+    // Disable if weekday is blocked
+    if (blockedWeekdays.includes(weekday)) return true;
 
-    // Check if out of office period overlaps
+    // Disable if in out of office period
     const outOfOfficeStart = deliverySettings.out_of_office_start ? new Date(deliverySettings.out_of_office_start) : null;
     const outOfOfficeEnd = deliverySettings.out_of_office_end ? new Date(deliverySettings.out_of_office_end) : null;
+    
+    if (outOfOfficeStart && outOfOfficeEnd && date >= outOfOfficeStart && date <= outOfOfficeEnd) return true;
 
-    for (let i = 0; i < maxAdvanceDays; i++) {
-      const currentDate = new Date(startDate);
-      currentDate.setDate(startDate.getDate() + i);
-      
-      const dateString = currentDate.toISOString().split('T')[0];
-      const weekday = currentDate.getDay();
-
-      // Skip if date is blocked
-      if (blockedDates.includes(dateString)) continue;
-      
-      // Skip if weekday is blocked
-      if (blockedWeekdays.includes(weekday)) continue;
-
-      // Skip if in out of office period
-      if (outOfOfficeStart && outOfOfficeEnd && currentDate >= outOfOfficeStart && currentDate <= outOfOfficeEnd) continue;
-
-      availableDates.push({
-        date: dateString,
-        display: currentDate.toLocaleDateString('en-US', { 
-          weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        })
-      });
-    }
-
-    return availableDates;
+    return false;
   };
 
   const getAvailableTimeSlots = () => {
@@ -679,7 +676,7 @@ export default function Checkout() {
         store,
         taxAmount,
         shippingCost,
-        deliveryDate,
+        deliveryDate: deliveryDate ? deliveryDate.toISOString().split('T')[0] : null,
         deliveryTimeSlot,
         deliveryComments,
         email: user?.email || shippingAddress.email,
@@ -1122,20 +1119,32 @@ export default function Checkout() {
                 <div className="space-y-4">
                   {/* Delivery Date */}
                   <div>
-                    <Label htmlFor="delivery-date">Preferred Delivery Date</Label>
-                    <select
-                      id="delivery-date"
-                      value={deliveryDate}
-                      onChange={(e) => setDeliveryDate(e.target.value)}
-                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select a delivery date</option>
-                      {getAvailableDeliveryDates().map((dateOption) => (
-                        <option key={dateOption.date} value={dateOption.date}>
-                          {dateOption.display}
-                        </option>
-                      ))}
-                    </select>
+                    <Label>Preferred Delivery Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal mt-1"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {deliveryDate ? deliveryDate.toLocaleDateString('en-US', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          }) : "Select a delivery date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={deliveryDate}
+                          onSelect={setDeliveryDate}
+                          disabled={isDateDisabled}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
 
                   {/* Time Slots */}
