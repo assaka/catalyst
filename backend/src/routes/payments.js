@@ -266,6 +266,8 @@ router.post('/create-checkout', async (req, res) => {
       shipping_method,
       selected_shipping_method,
       shipping_cost,
+      discount_amount,
+      applied_coupon,
       delivery_date,
       delivery_time_slot,
       delivery_instructions,
@@ -380,11 +382,44 @@ router.post('/create-checkout', async (req, res) => {
         delivery_date: delivery_date || '',
         delivery_time_slot: delivery_time_slot || '',
         delivery_instructions: delivery_instructions || '',
-        coupon_code: coupon_code || '',
+        coupon_code: applied_coupon?.code || coupon_code || '',
+        discount_amount: discount_amount?.toString() || '0',
         shipping_method_name: shipping_method?.name || selected_shipping_method || '',
         shipping_method_id: shipping_method?.id?.toString() || ''
       }
     };
+
+    // Apply discount if provided
+    if (applied_coupon && discount_amount > 0) {
+      try {
+        // Determine Stripe options for Connect account
+        const discountStripeOptions = {};
+        if (store.stripe_account_id) {
+          discountStripeOptions.stripeAccount = store.stripe_account_id;
+        }
+
+        // Create a Stripe coupon for the discount
+        const stripeCoupon = await stripe.coupons.create({
+          amount_off: Math.round(discount_amount * 100), // Convert to cents
+          currency: storeCurrency.toLowerCase(),
+          duration: 'once',
+          name: `Discount: ${applied_coupon.code}`,
+          metadata: {
+            original_coupon_code: applied_coupon.code,
+            original_coupon_id: applied_coupon.id?.toString() || ''
+          }
+        }, discountStripeOptions);
+
+        sessionConfig.discounts = [{
+          coupon: stripeCoupon.id
+        }];
+
+        console.log('Applied Stripe discount:', stripeCoupon.id, 'Amount:', discount_amount);
+      } catch (discountError) {
+        console.error('Failed to create Stripe coupon:', discountError.message);
+        // Continue without discount rather than failing the entire checkout
+      }
+    }
 
     // Set up shipping options based on selected method or default options
     if (shipping_method && shipping_cost !== undefined) {
@@ -680,7 +715,16 @@ async function createOrderFromCheckoutSession(session) {
     let shipping_cost = (session.total_details?.amount_shipping || 0) / 100;
     const total_amount = session.amount_total / 100;
     
-    console.log('Session total_details:', session.total_details);
+    console.log('Session details:', {
+      id: session.id,
+      amount_total: session.amount_total,
+      amount_subtotal: session.amount_subtotal,
+      total_details: session.total_details,
+      shipping_cost: session.shipping_cost,
+      shipping_details: session.shipping_details,
+      metadata: session.metadata
+    });
+    
     console.log('Shipping cost from total_details:', shipping_cost);
     
     // If shipping cost is 0, try to get it from shipping_cost in session or metadata
@@ -693,6 +737,17 @@ async function createOrderFromCheckoutSession(session) {
     if (shipping_cost === 0 && session.shipping_cost?.amount_total) {
       shipping_cost = session.shipping_cost.amount_total / 100;
       console.log('Using session.shipping_cost:', shipping_cost);
+    }
+    
+    // If still 0, check if there's a shipping rate ID and retrieve it
+    if (shipping_cost === 0 && session.shipping_rate) {
+      try {
+        const shippingRate = await stripe.shippingRates.retrieve(session.shipping_rate);
+        shipping_cost = shippingRate.fixed_amount.amount / 100;
+        console.log('Retrieved shipping cost from shipping rate:', shipping_cost);
+      } catch (shippingRateError) {
+        console.log('Could not retrieve shipping rate:', shippingRateError.message);
+      }
     }
     
     // Generate order number

@@ -19,10 +19,21 @@ export default function OrderSuccess() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('OrderSuccess useEffect triggered');
+    console.log('orderId:', orderId);
+    console.log('sessionId:', sessionId);
+    console.log('Current URL:', window.location.href);
+    console.log('Search params:', window.location.search);
+    
     if (orderId) {
+      console.log('Loading order by orderId:', orderId);
       loadOrderData();
     } else if (sessionId) {
+      console.log('Loading order by sessionId:', sessionId);
       loadOrderFromSession();
+    } else {
+      console.log('No orderId or sessionId found, setting loading to false');
+      setLoading(false);
     }
   }, [orderId, sessionId]);
 
@@ -102,9 +113,31 @@ export default function OrderSuccess() {
   }
 
   if (!order) {
+    // If we have a session ID but no order found, show a generic success message
+    if (sessionId) {
+      return (
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-8">
+            <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Payment Successful!</h1>
+            <p className="text-xl text-gray-700 mb-4">Thank you for your purchase. Your order has been successfully processed.</p>
+            <div className="bg-white rounded-lg p-4 max-w-md mx-auto shadow-sm">
+              <p className="text-sm text-gray-500">Session ID</p>
+              <p className="font-mono text-sm text-blue-600">{sessionId}</p>
+            </div>
+            <div className="mt-6">
+              <p className="text-sm text-gray-600">You should receive a confirmation email shortly.</p>
+              <p className="text-sm text-gray-600">If you need assistance, please contact support with the session ID above.</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
         <h1 className="text-2xl font-bold text-gray-900">Order not found</h1>
+        <p className="text-gray-600 mt-2">Please check your email for order confirmation or contact support.</p>
       </div>
     );
   }

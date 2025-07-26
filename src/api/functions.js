@@ -29,6 +29,8 @@ export const createStripeCheckout = async (checkoutData) => {
       shippingCost,
       shippingMethod,
       selectedShippingMethod,
+      discountAmount,
+      appliedCoupon,
       deliveryDate,
       deliveryTimeSlot,
       deliveryComments,
@@ -47,6 +49,8 @@ export const createStripeCheckout = async (checkoutData) => {
       shipping_method: shippingMethod,
       selected_shipping_method: selectedShippingMethod,
       shipping_cost: shippingCost,
+      discount_amount: discountAmount,
+      applied_coupon: appliedCoupon,
       delivery_date: deliveryDate,
       delivery_time_slot: deliveryTimeSlot,
       delivery_instructions: deliveryComments
