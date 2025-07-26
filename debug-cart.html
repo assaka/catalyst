@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cart Debug</title>
+</head>
+<body>
+    <h1>Cart Debug Tool</h1>
+    <button onclick="debugCart()">Debug Cart</button>
+    <div id="output"></div>
+
+    <script>
+        async function debugCart() {
+            const output = document.getElementById('output');
+            output.innerHTML = '<h2>Debugging Cart...</h2>';
+            
+            try {
+                // Check localStorage
+                const sessionId = localStorage.getItem('cart_session_id');
+                output.innerHTML += `<p><strong>Session ID:</strong> ${sessionId || 'NOT FOUND'}</p>`;
+                
+                // Check if there are any other cart-related items in localStorage
+                const allStorage = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    allStorage[key] = localStorage.getItem(key);
+                }
+                output.innerHTML += `<p><strong>All localStorage:</strong></p><pre>${JSON.stringify(allStorage, null, 2)}</pre>`;
+                
+                // Try to call the cart API directly
+                const baseURL = 'https://catalyst-backend-fzhu.onrender.com';
+                const params = new URLSearchParams();
+                if (sessionId) {
+                    params.append('session_id', sessionId);
+                }
+                
+                output.innerHTML += `<p><strong>API Call:</strong> ${baseURL}/api/cart?${params.toString()}</p>`;
+                
+                const response = await fetch(`${baseURL}/api/cart?${params.toString()}`);
+                const result = await response.json();
+                
+                output.innerHTML += `<p><strong>API Response Status:</strong> ${response.status}</p>`;
+                output.innerHTML += `<p><strong>API Response:</strong></p><pre>${JSON.stringify(result, null, 2)}</pre>`;
+                
+            } catch (error) {
+                output.innerHTML += `<p><strong>Error:</strong> ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

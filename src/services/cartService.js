@@ -30,11 +30,13 @@ class CartService {
   async getCart() {
     try {
       const sessionId = this.getSessionId();
+      console.log('🔍 DEBUG CartService: Session ID:', sessionId);
       
       const params = new URLSearchParams();
       params.append('session_id', sessionId);
       
       const response = await fetch(`${this.endpoint}?${params.toString()}`);
+      console.log('🔍 DEBUG CartService: API Response Status:', response.status);
       
       if (!response.ok) {
         console.error('CartService.getCart: HTTP error:', response.status);
@@ -42,6 +44,7 @@ class CartService {
       }
       
       const result = await response.json();
+      console.log('🔍 DEBUG CartService: API Response Data:', result);
       
       if (result.success && result.data) {
         return {

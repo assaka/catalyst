@@ -72,8 +72,10 @@ export default function MiniCart({ cartUpdateTrigger }) {
       
       // Use simplified cart service
       const cartResult = await cartService.getCart();
+      console.log('🔍 DEBUG: Cart service result:', cartResult);
       
       if (cartResult.success && cartResult.items) {
+        console.log('🔍 DEBUG: Cart items found:', cartResult.items.length);
         setCartItems(cartResult.items);
         
         // Load product details for cart items
@@ -101,6 +103,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
           setCartProducts(productDetails);
         }
       } else {
+        console.log('🔍 DEBUG: No cart items or cart service failed');
         setCartItems([]);
         setCartProducts({});
       }
