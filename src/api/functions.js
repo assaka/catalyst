@@ -66,6 +66,20 @@ export const stripeWebhook = async (payload, signature) => {
   }
 };
 
+export const createStripeConnectAccount = async (storeId, country = 'US', businessType = 'company') => {
+  try {
+    const response = await apiClient.post('payments/connect-account', {
+      store_id: storeId,
+      country: country,
+      business_type: businessType
+    });
+    return { data: response.data || response };
+  } catch (error) {
+    console.error('Error creating Stripe Connect account:', error);
+    throw error;
+  }
+};
+
 export const createStripeConnectLink = async (returnUrl, refreshUrl, storeId) => {
   try {
     const response = await apiClient.post('payments/connect-link', {

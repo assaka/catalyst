@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { createPageUrl } from '@/utils';
-import { createStripeConnectLink } from '@/api/functions';
+import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus } from '@/api/functions';
 
 export const SetupGuide = ({ store }) => {
     const navigate = useNavigate();
@@ -18,14 +18,37 @@ export const SetupGuide = ({ store }) => {
 
     const handleConnectStripe = async () => {
         try {
-            const { data } = await createStripeConnectLink();
-            if (data && data.url) {
-                window.location.href = data.url;
+            if (!store?.id) {
+                console.error("Store ID is required");
+                return;
+            }
+
+            // First check if store already has a Stripe account
+            const status = await checkStripeConnectStatus(store.id);
+            
+            let onboardingUrl;
+            
+            if (status.data?.connected && status.data?.account_id) {
+                // Account exists, create onboarding link
+                const currentUrl = window.location.origin + window.location.pathname;
+                const returnUrl = `${currentUrl}?stripe_return=true`;
+                const refreshUrl = `${currentUrl}?stripe_refresh=true`;
+                
+                const { data } = await createStripeConnectLink(returnUrl, refreshUrl, store.id);
+                onboardingUrl = data?.url;
             } else {
-                console.error("Failed to get Stripe Connect URL", data);
+                // No account exists, create new account
+                const { data } = await createStripeConnectAccount(store.id);
+                onboardingUrl = data?.onboarding_url;
+            }
+
+            if (onboardingUrl) {
+                window.location.href = onboardingUrl;
+            } else {
+                console.error("Failed to get Stripe onboarding URL");
             }
         } catch (error) {
-            console.error("Error creating Stripe connect link:", error);
+            console.error("Error setting up Stripe connect:", error);
         }
     };
 

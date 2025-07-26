@@ -32,6 +32,20 @@ JWT_SECRET=your-super-secret-jwt-key-here
 PORT=5000
 ```
 
+## Stripe Configuration (Required for Payments)
+
+```
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+```
+
+Get these from your Stripe Dashboard:
+1. Go to https://dashboard.stripe.com/
+2. Navigate to Developers > API keys
+3. Copy the Secret key and Publishable key
+4. For webhook secret, go to Developers > Webhooks and create/view your webhook endpoint
+
 ## How to Set in Render.com
 
 1. Go to your Render.com dashboard
