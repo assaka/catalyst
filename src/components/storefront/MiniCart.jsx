@@ -88,10 +88,23 @@ export default function MiniCart({ cartUpdateTrigger }) {
           for (const item of cartResult.items) {
             if (!productDetails[item.product_id]) {
               try {
+                console.log(`🔧 MiniCart: Loading product for ID: ${item.product_id}`);
                 const result = await Product.filter({ id: item.product_id });
                 const products = Array.isArray(result) ? result : [];
+                console.log(`🔧 MiniCart: API returned for ID ${item.product_id}:`, products.map(p => ({
+                  id: p.id,
+                  name: p.name,
+                  slug: p.slug
+                })));
                 if (products.length > 0) {
-                  productDetails[item.product_id] = products[0];
+                  const foundProduct = products[0];
+                  if (foundProduct.id === item.product_id) {
+                    productDetails[item.product_id] = foundProduct;
+                    console.log(`🔧 MiniCart: Correctly mapped product ${item.product_id} -> ${foundProduct.name}`);
+                  } else {
+                    console.error(`🔧 MiniCart: ID MISMATCH! Requested: ${item.product_id}, Got: ${foundProduct.id} (${foundProduct.name})`);
+                    // Don't add mismatched product
+                  }
                 }
               } catch (error) {
                 console.warn(`Failed to load product ${item.product_id}:`, error);
