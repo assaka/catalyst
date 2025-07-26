@@ -17,6 +17,7 @@ router.get('/public', async (req, res) => {
 
     const plugins = await StorePlugin.findAll({
       where: whereClause,
+      attributes: ['id', 'store_id', 'plugin_slug', 'plugin_name', 'is_active', 'version', 'createdAt', 'updatedAt'],
       order: [['plugin_name', 'ASC']]
     });
 
@@ -47,6 +48,7 @@ router.get('/', auth, async (req, res) => {
 
     const plugins = await StorePlugin.findAll({
       where: whereClause,
+      attributes: ['id', 'store_id', 'plugin_slug', 'plugin_name', 'is_active', 'version', 'createdAt', 'updatedAt'],
       order: [['plugin_name', 'ASC']]
     });
 
