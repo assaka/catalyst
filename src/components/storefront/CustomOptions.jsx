@@ -68,16 +68,21 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                     // Load products individually if $in syntax doesn't work
                     const optionProducts = [];
                     for (const productId of rule.optional_product_ids) {
+                        // Skip if this is the current product being viewed
+                        if (productId === product.id) {
+                            continue;
+                        }
+                        
                         try {
                             const products = await Product.filter({ 
                                 id: productId,
                                 is_active: true 
                             });
                             if (products && products.length > 0) {
-                                const product = products[0];
+                                const customOptionProduct = products[0];
                                 // Only include if it's marked as a custom option
-                                if (product.is_custom_option) {
-                                    optionProducts.push(product);
+                                if (customOptionProduct.is_custom_option) {
+                                    optionProducts.push(customOptionProduct);
                                 }
                             }
                         } catch (productError) {

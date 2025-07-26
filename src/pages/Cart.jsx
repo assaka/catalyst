@@ -182,10 +182,16 @@ export default function Cart() {
         try {
             // Use simplified cart service (session-based approach)
             const cartResult = await cartService.getCart();
+            console.log('🔍 Cart Page Debug - Cart Result:', {
+                success: cartResult.success,
+                itemsCount: cartResult.items?.length || 0,
+                items: cartResult.items
+            });
             
             let cartItems = [];
             if (cartResult.success && cartResult.items) {
                 cartItems = cartResult.items;
+                console.log('🔍 Cart Page Debug - Setting cart items:', cartItems.length);
             }
 
             
