@@ -33,10 +33,24 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             });
             
             // Fetch all active custom option rules for the store
-            const rules = await CustomOptionRule.filter({ 
+            console.log('🔧 CustomOptions: About to fetch rules with params:', { 
                 store_id: store.id,
                 is_active: true 
             });
+            
+            let rules = [];
+            try {
+                rules = await CustomOptionRule.filter({ 
+                    store_id: store.id,
+                    is_active: true 
+                });
+                console.log('🔧 CustomOptions: API call successful');
+            } catch (apiError) {
+                console.error('🔧 CustomOptions: API call failed:', apiError);
+                setCustomOptions([]);
+                setLoading(false);
+                return;
+            }
 
             console.log('🔧 CustomOptions: Found rules:', rules.length, rules.map(r => ({
                 id: r.id,
