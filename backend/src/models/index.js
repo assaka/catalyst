@@ -25,6 +25,7 @@ const ProductLabel = require('./ProductLabel');
 const PaymentMethod = require('./PaymentMethod');
 const CookieConsentSettings = require('./CookieConsentSettings');
 const ConsentLog = require('./ConsentLog');
+const Address = require('./Address');
 
 // Define associations
 const defineAssociations = () => {
@@ -140,6 +141,10 @@ const defineAssociations = () => {
   ConsentLog.belongsTo(Store, { foreignKey: 'store_id' });
   ConsentLog.belongsTo(User, { foreignKey: 'user_id' });
   Store.hasMany(ConsentLog, { foreignKey: 'store_id' });
+
+  // Address associations
+  Address.belongsTo(User, { foreignKey: 'user_id' });
+  User.hasMany(Address, { foreignKey: 'user_id' });
 };
 
 // Initialize associations
@@ -172,5 +177,6 @@ module.exports = {
   ProductLabel,
   PaymentMethod,
   CookieConsentSettings,
-  ConsentLog
+  ConsentLog,
+  Address
 };

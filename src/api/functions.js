@@ -15,14 +15,37 @@ export const createPaymentIntent = async (amount, currency = 'usd', metadata = {
   }
 };
 
-export const createStripeCheckout = async (items, successUrl, cancelUrl, customerEmail) => {
+export const createStripeCheckout = async (checkoutData) => {
   try {
-    const response = await apiClient.post('payments/create-checkout', {
-      items,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      customer_email: customerEmail
-    });
+    // Extract data from checkoutData object
+    const {
+      cartItems,
+      shippingAddress,
+      billingAddress,
+      store,
+      taxAmount,
+      shippingCost,
+      deliveryDate,
+      deliveryTimeSlot,
+      deliveryComments,
+      email,
+      userId,
+      sessionId
+    } = checkoutData;
+
+    const requestPayload = {
+      items: cartItems, // Map cartItems to items
+      store_id: store?.id,
+      success_url: `${window.location.origin}/order-success`,
+      cancel_url: `${window.location.origin}/cart`,
+      customer_email: email,
+      shipping_address: shippingAddress,
+      delivery_date: deliveryDate,
+      delivery_time_slot: deliveryTimeSlot,
+      delivery_instructions: deliveryComments
+    };
+
+    const response = await apiClient.post('payments/create-checkout', requestPayload);
     return response.data;
   } catch (error) {
     console.error('Error creating Stripe checkout:', error);

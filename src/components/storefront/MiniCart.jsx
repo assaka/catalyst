@@ -73,11 +73,6 @@ export default function MiniCart({ cartUpdateTrigger }) {
       
       // Use simplified cart service
       const cartResult = await cartService.getCart();
-      console.log('🔍 MiniCart Debug - Cart Result:', {
-        success: cartResult.success,
-        itemsCount: cartResult.items?.length || 0,
-        items: cartResult.items
-      });
       
       if (cartResult.success && cartResult.items) {
         setCartItems(cartResult.items);
