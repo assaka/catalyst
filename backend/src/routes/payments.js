@@ -187,6 +187,70 @@ router.post('/connect-account', auth, async (req, res) => {
   }
 });
 
+// @route   POST /api/payments/connect-link
+// @desc    Create Stripe Connect account link for onboarding
+// @access  Private
+router.post('/connect-link', auth, async (req, res) => {
+  try {
+    const { return_url, refresh_url, store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe not configured'
+      });
+    }
+
+    // Get store
+    const store = await Store.findByPk(store_id);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Check if store has Stripe account
+    if (!store.stripe_account_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'No Stripe account found for this store. Please create an account first.'
+      });
+    }
+
+    // Create account link for existing account
+    const accountLink = await stripe.accountLinks.create({
+      account: store.stripe_account_id,
+      refresh_url: refresh_url || `${process.env.CORS_ORIGIN}/dashboard/payments/connect?refresh=true`,
+      return_url: return_url || `${process.env.CORS_ORIGIN}/dashboard/payments/connect?success=true`,
+      type: 'account_onboarding'
+    });
+
+    res.json({
+      success: true,
+      data: {
+        url: accountLink.url,
+        account_id: store.stripe_account_id
+      }
+    });
+  } catch (error) {
+    console.error('Create Stripe Connect link error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+});
+
 // @route   POST /api/payments/create-checkout
 // @desc    Create Stripe Checkout Session
 // @access  Public
