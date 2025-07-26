@@ -249,8 +249,24 @@ export default function MiniCart({ cartUpdateTrigger }) {
             <>
               <div className="space-y-3 max-h-60 overflow-y-auto">
                 {cartItems.map((item) => {
+                  console.log('🔧 MiniCart: Rendering item:', {
+                    itemId: item.id,
+                    productId: item.product_id,
+                    selectedOptions: item.selected_options,
+                    itemPrice: item.price
+                  });
+                  
                   const product = cartProducts[item.product_id];
-                  if (!product) return null;
+                  if (!product) {
+                    console.log('🔧 MiniCart: No product found for ID:', item.product_id);
+                    return null;
+                  }
+                  
+                  console.log('🔧 MiniCart: Product details:', {
+                    productId: product.id,
+                    productName: product.name,
+                    productSlug: product.slug
+                  });
                   
                   // Use the stored price from cart (which should be the sale price)
                   let basePrice = formatPrice(item.price);
