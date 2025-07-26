@@ -405,27 +405,47 @@ router.post('/create-checkout', async (req, res) => {
 // @desc    Handle Stripe webhooks
 // @access  Public
 router.post('/webhook', async (req, res) => {
+  console.log('Webhook received');
   const sig = req.headers['stripe-signature'];
+  
+  if (!sig) {
+    console.error('No stripe-signature header found');
+    return res.status(400).send('No stripe-signature header');
+  }
+
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('STRIPE_WEBHOOK_SECRET not configured');
+    return res.status(500).send('Webhook secret not configured');
+  }
   
   let event;
   
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+    console.log('Webhook signature verified successfully');
   } catch (err) {
     console.error('Webhook signature verification failed:', err.message);
+    console.error('Signature:', sig);
+    console.error('Body type:', typeof req.body);
+    console.error('Body sample:', req.body.toString().substring(0, 100));
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
+
+  console.log('Processing webhook event:', event.type);
 
   // Handle the event
   switch (event.type) {
     case 'checkout.session.completed':
       const session = event.data.object;
+      console.log('Processing checkout.session.completed for session:', session.id);
       
       try {
         // Create order from checkout session
-        await createOrderFromCheckoutSession(session);
+        const order = await createOrderFromCheckoutSession(session);
+        console.log('Order created successfully:', order.order_number);
       } catch (error) {
         console.error('Error creating order from webhook:', error);
+        console.error('Error stack:', error.stack);
         return res.status(500).json({ error: 'Failed to create order' });
       }
       
