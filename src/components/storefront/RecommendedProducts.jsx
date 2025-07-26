@@ -57,7 +57,6 @@ const fetchRecommendationData = async (storeId, context = 'default') => {
   if (componentCache.has(cacheKey)) {
     const cached = componentCache.get(cacheKey);
     if (now - cached.timestamp < COMPONENT_CACHE_TTL) {
-      console.log('RecommendedProducts: Using component cache');
       return cached.data;
     }
   }
@@ -173,7 +172,6 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
         const fetchData = async () => {
             // Skip if we've hit rate limits recently (local or global)
             if (rateLimitHit || globalRateLimitFlag) {
-                console.log('RecommendedProducts: Skipping due to rate limit (local or global)');
                 setLoading(false);
                 return;
             }
@@ -189,7 +187,6 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
             // Skip if we have provided products and no current product (CMS page case)
             // This prevents unnecessary API calls on CMS pages
             if (providedProducts && !currentProduct) {
-                console.log('RecommendedProducts: Using provided products, skipping API calls');
                 setProducts(providedProducts.slice(0, 4));
                 setLoading(false);
                 return;

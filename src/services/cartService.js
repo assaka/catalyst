@@ -50,13 +50,6 @@ class CartService {
       }
       
       const result = await response.json();
-      console.log('🔍 Cart Service Debug - API Response:', {
-        url: fullUrl,
-        status: response.status,
-        result: result,
-        hasData: !!result.data,
-        itemsCount: result.data?.items?.length || 0
-      });
       
       if (result.success && result.data) {
         return {
