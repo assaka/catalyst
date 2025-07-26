@@ -108,9 +108,17 @@ export default function ProductDetail() {
       const cacheKey = `product-detail-${slug}-${store.id}`;
       console.log('🔍 ProductDetail: Loading product with slug:', slug, 'store:', store.id);
       
-      const products = await cachedApiCall(cacheKey, () =>
-        Product.filter({ store_id: store.id, slug: slug, status: 'active' })
-      );
+      // For debugging: bypass cache for unusual slugs to see fresh API response
+      const shouldBypassCache = slug === 'asdf' || slug.length < 3;
+      const products = shouldBypassCache 
+        ? await Product.filter({ store_id: store.id, slug: slug, status: 'active' })
+        : await cachedApiCall(cacheKey, () =>
+            Product.filter({ store_id: store.id, slug: slug, status: 'active' })
+          );
+          
+      if (shouldBypassCache) {
+        console.log('🔍 ProductDetail: Bypassed cache for debugging slug:', slug);
+      }
       
       console.log('🔍 ProductDetail: API returned products:', products);
       console.log('🔍 ProductDetail: Products length:', products?.length || 0);
