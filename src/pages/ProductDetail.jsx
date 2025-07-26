@@ -52,6 +52,8 @@ export default function ProductDetail() {
   const { slug: paramSlug } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || paramSlug;
+  
+  console.log('🚨 PRODUCTDETAIL DEBUG: Slug extracted:', slug, 'from URL:', window.location.href);
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
   const { store, settings, loading: storeLoading, categories, productLabels } = useStore();
@@ -99,13 +101,13 @@ export default function ProductDetail() {
       }
 
       const cacheKey = `product-detail-${slug}-${store.id}`;
-      console.log('🔍 ProductDetail: Loading product for slug:', slug);
+      console.log('🚨 CRITICAL DEBUG: About to load product with slug:', slug, 'for store:', store.id);
       
       const products = await cachedApiCall(cacheKey, () =>
         Product.filter({ store_id: store.id, slug: slug, status: 'active' })
       );
       
-      console.log('🔍 ProductDetail: API response for slug "' + slug + '":', products);
+      console.log('🚨 CRITICAL DEBUG: API returned for slug', slug, ':', products);
 
       if (products && products.length > 0) {
         const foundProduct = products[0];

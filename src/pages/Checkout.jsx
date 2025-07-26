@@ -165,6 +165,18 @@ export default function Checkout() {
         ShippingMethod.filter({ store_id: store.id, is_active: true })
       ]);
 
+      console.log('🚚 Checkout: Loaded shipping methods:', {
+        count: shippingData?.length || 0,
+        methods: shippingData?.map(m => ({
+          id: m.id,
+          name: m.name,
+          is_active: m.is_active,
+          type: m.type,
+          availability: m.availability,
+          countries: m.countries
+        })) || []
+      });
+
       setPaymentMethods(paymentData || []);
       setShippingMethods(shippingData || []);
 
@@ -538,13 +550,33 @@ export default function Checkout() {
 
   const getEligibleShippingMethods = () => {
     const country = getShippingCountry();
-    return shippingMethods.filter(method => {
-      if (method.availability === 'all') return true;
-      if (method.availability === 'specific_countries') {
-        return method.countries && method.countries.includes(country);
-      }
-      return true;
+    
+    console.log('🚚 Checkout: Filtering shipping methods:', {
+      currentCountry: country,
+      totalMethods: shippingMethods.length,
+      methods: shippingMethods.map(m => ({
+        id: m.id,
+        name: m.name,
+        availability: m.availability,
+        countries: m.countries
+      }))
     });
+
+    const eligible = shippingMethods.filter(method => {
+      const isEligible = method.availability === 'all' || 
+        (method.availability === 'specific_countries' && method.countries && method.countries.includes(country));
+      
+      console.log(`🚚 Method "${method.name}": ${isEligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'}`, {
+        availability: method.availability,
+        countries: method.countries,
+        currentCountry: country
+      });
+      
+      return isEligible;
+    });
+
+    console.log('🚚 Checkout: Eligible shipping methods:', eligible.map(m => m.name));
+    return eligible;
   };
 
   const getEligiblePaymentMethods = () => {
