@@ -418,9 +418,11 @@ export default function Storefront() {
                           </Link>
                         </h3>
                         <p className="text-sm text-gray-500 mb-3 h-10 overflow-hidden">{product.short_description}</p>
-                        <Badge variant={getStockVariant(product)}>
-                          {getStockLabel(product)}
-                        </Badge>
+                        {getStockLabel(product) &&
+                          <Badge variant={getStockVariant(product)}>
+                            {getStockLabel(product)}
+                          </Badge>
+                        }
                         <div className="py-4 flex items-baseline gap-2">
                           {/* FIXED: Inverted price logic to always show lowest price first */}
                           {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
@@ -554,9 +556,11 @@ export default function Storefront() {
                                   </Link>
                                 </h3>
                                 <p className="text-sm text-gray-500 mb-3 h-10 overflow-hidden">{product.short_description}</p>
-                                <Badge variant={getStockVariant(product)}>
-                                  {getStockLabel(product)}
-                                </Badge>
+                                {getStockLabel(product) &&
+                                    <Badge variant={getStockVariant(product)}>
+                                      {getStockLabel(product)}
+                                    </Badge>
+                                }
                                 <div className="flex items-baseline gap-2 my-4">
                                   {/* FIXED: Inverted price logic to always show lowest price first */}
                                   {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
