@@ -206,10 +206,27 @@ export default function Cart() {
             }
 
             const productIds = [...new Set(cartItems.map(item => item.product_id))];
-            const products = await retryApiCall(() => Product.filter({ id: { $in: productIds } }));
+            console.log('🔍 Cart Debug - Product IDs:', productIds);
+            
+            // Fetch products individually to avoid object parameter issues
+            const products = await retryApiCall(async () => {
+                const productPromises = productIds.map(id => 
+                    Product.filter({ id: id }).catch(error => {
+                        console.error(`Failed to fetch product ${id}:`, error);
+                        return null;
+                    })
+                );
+                const productArrays = await Promise.all(productPromises);
+                return productArrays.filter(arr => arr && arr.length > 0).map(arr => arr[0]);
+            });
+            
+            console.log('🔍 Cart Debug - Fetched products:', products?.length || 0);
             
             const populatedCart = cartItems.map(item => {
                 const productDetails = (products || []).find(p => p.id === item.product_id);
+                if (!productDetails) {
+                    console.warn('🚨 Cart Debug - No product found for cart item:', item.product_id);
+                }
                 return { 
                     ...item, 
                     product: productDetails,
@@ -217,6 +234,7 @@ export default function Cart() {
                 };
             }).filter(item => item.product); // Ensure product exists
             
+            console.log('🔍 Cart Debug - Final populated cart items:', populatedCart.length);
             setCartItems(populatedCart);
             setHasLoadedInitialData(true);
             
