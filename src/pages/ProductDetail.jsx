@@ -745,7 +745,11 @@ export default function ProductDetail() {
         {/* CMS Block Renderer for "above product tabs" position */}
         <CmsBlockRenderer position="above_product_tabs" page="storefront_product" storeId={store?.id} />
         {/* Recommended Products component */}
-        <RecommendedProducts product={product} storeId={store?.id} />
+        <RecommendedProducts 
+          product={product} 
+          storeId={store?.id} 
+          selectedOptions={selectedOptions} 
+        />
       </div>
 
       {/* Product Tabs */}

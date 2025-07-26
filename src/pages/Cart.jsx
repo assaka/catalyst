@@ -99,8 +99,10 @@ export default function Cart() {
     const [quantityUpdates, setQuantityUpdates] = useState({});
 
     useEffect(() => {
+        console.log('🚨 CART DEBUG: useEffect triggered, storeLoading:', storeLoading, 'store?.id:', store?.id);
         // Wait for store data to load before loading cart
         if (!storeLoading && store?.id) {
+            console.log('🚨 CART DEBUG: Starting cart load with 1s delay...');
             const timeoutId = setTimeout(() => {
                 loadCartData();
             }, 1000); // Reduced delay

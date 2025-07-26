@@ -28,6 +28,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
 
   // Load cart on mount and when triggered
   useEffect(() => {
+    console.log('🚨 MINICART DEBUG: useEffect triggered, loading cart...');
     loadCart();
   }, [cartUpdateTrigger]);
 
