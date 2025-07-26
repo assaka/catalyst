@@ -35,6 +35,14 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             console.log('🎯 CustomOptions: Found rules:', rules);
 
             // Find applicable rules for this product
+            // Only evaluate rules if we have a valid product with an ID
+            if (!product || !product.id) {
+                console.log('❌ CustomOptions: Invalid product, no rules can apply');
+                setCustomOptions([]);
+                setLoading(false);
+                return;
+            }
+
             const applicableRules = rules.filter(rule => isRuleApplicable(rule, product));
             
             console.log('🎯 CustomOptions: Applicable rules:', applicableRules);
@@ -99,17 +107,20 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             conditions: rule.conditions
         });
 
-        // If no conditions are specified, rule applies to all products
+        // Check if rule has valid conditions or is explicitly set to apply to all products
         if (!rule.conditions || Object.keys(rule.conditions).length === 0) {
-            console.log('✅ Rule applies: No conditions specified');
-            return true;
+            // Check if this rule is explicitly marked to apply to all products
+            // For now, we'll be restrictive and require explicit conditions
+            // This prevents accidental display of rules on inappropriate products
+            console.log('❌ Rule does not apply: No specific conditions defined');
+            return false;
         }
 
         const { categories, attribute_sets, skus, attribute_conditions } = rule.conditions;
         let hasAnyCondition = false;
 
         // Check category conditions
-        if (categories && categories.length > 0) {
+        if (categories && Array.isArray(categories) && categories.length > 0) {
             hasAnyCondition = true;
             const productCategories = product.category_ids || [];
             const hasMatchingCategory = categories.some(catId => productCategories.includes(catId));
@@ -125,7 +136,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         }
 
         // Check attribute set conditions
-        if (attribute_sets && attribute_sets.length > 0) {
+        if (attribute_sets && Array.isArray(attribute_sets) && attribute_sets.length > 0) {
             hasAnyCondition = true;
             const match = attribute_sets.includes(product.attribute_set_id);
             console.log('🔍 Attribute set check:', {
@@ -140,7 +151,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         }
 
         // Check SKU conditions
-        if (skus && skus.length > 0) {
+        if (skus && Array.isArray(skus) && skus.length > 0) {
             hasAnyCondition = true;
             const match = skus.includes(product.sku);
             console.log('🔍 SKU check:', {
@@ -155,7 +166,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         }
 
         // Check attribute conditions
-        if (attribute_conditions && attribute_conditions.length > 0) {
+        if (attribute_conditions && Array.isArray(attribute_conditions) && attribute_conditions.length > 0) {
             hasAnyCondition = true;
             for (const condition of attribute_conditions) {
                 const productValue = product[condition.attribute_code];
@@ -173,10 +184,10 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             }
         }
 
-        // If no conditions were specified, rule applies
+        // If no valid conditions were found, rule does not apply
         if (!hasAnyCondition) {
-            console.log('✅ Rule applies: No valid conditions specified');
-            return true;
+            console.log('❌ Rule does not apply: No valid conditions found');
+            return false;
         }
 
         console.log('❌ Rule does not apply: No conditions matched');

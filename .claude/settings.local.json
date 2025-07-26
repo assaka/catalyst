@@ -29,7 +29,8 @@
       "Bash(find:*)",
       "Bash(npm run migrate:*)",
       "Bash(cd backend)",
-      "Bash(git revert:*)"
+      "Bash(git revert:*)",
+      "WebFetch(domain:catalyst-pearl.vercel.app)"
     ],
     "deny": []
   }
