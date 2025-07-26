@@ -52,13 +52,6 @@ export default function ProductDetail() {
   const { slug: paramSlug } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || paramSlug;
-  
-  console.log('🔍 ProductDetail: URL params and slug extraction:', {
-    paramSlug,
-    searchParam: searchParams.get('slug'),
-    finalSlug: slug,
-    currentUrl: window.location.href
-  });
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
   const { store, settings, loading: storeLoading, categories, productLabels } = useStore();
@@ -106,44 +99,12 @@ export default function ProductDetail() {
       }
 
       const cacheKey = `product-detail-${slug}-${store.id}`;
-      console.log('🔍 ProductDetail: Loading product with slug:', slug, 'store:', store.id);
-      
-      // For debugging: bypass cache for unusual slugs to see fresh API response
-      const shouldBypassCache = slug === 'asdf' || slug.length < 3;
-      const products = shouldBypassCache 
-        ? await Product.filter({ store_id: store.id, slug: slug, status: 'active' })
-        : await cachedApiCall(cacheKey, () =>
-            Product.filter({ store_id: store.id, slug: slug, status: 'active' })
-          );
-          
-      if (shouldBypassCache) {
-        console.log('🔍 ProductDetail: Bypassed cache for debugging slug:', slug);
-      }
-      
-      console.log('🔍 ProductDetail: API returned products:', products);
-      console.log('🔍 ProductDetail: Products length:', products?.length || 0);
+      const products = await cachedApiCall(cacheKey, () =>
+        Product.filter({ store_id: store.id, slug: slug, status: 'active' })
+      );
 
       if (products && products.length > 0) {
         const foundProduct = products[0];
-        console.log('🔍 ProductDetail: Found product:', {
-          id: foundProduct.id,
-          name: foundProduct.name,
-          slug: foundProduct.slug,
-          store_id: foundProduct.store_id
-        });
-        
-        // Verify the product slug exactly matches what was requested
-        // This prevents showing incorrect products due to fuzzy matching or fallback logic
-        if (foundProduct.slug !== slug) {
-          console.warn('🚨 ProductDetail: Product slug mismatch!', {
-            requested: slug,
-            found: foundProduct.slug,
-            productName: foundProduct.name
-          });
-          setProduct(null); // Show "not found" instead of wrong product
-          return;
-        }
-        
         setProduct(foundProduct);
 
         // Send Google Analytics 'view_item' event
@@ -169,7 +130,6 @@ export default function ProductDetail() {
           checkWishlistStatus(foundProduct.id)
         ]);
       } else {
-        console.log('🔍 ProductDetail: No products found for slug:', slug);
         setProduct(null);
       }
     } catch (error) {
