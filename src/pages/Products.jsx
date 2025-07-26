@@ -121,7 +121,6 @@ export default function Products() {
       setAttributes(Array.isArray(attributesData) ? attributesData : []);
       setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
 
-      console.log('Loaded:', (productsData || []).length, 'products,', (attributeSetsData || []).length, 'attribute sets');
     } catch (error) {
       console.error("Error loading data:", error);
       setProducts([]);
@@ -141,7 +140,6 @@ export default function Products() {
     }
 
     try {
-      console.log('Creating product with store_id:', storeId);
       await Product.create({ ...productData, store_id: storeId });
       await loadData();
       setShowProductForm(false);
@@ -154,7 +152,6 @@ export default function Products() {
   const handleUpdateProduct = async (productData) => {
     try {
       const { id, ...updateData } = productData;
-      console.log("[Products.js] Updating product", id, "with data:", updateData);
 
       await Product.update(id, updateData);
       await loadData();

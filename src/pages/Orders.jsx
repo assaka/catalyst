@@ -76,7 +76,6 @@ export default function Orders() {
 
       // Fetch orders filtered by the store_id
       const ordersData = await Order.filter({ store_id: storeId }, '-created_date');
-      console.log('Found orders:', ordersData?.length || 0);
       setOrders(ordersData || []);
 
       // Load user data for the customers in these orders

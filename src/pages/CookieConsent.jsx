@@ -184,19 +184,14 @@ export default function CookieConsent() {
         return;
       }
       
-      console.log('Using store:', selectedStore.name);
       setStore(selectedStore);
       
       // Load cookie consent settings
-      console.log('🔍 Loading cookie consent settings for store:', selectedStore.id);
       const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: selectedStore.id }));
-      console.log('📊 Raw cookie consent settings from API:', cookieSettings);
-      console.log('Found cookie settings:', cookieSettings?.length || 0);
-      
+
       if (cookieSettings && cookieSettings.length > 0) {
         // Map backend fields to frontend fields
         const mappedSettings = mapBackendToFrontend(cookieSettings[0]);
-        console.log('✅ Final cookie consent settings being set:', mappedSettings);
         setSettings(mappedSettings);
       } else {
         // Create default settings with valid store_id - use the same structure as mapBackendToFrontend
@@ -215,7 +210,6 @@ export default function CookieConsent() {
       // Load consent logs
       try {
         const logs = await retryApiCall(() => ConsentLog.filter({ store_id: selectedStore.id }));
-        console.log('📊 Consent logs loaded:', logs?.length || 0);
         setConsentLogs(logs || []);
       } catch (logError) {
         console.warn('Failed to load consent logs (non-critical):', logError);
@@ -236,16 +230,8 @@ export default function CookieConsent() {
   const handleSave = async () => {
     // Check if settings or store are null, or if store doesn't have an ID (which is required for saving)
     const storeId = getSelectedStoreId();
-    console.log('🍪 Cookie consent save DEBUG:', {
-      hasSettings: !!settings,
-      storeId,
-      settingsId: settings?.id,
-      settingsKeys: settings ? Object.keys(settings) : [],
-      settingsStoreId: settings?.store_id
-    });
-    
+
     if (!settings || !storeId) {
-      console.log('❌ Cookie consent save failed: missing settings or store ID');
       setFlashMessage({ type: 'error', message: 'Settings not loaded or no store found. Cannot save.' });
       return;
     }
@@ -255,57 +241,31 @@ export default function CookieConsent() {
     try {
       // Map frontend settings to backend format
       const backendSettings = mapFrontendToBackend(settings);
-      
-      console.log('🔄 Saving cookie consent settings...', {
-        isUpdate: !!settings.id,
-        frontendData: settings,
-        backendData: backendSettings
-      });
-      
+
       let result;
       if (settings.id) {
-        console.log('🔄 Updating existing cookie consent settings:', settings.id);
         result = await retryApiCall(() => CookieConsentSettings.update(settings.id, backendSettings));
-        console.log('✅ Cookie consent settings updated successfully');
       } else {
-        console.log('✨ Creating new cookie consent settings');
         // If settings.id is null, it's a new setting. The store_id should already be populated from loadData's defaultSettings.
         result = await retryApiCall(() => CookieConsentSettings.create(backendSettings));
-        console.log('✅ Cookie consent settings created:', result);
       }
       
       // Handle array response from API client
       const normalizedResult = Array.isArray(result) ? result[0] : result;
-      
-      console.log('🔍 API Response structure:', {
-        isArray: Array.isArray(result),
-        normalizedResult,
-        hasData: !!normalizedResult?.data,
-        hasId: !!normalizedResult?.id,
-        keys: normalizedResult ? Object.keys(normalizedResult) : []
-      });
-      
+
       // The API client returns [settingsObject] for single objects
       // So normalizedResult should be the actual settings object from the database
       if (normalizedResult && normalizedResult.id) {
         // This is the settings object from database - map it to frontend format
         const updatedSettings = mapBackendToFrontend(normalizedResult);
-        console.log('🔄 Backend data from API:', normalizedResult);
-        console.log('🔄 Mapped settings for state update:', updatedSettings);
         setSettings(updatedSettings);
-        console.log('✅ Local cookie consent settings state updated');
       } else {
-        console.warn('⚠️ Unexpected API response structure, reloading data instead');
-        console.warn('Response details:', normalizedResult);
         await loadData(); // Fallback to reload if response structure is unexpected
       }
       
       setFlashMessage({ type: 'success', message: 'Cookie consent settings saved successfully!' });
       
     } catch (error) {
-      console.error('❌ Failed to save cookie consent settings:', error);
-      console.error('Error details:', error.message);
-      console.error('Error response:', error.response);
       setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.message}` });
     } finally {
       setSaving(false);

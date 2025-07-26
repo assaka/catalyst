@@ -28,8 +28,6 @@ export default function ProductTabForm({ tab, attributes, attributeSets, onSubmi
 
   useEffect(() => {
     if (tab) {
-      console.log("DEBUG: Loading tab data:", tab);
-      console.log("DEBUG: Tab attribute_set_ids:", tab.attribute_set_ids);
       setFormData({
         title: tab.title || "",
         content_type: tab.content_type || "description",

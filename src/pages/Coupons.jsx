@@ -71,8 +71,6 @@ export default function CouponsPage() {
 
     try {
       setLoading(true);
-      console.log('Loading coupons data for store:', storeId);
-      
       // Filter all data by selected store's ID
       const [couponsData, categoriesData, productsData] = await Promise.all([
         Coupon.filter({ store_id: storeId }),
@@ -83,7 +81,6 @@ export default function CouponsPage() {
       setCoupons(couponsData || []);
       setCategories(categoriesData || []);
       setProducts(productsData || []);
-      console.log('Loaded:', (couponsData || []).length, 'coupons');
     } catch (error) {
       console.error("Error loading coupons data:", error);
       setCoupons([]);

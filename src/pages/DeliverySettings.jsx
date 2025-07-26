@@ -91,20 +91,14 @@ export default function DeliverySettings() { // Renamed the function component f
         out_of_office_start: deliverySettings.out_of_office_start || null,
         out_of_office_end: deliverySettings.out_of_office_end || null
       };
-      
-      console.log('🔧 Prepared settings for save:', settingsToSave);
-      
+
       let result;
       if (deliverySettings.id) {
         // If deliverySettings already has an ID, it means it exists in the DB, so update
-        console.log('📝 Updating delivery settings:', deliverySettings.id);
         result = await DeliverySettingsEntity.update(deliverySettings.id, settingsToSave);
-        console.log('✅ Update result:', result);
       } else {
         // Otherwise, it's a new set of settings for this store, so create
-        console.log('✨ Creating new delivery settings');
         result = await DeliverySettingsEntity.create(settingsToSave);
-        console.log('✅ Create result:', result);
       }
       
       // Verify the result

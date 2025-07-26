@@ -45,7 +45,6 @@ export default function Landing() {
       setUser(userData);
     } catch (error) {
       // User not authenticated - this is fine for landing page
-      console.log("User not authenticated");
     } finally {
       setIsLoading(false);
     }

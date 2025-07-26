@@ -172,10 +172,8 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts }) => {
 
 
 const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, editingAddress, saving, onCancel }) => {
-  console.log("AddressForm rendered with:", { addressForm, editingAddress, saving });
-  
+
   const handleSubmit = (e) => {
-    console.log("AddressForm handleSubmit called");
     e.preventDefault();
     e.stopPropagation();
     handleAddressSubmit(e);
@@ -196,7 +194,6 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
                 name="full_name"
                 value={addressForm.full_name || ''}
                 onChange={(e) => {
-                  console.log("Full name changed:", e.target.value);
                   handleInputChange('full_name', e.target.value);
                 }}
                 required
@@ -553,24 +550,17 @@ export default function CustomerDashboard() {
   };
 
   const loadAddresses = async (currentUserId) => {
-    console.log("=== LOADING ADDRESSES DEBUG ===");
-    console.log("1. Loading addresses for user:", currentUserId);
-    
     if (!currentUserId) {
-      console.error("2. ERROR: No user ID provided");
       setAddresses([]);
       return;
     }
 
     try {
-      console.log("2. Attempting to fetch addresses...");
       let addressData = await retryApiCall(() => Address.filter({ user_id: currentUserId }));
       
       if (addressData && Array.isArray(addressData)) {
-        console.log("4. Setting addresses:", addressData.length, "addresses found");
         setAddresses(addressData);
       } else {
-        console.log("4. No addresses found or invalid data format");
         setAddresses([]);
       }
     } catch (error) {
@@ -605,35 +595,25 @@ export default function CustomerDashboard() {
   };
 
   const handleAddressSubmit = async (e) => {
-    console.log("=== ADDRESS SUBMISSION DEBUG ===");
-    console.log("1. Form submission started");
-    console.log("2. Current user:", user);
-    console.log("3. Address form data:", addressForm);
-    console.log("4. Editing address:", editingAddress);
-    
     if (!user || !user.id) {
       console.error("5. ERROR: No user or user.id found");
       setFlashMessage({ type: 'error', message: 'Authentication error. Please log in again.' });
       return;
     }
     
-    console.log("5. User ID verified:", user.id);
     setSaving(true);
     setFlashMessage(null);
 
     let dataToSave = { ...addressForm };
-    console.log("6. Data to save (before cleanup):", dataToSave);
-    
+
     // Clean up data by removing empty/null/undefined fields
     Object.keys(dataToSave).forEach(key => {
       if (dataToSave[key] === undefined || dataToSave[key] === null || dataToSave[key] === '') {
-        console.log(`7. Removing empty field: ${key}`);
         delete dataToSave[key];
       }
     });
     
     dataToSave.user_id = user.id;
-    console.log("8. Data to save (after cleanup):", dataToSave);
 
     // Validation
     const requiredFields = ['full_name', 'street', 'city', 'postal_code', 'country'];
@@ -645,36 +625,25 @@ export default function CustomerDashboard() {
       setSaving(false);
       return;
     }
-    
-    console.log("9. All required fields present");
 
     try {
       if (editingAddress) {
-        console.log("10. UPDATING existing address:", editingAddress.id);
-        console.log("11. Update data:", dataToSave);
         const result = await retryApiCall(() => Address.update(editingAddress.id, dataToSave));
-        console.log("12. Update result:", result);
         setFlashMessage({ type: 'success', message: 'Address updated successfully!' });
       } else {
-        console.log("10. CREATING new address");
-        console.log("11. Create data:", dataToSave);
         const result = await retryApiCall(() => Address.create(dataToSave));
-        console.log("12. Create result:", result);
         setFlashMessage({ type: 'success', message: 'Address added successfully!' });
       }
-      
-      console.log("13. Resetting form and reloading addresses");
+
       setShowAddressForm(false);
       resetAddressForm();
       await delay(500);
       await loadAddresses(user.id);
-      console.log("14. Address submission completed successfully");
       
     } catch (error) {
       console.error('15. ERROR during address save:', error);
       setFlashMessage({ type: 'error', message: `Failed to save address: ${error.message}` });
     } finally {
-      console.log("16. Setting saving to false");
       setSaving(false);
     }
   };
@@ -740,7 +709,6 @@ export default function CustomerDashboard() {
         ]);
         
       } catch (error) {
-        console.log("User not authenticated, showing guest view:", error);
         setUser(null);
         setIsGuest(true);
         // Clear any user-specific data from previous sessions if error occurs
@@ -780,12 +748,8 @@ export default function CustomerDashboard() {
   };
 
   const handleLogout = async () => {
-    console.log('🚨🚨🚨 CUSTOMER DASHBOARD LOGOUT CLICKED 🚨🚨🚨');
-    console.log('👤 Customer logout handler triggered');
     try {
-      console.log('👤 About to call Auth.logout()...');
       await Auth.logout();
-      console.log('✅ Customer logout completed, navigating...');
       navigate(createPageUrl('Storefront'));
     } catch (error) {
       console.error('❌ Customer logout error:', error);

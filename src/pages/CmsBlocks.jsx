@@ -47,10 +47,8 @@ export default function CmsBlocks() {
 
     setLoading(true);
     try {
-      console.log('Loading CMS blocks for store:', storeId);
       const blocksData = await CmsBlock.filter({ store_id: storeId });
       setBlocks(blocksData || []);
-      console.log('Loaded:', (blocksData || []).length, 'CMS blocks');
     } catch (error) {
       console.error("Error loading CMS blocks:", error);
       setBlocks([]);

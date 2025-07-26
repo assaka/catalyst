@@ -66,8 +66,7 @@ export default function CmsPages() {
 
     setLoading(true);
     try {
-      console.log('Loading CMS pages for store:', storeId);
-      
+
       const [pagesData, productsData] = await Promise.all([
         CmsPage.filter({ store_id: storeId }),
         Product.filter({ store_id: storeId })
@@ -75,7 +74,6 @@ export default function CmsPages() {
       
       setPages(pagesData || []);
       setProducts(productsData || []);
-      console.log('Loaded:', (pagesData || []).length, 'CMS pages');
     } catch (error) {
       console.error("Error loading CMS pages:", error);
       setPages([]);

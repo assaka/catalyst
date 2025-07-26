@@ -87,135 +87,82 @@ export default function Auth() {
         return;
       }
       
-      console.log('🔍 Auth.jsx: Calling User.me()...');
       let user = await User.me();
-      console.log('✅ Auth.jsx: User.me() succeeded:', user ? 'user found' : 'no user');
-      console.log('🔍 Auth.jsx: Full user data from User.me():', JSON.stringify(user, null, 2));
-      
+
       // Handle case where user is returned as an array
       if (Array.isArray(user)) {
-        console.log('🔍 Auth.jsx: User data was an array, extracting first element');
         user = user[0];
       }
       
       if (user) {
         // For Google OAuth users, ensure they have a role and redirect to Dashboard
         if (isGoogleOAuth) {
-          console.log('🔍 Auth.jsx: Google OAuth user detected, role:', user.role);
-          
+
           // If no role, set up the user as store_owner
           if (!user.role) {
-            console.log('🔄 Auth.jsx: Google OAuth user has no role, setting store_owner...');
             try {
               // Use the backend PATCH route to set role
               const updateResponse = await apiClient.patch('auth/me', {
                 role: 'store_owner',
                 account_type: 'agency'
               });
-              console.log('✅ Auth.jsx: Google OAuth role set successfully', updateResponse);
-              
+
               // Fetch fresh user data to ensure we have the updated role
-              console.log('🔄 Auth.jsx: Fetching fresh user data after role update...');
               const updatedUser = await User.me();
-              console.log('🔍 Auth.jsx: Fresh user data:', updatedUser);
-              
+
               // Update user object with fresh data
               user.role = updatedUser.role || 'store_owner';
               user.account_type = updatedUser.account_type || 'agency';
               
-              console.log('✅ Auth.jsx: User object updated with fresh data:', {
-                role: user.role,
-                account_type: user.account_type
-              });
             } catch (setupError) {
               console.error("❌ Auth.jsx: Failed to set Google OAuth user role:", setupError);
               // Fallback: manually set the role even if backend update failed
               user.role = 'store_owner';
               user.account_type = 'agency';
-              console.log('🔄 Auth.jsx: Fallback role assignment applied');
             }
           }
 
           // Always redirect Google OAuth users to Dashboard
-          console.log('✅ Auth.jsx: Google OAuth -> Redirecting to Dashboard');
           navigate(createPageUrl("Dashboard") + "?setup=complete");
           return;
         }
 
         // Always redirect to dashboard for authenticated users
-        console.log('🔍 Auth.jsx: User authenticated, checking role:', user.role);
-        
+
         // If user has no role, set default role automatically
         if (!user.role) {
-          console.log('🔄 Auth.jsx: No role found, setting default role to store_owner');
           try {
             const updateResponse = await User.update(user.id, {
               role: 'store_owner',
               account_type: 'agency'
             });
-            console.log('✅ Auth.jsx: Default role set successfully', updateResponse);
-            
+
             // Refresh user data after update
-            console.log('🔄 Auth.jsx: Refreshing user data after role update...');
             user = await User.me();
-            console.log('🔍 Auth.jsx: Updated user data:', user);
           } catch (error) {
             console.error('❌ Auth.jsx: Failed to set default role:', error);
           }
         }
 
-        // Always redirect to appropriate dashboard based on role
-        console.log('🔄 Auth.jsx: FINAL REDIRECT DECISION');
-        console.log('🔍 Auth.jsx: Final user data for redirect:', {
-          role: user.role,
-          account_type: user.account_type,
-          id: user.id,
-          email: user.email,
-          fullUserObject: user
-        });
-        
-        // ENHANCED DEBUGGING - Log exact values and types
-        console.log('🔍 ENHANCED DEBUG - Exact user properties:');
-        console.log('- user.role (value):', user.role);
-        console.log('- user.role (type):', typeof user.role);
-        console.log('- user.account_type (value):', user.account_type);
-        console.log('- user.account_type (type):', typeof user.account_type);
-        console.log('- user.email:', user.email);
-        
         // Store owners and admins go to main Dashboard
         const isStoreOwner = user.role === 'store_owner';
         const isAdmin = user.role === 'admin';
         const isAgency = user.account_type === 'agency';
         const hasNoRole = !user.role;
-        
-        console.log('🔍 Auth.jsx: Individual condition checks:', {
-          'user.role === "store_owner"': isStoreOwner,
-          'user.role === "admin"': isAdmin, 
-          'user.account_type === "agency"': isAgency,
-          '!user.role': hasNoRole,
-          'ANY_CONDITION_TRUE': isStoreOwner || isAdmin || isAgency || hasNoRole
-        });
-        
+
         if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
-          console.log('✅ Auth.jsx: store_owner/admin/agency -> Redirecting to Dashboard');
-          console.log('🎯 REDIRECTING TO DASHBOARD');
           navigate(createPageUrl("Dashboard"));
         } 
         // Regular customers go to CustomerDashboard
         else if (user.role === 'customer') {
-          console.log('🔄 Auth.jsx: customer -> Redirecting to CustomerDashboard');
-          console.log('🎯 REDIRECTING TO CUSTOMER DASHBOARD');
           navigate(createPageUrl("CustomerDashboard"));
         }
         // Default fallback to Dashboard
         else {
-          console.log('🔄 Auth.jsx: unknown role -> Redirecting to Dashboard');
-          console.log('🎯 REDIRECTING TO DASHBOARD (fallback)');
           navigate(createPageUrl("Dashboard"));
         }
       }
     } catch (error) {
-      console.log("❌ Auth.jsx: User not authenticated, ready for login:", error.message);
     }
   };
 
@@ -276,8 +223,7 @@ export default function Auth() {
         if (response.success) {
           // Check user role from response and redirect accordingly
           const userRole = response.data?.user?.role || response.user?.role;
-          console.log('🔍 Login successful, user role:', userRole);
-          
+
           if (userRole === 'store_owner' || userRole === 'admin' || !userRole) {
             navigate(createPageUrl("Dashboard"));
           } else if (userRole === 'customer') {
