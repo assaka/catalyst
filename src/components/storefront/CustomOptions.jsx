@@ -8,22 +8,31 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
     const [customOptions, setCustomOptions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [displayLabel, setDisplayLabel] = useState('Custom Options');
+    const [isLoading, setIsLoading] = useState(false); // Prevent duplicate loading
     const currencySymbol = settings?.currency_symbol || '$';
 
     useEffect(() => {
-        if (product && store?.id) {
+        if (product && store?.id && !isLoading) {
+            console.log('🔧 CustomOptions: useEffect triggered, loading options');
             loadCustomOptions();
+        } else {
+            console.log('🔧 CustomOptions: useEffect triggered but conditions not met', {
+                hasProduct: !!product,
+                hasStoreId: !!store?.id,
+                isAlreadyLoading: isLoading
+            });
         }
     }, [product?.id, store?.id]);
 
     const loadCustomOptions = async () => {
-        if (!product || !store?.id) {
+        if (!product || !store?.id || isLoading) {
             setLoading(false);
             return;
         }
 
         try {
             setLoading(true);
+            setIsLoading(true);
             console.log('🔧 CustomOptions: Loading rules for product:', {
                 productId: product.id,
                 productName: product.name,
@@ -137,6 +146,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             setCustomOptions([]);
         } finally {
             setLoading(false);
+            setIsLoading(false);
         }
     };
 
