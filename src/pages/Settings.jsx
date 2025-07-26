@@ -182,39 +182,6 @@ export default function Settings() {
           display_low_stock_threshold: settings.hasOwnProperty('display_low_stock_threshold') ? settings.display_low_stock_threshold : 0, // New
         }
       });
-      
-        enable_inventory: settings.hasOwnProperty('enable_inventory') ? settings.enable_inventory : true,
-        enable_reviews: settings.hasOwnProperty('enable_reviews') ? settings.enable_reviews : true,
-        show_category_in_breadcrumb: settings.hasOwnProperty('show_category_in_breadcrumb') ? settings.show_category_in_breadcrumb : true,
-        show_permanent_search: settings.hasOwnProperty('show_permanent_search') ? settings.show_permanent_search : true,
-        require_shipping_address: settings.hasOwnProperty('require_shipping_address') ? settings.require_shipping_address : true,
-        collect_phone_number_at_checkout: settings.hasOwnProperty('collect_phone_number_at_checkout') ? settings.collect_phone_number_at_checkout : false,
-        hide_currency_category: settings.hasOwnProperty('hide_currency_category') ? settings.hide_currency_category : false,
-        hide_currency_product: settings.hasOwnProperty('hide_currency_product') ? settings.hide_currency_product : false,
-        hide_header_cart: settings.hasOwnProperty('hide_header_cart') ? settings.hide_header_cart : false,
-        hide_header_checkout: settings.hasOwnProperty('hide_header_checkout') ? settings.hide_header_checkout : false,
-        hide_shipping_costs: settings.hasOwnProperty('hide_shipping_costs') ? settings.hide_shipping_costs : false,
-        hide_quantity_selector: settings.hasOwnProperty('hide_quantity_selector') ? settings.hide_quantity_selector : false,
-        allow_guest_checkout: settings.hasOwnProperty('allow_guest_checkout') ? settings.allow_guest_checkout : true,
-        // Log new settings as well
-        default_tax_included_in_prices: settings.hasOwnProperty('default_tax_included_in_prices') ? settings.default_tax_included_in_prices : false,
-        display_tax_inclusive_prices: settings.hasOwnProperty('display_tax_inclusive_prices') ? settings.display_tax_inclusive_prices : false,
-        calculate_tax_after_discount: settings.hasOwnProperty('calculate_tax_after_discount') ? settings.calculate_tax_after_discount : true,
-        display_out_of_stock: settings.hasOwnProperty('display_out_of_stock') ? settings.display_out_of_stock : true,
-        enable_product_filters: settings.hasOwnProperty('enable_product_filters') ? settings.enable_product_filters : false,
-        product_filter_attributes: settings.product_filter_attributes || [],
-        enable_credit_updates: settings.hasOwnProperty('enable_credit_updates') ? settings.enable_credit_updates : false,
-        'seo_settings.robots_txt_content': settings.seo_settings?.robots_txt_content || '',
-        'seo_settings.enable_rich_snippets_product': settings.seo_settings?.hasOwnProperty('enable_rich_snippets_product') ? settings.seo_settings.enable_rich_snippets_product : true,
-        'seo_settings.enable_rich_snippets_store': settings.seo_settings?.hasOwnProperty('enable_rich_snippets_store') ? settings.seo_settings.enable_rich_snippets_store : true,
-        'seo_settings.global_schema_markup_json': settings.seo_settings?.global_schema_markup_json || '',
-        'cookie_consent.enabled': settings.cookie_consent?.hasOwnProperty('enabled') ? settings.cookie_consent.enabled : false,
-        'theme.primary_button_color': settings.theme?.primary_button_color || '#007bff',
-        'enable_coupon_rules': settings.hasOwnProperty('enable_coupon_rules') ? settings.enable_coupon_rules : false,
-        'allow_stacking_coupons': settings.hasOwnProperty('allow_stacking_coupons') ? settings.allow_stacking_coupons : false,
-        'hide_stock_quantity': settings.hasOwnProperty('hide_stock_quantity') ? settings.hide_stock_quantity : false,
-        'display_low_stock_threshold': settings.hasOwnProperty('display_low_stock_threshold') ? settings.display_low_stock_threshold : 0,
-      });
 
     } catch (error) {
       console.error('Failed to load store:', error);
