@@ -525,7 +525,7 @@ async function createOrderFromCheckoutSession(session) {
     // Create the order
     const order = await Order.create({
       order_number: order_number,
-      store_id: parseInt(store_id), // Ensure it's a number
+      store_id: store_id, // Keep as UUID string
       customer_email: session.customer_email || session.customer_details?.email,
       customer_phone: session.customer_details?.phone,
       billing_address: session.customer_details?.address || {},
