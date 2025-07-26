@@ -50,12 +50,24 @@ export default function OrderSuccess() {
 
   const loadOrderFromSession = async () => {
     try {
+      console.log('Loading order from session ID:', sessionId);
+      console.log('API URL:', import.meta.env.VITE_API_BASE_URL);
+      
       // Use public endpoint to find order by payment reference (session_id)
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/orders/by-payment-reference/${sessionId}`);
+      const url = `${import.meta.env.VITE_API_BASE_URL}/api/orders/by-payment-reference/${sessionId}`;
+      console.log('Fetching order from:', url);
+      
+      const response = await fetch(url);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
+      const result = await response.json();
+      console.log('Response result:', result);
+      
       if (response.ok) {
-        const result = await response.json();
         if (result.success && result.data) {
           const orderData = result.data;
+          console.log('Order data found:', orderData);
           setOrder(orderData);
 
           const itemsData = await OrderItem.filter({ order_id: orderData.id });
@@ -68,7 +80,11 @@ export default function OrderSuccess() {
             productsMap[product.id] = product;
           });
           setOrderProducts(productsMap);
+        } else {
+          console.log('No order data in successful response:', result);
         }
+      } else {
+        console.log('Response not ok:', result);
       }
     } catch (error) {
       console.error('Error loading order from session:', error);

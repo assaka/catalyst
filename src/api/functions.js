@@ -27,6 +27,8 @@ export const createStripeCheckout = async (checkoutData) => {
       store,
       taxAmount,
       shippingCost,
+      shippingMethod,
+      selectedShippingMethod,
       deliveryDate,
       deliveryTimeSlot,
       deliveryComments,
@@ -42,6 +44,9 @@ export const createStripeCheckout = async (checkoutData) => {
       cancel_url: `${window.location.origin}/cart`,
       customer_email: email,
       shipping_address: shippingAddress,
+      shipping_method: shippingMethod,
+      selected_shipping_method: selectedShippingMethod,
+      shipping_cost: shippingCost,
       delivery_date: deliveryDate,
       delivery_time_slot: deliveryTimeSlot,
       delivery_instructions: deliveryComments

@@ -263,6 +263,9 @@ router.post('/create-checkout', async (req, res) => {
       cancel_url,
       customer_email,
       shipping_address,
+      shipping_method,
+      selected_shipping_method,
+      shipping_cost,
       delivery_date,
       delivery_time_slot,
       delivery_instructions,
@@ -377,7 +380,9 @@ router.post('/create-checkout', async (req, res) => {
         delivery_date: delivery_date || '',
         delivery_time_slot: delivery_time_slot || '',
         delivery_instructions: delivery_instructions || '',
-        coupon_code: coupon_code || ''
+        coupon_code: coupon_code || '',
+        shipping_method_name: shipping_method?.name || selected_shipping_method || '',
+        shipping_method_id: shipping_method?.id?.toString() || ''
       }
     };
 
@@ -393,49 +398,76 @@ router.post('/create-checkout', async (req, res) => {
       const postal_code = shipping_address.postal_code || shipping_address.zip || '';
       const country = shipping_address.country || 'US';
       
-      // Set up shipping options with free shipping
-      sessionConfig.shipping_options = [
-        {
-          shipping_rate_data: {
-            type: 'fixed_amount',
-            fixed_amount: {
-              amount: 0,
-              currency: storeCurrency.toLowerCase(),
-            },
-            display_name: 'Free Standard Shipping',
-            delivery_estimate: {
-              minimum: {
-                unit: 'business_day',
-                value: 3,
+      // Set up shipping options based on selected method or default options
+      if (shipping_method && shipping_cost !== undefined) {
+        // Use the selected shipping method from frontend
+        sessionConfig.shipping_options = [
+          {
+            shipping_rate_data: {
+              type: 'fixed_amount',
+              fixed_amount: {
+                amount: Math.round((shipping_cost || 0) * 100), // Convert to cents
+                currency: storeCurrency.toLowerCase(),
               },
-              maximum: {
-                unit: 'business_day',
-                value: 7,
+              display_name: shipping_method.name || selected_shipping_method || 'Selected Shipping',
+              delivery_estimate: shipping_method.estimated_delivery_days ? {
+                minimum: {
+                  unit: 'business_day',
+                  value: Math.max(1, shipping_method.estimated_delivery_days - 1),
+                },
+                maximum: {
+                  unit: 'business_day',
+                  value: shipping_method.estimated_delivery_days + 1,
+                },
+              } : undefined,
+            },
+          },
+        ];
+      } else {
+        // Fallback to default shipping options
+        sessionConfig.shipping_options = [
+          {
+            shipping_rate_data: {
+              type: 'fixed_amount',
+              fixed_amount: {
+                amount: 0,
+                currency: storeCurrency.toLowerCase(),
+              },
+              display_name: 'Free Standard Shipping',
+              delivery_estimate: {
+                minimum: {
+                  unit: 'business_day',
+                  value: 3,
+                },
+                maximum: {
+                  unit: 'business_day',
+                  value: 7,
+                },
               },
             },
           },
-        },
-        {
-          shipping_rate_data: {
-            type: 'fixed_amount',
-            fixed_amount: {
-              amount: 1500, // $15.00
-              currency: storeCurrency.toLowerCase(),
-            },
-            display_name: 'Express Shipping',
-            delivery_estimate: {
-              minimum: {
-                unit: 'business_day',
-                value: 1,
+          {
+            shipping_rate_data: {
+              type: 'fixed_amount',
+              fixed_amount: {
+                amount: 1500, // $15.00
+                currency: storeCurrency.toLowerCase(),
               },
-              maximum: {
-                unit: 'business_day',
-                value: 2,
+              display_name: 'Express Shipping',
+              delivery_estimate: {
+                minimum: {
+                  unit: 'business_day',
+                  value: 1,
+                },
+                maximum: {
+                  unit: 'business_day',
+                  value: 2,
+                },
               },
             },
           },
-        },
-      ];
+        ];
+      }
       
       // Enable shipping address collection
       sessionConfig.shipping_address_collection = {
@@ -613,7 +645,7 @@ router.post('/webhook', async (req, res) => {
 // Helper function to create order from Stripe checkout session
 async function createOrderFromCheckoutSession(session) {
   try {
-    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code } = session.metadata || {};
+    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code, shipping_method_name, shipping_method_id } = session.metadata || {};
     
     // Validate store_id
     if (!store_id) {
@@ -674,7 +706,9 @@ async function createOrderFromCheckoutSession(session) {
       payment_reference: session.id, // Use session ID for lookup
       payment_status: 'paid',
       status: 'processing',
-      coupon_code: coupon_code || null
+      coupon_code: coupon_code || null,
+      shipping_method_name: shipping_method_name || null,
+      shipping_method_id: shipping_method_id || null
     });
     
     // Group line items by product and reconstruct order items

@@ -600,6 +600,8 @@ export default function Checkout() {
     
     setIsProcessing(true);
     try {
+      const selectedMethod = shippingMethods.find(m => m.name === selectedShippingMethod);
+      
       const checkoutData = {
         cartItems,
         shippingAddress: getShippingCountry() === shippingAddress.country ? shippingAddress : userAddresses.find(a => a.id === selectedShippingAddress),
@@ -607,6 +609,8 @@ export default function Checkout() {
         store,
         taxAmount,
         shippingCost,
+        shippingMethod: selectedMethod,
+        selectedShippingMethod,
         deliveryDate: deliveryDate ? deliveryDate.toISOString().split('T')[0] : null,
         deliveryTimeSlot,
         deliveryComments,
