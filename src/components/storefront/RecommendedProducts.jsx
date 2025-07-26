@@ -5,10 +5,14 @@ import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingCart } from 'lucide-react';
-import { useStore } from '@/components/storefront/StoreProvider';
+import { useStore, cachedApiCall } from '@/components/storefront/StoreProvider';
 import cartService from '@/services/cartService';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Component-level cache to avoid repeated API calls
+const componentCache = new Map();
+const COMPONENT_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 5000) => {
   for (let i = 0; i < maxRetries; i++) {
@@ -37,6 +41,65 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 5000) => {
       
       throw error;
     }
+  }
+};
+
+// Optimized data fetcher that combines and caches multiple API calls
+const fetchRecommendationData = async (storeId) => {
+  const cacheKey = `recommendations-data-${storeId}`;
+  const now = Date.now();
+  
+  // Check component cache first
+  if (componentCache.has(cacheKey)) {
+    const cached = componentCache.get(cacheKey);
+    if (now - cached.timestamp < COMPONENT_CACHE_TTL) {
+      console.log('RecommendedProducts: Using component cache');
+      return cached.data;
+    }
+  }
+  
+  try {
+    // Run both API calls in parallel with caching
+    const [cartResult, featuredProducts] = await Promise.all([
+      // Cart data with shorter cache (30 seconds) since it changes frequently
+      (async () => {
+        try {
+          return await cartService.getCart();
+        } catch (error) {
+          console.warn('Failed to load cart data:', error);
+          return { success: false, items: [] };
+        }
+      })(),
+      
+      // Featured products with longer cache (5 minutes) since they're stable
+      cachedApiCall(
+        `featured-products-${storeId}`, 
+        () => Product.filter({ is_featured: true }, '-created_date', 8),
+        COMPONENT_CACHE_TTL
+      ).catch(error => {
+        console.warn('Failed to load featured products:', error);
+        return [];
+      })
+    ]);
+    
+    const data = {
+      cartItems: cartResult?.items || [],
+      featuredProducts: featuredProducts || []
+    };
+    
+    // Cache the combined result
+    componentCache.set(cacheKey, {
+      data,
+      timestamp: now
+    });
+    
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch recommendation data:', error);
+    return {
+      cartItems: [],
+      featuredProducts: []
+    };
   }
 };
 
@@ -79,7 +142,7 @@ const SimpleProductCard = ({ product, settings }) => (
 );
 
 export default function RecommendedProducts({ product: currentProduct, storeId, products: providedProducts, selectedOptions = [] }) {
-    const { settings } = useStore();
+    const { settings, store } = useStore();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [cartItems, setCartItems] = useState([]);
@@ -111,38 +174,44 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
                 return;
             }
             
+            // Use store ID from context or fallback to prop
+            const currentStoreId = store?.id || storeId;
+            if (!currentStoreId) {
+                console.warn('RecommendedProducts: No store ID available');
+                setLoading(false);
+                return;
+            }
+            
             try {
-                // Add progressive delay to spread out API calls
-                const randomDelay = 3000 + Math.random() * 2000; // 3-5 seconds
+                // Add minimal delay (reduced from 3-5 seconds since we're caching)
+                const randomDelay = 500 + Math.random() * 1000; // 0.5-1.5 seconds
                 await delay(randomDelay);
                 
-                // Get cart items to exclude from recommendations
                 let cartItems = [];
                 let cartProductIds = [];
-                
-                try {
-                    const cartResult = await cartService.getCart();
-                    cartItems = cartResult.items || [];
-                    cartProductIds = cartItems.map(item => item.product_id);
-                    setCartItems(cartProductIds);
-                } catch (cartError) {
-                    console.warn('RecommendedProducts: Failed to load cart data, continuing without cart exclusions');
-                }
-                
                 let productsToFilter = [];
                 
                 // If specific products are provided (like from CMS page), use them
                 if (providedProducts && Array.isArray(providedProducts)) {
                     productsToFilter = providedProducts;
-                } else {
-                    // Otherwise fetch featured products with retry logic
+                    
+                    // Still need cart data for filtering
                     try {
-                        const recommended = await retryApiCall(() => Product.filter({ is_featured: true }, '-created_date', 8));
-                        productsToFilter = recommended || [];
-                    } catch (productError) {
-                        console.warn('RecommendedProducts: Failed to load featured products, showing empty recommendations');
-                        productsToFilter = [];
+                        const cartResult = await cartService.getCart();
+                        cartItems = cartResult.items || [];
+                        cartProductIds = cartItems.map(item => item.product_id);
+                        setCartItems(cartProductIds);
+                    } catch (cartError) {
+                        console.warn('RecommendedProducts: Failed to load cart data, continuing without cart exclusions');
                     }
+                } else {
+                    // Use optimized combined fetcher for cart + featured products
+                    const { cartItems: fetchedCartItems, featuredProducts } = await fetchRecommendationData(currentStoreId);
+                    
+                    cartItems = fetchedCartItems;
+                    cartProductIds = cartItems.map(item => item.product_id);
+                    productsToFilter = featuredProducts;
+                    setCartItems(cartProductIds);
                 }
                 
                 // Filter out current product, cart items, and products with same custom options
@@ -209,7 +278,7 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
         return () => {
             window.removeEventListener('cartUpdated', handleCartUpdate);
         };
-    }, [currentProduct, providedProducts, selectedOptions, rateLimitHit]);
+    }, [currentProduct, providedProducts, selectedOptions, rateLimitHit, store?.id, storeId]);
 
     if (loading || products.length === 0) {
         return null;

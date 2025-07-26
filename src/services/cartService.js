@@ -26,21 +26,21 @@ class CartService {
     }
   }
 
-  // Get cart - simplified to always use session_id approach
+  // Get cart - simplified to always use session_id approach with smart caching
   async getCart() {
     try {
       const sessionId = this.getSessionId();
       
       const params = new URLSearchParams();
       params.append('session_id', sessionId);
-      params.append('_t', Date.now()); // Cache buster
       
       const fullUrl = `${this.endpoint}?${params.toString()}`;
       
+      // Use short cache for cart data (30 seconds) to balance freshness and performance
       const response = await fetch(fullUrl, {
-        cache: 'no-cache',
+        cache: 'default',
         headers: {
-          'Cache-Control': 'no-cache'
+          'Cache-Control': 'max-age=30'
         }
       });
       

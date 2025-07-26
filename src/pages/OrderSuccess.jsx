@@ -72,10 +72,47 @@ export default function OrderSuccess() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {/* Success Header */}
-      <div className="text-center mb-8">
-        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-gray-900">Order Confirmed!</h1>
-        <p className="text-gray-600 mt-2">Thank you for your purchase. Your order has been received.</p>
+      <div className="text-center mb-8 bg-gradient-to-r from-green-50 to-blue-50 rounded-xl p-8">
+        <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Order Confirmed!</h1>
+        <p className="text-xl text-gray-700 mb-4">Thank you for your purchase. Your order has been successfully placed.</p>
+        
+        {/* Order Summary Info */}
+        <div className="bg-white rounded-lg p-4 max-w-md mx-auto shadow-sm">
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-gray-500">Order Number</p>
+              <p className="font-bold text-lg text-blue-600">#{order.order_number}</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Order Date</p>
+              <p className="font-semibold">
+                {new Date(order.created_date).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })}
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 pt-3 border-t border-gray-100">
+            <p className="text-gray-500 text-xs">Total Amount</p>
+            <p className="font-bold text-2xl text-green-600">${order.total_amount.toFixed(2)}</p>
+          </div>
+        </div>
+        
+        {order.delivery_date && (
+          <div className="mt-4 text-blue-700">
+            <p className="text-sm font-medium">Expected Delivery</p>
+            <p className="text-lg font-semibold">
+              {new Date(order.delivery_date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -110,42 +147,92 @@ export default function OrderSuccess() {
           </Card>
 
           {/* Delivery Information */}
-          {(order.delivery_date || order.delivery_time_slot || order.delivery_comments) && (
+          {(order.delivery_date || order.delivery_time_slot || order.delivery_instructions) && (
             <Card className="material-elevation-1 border-0 mt-6">
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Calendar className="w-5 h-5 mr-2" />
+                  <Package className="w-5 h-5 mr-2 text-blue-600" />
                   Delivery Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-4">
                 {order.delivery_date && (
-                  <div className="flex items-center">
-                    <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+                  <div className="flex items-center p-3 bg-blue-50 rounded-lg">
+                    <Calendar className="w-5 h-5 mr-3 text-blue-600" />
                     <div>
-                      <p className="text-sm text-gray-600">Delivery Date</p>
-                      <p className="font-medium">{new Date(order.delivery_date).toLocaleDateString()}</p>
+                      <p className="text-sm font-medium text-blue-800">Scheduled Delivery Date</p>
+                      <p className="text-lg font-semibold text-blue-900">
+                        {new Date(order.delivery_date).toLocaleDateString('en-US', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </p>
                     </div>
                   </div>
                 )}
                 {order.delivery_time_slot && (
+                  <div className="flex items-center p-3 bg-green-50 rounded-lg">
+                    <Clock className="w-5 h-5 mr-3 text-green-600" />
+                    <div>
+                      <p className="text-sm font-medium text-green-800">Delivery Time Slot</p>
+                      <p className="text-lg font-semibold text-green-900">{order.delivery_time_slot}</p>
+                    </div>
+                  </div>
+                )}
+                {order.delivery_instructions && (
+                  <div className="p-3 bg-amber-50 rounded-lg">
+                    <div className="flex items-start">
+                      <MessageCircle className="w-5 h-5 mr-3 mt-0.5 text-amber-600" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-800">Special Delivery Instructions</p>
+                        <p className="text-amber-900 mt-1 leading-relaxed">{order.delivery_instructions}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Delivery Status Progress */}
+                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Delivery Status</p>
                   <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Time Slot</p>
-                      <p className="font-medium">{order.delivery_time_slot}</p>
+                    <div className="flex-1">
+                      <div className="flex items-center">
+                        <div className={`w-3 h-3 rounded-full ${
+                          ['processing', 'shipped', 'complete'].includes(order.status) 
+                            ? 'bg-green-500' 
+                            : 'bg-gray-300'
+                        }`}></div>
+                        <div className={`h-1 flex-1 mx-2 ${
+                          ['shipped', 'complete'].includes(order.status)
+                            ? 'bg-green-500'
+                            : 'bg-gray-300'
+                        }`}></div>
+                        <div className={`w-3 h-3 rounded-full ${
+                          ['shipped', 'complete'].includes(order.status)
+                            ? 'bg-green-500'
+                            : 'bg-gray-300'
+                        }`}></div>
+                        <div className={`h-1 flex-1 mx-2 ${
+                          order.status === 'complete'
+                            ? 'bg-green-500'
+                            : 'bg-gray-300'
+                        }`}></div>
+                        <div className={`w-3 h-3 rounded-full ${
+                          order.status === 'complete'
+                            ? 'bg-green-500'
+                            : 'bg-gray-300'
+                        }`}></div>
+                      </div>
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Confirmed</span>
+                        <span>Shipped</span>
+                        <span>Delivered</span>
+                      </div>
                     </div>
                   </div>
-                )}
-                {order.delivery_comments && (
-                  <div className="flex items-start">
-                    <MessageCircle className="w-4 h-4 mr-2 mt-1 text-gray-500" />
-                    <div>
-                      <p className="text-sm text-gray-600">Special Instructions</p>
-                      <p className="font-medium">{order.delivery_comments}</p>
-                    </div>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           )}
