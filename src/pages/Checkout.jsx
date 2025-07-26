@@ -10,6 +10,7 @@ import { PaymentMethod } from "@/api/entities";
 import { ShippingMethod } from "@/api/entities";
 import { Address } from "@/api/entities";
 import { Coupon } from "@/api/entities";
+import { DeliverySettings } from "@/api/entities";
 import { useStore } from "@/components/storefront/StoreProvider";
 import { createStripeCheckout } from "@/api/functions";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,9 @@ export default function Checkout() {
   const [shippingCost, setShippingCost] = useState(0);
   const [taxAmount, setTaxAmount] = useState(0);
   const [deliveryDate, setDeliveryDate] = useState('');
+  const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
+  const [deliveryComments, setDeliveryComments] = useState('');
+  const [deliverySettings, setDeliverySettings] = useState(null);
   
   // Coupon state
   const [couponCode, setCouponCode] = useState('');
@@ -159,10 +163,11 @@ export default function Checkout() {
       // Load cart items
       await loadCartItems();
 
-      // Load payment and shipping methods
-      const [paymentData, shippingData] = await Promise.all([
+      // Load payment methods, shipping methods, and delivery settings
+      const [paymentData, shippingData, deliveryData] = await Promise.all([
         PaymentMethod.filter({ store_id: store.id, is_active: true }),
-        ShippingMethod.filter({ store_id: store.id, is_active: true })
+        ShippingMethod.filter({ store_id: store.id, is_active: true }),
+        DeliverySettings.filter({ store_id: store.id })
       ]);
 
       console.log('🚚 Checkout: Loaded shipping methods:', {
@@ -179,6 +184,7 @@ export default function Checkout() {
 
       setPaymentMethods(paymentData || []);
       setShippingMethods(shippingData || []);
+      setDeliverySettings(deliveryData && deliveryData.length > 0 ? deliveryData[0] : null);
 
       // Set default selections
       if (paymentData?.length > 0) {
@@ -587,6 +593,58 @@ export default function Checkout() {
     });
   };
 
+  const getAvailableDeliveryDates = () => {
+    if (!deliverySettings) return [];
+
+    const today = new Date();
+    const offsetDays = deliverySettings.offset_days || 1;
+    const maxAdvanceDays = deliverySettings.max_advance_days || 30;
+    const blockedDates = deliverySettings.blocked_dates || [];
+    const blockedWeekdays = deliverySettings.blocked_weekdays || [];
+
+    const availableDates = [];
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() + offsetDays);
+
+    // Check if out of office period overlaps
+    const outOfOfficeStart = deliverySettings.out_of_office_start ? new Date(deliverySettings.out_of_office_start) : null;
+    const outOfOfficeEnd = deliverySettings.out_of_office_end ? new Date(deliverySettings.out_of_office_end) : null;
+
+    for (let i = 0; i < maxAdvanceDays; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      
+      const dateString = currentDate.toISOString().split('T')[0];
+      const weekday = currentDate.getDay();
+
+      // Skip if date is blocked
+      if (blockedDates.includes(dateString)) continue;
+      
+      // Skip if weekday is blocked
+      if (blockedWeekdays.includes(weekday)) continue;
+
+      // Skip if in out of office period
+      if (outOfOfficeStart && outOfOfficeEnd && currentDate >= outOfOfficeStart && currentDate <= outOfOfficeEnd) continue;
+
+      availableDates.push({
+        date: dateString,
+        display: currentDate.toLocaleDateString('en-US', { 
+          weekday: 'long', 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        })
+      });
+    }
+
+    return availableDates;
+  };
+
+  const getAvailableTimeSlots = () => {
+    if (!deliverySettings || !deliverySettings.delivery_time_slots) return [];
+    return deliverySettings.delivery_time_slots.filter(slot => slot.is_active);
+  };
+
   const getShippingCountry = () => {
     if (user && selectedShippingAddress && selectedShippingAddress !== 'new') {
       const address = userAddresses.find(a => a.id === selectedShippingAddress);
@@ -619,6 +677,8 @@ export default function Checkout() {
         taxAmount,
         shippingCost,
         deliveryDate,
+        deliveryTimeSlot,
+        deliveryComments,
         email: user?.email || shippingAddress.email,
         userId: user?.id,
         sessionId: localStorage.getItem('cart_session_id')
@@ -1044,6 +1104,78 @@ export default function Checkout() {
                       </label>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Delivery Settings */}
+          {deliverySettings && deliverySettings.enable_delivery_date && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Delivery Options</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {/* Delivery Date */}
+                  <div>
+                    <Label htmlFor="delivery-date">Preferred Delivery Date</Label>
+                    <select
+                      id="delivery-date"
+                      value={deliveryDate}
+                      onChange={(e) => setDeliveryDate(e.target.value)}
+                      className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select a delivery date</option>
+                      {getAvailableDeliveryDates().map((dateOption) => (
+                        <option key={dateOption.date} value={dateOption.date}>
+                          {dateOption.display}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Time Slots */}
+                  {getAvailableTimeSlots().length > 0 && (
+                    <div>
+                      <Label htmlFor="delivery-time">Preferred Time Slot</Label>
+                      <select
+                        id="delivery-time"
+                        value={deliveryTimeSlot}
+                        onChange={(e) => setDeliveryTimeSlot(e.target.value)}
+                        className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select a time slot</option>
+                        {getAvailableTimeSlots().map((slot, index) => (
+                          <option key={index} value={`${slot.start_time}-${slot.end_time}`}>
+                            {slot.start_time} - {slot.end_time}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Delivery Comments */}
+          {deliverySettings && deliverySettings.enable_comments && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Delivery Instructions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div>
+                  <Label htmlFor="delivery-comments">Special delivery instructions (optional)</Label>
+                  <textarea
+                    id="delivery-comments"
+                    value={deliveryComments}
+                    onChange={(e) => setDeliveryComments(e.target.value)}
+                    placeholder="Any special instructions for delivery..."
+                    rows={3}
+                    className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
                 </div>
               </CardContent>
             </Card>

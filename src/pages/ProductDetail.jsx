@@ -102,12 +102,32 @@ export default function ProductDetail() {
 
       const cacheKey = `product-detail-${slug}-${store.id}`;
       console.log('🚨 CRITICAL DEBUG: About to load product with slug:', slug, 'for store:', store.id);
+      console.log('🔐 AUTH DEBUG: Current user and token status:', {
+        hasUser: !!user,
+        userEmail: user?.email,
+        userRole: user?.role,
+        hasAuthToken: !!localStorage.getItem('auth_token'),
+        storeId: store.id,
+        storeName: store.name,
+        storeOwnerEmail: store.owner_email
+      });
       
-      const products = await cachedApiCall(cacheKey, () =>
+      // First try to find by slug
+      let products = await cachedApiCall(cacheKey, () =>
         Product.filter({ store_id: store.id, slug: slug, status: 'active' })
       );
       
       console.log('🚨 CRITICAL DEBUG: API returned for slug', slug, ':', products);
+
+      // If no product found by slug, try searching by SKU as fallback
+      if (!products || products.length === 0) {
+        console.log('🔍 No product found by slug, trying SKU fallback for:', slug);
+        const skuCacheKey = `product-detail-sku-${slug}-${store.id}`;
+        products = await cachedApiCall(skuCacheKey, () =>
+          Product.filter({ store_id: store.id, sku: slug, status: 'active' })
+        );
+        console.log('🔍 SKU search results for', slug, ':', products);
+      }
 
       if (products && products.length > 0) {
         const foundProduct = products[0];
@@ -120,19 +140,31 @@ export default function ProductDetail() {
           status: foundProduct.status
         });
         
-        // Critical check: verify the product slug matches the requested slug
-        if (foundProduct.slug !== slug) {
-          console.error('🚨 SLUG MISMATCH DETECTED!', {
-            requestedSlug: slug,
+        // Critical check: verify the product matches the request
+        // Allow match by either slug OR SKU (since SKU can be used as a fallback identifier)
+        const matchesBySlug = foundProduct.slug === slug;
+        const matchesBySku = foundProduct.sku === slug;
+        
+        if (!matchesBySlug && !matchesBySku) {
+          console.error('🚨 PRODUCT MISMATCH DETECTED!', {
+            requestedIdentifier: slug,
             foundProductSlug: foundProduct.slug,
-            foundProductName: foundProduct.name,
-            foundProductSku: foundProduct.sku
+            foundProductSku: foundProduct.sku,
+            foundProductName: foundProduct.name
           });
           // Show "not found" instead of wrong product
-          console.log('🚨 Setting product to null due to slug mismatch');
+          console.log('🚨 Setting product to null due to identifier mismatch');
           setProduct(null);
           setLoading(false);
           return;
+        }
+        
+        if (matchesBySku && !matchesBySlug) {
+          console.log('✅ Product found by SKU fallback:', {
+            requestedIdentifier: slug,
+            foundProductSlug: foundProduct.slug,
+            foundProductSku: foundProduct.sku
+          });
         }
         
         setProduct(foundProduct);

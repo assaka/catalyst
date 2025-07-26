@@ -17,8 +17,14 @@ const checkStoreOwnership = async (storeId, userEmail, userRole) => {
 // @access  Private
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id, category_id, status, search } = req.query;
+    const { page = 1, limit = 10, store_id, category_id, status, search, slug } = req.query;
     const offset = (page - 1) * limit;
+
+    console.log('🔍 Products GET request received:', {
+      page, limit, store_id, category_id, status, search, slug,
+      userRole: req.user?.role,
+      userEmail: req.user?.email
+    });
 
     const where = {};
     
@@ -30,10 +36,17 @@ router.get('/', async (req, res) => {
       });
       const storeIds = userStores.map(store => store.id);
       where.store_id = { [Op.in]: storeIds };
+      
+      console.log('🔍 User store ownership filter applied:', {
+        userEmail: req.user.email,
+        userStoreIds: storeIds
+      });
     }
 
     if (store_id) where.store_id = store_id;
+    if (category_id) where.category_id = category_id;
     if (status) where.status = status;
+    if (slug) where.slug = slug;
     if (search) {
       where[Op.or] = [
         { name: { [Op.iLike]: `%${search}%` } },
@@ -41,6 +54,8 @@ router.get('/', async (req, res) => {
         { description: { [Op.iLike]: `%${search}%` } }
       ];
     }
+
+    console.log('🔍 Final where clause for product query:', JSON.stringify(where, null, 2));
 
     const { count, rows } = await Product.findAndCountAll({
       where,
@@ -51,6 +66,20 @@ router.get('/', async (req, res) => {
         model: Store,
         attributes: ['id', 'name']
       }]
+    });
+
+    console.log('🔍 Product query results:', {
+      totalCount: count,
+      productsFound: rows.length,
+      productSlugs: rows.map(p => p.slug),
+      firstProductSample: rows[0] ? {
+        id: rows[0].id,
+        name: rows[0].name,
+        slug: rows[0].slug,
+        sku: rows[0].sku,
+        status: rows[0].status,
+        store_id: rows[0].store_id
+      } : 'No products found'
     });
 
     res.json({
