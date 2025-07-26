@@ -115,16 +115,39 @@ export default function OrderSuccess() {
           console.log('Order data found:', orderData);
           setOrder(orderData);
 
-          const itemsData = await OrderItem.filter({ order_id: orderData.id });
-          setOrderItems(itemsData);
+          // Check if order data already includes order items
+          if (orderData.OrderItems && Array.isArray(orderData.OrderItems)) {
+            console.log('Order items found in order data:', orderData.OrderItems);
+            setOrderItems(orderData.OrderItems);
+            
+            // Extract product info if available
+            const productsMap = {};
+            orderData.OrderItems.forEach(item => {
+              if (item.Product) {
+                productsMap[item.product_id] = item.Product;
+              }
+            });
+            setOrderProducts(productsMap);
+          } else {
+            console.log('No order items in order data, trying separate API call');
+            try {
+              const itemsData = await OrderItem.filter({ order_id: orderData.id });
+              setOrderItems(itemsData);
 
-          const productIds = [...new Set(itemsData.map(item => item.product_id))];
-          const productsData = await Product.filter({ id: { $in: productIds } });
-          const productsMap = {};
-          productsData.forEach(product => {
-            productsMap[product.id] = product;
-          });
-          setOrderProducts(productsMap);
+              const productIds = [...new Set(itemsData.map(item => item.product_id))];
+              if (productIds.length > 0) {
+                const productsData = await Product.filter({ id: { $in: productIds } });
+                const productsMap = {};
+                productsData.forEach(product => {
+                  productsMap[product.id] = product;
+                });
+                setOrderProducts(productsMap);
+              }
+            } catch (itemsError) {
+              console.log('Failed to load order items separately:', itemsError);
+              // Continue without order items details
+            }
+          }
         } else {
           console.log('No order data in successful response:', result);
         }
@@ -249,7 +272,7 @@ export default function OrderSuccess() {
           </div>
           <div className="mt-3 pt-3 border-t border-gray-100">
             <p className="text-gray-500 text-xs">Total Amount</p>
-            <p className="font-bold text-2xl text-green-600">${order.total_amount.toFixed(2)}</p>
+            <p className="font-bold text-2xl text-green-600">${parseFloat(order.total_amount || 0).toFixed(2)}</p>
           </div>
         </div>
         
@@ -292,7 +315,7 @@ export default function OrderSuccess() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Total Amount</p>
-                  <p className="font-semibold text-lg">${order.total_amount.toFixed(2)}</p>
+                  <p className="font-semibold text-lg">${parseFloat(order.total_amount || 0).toFixed(2)}</p>
                 </div>
               </div>
             </CardContent>
@@ -411,7 +434,7 @@ export default function OrderSuccess() {
                           <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-lg">${item.total_price.toFixed(2)}</p>
+                          <p className="font-semibold text-lg">${parseFloat(item.total_price || 0).toFixed(2)}</p>
                         </div>
                       </div>
                       
@@ -465,26 +488,26 @@ export default function OrderSuccess() {
             <CardContent className="space-y-3">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${order.subtotal.toFixed(2)}</span>
+                <span>${parseFloat(order.subtotal || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>${order.shipping_cost.toFixed(2)}</span>
+                <span>${parseFloat(order.shipping_cost || 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Tax</span>
-                <span>${order.tax_amount.toFixed(2)}</span>
+                <span>${parseFloat(order.tax_amount || 0).toFixed(2)}</span>
               </div>
-              {order.discount_amount > 0 && (
+              {parseFloat(order.discount_amount || 0) > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span>-${order.discount_amount.toFixed(2)}</span>
+                  <span>-${parseFloat(order.discount_amount || 0).toFixed(2)}</span>
                 </div>
               )}
               <Separator />
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total</span>
-                <span>${order.total_amount.toFixed(2)}</span>
+                <span>${parseFloat(order.total_amount || 0).toFixed(2)}</span>
               </div>
             </CardContent>
           </Card>

@@ -586,7 +586,7 @@ app.use('/api/categories', authMiddleware, categoryRoutes);
 // Public order lookup by payment reference (MUST be before authenticated routes)
 app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) => {
   try {
-    const { Order, Store } = require('./models');
+    const { Order, Store, OrderItem, Product } = require('./models');
     const { payment_reference } = req.params;
     
     if (!payment_reference) {
@@ -602,6 +602,13 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
         {
           model: Store,
           attributes: ['id', 'name']
+        },
+        {
+          model: OrderItem,
+          include: [{ 
+            model: Product, 
+            attributes: ['id', 'name', 'sku', 'image_url'] 
+          }]
         }
       ]
     });
