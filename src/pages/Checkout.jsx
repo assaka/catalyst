@@ -615,9 +615,18 @@ export default function Checkout() {
         sessionId: localStorage.getItem('cart_session_id')
       };
 
-      const { data } = await createStripeCheckout(checkoutData);
-      if (data.url) {
-        window.location.href = data.url;
+      const response = await createStripeCheckout(checkoutData);
+      console.log('Checkout response:', response);
+      
+      // The response is already the data object, not wrapped
+      const checkoutUrl = response.checkout_url || response.url;
+      
+      if (checkoutUrl) {
+        console.log('Redirecting to:', checkoutUrl);
+        window.location.href = checkoutUrl;
+      } else {
+        console.error('No checkout URL in response:', response);
+        throw new Error('No checkout URL received');
       }
     } catch (error) {
       console.error('Checkout failed:', error);
