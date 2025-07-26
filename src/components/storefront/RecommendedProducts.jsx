@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingCart } from 'lucide-react';
 import { useStore } from '@/components/storefront/StoreProvider';
+import cartService from '@/services/cartService';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -74,17 +75,48 @@ const SimpleProductCard = ({ product, settings }) => (
     </Card>
 );
 
-export default function RecommendedProducts() {
+export default function RecommendedProducts({ product: currentProduct, storeId, products: providedProducts }) {
     const { settings } = useStore();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [cartItems, setCartItems] = useState([]);
 
     useEffect(() => {
-        const fetchRecommended = async () => {
+        const fetchData = async () => {
             try {
                 await delay(800);
-                const recommended = await retryApiCall(() => Product.filter({ is_featured: true }, '-created_date', 4));
-                setProducts(recommended || []);
+                
+                // Get cart items to exclude from recommendations
+                const cartResult = await cartService.getCart();
+                const cartProductIds = cartResult.items ? cartResult.items.map(item => item.product_id) : [];
+                setCartItems(cartProductIds);
+                
+                let productsToFilter = [];
+                
+                // If specific products are provided (like from CMS page), use them
+                if (providedProducts && Array.isArray(providedProducts)) {
+                    productsToFilter = providedProducts;
+                } else {
+                    // Otherwise fetch featured products
+                    const recommended = await retryApiCall(() => Product.filter({ is_featured: true }, '-created_date', 8));
+                    productsToFilter = recommended || [];
+                }
+                
+                // Filter out current product and cart items
+                const filteredProducts = productsToFilter.filter(product => {
+                    // Exclude current product if provided
+                    if (currentProduct && product.id === currentProduct.id) {
+                        return false;
+                    }
+                    // Exclude products that are in cart
+                    if (cartProductIds.includes(product.id)) {
+                        return false;
+                    }
+                    return true;
+                });
+                
+                // Take only 4 products after filtering
+                setProducts(filteredProducts.slice(0, 4));
             } catch (error) {
                 console.error("Failed to load recommended products:", error);
                 setProducts([]);
@@ -92,8 +124,20 @@ export default function RecommendedProducts() {
                 setLoading(false);
             }
         };
-        fetchRecommended();
-    }, []);
+        
+        fetchData();
+        
+        // Listen for cart updates to refresh recommendations
+        const handleCartUpdate = () => {
+            fetchData();
+        };
+        
+        window.addEventListener('cartUpdated', handleCartUpdate);
+        
+        return () => {
+            window.removeEventListener('cartUpdated', handleCartUpdate);
+        };
+    }, [currentProduct, providedProducts]);
 
     if (loading || products.length === 0) {
         return null;
