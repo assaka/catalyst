@@ -25,23 +25,30 @@ export const SetupGuide = ({ store }) => {
 
             // First check if store already has a Stripe account
             const status = await checkStripeConnectStatus(store.id);
+            console.log("Stripe status:", status);
             
             let onboardingUrl;
             
             if (status.data?.connected && status.data?.account_id) {
                 // Account exists, create onboarding link
+                console.log("Existing account found, creating onboarding link");
                 const currentUrl = window.location.origin + window.location.pathname;
                 const returnUrl = `${currentUrl}?stripe_return=true`;
                 const refreshUrl = `${currentUrl}?stripe_refresh=true`;
                 
-                const { data } = await createStripeConnectLink(returnUrl, refreshUrl, store.id);
-                onboardingUrl = data?.url;
+                const linkResponse = await createStripeConnectLink(returnUrl, refreshUrl, store.id);
+                console.log("Connect link response:", linkResponse);
+                onboardingUrl = linkResponse.data?.url;
             } else {
                 // No account exists, create new account
-                const { data } = await createStripeConnectAccount(store.id);
-                onboardingUrl = data?.onboarding_url;
+                console.log("No account found, creating new account");
+                const accountResponse = await createStripeConnectAccount(store.id);
+                console.log("Connect account response:", accountResponse);
+                onboardingUrl = accountResponse.data?.onboarding_url;
             }
 
+            console.log("Final onboarding URL:", onboardingUrl);
+            
             if (onboardingUrl) {
                 window.location.href = onboardingUrl;
             } else {
