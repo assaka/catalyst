@@ -176,6 +176,12 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!isFormValid) {
+      alert('Please fill in all required fields and add at least one condition (category, attribute set, SKU, or attribute condition).');
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -230,14 +236,6 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
                      formData.store_id &&
                      hasValidConditions();
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!isFormValid) {
-      alert('Please fill in all required fields and add at least one condition (category, attribute set, SKU, or attribute condition).');
-      return;
-    }
-    onSubmit(formData);
-  };
 
   return (
     <div className="space-y-6">
