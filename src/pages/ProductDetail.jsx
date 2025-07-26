@@ -330,19 +330,9 @@ export default function ProductDetail() {
   };
 
   // useCallback is used to memoize handleOptionChange, preventing unnecessary re-renders in CustomOptions
-  const handleOptionChange = useCallback((optionProduct, isSelected) => {
-    setSelectedOptions(prev => {
-      if (isSelected) {
-        // Ensure price is a number
-        return [...prev, {
-          product_id: optionProduct.id,
-          name: optionProduct.name,
-          price: parseFloat(optionProduct.price) || 0
-        }];
-      } else {
-        return prev.filter(opt => opt.product_id !== optionProduct.id);
-      }
-    });
+  const handleOptionChange = useCallback((newSelectedOptions) => {
+    console.log('🎯 ProductDetail: Custom options changed:', newSelectedOptions);
+    setSelectedOptions(newSelectedOptions);
   }, []); // Empty dependency array ensures this function is stable
 
   if (loading) {
