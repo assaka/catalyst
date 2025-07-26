@@ -384,18 +384,18 @@ export default function ProductDetail() {
   // Helper function to get stock label based on settings and quantity
   const getStockLabel = (product) => {
     // Check if stock labels should be shown at all
-    const showStockLabel = settings?.show_stock_label !== false;
+    const showStockLabel = settings?.stock_settings?.show_stock_label !== false;
     if (!showStockLabel) return null;
     
     // Default behavior if no stock settings are found
-    if (!store?.settings?.stock_settings) {
+    if (!settings?.stock_settings) {
       if (product.stock_quantity <= 0 && !product.infinite_stock) {
         return "Out of Stock";
       }
       return "In Stock";
     }
 
-    const stockSettings = store.settings.stock_settings;
+    const stockSettings = settings.stock_settings;
 
     // Handle infinite stock
     if (product.infinite_stock) {
