@@ -112,6 +112,9 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                 // Only include if it's marked as a custom option
                                 if (product.is_custom_option) {
                                     optionProducts.push(product);
+                                    console.log(`🔧 CustomOptions: Added product ${product.name} to options`);
+                                } else {
+                                    console.log(`🔧 CustomOptions: Skipped product ${product.name} - not marked as custom option (is_custom_option: ${product.is_custom_option})`);
                                 }
                             }
                         } catch (productError) {
