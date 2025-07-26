@@ -132,7 +132,6 @@ export default function Cart() {
             // Only reload if we're not currently processing our own updates
             if (!loading && hasLoadedInitialData) {
                 loadCartData(false); // Reload without showing loader
-            } else {
             }
         };
 
@@ -182,16 +181,10 @@ export default function Cart() {
         try {
             // Use simplified cart service (session-based approach)
             const cartResult = await cartService.getCart();
-            console.log('🔍 Cart Page Debug - Cart Result:', {
-                success: cartResult.success,
-                itemsCount: cartResult.items?.length || 0,
-                items: cartResult.items
-            });
             
             let cartItems = [];
             if (cartResult.success && cartResult.items) {
                 cartItems = cartResult.items;
-                console.log('🔍 Cart Page Debug - Setting cart items:', cartItems.length);
             }
 
             
@@ -206,7 +199,6 @@ export default function Cart() {
             }
 
             const productIds = [...new Set(cartItems.map(item => item.product_id))];
-            console.log('🔍 Cart Debug - Product IDs:', productIds);
             
             // Fetch products individually to avoid object parameter issues
             const products = await retryApiCall(async () => {
@@ -220,13 +212,8 @@ export default function Cart() {
                 return productArrays.filter(arr => arr && arr.length > 0).map(arr => arr[0]);
             });
             
-            console.log('🔍 Cart Debug - Fetched products:', products?.length || 0);
-            
             const populatedCart = cartItems.map(item => {
                 const productDetails = (products || []).find(p => p.id === item.product_id);
-                if (!productDetails) {
-                    console.warn('🚨 Cart Debug - No product found for cart item:', item.product_id);
-                }
                 return { 
                     ...item, 
                     product: productDetails,
@@ -234,7 +221,6 @@ export default function Cart() {
                 };
             }).filter(item => item.product); // Ensure product exists
             
-            console.log('🔍 Cart Debug - Final populated cart items:', populatedCart.length);
             setCartItems(populatedCart);
             setHasLoadedInitialData(true);
             

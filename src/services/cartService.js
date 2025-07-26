@@ -45,7 +45,6 @@ class CartService {
       });
       
       if (!response.ok) {
-        console.error('🚨 CART SERVICE ERROR: HTTP error:', response.status);
         return { success: false, cart: null, items: [] };
       }
       
@@ -109,7 +108,7 @@ class CartService {
       console.error('CartService.addItem: API returned error:', result.message);
       return { success: false, error: result.message };
     } catch (error) {
-      console.error('🛒 CartService.addItem error:', error);
+      console.error('CartService.addItem error:', error);
       return { success: false, error: error.message };
     }
   }

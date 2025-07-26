@@ -11,6 +11,7 @@ import { CheckCircle, Package, MapPin, Calendar, Clock, MessageCircle, Mail, Pho
 export default function OrderSuccess() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('order');
+  const sessionId = searchParams.get('session_id');
   
   const [order, setOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
@@ -20,8 +21,10 @@ export default function OrderSuccess() {
   useEffect(() => {
     if (orderId) {
       loadOrderData();
+    } else if (sessionId) {
+      loadOrderFromSession();
     }
-  }, [orderId]);
+  }, [orderId, sessionId]);
 
   const loadOrderData = async () => {
     try {
@@ -40,6 +43,32 @@ export default function OrderSuccess() {
       setOrderProducts(productsMap);
     } catch (error) {
       console.error('Error loading order data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadOrderFromSession = async () => {
+    try {
+      // Find order by payment reference (session_id)
+      const orders = await Order.filter({ payment_reference: sessionId });
+      if (orders && orders.length > 0) {
+        const orderData = orders[0];
+        setOrder(orderData);
+
+        const itemsData = await OrderItem.filter({ order_id: orderData.id });
+        setOrderItems(itemsData);
+
+        const productIds = [...new Set(itemsData.map(item => item.product_id))];
+        const productsData = await Product.filter({ id: { $in: productIds } });
+        const productsMap = {};
+        productsData.forEach(product => {
+          productsMap[product.id] = product;
+        });
+        setOrderProducts(productsMap);
+      }
+    } catch (error) {
+      console.error('Error loading order from session:', error);
     } finally {
       setLoading(false);
     }
@@ -246,8 +275,8 @@ export default function OrderSuccess() {
               <div className="space-y-6">
                 {orderItems.map((item, index) => {
                   const product = orderProducts[item.product_id];
-                  const basePrice = item.price;
-                  const customOptions = item.selected_options || [];
+                  const basePrice = item.unit_price;
+                  const customOptions = item.product_attributes?.selected_options || [];
                   const customOptionsTotal = customOptions.reduce((sum, opt) => sum + (opt.price || 0), 0);
                   
                   return (
@@ -255,11 +284,11 @@ export default function OrderSuccess() {
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{item.product_name}</h4>
-                          <p className="text-sm text-gray-500">SKU: {item.sku}</p>
+                          <p className="text-sm text-gray-500">SKU: {item.product_sku}</p>
                           <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-lg">${item.total.toFixed(2)}</p>
+                          <p className="font-semibold text-lg">${item.total_price.toFixed(2)}</p>
                         </div>
                       </div>
                       
@@ -293,7 +322,7 @@ export default function OrderSuccess() {
                         
                         <div className="flex justify-between font-semibold pt-1 border-t border-gray-300">
                           <span>Total for {item.quantity} item(s):</span>
-                          <span>${item.total.toFixed(2)}</span>
+                          <span>${item.total_price.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>

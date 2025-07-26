@@ -1,6 +1,6 @@
 const express = require('express');
 const auth = require('../middleware/auth');
-const { Store } = require('../models');
+const { Store, Order, OrderItem } = require('../models');
 
 const router = express.Router();
 
@@ -186,6 +186,253 @@ router.post('/connect-account', auth, async (req, res) => {
     });
   }
 });
+
+// @route   POST /api/payments/create-checkout
+// @desc    Create Stripe Checkout Session
+// @access  Public
+router.post('/create-checkout', async (req, res) => {
+  try {
+    const { 
+      items, 
+      store_id, 
+      success_url, 
+      cancel_url,
+      customer_email,
+      shipping_address,
+      delivery_date,
+      delivery_time_slot,
+      delivery_instructions,
+      coupon_code
+    } = req.body;
+
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Items are required'
+      });
+    }
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    // Check if Stripe is configured
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return res.status(400).json({
+        success: false,
+        message: 'Stripe not configured'
+      });
+    }
+
+    // Get store to check for Stripe account
+    const store = await Store.findByPk(store_id);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Create line items for Stripe
+    const line_items = items.map(item => {
+      const unit_amount = Math.round((item.price + (item.options_total || 0)) * 100); // Convert to cents
+      
+      return {
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: item.product_name || item.name,
+            description: item.description || undefined,
+            images: item.image_url ? [item.image_url] : undefined,
+            metadata: {
+              product_id: item.product_id?.toString() || '',
+              sku: item.sku || '',
+              selected_options: JSON.stringify(item.selected_options || [])
+            }
+          },
+          unit_amount: unit_amount,
+        },
+        quantity: item.quantity || 1,
+      };
+    });
+
+    // Build checkout session configuration
+    const sessionConfig = {
+      payment_method_types: ['card'],
+      line_items: line_items,
+      mode: 'payment',
+      success_url: success_url || `${process.env.CORS_ORIGIN}/order-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancel_url || `${process.env.CORS_ORIGIN}/cart`,
+      metadata: {
+        store_id: store_id.toString(),
+        delivery_date: delivery_date || '',
+        delivery_time_slot: delivery_time_slot || '',
+        delivery_instructions: delivery_instructions || '',
+        coupon_code: coupon_code || ''
+      }
+    };
+
+    // Add customer email if provided
+    if (customer_email) {
+      sessionConfig.customer_email = customer_email;
+    }
+
+    // Add shipping if address is provided
+    if (shipping_address) {
+      sessionConfig.shipping_address_collection = {
+        allowed_countries: ['US', 'CA', 'GB', 'AU'] // Add more countries as needed
+      };
+      
+      // If we have a specific address, we could pre-fill it
+      if (shipping_address.name || shipping_address.address_line1) {
+        sessionConfig.customer_details = {
+          address: {
+            line1: shipping_address.address_line1 || '',
+            line2: shipping_address.address_line2 || '',
+            city: shipping_address.city || '',
+            state: shipping_address.state || '',
+            postal_code: shipping_address.postal_code || '',
+            country: shipping_address.country || 'US'
+          },
+          name: shipping_address.name || ''
+        };
+      }
+    }
+
+    // Use Connect account if available
+    const stripeOptions = {};
+    if (store.stripe_account_id) {
+      stripeOptions.stripeAccount = store.stripe_account_id;
+    }
+
+    // Create checkout session
+    const session = await stripe.checkout.sessions.create(sessionConfig, stripeOptions);
+
+    res.json({
+      success: true,
+      data: {
+        session_id: session.id,
+        checkout_url: session.url,
+        public_key: process.env.STRIPE_PUBLISHABLE_KEY
+      }
+    });
+
+  } catch (error) {
+    console.error('Create checkout session error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create checkout session',
+      error: error.message
+    });
+  }
+});
+
+// @route   POST /api/payments/webhook
+// @desc    Handle Stripe webhooks
+// @access  Public
+router.post('/webhook', async (req, res) => {
+  const sig = req.headers['stripe-signature'];
+  
+  let event;
+  
+  try {
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+
+  // Handle the event
+  switch (event.type) {
+    case 'checkout.session.completed':
+      const session = event.data.object;
+      
+      try {
+        // Create order from checkout session
+        await createOrderFromCheckoutSession(session);
+      } catch (error) {
+        console.error('Error creating order from webhook:', error);
+        return res.status(500).json({ error: 'Failed to create order' });
+      }
+      
+      break;
+    default:
+      console.log(`Unhandled event type ${event.type}`);
+  }
+
+  res.json({ received: true });
+});
+
+// Helper function to create order from Stripe checkout session
+async function createOrderFromCheckoutSession(session) {
+  try {
+    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code } = session.metadata;
+    
+    // Get line items from the session
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+      expand: ['data.price.product']
+    });
+    
+    // Calculate order totals from session
+    const subtotal = session.amount_subtotal / 100; // Convert from cents
+    const tax_amount = session.amount_tax / 100;
+    const total_amount = session.amount_total / 100;
+    
+    // Create the order
+    const order = await Order.create({
+      store_id: store_id,
+      customer_email: session.customer_email || session.customer_details?.email,
+      customer_phone: session.customer_details?.phone,
+      billing_address: session.customer_details?.address || {},
+      shipping_address: session.shipping_details?.address || session.customer_details?.address || {},
+      subtotal: subtotal,
+      tax_amount: tax_amount,
+      shipping_amount: 0, // Add shipping logic if needed
+      discount_amount: (session.total_details?.amount_discount || 0) / 100,
+      total_amount: total_amount,
+      currency: session.currency.toUpperCase(),
+      delivery_date: delivery_date ? new Date(delivery_date) : null,
+      delivery_time_slot: delivery_time_slot || null,
+      delivery_instructions: delivery_instructions || null,
+      payment_method: 'stripe',
+      payment_reference: session.id, // Use session ID for lookup
+      payment_status: 'paid',
+      status: 'processing',
+      coupon_code: coupon_code || null
+    });
+    
+    // Create order items
+    for (const lineItem of lineItems.data) {
+      const productMetadata = lineItem.price.product.metadata || {};
+      const selectedOptions = productMetadata.selected_options ? 
+        JSON.parse(productMetadata.selected_options) : [];
+      
+      await OrderItem.create({
+        order_id: order.id,
+        product_id: productMetadata.product_id,
+        product_name: lineItem.description,
+        product_sku: productMetadata.sku || '',
+        quantity: lineItem.quantity,
+        unit_price: lineItem.price.unit_amount / 100,
+        total_price: (lineItem.amount_total / 100),
+        product_attributes: {
+          selected_options: selectedOptions
+        }
+      });
+    }
+    
+    console.log(`Order created successfully: ${order.order_number}`);
+    return order;
+    
+  } catch (error) {
+    console.error('Error creating order from checkout session:', error);
+    throw error;
+  }
+}
 
 // @route   POST /api/payments/process
 // @desc    Process payment
