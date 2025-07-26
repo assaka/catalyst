@@ -92,38 +92,94 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
     };
 
     const isRuleApplicable = (rule, product) => {
-        if (!rule.conditions) return true; // No conditions means it applies to all products
+        console.log('🔍 Evaluating rule applicability:', {
+            ruleName: rule.name,
+            productId: product.id,
+            productSku: product.sku,
+            conditions: rule.conditions
+        });
+
+        // If no conditions are specified, rule applies to all products
+        if (!rule.conditions || Object.keys(rule.conditions).length === 0) {
+            console.log('✅ Rule applies: No conditions specified');
+            return true;
+        }
 
         const { categories, attribute_sets, skus, attribute_conditions } = rule.conditions;
+        let hasAnyCondition = false;
 
         // Check category conditions
         if (categories && categories.length > 0) {
+            hasAnyCondition = true;
             const productCategories = product.category_ids || [];
             const hasMatchingCategory = categories.some(catId => productCategories.includes(catId));
-            if (hasMatchingCategory) return true;
+            console.log('🔍 Category check:', {
+                ruleCategories: categories,
+                productCategories,
+                match: hasMatchingCategory
+            });
+            if (hasMatchingCategory) {
+                console.log('✅ Rule applies: Category match');
+                return true;
+            }
         }
 
         // Check attribute set conditions
         if (attribute_sets && attribute_sets.length > 0) {
-            if (attribute_sets.includes(product.attribute_set_id)) return true;
+            hasAnyCondition = true;
+            const match = attribute_sets.includes(product.attribute_set_id);
+            console.log('🔍 Attribute set check:', {
+                ruleAttributeSets: attribute_sets,
+                productAttributeSet: product.attribute_set_id,
+                match
+            });
+            if (match) {
+                console.log('✅ Rule applies: Attribute set match');
+                return true;
+            }
         }
 
         // Check SKU conditions
         if (skus && skus.length > 0) {
-            if (skus.includes(product.sku)) return true;
+            hasAnyCondition = true;
+            const match = skus.includes(product.sku);
+            console.log('🔍 SKU check:', {
+                ruleSKUs: skus,
+                productSKU: product.sku,
+                match
+            });
+            if (match) {
+                console.log('✅ Rule applies: SKU match');
+                return true;
+            }
         }
 
         // Check attribute conditions
         if (attribute_conditions && attribute_conditions.length > 0) {
+            hasAnyCondition = true;
             for (const condition of attribute_conditions) {
                 const productValue = product[condition.attribute_code];
-                if (productValue && productValue.toString() === condition.attribute_value.toString()) {
+                const match = productValue && productValue.toString() === condition.attribute_value.toString();
+                console.log('🔍 Attribute condition check:', {
+                    attributeCode: condition.attribute_code,
+                    expectedValue: condition.attribute_value,
+                    productValue,
+                    match
+                });
+                if (match) {
+                    console.log('✅ Rule applies: Attribute condition match');
                     return true;
                 }
             }
         }
 
-        // If conditions exist but none matched, rule doesn't apply
+        // If no conditions were specified, rule applies
+        if (!hasAnyCondition) {
+            console.log('✅ Rule applies: No valid conditions specified');
+            return true;
+        }
+
+        console.log('❌ Rule does not apply: No conditions matched');
         return false;
     };
 
