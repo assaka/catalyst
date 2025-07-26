@@ -252,6 +252,7 @@ function PagesContent() {
                 <Route path="/CustomOptionRules" element={<CustomOptionRules />} />
                 
                 <Route path="/OrderSuccess" element={<OrderSuccess />} />
+                <Route path="/order-success" element={<OrderSuccess />} />
                 
                 <Route path="/ShippingMethods" element={<ShippingMethods />} />
                 
