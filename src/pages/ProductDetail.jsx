@@ -123,6 +123,19 @@ export default function ProductDetail() {
           slug: foundProduct.slug,
           store_id: foundProduct.store_id
         });
+        
+        // Verify the product slug exactly matches what was requested
+        // This prevents showing incorrect products due to fuzzy matching or fallback logic
+        if (foundProduct.slug !== slug) {
+          console.warn('🚨 ProductDetail: Product slug mismatch!', {
+            requested: slug,
+            found: foundProduct.slug,
+            productName: foundProduct.name
+          });
+          setProduct(null); // Show "not found" instead of wrong product
+          return;
+        }
+        
         setProduct(foundProduct);
 
         // Send Google Analytics 'view_item' event
