@@ -100,7 +100,6 @@ export default function ProductDetail() {
       }
 
       const cacheKey = `product-detail-${slug}-${store.id}`;
-      console.log('🔍 ProductDetail: Loading product with slug:', slug, 'for store:', store.id);
       
       // First try to find by slug
       let products = await cachedApiCall(cacheKey, () =>
@@ -109,7 +108,6 @@ export default function ProductDetail() {
       
       // If no product found by slug, try searching by SKU as fallback
       if (!products || products.length === 0) {
-        console.log('🔍 ProductDetail: No product found by slug, trying SKU fallback');
         const skuCacheKey = `product-detail-sku-${slug}-${store.id}`;
         products = await cachedApiCall(skuCacheKey, () =>
           Product.filter({ store_id: store.id, sku: slug, status: 'active' })
@@ -125,26 +123,12 @@ export default function ProductDetail() {
         const matchesBySku = foundProduct.sku === slug;
         
         if (!matchesBySlug && !matchesBySku) {
-          console.error('🚨 PRODUCT MISMATCH DETECTED!', {
-            requestedIdentifier: slug,
-            foundProductSlug: foundProduct.slug,
-            foundProductSku: foundProduct.sku,
-            foundProductName: foundProduct.name
-          });
           // Show "not found" instead of wrong product
-          console.log('🚨 Setting product to null due to identifier mismatch');
           setProduct(null);
           setLoading(false);
           return;
         }
         
-        if (matchesBySku && !matchesBySlug) {
-          console.log('✅ Product found by SKU fallback:', {
-            requestedIdentifier: slug,
-            foundProductSlug: foundProduct.slug,
-            foundProductSku: foundProduct.sku
-          });
-        }
         
         setProduct(foundProduct);
 
@@ -693,7 +677,7 @@ export default function ProductDetail() {
           {/* Quantity, Add to Cart, and Wishlist */}
           <div className="border-t pt-6">
             <div className="flex items-center space-x-4">
-              {console.log('🔍 DEBUG ProductDetail - settings.hide_quantity_selector:', settings?.hide_quantity_selector) || !settings?.hide_quantity_selector && (
+              {!settings?.hide_quantity_selector && (
                 <div className="flex items-center space-x-2">
                   <label htmlFor="quantity-input" className="font-medium text-sm">Qty:</label>
                   <div className="flex items-center border rounded-lg overflow-hidden">

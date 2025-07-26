@@ -20,11 +20,6 @@ router.get('/', async (req, res) => {
     const { page = 1, limit = 10, store_id, category_id, status, search, slug, sku } = req.query;
     const offset = (page - 1) * limit;
 
-    console.log('🔍 Products GET request received:', {
-      page, limit, store_id, category_id, status, search, slug, sku,
-      userRole: req.user?.role,
-      userEmail: req.user?.email
-    });
 
     const where = {};
     
@@ -36,18 +31,12 @@ router.get('/', async (req, res) => {
       });
       const userStoreIds = userStores.map(store => store.id);
       
-      console.log('🔍 User store ownership filter applied:', {
-        userEmail: req.user.email,
-        userStoreIds: userStoreIds
-      });
 
       // If a specific store_id is requested, check if user owns it
       if (store_id) {
         if (userStoreIds.includes(store_id)) {
           where.store_id = store_id;
-          console.log('🔍 User has access to requested store:', store_id);
         } else {
-          console.log('🔍 User does not have access to requested store:', store_id);
           // Return empty result if user doesn't own the requested store
           return res.json({
             success: true,
@@ -77,11 +66,9 @@ router.get('/', async (req, res) => {
     if (status) where.status = status;
     if (slug) {
       where.slug = slug;
-      console.log('🔍 Filtering by slug:', slug);
     }
     if (sku) {
       where.sku = sku;
-      console.log('🔍 Filtering by sku:', sku);
     }
     if (search) {
       where[Op.or] = [
@@ -91,37 +78,6 @@ router.get('/', async (req, res) => {
       ];
     }
 
-    console.log('🔍 Final where clause for product query:', JSON.stringify(where, null, 2));
-
-    // If searching by slug or sku, let's also check what products exist regardless of ownership
-    if (slug || sku) {
-      try {
-        const debugWhere = {};
-        if (slug) debugWhere.slug = slug;
-        if (sku) debugWhere.sku = sku;
-        
-        const allProducts = await Product.findAll({
-          where: debugWhere,
-          include: [{
-            model: Store,
-            attributes: ['id', 'name', 'owner_email']
-          }]
-        });
-        console.log(`🔍 All products with ${slug ? 'slug "' + slug + '"' : 'sku "' + sku + '"'} (regardless of ownership):`, 
-          allProducts.map(p => ({
-            id: p.id,
-            name: p.name,
-            slug: p.slug,
-            sku: p.sku,
-            store_id: p.store_id,
-            store_name: p.Store?.name,
-            store_owner: p.Store?.owner_email
-          }))
-        );
-      } catch (debugError) {
-        console.log('🔍 Debug query failed:', debugError.message);
-      }
-    }
 
     const { count, rows } = await Product.findAndCountAll({
       where,
@@ -134,19 +90,6 @@ router.get('/', async (req, res) => {
       }]
     });
 
-    console.log('🔍 Product query results:', {
-      totalCount: count,
-      productsFound: rows.length,
-      productSlugs: rows.map(p => p.slug),
-      firstProductSample: rows[0] ? {
-        id: rows[0].id,
-        name: rows[0].name,
-        slug: rows[0].slug,
-        sku: rows[0].sku,
-        status: rows[0].status,
-        store_id: rows[0].store_id
-      } : 'No products found'
-    });
 
     res.json({
       success: true,

@@ -24,46 +24,21 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
 
         try {
             setLoading(true);
-            console.log('🎯 CustomOptions: Loading rules for product:', product.id, 'store:', store.id);
-
             // Fetch all active custom option rules for the store
             const rules = await CustomOptionRule.filter({ 
                 store_id: store.id,
                 is_active: true 
             });
 
-            console.log('🎯 CustomOptions: Found rules:', rules.map(r => ({
-                id: r.id,
-                name: r.name,
-                conditions: r.conditions,
-                optional_product_ids: r.optional_product_ids
-            })));
-
             // Find applicable rules for this product
             // Only evaluate rules if we have a valid product with an ID
             if (!product || !product.id) {
-                console.log('❌ CustomOptions: Invalid product, no rules can apply');
                 setCustomOptions([]);
                 setLoading(false);
                 return;
             }
 
             const applicableRules = rules.filter(rule => isRuleApplicable(rule, product));
-            
-            console.log('🎯 CustomOptions: Applicable rules:', applicableRules.map(r => ({
-                id: r.id,
-                name: r.name,
-                conditions: r.conditions
-            })));
-            
-            console.log('🎯 CustomOptions: Current product details:', {
-                id: product.id,
-                name: product.name,
-                sku: product.sku,
-                slug: product.slug,
-                category_ids: product.category_ids,
-                attribute_set_id: product.attribute_set_id
-            });
 
             if (applicableRules.length === 0) {
                 setCustomOptions([]);
@@ -78,8 +53,6 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             // Load the custom option products
             if (rule.optional_product_ids && rule.optional_product_ids.length > 0) {
                 try {
-                    console.log('🎯 CustomOptions: Loading products with IDs:', rule.optional_product_ids);
-                    
                     // Load products individually if $in syntax doesn't work
                     const optionProducts = [];
                     for (const productId of rule.optional_product_ids) {
@@ -100,12 +73,6 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                         }
                     }
 
-                    console.log('🎯 CustomOptions: Loaded option products:', optionProducts.map(p => ({
-                        id: p.id,
-                        name: p.name,
-                        sku: p.sku,
-                        is_custom_option: p.is_custom_option
-                    })));
                     setCustomOptions(optionProducts);
                 } catch (error) {
                     console.error('Error loading custom option products:', error);
@@ -123,16 +90,8 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
     };
 
     const isRuleApplicable = (rule, product) => {
-        console.log('🔍 Evaluating rule applicability:', {
-            ruleName: rule.name,
-            productId: product.id,
-            productSku: product.sku,
-            conditions: rule.conditions
-        });
-
         // Check if rule has valid conditions
         if (!rule.conditions || Object.keys(rule.conditions).length === 0) {
-            console.log('❌ Rule does not apply: No conditions object defined');
             return false;
         }
 
@@ -144,12 +103,6 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         const hasValidAttributeConditions = attribute_conditions && Array.isArray(attribute_conditions) && attribute_conditions.length > 0;
 
         if (!hasValidCategories && !hasValidAttributeSets && !hasValidSkus && !hasValidAttributeConditions) {
-            console.log('❌ Rule does not apply: No valid condition values found', {
-                categories: categories,
-                attribute_sets: attribute_sets,
-                skus: skus,
-                attribute_conditions: attribute_conditions
-            });
             return false;
         }
 
@@ -160,13 +113,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             hasAnyCondition = true;
             const productCategories = product.category_ids || [];
             const hasMatchingCategory = categories.some(catId => productCategories.includes(catId));
-            console.log('🔍 Category check:', {
-                ruleCategories: categories,
-                productCategories,
-                match: hasMatchingCategory
-            });
             if (hasMatchingCategory) {
-                console.log('✅ Rule applies: Category match');
                 return true;
             }
         }
@@ -175,13 +122,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         if (attribute_sets && Array.isArray(attribute_sets) && attribute_sets.length > 0) {
             hasAnyCondition = true;
             const match = attribute_sets.includes(product.attribute_set_id);
-            console.log('🔍 Attribute set check:', {
-                ruleAttributeSets: attribute_sets,
-                productAttributeSet: product.attribute_set_id,
-                match
-            });
             if (match) {
-                console.log('✅ Rule applies: Attribute set match');
                 return true;
             }
         }
@@ -190,13 +131,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
         if (skus && Array.isArray(skus) && skus.length > 0) {
             hasAnyCondition = true;
             const match = skus.includes(product.sku);
-            console.log('🔍 SKU check:', {
-                ruleSKUs: skus,
-                productSKU: product.sku,
-                match
-            });
             if (match) {
-                console.log('✅ Rule applies: SKU match');
                 return true;
             }
         }
@@ -207,14 +142,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             for (const condition of attribute_conditions) {
                 const productValue = product[condition.attribute_code];
                 const match = productValue && productValue.toString() === condition.attribute_value.toString();
-                console.log('🔍 Attribute condition check:', {
-                    attributeCode: condition.attribute_code,
-                    expectedValue: condition.attribute_value,
-                    productValue,
-                    match
-                });
                 if (match) {
-                    console.log('✅ Rule applies: Attribute condition match');
                     return true;
                 }
             }
@@ -222,11 +150,9 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
 
         // If no valid conditions were found, rule does not apply
         if (!hasAnyCondition) {
-            console.log('❌ Rule does not apply: No valid conditions found');
             return false;
         }
 
-        console.log('❌ Rule does not apply: No conditions matched');
         return false;
     };
 
