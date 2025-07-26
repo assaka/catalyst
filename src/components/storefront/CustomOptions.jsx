@@ -130,16 +130,29 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             conditions: rule.conditions
         });
 
-        // Check if rule has valid conditions or is explicitly set to apply to all products
+        // Check if rule has valid conditions
         if (!rule.conditions || Object.keys(rule.conditions).length === 0) {
-            // Check if this rule is explicitly marked to apply to all products
-            // For now, we'll be restrictive and require explicit conditions
-            // This prevents accidental display of rules on inappropriate products
-            console.log('❌ Rule does not apply: No specific conditions defined');
+            console.log('❌ Rule does not apply: No conditions object defined');
             return false;
         }
 
+        // Additional check: ensure at least one condition has actual values
         const { categories, attribute_sets, skus, attribute_conditions } = rule.conditions;
+        const hasValidCategories = categories && Array.isArray(categories) && categories.length > 0;
+        const hasValidAttributeSets = attribute_sets && Array.isArray(attribute_sets) && attribute_sets.length > 0;
+        const hasValidSkus = skus && Array.isArray(skus) && skus.length > 0;
+        const hasValidAttributeConditions = attribute_conditions && Array.isArray(attribute_conditions) && attribute_conditions.length > 0;
+
+        if (!hasValidCategories && !hasValidAttributeSets && !hasValidSkus && !hasValidAttributeConditions) {
+            console.log('❌ Rule does not apply: No valid condition values found', {
+                categories: categories,
+                attribute_sets: attribute_sets,
+                skus: skus,
+                attribute_conditions: attribute_conditions
+            });
+            return false;
+        }
+
         let hasAnyCondition = false;
 
         // Check category conditions
