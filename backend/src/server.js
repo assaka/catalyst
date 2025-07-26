@@ -583,6 +583,48 @@ app.use('/api/stores', authMiddleware, storeRoutes);
 app.use('/api/products', authMiddleware, productRoutes);
 app.use('/api/categories', authMiddleware, categoryRoutes);
 app.use('/api/orders', authMiddleware, orderRoutes);
+// Public order lookup by payment reference
+app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) => {
+  try {
+    const { Order, Store } = require('./models');
+    const { payment_reference } = req.params;
+    
+    if (!payment_reference) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment reference is required'
+      });
+    }
+
+    const order = await Order.findOne({
+      where: { payment_reference },
+      include: [
+        {
+          model: Store,
+          attributes: ['id', 'name']
+        }
+      ]
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: order
+    });
+  } catch (error) {
+    console.error('Get order by payment reference error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
 app.use('/api/coupons', authMiddleware, couponRoutes);
 app.use('/api/attributes', authMiddleware, attributeRoutes);
 app.use('/api/cms', authMiddleware, cmsRoutes);

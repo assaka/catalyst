@@ -50,22 +50,25 @@ export default function OrderSuccess() {
 
   const loadOrderFromSession = async () => {
     try {
-      // Find order by payment reference (session_id)
-      const orders = await Order.filter({ payment_reference: sessionId });
-      if (orders && orders.length > 0) {
-        const orderData = orders[0];
-        setOrder(orderData);
+      // Use public endpoint to find order by payment reference (session_id)
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders/by-payment-reference/${sessionId}`);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          const orderData = result.data;
+          setOrder(orderData);
 
-        const itemsData = await OrderItem.filter({ order_id: orderData.id });
-        setOrderItems(itemsData);
+          const itemsData = await OrderItem.filter({ order_id: orderData.id });
+          setOrderItems(itemsData);
 
-        const productIds = [...new Set(itemsData.map(item => item.product_id))];
-        const productsData = await Product.filter({ id: { $in: productIds } });
-        const productsMap = {};
-        productsData.forEach(product => {
-          productsMap[product.id] = product;
-        });
-        setOrderProducts(productsMap);
+          const productIds = [...new Set(itemsData.map(item => item.product_id))];
+          const productsData = await Product.filter({ id: { $in: productIds } });
+          const productsMap = {};
+          productsData.forEach(product => {
+            productsMap[product.id] = product;
+          });
+          setOrderProducts(productsMap);
+        }
       }
     } catch (error) {
       console.error('Error loading order from session:', error);
