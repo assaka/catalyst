@@ -6,42 +6,56 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CountrySelect } from '@/components/ui/country-select';
+import { ShippingMethodType } from '@/api/entities';
 export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: '',
     is_active: true,
-    type: 'flat_rate',
-    flat_rate_cost: 0,
-    free_shipping_min_order: 0,
-    dhl_api_key: '',
-    dhl_api_secret: '',
-    dhl_account_number: '',
-    dhl_service_type: 'domestic',
+    shipping_method_type_id: '',
+    configuration: {},
     availability: 'all',
     countries: [],
   });
 
   const [loading, setLoading] = useState(false);
+  const [shippingMethodTypes, setShippingMethodTypes] = useState([]);
+  const [selectedMethodType, setSelectedMethodType] = useState(null);
 
+  // Load shipping method types on component mount
+  useEffect(() => {
+    const loadShippingMethodTypes = async () => {
+      try {
+        const types = await ShippingMethodType.filter({ store_id: storeId, is_active: true });
+        setShippingMethodTypes(types || []);
+      } catch (error) {
+        console.error('Error loading shipping method types:', error);
+        setShippingMethodTypes([]);
+      }
+    };
 
+    if (storeId) {
+      loadShippingMethodTypes();
+    }
+  }, [storeId]);
 
   useEffect(() => {
     if (method) {
       setFormData({
         name: method.name || '',
         is_active: method.is_active !== false,
-        type: method.type || 'flat_rate',
-        flat_rate_cost: method.flat_rate_cost || 0,
-        free_shipping_min_order: method.free_shipping_min_order || 0,
-        dhl_api_key: method.dhl_api_key || '',
-        dhl_api_secret: method.dhl_api_secret || '',
-        dhl_account_number: method.dhl_account_number || '',
-        dhl_service_type: method.dhl_service_type || 'domestic',
+        shipping_method_type_id: method.shipping_method_type_id || '',
+        configuration: method.configuration || {},
         availability: method.availability || 'all',
         countries: Array.isArray(method.countries) ? method.countries : [],
       });
+      
+      // Find and set the selected method type
+      if (method.shipping_method_type_id && shippingMethodTypes.length > 0) {
+        const methodType = shippingMethodTypes.find(type => type.id === method.shipping_method_type_id);
+        setSelectedMethodType(methodType);
+      }
     }
-  }, [method]);
+  }, [method, shippingMethodTypes]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -60,6 +74,105 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleConfigurationChange = (field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      configuration: { ...prev.configuration, [field]: value }
+    }));
+  };
+
+  const handleMethodTypeChange = (typeId) => {
+    const methodType = shippingMethodTypes.find(type => type.id === typeId);
+    setSelectedMethodType(methodType);
+    setFormData(prev => ({
+      ...prev,
+      shipping_method_type_id: typeId,
+      configuration: {} // Reset configuration when type changes
+    }));
+  };
+
+  const renderConfigurationFields = () => {
+    if (!selectedMethodType || !selectedMethodType.configuration_schema?.fields) {
+      return null;
+    }
+
+    return (
+      <div className="space-y-4">
+        <h4 className="font-semibold text-sm text-gray-700">Configuration</h4>
+        {selectedMethodType.configuration_schema.fields.map((field) => (
+          <div key={field.name}>
+            <Label htmlFor={field.name}>
+              {field.label}
+              {field.required && <span className="text-red-500 ml-1">*</span>}
+            </Label>
+            
+            {field.type === 'text' && (
+              <Input
+                id={field.name}
+                value={formData.configuration[field.name] || field.default_value || ''}
+                onChange={(e) => handleConfigurationChange(field.name, e.target.value)}
+                placeholder={field.placeholder}
+                required={field.required}
+              />
+            )}
+            
+            {field.type === 'password' && (
+              <Input
+                id={field.name}
+                type="password"
+                value={formData.configuration[field.name] || field.default_value || ''}
+                onChange={(e) => handleConfigurationChange(field.name, e.target.value)}
+                placeholder={field.placeholder}
+                required={field.required}
+              />
+            )}
+            
+            {field.type === 'number' && (
+              <Input
+                id={field.name}
+                type="number"
+                step="0.01"
+                value={formData.configuration[field.name] || field.default_value || 0}
+                onChange={(e) => handleConfigurationChange(field.name, parseFloat(e.target.value) || 0)}
+                placeholder={field.placeholder}
+                required={field.required}
+              />
+            )}
+            
+            {field.type === 'select' && field.options && (
+              <Select
+                value={formData.configuration[field.name] || field.default_value || ''}
+                onValueChange={(value) => handleConfigurationChange(field.name, value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={field.placeholder} />
+                </SelectTrigger>
+                <SelectContent>
+                  {field.options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            
+            {field.type === 'boolean' && (
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id={field.name}
+                  checked={formData.configuration[field.name] || field.default_value || false}
+                  onCheckedChange={(checked) => handleConfigurationChange(field.name, checked)}
+                />
+                <Label htmlFor={field.name}>{field.label}</Label>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   if (loading) {
@@ -99,104 +212,25 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
           </div>
 
           <div>
-            <Label htmlFor="type">Shipping Type</Label>
+            <Label htmlFor="shipping_method_type_id">Shipping Method Type</Label>
             <Select
-              value={formData.type}
-              onValueChange={(value) => handleInputChange('type', value)}
+              value={formData.shipping_method_type_id}
+              onValueChange={handleMethodTypeChange}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Select shipping method type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="flat_rate">Flat Rate</SelectItem>
-                <SelectItem value="free_shipping">Free Shipping</SelectItem>
-                <SelectItem value="dhl">DHL Shipping</SelectItem>
+                {shippingMethodTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>
+                    {type.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {formData.type === 'flat_rate' && (
-            <div>
-              <Label htmlFor="flat_rate_cost">Shipping Cost</Label>
-              <Input
-                id="flat_rate_cost"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.flat_rate_cost}
-                onChange={(e) => handleInputChange('flat_rate_cost', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-          )}
-
-          {formData.type === 'free_shipping' && (
-            <div>
-              <Label htmlFor="free_shipping_min_order">Minimum Order Amount for Free Shipping</Label>
-              <Input
-                id="free_shipping_min_order"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.free_shipping_min_order}
-                onChange={(e) => handleInputChange('free_shipping_min_order', parseFloat(e.target.value) || 0)}
-              />
-            </div>
-          )}
-
-          {formData.type === 'dhl' && (
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="dhl_api_key">DHL API Key *</Label>
-                <Input
-                  id="dhl_api_key"
-                  type="password"
-                  value={formData.dhl_api_key}
-                  onChange={(e) => handleInputChange('dhl_api_key', e.target.value)}
-                  placeholder="Enter your DHL API key"
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="dhl_api_secret">DHL API Secret *</Label>
-                <Input
-                  id="dhl_api_secret"
-                  type="password"
-                  value={formData.dhl_api_secret}
-                  onChange={(e) => handleInputChange('dhl_api_secret', e.target.value)}
-                  placeholder="Enter your DHL API secret"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="dhl_account_number">DHL Account Number *</Label>
-                <Input
-                  id="dhl_account_number"
-                  value={formData.dhl_account_number}
-                  onChange={(e) => handleInputChange('dhl_account_number', e.target.value)}
-                  placeholder="Enter your DHL account number"
-                  required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="dhl_service_type">Service Type</Label>
-                <Select
-                  value={formData.dhl_service_type}
-                  onValueChange={(value) => handleInputChange('dhl_service_type', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="domestic">Domestic</SelectItem>
-                    <SelectItem value="international">International</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
+          {renderConfigurationFields()}
 
           <div>
             <Label htmlFor="availability">Availability</Label>

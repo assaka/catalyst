@@ -10,14 +10,13 @@
       "type": "boolean",
       "default": true
     },
+    "shipping_method_type_id": {
+      "type": "string",
+      "description": "Reference to ShippingMethodType record"
+    },
     "type": {
       "type": "string",
-      "enum": [
-        "flat_rate",
-        "free_shipping",
-        "dhl"
-      ],
-      "default": "flat_rate"
+      "description": "Legacy type field for backward compatibility"
     },
     "flat_rate_cost": {
       "type": "number",
@@ -47,6 +46,10 @@
       ],
       "default": "domestic",
       "description": "DHL service type. Used if type is 'dhl'."
+    },
+    "configuration": {
+      "type": "object",
+      "description": "Dynamic configuration based on shipping method type schema"
     },
     "availability": {
       "type": "string",

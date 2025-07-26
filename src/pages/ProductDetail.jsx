@@ -99,12 +99,35 @@ export default function ProductDetail() {
       }
 
       const cacheKey = `product-detail-${slug}-${store.id}`;
+      console.log('🔍 ProductDetail: Loading product for slug:', slug);
+      
       const products = await cachedApiCall(cacheKey, () =>
         Product.filter({ store_id: store.id, slug: slug, status: 'active' })
       );
+      
+      console.log('🔍 ProductDetail: API response for slug "' + slug + '":', products);
 
       if (products && products.length > 0) {
         const foundProduct = products[0];
+        console.log('🔍 ProductDetail: Found product details:', {
+          id: foundProduct.id,
+          name: foundProduct.name,
+          slug: foundProduct.slug,
+          sku: foundProduct.sku,
+          store_id: foundProduct.store_id,
+          status: foundProduct.status
+        });
+        
+        // Critical check: verify the product slug matches the requested slug
+        if (foundProduct.slug !== slug) {
+          console.error('🚨 SLUG MISMATCH DETECTED!', {
+            requestedSlug: slug,
+            foundProductSlug: foundProduct.slug,
+            foundProductName: foundProduct.name,
+            foundProductSku: foundProduct.sku
+          });
+        }
+        
         setProduct(foundProduct);
 
         // Send Google Analytics 'view_item' event

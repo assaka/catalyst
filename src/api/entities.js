@@ -386,6 +386,7 @@ export const Coupon = new BaseEntity('coupons');
 export const CmsPage = new BaseEntity('cms');
 export const Tax = new BaseEntity('tax');
 export const ShippingMethod = new BaseEntity('shipping');
+export const ShippingMethodType = new BaseEntity('shipping-types');
 export const DeliverySettings = new BaseEntity('delivery');
 
 // Additional entities (you can implement these as needed)
