@@ -47,30 +47,38 @@ export const SetupGuide = ({ store }) => {
                     console.log("Extracted onboarding URL from object:", onboardingUrl);
                 }
             } catch (accountError) {
-                console.log("Account creation failed:", accountError.message);
+                console.log("Account creation failed:", accountError);
+                console.log("Error message:", accountError.message);
+                console.log("Error string includes 'already exists':", accountError.message?.includes("already exists"));
                 
                 // If account already exists, try to create an onboarding link
                 if (accountError.message?.includes("already exists")) {
                     console.log("Account exists, creating onboarding link");
-                    const currentUrl = window.location.origin + window.location.pathname;
-                    const returnUrl = `${currentUrl}?stripe_return=true`;
-                    const refreshUrl = `${currentUrl}?stripe_refresh=true`;
-                    
-                    const linkResponse = await createStripeConnectLink(returnUrl, refreshUrl, store.id);
-                    console.log("Connect link response:", linkResponse);
-                    console.log("Response data structure:", JSON.stringify(linkResponse.data, null, 2));
-                    
-                    // Handle both object and array response structures
-                    if (Array.isArray(linkResponse.data)) {
-                        // If data is an array, get the first item
-                        onboardingUrl = linkResponse.data[0]?.url;
-                        console.log("Extracted URL from array:", onboardingUrl);
-                    } else {
-                        // If data is an object, use the url property
-                        onboardingUrl = linkResponse.data?.url;
-                        console.log("Extracted URL from object:", onboardingUrl);
+                    try {
+                        const currentUrl = window.location.origin + window.location.pathname;
+                        const returnUrl = `${currentUrl}?stripe_return=true`;
+                        const refreshUrl = `${currentUrl}?stripe_refresh=true`;
+                        
+                        const linkResponse = await createStripeConnectLink(returnUrl, refreshUrl, store.id);
+                        console.log("Connect link response:", linkResponse);
+                        console.log("Response data structure:", JSON.stringify(linkResponse.data, null, 2));
+                        
+                        // Handle both object and array response structures
+                        if (Array.isArray(linkResponse.data)) {
+                            // If data is an array, get the first item
+                            onboardingUrl = linkResponse.data[0]?.url;
+                            console.log("Extracted URL from array:", onboardingUrl);
+                        } else {
+                            // If data is an object, use the url property
+                            onboardingUrl = linkResponse.data?.url;
+                            console.log("Extracted URL from object:", onboardingUrl);
+                        }
+                    } catch (linkError) {
+                        console.error("Error creating connect link:", linkError);
+                        throw linkError;
                     }
                 } else {
+                    console.log("Different error, re-throwing:", accountError.message);
                     throw accountError; // Re-throw if it's a different error
                 }
             }
