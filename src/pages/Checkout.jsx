@@ -623,14 +623,18 @@ export default function Checkout() {
         throw new Error('No response from checkout API');
       }
       
-      // The response is already the data object, not wrapped
-      const checkoutUrl = response.checkout_url || response.url;
+      // Handle array response from API
+      const responseData = Array.isArray(response) ? response[0] : response;
+      console.log('Response data:', responseData);
+      
+      // Get checkout URL from response
+      const checkoutUrl = responseData.checkout_url || responseData.url;
       
       if (checkoutUrl) {
         console.log('Redirecting to:', checkoutUrl);
         window.location.href = checkoutUrl;
       } else {
-        console.error('No checkout URL in response:', response);
+        console.error('No checkout URL in response:', responseData);
         throw new Error('No checkout URL received');
       }
     } catch (error) {
