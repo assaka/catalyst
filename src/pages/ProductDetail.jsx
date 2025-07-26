@@ -53,7 +53,6 @@ export default function ProductDetail() {
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || paramSlug;
   
-  console.log('🚨 PRODUCTDETAIL DEBUG: Slug extracted:', slug, 'from URL:', window.location.href);
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
   const { store, settings, loading: storeLoading, categories, productLabels } = useStore();
@@ -101,44 +100,24 @@ export default function ProductDetail() {
       }
 
       const cacheKey = `product-detail-${slug}-${store.id}`;
-      console.log('🚨 CRITICAL DEBUG: About to load product with slug:', slug, 'for store:', store.id);
-      console.log('🔐 AUTH DEBUG: Current user and token status:', {
-        hasUser: !!user,
-        userEmail: user?.email,
-        userRole: user?.role,
-        hasAuthToken: !!localStorage.getItem('auth_token'),
-        storeId: store.id,
-        storeName: store.name,
-        storeOwnerEmail: store.owner_email
-      });
+      console.log('🔍 ProductDetail: Loading product with slug:', slug, 'for store:', store.id);
       
       // First try to find by slug
       let products = await cachedApiCall(cacheKey, () =>
         Product.filter({ store_id: store.id, slug: slug, status: 'active' })
       );
       
-      console.log('🚨 CRITICAL DEBUG: API returned for slug', slug, ':', products);
-
       // If no product found by slug, try searching by SKU as fallback
       if (!products || products.length === 0) {
-        console.log('🔍 No product found by slug, trying SKU fallback for:', slug);
+        console.log('🔍 ProductDetail: No product found by slug, trying SKU fallback');
         const skuCacheKey = `product-detail-sku-${slug}-${store.id}`;
         products = await cachedApiCall(skuCacheKey, () =>
           Product.filter({ store_id: store.id, sku: slug, status: 'active' })
         );
-        console.log('🔍 SKU search results for', slug, ':', products);
       }
 
       if (products && products.length > 0) {
         const foundProduct = products[0];
-        console.log('🔍 ProductDetail: Found product details:', {
-          id: foundProduct.id,
-          name: foundProduct.name,
-          slug: foundProduct.slug,
-          sku: foundProduct.sku,
-          store_id: foundProduct.store_id,
-          status: foundProduct.status
-        });
         
         // Critical check: verify the product matches the request
         // Allow match by either slug OR SKU (since SKU can be used as a fallback identifier)

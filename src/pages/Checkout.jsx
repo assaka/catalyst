@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CountrySelect } from "@/components/ui/country-select";
 import {
   Dialog,
@@ -33,7 +35,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Tag } from "lucide-react";
+import { Tag, CalendarIcon } from "lucide-react";
 
 export default function Checkout() {
   const { store, settings, loading: storeLoading } = useStore();
