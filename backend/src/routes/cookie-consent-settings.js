@@ -14,23 +14,39 @@ const checkStoreOwnership = async (storeId, userEmail, userRole) => {
 
 // @route   GET /api/cookie-consent-settings
 // @desc    Get cookie consent settings
-// @access  Private
+// @access  Public/Private
 router.get('/', async (req, res) => {
   try {
     const { store_id } = req.query;
+    
+    // Check if this is a public request
+    const isPublicRequest = req.originalUrl.includes('/api/public/cookie-consent-settings');
     const where = {};
     
-    // Filter by store ownership
-    if (req.user.role !== 'admin') {
-      const userStores = await Store.findAll({
-        where: { owner_email: req.user.email },
-        attributes: ['id']
-      });
-      const storeIds = userStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
-    }
+    if (isPublicRequest) {
+      // Public access - only return settings for specific store
+      if (store_id) where.store_id = store_id;
+    } else {
+      // Authenticated access - check authentication
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Access denied',
+          message: 'Authentication required'
+        });
+      }
+      
+      // Filter by store ownership
+      if (req.user.role !== 'admin') {
+        const userStores = await Store.findAll({
+          where: { owner_email: req.user.email },
+          attributes: ['id']
+        });
+        const storeIds = userStores.map(store => store.id);
+        where.store_id = { [Op.in]: storeIds };
+      }
 
-    if (store_id) where.store_id = store_id;
+      if (store_id) where.store_id = store_id;
+    }
 
     const settings = await CookieConsentSettings.findAll({
       where,
@@ -40,10 +56,16 @@ router.get('/', async (req, res) => {
       }]
     });
 
-    res.json({
-      success: true,
-      data: settings
-    });
+    if (isPublicRequest) {
+      // Return just the array for public requests (for compatibility)
+      res.json(settings);
+    } else {
+      // Return wrapped response for authenticated requests
+      res.json({
+        success: true,
+        data: settings
+      });
+    }
   } catch (error) {
     console.error('Get cookie consent settings error:', error);
     res.status(500).json({

@@ -6,10 +6,13 @@ const router = express.Router();
 
 // @route   GET /api/seo-settings
 // @desc    Get SEO settings for a store
-// @access  Private
-router.get('/', auth, async (req, res) => {
+// @access  Public/Private
+router.get('/', async (req, res) => {
   try {
     const { store_id } = req.query;
+    
+    // Check if this is a public request
+    const isPublicRequest = req.originalUrl.includes('/api/public/seo-settings');
 
     if (!store_id) {
       return res.status(400).json({
@@ -18,12 +21,20 @@ router.get('/', auth, async (req, res) => {
       });
     }
 
-    // Check store ownership
-    if (req.user.role !== 'admin') {
-      const store = await Store.findByPk(store_id);
-      if (!store || store.owner_email !== req.user.email) {
-        return res.status(403).json({
-          success: false,
+    if (!isPublicRequest) {
+      // Authenticated access - check authentication and ownership
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Access denied',
+          message: 'Authentication required'
+        });
+      }
+      
+      if (req.user.role !== 'admin') {
+        const store = await Store.findByPk(store_id);
+        if (!store || store.owner_email !== req.user.email) {
+          return res.status(403).json({
+            success: false,
           message: 'Access denied'
         });
       }
@@ -31,8 +42,8 @@ router.get('/', auth, async (req, res) => {
 
     let seoSettings = await SeoSettings.findOne({ where: { store_id } });
 
-    if (!seoSettings) {
-      // Create default SEO settings
+    if (!seoSettings && !isPublicRequest) {
+      // Create default SEO settings only for authenticated requests
       seoSettings = await SeoSettings.create({
         store_id,
         enable_rich_snippets: true,
@@ -41,10 +52,16 @@ router.get('/', auth, async (req, res) => {
       });
     }
 
-    res.json({
-      success: true,
-      data: seoSettings
-    });
+    if (isPublicRequest) {
+      // Return just the array/object for public requests (for compatibility)
+      res.json(seoSettings ? [seoSettings] : []);
+    } else {
+      // Return wrapped response for authenticated requests
+      res.json({
+        success: true,
+        data: seoSettings
+      });
+    }
   } catch (error) {
     console.error('Get SEO settings error:', error);
     res.status(500).json({
