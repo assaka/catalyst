@@ -90,8 +90,11 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION) => {
   const now = Date.now();
   
-  // Always check cache first
-  if (apiCache.has(key)) {
+  // Force fresh calls for critical product APIs after database reset
+  const isCriticalProductCall = key.includes('featured-products') || key.includes('products-category');
+  
+  // Always check cache first (unless it's a critical product call)
+  if (apiCache.has(key) && !isCriticalProductCall) {
     const { data, timestamp } = apiCache.get(key);
     
     // If data is fresh, return it
@@ -99,19 +102,25 @@ const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION) => {
       return Promise.resolve(data);
     }
     
-    // Data is stale but exists - return it immediately and refresh in background
-    setTimeout(async () => {
-      try {
-        await delay(Math.random() * 5000 + 2000); // Random delay 2-7 seconds
-        const freshData = await apiCall();
-        apiCache.set(key, { data: freshData, timestamp: now });
-        saveCacheToStorage();
-      } catch (error) {
-        console.warn(`Background refresh failed for ${key}:`, error);
-      }
-    }, 100);
-    
-    return data;
+    // For critical product calls, don't return stale empty data
+    if (isCriticalProductCall && Array.isArray(data) && data.length === 0) {
+      console.log(`🔄 StoreProvider: Forcing fresh call for critical API with empty cache: ${key}`);
+      // Don't return cached empty data, force fresh call below
+    } else {
+      // Data is stale but exists - return it immediately and refresh in background
+      setTimeout(async () => {
+        try {
+          await delay(Math.random() * 5000 + 2000); // Random delay 2-7 seconds
+          const freshData = await apiCall();
+          apiCache.set(key, { data: freshData, timestamp: now });
+          saveCacheToStorage();
+        } catch (error) {
+          console.warn(`Background refresh failed for ${key}:`, error);
+        }
+      }, 100);
+      
+      return data;
+    }
   }
   
   // No cached data - must fetch fresh
@@ -483,5 +492,17 @@ export const StoreProvider = ({ children }) => {
   );
 };
 
+// Clear cache function for debugging
+const clearCache = () => {
+  apiCache.clear();
+  localStorage.removeItem('storeProviderCache');
+  console.log('🗑️ Cache cleared');
+};
+
+// Make clearCache available globally for debugging
+if (typeof window !== 'undefined') {
+  window.clearCache = clearCache;
+}
+
 // Export the caching function for use in other components
-export { cachedApiCall };
+export { cachedApiCall, clearCache };
