@@ -619,10 +619,10 @@ app.post('/debug/seed', async (req, res) => {
   }
 });
 
-// Database reset endpoint - drops all tables and recreates them
-app.post('/debug/reset-db', async (req, res) => {
+// Complete database wipe and recreation
+app.post('/debug/reset-db-complete', async (req, res) => {
   try {
-    console.log('🗑️ Starting database reset...');
+    console.log('🗑️ Starting COMPLETE database wipe...');
     
     const fs = require('fs');
     const path = require('path');
@@ -647,70 +647,176 @@ app.post('/debug/reset-db', async (req, res) => {
     await client.connect();
     console.log('✅ Connected to database');
 
-    // Drop all tables
-    console.log('🗑️ Dropping all existing tables...');
-    const dropSqlPath = path.join(__dirname, 'database/migrations/drop-all-tables.sql');
-    const dropSqlContent = fs.readFileSync(dropSqlPath, 'utf8');
+    // Step 1: Drop ALL objects including types, functions, etc.
+    console.log('🗑️ Step 1: Dropping ALL database objects...');
+    
+    // Drop all types first (including enums)
+    const dropTypesQuery = `
+      DO $$ 
+      DECLARE 
+        r RECORD;
+      BEGIN
+        -- Drop all custom types
+        FOR r IN (SELECT typname FROM pg_type WHERE typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public') AND typtype = 'e') 
+        LOOP
+          EXECUTE 'DROP TYPE IF EXISTS ' || quote_ident(r.typname) || ' CASCADE';
+        END LOOP;
+      END $$;
+    `;
     
     try {
-      await client.query(dropSqlContent);
-      console.log('✅ All tables dropped successfully');
+      await client.query(dropTypesQuery);
+      console.log('✅ All custom types dropped');
     } catch (error) {
-      console.log('⚠️ Some drop operations failed (this is normal):', error.message);
+      console.log('⚠️ Type drop failed:', error.message);
     }
 
-    // Create all tables
-    console.log('📋 Creating all tables...');
+    // Drop all tables with CASCADE
+    const dropTablesQuery = `
+      DO $$ 
+      DECLARE 
+        r RECORD;
+      BEGIN
+        -- Drop all tables
+        FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') 
+        LOOP
+          EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+        END LOOP;
+      END $$;
+    `;
+    
+    try {
+      await client.query(dropTablesQuery);
+      console.log('✅ All tables dropped with CASCADE');
+    } catch (error) {
+      console.log('⚠️ Table drop failed:', error.message);
+    }
+
+    // Drop all functions
+    const dropFunctionsQuery = `
+      DO $$ 
+      DECLARE 
+        r RECORD;
+      BEGIN
+        -- Drop all functions
+        FOR r IN (SELECT proname, oidvectortypes(proargtypes) as argtypes FROM pg_proc WHERE pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')) 
+        LOOP
+          EXECUTE 'DROP FUNCTION IF EXISTS ' || quote_ident(r.proname) || '(' || r.argtypes || ') CASCADE';
+        END LOOP;
+      END $$;
+    `;
+    
+    try {
+      await client.query(dropFunctionsQuery);
+      console.log('✅ All functions dropped');
+    } catch (error) {
+      console.log('⚠️ Function drop failed:', error.message);
+    }
+
+    // Drop all sequences
+    const dropSequencesQuery = `
+      DO $$ 
+      DECLARE 
+        r RECORD;
+      BEGIN
+        -- Drop all sequences
+        FOR r IN (SELECT sequencename FROM pg_sequences WHERE schemaname = 'public') 
+        LOOP
+          EXECUTE 'DROP SEQUENCE IF EXISTS ' || quote_ident(r.sequencename) || ' CASCADE';
+        END LOOP;
+      END $$;
+    `;
+    
+    try {
+      await client.query(dropSequencesQuery);
+      console.log('✅ All sequences dropped');
+    } catch (error) {
+      console.log('⚠️ Sequence drop failed:', error.message);
+    }
+
+    // Verify everything is clean
+    const verifyCleanQuery = `
+      SELECT 
+        (SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public') as tables,
+        (SELECT COUNT(*) FROM pg_type WHERE typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public') AND typtype = 'e') as enums,
+        (SELECT COUNT(*) FROM pg_proc WHERE pronamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')) as functions,
+        (SELECT COUNT(*) FROM pg_sequences WHERE schemaname = 'public') as sequences;
+    `;
+    
+    const cleanResult = await client.query(verifyCleanQuery);
+    console.log('🔍 Database clean status:', cleanResult.rows[0]);
+
+    // Step 2: Create all tables fresh
+    console.log('\n📋 Step 2: Creating all tables from scratch...');
     const createSqlPath = path.join(__dirname, 'database/migrations/create-all-tables.sql');
     const createSqlContent = fs.readFileSync(createSqlPath, 'utf8');
 
-    // Split SQL into individual statements
-    const statements = createSqlContent
-      .split(';')
-      .map(stmt => stmt.trim())
-      .filter(stmt => stmt && !stmt.startsWith('--'));
+    // Execute the entire creation script
+    try {
+      await client.query(createSqlContent);
+      console.log('✅ Tables created successfully');
+    } catch (error) {
+      console.error('❌ Table creation failed:', error.message);
+      
+      // Try statement by statement if full script fails
+      console.log('🔄 Trying statement-by-statement execution...');
+      const statements = createSqlContent
+        .split(';')
+        .map(stmt => stmt.trim())
+        .filter(stmt => stmt && !stmt.startsWith('--'));
 
-    let successCount = 0;
-    let errorCount = 0;
+      let successCount = 0;
+      let errorCount = 0;
 
-    for (const statement of statements) {
-      if (statement.trim()) {
-        try {
-          await client.query(statement);
-          successCount++;
-        } catch (error) {
-          errorCount++;
-          console.error(`❌ Statement failed:`, error.message);
+      for (const statement of statements) {
+        if (statement.trim()) {
+          try {
+            await client.query(statement);
+            successCount++;
+          } catch (stmtError) {
+            errorCount++;
+            console.error(`❌ Statement failed:`, stmtError.message);
+          }
         }
       }
+      
+      console.log(`📊 Statement execution: ${successCount} success, ${errorCount} failed`);
     }
 
-    // Verify tables were created
-    const tablesResult = await client.query(`
+    // Verify final state
+    const finalTablesResult = await client.query(`
       SELECT tablename 
       FROM pg_tables 
       WHERE schemaname = 'public' 
       ORDER BY tablename;
     `);
 
+    const finalTypesResult = await client.query(`
+      SELECT typname 
+      FROM pg_type 
+      WHERE typnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public') AND typtype = 'e'
+      ORDER BY typname;
+    `);
+
     await client.end();
 
     res.json({
       success: true,
-      message: 'Database reset completed successfully',
-      execution: {
-        statements_executed: successCount,
-        statements_failed: errorCount,
-        tables_created: tablesResult.rows.length
+      message: 'Complete database wipe and recreation successful',
+      before_cleanup: cleanResult.rows[0],
+      final_state: {
+        tables_created: finalTablesResult.rows.length,
+        enums_created: finalTypesResult.rows.length
       },
-      tables: tablesResult.rows.map(row => row.tablename)
+      tables: finalTablesResult.rows.map(row => row.tablename),
+      enums: finalTypesResult.rows.map(row => row.typname)
     });
 
   } catch (error) {
-    console.error('❌ Database reset failed:', error);
+    console.error('❌ Complete database reset failed:', error);
     res.status(500).json({
       success: false,
-      message: 'Database reset failed',
+      message: 'Complete database reset failed',
       error: error.message
     });
   }
