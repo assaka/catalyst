@@ -138,6 +138,12 @@ export default function Checkout() {
     };
   }, [loading]);
 
+  // Trigger tax recalculation when shipping address country changes
+  useEffect(() => {
+    // Tax will be recalculated automatically through getTotalAmount since it calls calculateTax
+    console.log('🏢 Shipping country changed, tax will be recalculated');
+  }, [shippingAddress.country, selectedShippingAddress]);
+
   const loadCheckoutData = async () => {
     try {
       setLoading(true);
@@ -533,17 +539,29 @@ export default function Checkout() {
     const subtotal = calculateSubtotal();
     const discount = calculateDiscount();
     
+    // Get the current shipping country for tax calculation
+    const currentShippingCountry = getShippingCountry();
+    const taxShippingAddress = { 
+      ...shippingAddress, 
+      country: currentShippingCountry 
+    };
+    
     const taxResult = taxService.calculateTax(
       cartItems,
       cartProducts,
       store,
       taxRules,
-      shippingAddress,
+      taxShippingAddress,
       subtotal,
       discount
     );
 
-    console.log('🧮 Tax calculation in checkout:', taxResult);
+    console.log('🧮 Tax calculation in checkout:', {
+      country: currentShippingCountry,
+      subtotal,
+      discount,
+      result: taxResult
+    });
     return taxResult.taxAmount || 0;
   };
 

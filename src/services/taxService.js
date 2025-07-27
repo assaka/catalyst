@@ -116,15 +116,54 @@ class TaxService {
    * @returns {Object|null} - Applicable tax rule or null
    */
   findApplicableTaxRule(taxRules, shippingAddress) {
-    // For now, find the default tax rule or the first active rule
+    const country = shippingAddress?.country || 'US';
+    
+    console.log('🔍 Finding applicable tax rule for country:', country);
+    console.log('📋 Available tax rules:', taxRules.map(r => ({ 
+      name: r.name, 
+      is_active: r.is_active, 
+      is_default: r.is_default,
+      countries: r.country_rates?.map(cr => cr.country) 
+    })));
+
+    // First, try to find a rule that has rates for the specific country
+    const rulesWithCountry = taxRules.filter(rule => 
+      rule.is_active && 
+      rule.country_rates && 
+      rule.country_rates.some(rate => 
+        rate.country && rate.country.toUpperCase() === country.toUpperCase()
+      )
+    );
+
+    if (rulesWithCountry.length > 0) {
+      console.log('✅ Found rules with country rates:', rulesWithCountry.map(r => r.name));
+      // Prefer default rule if it has country rates
+      const defaultRuleWithCountry = rulesWithCountry.find(rule => rule.is_default);
+      if (defaultRuleWithCountry) {
+        console.log('🎯 Using default rule with country rates:', defaultRuleWithCountry.name);
+        return defaultRuleWithCountry;
+      }
+      // Otherwise use the first rule with country rates
+      console.log('🎯 Using first rule with country rates:', rulesWithCountry[0].name);
+      return rulesWithCountry[0];
+    }
+
+    // Fallback: find the default tax rule
     const defaultRule = taxRules.find(rule => rule.is_default && rule.is_active);
     if (defaultRule) {
+      console.log('🎯 Using default rule as fallback:', defaultRule.name);
       return defaultRule;
     }
 
-    // If no default, use the first active rule
+    // Final fallback: use the first active rule
     const firstActiveRule = taxRules.find(rule => rule.is_active);
-    return firstActiveRule || null;
+    if (firstActiveRule) {
+      console.log('🎯 Using first active rule as final fallback:', firstActiveRule.name);
+      return firstActiveRule;
+    }
+    
+    console.log('❌ No applicable tax rule found');
+    return null;
   }
 
   /**

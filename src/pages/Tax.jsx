@@ -116,16 +116,28 @@ export default function TaxPage() {
     console.log('📊 New settings to save:', newSettings);
 
     try {
-      // Update the entire settings object in the store
+      // Update the entire settings object in the store using admin API
       const { Store } = await import('@/api/entities');
       const updateResult = await Store.update(selectedStore.id, { settings: newSettings });
       
       console.log('✅ Store settings updated successfully:', updateResult);
 
-      // Force reload of the page data to reflect changes
-      window.dispatchEvent(new CustomEvent('storeSelectionChanged'));
+      // Update local state immediately for UI responsiveness
+      const updatedStore = { ...selectedStore, settings: newSettings };
+      
+      // Trigger a store selection change event to refresh data across components
+      window.dispatchEvent(new CustomEvent('storeSelectionChanged', {
+        detail: { updatedStore }
+      }));
+      
+      // Also manually refresh the page data to ensure consistency
+      setTimeout(() => {
+        loadData();
+      }, 100);
+      
     } catch (error) {
       console.error("Failed to update tax settings:", error);
+      console.error("Error details:", error.response?.data || error);
       alert(`Failed to update tax settings: ${error.message}`);
     }
   };
