@@ -6,56 +6,46 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CountrySelect } from '@/components/ui/country-select';
-import { ShippingMethodType } from '@/api/entities';
+import { Textarea } from '@/components/ui/textarea';
+
 export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: '',
+    description: '',
     is_active: true,
-    shipping_method_type_id: '',
-    configuration: {},
+    type: 'flat_rate',
+    flat_rate_cost: 0,
+    free_shipping_min_order: 0,
+    weight_ranges: [],
+    price_ranges: [],
     availability: 'all',
     countries: [],
+    min_delivery_days: 1,
+    max_delivery_days: 7,
+    sort_order: 0
   });
 
   const [loading, setLoading] = useState(false);
-  const [shippingMethodTypes, setShippingMethodTypes] = useState([]);
-  const [selectedMethodType, setSelectedMethodType] = useState(null);
-
-  // Load shipping method types on component mount
-  useEffect(() => {
-    const loadShippingMethodTypes = async () => {
-      try {
-        const types = await ShippingMethodType.filter({ store_id: storeId, is_active: true });
-        setShippingMethodTypes(types || []);
-      } catch (error) {
-        console.error('Error loading shipping method types:', error);
-        setShippingMethodTypes([]);
-      }
-    };
-
-    if (storeId) {
-      loadShippingMethodTypes();
-    }
-  }, [storeId]);
 
   useEffect(() => {
     if (method) {
       setFormData({
         name: method.name || '',
+        description: method.description || '',
         is_active: method.is_active !== false,
-        shipping_method_type_id: method.shipping_method_type_id || '',
-        configuration: method.configuration || {},
+        type: method.type || 'flat_rate',
+        flat_rate_cost: method.flat_rate_cost || 0,
+        free_shipping_min_order: method.free_shipping_min_order || 0,
+        weight_ranges: method.weight_ranges || [],
+        price_ranges: method.price_ranges || [],
         availability: method.availability || 'all',
         countries: Array.isArray(method.countries) ? method.countries : [],
+        min_delivery_days: method.min_delivery_days || 1,
+        max_delivery_days: method.max_delivery_days || 7,
+        sort_order: method.sort_order || 0
       });
-      
-      // Find and set the selected method type
-      if (method.shipping_method_type_id && shippingMethodTypes.length > 0) {
-        const methodType = shippingMethodTypes.find(type => type.id === method.shipping_method_type_id);
-        setSelectedMethodType(methodType);
-      }
     }
-  }, [method, shippingMethodTypes]);
+  }, [method]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -65,10 +55,13 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
       return;
     }
 
+    setLoading(true);
     try {
       await onSubmit({ ...formData, store_id: storeId });
     } catch (error) {
       console.error('Error submitting shipping method:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,112 +69,202 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleConfigurationChange = (field, value) => {
+  const addWeightRange = () => {
     setFormData(prev => ({
       ...prev,
-      configuration: { ...prev.configuration, [field]: value }
+      weight_ranges: [...prev.weight_ranges, { min_weight: 0, max_weight: 0, cost: 0 }]
     }));
   };
 
-  const handleMethodTypeChange = (typeId) => {
-    const methodType = shippingMethodTypes.find(type => type.id === typeId);
-    setSelectedMethodType(methodType);
+  const updateWeightRange = (index, field, value) => {
     setFormData(prev => ({
       ...prev,
-      shipping_method_type_id: typeId,
-      configuration: {} // Reset configuration when type changes
+      weight_ranges: prev.weight_ranges.map((range, i) => 
+        i === index ? { ...range, [field]: parseFloat(value) || 0 } : range
+      )
     }));
   };
 
-  const renderConfigurationFields = () => {
-    if (!selectedMethodType || !selectedMethodType.configuration_schema?.fields) {
-      return null;
-    }
+  const removeWeightRange = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      weight_ranges: prev.weight_ranges.filter((_, i) => i !== index)
+    }));
+  };
 
-    return (
-      <div className="space-y-4">
-        <h4 className="font-semibold text-sm text-gray-700">Configuration</h4>
-        {selectedMethodType.configuration_schema.fields.map((field) => (
-          <div key={field.name}>
-            <Label htmlFor={field.name}>
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
-            </Label>
-            
-            {field.type === 'text' && (
-              <Input
-                id={field.name}
-                value={formData.configuration[field.name] || field.default_value || ''}
-                onChange={(e) => handleConfigurationChange(field.name, e.target.value)}
-                placeholder={field.placeholder}
-                required={field.required}
-              />
-            )}
-            
-            {field.type === 'password' && (
-              <Input
-                id={field.name}
-                type="password"
-                value={formData.configuration[field.name] || field.default_value || ''}
-                onChange={(e) => handleConfigurationChange(field.name, e.target.value)}
-                placeholder={field.placeholder}
-                required={field.required}
-              />
-            )}
-            
-            {field.type === 'number' && (
-              <Input
-                id={field.name}
-                type="number"
-                step="0.01"
-                value={formData.configuration[field.name] || field.default_value || 0}
-                onChange={(e) => handleConfigurationChange(field.name, parseFloat(e.target.value) || 0)}
-                placeholder={field.placeholder}
-                required={field.required}
-              />
-            )}
-            
-            {field.type === 'select' && field.options && (
-              <Select
-                value={formData.configuration[field.name] || field.default_value || ''}
-                onValueChange={(value) => handleConfigurationChange(field.name, value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={field.placeholder} />
-                </SelectTrigger>
-                <SelectContent>
-                  {field.options.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            
-            {field.type === 'boolean' && (
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id={field.name}
-                  checked={formData.configuration[field.name] || field.default_value || false}
-                  onCheckedChange={(checked) => handleConfigurationChange(field.name, checked)}
-                />
-                <Label htmlFor={field.name}>{field.label}</Label>
-              </div>
-            )}
+  const addPriceRange = () => {
+    setFormData(prev => ({
+      ...prev,
+      price_ranges: [...prev.price_ranges, { min_price: 0, max_price: 0, cost: 0 }]
+    }));
+  };
+
+  const updatePriceRange = (index, field, value) => {
+    setFormData(prev => ({
+      ...prev,
+      price_ranges: prev.price_ranges.map((range, i) => 
+        i === index ? { ...range, [field]: parseFloat(value) || 0 } : range
+      )
+    }));
+  };
+
+  const removePriceRange = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      price_ranges: prev.price_ranges.filter((_, i) => i !== index)
+    }));
+  };
+
+  const renderTypeSpecificFields = () => {
+    switch (formData.type) {
+      case 'flat_rate':
+        return (
+          <div>
+            <Label htmlFor="flat_rate_cost">Flat Rate Cost ($) *</Label>
+            <Input
+              id="flat_rate_cost"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.flat_rate_cost}
+              onChange={(e) => handleInputChange('flat_rate_cost', parseFloat(e.target.value) || 0)}
+              placeholder="e.g., 9.99"
+              required
+            />
           </div>
-        ))}
-      </div>
-    );
-  };
+        );
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+      case 'free_shipping':
+        return (
+          <div>
+            <Label htmlFor="free_shipping_min_order">Minimum Order Amount for Free Shipping ($)</Label>
+            <Input
+              id="free_shipping_min_order"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.free_shipping_min_order}
+              onChange={(e) => handleInputChange('free_shipping_min_order', parseFloat(e.target.value) || 0)}
+              placeholder="e.g., 50.00"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Orders above this amount will qualify for free shipping. Set to 0 for always free.
+            </p>
+          </div>
+        );
+
+      case 'weight_based':
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Weight-Based Pricing</Label>
+              <Button type="button" onClick={addWeightRange} size="sm">
+                Add Weight Range
+              </Button>
+            </div>
+            {formData.weight_ranges.map((range, index) => (
+              <div key={index} className="grid grid-cols-4 gap-2 items-end p-3 border rounded">
+                <div>
+                  <Label className="text-xs">Min Weight (kg)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={range.min_weight}
+                    onChange={(e) => updateWeightRange(index, 'min_weight', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Max Weight (kg)</Label>
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={range.max_weight}
+                    onChange={(e) => updateWeightRange(index, 'max_weight', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Cost ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={range.cost}
+                    onChange={(e) => updateWeightRange(index, 'cost', e.target.value)}
+                  />
+                </div>
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => removeWeightRange(index)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        );
+
+      case 'price_based':
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Price-Based Shipping</Label>
+              <Button type="button" onClick={addPriceRange} size="sm">
+                Add Price Range
+              </Button>
+            </div>
+            {formData.price_ranges.map((range, index) => (
+              <div key={index} className="grid grid-cols-4 gap-2 items-end p-3 border rounded">
+                <div>
+                  <Label className="text-xs">Min Order Value ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={range.min_price}
+                    onChange={(e) => updatePriceRange(index, 'min_price', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Max Order Value ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={range.max_price}
+                    onChange={(e) => updatePriceRange(index, 'max_price', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Shipping Cost ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={range.cost}
+                    onChange={(e) => updatePriceRange(index, 'cost', e.target.value)}
+                  />
+                </div>
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  size="sm" 
+                  onClick={() => removePriceRange(index)}
+                >
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <Card>
@@ -202,6 +285,17 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
             />
           </div>
 
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={formData.description}
+              onChange={(e) => handleInputChange('description', e.target.value)}
+              placeholder="Brief description of this shipping method"
+              rows={3}
+            />
+          </div>
+
           <div className="flex items-center space-x-2">
             <Switch
               id="is_active"
@@ -212,25 +306,59 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
           </div>
 
           <div>
-            <Label htmlFor="shipping_method_type_id">Shipping Method Type</Label>
+            <Label htmlFor="type">Shipping Type *</Label>
             <Select
-              value={formData.shipping_method_type_id}
-              onValueChange={handleMethodTypeChange}
+              value={formData.type}
+              onValueChange={(value) => handleInputChange('type', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select shipping method type" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {shippingMethodTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>
-                    {type.name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="flat_rate">Flat Rate</SelectItem>
+                <SelectItem value="free_shipping">Free Shipping</SelectItem>
+                <SelectItem value="weight_based">Weight Based</SelectItem>
+                <SelectItem value="price_based">Price Based</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {renderConfigurationFields()}
+          {renderTypeSpecificFields()}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="min_delivery_days">Min Delivery Days</Label>
+              <Input
+                id="min_delivery_days"
+                type="number"
+                min="1"
+                value={formData.min_delivery_days}
+                onChange={(e) => handleInputChange('min_delivery_days', parseInt(e.target.value) || 1)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="max_delivery_days">Max Delivery Days</Label>
+              <Input
+                id="max_delivery_days"
+                type="number"
+                min="1"
+                value={formData.max_delivery_days}
+                onChange={(e) => handleInputChange('max_delivery_days', parseInt(e.target.value) || 7)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="sort_order">Sort Order</Label>
+            <Input
+              id="sort_order"
+              type="number"
+              min="0"
+              value={formData.sort_order}
+              onChange={(e) => handleInputChange('sort_order', parseInt(e.target.value) || 0)}
+              placeholder="Order in which this method appears (0 = first)"
+            />
+          </div>
 
           <div>
             <Label htmlFor="availability">Availability</Label>
@@ -255,7 +383,7 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
                 value={formData.countries}
                 onChange={(countries) => handleInputChange('countries', countries)}
                 multiple={true}
-                placeholder="Select countries..."
+                placeholder="Select countries where this shipping method is available..."
               />
             </div>
           )}
@@ -264,8 +392,8 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
             <Button type="button" variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!storeId}>
-              {method ? 'Update Method' : 'Create Method'}
+            <Button type="submit" disabled={!storeId || loading}>
+              {loading ? 'Saving...' : (method ? 'Update Method' : 'Create Method')}
             </Button>
           </div>
         </form>
