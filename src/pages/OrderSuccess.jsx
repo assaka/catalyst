@@ -140,11 +140,13 @@ export default function OrderSuccess() {
     try {
       // Extract name from order data
       const customerName = order.shipping_address?.name || order.shipping_address?.full_name || '';
-      const [firstName = '', lastName = ''] = customerName.split(' ');
+      const nameParts = customerName.trim().split(' ');
+      const firstName = nameParts[0] || 'Customer';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User';
       
       const response = await Auth.register({
-        first_name: firstName || 'Customer',
-        last_name: lastName || '',
+        first_name: firstName,
+        last_name: lastName,
         email: order.customer_email,
         password: accountFormData.password,
       });
