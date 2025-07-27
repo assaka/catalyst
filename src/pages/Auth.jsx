@@ -159,14 +159,9 @@ export default function Auth() {
         // Handle role-based redirections based on context
         if (isStorefrontContext) {
           // Storefront access control
-          if (isCustomer) {
-            // Customers can access storefront - no redirect needed
-            return;
-          } else if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
-            // Store owners cannot access storefront - redirect to dashboard
-            navigate(createPageUrl("Dashboard"));
-            return;
-          }
+          // Allow all users (including store_owners) to access storefront as guests
+          // No automatic redirects for storefront pages
+          return;
         } else if (isDashboardContext) {
           // Dashboard access control
           if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
@@ -268,8 +263,8 @@ export default function Auth() {
             }
           } else if (userRole === 'store_owner' || userRole === 'admin' || !userRole) {
             if (isStorefrontContext) {
-              // Store owner trying to access storefront - redirect to dashboard
-              navigate(createPageUrl("Dashboard"));
+              // Store owner logging in from storefront - stay on storefront (shopping as guest)
+              navigate(createPageUrl("Storefront"));
             } else {
               // Store owner accessing dashboard - allow access
               navigate(createPageUrl("Dashboard"));

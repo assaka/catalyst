@@ -48,11 +48,7 @@ export const useRoleProtection = () => {
         const isCustomer = user.role === 'customer';
 
         // Enforce role-based access control
-        if (isStorefrontContext && (isStoreOwner || isAdmin)) {
-          // Store owners/admins cannot access storefront
-          navigate(createPageUrl("Dashboard"));
-          return;
-        }
+        // Allow store_owners to access storefront as guests - no redirect
 
         if (isDashboardContext && isCustomer) {
           // Customers cannot access dashboard (except customer dashboard)
