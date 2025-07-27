@@ -469,7 +469,26 @@ app.post('/debug/seed', async (req, res) => {
   try {
     console.log('🌱 Starting sample data seeding via API...');
     
-    const { Store, Product, Category } = require('./models');
+    const { Store, Product, Category, User } = require('./models');
+    
+    // First, ensure the user exists
+    const ownerEmail = 'playamin998@gmail.com';
+    let user = await User.findOne({ where: { email: ownerEmail } });
+    
+    if (!user) {
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash('password123', 10);
+      
+      user = await User.create({
+        email: ownerEmail,
+        password: hashedPassword,
+        first_name: 'Hamid',
+        last_name: 'Test'
+      });
+      console.log('✅ Created user:', user.email);
+    } else {
+      console.log('✅ User already exists:', user.email);
+    }
     
     // Check if we have the hamid2 store
     let store = await Store.findOne({ where: { slug: 'hamid2' } });
@@ -480,7 +499,7 @@ app.post('/debug/seed', async (req, res) => {
         name: 'Hamid',
         slug: 'hamid2',
         description: 'Sample store for testing',
-        owner_email: 'playamin998@gmail.com'
+        owner_email: ownerEmail
       });
       console.log('✅ Created new store:', store.name);
     } else {
@@ -577,6 +596,10 @@ app.post('/debug/seed', async (req, res) => {
       success: true,
       message: 'Sample data seeding completed successfully',
       data: {
+        user: {
+          id: user.id,
+          email: user.email
+        },
         store: {
           id: store.id,
           name: store.name,
