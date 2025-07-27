@@ -586,8 +586,8 @@ app.use('/api/categories', authMiddleware, categoryRoutes);
 // Public order lookup by payment reference (MUST be before authenticated routes)
 app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) => {
   try {
-    const { Order, Store, OrderItem, Product } = require('./models');
     const { payment_reference } = req.params;
+    console.log('Looking up order with payment_reference:', payment_reference);
     
     if (!payment_reference) {
       return res.status(400).json({
@@ -596,22 +596,13 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
       });
     }
 
+    // Try simple lookup first
+    const { Order } = require('./models');
     const order = await Order.findOne({
-      where: { payment_reference },
-      include: [
-        {
-          model: Store,
-          attributes: ['id', 'name']
-        },
-        {
-          model: OrderItem,
-          include: [{ 
-            model: Product, 
-            attributes: ['id', 'name', 'sku', 'image_url'] 
-          }]
-        }
-      ]
+      where: { payment_reference }
     });
+
+    console.log('Order found:', order ? 'YES' : 'NO');
 
     if (!order) {
       return res.status(404).json({
@@ -620,15 +611,54 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
       });
     }
 
+    // Try to add associations gradually
+    let orderWithDetails = order;
+    try {
+      const { Store, OrderItem, Product } = require('./models');
+      
+      // Get order items separately
+      const orderItems = await OrderItem.findAll({
+        where: { order_id: order.id },
+        include: [{ 
+          model: Product, 
+          attributes: ['id', 'name', 'sku', 'image_url'],
+          required: false
+        }]
+      });
+      
+      // Get store separately  
+      const store = await Store.findByPk(order.store_id, {
+        attributes: ['id', 'name']
+      });
+
+      orderWithDetails = {
+        ...order.toJSON(),
+        Store: store,
+        OrderItems: orderItems
+      };
+      
+      console.log('Successfully loaded order with details');
+    } catch (includeError) {
+      console.error('Error loading associations:', includeError.message);
+      // Return basic order if associations fail
+    }
+
     res.json({
       success: true,
-      data: order
+      data: orderWithDetails
     });
   } catch (error) {
     console.error('Get order by payment reference error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+      sql: error.sql
+    });
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
