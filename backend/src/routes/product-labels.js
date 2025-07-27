@@ -7,7 +7,7 @@ const router = express.Router();
 // @route   GET /api/product-labels
 // @desc    Get all product labels for a store
 // @access  Public/Private
-router.get('/', async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const { store_id, is_active } = req.query;
     
@@ -96,16 +96,25 @@ router.get('/:id', auth, async (req, res) => {
 // @access  Private
 router.post('/', auth, async (req, res) => {
   try {
+    console.log('🔍 Creating product label with data:', req.body);
     const label = await ProductLabel.create(req.body);
+    console.log('✅ Product label created successfully:', label);
     res.status(201).json({
       success: true,
       data: label
     });
   } catch (error) {
-    console.error('Create product label error:', error);
+    console.error('❌ Create product label error:', error);
+    console.error('❌ Error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      sql: error.sql
+    });
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: `Server error: ${error.message}`,
+      error: error.name
     });
   }
 });
