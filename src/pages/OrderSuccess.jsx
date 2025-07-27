@@ -302,6 +302,24 @@ export default function OrderSuccess() {
                     <span className="text-gray-600">Payment Method:</span>
                     <span className="font-semibold capitalize">{order.payment_method || 'Card'}</span>
                   </div>
+                  {order.delivery_date && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Delivery Date:</span>
+                      <span className="font-semibold">{formatDate(order.delivery_date)}</span>
+                    </div>
+                  )}
+                  {order.delivery_time_slot && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Delivery Time:</span>
+                      <span className="font-semibold">{order.delivery_time_slot}</span>
+                    </div>
+                  )}
+                  {order.shipping_method && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Shipping Method:</span>
+                      <span className="font-semibold">{order.shipping_method}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -317,8 +335,30 @@ export default function OrderSuccess() {
               <CardContent>
                 {orderItems.length === 0 ? (
                   <div className="text-center py-4">
-                    <p className="text-gray-500">No order items found.</p>
-                    <p className="text-xs text-gray-400 mt-2">Debug: {JSON.stringify(order?.OrderItems?.length || 'undefined')}</p>
+                    <div className="mb-4">
+                      <p className="text-gray-500">Order items are being processed...</p>
+                      <p className="text-xs text-gray-400 mt-1">Your order was successful and will be fulfilled.</p>
+                    </div>
+                    
+                    {/* Fallback order info */}
+                    <div className="bg-blue-50 p-3 rounded-lg text-left">
+                      <h4 className="font-medium text-blue-900 mb-2">Order Details</h4>
+                      <div className="text-sm text-blue-800 space-y-1">
+                        <p><strong>Total Amount:</strong> {formatCurrency(order.total_amount, order.currency)}</p>
+                        {order.subtotal && (
+                          <p><strong>Subtotal:</strong> {formatCurrency(order.subtotal, order.currency)}</p>
+                        )}
+                        {parseFloat(order.shipping_amount || 0) > 0 && (
+                          <p><strong>Shipping:</strong> {formatCurrency(order.shipping_amount, order.currency)}</p>
+                        )}
+                        {parseFloat(order.discount_amount || 0) > 0 && (
+                          <p><strong>Discount:</strong> -{formatCurrency(order.discount_amount, order.currency)}</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-gray-400 mt-3">Debug: OrderItems={JSON.stringify(order?.OrderItems?.length || 'undefined')}</p>
+                    
                     {order && (
                       <Button 
                         variant="outline" 
@@ -626,7 +666,7 @@ export default function OrderSuccess() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">2. Shipping</h3>
                 <p className="text-sm text-gray-600">
-                  Your order will be carefully packed and shipped to your delivery address.
+                  Your order will be carefully packed and shipped{order.shipping_method ? ` via ${order.shipping_method}` : ''} to your delivery address.
                 </p>
               </div>
               <div>
@@ -635,7 +675,14 @@ export default function OrderSuccess() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">3. Delivery</h3>
                 <p className="text-sm text-gray-600">
-                  You'll receive your order according to the shipping method selected.
+                  {order.delivery_date ? (
+                    <>You'll receive your order on {formatDate(order.delivery_date)}{order.delivery_time_slot ? ` during ${order.delivery_time_slot}` : ''}.</>
+                  ) : (
+                    'You'll receive your order according to the shipping method selected.'
+                  )}
+                  {order.delivery_instructions && (
+                    <span className="block mt-1 font-medium">Special instructions: {order.delivery_instructions}</span>
+                  )}
                 </p>
               </div>
             </div>

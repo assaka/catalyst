@@ -733,6 +733,9 @@ async function createOrderFromCheckoutSession(session) {
       expand: ['data.price.product']
     }, stripeOptions);
     
+    console.log('Line items retrieved:', JSON.stringify(lineItems, null, 2));
+    console.log('Number of line items:', lineItems.data.length);
+    
     // Calculate order totals from session
     const subtotal = session.amount_subtotal / 100; // Convert from cents
     const tax_amount = (session.total_details?.amount_tax || 0) / 100;
@@ -825,12 +828,27 @@ async function createOrderFromCheckoutSession(session) {
     const productMap = new Map();
     
     for (const lineItem of lineItems.data) {
+      console.log('Processing line item:', JSON.stringify(lineItem, null, 2));
+      
       const productMetadata = lineItem.price.product.metadata || {};
       const itemType = productMetadata.item_type || 'main_product';
       const productId = productMetadata.product_id;
       
+      console.log('Line item details:', {
+        productId,
+        itemType,
+        productName: lineItem.price.product.name,
+        metadata: productMetadata
+      });
+      
+      if (!productId) {
+        console.warn('No product_id found in line item metadata, skipping item');
+        continue;
+      }
+      
       if (itemType === 'main_product') {
         // Main product line item
+        console.log('Adding main product to map:', productId);
         productMap.set(productId, {
           product_id: productId,
           product_name: lineItem.price.product.name,
@@ -842,6 +860,7 @@ async function createOrderFromCheckoutSession(session) {
         });
       } else if (itemType === 'custom_option') {
         // Custom option line item
+        console.log('Adding custom option for product:', productId);
         if (productMap.has(productId)) {
           const product = productMap.get(productId);
           product.selected_options.push({
@@ -849,6 +868,8 @@ async function createOrderFromCheckoutSession(session) {
             price: lineItem.price.unit_amount / 100,
             total: lineItem.amount_total / 100
           });
+        } else {
+          console.warn('Custom option found but no main product in map for product_id:', productId);
         }
       }
     }
