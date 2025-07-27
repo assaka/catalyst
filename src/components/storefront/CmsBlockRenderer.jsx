@@ -45,8 +45,8 @@ const loadCmsBlocksWithCache = async () => {
     return pendingRequests.get('all');
   }
 
-  // Create new request
-  const requestPromise = Promise.resolve([]); // Disabled CmsBlock.findAll() until backend supports public cms-blocks
+  // Create new request - CmsBlock.findAll() disabled until backend supports public cms-blocks
+  const requestPromise = Promise.resolve([])
     .then(blocks => {
       const result = blocks || [];
       cmsBlockCache.set('all', result);
