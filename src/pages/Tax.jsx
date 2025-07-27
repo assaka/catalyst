@@ -103,6 +103,9 @@ export default function TaxPage() {
       return;
     }
 
+    console.log(`🔧 Updating tax setting: ${key} = ${value}`);
+    console.log('📊 Current store settings:', selectedStore.settings);
+
     // Create a deep copy of the settings object to avoid mutation issues
     // and ensure `settings` object exists if it's null/undefined
     const newSettings = { ...(selectedStore.settings || {}) };
@@ -110,14 +113,20 @@ export default function TaxPage() {
     // Update the specific setting
     newSettings[key] = value;
 
+    console.log('📊 New settings to save:', newSettings);
+
     try {
       // Update the entire settings object in the store
       const { Store } = await import('@/api/entities');
-      await Store.update(selectedStore.id, { settings: newSettings });
+      const updateResult = await Store.update(selectedStore.id, { settings: newSettings });
+      
+      console.log('✅ Store settings updated successfully:', updateResult);
 
-      // Note: The store context will handle the state update
+      // Force reload of the page data to reflect changes
+      window.dispatchEvent(new CustomEvent('storeSelectionChanged'));
     } catch (error) {
       console.error("Failed to update tax settings:", error);
+      alert(`Failed to update tax settings: ${error.message}`);
     }
   };
 

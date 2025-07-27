@@ -6,10 +6,12 @@ import { Product } from "@/api/entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 import couponService from "@/services/couponService";
+import taxService from "@/services/taxService";
 import { PaymentMethod } from "@/api/entities";
 import { ShippingMethod } from "@/api/entities";
 import { Address } from "@/api/entities";
 import { Coupon } from "@/api/entities";
+import { Tax } from "@/api/entities";
 import { DeliverySettings } from "@/api/entities";
 import { useStore } from "@/components/storefront/StoreProvider";
 import { createStripeCheckout } from "@/api/functions";
@@ -83,6 +85,7 @@ export default function Checkout() {
   
   const [shippingCost, setShippingCost] = useState(0);
   const [taxAmount, setTaxAmount] = useState(0);
+  const [taxRules, setTaxRules] = useState([]);
   const [deliveryDate, setDeliveryDate] = useState(null);
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('');
   const [deliveryComments, setDeliveryComments] = useState('');
@@ -159,17 +162,19 @@ export default function Checkout() {
       // Load cart items
       await loadCartItems();
 
-      // Load payment methods, shipping methods, and delivery settings
-      const [paymentData, shippingData, deliveryData] = await Promise.all([
+      // Load payment methods, shipping methods, delivery settings, and tax rules
+      const [paymentData, shippingData, deliveryData, taxData] = await Promise.all([
         PaymentMethod.filter({ store_id: store.id, is_active: true }),
         ShippingMethod.filter({ store_id: store.id, is_active: true }),
-        DeliverySettings.filter({ store_id: store.id })
+        DeliverySettings.filter({ store_id: store.id }),
+        Tax.filter({ store_id: store.id, is_active: true })
       ]);
 
 
       setPaymentMethods(paymentData || []);
       setShippingMethods(shippingData || []);
       setDeliverySettings(deliveryData && deliveryData.length > 0 ? deliveryData[0] : null);
+      setTaxRules(taxData || []);
 
       // Set default selections
       if (paymentData?.length > 0) {
@@ -272,7 +277,7 @@ export default function Checkout() {
     const subtotal = calculateSubtotal();
     const discount = calculateDiscount();
     const shipping = isNaN(parseFloat(shippingCost)) ? 0 : parseFloat(shippingCost);
-    const tax = isNaN(parseFloat(taxAmount)) ? 0 : parseFloat(taxAmount);
+    const tax = calculateTax(); // Use calculated tax instead of state
     const total = subtotal - discount + shipping + tax;
     
     
@@ -482,6 +487,28 @@ export default function Checkout() {
     }
     
     return discount;
+  };
+
+  const calculateTax = () => {
+    if (!store || !taxRules.length || !cartItems.length) {
+      return 0;
+    }
+
+    const subtotal = calculateSubtotal();
+    const discount = calculateDiscount();
+    
+    const taxResult = taxService.calculateTax(
+      cartItems,
+      cartProducts,
+      store,
+      taxRules,
+      shippingAddress,
+      subtotal,
+      discount
+    );
+
+    console.log('🧮 Tax calculation in checkout:', taxResult);
+    return taxResult.taxAmount || 0;
   };
 
   const handleLogin = async () => {
@@ -863,10 +890,10 @@ export default function Checkout() {
                   </div>
                 )}
                 
-                {taxAmount > 0 && (
+                {calculateTax() > 0 && (
                   <div className="flex justify-between">
                     <span>Tax</span>
-                    <span>{currencySymbol}{formatPrice(taxAmount)}</span>
+                    <span>{currencySymbol}{formatPrice(calculateTax())}</span>
                   </div>
                 )}
                 
