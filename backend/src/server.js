@@ -830,6 +830,47 @@ app.get('/debug/view-categories', async (req, res) => {
   }
 });
 
+// Debug: Associate products with categories
+app.post('/debug/associate-products-categories', async (req, res) => {
+  try {
+    const { Product, Category } = require('./models');
+    
+    // Get all products and categories for the store
+    const store_id = '157d4590-49bf-4b0b-bd77-abe131909528';
+    const products = await Product.findAll({ where: { store_id } });
+    const categories = await Category.findAll({ where: { store_id } });
+    
+    console.log(`Found ${products.length} products and ${categories.length} categories`);
+    
+    let updated = 0;
+    for (const product of products) {
+      // Associate first product with Home & Garden category
+      const homeGardenCategory = categories.find(cat => cat.slug === 'home-garden');
+      if (homeGardenCategory && (!product.category_ids || product.category_ids.length === 0)) {
+        await product.update({
+          category_ids: [homeGardenCategory.id]
+        });
+        updated++;
+        console.log(`Associated ${product.name} with ${homeGardenCategory.name}`);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Associated ${updated} products with categories`,
+      products: products.length,
+      categories: categories.length
+    });
+  } catch (error) {
+    console.error('❌ Associate products failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to associate products',
+      error: error.message
+    });
+  }
+});
+
 // Simple product test endpoint
 app.get('/debug/test-products', async (req, res) => {
   try {

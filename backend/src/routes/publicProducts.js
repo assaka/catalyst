@@ -18,7 +18,12 @@ router.get('/', async (req, res) => {
     const where = {};
     
     if (store_id) where.store_id = store_id;
-    if (category_id) where.category_id = category_id;
+    if (category_id) {
+      // Filter by category using JSON array field
+      where.category_ids = {
+        [Op.contains]: [category_id]
+      };
+    }
     if (featured === 'true' || featured === true) where.featured = true;
     if (slug) where.slug = slug;
     if (sku) where.sku = sku;
