@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Product } from "@/api/entities";
+import { StorefrontProduct } from "@/api/storefront-entities";
 import { CmsBlock } from "@/api/entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import ProductLabelComponent from "@/components/storefront/ProductLabel";
@@ -61,7 +61,7 @@ export default function Storefront() {
         const featuredCacheKey = `featured-products-${store.id}`;
         const featuredData = await cachedApiCall(
           featuredCacheKey, 
-          () => Product.filter({ store_id: store.id, featured: true, status: 'active' }, '-created_date', 12)
+          () => StorefrontProduct.getFeatured({ store_id: store.id, status: 'active', limit: 12 })
         );
         const featuredArray = ensureArray(featuredData);
         setFeaturedProducts(featuredArray);
@@ -86,10 +86,9 @@ export default function Storefront() {
         const cacheKey = `products-category-${category.id}-v3`;
         let productsData = await cachedApiCall(cacheKey, async () => {
           try {
-            const exact = await Product.filter({ 
+            const exact = await StorefrontProduct.getByCategory(category.id, { 
               store_id: store.id, 
-              status: 'active',
-              category_ids: { contains: [category.id] }
+              status: 'active'
             });
             
             if (exact && exact.length > 0) {
@@ -99,7 +98,7 @@ export default function Storefront() {
           }
           
           const allProducts = await cachedApiCall(`all-active-products-${store.id}`, () => 
-            Product.filter({ store_id: store.id, status: 'active' })
+            StorefrontProduct.filter({ store_id: store.id, status: 'active' })
           );
           
           const filtered = (allProducts || []).filter(product => 

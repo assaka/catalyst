@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Product } from '@/api/entities';
+import { StorefrontProduct } from '@/api/storefront-entities';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Button } from '@/components/ui/button';
@@ -77,7 +77,7 @@ const fetchRecommendationData = async (storeId, context = 'default') => {
       // Featured products with longer cache (5 minutes) since they're stable
       cachedApiCall(
         `featured-products-${storeId}`, 
-        () => Product.filter({ is_featured: true }, '-created_date', 8),
+        () => StorefrontProduct.getFeatured({ limit: 8 }),
         COMPONENT_CACHE_TTL
       ).catch(error => {
         console.warn('Failed to load featured products:', error);
