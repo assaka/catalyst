@@ -285,11 +285,21 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
                       <SelectValue placeholder="Select attribute" />
                     </SelectTrigger>
                     <SelectContent>
-                      {attributes.filter(a => a.is_usable_in_conditions).map(attr => (
-                        <SelectItem key={attr.id} value={attr.code}>
-                          {attr.name}
-                        </SelectItem>
-                      ))}
+                      {(() => {
+                        console.log('🔍 ProductLabelForm: All attributes:', attributes);
+                        const usableAttributes = attributes.filter(a => a.is_usable_in_conditions);
+                        console.log('🔍 ProductLabelForm: Usable attributes:', usableAttributes);
+                        
+                        // Fallback to all attributes if no attributes are marked as usable
+                        const attributesToShow = usableAttributes.length > 0 ? usableAttributes : attributes;
+                        console.log('🔍 ProductLabelForm: Attributes to show:', attributesToShow);
+                        
+                        return attributesToShow.map(attr => (
+                          <SelectItem key={attr.id} value={attr.code}>
+                            {attr.name}
+                          </SelectItem>
+                        ));
+                      })()}
                     </SelectContent>
                   </Select>
                   

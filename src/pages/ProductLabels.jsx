@@ -41,6 +41,9 @@ export default function ProductLabels() {
         ProductLabel.filter({ store_id: storeId })
       ]);
       
+      console.log('🔍 ProductLabels: Loaded attributes:', attributesData);
+      console.log('🔍 ProductLabels: Loaded labels:', labelsData);
+      
       setAttributes(attributesData || []);
       setLabels(labelsData || []);
     } catch (error) {
@@ -96,6 +99,9 @@ export default function ProductLabels() {
         console.log('🗑️ Clearing storefront cache after label creation');
         window.clearCache();
       }
+      
+      // Also set a flag for manual cache clearing
+      localStorage.setItem('forceRefreshLabels', 'true');
       
       closeForm();
       loadData();

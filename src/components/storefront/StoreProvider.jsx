@@ -411,8 +411,20 @@ export const StoreProvider = ({ children }) => {
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`labels-${selectedStore.id}`, async () => {
-          const result = await StorefrontProductLabel.filter({ store_id: selectedStore.id, is_active: true });
-          return Array.isArray(result) ? result : [];
+          console.log('🔍 StoreProvider: Fetching product labels for store:', selectedStore.id);
+          
+          // Check if we should force refresh
+          const forceRefresh = localStorage.getItem('forceRefreshLabels');
+          if (forceRefresh) {
+            console.log('🔄 StoreProvider: Force refreshing product labels');
+            localStorage.removeItem('forceRefreshLabels');
+          }
+          
+          const result = await StorefrontProductLabel.filter({ store_id: selectedStore.id });
+          console.log('🔍 StoreProvider: Raw product labels result:', result);
+          const activeLabels = Array.isArray(result) ? result.filter(label => label.is_active !== false) : [];
+          console.log('🔍 StoreProvider: Active product labels:', activeLabels);
+          return activeLabels;
         }),
         cachedApiCall(`attributes-${selectedStore.id}`, async () => {
           const result = await StorefrontAttribute.filter({ store_id: selectedStore.id });
