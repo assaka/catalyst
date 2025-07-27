@@ -33,7 +33,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function StockSettings() {
-  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId, refreshStores } = useStoreSelection();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -136,6 +136,9 @@ export default function StockSettings() {
       setFlashMessage({ type: 'success', message: 'Stock settings saved successfully!' });
       
       await delay(2000); // Increased delay to ensure backend processing
+      
+      // Refresh the store context to get updated settings
+      await refreshStores();
       await loadStore();
       
     } catch (error) {
