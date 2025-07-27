@@ -58,7 +58,19 @@ const ProductLabel = sequelize.define('ProductLabel', {
       unique: true,
       fields: ['store_id', 'slug']
     }
-  ]
+  ],
+  hooks: {
+    beforeCreate: (label) => {
+      if (!label.slug && label.name) {
+        label.slug = label.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      }
+    },
+    beforeUpdate: (label) => {
+      if (label.changed('name') && !label.changed('slug')) {
+        label.slug = label.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      }
+    }
+  }
 });
 
 module.exports = ProductLabel;
