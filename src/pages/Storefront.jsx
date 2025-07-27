@@ -70,7 +70,7 @@ export default function Storefront() {
         try {
           featuredData = await cachedApiCall(
             featuredCacheKey, 
-            () => StorefrontProduct.getFeatured({ store_id: store.id, status: 'active', limit: 12 })
+            () => StorefrontProduct.getFeatured({ store_id: store.id, limit: 12 })
           );
           console.log('📊 Storefront: Featured products result:', featuredData);
         } catch (featuredError) {
@@ -102,8 +102,7 @@ export default function Storefront() {
         let productsData = await cachedApiCall(cacheKey, async () => {
           try {
             const exact = await StorefrontProduct.getByCategory(category.id, { 
-              store_id: store.id, 
-              status: 'active'
+              store_id: store.id
             });
             
             if (exact && exact.length > 0) {
@@ -113,7 +112,7 @@ export default function Storefront() {
           }
           
           const allProducts = await cachedApiCall(`all-active-products-${store.id}`, () => 
-            StorefrontProduct.filter({ store_id: store.id, status: 'active' })
+            StorefrontProduct.filter({ store_id: store.id })
           );
           
           const filtered = (allProducts || []).filter(product => 
