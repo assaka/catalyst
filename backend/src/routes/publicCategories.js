@@ -14,7 +14,10 @@ router.get('/', async (req, res) => {
     console.log('🔍 Public Categories API called with params:', req.query);
     console.log('🔍 Request URL:', req.originalUrl);
 
-    const where = {};
+    const where = {
+      is_active: true,  // Only show active categories
+      hide_in_menu: false  // Only show categories not hidden in menu
+    };
     
     if (store_id) where.store_id = store_id;
     if (parent_id !== undefined) where.parent_id = parent_id;

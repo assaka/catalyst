@@ -729,33 +729,43 @@ app.post('/debug/create-categories', async (req, res) => {
       });
     }
     
-    // Create sample categories
+    // Create sample categories with proper flags
     const categories = [
       {
         name: 'Electronics',
         slug: 'electronics',
         description: 'Electronic products and gadgets',
-        store_id: hamidStore.id
+        store_id: hamidStore.id,
+        is_active: true,
+        hide_in_menu: false
       },
       {
         name: 'Clothing',
         slug: 'clothing', 
         description: 'Fashion and apparel',
-        store_id: hamidStore.id
+        store_id: hamidStore.id,
+        is_active: true,
+        hide_in_menu: false
       },
       {
         name: 'Home & Garden',
         slug: 'home-garden',
         description: 'Home and garden products',
-        store_id: hamidStore.id
+        store_id: hamidStore.id,
+        is_active: true,
+        hide_in_menu: false
       }
     ];
     
     let created = 0;
     for (const catData of categories) {
       try {
-        await Category.create(catData);
-        created++;
+        const [category, wasCreated] = await Category.findOrCreate({
+          where: { slug: catData.slug, store_id: hamidStore.id },
+          defaults: catData
+        });
+        if (wasCreated) created++;
+        console.log(`Category ${wasCreated ? 'created' : 'exists'}: ${category.name} (is_active: ${category.is_active}, hide_in_menu: ${category.hide_in_menu})`);
       } catch (err) {
         console.error('Category creation error:', err.message);
       }
@@ -778,6 +788,43 @@ app.post('/debug/create-categories', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to create categories',
+      error: error.message
+    });
+  }
+});
+
+// Debug: View all categories
+app.get('/debug/view-categories', async (req, res) => {
+  try {
+    const { Category, Store } = require('./models');
+    
+    const categories = await Category.findAll({
+      include: [{
+        model: Store,
+        as: 'store',
+        attributes: ['id', 'name', 'slug']
+      }],
+      order: [['name', 'ASC']]
+    });
+
+    res.json({
+      success: true,
+      count: categories.length,
+      categories: categories.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        is_active: cat.is_active,
+        hide_in_menu: cat.hide_in_menu,
+        store_id: cat.store_id,
+        store_name: cat.store?.name
+      }))
+    });
+  } catch (error) {
+    console.error('❌ View categories failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to view categories',
       error: error.message
     });
   }
