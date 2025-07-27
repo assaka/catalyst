@@ -88,6 +88,7 @@ export default function Checkout() {
   });
   
   const [shippingCost, setShippingCost] = useState(0);
+  const [paymentFee, setPaymentFee] = useState(0);
   const [taxAmount, setTaxAmount] = useState(0);
   const [taxRules, setTaxRules] = useState([]);
   const [deliveryDate, setDeliveryDate] = useState(null);
@@ -183,6 +184,7 @@ export default function Checkout() {
       // Set default selections
       if (paymentData?.length > 0) {
         setSelectedPaymentMethod(paymentData[0].code);
+        calculatePaymentFee(paymentData[0].code);
       }
       if (shippingData?.length > 0) {
         setSelectedShippingMethod(shippingData[0].name);
@@ -233,6 +235,11 @@ export default function Checkout() {
         if (appliedCoupon) {
           validateAppliedCoupon(appliedCoupon, cartItems, productDetails);
         }
+        
+        // Recalculate payment fee when cart contents change
+        if (selectedPaymentMethod) {
+          calculatePaymentFee(selectedPaymentMethod);
+        }
       } else if (appliedCoupon) {
         // Clear coupon if cart is empty
         couponService.removeAppliedCoupon();
@@ -281,8 +288,9 @@ export default function Checkout() {
     const subtotal = calculateSubtotal();
     const discount = calculateDiscount();
     const shipping = isNaN(parseFloat(shippingCost)) ? 0 : parseFloat(shippingCost);
+    const paymentMethodFee = isNaN(parseFloat(paymentFee)) ? 0 : parseFloat(paymentFee);
     const tax = calculateTax(); // Use calculated tax instead of state
-    const total = subtotal - discount + shipping + tax;
+    const total = subtotal - discount + shipping + paymentMethodFee + tax;
     
     
     return isNaN(total) ? 0 : total;
@@ -307,6 +315,30 @@ export default function Checkout() {
     } else if (method.type === 'flat_rate') {
       setShippingCost(parseFloat(method.flat_rate_cost) || 0);
     }
+  };
+
+  const calculatePaymentFee = (paymentMethodCode) => {
+    if (!paymentMethodCode) {
+      setPaymentFee(0);
+      return;
+    }
+    
+    const method = paymentMethods.find(m => m.code === paymentMethodCode);
+    if (!method || method.fee_type === 'none' || !method.fee_amount) {
+      setPaymentFee(0);
+      return;
+    }
+    
+    const subtotal = calculateSubtotal();
+    let fee = 0;
+    
+    if (method.fee_type === 'fixed') {
+      fee = parseFloat(method.fee_amount) || 0;
+    } else if (method.fee_type === 'percentage') {
+      fee = subtotal * (parseFloat(method.fee_amount) / 100);
+    }
+    
+    setPaymentFee(fee);
   };
 
   // Validate that applied coupon is still valid for current cart contents
@@ -642,8 +674,10 @@ export default function Checkout() {
         store,
         taxAmount,
         shippingCost,
+        paymentFee,
         shippingMethod: selectedMethod,
         selectedShippingMethod,
+        selectedPaymentMethod,
         discountAmount: discount,
         appliedCoupon,
         deliveryDate: deliveryDate ? deliveryDate.toISOString().split('T')[0] : null,
@@ -739,17 +773,28 @@ export default function Checkout() {
                         name="paymentMethod"
                         value={method.code}
                         checked={selectedPaymentMethod === method.code}
-                        onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                        onChange={(e) => {
+                          setSelectedPaymentMethod(e.target.value);
+                          calculatePaymentFee(e.target.value);
+                        }}
                         className="text-blue-600"
                       />
                       <label htmlFor={`payment-method-${method.id}`} className="flex-1 cursor-pointer flex items-center space-x-3">
                         {method.icon_url && (
                           <img src={method.icon_url} alt={method.name} className="w-8 h-8 object-contain" />
                         )}
-                        <div>
+                        <div className="flex-1">
                           <p className="font-medium">{method.name}</p>
                           {method.description && (
                             <p className="text-sm text-gray-500">{method.description}</p>
+                          )}
+                          {method.fee_type !== 'none' && method.fee_amount > 0 && (
+                            <p className="text-sm text-gray-600">
+                              Fee: {method.fee_type === 'fixed' 
+                                ? `${currencySymbol}${formatPrice(method.fee_amount)}`
+                                : `${formatPrice(method.fee_amount)}%`
+                              }
+                            </p>
                           )}
                         </div>
                       </label>
@@ -891,6 +936,13 @@ export default function Checkout() {
                   <div className="flex justify-between">
                     <span>Shipping</span>
                     <span>{shippingCost > 0 ? `${currencySymbol}${formatPrice(shippingCost)}` : 'Free'}</span>
+                  </div>
+                )}
+                
+                {paymentFee > 0 && (
+                  <div className="flex justify-between">
+                    <span>Payment Fee</span>
+                    <span>{currencySymbol}{formatPrice(paymentFee)}</span>
                   </div>
                 )}
                 
