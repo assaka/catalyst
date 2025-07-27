@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 // Automated deployment testing script
-const { exec } = require('child_process');
-const util = require('util');
+import { exec } from 'child_process';
+import util from 'util';
 
 const execPromise = util.promisify(exec);
 
@@ -264,20 +264,18 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// Run tests if this file is executed directly
-if (require.main === module) {
-  runTests()
-    .then(results => {
-      console.log('\n✅ Testing completed');
-      
-      // Exit with appropriate code
-      const hasFailures = !results.backend_health || !results.stores.success || !results.storefront.success;
-      process.exit(hasFailures ? 1 : 0);
-    })
-    .catch(error => {
-      console.error('\n❌ Testing failed:', error);
-      process.exit(1);
-    });
-}
+// Run tests - ES module execution
+runTests()
+  .then(results => {
+    console.log('\n✅ Testing completed');
+    
+    // Exit with appropriate code
+    const hasFailures = !results.backend_health || !results.stores.success || !results.storefront.success;
+    process.exit(hasFailures ? 1 : 0);
+  })
+  .catch(error => {
+    console.error('\n❌ Testing failed:', error);
+    process.exit(1);
+  });
 
-module.exports = { runTests };
+export { runTests };
