@@ -146,32 +146,24 @@ export default function ProductLabels() {
     try {
       console.log('🧪 Creating test label for store:', storeId);
       
-      // Use our test endpoint
-      const response = await fetch(`https://catalyst-backend-fzhu.onrender.com/api/product-labels/test`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ store_id: storeId })
-      });
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        console.log('✅ Test label created:', result.data);
-        alert(`Test label created successfully: ${result.data.name}`);
-        
-        // Clear cache and reload
-        if (typeof window !== 'undefined' && window.clearCache) {
-          window.clearCache();
+      // Create test label data directly using the regular API
+      const testLabelData = {
+        name: 'Debug Test Label',
+        text: 'DEBUG',
+        background_color: '#FF0000',
+        text_color: '#FFFFFF', // Use text_color here, will be mapped to color in handleSubmit
+        position: 'top-right',
+        is_active: true,
+        conditions: {
+          attribute_conditions: [],
+          price_conditions: {}
         }
-        localStorage.setItem('forceRefreshLabels', 'true');
-        
-        loadData();
-      } else {
-        console.error('❌ Failed to create test label:', result.message);
-        alert(`Failed to create test label: ${result.message}`);
-      }
+      };
+      
+      // Use the existing handleSubmit logic which includes field mapping
+      await handleSubmit(testLabelData);
+      
+      console.log('✅ Test label created successfully');
     } catch (error) {
       console.error('❌ Error creating test label:', error);
       alert(`Error creating test label: ${error.message}`);
