@@ -642,6 +642,56 @@ app.post('/debug/seed', async (req, res) => {
   }
 });
 
+// Simple product test endpoint
+app.get('/debug/test-products', async (req, res) => {
+  try {
+    console.log('🧪 Testing product queries...');
+    
+    const { Product, Store } = require('./models');
+    
+    // Test 1: Simple count
+    const productCount = await Product.count();
+    console.log('📊 Total products in database:', productCount);
+    
+    // Test 2: Simple findAll without associations
+    const productsSimple = await Product.findAll({ limit: 5 });
+    console.log('📦 Products (simple query):', productsSimple.length);
+    
+    // Test 3: Find products with store association (like the publicProducts route)
+    try {
+      const productsWithStore = await Product.findAll({
+        limit: 2,
+        include: [{
+          model: Store,
+          as: 'store',
+          attributes: ['id', 'name', 'slug']
+        }]
+      });
+      console.log('🏪 Products with store association:', productsWithStore.length);
+    } catch (assocError) {
+      console.error('❌ Association query failed:', assocError.message);
+    }
+    
+    res.json({
+      success: true,
+      message: 'Product test completed',
+      results: {
+        total_count: productCount,
+        simple_query_count: productsSimple.length,
+        sample_products: productsSimple.map(p => ({ id: p.id, name: p.name, store_id: p.store_id }))
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Product test failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Product test failed',
+      error: error.message
+    });
+  }
+});
+
 // Complete database wipe and recreation
 app.post('/debug/reset-db-complete', async (req, res) => {
   try {
