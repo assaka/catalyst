@@ -10,6 +10,9 @@ router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 100, store_id, category_id, status = 'active', search, slug, sku, id, featured } = req.query;
     const offset = (page - 1) * limit;
+    
+    console.log('🔍 Public Products API called with params:', req.query);
+    console.log('📊 Featured param:', featured, typeof featured);
 
     const where = {
       status: 'active' // Only show active products publicly
@@ -44,6 +47,8 @@ router.get('/', async (req, res) => {
       ]
     });
 
+    console.log('✅ Public Products query result:', rows.length, 'products found');
+    
     // Return just the array for public requests (for compatibility)
     res.json(rows);
   } catch (error) {

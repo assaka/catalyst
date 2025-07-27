@@ -10,6 +10,8 @@ router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 100, store_id, parent_id, search } = req.query;
     const offset = (page - 1) * limit;
+    
+    console.log('🔍 Public Categories API called with params:', req.query);
 
     const where = {
       is_active: true // Only show active categories publicly
@@ -37,6 +39,8 @@ router.get('/', async (req, res) => {
       }]
     });
 
+    console.log('✅ Public Categories query result:', rows.length, 'categories found');
+    
     // Return just the array for public requests (for compatibility)
     res.json(rows);
   } catch (error) {
