@@ -18,10 +18,16 @@ export default function CustomOptions({
   }, [selectedCustomOptions]);
 
   const handleOptionChange = (option, checked) => {
+    // Use lower price if compare_price exists and is different
+    let optionPrice = parseFloat(option.price || 0);
+    if (option.compare_price && parseFloat(option.compare_price) > 0 && parseFloat(option.compare_price) !== parseFloat(option.price)) {
+      optionPrice = Math.min(parseFloat(option.price), parseFloat(option.compare_price));
+    }
+    
     const newOption = {
       id: option.id,
       name: option.name,
-      price: option.price || 0,
+      price: optionPrice,
       quantity: checked ? 1 : 0,
       selected: checked
     };
@@ -69,9 +75,20 @@ export default function CustomOptions({
                 </div>
               </div>
               <div className="text-right">
-                <span className="font-semibold">
-                  {settings?.hide_currency_product ? '' : '$'}{option.price?.toFixed(2) || '0.00'}
-                </span>
+                {option.compare_price && parseFloat(option.compare_price) > 0 && parseFloat(option.compare_price) !== parseFloat(option.price) ? (
+                  <div>
+                    <span className="font-semibold text-red-600">
+                      {settings?.hide_currency_product ? '' : '$'}{Math.min(parseFloat(option.price || 0), parseFloat(option.compare_price || 0)).toFixed(2)}
+                    </span>
+                    <div className="text-sm text-gray-500 line-through">
+                      {settings?.hide_currency_product ? '' : '$'}{Math.max(parseFloat(option.price || 0), parseFloat(option.compare_price || 0)).toFixed(2)}
+                    </div>
+                  </div>
+                ) : (
+                  <span className="font-semibold">
+                    {settings?.hide_currency_product ? '' : '$'}{option.price?.toFixed(2) || '0.00'}
+                  </span>
+                )}
               </div>
             </div>
           ))}

@@ -182,12 +182,15 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             // Remove option
             newSelectedOptions = selectedOptions.filter(selected => selected.product_id !== option.id);
         } else {
-            // Add option with price info
-            const optionPrice = option.sale_price || option.price || 0;
+            // Add option with price info - use lower price if compare_price exists
+            let optionPrice = parseFloat(option.price || 0);
+            if (option.compare_price && parseFloat(option.compare_price) > 0 && parseFloat(option.compare_price) !== parseFloat(option.price)) {
+                optionPrice = Math.min(parseFloat(option.price), parseFloat(option.compare_price));
+            }
             newSelectedOptions = [...selectedOptions, {
                 product_id: option.id,
                 name: option.name,
-                price: parseFloat(optionPrice)
+                price: optionPrice
             }];
         }
         
@@ -220,7 +223,11 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
             <div className="space-y-3">
                 {customOptions.map(option => {
                     const isSelected = selectedOptions.some(selected => selected.product_id === option.id);
-                    const optionPrice = option.sale_price || option.price || 0;
+                    
+                    // Calculate display prices
+                    const hasSpecialPrice = option.compare_price && parseFloat(option.compare_price) > 0 && parseFloat(option.compare_price) !== parseFloat(option.price);
+                    const displayPrice = hasSpecialPrice ? Math.min(parseFloat(option.price || 0), parseFloat(option.compare_price || 0)) : parseFloat(option.price || 0);
+                    const originalPrice = hasSpecialPrice ? Math.max(parseFloat(option.price || 0), parseFloat(option.compare_price || 0)) : null;
                     
                     return (
                         <div 
@@ -249,9 +256,22 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                             )}
                                         </div>
                                         <div className="ml-4 flex-shrink-0">
-                                            <Badge variant={isSelected ? "default" : "outline"} className="font-semibold">
-                                                +{currencySymbol}{parseFloat(optionPrice).toFixed(2)}
-                                            </Badge>
+                                            {hasSpecialPrice ? (
+                                                <div className="text-right">
+                                                    <div className="flex items-center space-x-2">
+                                                        <Badge variant={isSelected ? "default" : "outline"} className="font-semibold bg-red-100 text-red-800 border-red-300">
+                                                            +{currencySymbol}{displayPrice.toFixed(2)}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 line-through mt-1">
+                                                        +{currencySymbol}{originalPrice.toFixed(2)}
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <Badge variant={isSelected ? "default" : "outline"} className="font-semibold">
+                                                    +{currencySymbol}{displayPrice.toFixed(2)}
+                                                </Badge>
+                                            )}
                                         </div>
                                     </div>
                                     
