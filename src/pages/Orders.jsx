@@ -39,6 +39,7 @@ export default function Orders() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState({});
+  const [orderItems, setOrderItems] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [openOrderId, setOpenOrderId] = useState(null);
@@ -96,8 +97,28 @@ export default function Orders() {
         } else {
           setUsers({});
         }
+
+        // Load order items for each order
+        const orderIds = ordersData.map(o => o.id);
+        if (orderIds.length > 0) {
+          try {
+            const itemsData = await OrderItem.filter({ order_id__in: orderIds });
+            const itemsMap = itemsData.reduce((acc, item) => {
+              if (!acc[item.order_id]) acc[item.order_id] = [];
+              acc[item.order_id].push(item);
+              return acc;
+            }, {});
+            setOrderItems(itemsMap);
+          } catch (itemError) {
+            console.error("Could not load order items:", itemError);
+            setOrderItems({});
+          }
+        } else {
+          setOrderItems({});
+        }
       } else {
         setUsers({});
+        setOrderItems({});
       }
     } catch (err) {
       console.error("Error loading orders:", err);
@@ -128,8 +149,8 @@ export default function Orders() {
 
   const filteredOrders = orders.filter(order =>
     order.order_number?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (users[order.user_id]?.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (users[order.user_id]?.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+    (users[order.user_id]?.full_name || order.customer_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (users[order.user_id]?.email || order.customer_email || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatPrice = (price) => {
@@ -137,7 +158,13 @@ export default function Orders() {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? 'Invalid Date' : date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
   if (loading) {
@@ -270,14 +297,18 @@ export default function Orders() {
                                 <TableCell className="font-medium">
                                   #{order.order_number || order.id.slice(-8)}
                                 </TableCell>
-                                <TableCell>{formatDate(order.created_date)}</TableCell>
+                                <TableCell>{formatDate(order.created_date || order.createdAt)}</TableCell>
                                 <TableCell>
                                   <div>
                                     <p className="font-medium">
-                                      {users[order.user_id]?.full_name || 'Unknown Customer'}
+                                      {users[order.user_id]?.full_name || 
+                                       order.customer_name || 
+                                       order.billing_address?.name || 
+                                       order.shipping_address?.name || 
+                                       'Guest Customer'}
                                     </p>
                                     <p className="text-sm text-gray-500">
-                                      {users[order.user_id]?.email || ''}
+                                      {users[order.user_id]?.email || order.customer_email || 'No email'}
                                     </p>
                                   </div>
                                 </TableCell>
@@ -295,10 +326,52 @@ export default function Orders() {
                               <TableRow>
                                 <TableCell colSpan={6} className="p-0">
                                   <div className="p-6 bg-gray-50 border-t">
+                                    {/* Order Items */}
+                                    <div className="mb-6">
+                                      <h4 className="font-semibold text-gray-900 mb-3">Order Items</h4>
+                                      {orderItems[order.id] && orderItems[order.id].length > 0 ? (
+                                        <div className="bg-white rounded-lg border overflow-hidden">
+                                          <Table>
+                                            <TableHeader>
+                                              <TableRow>
+                                                <TableHead>Product</TableHead>
+                                                <TableHead className="text-center">Qty</TableHead>
+                                                <TableHead className="text-right">Price</TableHead>
+                                                <TableHead className="text-right">Total</TableHead>
+                                              </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                              {orderItems[order.id].map((item, index) => (
+                                                <TableRow key={index}>
+                                                  <TableCell>
+                                                    <div>
+                                                      <p className="font-medium">{item.product_name || 'Unknown Product'}</p>
+                                                      {item.product_sku && (
+                                                        <p className="text-sm text-gray-500">SKU: {item.product_sku}</p>
+                                                      )}
+                                                    </div>
+                                                  </TableCell>
+                                                  <TableCell className="text-center">{item.quantity || 1}</TableCell>
+                                                  <TableCell className="text-right">{formatPrice(item.price)}</TableCell>
+                                                  <TableCell className="text-right font-medium">{formatPrice(item.total_price || (item.price * item.quantity))}</TableCell>
+                                                </TableRow>
+                                              ))}
+                                            </TableBody>
+                                          </Table>
+                                        </div>
+                                      ) : (
+                                        <div className="bg-white rounded-lg border p-4 text-center text-gray-500">
+                                          <Package className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                                          <p>No order items found</p>
+                                          <p className="text-sm">Order details may still be processing</p>
+                                        </div>
+                                      )}
+                                    </div>
+
                                     <div className="grid md:grid-cols-2 gap-6">
                                       {/* Order Details */}
                                       <div>
-                                        <h4 className="font-semibold text-gray-900 mb-3">Order Details</h4>
+                                        <h4 className="font-semibold text-gray-900 mb-3">Order Summary</h4>
                                         <div className="space-y-2 text-sm">
                                           <div className="flex justify-between">
                                             <span className="text-gray-600">Subtotal:</span>
@@ -306,7 +379,7 @@ export default function Orders() {
                                           </div>
                                           <div className="flex justify-between">
                                             <span className="text-gray-600">Shipping:</span>
-                                            <span>{formatPrice(order.shipping_cost)}</span>
+                                            <span>{formatPrice(order.shipping_cost || order.shipping_amount)}</span>
                                           </div>
                                           <div className="flex justify-between">
                                             <span className="text-gray-600">Tax:</span>
@@ -324,6 +397,20 @@ export default function Orders() {
                                             <span>{formatPrice(order.total_amount)}</span>
                                           </div>
                                         </div>
+                                        
+                                        {/* Additional Order Info */}
+                                        <div className="mt-4 pt-4 border-t space-y-2 text-sm">
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600">Payment Method:</span>
+                                            <span className="capitalize">{order.payment_method || 'N/A'}</span>
+                                          </div>
+                                          <div className="flex justify-between">
+                                            <span className="text-gray-600">Payment Status:</span>
+                                            <Badge className={order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                                              {order.payment_status || 'Pending'}
+                                            </Badge>
+                                          </div>
+                                        </div>
                                       </div>
 
                                       {/* Shipping Address */}
@@ -331,13 +418,29 @@ export default function Orders() {
                                         <h4 className="font-semibold text-gray-900 mb-3">Shipping Address</h4>
                                         {order.shipping_address ? (
                                           <div className="text-sm text-gray-600">
-                                            <p>{order.shipping_address.fullName}</p>
-                                            <p>{order.shipping_address.address}</p>
-                                            <p>{order.shipping_address.city}, {order.shipping_address.postalCode}</p>
+                                            <p className="font-medium">{order.shipping_address.full_name || order.shipping_address.name}</p>
+                                            <p>{order.shipping_address.street || order.shipping_address.line1 || order.shipping_address.address}</p>
+                                            {order.shipping_address.line2 && <p>{order.shipping_address.line2}</p>}
+                                            <p>{order.shipping_address.city}, {order.shipping_address.state || order.shipping_address.province} {order.shipping_address.postal_code || order.shipping_address.zip}</p>
                                             <p>{order.shipping_address.country}</p>
+                                            {order.shipping_address.phone && <p>Phone: {order.shipping_address.phone}</p>}
                                           </div>
                                         ) : (
                                           <p className="text-sm text-gray-500">No shipping address provided</p>
+                                        )}
+                                        
+                                        {/* Billing Address if different */}
+                                        {order.billing_address && JSON.stringify(order.billing_address) !== JSON.stringify(order.shipping_address) && (
+                                          <div className="mt-4">
+                                            <h5 className="font-medium text-gray-900 mb-2">Billing Address</h5>
+                                            <div className="text-sm text-gray-600">
+                                              <p className="font-medium">{order.billing_address.full_name || order.billing_address.name}</p>
+                                              <p>{order.billing_address.street || order.billing_address.line1 || order.billing_address.address}</p>
+                                              {order.billing_address.line2 && <p>{order.billing_address.line2}</p>}
+                                              <p>{order.billing_address.city}, {order.billing_address.state || order.billing_address.province} {order.billing_address.postal_code || order.billing_address.zip}</p>
+                                              <p>{order.billing_address.country}</p>
+                                            </div>
+                                          </div>
                                         )}
                                       </div>
                                     </div>
