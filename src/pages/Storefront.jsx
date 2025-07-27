@@ -42,8 +42,10 @@ export default function Storefront() {
   const categories = useMemo(() => storeCategories || [], [storeCategories]);
 
   useEffect(() => {
+    console.log('🔍 Storefront useEffect:', { storeLoading, storeId: store?.id, categorySlug });
     if (!storeLoading && store?.id) {
         const homepage = !categorySlug;
+        console.log('📍 Storefront: Loading data, homepage:', homepage);
         setIsHomepage(homepage);
         loadData(homepage);
     }
@@ -51,18 +53,24 @@ export default function Storefront() {
 
   const loadData = async (isHome = false) => {
     try {
+      console.log('🔍 Storefront loadData called:', { isHome, storeId: store?.id });
       setLoading(true);
       setActiveFilters({});
-      if (!store) return;
-
+      if (!store) {
+        console.log('❌ Storefront: No store, returning');
+        return;
+      }
 
       if (isHome) {
+        console.log('🏠 Storefront: Loading homepage data');
         setCurrentCategory(null);
         const featuredCacheKey = `featured-products-${store.id}`;
+        console.log('🔍 Storefront: Calling StorefrontProduct.getFeatured()');
         const featuredData = await cachedApiCall(
           featuredCacheKey, 
           () => StorefrontProduct.getFeatured({ store_id: store.id, status: 'active', limit: 12 })
         );
+        console.log('📊 Storefront: Featured products result:', featuredData);
         const featuredArray = ensureArray(featuredData);
         setFeaturedProducts(featuredArray);
         setProducts([]);
