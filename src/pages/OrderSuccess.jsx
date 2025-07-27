@@ -143,19 +143,17 @@ export default function OrderSuccess() {
     setCreatingAccount(true);
     
     try {
-      // Extract name from order data - try multiple sources
-      let customerName = '';
+      // Extract comprehensive details from order data
+      const shippingAddr = order.shipping_address || {};
+      const billingAddr = order.billing_address || {};
       
-      // Try to get name from shipping address first
-      if (order.shipping_address?.name || order.shipping_address?.full_name) {
-        customerName = order.shipping_address.name || order.shipping_address.full_name;
-      }
-      // Try billing address if shipping doesn't have name
-      else if (order.billing_address?.name || order.billing_address?.full_name) {
-        customerName = order.billing_address.name || order.billing_address.full_name;
-      }
-      // Try customer details from Stripe
-      else if (order.customer_name) {
+      // Extract name - try multiple sources
+      let customerName = '';
+      if (shippingAddr.name || shippingAddr.full_name) {
+        customerName = shippingAddr.name || shippingAddr.full_name;
+      } else if (billingAddr.name || billingAddr.full_name) {
+        customerName = billingAddr.name || billingAddr.full_name;
+      } else if (order.customer_name) {
         customerName = order.customer_name;
       }
       
@@ -167,14 +165,41 @@ export default function OrderSuccess() {
       if (!firstName) firstName = 'Customer';
       if (!lastName) lastName = 'User';
       
-      const response = await Auth.register({
+      // Extract phone number
+      const phone = order.customer_phone || shippingAddr.phone || billingAddr.phone || '';
+      
+      // Create registration payload with address details
+      const registrationData = {
         first_name: firstName,
         last_name: lastName,
         email: order.customer_email,
         password: accountFormData.password,
-        role: 'customer', // Set role as customer, not store_owner
-        send_welcome_email: true // Request welcome email to be sent
-      });
+        phone: phone,
+        role: 'customer',
+        send_welcome_email: true,
+        // Add address information for profile
+        address_data: {
+          shipping_address: {
+            street: shippingAddr.line1 || shippingAddr.street || '',
+            street2: shippingAddr.line2 || '',
+            city: shippingAddr.city || '',
+            state: shippingAddr.state || shippingAddr.province || '',
+            postal_code: shippingAddr.postal_code || shippingAddr.zip || '',
+            country: shippingAddr.country || ''
+          },
+          billing_address: {
+            street: billingAddr.line1 || billingAddr.street || '',
+            street2: billingAddr.line2 || '',
+            city: billingAddr.city || '',
+            state: billingAddr.state || billingAddr.province || '',
+            postal_code: billingAddr.postal_code || billingAddr.zip || '',
+            country: billingAddr.country || ''
+          }
+        }
+      };
+      
+      console.log('Creating account with data:', registrationData);
+      const response = await Auth.register(registrationData);
       
       setAccountCreationSuccess(true);
       setShowCreateAccount(false);

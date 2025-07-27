@@ -71,8 +71,86 @@ class ApiClient {
     return headers;
   }
 
+  // Public request method (no authentication required)
+  async publicRequest(method, endpoint, data = null, customHeaders = {}) {
+    // For public endpoints, use /api/public/ prefix
+    const publicEndpoint = endpoint.startsWith('public/') ? endpoint : `public/${endpoint}`;
+    const url = this.buildUrl(publicEndpoint);
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      ...customHeaders
+    };
+
+    const config = {
+      method,
+      headers,
+      credentials: 'include'
+    };
+
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      config.body = JSON.stringify(data);
+    }
+
+    try {
+      const response = await fetch(url, config);
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Unexpected response type: ${contentType}`);
+      }
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        const error = new Error(result.message || `HTTP error! status: ${response.status}`);
+        error.status = response.status;
+        error.data = result;
+        throw error;
+      }
+
+      // Handle wrapped API responses
+      if (result && typeof result === 'object' && result.success && result.data) {
+        if (Array.isArray(result.data)) {
+          return result.data;
+        }
+        
+        if (result.data && typeof result.data === 'object' && result.data.id) {
+          return [result.data];
+        }
+        
+        const dataEntries = Object.entries(result.data);
+        for (const [key, value] of dataEntries) {
+          if (Array.isArray(value) && key !== 'gdpr_countries') {
+            return value;
+          }
+        }
+        
+        return [result.data];
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`Public API request failed: ${method} ${url}`, error);
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('Network error: Unable to connect to server');
+      }
+      
+      throw error;
+    }
+  }
+
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
+    // If user is not authenticated, try public endpoint first for certain routes
+    const publicRoutes = ['stores', 'products', 'categories', 'shipping', 'tax', 'delivery', 'attributes', 'coupons'];
+    const isPublicRoute = publicRoutes.some(route => endpoint.startsWith(route));
+    
+    if ((this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true' || !this.getToken()) && isPublicRoute) {
+      return this.publicRequest(method, endpoint, data, customHeaders);
+    }
+    
     // Prevent authenticated requests if user has been logged out
     if (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true') {
       throw new Error('Session has been terminated. Please log in again.');

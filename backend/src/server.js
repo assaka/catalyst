@@ -578,6 +578,18 @@ app.get('/debug/db', async (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes); // Fallback for legacy paths
+
+// Public routes for guest access
+app.use('/api/public/stores', storeRoutes);
+app.use('/api/public/products', productRoutes);
+app.use('/api/public/categories', categoryRoutes);
+app.use('/api/public/shipping', shippingRoutes);
+app.use('/api/public/tax', taxRoutes);
+app.use('/api/public/delivery', deliveryRoutes);
+app.use('/api/public/attributes', attributeRoutes);
+app.use('/api/public/coupons', couponRoutes);
+
+// Authenticated routes (keep existing for admin/authenticated users)
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/stores', authMiddleware, storeRoutes);
 app.use('/api/products', authMiddleware, productRoutes);

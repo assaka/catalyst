@@ -63,7 +63,7 @@ router.post('/register', [
       });
     }
 
-    const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency', send_welcome_email = false } = req.body;
+    const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency', send_welcome_email = false, address_data } = req.body;
 
     // Check if user exists
     const existingUser = await User.findOne({ where: { email } });
@@ -91,6 +91,12 @@ router.post('/register', [
         // Simple console log for now - in production this would be an actual email service
         console.log(`Welcome email should be sent to: ${email}`);
         console.log(`Welcome message: Hello ${first_name}, welcome to our store! Your account has been created successfully.`);
+        
+        // Log address data if provided (for future Address model integration)
+        if (address_data) {
+          console.log('Customer address data received:', JSON.stringify(address_data, null, 2));
+          console.log('TODO: Store address data in Address model when available');
+        }
         
         // TODO: Implement actual email service integration here
         // Example: await emailService.sendWelcomeEmail(user);
