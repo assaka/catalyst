@@ -22,6 +22,9 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
   try {
     const { page = 1, limit = 10, store_id, category_id, status, search, slug, sku, id } = req.query;
     const offset = (page - 1) * limit;
+    
+    console.log('🔍 Admin Products API called with params:', req.query);
+    console.log('📊 Status parameter:', status, typeof status);
 
     const where = {};
     
@@ -83,6 +86,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
       ];
     }
 
+    console.log('🔎 Final WHERE clause for products query:', JSON.stringify(where, null, 2));
 
     const { count, rows } = await Product.findAndCountAll({
       where,

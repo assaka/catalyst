@@ -275,8 +275,10 @@ class ProductService extends BaseEntity {
   // Public product access (no authentication required)
   async filter(params = {}) {
     try {
+      console.log('🔍 ProductService.filter() called with params:', params);
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `products?${queryString}` : 'products';
+      console.log('📡 ProductService making request to URL:', url);
       
       // Use authenticated request for admin API, not public API
       const response = await apiClient.get(url);
