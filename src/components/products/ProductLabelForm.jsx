@@ -291,7 +291,8 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
                         console.log('🔍 ProductLabelForm: Usable attributes:', usableAttributes);
                         
                         // Fallback to all attributes if no attributes are marked as usable
-                        const attributesToShow = usableAttributes.length > 0 ? usableAttributes : attributes;
+                        // Also show all attributes if they exist but none have is_usable_in_conditions = true
+                        const attributesToShow = usableAttributes.length > 0 ? usableAttributes : attributes.slice(0, 20); // Limit to first 20 to prevent UI issues
                         console.log('🔍 ProductLabelForm: Attributes to show:', attributesToShow);
                         
                         return attributesToShow.map(attr => (

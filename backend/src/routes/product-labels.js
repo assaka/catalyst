@@ -91,6 +91,45 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
+// @route   POST /api/product-labels/test
+// @desc    Create a test product label for debugging
+// @access  Private
+router.post('/test', auth, async (req, res) => {
+  try {
+    console.log('🧪 Creating test product label...');
+    
+    const testLabelData = {
+      store_id: req.body.store_id || req.query.store_id,
+      name: 'Test Label - Debug',
+      slug: 'test-label-debug',
+      text: 'TEST',
+      background_color: '#FF0000',
+      color: '#FFFFFF',
+      position: 'top-right',
+      is_active: true,
+      conditions: {}
+    };
+    
+    console.log('🧪 Test label data:', testLabelData);
+    
+    const label = await ProductLabel.create(testLabelData);
+    console.log('✅ Test label created successfully:', label.toJSON());
+    
+    res.status(201).json({
+      success: true,
+      data: label,
+      message: 'Test label created successfully'
+    });
+  } catch (error) {
+    console.error('❌ Create test label error:', error);
+    res.status(500).json({
+      success: false,
+      message: `Server error: ${error.message}`,
+      error: error.name
+    });
+  }
+});
+
 // @route   POST /api/product-labels
 // @desc    Create a new product label
 // @access  Private

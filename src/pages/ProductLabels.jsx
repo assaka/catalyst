@@ -136,6 +136,48 @@ export default function ProductLabels() {
     }
   };
 
+  const createTestLabel = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      console.error("Cannot create test label: No store selected.");
+      return;
+    }
+
+    try {
+      console.log('🧪 Creating test label for store:', storeId);
+      
+      // Use our test endpoint
+      const response = await fetch(`https://catalyst-backend-fzhu.onrender.com/api/product-labels/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ store_id: storeId })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('✅ Test label created:', result.data);
+        alert(`Test label created successfully: ${result.data.name}`);
+        
+        // Clear cache and reload
+        if (typeof window !== 'undefined' && window.clearCache) {
+          window.clearCache();
+        }
+        localStorage.setItem('forceRefreshLabels', 'true');
+        
+        loadData();
+      } else {
+        console.error('❌ Failed to create test label:', result.message);
+        alert(`Failed to create test label: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Error creating test label:', error);
+      alert(`Error creating test label: ${error.message}`);
+    }
+  };
+
   const closeForm = () => {
     setShowForm(false);
     setEditingLabel(null); // Reset the editingLabel when closing the form
@@ -177,12 +219,21 @@ export default function ProductLabels() {
             <h1 className="text-3xl font-bold text-gray-900">Product Labels</h1>
             <p className="text-gray-600 mt-1">Create dynamic labels that appear on product images</p>
           </div>
-          <Button 
-            onClick={() => handleEdit(null)} // Call handleEdit with null to signify adding a new label
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-          >
-            <Plus className="mr-2 h-4 w-4" /> Add Label
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={createTestLabel}
+              variant="outline"
+              className="border-orange-500 text-orange-600 hover:bg-orange-50"
+            >
+              🧪 Create Test Label
+            </Button>
+            <Button 
+              onClick={() => handleEdit(null)} // Call handleEdit with null to signify adding a new label
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add Label
+            </Button>
+          </div>
         </div>
 
         {loading ? (

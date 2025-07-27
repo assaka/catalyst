@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ProductLabel Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        textarea { width: 100%; height: 200px; font-family: monospace; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>ProductLabel Debug Tool</h1>
+    
+    <div class="section">
+        <h2>Configuration</h2>
+        <label>Backend URL:</label>
+        <input type="text" id="backendUrl" value="https://catalyst-backend-fzhu.onrender.com" style="width: 400px;">
+        <br><br>
+        <label>Store ID:</label>
+        <input type="text" id="storeId" placeholder="Enter store ID" style="width: 400px;">
+        <br><br>
+        <button onclick="getStores()">Get First Store</button>
+        <button onclick="testAll()">Run All Tests</button>
+    </div>
+
+    <div class="section">
+        <h2>Test Results</h2>
+        <div id="results"></div>
+    </div>
+
+    <div class="section">
+        <h2>Raw API Responses</h2>
+        <textarea id="apiResponses" readonly></textarea>
+    </div>
+
+    <script>
+        let currentStoreId = '';
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+        }
+        
+        function logApi(data) {
+            const textarea = document.getElementById('apiResponses');
+            textarea.value += JSON.stringify(data, null, 2) + '\n\n';
+        }
+        
+        async function apiCall(endpoint, method = 'GET', data = null) {
+            const backendUrl = document.getElementById('backendUrl').value;
+            const url = `${backendUrl}/api/${endpoint}`;
+            
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            };
+            
+            if (data) {
+                options.body = JSON.stringify(data);
+            }
+            
+            try {
+                log(`Making ${method} request to: ${url}`);
+                const response = await fetch(url, options);
+                const result = await response.json();
+                
+                logApi({ url, method, data, response: result });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${result.message || 'Unknown error'}`);
+                }
+                
+                return result;
+            } catch (error) {
+                log(`API Error: ${error.message}`, 'error');
+                logApi({ url, method, data, error: error.message });
+                throw error;
+            }
+        }
+        
+        async function getStores() {
+            try {
+                log('Fetching stores...');
+                const result = await apiCall('public/stores');
+                
+                if (result && result.length > 0) {
+                    currentStoreId = result[0].id;
+                    document.getElementById('storeId').value = currentStoreId;
+                    log(`Found store: ${result[0].name} (ID: ${currentStoreId})`, 'success');
+                } else {
+                    log('No stores found', 'error');
+                }
+            } catch (error) {
+                log(`Failed to get stores: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAttributes() {
+            const storeId = document.getElementById('storeId').value || currentStoreId;
+            if (!storeId) {
+                log('No store ID provided', 'error');
+                return;
+            }
+            
+            try {
+                log('Testing attributes...');
+                const result = await apiCall(`public/attributes?store_id=${storeId}`);
+                
+                log(`Found ${result.length} attributes`);
+                result.forEach(attr => {
+                    log(`  - ${attr.name} (${attr.code}) - usable_in_conditions: ${attr.is_usable_in_conditions}`);
+                });
+                
+                return result;
+            } catch (error) {
+                log(`Failed to get attributes: ${error.message}`, 'error');
+                return [];
+            }
+        }
+        
+        async function testProductLabels() {
+            const storeId = document.getElementById('storeId').value || currentStoreId;
+            if (!storeId) {
+                log('No store ID provided', 'error');
+                return;
+            }
+            
+            try {
+                log('Testing product labels...');
+                const result = await apiCall(`public/product-labels?store_id=${storeId}`);
+                
+                log(`Found ${result.length} product labels`);
+                result.forEach(label => {
+                    log(`  - ${label.name}: active=${label.is_active}, slug=${label.slug}`);
+                });
+                
+                return result;
+            } catch (error) {
+                log(`Failed to get product labels: ${error.message}`, 'error');
+                return [];
+            }
+        }
+        
+        async function createTestLabel() {
+            const storeId = document.getElementById('storeId').value || currentStoreId;
+            if (!storeId) {
+                log('No store ID provided', 'error');
+                return;
+            }
+            
+            try {
+                log('Creating test product label...');
+                
+                const testLabel = {
+                    store_id: storeId,
+                    name: 'Debug Test Label',
+                    text: 'DEBUG',
+                    background_color: '#FF0000',
+                    color: '#FFFFFF',
+                    position: 'top-right',
+                    is_active: true,
+                    conditions: {
+                        attribute_conditions: [],
+                        price_conditions: {}
+                    }
+                };
+                
+                const result = await apiCall('product-labels', 'POST', testLabel);
+                log(`Created test label: ${result.data.name} (ID: ${result.data.id})`, 'success');
+                return result.data;
+            } catch (error) {
+                log(`Failed to create test label: ${error.message}`, 'error');
+                return null;
+            }
+        }
+        
+        async function testAll() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('apiResponses').value = '';
+            
+            await getStores();
+            await testAttributes();
+            await testProductLabels();
+            await createTestLabel();
+            
+            log('All tests completed!', 'success');
+        }
+    </script>
+</body>
+</html>
