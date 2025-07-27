@@ -15,13 +15,11 @@ router.get('/', async (req, res) => {
     console.log('📊 Featured param:', featured, typeof featured);
     console.log('🔍 Request URL:', req.originalUrl);
 
-    const where = {
-      status: 'active' // Only show active products publicly
-    };
+    const where = {};
     
     if (store_id) where.store_id = store_id;
     if (category_id) where.category_id = category_id;
-    if (featured === 'true' || featured === true) where.is_featured = true;
+    if (featured === 'true' || featured === true) where.featured = true;
     if (slug) where.slug = slug;
     if (sku) where.sku = sku;
     if (id) where.id = id;
@@ -34,18 +32,12 @@ router.get('/', async (req, res) => {
       ];
     }
 
+    // Temporarily remove include to avoid association errors
     const { count, rows } = await Product.findAndCountAll({
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['created_at', 'DESC']],
-      include: [
-        {
-          model: Store,
-          as: 'store',
-          attributes: ['id', 'name', 'slug']
-        }
-      ]
+      order: [['created_at', 'DESC']]
     });
 
     console.log('✅ Public Products query result:', rows.length, 'products found');
@@ -70,15 +62,9 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findByPk(req.params.id, {
-      include: [{
-        model: Store,
-        as: 'store',
-        attributes: ['id', 'name', 'slug']
-      }]
-    });
+    const product = await Product.findByPk(req.params.id);
     
-    if (!product || product.status !== 'active') {
+    if (!product) {
       return res.status(404).json({
         success: false,
         message: 'Product not found'
