@@ -115,11 +115,13 @@ export default function Storefront() {
             StorefrontProduct.filter({ store_id: store.id })
           );
           
-          const filtered = (allProducts || []).filter(product => 
-            product.category_ids && 
-            Array.isArray(product.category_ids) && 
-            product.category_ids.includes(category.id)
-          );
+          const filtered = (allProducts || []).filter(product => {
+            const hasCategories = product.category_ids && Array.isArray(product.category_ids);
+            const includesCategory = hasCategories && product.category_ids.includes(category.id);
+            console.log(`🔍 Product "${product.name}": category_ids=${JSON.stringify(product.category_ids)}, looking for ${category.id}, match=${includesCategory}`);
+            return includesCategory;
+          });
+          console.log(`📊 Category filtering: ${allProducts?.length || 0} total products, ${filtered.length} match category "${category.name}"`);
           return filtered;
         });
         
