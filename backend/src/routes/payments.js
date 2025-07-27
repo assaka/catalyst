@@ -416,14 +416,16 @@ router.post('/create-checkout', async (req, res) => {
           coupon: stripeCoupon.id
         }];
         
-        // Also allow promotion codes if the coupon has a promotion code
-        sessionConfig.allow_promotion_codes = false; // Disable since we're pre-applying
+        // Note: Cannot use allow_promotion_codes when discounts are pre-applied
 
         console.log('Applied Stripe discount:', stripeCoupon.id, 'Amount:', discount_amount);
       } catch (discountError) {
         console.error('Failed to create Stripe coupon:', discountError.message);
         // Continue without discount rather than failing the entire checkout
       }
+    } else {
+      // If no discount is pre-applied, allow customers to enter promotion codes
+      sessionConfig.allow_promotion_codes = true;
     }
 
     // Set up shipping with the pre-selected method
