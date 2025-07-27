@@ -12,7 +12,8 @@
     "seed": "node src/database/seed.js",
     "test": "jest",
     "db:check": "node check-database.js",
-    "db:fix": "node fix-database-constraints.js"
+    "db:fix": "node fix-database-constraints.js",
+    "db:seed": "node seed-sample-data.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.4",

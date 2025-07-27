@@ -464,6 +464,161 @@ app.post('/debug/migrate', async (req, res) => {
   }
 });
 
+// Sample data seeding endpoint
+app.post('/debug/seed', async (req, res) => {
+  try {
+    console.log('🌱 Starting sample data seeding via API...');
+    
+    const { Store, Product, Category } = require('./models');
+    
+    // Check if we have the hamid2 store
+    let store = await Store.findOne({ where: { slug: 'hamid2' } });
+    
+    if (!store) {
+      store = await Store.create({
+        name: 'Hamid',
+        slug: 'hamid2',
+        description: 'Sample store for testing',
+        owner_email: 'playamin998@gmail.com',
+        currency: 'USD',
+        status: 'active'
+      });
+    }
+
+    // Check existing products
+    const existingProducts = await Product.findAll({ where: { store_id: store.id } });
+    
+    let productsCreated = 0;
+    if (existingProducts.length === 0) {
+      const sampleProducts = [
+        {
+          name: 'Sample Product 1',
+          slug: 'sample-product-1',
+          description: 'This is a sample product for testing the storefront',
+          short_description: 'Sample product for testing',
+          sku: 'SAMPLE-001',
+          price: 29.99,
+          compare_price: 39.99,
+          stock_quantity: 100,
+          status: 'active',
+          is_featured: true,
+          store_id: store.id
+        },
+        {
+          name: 'Featured Product 2',
+          slug: 'featured-product-2',
+          description: 'Another great sample product',
+          short_description: 'Another sample product',
+          sku: 'SAMPLE-002',
+          price: 49.99,
+          stock_quantity: 50,
+          status: 'active',
+          is_featured: true,
+          store_id: store.id
+        },
+        {
+          name: 'Regular Product 3',
+          slug: 'regular-product-3',
+          description: 'A regular sample product',
+          short_description: 'Regular sample product',
+          sku: 'SAMPLE-003',
+          price: 19.99,
+          stock_quantity: 75,
+          status: 'active',
+          is_featured: false,
+          store_id: store.id
+        },
+        {
+          name: 'Premium Product 4',
+          slug: 'premium-product-4',
+          description: 'Premium sample product with great features',
+          short_description: 'Premium sample product',
+          sku: 'SAMPLE-004',
+          price: 99.99,
+          compare_price: 129.99,
+          stock_quantity: 25,
+          status: 'active',
+          is_featured: true,
+          store_id: store.id
+        }
+      ];
+
+      for (const productData of sampleProducts) {
+        await Product.create(productData);
+        productsCreated++;
+      }
+    }
+
+    // Check existing categories
+    const existingCategories = await Category.findAll({ where: { store_id: store.id } });
+    
+    let categoriesCreated = 0;
+    if (existingCategories.length === 0) {
+      const sampleCategories = [
+        {
+          name: 'Electronics',
+          slug: 'electronics',
+          description: 'Electronic products and gadgets',
+          status: 'active',
+          store_id: store.id
+        },
+        {
+          name: 'Clothing',
+          slug: 'clothing',
+          description: 'Fashion and clothing items',
+          status: 'active',
+          store_id: store.id
+        }
+      ];
+
+      for (const categoryData of sampleCategories) {
+        await Category.create(categoryData);
+        categoriesCreated++;
+      }
+    }
+
+    // Final counts
+    const finalProductCount = await Product.count({ where: { store_id: store.id } });
+    const finalCategoryCount = await Category.count({ where: { store_id: store.id } });
+    const featuredProductCount = await Product.count({ 
+      where: { 
+        store_id: store.id, 
+        is_featured: true, 
+        status: 'active' 
+      } 
+    });
+
+    res.json({
+      success: true,
+      message: 'Sample data seeding completed successfully',
+      data: {
+        store: {
+          id: store.id,
+          name: store.name,
+          slug: store.slug
+        },
+        created: {
+          products: productsCreated,
+          categories: categoriesCreated
+        },
+        totals: {
+          products: finalProductCount,
+          categories: finalCategoryCount,
+          featured_products: featuredProductCount
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Seeding failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Sample data seeding failed',
+      error: error.message
+    });
+  }
+});
+
 // Detailed database debug endpoint
 app.get('/debug/db', async (req, res) => {
   const { supabase } = require('./database/connection');
