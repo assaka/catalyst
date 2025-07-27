@@ -16,20 +16,14 @@ import {
   Package, 
   MapPin, 
   CreditCard, 
-  Mail, 
-  Phone, 
-  Truck, 
   UserPlus, 
-  Download,
-  Share2,
-  Calendar,
-  Clock,
+  Truck,
   ShoppingBag,
   Info
 } from 'lucide-react';
 
 export default function OrderSuccess() {
-  console.log('OrderSuccess component loaded - Version: Modern 3.0');
+  console.log('OrderSuccess component loaded - Version: Simplified Layout 4.0');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -53,17 +47,14 @@ export default function OrderSuccess() {
   }
 
   const [order, setOrder] = useState(null);
+  const [orderItems, setOrderItems] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Guest account creation state
+  // Account creation state - simplified to password only
   const [showCreateAccount, setShowCreateAccount] = useState(false);
   const [accountFormData, setAccountFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
     password: '',
-    confirmPassword: '',
-    acceptTerms: false
+    confirmPassword: ''
   });
   const [creatingAccount, setCreatingAccount] = useState(false);
   const [accountCreationError, setAccountCreationError] = useState('');
@@ -107,12 +98,9 @@ export default function OrderSuccess() {
           console.log('Order data loaded:', orderData);
           setOrder(orderData);
           
-          // Pre-fill account form if guest
-          if (orderData.customer_email) {
-            setAccountFormData(prev => ({
-              ...prev,
-              email: orderData.customer_email
-            }));
+          // Set order items from order data
+          if (orderData.OrderItems && Array.isArray(orderData.OrderItems)) {
+            setOrderItems(orderData.OrderItems);
           }
         } else {
           console.error('Failed to load order:', result);
@@ -132,16 +120,6 @@ export default function OrderSuccess() {
     setAccountCreationError('');
     
     // Validate form
-    if (!accountFormData.firstName.trim() || !accountFormData.lastName.trim()) {
-      setAccountCreationError('Please enter your first and last name.');
-      return;
-    }
-    
-    if (!accountFormData.email.trim()) {
-      setAccountCreationError('Please enter your email address.');
-      return;
-    }
-    
     if (accountFormData.password.length < 6) {
       setAccountCreationError('Password must be at least 6 characters long.');
       return;
@@ -151,19 +129,18 @@ export default function OrderSuccess() {
       setAccountCreationError('Passwords do not match.');
       return;
     }
-    
-    if (!accountFormData.acceptTerms) {
-      setAccountCreationError('Please accept the terms and conditions.');
-      return;
-    }
 
     setCreatingAccount(true);
     
     try {
+      // Extract name from order data
+      const customerName = order.shipping_address?.name || order.shipping_address?.full_name || '';
+      const [firstName = '', lastName = ''] = customerName.split(' ');
+      
       const response = await User.create({
-        first_name: accountFormData.firstName,
-        last_name: accountFormData.lastName,
-        email: accountFormData.email,
+        first_name: firstName || 'Customer',
+        last_name: lastName || '',
+        email: order.customer_email,
         password: accountFormData.password,
       });
       
@@ -184,9 +161,9 @@ export default function OrderSuccess() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your order details...</p>
         </div>
       </div>
@@ -195,7 +172,7 @@ export default function OrderSuccess() {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Package className="w-8 h-8 text-red-600" />
@@ -208,28 +185,22 @@ export default function OrderSuccess() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        {/* Hero Success Section */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-green-400 to-green-600 rounded-full mb-6 shadow-lg">
-            <CheckCircle className="w-10 h-10 text-white" />
+        {/* Success Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Thank You!</h1>
-          <p className="text-xl text-gray-600 mb-4">Your order has been successfully placed</p>
-          <div className="inline-flex items-center space-x-4 bg-white rounded-full px-6 py-3 shadow-md">
-            <span className="text-sm text-gray-500">Order Number:</span>
-            <span className="font-bold text-green-600 text-lg">#{order.order_number}</span>
-            <Button variant="ghost" size="sm" className="p-1">
-              <Share2 className="w-4 h-4" />
-            </Button>
-          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Thank You!</h1>
+          <p className="text-lg text-gray-600 mb-4">Your order has been successfully placed</p>
+          <p className="text-sm text-gray-500">Order Number: <span className="font-semibold text-gray-900">#{order.order_number}</span></p>
         </div>
 
         {/* Account Creation Success Alert */}
         {accountCreationSuccess && (
-          <Alert className="mb-8 border-green-200 bg-green-50">
+          <Alert className="mb-6 border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
               Account created successfully! You'll be redirected to login shortly.
@@ -237,75 +208,112 @@ export default function OrderSuccess() {
           </Alert>
         )}
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-2 gap-8">
           
-          {/* Left Column - Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          {/* Left Column */}
+          <div className="space-y-6">
             
-            {/* Order Summary Card */}
-            <Card className="shadow-sm border-0 bg-white/80 backdrop-blur">
-              <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-t-lg">
-                <CardTitle className="flex items-center text-gray-900">
+            {/* Order Summary */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
                   <ShoppingBag className="w-5 h-5 mr-2 text-blue-600" />
                   Order Summary
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600 mb-1">
-                      {formatCurrency(order.total_amount, order.currency)}
-                    </div>
-                    <p className="text-sm text-gray-500">Total Amount</p>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order Number:</span>
+                    <span className="font-semibold">#{order.order_number}</span>
                   </div>
-                  <div className="text-center">
-                    <div className="text-lg font-semibold text-gray-900 mb-1">
-                      {formatDate(order.created_date || order.createdAt)}
-                    </div>
-                    <p className="text-sm text-gray-500">Order Date</p>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order Date:</span>
+                    <span className="font-semibold">{formatDate(order.created_date || order.createdAt)}</span>
                   </div>
-                  <div className="text-center">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Status:</span>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                       {order.status?.charAt(0).toUpperCase() + order.status?.slice(1)}
                     </Badge>
-                    <p className="text-sm text-gray-500 mt-1">Status</p>
                   </div>
-                  <div className="text-center">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Payment Status:</span>
                     <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                       {order.payment_status?.charAt(0).toUpperCase() + order.payment_status?.slice(1)}
                     </Badge>
-                    <p className="text-sm text-gray-500 mt-1">Payment</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Order Breakdown */}
-            <Card className="shadow-sm border-0 bg-white/80 backdrop-blur">
+            {/* Order Items */}
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center text-gray-900">
+                <CardTitle className="flex items-center">
                   <Package className="w-5 h-5 mr-2 text-green-600" />
-                  Order Breakdown
+                  Order Items
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-3">
+              <CardContent>
+                {orderItems.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500">Loading order items...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {orderItems.map((item, index) => (
+                      <div key={index} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{item.product_name}</h4>
+                          <p className="text-sm text-gray-500">SKU: {item.product_sku}</p>
+                          <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                          
+                          {/* Custom Options */}
+                          {item.product_attributes?.selected_options && item.product_attributes.selected_options.length > 0 && (
+                            <div className="mt-2">
+                              <p className="text-xs text-gray-500 mb-1">Options:</p>
+                              {item.product_attributes.selected_options.map((option, optIndex) => (
+                                <p key={optIndex} className="text-xs text-gray-600">
+                                  • {option.name} {option.price > 0 && `(+${formatCurrency(option.price, order.currency)})`}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">{formatCurrency(item.total_price, order.currency)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Order Total */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Order Total</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">{formatCurrency(order.subtotal, order.currency)}</span>
+                    <span>{formatCurrency(order.subtotal, order.currency)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>
-                    <span className="font-medium">{formatCurrency(order.shipping_cost, order.currency)}</span>
+                    <span>{formatCurrency(order.shipping_cost, order.currency)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Tax</span>
-                    <span className="font-medium">{formatCurrency(order.tax_amount, order.currency)}</span>
+                    <span>{formatCurrency(order.tax_amount, order.currency)}</span>
                   </div>
                   {parseFloat(order.discount_amount || 0) > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Discount</span>
-                      <span className="font-medium">-{formatCurrency(order.discount_amount, order.currency)}</span>
+                      <span>-{formatCurrency(order.discount_amount, order.currency)}</span>
                     </div>
                   )}
                   <Separator />
@@ -316,68 +324,21 @@ export default function OrderSuccess() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* What Happens Next */}
-            <Card className="shadow-sm border-0 bg-gradient-to-r from-blue-50 to-purple-50">
-              <CardHeader>
-                <CardTitle className="flex items-center text-gray-900">
-                  <Info className="w-5 h-5 mr-2 text-blue-600" />
-                  What Happens Next?
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Package className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Order Processing</h3>
-                    <p className="text-sm text-gray-600">
-                      We'll prepare your order and send you a confirmation email with tracking information.
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Truck className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Shipping</h3>
-                    <p className="text-sm text-gray-600">
-                      Your order will be carefully packed and shipped to your delivery address.
-                    </p>
-                  </div>
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <CheckCircle className="w-6 h-6 text-green-600" />
-                    </div>
-                    <h3 className="font-semibold text-gray-900 mb-2">Delivery</h3>
-                    <p className="text-sm text-gray-600">
-                      You'll receive your order according to the shipping method selected.
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-                  <p className="text-sm text-gray-600">
-                    A confirmation email has been sent to{' '}
-                    <span className="font-medium text-gray-900">{order.customer_email}</span>
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Right Column - Secondary Info */}
+          {/* Right Column */}
           <div className="space-y-6">
             
             {/* Shipping Address */}
             {order.shipping_address && (
-              <Card className="shadow-sm border-0 bg-white/80 backdrop-blur">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center text-gray-900">
+                  <CardTitle className="flex items-center">
                     <MapPin className="w-5 h-5 mr-2 text-green-600" />
                     Shipping Address
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent>
                   <div className="space-y-1 text-sm">
                     <p className="font-medium text-gray-900">
                       {order.shipping_address.full_name || order.shipping_address.name}
@@ -405,14 +366,14 @@ export default function OrderSuccess() {
 
             {/* Billing Address */}
             {order.billing_address && (
-              <Card className="shadow-sm border-0 bg-white/80 backdrop-blur">
+              <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center text-gray-900">
+                  <CardTitle className="flex items-center">
                     <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
                     Billing Address
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent>
                   <div className="space-y-1 text-sm">
                     <p className="font-medium text-gray-900">
                       {order.billing_address.name || order.billing_address.full_name}
@@ -435,17 +396,17 @@ export default function OrderSuccess() {
               </Card>
             )}
 
-            {/* Guest Account Creation */}
-            <Card className="shadow-sm border-0 bg-gradient-to-br from-blue-50 to-indigo-50">
+            {/* Create Account - Simplified */}
+            <Card>
               <CardHeader>
-                <CardTitle className="flex items-center text-gray-900">
+                <CardTitle className="flex items-center">
                   <UserPlus className="w-5 h-5 mr-2 text-blue-600" />
                   Create Account
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent>
                 <p className="text-sm text-gray-600 mb-4">
-                  Save your information for faster checkout next time and track your orders easily.
+                  Create an account using your email <strong>{order.customer_email}</strong> to track your orders.
                 </p>
                 
                 {!showCreateAccount ? (
@@ -458,51 +419,8 @@ export default function OrderSuccess() {
                   </Button>
                 ) : (
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label htmlFor="firstName" className="text-xs font-medium text-gray-700">
-                          First Name
-                        </Label>
-                        <Input
-                          id="firstName"
-                          type="text"
-                          value={accountFormData.firstName}
-                          onChange={(e) => setAccountFormData(prev => ({ ...prev, firstName: e.target.value }))}
-                          className="mt-1"
-                          placeholder="First name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="lastName" className="text-xs font-medium text-gray-700">
-                          Last Name
-                        </Label>
-                        <Input
-                          id="lastName"
-                          type="text"
-                          value={accountFormData.lastName}
-                          onChange={(e) => setAccountFormData(prev => ({ ...prev, lastName: e.target.value }))}
-                          className="mt-1"
-                          placeholder="Last name"
-                        />
-                      </div>
-                    </div>
-                    
                     <div>
-                      <Label htmlFor="email" className="text-xs font-medium text-gray-700">
-                        Email Address
-                      </Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={accountFormData.email}
-                        onChange={(e) => setAccountFormData(prev => ({ ...prev, email: e.target.value }))}
-                        className="mt-1"
-                        placeholder="Email address"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="password" className="text-xs font-medium text-gray-700">
+                      <Label htmlFor="password" className="text-sm font-medium text-gray-700">
                         Password
                       </Label>
                       <Input
@@ -516,7 +434,7 @@ export default function OrderSuccess() {
                     </div>
                     
                     <div>
-                      <Label htmlFor="confirmPassword" className="text-xs font-medium text-gray-700">
+                      <Label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
                         Confirm Password
                       </Label>
                       <Input
@@ -529,23 +447,9 @@ export default function OrderSuccess() {
                       />
                     </div>
                     
-                    <div className="flex items-start space-x-2">
-                      <input
-                        type="checkbox"
-                        id="accept-terms"
-                        checked={accountFormData.acceptTerms}
-                        onChange={(e) => setAccountFormData(prev => ({ ...prev, acceptTerms: e.target.checked }))}
-                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <Label htmlFor="accept-terms" className="text-xs text-gray-600">
-                        I agree to the <a href="/terms" className="text-blue-600 hover:underline">Terms</a> and{' '}
-                        <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>
-                      </Label>
-                    </div>
-                    
                     {accountCreationError && (
                       <Alert className="border-red-200 bg-red-50">
-                        <AlertDescription className="text-red-600 text-xs">
+                        <AlertDescription className="text-red-600 text-sm">
                           {accountCreationError}
                         </AlertDescription>
                       </Alert>
@@ -556,11 +460,10 @@ export default function OrderSuccess() {
                         onClick={handleCreateAccount}
                         disabled={creatingAccount}
                         className="flex-1 bg-blue-600 hover:bg-blue-700"
-                        size="sm"
                       >
                         {creatingAccount ? (
                           <>
-                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white mr-2"></div>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                             Creating...
                           </>
                         ) : (
@@ -570,7 +473,6 @@ export default function OrderSuccess() {
                       <Button
                         onClick={() => setShowCreateAccount(false)}
                         variant="outline"
-                        size="sm"
                       >
                         Cancel
                       </Button>
@@ -579,44 +481,55 @@ export default function OrderSuccess() {
                 )}
               </CardContent>
             </Card>
-
-            {/* Contact Information */}
-            <Card className="shadow-sm border-0 bg-white/80 backdrop-blur">
-              <CardHeader>
-                <CardTitle className="flex items-center text-gray-900">
-                  <Mail className="w-5 h-5 mr-2 text-green-600" />
-                  Need Help?
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <p className="text-sm text-gray-600 mb-4">
-                  Have questions about your order? We're here to help!
-                </p>
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm">
-                    <Mail className="w-4 h-4 mr-3 text-gray-400" />
-                    <div>
-                      <p className="font-medium text-gray-900">Email Support</p>
-                      <p className="text-gray-600">support@yourstore.com</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <Phone className="w-4 h-4 mr-3 text-gray-400" />
-                    <div>
-                      <p className="font-medium text-gray-900">Phone Support</p>
-                      <p className="text-gray-600">1-800-123-4567</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                  <p className="text-xs text-blue-800">
-                    <strong>Order Reference:</strong> #{order.order_number}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
+
+        {/* What Happens Next - Bottom Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center text-center w-full justify-center">
+              <Info className="w-5 h-5 mr-2 text-blue-600" />
+              What Happens Next?
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-6 text-center">
+              <div>
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Package className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">1. Order Processing</h3>
+                <p className="text-sm text-gray-600">
+                  We'll prepare your order and send you a confirmation email with tracking information.
+                </p>
+              </div>
+              <div>
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Truck className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">2. Shipping</h3>
+                <p className="text-sm text-gray-600">
+                  Your order will be carefully packed and shipped to your delivery address.
+                </p>
+              </div>
+              <div>
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">3. Delivery</h3>
+                <p className="text-sm text-gray-600">
+                  You'll receive your order according to the shipping method selected.
+                </p>
+              </div>
+            </div>
+            <div className="mt-6 pt-6 border-t border-gray-200 text-center">
+              <p className="text-sm text-gray-600">
+                A confirmation email has been sent to{' '}
+                <span className="font-medium text-gray-900">{order.customer_email}</span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
