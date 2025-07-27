@@ -258,7 +258,7 @@ export default function OrderSuccess() {
           <Alert className="mb-6 border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              Account created successfully! A welcome email has been sent to {order.customer_email}. You can now log in to track your orders.
+              Account created successfully! A welcome email has been sent to {order.customer_email}. Your shipping and billing addresses have been saved to your profile. You can now log in to track your orders.
             </AlertDescription>
           </Alert>
         )}

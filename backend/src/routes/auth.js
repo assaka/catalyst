@@ -85,18 +85,81 @@ router.post('/register', [
       account_type
     });
 
+    // Create addresses if provided
+    if (address_data && role === 'customer') {
+      try {
+        const { Address } = require('../models');
+        const fullName = `${first_name} ${last_name}`;
+        
+        // Create shipping address if provided
+        if (address_data.shipping_address && address_data.shipping_address.street) {
+          const shippingAddr = address_data.shipping_address;
+          await Address.create({
+            user_id: user.id,
+            type: 'shipping',
+            full_name: fullName,
+            street: shippingAddr.street,
+            street_2: shippingAddr.street2 || null,
+            city: shippingAddr.city,
+            state: shippingAddr.state,
+            postal_code: shippingAddr.postal_code,
+            country: shippingAddr.country || 'US',
+            phone: phone || null,
+            email: email,
+            is_default: true
+          });
+          console.log('Created shipping address for user:', user.id);
+        }
+        
+        // Create billing address if provided and different from shipping
+        if (address_data.billing_address && address_data.billing_address.street) {
+          const billingAddr = address_data.billing_address;
+          const shippingAddr = address_data.shipping_address || {};
+          
+          // Only create separate billing address if it's different from shipping
+          const isDifferent = (
+            billingAddr.street !== shippingAddr.street ||
+            billingAddr.city !== shippingAddr.city ||
+            billingAddr.postal_code !== shippingAddr.postal_code
+          );
+          
+          if (isDifferent) {
+            await Address.create({
+              user_id: user.id,
+              type: 'billing',
+              full_name: fullName,
+              street: billingAddr.street,
+              street_2: billingAddr.street2 || null,
+              city: billingAddr.city,
+              state: billingAddr.state,
+              postal_code: billingAddr.postal_code,
+              country: billingAddr.country || 'US',
+              phone: phone || null,
+              email: email,
+              is_default: true
+            });
+            console.log('Created billing address for user:', user.id);
+          } else {
+            // If addresses are the same, update shipping address to be 'both'
+            await Address.update(
+              { type: 'both' },
+              { where: { user_id: user.id, type: 'shipping' } }
+            );
+            console.log('Updated shipping address to be both shipping and billing');
+          }
+        }
+      } catch (addressError) {
+        console.error('Failed to create addresses:', addressError);
+        // Don't fail registration if address creation fails
+      }
+    }
+
     // Send welcome email if requested (for customer registrations)
     if (send_welcome_email && role === 'customer') {
       try {
         // Simple console log for now - in production this would be an actual email service
         console.log(`Welcome email should be sent to: ${email}`);
         console.log(`Welcome message: Hello ${first_name}, welcome to our store! Your account has been created successfully.`);
-        
-        // Log address data if provided (for future Address model integration)
-        if (address_data) {
-          console.log('Customer address data received:', JSON.stringify(address_data, null, 2));
-          console.log('TODO: Store address data in Address model when available');
-        }
         
         // TODO: Implement actual email service integration here
         // Example: await emailService.sendWelcomeEmail(user);
