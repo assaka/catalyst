@@ -399,6 +399,13 @@ export default function OrderSuccess() {
     );
   }
 
+  // Currency formatting helper
+  const formatCurrency = (amount, currency) => {
+    if (!amount) return currency && currency !== 'USD' ? `${currency} 0.00` : '$0.00';
+    const formattedAmount = parseFloat(amount).toFixed(2);
+    return currency && currency !== 'USD' ? `${currency} ${formattedAmount}` : `$${formattedAmount}`;
+  };
+
   const statusColors = {
     pending: 'bg-yellow-100 text-yellow-800',
     processing: 'bg-blue-100 text-blue-800',
@@ -492,7 +499,12 @@ export default function OrderSuccess() {
               <CardContent className="p-6">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">${parseFloat(order.total_amount || 0).toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {order.currency && order.currency !== 'USD' ? 
+                        `${order.currency} ${parseFloat(order.total_amount || 0).toFixed(2)}` : 
+                        `$${parseFloat(order.total_amount || 0).toFixed(2)}`
+                      }
+                    </div>
                     <div className="text-sm text-gray-500">Total</div>
                   </div>
                   <div className="text-center">
@@ -507,7 +519,12 @@ export default function OrderSuccess() {
                   </div>
                   <div className="text-center">
                     <div className="text-sm font-medium text-gray-900">
-                      {new Date(order.created_date || order.createdAt).toLocaleDateString()}
+                      {(() => {
+                        const dateStr = order.created_date || order.createdAt;
+                        if (!dateStr) return 'N/A';
+                        const date = new Date(dateStr);
+                        return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
+                      })()}
                     </div>
                     <div className="text-sm text-gray-500">Date</div>
                   </div>
@@ -697,135 +714,21 @@ export default function OrderSuccess() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Order Details */}
-        <div className="lg:col-span-2">
-          <Card className="material-elevation-1 border-0">
-            <CardHeader>
-              <CardTitle>Order Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Order Number</p>
-                  <p className="font-semibold">{order.order_number}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Status</p>
-                  <Badge className={statusColors[order.status]}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Order Date</p>
-                  <p className="font-semibold">{new Date(order.created_date).toLocaleDateString()}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Total Amount</p>
-                  <p className="font-semibold text-lg">${parseFloat(order.total_amount || 0).toFixed(2)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Delivery Information */}
-          {(order.delivery_date || order.delivery_time_slot || order.delivery_instructions) && (
-            <Card className="material-elevation-1 border-0 mt-6">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Package className="w-5 h-5 mr-2 text-blue-600" />
-                  Delivery Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {order.delivery_date && (
-                  <div className="flex items-center p-3 bg-blue-50 rounded-lg">
-                    <Calendar className="w-5 h-5 mr-3 text-blue-600" />
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">Scheduled Delivery Date</p>
-                      <p className="text-lg font-semibold text-blue-900">
-                        {new Date(order.delivery_date).toLocaleDateString('en-US', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                {order.delivery_time_slot && (
-                  <div className="flex items-center p-3 bg-green-50 rounded-lg">
-                    <Clock className="w-5 h-5 mr-3 text-green-600" />
-                    <div>
-                      <p className="text-sm font-medium text-green-800">Delivery Time Slot</p>
-                      <p className="text-lg font-semibold text-green-900">{order.delivery_time_slot}</p>
-                    </div>
-                  </div>
-                )}
-                {order.delivery_instructions && (
-                  <div className="p-3 bg-amber-50 rounded-lg">
-                    <div className="flex items-start">
-                      <MessageCircle className="w-5 h-5 mr-3 mt-0.5 text-amber-600" />
-                      <div>
-                        <p className="text-sm font-medium text-amber-800">Special Delivery Instructions</p>
-                        <p className="text-amber-900 mt-1 leading-relaxed">{order.delivery_instructions}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Delivery Status Progress */}
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-medium text-gray-700 mb-2">Delivery Status</p>
-                  <div className="flex items-center">
-                    <div className="flex-1">
-                      <div className="flex items-center">
-                        <div className={`w-3 h-3 rounded-full ${
-                          ['processing', 'shipped', 'complete'].includes(order.status) 
-                            ? 'bg-green-500' 
-                            : 'bg-gray-300'
-                        }`}></div>
-                        <div className={`h-1 flex-1 mx-2 ${
-                          ['shipped', 'complete'].includes(order.status)
-                            ? 'bg-green-500'
-                            : 'bg-gray-300'
-                        }`}></div>
-                        <div className={`w-3 h-3 rounded-full ${
-                          ['shipped', 'complete'].includes(order.status)
-                            ? 'bg-green-500'
-                            : 'bg-gray-300'
-                        }`}></div>
-                        <div className={`h-1 flex-1 mx-2 ${
-                          order.status === 'complete'
-                            ? 'bg-green-500'
-                            : 'bg-gray-300'
-                        }`}></div>
-                        <div className={`w-3 h-3 rounded-full ${
-                          order.status === 'complete'
-                            ? 'bg-green-500'
-                            : 'bg-gray-300'
-                        }`}></div>
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-500 mt-1">
-                        <span>Confirmed</span>
-                        <span>Shipped</span>
-                        <span>Delivered</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
+        {/* Left Column - Order Details */}
+        <div className="lg:col-span-2 space-y-6">
           {/* Items Ordered with Detailed Breakdown */}
           <Card className="material-elevation-1 border-0 mt-6">
             <CardHeader>
-              <CardTitle>Items Ordered</CardTitle>
+              <CardTitle>Items Ordered ({orderItems.length} items)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-6">
-                {orderItems.map((item, index) => {
+              {orderItems.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading order items...</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {orderItems.map((item, index) => {
                   const product = orderProducts[item.product_id];
                   const basePrice = item.unit_price;
                   const customOptions = item.product_attributes?.selected_options || [];
@@ -879,8 +782,9 @@ export default function OrderSuccess() {
                       </div>
                     </div>
                   );
-                })}
-              </div>
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -894,26 +798,26 @@ export default function OrderSuccess() {
             <CardContent className="space-y-3">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>${parseFloat(order.subtotal || 0).toFixed(2)}</span>
+                <span>{formatCurrency(order.subtotal, order.currency)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>${parseFloat(order.shipping_cost || 0).toFixed(2)}</span>
+                <span>{formatCurrency(order.shipping_cost, order.currency)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Tax</span>
-                <span>${parseFloat(order.tax_amount || 0).toFixed(2)}</span>
+                <span>{formatCurrency(order.tax_amount, order.currency)}</span>
               </div>
               {parseFloat(order.discount_amount || 0) > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount</span>
-                  <span>-${parseFloat(order.discount_amount || 0).toFixed(2)}</span>
+                  <span>-{formatCurrency(order.discount_amount, order.currency)}</span>
                 </div>
               )}
               <Separator />
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total</span>
-                <span>${parseFloat(order.total_amount || 0).toFixed(2)}</span>
+                <span>{formatCurrency(order.total_amount, order.currency)}</span>
               </div>
             </CardContent>
           </Card>
