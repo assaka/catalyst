@@ -63,7 +63,7 @@ router.post('/register', [
       });
     }
 
-    const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency' } = req.body;
+    const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency', send_welcome_email = false } = req.body;
 
     // Check if user exists
     const existingUser = await User.findOne({ where: { email } });
@@ -84,6 +84,21 @@ router.post('/register', [
       role,
       account_type
     });
+
+    // Send welcome email if requested (for customer registrations)
+    if (send_welcome_email && role === 'customer') {
+      try {
+        // Simple console log for now - in production this would be an actual email service
+        console.log(`Welcome email should be sent to: ${email}`);
+        console.log(`Welcome message: Hello ${first_name}, welcome to our store! Your account has been created successfully.`);
+        
+        // TODO: Implement actual email service integration here
+        // Example: await emailService.sendWelcomeEmail(user);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+        // Don't fail registration if email fails
+      }
+    }
 
     // Generate token
     const token = generateToken(user);

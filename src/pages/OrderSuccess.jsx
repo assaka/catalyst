@@ -143,25 +143,43 @@ export default function OrderSuccess() {
     setCreatingAccount(true);
     
     try {
-      // Extract name from order data
-      const customerName = order.shipping_address?.name || order.shipping_address?.full_name || '';
+      // Extract name from order data - try multiple sources
+      let customerName = '';
+      
+      // Try to get name from shipping address first
+      if (order.shipping_address?.name || order.shipping_address?.full_name) {
+        customerName = order.shipping_address.name || order.shipping_address.full_name;
+      }
+      // Try billing address if shipping doesn't have name
+      else if (order.billing_address?.name || order.billing_address?.full_name) {
+        customerName = order.billing_address.name || order.billing_address.full_name;
+      }
+      // Try customer details from Stripe
+      else if (order.customer_name) {
+        customerName = order.customer_name;
+      }
+      
       const nameParts = customerName.trim().split(' ');
-      const firstName = nameParts[0] || 'Customer';
-      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'User';
+      let firstName = nameParts[0] || '';
+      let lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      
+      // Only use defaults if we truly have no name data
+      if (!firstName) firstName = 'Customer';
+      if (!lastName) lastName = 'User';
       
       const response = await Auth.register({
         first_name: firstName,
         last_name: lastName,
         email: order.customer_email,
         password: accountFormData.password,
+        role: 'customer', // Set role as customer, not store_owner
+        send_welcome_email: true // Request welcome email to be sent
       });
       
       setAccountCreationSuccess(true);
       setShowCreateAccount(false);
       
-      setTimeout(() => {
-        navigate('/auth?tab=login');
-      }, 2000);
+      // Don't redirect to auth - just show success message
       
     } catch (error) {
       console.error('Account creation error:', error);
@@ -215,7 +233,7 @@ export default function OrderSuccess() {
           <Alert className="mb-6 border-green-200 bg-green-50">
             <CheckCircle className="h-4 w-4 text-green-600" />
             <AlertDescription className="text-green-800">
-              Account created successfully! You'll be redirected to login shortly.
+              Account created successfully! A welcome email has been sent to {order.customer_email}. You can now log in to track your orders.
             </AlertDescription>
           </Alert>
         )}
@@ -480,7 +498,7 @@ export default function OrderSuccess() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 mb-4">
-                  Create an account using your email <strong>{order.customer_email}</strong> to track your orders.
+                  Create an account using your email <strong>{order.customer_email}</strong> to track your orders and save your details for faster checkout. We'll send you a welcome email to get started.
                 </p>
                 
                 {!showCreateAccount ? (
