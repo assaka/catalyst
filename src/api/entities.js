@@ -12,7 +12,18 @@ class BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
       
-      const response = await apiClient.get(url);
+      // Check if user is not authenticated and this is a public-friendly endpoint
+      const publicFriendlyEndpoints = ['tax', 'attributes', 'product-labels', 'attribute-sets', 'seo-templates', 'seo-settings', 'cookie-consent-settings'];
+      const isPublicFriendly = publicFriendlyEndpoints.includes(this.endpoint);
+      
+      let response;
+      if (isPublicFriendly && (!apiClient.getToken() || apiClient.isLoggedOut)) {
+        // Use public endpoint for unauthenticated requests to public-friendly endpoints
+        response = await apiClient.publicRequest('GET', url);
+      } else {
+        // Use regular authenticated endpoint
+        response = await apiClient.get(url);
+      }
       
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
