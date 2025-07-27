@@ -60,13 +60,31 @@ const ProductTab = sequelize.define('ProductTab', {
   ],
   hooks: {
     beforeCreate: (tab) => {
+      // Always generate slug if not provided
       if (!tab.slug && tab.name) {
         tab.slug = tab.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      }
+      // Fallback: if still no slug, generate one from tab type
+      if (!tab.slug) {
+        tab.slug = `${tab.tab_type || 'tab'}-${Date.now()}`;
       }
     },
     beforeUpdate: (tab) => {
       if (tab.changed('name') && !tab.changed('slug')) {
         tab.slug = tab.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      }
+      // Ensure slug is never null
+      if (!tab.slug) {
+        tab.slug = `${tab.tab_type || 'tab'}-${Date.now()}`;
+      }
+    },
+    beforeValidate: (tab) => {
+      // Final safety check before validation
+      if (!tab.slug && tab.name) {
+        tab.slug = tab.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      }
+      if (!tab.slug) {
+        tab.slug = `${tab.tab_type || 'tab'}-${Date.now()}`;
       }
     }
   }

@@ -106,9 +106,18 @@ router.post('/', auth, [
       });
     }
 
+    // Ensure name is properly trimmed and not empty
+    const trimmedName = (name || '').trim();
+    if (!trimmedName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tab name cannot be empty'
+      });
+    }
+
     const productTab = await ProductTab.create({
       store_id,
-      name,
+      name: trimmedName,
       tab_type: tab_type || 'text',
       content: content || '',
       attribute_ids: attribute_ids || [],
