@@ -104,8 +104,6 @@ export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Apply role-based access control
-  useRoleProtection();
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -209,6 +207,9 @@ export default function Layout({ children, currentPageName }) {
   const isStorefrontPage = storefrontPages.includes(currentPageName);
   const isCustomerDashboard = currentPageName === 'CustomerDashboard';
   const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard;
+  
+  // Apply role-based access control only for admin pages
+  useRoleProtection(isAdminPage);
 
   if (isLoading && isAdminPage) {
     return (
