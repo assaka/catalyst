@@ -172,6 +172,7 @@ export const getApplicableTaxRate = (taxRules, country = 'US') => {
  * @returns {string} - Formatted price string
  */
 export const formatDisplayPrice = (basePrice, currencySymbol = '$', store, taxRules = [], country = 'US') => {
+    console.log('🔍 TAX DEBUG: formatDisplayPrice called!');
     console.log('🔍 formatDisplayPrice called with:', {
         basePrice,
         currencySymbol,

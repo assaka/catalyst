@@ -27,9 +27,12 @@ const ProductTab = sequelize.define('ProductTab', {
     }
   },
   tab_type: {
-    type: DataTypes.ENUM('text', 'description', 'attributes', 'attribute_sets'),
+    type: DataTypes.STRING,
     defaultValue: 'text',
-    allowNull: false
+    allowNull: false,
+    validate: {
+      isIn: [['text', 'description', 'attributes', 'attribute_sets']]
+    }
   },
   content: {
     type: DataTypes.TEXT,

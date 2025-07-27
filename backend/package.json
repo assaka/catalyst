@@ -9,6 +9,8 @@
     "dev": "nodemon src/server.js",
     "migrate": "node src/database/migrate.js",
     "migrate:full": "node src/database/migrations/run-migration.js",
+    "migrate:tabs": "node src/database/migrations/run-product-tabs-migration.js",
+    "sync:tables": "node src/database/sync-tables.js",
     "seed": "node src/database/seed.js",
     "test": "jest",
     "db:check": "node check-database.js",
