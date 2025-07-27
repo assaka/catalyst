@@ -70,25 +70,43 @@ export const calculateDisplayPrice = (basePrice, store, taxRules = [], country =
     const displayTaxInclusive = settings.display_tax_inclusive_prices || false;
     const defaultTaxIncludedInPrices = settings.default_tax_included_in_prices || false;
 
+    console.log('🔍 Tax calculation debug:', {
+        price,
+        displayTaxInclusive,
+        defaultTaxIncludedInPrices,
+        taxRulesCount: taxRules.length,
+        country,
+        settings: settings
+    });
+
     // If tax display setting is same as input setting, no calculation needed
     if (displayTaxInclusive === defaultTaxIncludedInPrices) {
+        console.log('✅ No tax adjustment needed - display and default settings match');
         return price;
     }
 
     // Find applicable tax rate
     const taxRate = getApplicableTaxRate(taxRules, country);
+    console.log('📊 Applicable tax rate:', taxRate);
+    
     if (taxRate === 0) {
+        console.log('⚠️ No tax rate found, returning original price');
         return price;
     }
 
     if (displayTaxInclusive && !defaultTaxIncludedInPrices) {
         // Show tax-inclusive price when products don't include tax
-        return price * (1 + taxRate / 100);
+        const adjustedPrice = price * (1 + taxRate / 100);
+        console.log('💰 Adding tax to price:', { original: price, adjusted: adjustedPrice, rate: taxRate });
+        return adjustedPrice;
     } else if (!displayTaxInclusive && defaultTaxIncludedInPrices) {
         // Show tax-exclusive price when products include tax
-        return price / (1 + taxRate / 100);
+        const adjustedPrice = price / (1 + taxRate / 100);
+        console.log('💰 Removing tax from price:', { original: price, adjusted: adjustedPrice, rate: taxRate });
+        return adjustedPrice;
     }
 
+    console.log('✅ No adjustment case matched, returning original price');
     return price;
 };
 
@@ -99,7 +117,12 @@ export const calculateDisplayPrice = (basePrice, store, taxRules = [], country =
  * @returns {number} - Tax rate percentage
  */
 export const getApplicableTaxRate = (taxRules, country = 'US') => {
-    if (!taxRules || taxRules.length === 0) return 0;
+    console.log('🔍 Finding tax rate for country:', country, 'from', taxRules.length, 'rules');
+    
+    if (!taxRules || taxRules.length === 0) {
+        console.log('⚠️ No tax rules provided');
+        return 0;
+    }
 
     // Find rules with country rates
     const rulesWithCountry = taxRules.filter(rule => 
@@ -110,23 +133,32 @@ export const getApplicableTaxRate = (taxRules, country = 'US') => {
         )
     );
 
+    console.log('📊 Rules with country rates for', country, ':', rulesWithCountry.length);
+
     if (rulesWithCountry.length > 0) {
         const rule = rulesWithCountry.find(r => r.is_default) || rulesWithCountry[0];
         const countryRate = rule.country_rates.find(rate => 
             rate.country && rate.country.toUpperCase() === country.toUpperCase()
         );
-        return parseFloat(countryRate?.rate) || 0;
+        const rate = parseFloat(countryRate?.rate) || 0;
+        console.log('✅ Found country-specific rate:', rate, 'from rule:', rule.name);
+        return rate;
     }
 
     // Fallback to default rule
     const defaultRule = taxRules.find(rule => rule.is_default && rule.is_active);
+    console.log('🔄 Checking default rule:', defaultRule?.name || 'none');
+    
     if (defaultRule && defaultRule.country_rates) {
         const usRate = defaultRule.country_rates.find(rate => 
             rate.country && rate.country.toUpperCase() === 'US'
         );
-        return parseFloat(usRate?.rate) || 0;
+        const rate = parseFloat(usRate?.rate) || 0;
+        console.log('✅ Using default rule US rate:', rate);
+        return rate;
     }
 
+    console.log('❌ No applicable tax rate found');
     return 0;
 };
 
@@ -140,6 +172,23 @@ export const getApplicableTaxRate = (taxRules, country = 'US') => {
  * @returns {string} - Formatted price string
  */
 export const formatDisplayPrice = (basePrice, currencySymbol = '$', store, taxRules = [], country = 'US') => {
+    console.log('🔍 formatDisplayPrice called with:', {
+        basePrice,
+        currencySymbol,
+        storeName: store?.name,
+        storeSettings: store?.settings,
+        taxRulesCount: taxRules?.length || 0,
+        country
+    });
+    
     const displayPrice = calculateDisplayPrice(basePrice, store, taxRules, country);
-    return formatCurrency(displayPrice, currencySymbol);
+    const formatted = formatCurrency(displayPrice, currencySymbol);
+    
+    console.log('💰 Price formatting result:', {
+        original: basePrice,
+        adjusted: displayPrice,
+        formatted
+    });
+    
+    return formatted;
 };
