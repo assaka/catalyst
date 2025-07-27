@@ -224,6 +224,11 @@ function PagesContent() {
                 <Route path="/Plugins" element={<Plugins />} />
                 
                 <Route path="/Storefront" element={<Storefront />} />
+                <Route path="/:storeCode/storefront" element={<Storefront />} />
+                <Route path="/:storeCode/productdetail" element={<ProductDetail />} />
+                <Route path="/:storeCode/cart" element={<Cart />} />
+                <Route path="/:storeCode/checkout" element={<Checkout />} />
+                <Route path="/:storeCode/order-success" element={<OrderSuccess />} />
                 
                 <Route path="/ProductDetail" element={<ProductDetail />} />
                 

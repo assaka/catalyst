@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { Store } from '@/api/entities';
 import { Tax } from '@/api/entities';
 import { Category } from '@/api/entities';
@@ -152,17 +152,34 @@ export const StoreProvider = ({ children }) => {
       
       // Get store first with ultra-aggressive caching
       const path = location.pathname;
-      const storeSlugMatch = path.match(/\/storefront\/([^\/]+)/);
+      
+      // Check for new store slug pattern: /:storeSlug/storefront
+      const storeSlugMatch = path.match(/^\/([^\/]+)\/(storefront|productdetail|cart|checkout|order-success)/);
       const storeSlug = storeSlugMatch ? storeSlugMatch[1] : null;
       
-      const storeCacheKey = storeSlug ? `store-slug-${storeSlug}` : 'first-store';
+      // Check for old pattern: /storefront/:slug (keep for backward compatibility)
+      const oldStoreSlugMatch = path.match(/\/storefront\/([^\/]+)/);
+      const oldStoreSlug = oldStoreSlugMatch ? oldStoreSlugMatch[1] : null;
+      
+      // Use new pattern first, then old pattern, then default to first store
+      let storeCacheKey = 'first-store';
+      let storeIdentifier = null;
+      
+      if (storeSlug && storeSlug !== 'storefront' && storeSlug !== 'productdetail' && storeSlug !== 'cart' && storeSlug !== 'checkout' && storeSlug !== 'order-success') {
+        storeCacheKey = `store-slug-${storeSlug}`;
+        storeIdentifier = storeSlug;
+      } else if (oldStoreSlug) {
+        storeCacheKey = `store-slug-${oldStoreSlug}`;
+        storeIdentifier = oldStoreSlug;
+      }
+      
       const stores = await cachedApiCall(storeCacheKey, async () => {
-        if (storeSlug) {
+        if (storeIdentifier) {
           try {
-            const result = await Store.filter({ slug: storeSlug });
+            const result = await Store.filter({ slug: storeIdentifier });
             return Array.isArray(result) ? result : [];
           } catch (error) {
-            console.error(`StoreProvider: Store.filter failed:`, error);
+            console.error(`StoreProvider: Store.filter failed for slug:`, error);
             return [];
           }
         } else {

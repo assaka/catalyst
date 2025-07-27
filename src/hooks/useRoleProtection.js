@@ -18,8 +18,11 @@ export const useRoleProtection = () => {
         }
 
         if (!user) {
-          // Not authenticated - redirect to auth
-          navigate(createPageUrl("Auth"));
+          // Not authenticated - only redirect to auth for dashboard pages
+          if (isDashboardContext) {
+            navigate(createPageUrl("Auth"));
+          }
+          // Allow guest access to storefront pages
           return;
         }
 
@@ -29,6 +32,10 @@ export const useRoleProtection = () => {
           '/landing', '/', '/storefront', '/productdetail', '/cart', 
           '/checkout', '/order-success', '/ordersuccess'
         ];
+        
+        // Check if current path matches store slug pattern (/:storeSlug/page)
+        const storeSlugPattern = /^\/[^\/]+\/(storefront|productdetail|cart|checkout|order-success|ordersuccess)/.test(currentPath);
+        const isStorefrontContext = storefrontPages.some(page => currentPath.startsWith(page)) || storeSlugPattern;
         const dashboardPages = [
           '/dashboard', '/products', '/categories', '/settings', '/attributes', 
           '/plugins', '/cmsblocks', '/tax', '/orders', '/coupons', '/cmspages', 
@@ -40,7 +47,6 @@ export const useRoleProtection = () => {
           '/ordercancel', '/customeractivity', '/cookieconsent'
         ];
         
-        const isStorefrontContext = storefrontPages.some(page => currentPath.startsWith(page));
         const isDashboardContext = dashboardPages.some(page => currentPath.startsWith(page));
         
         const isStoreOwner = user.role === 'store_owner';
