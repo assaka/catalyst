@@ -396,7 +396,7 @@ export default function OrderSuccess() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Shipping</span>
-                    <span>{formatCurrency(order.shipping_cost, order.currency)}</span>
+                    <span>{formatCurrency(order.shipping_amount || order.shipping_cost, order.currency)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Tax</span>

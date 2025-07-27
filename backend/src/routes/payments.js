@@ -806,7 +806,7 @@ async function createOrderFromCheckoutSession(session) {
       shipping_address: session.shipping_details?.address || session.customer_details?.address || {},
       subtotal: subtotal,
       tax_amount: tax_amount,
-      shipping_cost: shipping_cost,
+      shipping_amount: shipping_cost, // Use shipping_amount instead of shipping_cost
       discount_amount: (session.total_details?.amount_discount || 0) / 100,
       total_amount: total_amount,
       currency: session.currency.toUpperCase(),
@@ -818,8 +818,7 @@ async function createOrderFromCheckoutSession(session) {
       payment_status: 'paid',
       status: 'processing',
       coupon_code: coupon_code || null,
-      shipping_method_name: shipping_method_name || null,
-      shipping_method_id: shipping_method_id || null
+      shipping_method: shipping_method_name || null // Use shipping_method instead of shipping_method_name
     });
     
     // Group line items by product and reconstruct order items

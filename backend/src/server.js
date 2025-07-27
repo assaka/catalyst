@@ -643,10 +643,17 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
       };
       
       console.log('Successfully loaded order with details. OrderItems count:', orderItems.length);
+      console.log('Sample OrderItem:', orderItems[0] ? JSON.stringify(orderItems[0], null, 2) : 'No items');
     } catch (includeError) {
       console.error('Error loading associations:', includeError.message);
       console.error('Include error stack:', includeError.stack);
-      // Return basic order if associations fail
+      
+      // Return basic order with empty OrderItems if associations fail
+      orderWithDetails = {
+        ...order.toJSON(),
+        Store: null,
+        OrderItems: []
+      };
     }
 
     res.json({
