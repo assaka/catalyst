@@ -35,6 +35,9 @@ export default function PaymentMethods() {
     sort_order: 0,
     min_amount: '',
     max_amount: '',
+    fee_type: 'none',
+    fee_amount: 0,
+    availability: 'all',
     countries: []
   });
 
@@ -102,7 +105,8 @@ export default function PaymentMethods() {
         ...formData,
         store_id: store.id,
         min_amount: formData.min_amount ? parseFloat(formData.min_amount) : null,
-        max_amount: formData.max_amount ? parseFloat(formData.max_amount) : null
+        max_amount: formData.max_amount ? parseFloat(formData.max_amount) : null,
+        fee_amount: formData.fee_amount ? parseFloat(formData.fee_amount) : 0
       };
 
       if (editingMethod) {
@@ -135,6 +139,9 @@ export default function PaymentMethods() {
       sort_order: method.sort_order,
       min_amount: method.min_amount || '',
       max_amount: method.max_amount || '',
+      fee_type: method.fee_type || 'none',
+      fee_amount: method.fee_amount || 0,
+      availability: method.availability || 'all',
       countries: method.countries || []
     });
     setEditingMethod(method);
@@ -157,13 +164,16 @@ export default function PaymentMethods() {
     setFormData({
       name: '', 
       code: '', 
-      type: 'other',
+      type: 'credit_card',
       is_active: true, 
       description: '', 
       icon_url: '', 
       sort_order: 0,
       min_amount: '', 
       max_amount: '', 
+      fee_type: 'none',
+      fee_amount: 0,
+      availability: 'all',
       countries: []
     });
   };
@@ -284,9 +294,27 @@ export default function PaymentMethods() {
                         <Badge variant={method.is_active ? 'default' : 'secondary'}>
                           {method.is_active ? 'Active' : 'Inactive'}
                         </Badge>
-                        {method.countries && method.countries.length > 0 && (
+                        {method.fee_type && method.fee_type !== 'none' && (
+                          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+                            {method.fee_type === 'fixed' 
+                              ? `$${method.fee_amount || 0} fee` 
+                              : `${method.fee_amount || 0}% fee`
+                            }
+                          </Badge>
+                        )}
+                        {method.availability === 'specific_countries' && method.countries && method.countries.length > 0 && (
                           <Badge variant="outline">
                             {method.countries.length} Country{method.countries.length !== 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                        {(method.min_amount || method.max_amount) && (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            {method.min_amount && method.max_amount 
+                              ? `$${method.min_amount} - $${method.max_amount}`
+                              : method.min_amount 
+                                ? `Min $${method.min_amount}`
+                                : `Max $${method.max_amount}`
+                            }
                           </Badge>
                         )}
                       </div>
@@ -416,13 +444,82 @@ export default function PaymentMethods() {
                 </div>
 
                 <div>
-                  <Label>Available Countries</Label>
-                  <CountrySelect
-                    value={formData.countries}
-                    onChange={(value) => setFormData({ ...formData, countries: value })}
-                    placeholder="Select countries (leave empty for all countries)"
-                    multiple={true}
-                  />
+                  <Label htmlFor="availability">Availability</Label>
+                  <Select 
+                    value={formData.availability} 
+                    onValueChange={(value) => setFormData({ ...formData, availability: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Countries</SelectItem>
+                      <SelectItem value="specific_countries">Specific Countries</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.availability === 'specific_countries' && (
+                  <div>
+                    <Label>Allowed Countries</Label>
+                    <CountrySelect
+                      value={formData.countries}
+                      onChange={(value) => setFormData({ ...formData, countries: value })}
+                      placeholder="Select countries where this payment method is available"
+                      multiple={true}
+                    />
+                  </div>
+                )}
+
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-4">Fee Configuration</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="fee_type">Fee Type</Label>
+                      <Select 
+                        value={formData.fee_type} 
+                        onValueChange={(value) => setFormData({ ...formData, fee_type: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No Fee</SelectItem>
+                          <SelectItem value="fixed">Fixed Amount</SelectItem>
+                          <SelectItem value="percentage">Percentage</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {formData.fee_type !== 'none' && (
+                      <div>
+                        <Label htmlFor="fee_amount">
+                          Fee Amount {formData.fee_type === 'percentage' ? '(%)' : '($)'}
+                        </Label>
+                        <Input
+                          id="fee_amount"
+                          type="number"
+                          step={formData.fee_type === 'percentage' ? '0.01' : '0.01'}
+                          min="0"
+                          max={formData.fee_type === 'percentage' ? '100' : undefined}
+                          value={formData.fee_amount}
+                          onChange={(e) => setFormData({ ...formData, fee_amount: parseFloat(e.target.value) || 0 })}
+                          placeholder={formData.fee_type === 'percentage' ? 'e.g., 2.5' : 'e.g., 1.99'}
+                        />
+                        {formData.fee_type === 'percentage' && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            Percentage of order total charged as fee
+                          </p>
+                        )}
+                        {formData.fee_type === 'fixed' && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            Fixed amount charged per transaction
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
