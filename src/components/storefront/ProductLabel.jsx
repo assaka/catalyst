@@ -22,7 +22,7 @@ export default function ProductLabel({ label, style = {} }) {
 
   const labelStyle = {
     backgroundColor: label.background_color || '#FF0000',
-    color: label.text_color || '#FFFFFF',
+    color: label.color || label.text_color || '#FFFFFF', // Handle both field names
     ...style
   };
 

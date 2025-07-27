@@ -364,9 +364,11 @@ export default function Storefront() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           {productLabels && productLabels.map((label) => {
+                            console.log('🏷️ Evaluating label for product:', { label, product: product.name });
                             let showLabel = false;
                             // FIXED: Simplified product label condition
                             if (!label.conditions || Object.keys(label.conditions).length === 0) {
+                                console.log('✅ Label has no conditions, showing for all products');
                                 showLabel = true; 
                             } else {
                                 if (label.conditions.price_conditions) {

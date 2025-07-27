@@ -90,6 +90,13 @@ export default function ProductLabels() {
       } else {
         await ProductLabel.create(backendData);
       }
+      
+      // Clear storefront cache for product labels to ensure new labels appear immediately
+      if (typeof window !== 'undefined' && window.clearCache) {
+        console.log('🗑️ Clearing storefront cache after label creation');
+        window.clearCache();
+      }
+      
       closeForm();
       loadData();
     } catch (error) {

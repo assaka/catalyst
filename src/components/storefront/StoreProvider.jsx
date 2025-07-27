@@ -444,7 +444,9 @@ export const StoreProvider = ({ children }) => {
       console.log(`📋 StoreProvider: Processed categories:`, processedCategories);
       setCategories(processedCategories);
       
-      setProductLabels(results[2].status === 'fulfilled' ? (results[2].value || []) : []);
+      const productLabelsData = results[2].status === 'fulfilled' ? (results[2].value || []) : [];
+      console.log('🏷️ StoreProvider: Loaded product labels:', productLabelsData);
+      setProductLabels(productLabelsData);
       
       const attrData = results[3].status === 'fulfilled' ? (results[3].value || []) : [];
       setAttributes(attrData);
