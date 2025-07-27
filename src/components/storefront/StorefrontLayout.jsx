@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { handleLogout } from '@/utils/auth';
 import { Category } from '@/api/entities';
 import { Language } from '@/api/entities';
 import { StorePlugin } from '@/api/entities';
-import { User } from '@/api/entities';
+import { User, Auth } from '@/api/entities';
 import { DeliverySettings } from '@/api/entities';
 import { ShoppingBag, User as UserIcon, Globe, Menu, Search, ChevronDown, Settings, Package, LogOut, X } from "lucide-react";
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000, defaultVa
 export default function StorefrontLayout({ children }) {
     const { store, settings, loading, selectedCountry, setSelectedCountry, categories } = useStore();
     const location = useLocation();
+    const navigate = useNavigate();
     const [languages, setLanguages] = useState([]);
     const [currentLanguage, setCurrentLanguage] = useState('en');
     const [user, setUser] = useState(null);
@@ -282,7 +283,7 @@ export default function StorefrontLayout({ children }) {
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon" 
-                                                onClick={() => User.login()}
+                                                onClick={() => navigate(createPageUrl("Auth"))}
                                                 disabled={userLoading}
                                             >
                                                 <UserIcon className="w-5 h-5" />
@@ -357,7 +358,7 @@ export default function StorefrontLayout({ children }) {
                                             </div>
                                         ) : (
                                             <Button 
-                                                onClick={() => User.login()}
+                                                onClick={() => navigate(createPageUrl("Auth"))}
                                                 disabled={userLoading}
                                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
                                             >

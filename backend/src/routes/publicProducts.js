@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     
     if (store_id) where.store_id = store_id;
     if (category_id) where.category_id = category_id;
-    if (featured === 'true') where.is_featured = true;
+    if (featured === 'true' || featured === true) where.is_featured = true;
     if (slug) where.slug = slug;
     if (sku) where.sku = sku;
     if (id) where.id = id;
