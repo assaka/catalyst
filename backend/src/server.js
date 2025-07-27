@@ -501,7 +501,7 @@ app.post('/debug/seed', async (req, res) => {
           compare_price: 39.99,
           stock_quantity: 100,
           status: 'active',
-          is_featured: true,
+          featured: true,
           store_id: store.id
         },
         {
@@ -513,7 +513,7 @@ app.post('/debug/seed', async (req, res) => {
           price: 49.99,
           stock_quantity: 50,
           status: 'active',
-          is_featured: true,
+          featured: true,
           store_id: store.id
         },
         {
@@ -525,7 +525,7 @@ app.post('/debug/seed', async (req, res) => {
           price: 19.99,
           stock_quantity: 75,
           status: 'active',
-          is_featured: false,
+          featured: false,
           store_id: store.id
         },
         {
@@ -538,7 +538,7 @@ app.post('/debug/seed', async (req, res) => {
           compare_price: 129.99,
           stock_quantity: 25,
           status: 'active',
-          is_featured: true,
+          featured: true,
           store_id: store.id
         }
       ];
@@ -583,7 +583,7 @@ app.post('/debug/seed', async (req, res) => {
     const featuredProductCount = await Product.count({ 
       where: { 
         store_id: store.id, 
-        is_featured: true, 
+        featured: true, 
         status: 'active' 
       } 
     });
@@ -614,6 +614,103 @@ app.post('/debug/seed', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Sample data seeding failed',
+      error: error.message
+    });
+  }
+});
+
+// Database reset endpoint - drops all tables and recreates them
+app.post('/debug/reset-db', async (req, res) => {
+  try {
+    console.log('🗑️ Starting database reset...');
+    
+    const fs = require('fs');
+    const path = require('path');
+    const { Client } = require('pg');
+    
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      return res.status(500).json({
+        success: false,
+        message: 'DATABASE_URL not configured'
+      });
+    }
+
+    // Create PostgreSQL client
+    const client = new Client({
+      connectionString: databaseUrl,
+      ssl: {
+        rejectUnauthorized: false
+      }
+    });
+
+    await client.connect();
+    console.log('✅ Connected to database');
+
+    // Drop all tables
+    console.log('🗑️ Dropping all existing tables...');
+    const dropSqlPath = path.join(__dirname, 'database/migrations/drop-all-tables.sql');
+    const dropSqlContent = fs.readFileSync(dropSqlPath, 'utf8');
+    
+    try {
+      await client.query(dropSqlContent);
+      console.log('✅ All tables dropped successfully');
+    } catch (error) {
+      console.log('⚠️ Some drop operations failed (this is normal):', error.message);
+    }
+
+    // Create all tables
+    console.log('📋 Creating all tables...');
+    const createSqlPath = path.join(__dirname, 'database/migrations/create-all-tables.sql');
+    const createSqlContent = fs.readFileSync(createSqlPath, 'utf8');
+
+    // Split SQL into individual statements
+    const statements = createSqlContent
+      .split(';')
+      .map(stmt => stmt.trim())
+      .filter(stmt => stmt && !stmt.startsWith('--'));
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const statement of statements) {
+      if (statement.trim()) {
+        try {
+          await client.query(statement);
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          console.error(`❌ Statement failed:`, error.message);
+        }
+      }
+    }
+
+    // Verify tables were created
+    const tablesResult = await client.query(`
+      SELECT tablename 
+      FROM pg_tables 
+      WHERE schemaname = 'public' 
+      ORDER BY tablename;
+    `);
+
+    await client.end();
+
+    res.json({
+      success: true,
+      message: 'Database reset completed successfully',
+      execution: {
+        statements_executed: successCount,
+        statements_failed: errorCount,
+        tables_created: tablesResult.rows.length
+      },
+      tables: tablesResult.rows.map(row => row.tablename)
+    });
+
+  } catch (error) {
+    console.error('❌ Database reset failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Database reset failed',
       error: error.message
     });
   }
