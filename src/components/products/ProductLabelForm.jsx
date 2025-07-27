@@ -30,7 +30,7 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
         name: label.name || '',
         text: label.text || '',
         background_color: label.background_color || '#FF0000',
-        text_color: label.text_color || '#FFFFFF',
+        text_color: label.color || label.text_color || '#FFFFFF', // Handle both field names
         position: label.position || 'top-right',
         conditions: label.conditions || {
           attribute_conditions: [],

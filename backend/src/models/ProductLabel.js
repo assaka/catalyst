@@ -61,13 +61,28 @@ const ProductLabel = sequelize.define('ProductLabel', {
   ],
   hooks: {
     beforeCreate: (label) => {
+      console.log('🔍 ProductLabel beforeCreate hook - label data:', {
+        name: label.name,
+        slug: label.slug,
+        text: label.text
+      });
       if (!label.slug && label.name) {
         label.slug = label.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        console.log('✅ Generated slug:', label.slug);
+      } else {
+        console.log('❌ Slug not generated - slug exists or name missing');
       }
     },
     beforeUpdate: (label) => {
+      console.log('🔍 ProductLabel beforeUpdate hook - label data:', {
+        name: label.name,
+        slug: label.slug,
+        changed_name: label.changed('name'),
+        changed_slug: label.changed('slug')
+      });
       if (label.changed('name') && !label.changed('slug')) {
         label.slug = label.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        console.log('✅ Updated slug:', label.slug);
       }
     }
   }

@@ -72,13 +72,23 @@ export default function ProductLabels() {
       return;
     }
 
-    console.log('🔍 Submitting product label data:', labelData);
+    // Map frontend field names to backend field names
+    const backendData = {
+      ...labelData,
+      color: labelData.text_color, // Map text_color to color
+      store_id: storeId
+    };
+    
+    // Remove the frontend field name
+    delete backendData.text_color;
+
+    console.log('🔍 Submitting product label data:', backendData);
 
     try {
       if (editingLabel) {
-        await ProductLabel.update(editingLabel.id, { ...labelData, store_id: storeId });
+        await ProductLabel.update(editingLabel.id, backendData);
       } else {
-        await ProductLabel.create({ ...labelData, store_id: storeId });
+        await ProductLabel.create(backendData);
       }
       closeForm();
       loadData();
