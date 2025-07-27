@@ -64,6 +64,7 @@ class StorefrontApiClient {
     const headers = this.getPublicHeaders(customHeaders);
 
     console.log(`🌐 Storefront Public Request: ${method} ${url}`);
+    console.log(`🔍 Original endpoint: ${endpoint}`);
 
     const config = {
       method,
