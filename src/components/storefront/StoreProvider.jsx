@@ -240,7 +240,6 @@ export const StoreProvider = ({ children }) => {
         enable_reviews: true,
         allow_guest_checkout: true,
         require_shipping_address: true,
-        allowed_countries: ['US'],
         hide_currency_category: false,
         hide_currency_product: false,
         hide_header_cart: false,
@@ -264,10 +263,18 @@ export const StoreProvider = ({ children }) => {
         cookie_consent: {
           enabled: false
         },
-        ...(selectedStore.settings || {})
+        // Merge store settings first, then set defaults only for missing properties
+        ...(selectedStore.settings || {}),
+        // Only set default allowed_countries if not already defined in store settings
+        allowed_countries: (selectedStore.settings && selectedStore.settings.allowed_countries) 
+          ? selectedStore.settings.allowed_countries 
+          : ['US', 'CA', 'GB', 'DE', 'FR']
       };
       
       
+      
+      console.log('🌍 StoreProvider: Merged settings allowed_countries:', mergedSettings.allowed_countries);
+      console.log('🌍 StoreProvider: Original store settings:', selectedStore.settings);
       
       setStore({ ...selectedStore, settings: mergedSettings });
       

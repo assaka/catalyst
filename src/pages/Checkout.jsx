@@ -44,6 +44,10 @@ export default function Checkout() {
   
   // Get currency symbol from settings
   const currencySymbol = settings?.currency_symbol || '$';
+  
+  // Debug allowed countries
+  console.log('🌍 Checkout: Store settings:', settings);
+  console.log('🌍 Checkout: Allowed countries:', settings?.allowed_countries);
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [cartProducts, setCartProducts] = useState({});
