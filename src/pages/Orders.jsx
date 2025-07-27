@@ -76,8 +76,14 @@ export default function Orders() {
       setError(null);
 
       // Fetch orders filtered by the store_id
-      const ordersData = await Order.filter({ store_id: storeId }, '-created_date');
-      setOrders(ordersData || []);
+      const ordersResponse = await Order.filter({ store_id: storeId }, '-created_date');
+      
+      // The API returns data in a wrapper object
+      const ordersData = ordersResponse?.data?.orders || ordersResponse?.orders || ordersResponse || [];
+      console.log('Orders response:', ordersResponse);
+      console.log('Orders data:', ordersData);
+      
+      setOrders(Array.isArray(ordersData) ? ordersData : []);
 
       // Load user data for the customers in these orders
       if (ordersData && ordersData.length > 0) {
@@ -98,24 +104,16 @@ export default function Orders() {
           setUsers({});
         }
 
-        // Load order items for each order
-        const orderIds = ordersData.map(o => o.id);
-        if (orderIds.length > 0) {
-          try {
-            const itemsData = await OrderItem.filter({ order_id__in: orderIds });
-            const itemsMap = itemsData.reduce((acc, item) => {
-              if (!acc[item.order_id]) acc[item.order_id] = [];
-              acc[item.order_id].push(item);
-              return acc;
-            }, {});
-            setOrderItems(itemsMap);
-          } catch (itemError) {
-            console.error("Could not load order items:", itemError);
-            setOrderItems({});
+        // Extract order items from the orders data (backend includes them)
+        const itemsMap = {};
+        ordersData.forEach(order => {
+          if (order.OrderItems && Array.isArray(order.OrderItems)) {
+            itemsMap[order.id] = order.OrderItems;
           }
-        } else {
-          setOrderItems({});
-        }
+        });
+        
+        console.log('Order items extracted:', itemsMap);
+        setOrderItems(itemsMap);
       } else {
         setUsers({});
         setOrderItems({});
