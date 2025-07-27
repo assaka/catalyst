@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Order } from '@/api/entities';
 import { OrderItem } from '@/api/entities';
 import { Product } from '@/api/entities';
-import { User } from '@/api/entities';
+import { Auth } from '@/api/entities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -99,8 +99,13 @@ export default function OrderSuccess() {
           setOrder(orderData);
           
           // Set order items from order data
+          console.log('OrderItems from API:', orderData.OrderItems);
           if (orderData.OrderItems && Array.isArray(orderData.OrderItems)) {
+            console.log('Setting order items:', orderData.OrderItems.length, 'items');
             setOrderItems(orderData.OrderItems);
+          } else {
+            console.log('No OrderItems found in order data');
+            setOrderItems([]);
           }
         } else {
           console.error('Failed to load order:', result);
@@ -137,7 +142,7 @@ export default function OrderSuccess() {
       const customerName = order.shipping_address?.name || order.shipping_address?.full_name || '';
       const [firstName = '', lastName = ''] = customerName.split(' ');
       
-      const response = await User.create({
+      const response = await Auth.register({
         first_name: firstName || 'Customer',
         last_name: lastName || '',
         email: order.customer_email,
@@ -243,6 +248,10 @@ export default function OrderSuccess() {
                       {order.payment_status?.charAt(0).toUpperCase() + order.payment_status?.slice(1)}
                     </Badge>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Payment Method:</span>
+                    <span className="font-semibold capitalize">{order.payment_method || 'Card'}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -258,7 +267,8 @@ export default function OrderSuccess() {
               <CardContent>
                 {orderItems.length === 0 ? (
                   <div className="text-center py-4">
-                    <p className="text-gray-500">Loading order items...</p>
+                    <p className="text-gray-500">No order items found.</p>
+                    <p className="text-xs text-gray-400 mt-2">Debug: {JSON.stringify(order?.OrderItems?.length || 'undefined')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -288,6 +298,48 @@ export default function OrderSuccess() {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Download Invoice */}
+            <Card>
+              <CardContent className="pt-6">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => {
+                    // Create simple invoice content
+                    const invoiceContent = `
+                      INVOICE
+                      Order #${order.order_number}
+                      Date: ${formatDate(order.created_date || order.createdAt)}
+                      
+                      Customer: ${order.customer_email}
+                      
+                      Items:
+                      ${orderItems.map(item => 
+                        `${item.product_name} x${item.quantity} - ${formatCurrency(item.total_price, order.currency)}`
+                      ).join('\n                      ')}
+                      
+                      Subtotal: ${formatCurrency(order.subtotal, order.currency)}
+                      Shipping: ${formatCurrency(order.shipping_cost, order.currency)}
+                      Tax: ${formatCurrency(order.tax_amount, order.currency)}
+                      ${parseFloat(order.discount_amount || 0) > 0 ? `Discount: -${formatCurrency(order.discount_amount, order.currency)}\n                      ` : ''}Total: ${formatCurrency(order.total_amount, order.currency)}
+                    `;
+                    
+                    const blob = new Blob([invoiceContent], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `invoice-${order.order_number}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  📄 Download Invoice
+                </Button>
               </CardContent>
             </Card>
 
