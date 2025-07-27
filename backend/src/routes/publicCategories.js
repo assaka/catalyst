@@ -41,6 +41,10 @@ router.get('/', async (req, res) => {
     });
 
     console.log('✅ Public Categories query result:', rows.length, 'categories found');
+    console.log('📊 WHERE conditions:', where);
+    if (rows.length > 0) {
+      console.log('🎯 Sample category:', JSON.stringify(rows[0], null, 2));
+    }
     
     // Return just the array for public requests (for compatibility)
     res.json(rows);

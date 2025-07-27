@@ -49,6 +49,10 @@ router.get('/', async (req, res) => {
     });
 
     console.log('✅ Public Products query result:', rows.length, 'products found');
+    console.log('📊 WHERE conditions:', where);
+    if (rows.length > 0) {
+      console.log('🎯 Sample product:', JSON.stringify(rows[0], null, 2));
+    }
     
     // Return just the array for public requests (for compatibility)
     res.json(rows);
