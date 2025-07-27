@@ -150,7 +150,7 @@ export default function ProductTabs() {
 
   // Filter tabs based on search query (using the new 'tabs' state)
   const filteredTabs = tabs.filter(tab =>
-    tab.title.toLowerCase().includes(searchQuery.toLowerCase())
+    (tab.name || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
@@ -228,8 +228,8 @@ export default function ProductTabs() {
                       <Package className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <CardTitle className="text-lg">{tab.title}</CardTitle>
-                      <p className="text-sm text-gray-500 capitalize">{tab.content_type}</p>
+                      <CardTitle className="text-lg">{tab.name}</CardTitle>
+                      <p className="text-sm text-gray-500">Sort Order: {tab.sort_order || 0}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -267,24 +267,11 @@ export default function ProductTabs() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {tab.content_type === 'attributes' && tab.attribute_codes && tab.attribute_codes.length > 0 && (
+                  {tab.content && (
                     <div>
-                      <p className="text-sm font-medium text-gray-700 mb-1">Attributes:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {tab.attribute_codes.slice(0, 3).map((code) => {
-                          const attribute = attributes.find(attr => attr.code === code);
-                          return (
-                            <Badge key={code} variant="outline" className="text-xs">
-                              {attribute?.name || code}
-                            </Badge>
-                          );
-                        })}
-                        {tab.attribute_codes.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{tab.attribute_codes.length - 3} more
-                          </Badge>
-                        )}
-                      </div>
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {tab.content}
+                      </p>
                     </div>
                   )}
 
@@ -336,8 +323,6 @@ export default function ProductTabs() {
             </DialogHeader>
             <ProductTabForm
               tab={editingTab} // Pass the tab being edited (or null for new)
-              attributes={attributes}
-              attributeSets={attributeSets}
               onSubmit={handleSubmit} // Use the combined handleSubmit function
               onCancel={() => {
                 setShowForm(false); // Close the form

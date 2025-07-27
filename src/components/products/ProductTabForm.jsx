@@ -1,26 +1,15 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 
-export default function ProductTabForm({ tab, attributes, attributeSets, onSubmit, onCancel }) {
+export default function ProductTabForm({ tab, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
-    title: "",
-    content_type: "description",
-    attribute_codes: [],
-    attribute_set_ids: [],
+    name: "",
+    content: "",
     sort_order: 0,
     is_active: true,
   });
@@ -29,10 +18,8 @@ export default function ProductTabForm({ tab, attributes, attributeSets, onSubmi
   useEffect(() => {
     if (tab) {
       setFormData({
-        title: tab.title || "",
-        content_type: tab.content_type || "description",
-        attribute_codes: tab.attribute_codes || [],
-        attribute_set_ids: tab.attribute_set_ids || [],
+        name: tab.name || "",
+        content: tab.content || "",
         sort_order: tab.sort_order || 0,
         is_active: tab.is_active ?? true,
       });
@@ -46,28 +33,6 @@ export default function ProductTabForm({ tab, attributes, attributeSets, onSubmi
     }));
   };
 
-  const handleAttributeToggle = (attributeCode) => {
-    setFormData(prev => ({
-      ...prev,
-      attribute_codes: prev.attribute_codes.includes(attributeCode)
-        ? prev.attribute_codes.filter(code => code !== attributeCode)
-        : [...prev.attribute_codes, attributeCode]
-    }));
-  };
-
-  const handleAttributeSetToggle = (attributeSetId) => {
-    setFormData(prev => {
-      const newAttributeSetIds = prev.attribute_set_ids.includes(attributeSetId)
-        ? prev.attribute_set_ids.filter(id => id !== attributeSetId)
-        : [...prev.attribute_set_ids, attributeSetId];
-
-      return {
-        ...prev,
-        attribute_set_ids: newAttributeSetIds
-      };
-    });
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -77,6 +42,11 @@ export default function ProductTabForm({ tab, attributes, attributeSets, onSubmi
         ...formData,
         sort_order: parseInt(formData.sort_order) || 0
       };
+
+      // If editing, include the ID
+      if (tab && tab.id) {
+        submitData.id = tab.id;
+      }
 
       await onSubmit(submitData);
     } catch (error) {
@@ -88,151 +58,81 @@ export default function ProductTabForm({ tab, attributes, attributeSets, onSubmi
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Basic Information */}
-        <Card className="material-elevation-1 border-0">
-          <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="title">Tab Title *</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => handleInputChange("title", e.target.value)}
-                placeholder="Enter tab title"
-                required
-              />
-            </div>
+      <Card className="material-elevation-1 border-0">
+        <CardHeader>
+          <CardTitle>{tab ? 'Edit Product Tab' : 'Add Product Tab'}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label htmlFor="name">Tab Name *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleInputChange("name", e.target.value)}
+              placeholder="Enter tab name (e.g., Features, Specifications)"
+              required
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              This will be displayed as the tab title on product pages
+            </p>
+          </div>
 
-            <div>
-              <Label htmlFor="content_type">Content Type *</Label>
-              <Select value={formData.content_type} onValueChange={(value) => handleInputChange("content_type", value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select content type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="description">Product Description</SelectItem>
-                  <SelectItem value="attributes">Product Attributes</SelectItem>
-                  <SelectItem value="reviews">Product Reviews</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div>
+            <Label htmlFor="content">Tab Content</Label>
+            <Textarea
+              id="content"
+              value={formData.content}
+              onChange={(e) => handleInputChange("content", e.target.value)}
+              placeholder="Enter the content for this tab..."
+              rows={8}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              You can use HTML for formatting. This content will be displayed when the tab is clicked.
+            </p>
+          </div>
 
-            <div>
-              <Label htmlFor="sort_order">Sort Order</Label>
-              <Input
-                id="sort_order"
-                type="number"
-                value={formData.sort_order}
-                onChange={(e) => handleInputChange("sort_order", e.target.value)}
-                placeholder="0"
-              />
-            </div>
+          <div>
+            <Label htmlFor="sort_order">Sort Order</Label>
+            <Input
+              id="sort_order"
+              type="number"
+              value={formData.sort_order}
+              onChange={(e) => handleInputChange("sort_order", e.target.value)}
+              placeholder="0"
+              min="0"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Lower numbers appear first. Use this to control tab order.
+            </p>
+          </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="is_active"
-                checked={formData.is_active}
-                onCheckedChange={(checked) => handleInputChange("is_active", checked)}
-              />
-              <Label htmlFor="is_active">Active</Label>
-            </div>
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="is_active"
+              checked={formData.is_active}
+              onCheckedChange={(checked) => handleInputChange("is_active", checked)}
+            />
+            <Label htmlFor="is_active">Active</Label>
+          </div>
 
-          </CardContent>
-        </Card>
-
-        {/* Attribute Configuration */}
-        {formData.content_type === 'attributes' && (
-          <Card className="material-elevation-1 border-0">
-            <CardHeader>
-              <CardTitle>Attribute Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label className="text-base font-medium">Attribute Sets</Label>
-                <p className="text-sm text-gray-600 mb-3">
-                  Select attribute sets to include all their attributes
-                </p>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {attributeSets.map((attributeSet) => (
-                    <div key={attributeSet.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`set-${attributeSet.id}`}
-                        checked={formData.attribute_set_ids.includes(attributeSet.id)}
-                        onCheckedChange={() => handleAttributeSetToggle(attributeSet.id)}
-                      />
-                      <Label htmlFor={`set-${attributeSet.id}`} className="text-sm">
-                        {attributeSet.name}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-base font-medium">Individual Attributes</Label>
-                <p className="text-sm text-gray-600 mb-3">
-                  Select specific attributes to include
-                </p>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {attributes.map((attribute) => (
-                    <div key={attribute.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`attr-${attribute.id}`}
-                        checked={formData.attribute_codes.includes(attribute.code)}
-                        onCheckedChange={() => handleAttributeToggle(attribute.code)}
-                      />
-                      <Label htmlFor={`attr-${attribute.id}`} className="text-sm">
-                        {attribute.name} ({attribute.code})
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {(formData.attribute_codes.length > 0 || formData.attribute_set_ids.length > 0) && (
-                <div>
-                  <Label className="text-base font-medium">Selected Items</Label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {formData.attribute_set_ids.map((setId) => {
-                      const attributeSet = attributeSets.find(set => set.id === setId);
-                      return (
-                        <Badge key={setId} variant="default">
-                          Set: {attributeSet?.name}
-                        </Badge>
-                      );
-                    })}
-                    {formData.attribute_codes.map((code) => {
-                      const attribute = attributes.find(attr => attr.code === code);
-                      return (
-                        <Badge key={code} variant="outline">
-                          {attribute?.name || code}
-                        </Badge>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* Actions */}
-      <div className="flex justify-end space-x-4">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          disabled={loading}
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-        >
-          {loading ? "Saving..." : (tab ? "Update Tab" : "Create Tab")}
-        </Button>
-      </div>
+          <div className="flex justify-end space-x-4 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading || !formData.name.trim()}
+            >
+              {loading ? 'Saving...' : (tab ? 'Update Tab' : 'Create Tab')}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </form>
   );
 }
