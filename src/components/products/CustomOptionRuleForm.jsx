@@ -90,6 +90,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
         const { Product } = await import('@/api/entities');
         const products = await Product.filter({ 
           is_custom_option: true, 
+          status: 'active',
           store_id: formData.store_id 
         });
         setCustomOptionProducts(Array.isArray(products) ? products : []);

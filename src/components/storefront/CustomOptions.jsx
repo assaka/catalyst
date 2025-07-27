@@ -76,7 +76,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                         try {
                             const products = await Product.filter({ 
                                 id: productId,
-                                is_active: true 
+                                status: 'active'
                             });
                             if (products && products.length > 0) {
                                 const customOptionProduct = products[0];
