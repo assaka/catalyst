@@ -8,6 +8,7 @@ import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
+import useRoleProtection from '@/hooks/useRoleProtection';
 
 import {
   Menu,
@@ -102,6 +103,9 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Apply role-based access control
+  useRoleProtection();
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

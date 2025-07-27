@@ -95,9 +95,16 @@ export default function Auth() {
       }
       
       if (user) {
+        // Determine current context (storefront vs dashboard)
+        const currentPath = window.location.pathname.toLowerCase();
+        const storefrontPages = ['/landing', '/', '/storefront', '/productdetail', '/cart', '/checkout', '/order-success', '/ordersuccess'];
+        const dashboardPages = ['/dashboard', '/products', '/categories', '/settings', '/attributes', '/plugins', '/cmsblocks', '/tax', '/orders', '/coupons', '/cmspages', '/producttabs', '/productlabels', '/customoptionrules', '/shippingmethods', '/googletagmanager', '/deliverysettings', '/themelayout', '/marketplaceexport', '/imagemanager', '/htmlsitemap', '/customers', '/stocksettings', '/analyticssettings', '/paymentmethods', '/seotools', '/xmlsitemap', '/robotstxt', '/onboarding', '/billing', '/clientdashboard', '/stores', '/ordercancel', '/customeractivity', '/cookieconsent'];
+        
+        const isStorefrontContext = storefrontPages.some(page => currentPath.startsWith(page));
+        const isDashboardContext = dashboardPages.some(page => currentPath.startsWith(page));
+        
         // For Google OAuth users, ensure they have a role and redirect to Dashboard
         if (isGoogleOAuth) {
-
           // If no role, set up the user as store_owner
           if (!user.role) {
             try {
@@ -127,8 +134,6 @@ export default function Auth() {
           return;
         }
 
-        // Always redirect to dashboard for authenticated users
-
         // If user has no role, set default role automatically
         if (!user.role) {
           try {
@@ -144,18 +149,45 @@ export default function Auth() {
           }
         }
 
-        // Store owners and admins go to main Dashboard
+        // Role-based access control
         const isStoreOwner = user.role === 'store_owner';
         const isAdmin = user.role === 'admin';
+        const isCustomer = user.role === 'customer';
         const isAgency = user.account_type === 'agency';
         const hasNoRole = !user.role;
 
-        if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
-          navigate(createPageUrl("Dashboard"));
-        } 
-        // Regular customers go to CustomerDashboard
-        else if (user.role === 'customer') {
-          navigate(createPageUrl("CustomerDashboard"));
+        // Handle role-based redirections based on context
+        if (isStorefrontContext) {
+          // Storefront access control
+          if (isCustomer) {
+            // Customers can access storefront - no redirect needed
+            return;
+          } else if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
+            // Store owners cannot access storefront - redirect to dashboard
+            navigate(createPageUrl("Dashboard"));
+            return;
+          }
+        } else if (isDashboardContext) {
+          // Dashboard access control
+          if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
+            // Store owners can access dashboard - no redirect needed
+            return;
+          } else if (isCustomer) {
+            // Customers cannot access dashboard - redirect to customer dashboard or storefront
+            if (currentPath === '/customerdashboard') {
+              return; // Allow access to customer dashboard
+            } else {
+              navigate(createPageUrl("Storefront"));
+              return;
+            }
+          }
+        } else {
+          // Default routing for other pages
+          if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
+            navigate(createPageUrl("Dashboard"));
+          } else if (isCustomer) {
+            navigate(createPageUrl("Storefront"));
+          }
         }
         // Default fallback to Dashboard
         else {
@@ -223,11 +255,29 @@ export default function Auth() {
         if (response.success) {
           // Check user role from response and redirect accordingly
           const userRole = response.data?.user?.role || response.user?.role;
+          
+          // Determine current context (storefront vs dashboard)
+          const currentPath = window.location.pathname.toLowerCase();
+          const storefrontPages = ['/landing', '/', '/storefront', '/productdetail', '/cart', '/checkout', '/order-success', '/ordersuccess'];
+          const isStorefrontContext = storefrontPages.some(page => currentPath.startsWith(page));
 
-          if (userRole === 'store_owner' || userRole === 'admin' || !userRole) {
-            navigate(createPageUrl("Dashboard"));
-          } else if (userRole === 'customer') {
-            navigate(createPageUrl("CustomerDashboard"));
+          // Role-based redirection with context awareness
+          if (userRole === 'customer') {
+            if (isStorefrontContext) {
+              // Customer logging in from storefront - stay on storefront
+              navigate(createPageUrl("Storefront"));
+            } else {
+              // Customer trying to access dashboard - redirect to customer dashboard
+              navigate(createPageUrl("CustomerDashboard"));
+            }
+          } else if (userRole === 'store_owner' || userRole === 'admin' || !userRole) {
+            if (isStorefrontContext) {
+              // Store owner trying to access storefront - redirect to dashboard
+              navigate(createPageUrl("Dashboard"));
+            } else {
+              // Store owner accessing dashboard - allow access
+              navigate(createPageUrl("Dashboard"));
+            }
           } else {
             // Fallback to checkAuthStatus
             checkAuthStatus();
