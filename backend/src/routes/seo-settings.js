@@ -35,8 +35,9 @@ router.get('/', async (req, res) => {
         if (!store || store.owner_email !== req.user.email) {
           return res.status(403).json({
             success: false,
-          message: 'Access denied'
-        });
+            message: 'Access denied'
+          });
+        }
       }
     }
 

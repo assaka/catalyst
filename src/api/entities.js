@@ -16,11 +16,22 @@ class BaseEntity {
       const publicFriendlyEndpoints = ['tax', 'attributes', 'product-labels', 'attribute-sets', 'seo-templates', 'seo-settings', 'cookie-consent-settings'];
       const isPublicFriendly = publicFriendlyEndpoints.includes(this.endpoint);
       
+      const hasToken = apiClient.getToken();
+      const isLoggedOut = apiClient.isLoggedOut;
+      
+      // For guest users (first-time visitors), always use public endpoints for public-friendly entities
+      const userLoggedOutFlag = localStorage.getItem('user_logged_out');
+      const isGuestUser = !hasToken && userLoggedOutFlag !== 'true'; // No token and never explicitly logged out
+      
+      console.log(`🔍 BaseEntity ${this.endpoint}: hasToken=${!!hasToken}, isLoggedOut=${isLoggedOut}, isPublicFriendly=${isPublicFriendly}, isGuestUser=${isGuestUser}, userLoggedOutFlag=${userLoggedOutFlag}`);
+      
       let response;
-      if (isPublicFriendly && (!apiClient.getToken() || apiClient.isLoggedOut)) {
+      if (isPublicFriendly && (!hasToken || isLoggedOut || isGuestUser)) {
+        console.log(`✅ Using PUBLIC endpoint for ${this.endpoint}`);
         // Use public endpoint for unauthenticated requests to public-friendly endpoints
         response = await apiClient.publicRequest('GET', url);
       } else {
+        console.log(`🔒 Using AUTHENTICATED endpoint for ${this.endpoint}`);
         // Use regular authenticated endpoint
         response = await apiClient.get(url);
       }
