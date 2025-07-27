@@ -676,7 +676,7 @@ export default function OrderSuccess() {
                   {order.delivery_date ? (
                     <>You'll receive your order on {formatDate(order.delivery_date)}{order.delivery_time_slot ? ` during ${order.delivery_time_slot}` : ''}.</>
                   ) : (
-                    'You'll receive your order according to the shipping method selected.'
+                    "You'll receive your order according to the shipping method selected."
                   )}
                   {order.delivery_instructions && (
                     <span className="block mt-1 font-medium">Special instructions: {order.delivery_instructions}</span>
