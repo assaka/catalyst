@@ -594,8 +594,8 @@ app.use('/api/public/coupons', couponRoutes);
 // Authenticated routes (keep existing for admin/authenticated users)
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/stores', authMiddleware, storeRoutes);
-app.use('/api/products', authMiddleware, productRoutes);
-app.use('/api/categories', authMiddleware, categoryRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Public order lookup by payment reference (MUST be before authenticated routes)
 app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) => {

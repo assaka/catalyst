@@ -15,9 +15,10 @@ const checkStoreOwnership = async (storeId, userEmail, userRole) => {
 // @route   GET /api/products
 // @desc    Get products (authenticated users only)
 // @access  Private
-const authorize = require('../middleware/auth').authorize;
+const authMiddleware = require('../middleware/auth');
+const { authorize } = require('../middleware/auth');
 
-router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { page = 1, limit = 10, store_id, category_id, status, search, slug, sku, id } = req.query;
     const offset = (page - 1) * limit;
@@ -119,7 +120,7 @@ router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
 // @route   GET /api/products/:id
 // @desc    Get product by ID
 // @access  Private
-router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
+router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id, {
       include: [{
@@ -159,7 +160,7 @@ router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
 // @route   POST /api/products
 // @desc    Create new product
 // @access  Private
-router.post('/', authorize(['admin', 'store_owner']), [
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
   body('name').notEmpty().withMessage('Product name is required'),
   body('sku').notEmpty().withMessage('SKU is required'),
   body('price').isDecimal().withMessage('Price must be a valid decimal'),
@@ -204,7 +205,7 @@ router.post('/', authorize(['admin', 'store_owner']), [
 // @route   PUT /api/products/:id
 // @desc    Update product
 // @access  Private
-router.put('/:id', authorize(['admin', 'store_owner']), [
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
   body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
   body('sku').optional().notEmpty().withMessage('SKU cannot be empty'),
   body('price').optional().isDecimal().withMessage('Price must be a valid decimal')
@@ -259,7 +260,7 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
 // @route   DELETE /api/products/:id
 // @desc    Delete product
 // @access  Private
-router.delete('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id, {
       include: [{

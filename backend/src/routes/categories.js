@@ -15,9 +15,10 @@ const checkStoreOwnership = async (storeId, userEmail, userRole) => {
 // @route   GET /api/categories
 // @desc    Get categories (authenticated users only)
 // @access  Private
-const authorize = require('../middleware/auth').authorize;
+const authMiddleware = require('../middleware/auth');
+const { authorize } = require('../middleware/auth');
 
-router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
+router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { page = 1, limit = 10, store_id, parent_id, search } = req.query;
     const offset = (page - 1) * limit;
@@ -78,7 +79,7 @@ router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
 // @route   GET /api/categories/:id
 // @desc    Get category by ID
 // @access  Private
-router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
+router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const category = await Category.findByPk(req.params.id, {
       include: [{
@@ -118,7 +119,7 @@ router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
 // @route   POST /api/categories
 // @desc    Create new category
 // @access  Private
-router.post('/', authorize(['admin', 'store_owner']), [
+router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
   body('name').notEmpty().withMessage('Category name is required'),
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID')
 ], async (req, res) => {
@@ -161,7 +162,7 @@ router.post('/', authorize(['admin', 'store_owner']), [
 // @route   PUT /api/categories/:id
 // @desc    Update category
 // @access  Private
-router.put('/:id', authorize(['admin', 'store_owner']), [
+router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
   body('name').optional().notEmpty().withMessage('Category name cannot be empty')
 ], async (req, res) => {
   try {
@@ -214,7 +215,7 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
 // @route   DELETE /api/categories/:id
 // @desc    Delete category
 // @access  Private
-router.delete('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
+router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const category = await Category.findByPk(req.params.id, {
       include: [{
