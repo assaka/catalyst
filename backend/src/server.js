@@ -1255,6 +1255,7 @@ app.use('/api/public/attribute-sets', attributeSetRoutes);
 app.use('/api/public/seo-templates', seoTemplateRoutes);
 app.use('/api/public/seo-settings', seoSettingsRoutes);
 app.use('/api/public/cookie-consent-settings', cookieConsentRoutes);
+app.use('/api/public/cms-blocks', cmsBlockRoutes);
 
 // Authenticated routes (keep existing for admin/authenticated users)
 app.use('/api/users', authMiddleware, userRoutes);

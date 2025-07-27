@@ -4,6 +4,42 @@ const { CmsBlock, Store } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
+// @route   GET /api/public/cms-blocks
+// @desc    Get active CMS blocks for public display
+// @access  Public
+router.get('/public', async (req, res) => {
+  try {
+    const { store_id } = req.query;
+    
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    const blocks = await CmsBlock.findAll({
+      where: { 
+        store_id,
+        is_active: true
+      },
+      order: [['sort_order', 'ASC'], ['title', 'ASC']],
+      attributes: ['id', 'title', 'identifier', 'content', 'placement', 'sort_order', 'is_active']
+    });
+
+    res.json({
+      success: true,
+      data: blocks
+    });
+  } catch (error) {
+    console.error('Get public CMS blocks error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // Helper function to check store ownership
 const checkStoreOwnership = async (storeId, userEmail, userRole) => {
   if (userRole === 'admin') return true;

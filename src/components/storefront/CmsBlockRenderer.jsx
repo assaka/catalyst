@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// CmsBlock API temporarily disabled until backend supports public cms-blocks
+import { CmsBlock } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 // Global cache and request queue to prevent duplicate requests
 const cmsBlockCache = new Map();
@@ -34,43 +35,58 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
   }
 };
 
-const loadCmsBlocksWithCache = async () => {
+const loadCmsBlocksWithCache = async (storeId) => {
+  const cacheKey = `store_${storeId}`;
+  
   // Check cache first
-  if (cmsBlockCache.has('all')) {
-    return cmsBlockCache.get('all');
+  if (cmsBlockCache.has(cacheKey)) {
+    return cmsBlockCache.get(cacheKey);
   }
 
   // Check if there's already a pending request
-  if (pendingRequests.has('all')) {
-    return pendingRequests.get('all');
+  if (pendingRequests.has(cacheKey)) {
+    return pendingRequests.get(cacheKey);
   }
 
-  // Create new request - CmsBlock.findAll() disabled until backend supports public cms-blocks
-  const requestPromise = Promise.resolve([])
+  // Create new request to load CMS blocks
+  const requestPromise = retryApiCall(async () => {
+    console.log('🔄 Loading CMS blocks for store:', storeId);
+    const blocks = await CmsBlock.findAll({ store_id: storeId });
+    console.log('✅ Loaded CMS blocks:', blocks?.length || 0);
+    return blocks;
+  })
     .then(blocks => {
       const result = blocks || [];
-      cmsBlockCache.set('all', result);
-      pendingRequests.delete('all');
+      cmsBlockCache.set(cacheKey, result);
+      pendingRequests.delete(cacheKey);
       return result;
     })
     .catch(error => {
       console.error("Error loading CMS blocks:", error);
-      pendingRequests.delete('all');
+      pendingRequests.delete(cacheKey);
       return [];
     });
 
-  pendingRequests.set('all', requestPromise);
+  pendingRequests.set(cacheKey, requestPromise);
   return requestPromise;
 };
 
 export default function CmsBlockRenderer({ position, page }) {
   const [blocks, setBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { selectedStore } = useStoreSelection();
 
   useEffect(() => {
     const loadBlocks = async () => {
       try {
-        const allBlocks = await loadCmsBlocksWithCache();
+        if (!selectedStore?.id) {
+          console.log('❌ No store selected, cannot load CMS blocks');
+          setBlocks([]);
+          setLoading(false);
+          return;
+        }
+
+        const allBlocks = await loadCmsBlocksWithCache(selectedStore.id);
         
         const filteredBlocks = allBlocks.filter(block => {
           if (!block.is_active) return false;
@@ -100,7 +116,7 @@ export default function CmsBlockRenderer({ position, page }) {
     };
 
     loadBlocks();
-  }, [position, page]);
+  }, [position, page, selectedStore?.id]);
 
   if (loading) {
     return null; // Don't show loading spinner for CMS blocks
