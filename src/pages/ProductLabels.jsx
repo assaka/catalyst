@@ -59,6 +59,21 @@ export default function ProductLabels() {
       return;
     }
 
+    // Validate required fields
+    if (!labelData.name || !labelData.name.trim()) {
+      console.error("Cannot save product label: Name is required.");
+      alert("Please enter a name for the product label.");
+      return;
+    }
+
+    if (!labelData.text || !labelData.text.trim()) {
+      console.error("Cannot save product label: Display text is required.");
+      alert("Please enter display text for the product label.");
+      return;
+    }
+
+    console.log('🔍 Submitting product label data:', labelData);
+
     try {
       if (editingLabel) {
         await ProductLabel.update(editingLabel.id, { ...labelData, store_id: storeId });
@@ -243,9 +258,12 @@ export default function ProductLabels() {
         )}
 
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="product-label-description">
             <DialogHeader>
               <DialogTitle>{editingLabel ? 'Edit Product Label' : 'Add New Product Label'}</DialogTitle>
+              <p id="product-label-description" className="text-sm text-gray-600">
+                {editingLabel ? 'Modify the settings for this product label.' : 'Create a new label to highlight products with special attributes or conditions.'}
+              </p>
             </DialogHeader>
             <ProductLabelForm
               label={editingLabel}
