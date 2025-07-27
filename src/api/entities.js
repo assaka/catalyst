@@ -250,6 +250,42 @@ class ProductService extends BaseEntity {
     super('products');
   }
 
+  // Public product access (no authentication required)
+  async filter(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `products?${queryString}` : 'products';
+      
+      const response = await apiClient.publicRequest('GET', url);
+      
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+      
+      return result;
+    } catch (error) {
+      console.error(`ProductService.filter() error:`, error.message);
+      return [];
+    }
+  }
+
+  // Public findAll (no authentication required)
+  async findAll(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `products?${queryString}` : 'products';
+      
+      const response = await apiClient.publicRequest('GET', url);
+      
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+      
+      return result;
+    } catch (error) {
+      console.error(`ProductService.findAll() error:`, error.message);
+      return [];
+    }
+  }
+
   // Search products
   async search(query, params = {}) {
     const result = await this.findAll({ ...params, search: query });
@@ -273,6 +309,42 @@ class ProductService extends BaseEntity {
 class CategoryService extends BaseEntity {
   constructor() {
     super('categories');
+  }
+
+  // Public category access (no authentication required)
+  async filter(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `categories?${queryString}` : 'categories';
+      
+      const response = await apiClient.publicRequest('GET', url);
+      
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+      
+      return result;
+    } catch (error) {
+      console.error(`CategoryService.filter() error:`, error.message);
+      return [];
+    }
+  }
+
+  // Public findAll (no authentication required)
+  async findAll(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `categories?${queryString}` : 'categories';
+      
+      const response = await apiClient.publicRequest('GET', url);
+      
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+      
+      return result;
+    } catch (error) {
+      console.error(`CategoryService.findAll() error:`, error.message);
+      return [];
+    }
   }
 
   // Get root categories

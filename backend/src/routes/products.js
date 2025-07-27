@@ -13,13 +13,14 @@ const checkStoreOwnership = async (storeId, userEmail, userRole) => {
 };
 
 // @route   GET /api/products
-// @desc    Get products
+// @desc    Get products (authenticated users only)
 // @access  Private
-router.get('/', async (req, res) => {
+const authorize = require('../middleware/auth').authorize;
+
+router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { page = 1, limit = 10, store_id, category_id, status, search, slug, sku, id } = req.query;
     const offset = (page - 1) * limit;
-
 
     const where = {};
     
@@ -118,7 +119,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/products/:id
 // @desc    Get product by ID
 // @access  Private
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id, {
       include: [{
@@ -158,7 +159,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/products
 // @desc    Create new product
 // @access  Private
-router.post('/', [
+router.post('/', authorize(['admin', 'store_owner']), [
   body('name').notEmpty().withMessage('Product name is required'),
   body('sku').notEmpty().withMessage('SKU is required'),
   body('price').isDecimal().withMessage('Price must be a valid decimal'),
@@ -203,7 +204,7 @@ router.post('/', [
 // @route   PUT /api/products/:id
 // @desc    Update product
 // @access  Private
-router.put('/:id', [
+router.put('/:id', authorize(['admin', 'store_owner']), [
   body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
   body('sku').optional().notEmpty().withMessage('SKU cannot be empty'),
   body('price').optional().isDecimal().withMessage('Price must be a valid decimal')
@@ -258,7 +259,7 @@ router.put('/:id', [
 // @route   DELETE /api/products/:id
 // @desc    Delete product
 // @access  Private
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const product = await Product.findByPk(req.params.id, {
       include: [{

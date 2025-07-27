@@ -1,0 +1,84 @@
+const express = require('express');
+const { Category, Store } = require('../models');
+const { Op } = require('sequelize');
+const router = express.Router();
+
+// @route   GET /api/public/categories
+// @desc    Get all active categories (no authentication required)
+// @access  Public
+router.get('/', async (req, res) => {
+  try {
+    const { page = 1, limit = 100, store_id, parent_id, search } = req.query;
+    const offset = (page - 1) * limit;
+
+    const where = {
+      is_active: true // Only show active categories publicly
+    };
+    
+    if (store_id) where.store_id = store_id;
+    if (parent_id !== undefined) where.parent_id = parent_id;
+    
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const { count, rows } = await Category.findAndCountAll({
+      where,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [['sort_order', 'ASC'], ['name', 'ASC']],
+      include: [{
+        model: Store,
+        as: 'store',
+        attributes: ['id', 'name', 'slug']
+      }]
+    });
+
+    // Return just the array for public requests (for compatibility)
+    res.json(rows);
+  } catch (error) {
+    console.error('Get public categories error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   GET /api/public/categories/:id
+// @desc    Get single category by ID (no authentication required)
+// @access  Public
+router.get('/:id', async (req, res) => {
+  try {
+    const category = await Category.findByPk(req.params.id, {
+      include: [{
+        model: Store,
+        as: 'store',
+        attributes: ['id', 'name', 'slug']
+      }]
+    });
+    
+    if (!category || !category.is_active) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: category
+    });
+  } catch (error) {
+    console.error('Get public category error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+module.exports = router;

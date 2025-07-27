@@ -13,9 +13,11 @@ const checkStoreOwnership = async (storeId, userEmail, userRole) => {
 };
 
 // @route   GET /api/categories
-// @desc    Get categories
+// @desc    Get categories (authenticated users only)
 // @access  Private
-router.get('/', async (req, res) => {
+const authorize = require('../middleware/auth').authorize;
+
+router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const { page = 1, limit = 10, store_id, parent_id, search } = req.query;
     const offset = (page - 1) * limit;
@@ -76,7 +78,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/categories/:id
 // @desc    Get category by ID
 // @access  Private
-router.get('/:id', async (req, res) => {
+router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const category = await Category.findByPk(req.params.id, {
       include: [{
@@ -116,7 +118,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/categories
 // @desc    Create new category
 // @access  Private
-router.post('/', [
+router.post('/', authorize(['admin', 'store_owner']), [
   body('name').notEmpty().withMessage('Category name is required'),
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID')
 ], async (req, res) => {
@@ -159,7 +161,7 @@ router.post('/', [
 // @route   PUT /api/categories/:id
 // @desc    Update category
 // @access  Private
-router.put('/:id', [
+router.put('/:id', authorize(['admin', 'store_owner']), [
   body('name').optional().notEmpty().withMessage('Category name cannot be empty')
 ], async (req, res) => {
   try {
@@ -212,7 +214,7 @@ router.put('/:id', [
 // @route   DELETE /api/categories/:id
 // @desc    Delete category
 // @access  Private
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
     const category = await Category.findByPk(req.params.id, {
       include: [{

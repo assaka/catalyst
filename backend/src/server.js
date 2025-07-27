@@ -18,6 +18,8 @@ const userRoutes = require('./routes/users');
 const storeRoutes = require('./routes/stores');
 const productRoutes = require('./routes/products');
 const categoryRoutes = require('./routes/categories');
+const publicProductRoutes = require('./routes/publicProducts');
+const publicCategoryRoutes = require('./routes/publicCategories');
 const orderRoutes = require('./routes/orders');
 const couponRoutes = require('./routes/coupons');
 const attributeRoutes = require('./routes/attributes');
@@ -581,8 +583,8 @@ app.use('/auth', authRoutes); // Fallback for legacy paths
 
 // Public routes for guest access
 app.use('/api/public/stores', storeRoutes);
-app.use('/api/public/products', productRoutes);
-app.use('/api/public/categories', categoryRoutes);
+app.use('/api/public/products', publicProductRoutes);
+app.use('/api/public/categories', publicCategoryRoutes);
 app.use('/api/public/shipping', shippingRoutes);
 app.use('/api/public/tax', taxRoutes);
 app.use('/api/public/delivery', deliveryRoutes);
