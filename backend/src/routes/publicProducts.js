@@ -15,9 +15,41 @@ router.get('/', async (req, res) => {
     console.log('📊 Featured param:', featured, typeof featured);
     console.log('🔍 Request URL:', req.originalUrl);
 
-    const where = {};
+    const where = {
+      status: 'active',  // Only show active products in public API
+      visibility: 'visible'  // Only show visible products
+    };
     
-    if (store_id) where.store_id = store_id;
+    if (store_id) {
+      where.store_id = store_id;
+      
+      // Check store's display_out_of_stock setting
+      try {
+        const store = await Store.findByPk(store_id, {
+          attributes: ['settings']
+        });
+        
+        const displayOutOfStock = store?.settings?.display_out_of_stock !== false; // Default to true
+        
+        if (!displayOutOfStock) {
+          // Filter out products that are out of stock
+          where[Op.or] = [
+            { infinite_stock: true },  // Products with infinite stock are always available
+            { manage_stock: false },   // Products not managing stock are always available
+            {
+              [Op.and]: [
+                { manage_stock: true },
+                { stock_quantity: { [Op.gt]: 0 } }  // In stock
+              ]
+            }
+          ];
+        }
+        
+        console.log(`📦 Stock filtering: display_out_of_stock=${displayOutOfStock}`);
+      } catch (error) {
+        console.warn('Could not load store settings for stock filtering:', error.message);
+      }
+    }
     if (category_id) {
       // Filter by category using JSON array field
       where.category_ids = {

@@ -720,9 +720,18 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
 
     // Update the store directly
     if (req.body.settings) {
-      console.log('🔧 Updating settings field directly');
-      await store.update({ settings: req.body.settings });
-      console.log('✅ Settings field updated');
+      console.log('🔧 Merging settings with existing store settings');
+      
+      // Merge with existing settings to avoid overwriting other settings
+      const currentSettings = store.settings || {};
+      const mergedSettings = {
+        ...currentSettings,
+        ...req.body.settings
+      };
+      
+      console.log('🔄 Merged settings:', JSON.stringify(mergedSettings));
+      await store.update({ settings: mergedSettings });
+      console.log('✅ Settings field updated with merge');
     }
     
     // Update other fields if they exist

@@ -120,6 +120,8 @@ export default function StockSettings() {
         }
       };
 
+      console.log('🔧 StockSettings: Saving payload:', JSON.stringify(payload, null, 2));
+
 
       const result = await retryApiCall(() => Store.update(storeId, payload));
       
