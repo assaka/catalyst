@@ -97,7 +97,15 @@ router.get('/:id', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     console.log('🔍 Creating product label with data:', req.body);
-    const label = await ProductLabel.create(req.body);
+    
+    // Ensure slug is generated if not provided (fallback for hook issues)
+    const labelData = { ...req.body };
+    if (!labelData.slug && labelData.name) {
+      labelData.slug = labelData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      console.log('🔧 Fallback slug generation:', labelData.slug);
+    }
+    
+    const label = await ProductLabel.create(labelData);
     console.log('✅ Product label created successfully:', label);
     res.status(201).json({
       success: true,
