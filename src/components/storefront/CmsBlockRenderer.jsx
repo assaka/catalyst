@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CmsBlock } from '@/api/entities';
+// CmsBlock API temporarily disabled until backend supports public cms-blocks
 
 // Global cache and request queue to prevent duplicate requests
 const cmsBlockCache = new Map();
@@ -46,7 +46,7 @@ const loadCmsBlocksWithCache = async () => {
   }
 
   // Create new request
-  const requestPromise = retryApiCall(() => CmsBlock.findAll())
+  const requestPromise = Promise.resolve([]); // Disabled CmsBlock.findAll() until backend supports public cms-blocks
     .then(blocks => {
       const result = blocks || [];
       cmsBlockCache.set('all', result);

@@ -26,22 +26,12 @@ export const trackEvent = (eventName, eventData = {}) => {
   pushToDataLayer(event);
 };
 
-// Customer Activity Tracking
+// Customer Activity Tracking - temporarily disabled until backend supports it
 export const trackActivity = async (activityType, data = {}) => {
   try {
-    const { CustomerActivity } = await import('@/api/entities');
-    const { User } = await import('@/api/entities');
-    
-    // Get user info
-    let userId = null;
-    let sessionId = localStorage.getItem('guest_session_id');
-    
-    try {
-      const user = await User.me();
-      userId = user?.id;
-    } catch (error) {
-      // User not logged in
-    }
+    // Activity tracking disabled until backend provides proper customer activity endpoints
+    console.debug('Activity tracking disabled:', activityType, data);
+    return;
     
     if (!sessionId) {
       sessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
