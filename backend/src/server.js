@@ -551,8 +551,15 @@ app.post('/debug/seed', async (req, res) => {
       ];
 
       for (const productData of sampleProducts) {
-        await Product.create(productData);
-        productsCreated++;
+        try {
+          console.log('Creating product:', productData.name);
+          await Product.create(productData);
+          productsCreated++;
+          console.log('✅ Product created successfully');
+        } catch (prodError) {
+          console.error('❌ Product creation failed:', prodError.message);
+          throw prodError;
+        }
       }
     }
 
@@ -619,10 +626,18 @@ app.post('/debug/seed', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Seeding failed:', error);
+    
+    // Provide more detailed error information
+    let errorDetails = error.message;
+    if (error.errors && Array.isArray(error.errors)) {
+      errorDetails = error.errors.map(err => `${err.path}: ${err.message}`).join(', ');
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Sample data seeding failed',
-      error: error.message
+      error: errorDetails,
+      fullError: error.name
     });
   }
 });
