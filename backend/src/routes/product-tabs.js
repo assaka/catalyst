@@ -72,7 +72,10 @@ router.get('/:id', async (req, res) => {
 router.post('/', auth, [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
   body('name').trim().notEmpty().withMessage('Name is required'),
+  body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_sets']).withMessage('Invalid tab type'),
   body('content').optional().isString(),
+  body('attribute_ids').optional().isArray().withMessage('Attribute IDs must be an array'),
+  body('attribute_set_ids').optional().isArray().withMessage('Attribute set IDs must be an array'),
   body('sort_order').optional().isInt({ min: 0 }).withMessage('Sort order must be a non-negative integer'),
   body('is_active').optional().isBoolean()
 ], async (req, res) => {
@@ -85,7 +88,7 @@ router.post('/', auth, [
       });
     }
 
-    const { store_id, name, content, sort_order, is_active } = req.body;
+    const { store_id, name, tab_type, content, attribute_ids, attribute_set_ids, sort_order, is_active } = req.body;
 
     // Check store ownership
     const store = await Store.findByPk(store_id);
@@ -106,7 +109,10 @@ router.post('/', auth, [
     const productTab = await ProductTab.create({
       store_id,
       name,
+      tab_type: tab_type || 'text',
       content: content || '',
+      attribute_ids: attribute_ids || [],
+      attribute_set_ids: attribute_set_ids || [],
       sort_order: sort_order || 0,
       is_active: is_active !== undefined ? is_active : true
     });
@@ -130,7 +136,10 @@ router.post('/', auth, [
 // @access  Private
 router.put('/:id', auth, [
   body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
+  body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_sets']).withMessage('Invalid tab type'),
   body('content').optional().isString(),
+  body('attribute_ids').optional().isArray().withMessage('Attribute IDs must be an array'),
+  body('attribute_set_ids').optional().isArray().withMessage('Attribute set IDs must be an array'),
   body('sort_order').optional().isInt({ min: 0 }).withMessage('Sort order must be a non-negative integer'),
   body('is_active').optional().isBoolean()
 ], async (req, res) => {

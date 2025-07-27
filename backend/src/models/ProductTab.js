@@ -23,9 +23,24 @@ const ProductTab = sequelize.define('ProductTab', {
     type: DataTypes.STRING,
     allowNull: false
   },
+  tab_type: {
+    type: DataTypes.ENUM('text', 'description', 'attributes', 'attribute_sets'),
+    defaultValue: 'text',
+    allowNull: false
+  },
   content: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  attribute_ids: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: []
+  },
+  attribute_set_ids: {
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: []
   },
   sort_order: {
     type: DataTypes.INTEGER,

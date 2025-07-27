@@ -5,11 +5,22 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
-export default function ProductTabForm({ tab, onSubmit, onCancel }) {
+export default function ProductTabForm({ tab, attributes = [], attributeSets = [], onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: "",
+    tab_type: "text",
     content: "",
+    attribute_ids: [],
+    attribute_set_ids: [],
     sort_order: 0,
     is_active: true,
   });
@@ -19,7 +30,10 @@ export default function ProductTabForm({ tab, onSubmit, onCancel }) {
     if (tab) {
       setFormData({
         name: tab.name || "",
+        tab_type: tab.tab_type || "text",
         content: tab.content || "",
+        attribute_ids: tab.attribute_ids || [],
+        attribute_set_ids: tab.attribute_set_ids || [],
         sort_order: tab.sort_order || 0,
         is_active: tab.is_active ?? true,
       });
@@ -30,6 +44,15 @@ export default function ProductTabForm({ tab, onSubmit, onCancel }) {
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleArrayChange = (field, itemId, isChecked) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: isChecked 
+        ? [...prev[field], itemId]
+        : prev[field].filter(id => id !== itemId)
     }));
   };
 
@@ -78,18 +101,100 @@ export default function ProductTabForm({ tab, onSubmit, onCancel }) {
           </div>
 
           <div>
-            <Label htmlFor="content">Tab Content</Label>
-            <Textarea
-              id="content"
-              value={formData.content}
-              onChange={(e) => handleInputChange("content", e.target.value)}
-              placeholder="Enter the content for this tab..."
-              rows={8}
-            />
+            <Label htmlFor="tab_type">Tab Type *</Label>
+            <Select value={formData.tab_type} onValueChange={(value) => handleInputChange("tab_type", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select tab type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="text">Text Content</SelectItem>
+                <SelectItem value="description">Product Description</SelectItem>
+                <SelectItem value="attributes">Specific Attributes</SelectItem>
+                <SelectItem value="attribute_sets">Attribute Sets</SelectItem>
+              </SelectContent>
+            </Select>
             <p className="text-sm text-gray-500 mt-1">
-              You can use HTML for formatting. This content will be displayed when the tab is clicked.
+              Choose how this tab will display content on product pages
             </p>
           </div>
+
+          {formData.tab_type === 'text' && (
+            <div>
+              <Label htmlFor="content">Tab Content</Label>
+              <Textarea
+                id="content"
+                value={formData.content}
+                onChange={(e) => handleInputChange("content", e.target.value)}
+                placeholder="Enter the content for this tab..."
+                rows={8}
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                You can use HTML for formatting. This content will be displayed when the tab is clicked.
+              </p>
+            </div>
+          )}
+
+          {formData.tab_type === 'attributes' && (
+            <div>
+              <Label>Select Attributes</Label>
+              <div className="grid grid-cols-2 gap-3 mt-2 max-h-60 overflow-y-auto border rounded-md p-3">
+                {attributes.length > 0 ? (
+                  attributes.map((attribute) => (
+                    <div key={attribute.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`attr-${attribute.id}`}
+                        checked={formData.attribute_ids.includes(attribute.id)}
+                        onCheckedChange={(checked) => handleArrayChange("attribute_ids", attribute.id, checked)}
+                      />
+                      <Label htmlFor={`attr-${attribute.id}`} className="text-sm cursor-pointer">
+                        {attribute.name}
+                      </Label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 col-span-2">No attributes available</p>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Selected attributes will be displayed in this tab for each product
+              </p>
+            </div>
+          )}
+
+          {formData.tab_type === 'attribute_sets' && (
+            <div>
+              <Label>Select Attribute Sets</Label>
+              <div className="grid grid-cols-1 gap-3 mt-2 max-h-60 overflow-y-auto border rounded-md p-3">
+                {attributeSets.length > 0 ? (
+                  attributeSets.map((attributeSet) => (
+                    <div key={attributeSet.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`set-${attributeSet.id}`}
+                        checked={formData.attribute_set_ids.includes(attributeSet.id)}
+                        onCheckedChange={(checked) => handleArrayChange("attribute_set_ids", attributeSet.id, checked)}
+                      />
+                      <Label htmlFor={`set-${attributeSet.id}`} className="text-sm cursor-pointer">
+                        {attributeSet.name}
+                      </Label>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">No attribute sets available</p>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                All attributes from selected sets will be displayed in this tab for each product
+              </p>
+            </div>
+          )}
+
+          {formData.tab_type === 'description' && (
+            <div className="bg-blue-50 p-4 rounded-md">
+              <p className="text-sm text-blue-800">
+                This tab will automatically display the product's description. No additional configuration needed.
+              </p>
+            </div>
+          )}
 
           <div>
             <Label htmlFor="sort_order">Sort Order</Label>

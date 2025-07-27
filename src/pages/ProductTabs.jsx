@@ -229,7 +229,14 @@ export default function ProductTabs() {
                     </div>
                     <div>
                       <CardTitle className="text-lg">{tab.name}</CardTitle>
-                      <p className="text-sm text-gray-500">Sort Order: {tab.sort_order || 0}</p>
+                      <p className="text-sm text-gray-500">
+                        {tab.tab_type === 'text' && 'Text Content'}
+                        {tab.tab_type === 'description' && 'Product Description'}
+                        {tab.tab_type === 'attributes' && 'Specific Attributes'}
+                        {tab.tab_type === 'attribute_sets' && 'Attribute Sets'}
+                        {!tab.tab_type && 'Text Content'}
+                      </p>
+                      <p className="text-sm text-gray-400">Sort Order: {tab.sort_order || 0}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -267,11 +274,69 @@ export default function ProductTabs() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {tab.content && (
+                  {tab.tab_type === 'text' && tab.content && (
                     <div>
                       <p className="text-sm text-gray-600 line-clamp-2">
                         {tab.content}
                       </p>
+                    </div>
+                  )}
+
+                  {tab.tab_type === 'description' && (
+                    <div className="bg-blue-50 p-2 rounded">
+                      <p className="text-xs text-blue-700">
+                        Displays product description automatically
+                      </p>
+                    </div>
+                  )}
+
+                  {tab.tab_type === 'attributes' && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Selected Attributes:</p>
+                      {tab.attribute_ids && tab.attribute_ids.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {tab.attribute_ids.slice(0, 3).map((attrId, idx) => {
+                            const attr = attributes.find(a => a.id === attrId);
+                            return (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {attr?.name || `Attr ${attrId.slice(0, 8)}`}
+                              </Badge>
+                            );
+                          })}
+                          {tab.attribute_ids.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{tab.attribute_ids.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400">No attributes selected</p>
+                      )}
+                    </div>
+                  )}
+
+                  {tab.tab_type === 'attribute_sets' && (
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Selected Attribute Sets:</p>
+                      {tab.attribute_set_ids && tab.attribute_set_ids.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {tab.attribute_set_ids.slice(0, 2).map((setId, idx) => {
+                            const attrSet = attributeSets.find(s => s.id === setId);
+                            return (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {attrSet?.name || `Set ${setId.slice(0, 8)}`}
+                              </Badge>
+                            );
+                          })}
+                          {tab.attribute_set_ids.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{tab.attribute_set_ids.length - 2} more
+                            </Badge>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-400">No attribute sets selected</p>
+                      )}
                     </div>
                   )}
 
@@ -323,6 +388,8 @@ export default function ProductTabs() {
             </DialogHeader>
             <ProductTabForm
               tab={editingTab} // Pass the tab being edited (or null for new)
+              attributes={attributes}
+              attributeSets={attributeSets}
               onSubmit={handleSubmit} // Use the combined handleSubmit function
               onCancel={() => {
                 setShowForm(false); // Close the form
