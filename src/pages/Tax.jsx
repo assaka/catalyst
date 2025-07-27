@@ -138,10 +138,13 @@ export default function TaxPage() {
   };
 
   const handleUpdateTax = async (taxData) => {
-    try {
-      const { id, ...updateData } = taxData;
+    if (!selectedTax?.id) {
+      console.error("No tax selected for update");
+      throw new Error("No tax selected for update");
+    }
 
-      await Tax.update(id, updateData);
+    try {
+      await Tax.update(selectedTax.id, taxData);
       await loadData();
       setShowTaxForm(false);
       setSelectedTax(null);

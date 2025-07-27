@@ -36,7 +36,9 @@
       "Bash(for:*)",
       "Bash(do echo \"Cleaning $file\")",
       "Bash(rm:*)",
-      "Bash(npm run test:*)"
+      "Bash(npm run test:*)",
+      "Bash(npm start)",
+      "Bash(pkill:*)"
     ],
     "deny": []
   }
