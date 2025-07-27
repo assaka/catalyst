@@ -851,11 +851,14 @@ async function createOrderFromCheckoutSession(session) {
     }
     
     // Create order items from grouped data
+    console.log('Creating order items for order:', order.id);
+    console.log('Product map has', productMap.size, 'products');
+    
     for (const [productId, productData] of productMap) {
       const optionsTotal = productData.selected_options.reduce((sum, opt) => sum + opt.total, 0);
       const totalPrice = productData.base_total + optionsTotal;
       
-      await OrderItem.create({
+      const orderItemData = {
         order_id: order.id,
         product_id: productData.product_id,
         product_name: productData.product_name,
@@ -866,7 +869,12 @@ async function createOrderFromCheckoutSession(session) {
         product_attributes: {
           selected_options: productData.selected_options
         }
-      });
+      };
+      
+      console.log('Creating order item:', JSON.stringify(orderItemData, null, 2));
+      
+      const createdItem = await OrderItem.create(orderItemData);
+      console.log('Created order item with ID:', createdItem.id);
     }
     
     console.log(`Order created successfully: ${order.order_number}`);

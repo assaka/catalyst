@@ -95,16 +95,21 @@ export default function OrderSuccess() {
         
         if (response.ok && result.success && result.data) {
           const orderData = result.data;
-          console.log('Order data loaded:', orderData);
+          console.log('Full order data loaded:', JSON.stringify(orderData, null, 2));
           setOrder(orderData);
           
           // Set order items from order data
           console.log('OrderItems from API:', orderData.OrderItems);
+          console.log('OrderItems type:', typeof orderData.OrderItems);
+          console.log('OrderItems length:', orderData.OrderItems?.length);
+          
           if (orderData.OrderItems && Array.isArray(orderData.OrderItems)) {
             console.log('Setting order items:', orderData.OrderItems.length, 'items');
+            console.log('Sample order item:', orderData.OrderItems[0]);
             setOrderItems(orderData.OrderItems);
           } else {
             console.log('No OrderItems found in order data');
+            console.log('Available keys in orderData:', Object.keys(orderData));
             setOrderItems([]);
           }
         } else {
@@ -271,6 +276,21 @@ export default function OrderSuccess() {
                   <div className="text-center py-4">
                     <p className="text-gray-500">No order items found.</p>
                     <p className="text-xs text-gray-400 mt-2">Debug: {JSON.stringify(order?.OrderItems?.length || 'undefined')}</p>
+                    {order && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2"
+                        onClick={() => {
+                          console.log('Attempting to reload order items...');
+                          console.log('Current order data:', order);
+                          // Try to reload order data
+                          window.location.reload();
+                        }}
+                      >
+                        🔄 Reload Order Items
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">

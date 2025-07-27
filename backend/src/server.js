@@ -616,6 +616,8 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
     try {
       const { Store, OrderItem, Product } = require('./models');
       
+      console.log('Looking for order items with order_id:', order.id);
+      
       // Get order items separately
       const orderItems = await OrderItem.findAll({
         where: { order_id: order.id },
@@ -625,6 +627,9 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
           required: false
         }]
       });
+      
+      console.log('Found order items:', orderItems.length);
+      console.log('Order items data:', JSON.stringify(orderItems, null, 2));
       
       // Get store separately  
       const store = await Store.findByPk(order.store_id, {
@@ -637,9 +642,10 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
         OrderItems: orderItems
       };
       
-      console.log('Successfully loaded order with details');
+      console.log('Successfully loaded order with details. OrderItems count:', orderItems.length);
     } catch (includeError) {
       console.error('Error loading associations:', includeError.message);
+      console.error('Include error stack:', includeError.stack);
       // Return basic order if associations fail
     }
 
