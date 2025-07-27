@@ -65,12 +65,12 @@ router.post('/register', [
 
     const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency', send_welcome_email = false, address_data } = req.body;
 
-    // Check if user exists
-    const existingUser = await User.findOne({ where: { email } });
+    // Check if user exists with same email and role
+    const existingUser = await User.findOne({ where: { email, role } });
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists'
+        message: `User with this email already exists for the ${role} role`
       });
     }
 
@@ -189,12 +189,71 @@ router.post('/register', [
   }
 });
 
+// @route   POST /api/auth/check-email
+// @desc    Check what roles are available for an email
+// @access  Public
+router.post('/check-email', [
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { email } = req.body;
+    
+    // Find all accounts with this email
+    const users = await User.findAll({ 
+      where: { email },
+      attributes: ['role', 'account_type', 'first_name', 'last_name', 'is_active']
+    });
+    
+    if (!users || users.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          email,
+          accounts: [],
+          hasAccounts: false
+        }
+      });
+    }
+    
+    const accounts = users.filter(user => user.is_active).map(user => ({
+      role: user.role,
+      account_type: user.account_type,
+      name: `${user.first_name} ${user.last_name}`
+    }));
+    
+    res.json({
+      success: true,
+      data: {
+        email,
+        accounts,
+        hasAccounts: accounts.length > 0,
+        multipleAccounts: accounts.length > 1
+      }
+    });
+  } catch (error) {
+    console.error('Check email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
 router.post('/login', [
   body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
   body('password').notEmpty().withMessage('Password is required'),
+  body('role').optional().isIn(['admin', 'store_owner', 'customer']).withMessage('Invalid role'),
   body('rememberMe').optional().isBoolean().withMessage('Remember me must be a boolean')
 ], async (req, res) => {
   try {
@@ -206,7 +265,7 @@ router.post('/login', [
       });
     }
 
-    const { email, password, rememberMe } = req.body;
+    const { email, password, role, rememberMe } = req.body;
     const ipAddress = req.ip || req.connection.remoteAddress;
 
     // Check rate limiting
@@ -218,9 +277,20 @@ router.post('/login', [
       });
     }
 
-    // Find user
-    const user = await User.findOne({ where: { email } });
-    if (!user) {
+    // Find users with this email, prioritizing the specified role if provided
+    const whereClause = { email };
+    if (role) {
+      whereClause.role = role;
+    }
+    
+    let users = await User.findAll({ where: whereClause });
+    
+    // If no users found with specific role, try all users with this email
+    if (role && (!users || users.length === 0)) {
+      users = await User.findAll({ where: { email } });
+    }
+    
+    if (!users || users.length === 0) {
       // Log failed attempt
       await LoginAttempt.create({
         email,
@@ -234,9 +304,33 @@ router.post('/login', [
       });
     }
 
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
+    // Try to find a user account that matches the password
+    // If role is specified, prioritize that role
+    let authenticatedUser = null;
+    
+    if (role) {
+      // First try the specified role
+      const roleUser = users.find(u => u.role === role);
+      if (roleUser) {
+        const isMatch = await roleUser.comparePassword(password);
+        if (isMatch) {
+          authenticatedUser = roleUser;
+        }
+      }
+    }
+    
+    // If no role specified or role-specific auth failed, try all accounts
+    if (!authenticatedUser) {
+      for (const user of users) {
+        const isMatch = await user.comparePassword(password);
+        if (isMatch) {
+          authenticatedUser = user;
+          break;
+        }
+      }
+    }
+
+    if (!authenticatedUser) {
       // Log failed attempt
       await LoginAttempt.create({
         email,
@@ -251,12 +345,15 @@ router.post('/login', [
     }
 
     // Check if user is active
-    if (!user.is_active) {
+    if (!authenticatedUser.is_active) {
       return res.status(400).json({
         success: false,
         message: 'Account is inactive'
       });
     }
+
+    // Use the authenticated user
+    const user = authenticatedUser;
 
     // Log successful attempt
     await LoginAttempt.create({
