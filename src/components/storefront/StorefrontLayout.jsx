@@ -3,10 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { handleLogout } from '@/utils/auth';
-import { Category } from '@/api/entities';
-import { Language } from '@/api/entities';
-import { StorePlugin } from '@/api/entities';
-import { User, Auth } from '@/api/entities';
+import { StorefrontCategory } from '@/api/storefront-entities';
+import { CustomerAuth } from '@/api/storefront-entities';
 import { DeliverySettings } from '@/api/entities';
 import { ShoppingBag, User as UserIcon, Globe, Menu, Search, ChevronDown, Settings, Package, LogOut, X } from "lucide-react";
 import { Button } from '@/components/ui/button';
@@ -89,14 +87,12 @@ export default function StorefrontLayout({ children }) {
             if (loading || !store) return;
 
             try {
-                await delay(200 + Math.random() * 300);
-                const langData = await retryApiCall(() => Language.filter({ is_active: true }));
-                setLanguages(Array.isArray(langData) ? langData : []);
+                // Languages feature temporarily disabled for storefront
+                setLanguages([]);
 
-                await delay(200 + Math.random() * 300);
+                // Google Tag Manager plugin temporarily disabled
                 try {
-                    const plugins = await retryApiCall(() => StorePlugin.getPublic({ plugin_slug: 'google-tag-manager' }), 2, 1000, []);
-                    if (Array.isArray(plugins) && plugins.length > 0 && plugins[0].configuration?.gtm_script) {
+                    if (false) { // Disabled until backend supports public plugin endpoints
                         setGtmScript(plugins[0].configuration.gtm_script);
                     }
                 } catch (error) {

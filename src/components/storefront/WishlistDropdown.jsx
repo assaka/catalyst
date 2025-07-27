@@ -3,9 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Wishlist } from '@/api/entities';
-import { Product } from '@/api/entities';
-import { User } from '@/api/entities';
+import { CustomerWishlist, StorefrontProduct, CustomerAuth } from '@/api/storefront-entities';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useStore } from '@/components/storefront/StoreProvider'; // FIXED: Corrected import path
@@ -34,14 +32,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 // --- End of helper functions ---
 
-const getSessionId = () => {
-  let sid = localStorage.getItem('guest_session_id');
-  if (!sid) {
-    sid = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('guest_session_id', sid);
-  }
-  return sid;
-};
+// Session handling removed - now using proper customer authentication
 
 export default function WishlistDropdown() {
   const { store } = useStore(); // Added store context
@@ -53,19 +44,25 @@ export default function WishlistDropdown() {
   const loadWishlistItems = async () => {
     try {
       setLoading(true);
-      const currentUser = await User.me().catch(() => null);
-      setUser(currentUser); // Update user state
+      
+      // Only load wishlist if customer is authenticated
+      if (!CustomerAuth.isAuthenticated()) {
+        setWishlistItems([]);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
 
-      const sessionId = getSessionId();
-      const filter = currentUser?.id ? { user_id: currentUser.id } : { session_id: sessionId };
+      const currentUser = await CustomerAuth.me().catch(() => null);
+      setUser(currentUser);
 
-      const result = await retryApiCall(() => Wishlist.filter(filter));
+      const result = await retryApiCall(() => CustomerWishlist.getItems());
       const items = Array.isArray(result) ? result : [];
 
       if (items.length > 0) {
         const productIds = [...new Set(items.map(item => item.product_id))];
         await delay(500); // Stagger calls
-        const productResult = await retryApiCall(() => Product.filter({ id: { $in: productIds } }));
+        const productResult = await retryApiCall(() => StorefrontProduct.filter({ id: { $in: productIds } }));
         const products = Array.isArray(productResult) ? productResult : [];
 
         const productLookup = products.reduce((acc, product) => {
@@ -107,16 +104,14 @@ export default function WishlistDropdown() {
   }, [store?.id]); // Dependency on store.id to trigger reload when store changes
 
   const handleRemoveFromWishlist = async (productId) => {
-    const sessionId = getSessionId();
-    const filter = user?.id ? { user_id: user.id, product_id: productId } : { session_id: sessionId, product_id: productId };
-
     try {
-      const result = await retryApiCall(() => Wishlist.filter(filter));
-      const existingItems = Array.isArray(result) ? result : [];
-      if (existingItems.length > 0) {
-        await retryApiCall(() => Wishlist.delete(existingItems[0].id));
-        window.dispatchEvent(new CustomEvent('wishlistUpdated')); // Dispatch global event to trigger reload
+      if (!CustomerAuth.isAuthenticated()) {
+        console.warn("Cannot remove from wishlist: Customer not authenticated");
+        return;
       }
+
+      await retryApiCall(() => CustomerWishlist.removeItem(productId));
+      window.dispatchEvent(new CustomEvent('wishlistUpdated')); // Dispatch global event to trigger reload
     } catch (error) {
       console.error("WishlistDropdown: Error removing item from wishlist:", error);
     }
