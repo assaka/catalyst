@@ -176,18 +176,22 @@ export const StoreProvider = ({ children }) => {
       const stores = await cachedApiCall(storeCacheKey, async () => {
         if (storeIdentifier) {
           try {
+            console.log(`🔍 StoreProvider: Looking for store with slug: ${storeIdentifier}`);
             const result = await Store.filter({ slug: storeIdentifier });
+            console.log(`📊 StoreProvider: Store.filter result:`, result);
             return Array.isArray(result) ? result : [];
           } catch (error) {
-            console.error(`StoreProvider: Store.filter failed for slug:`, error);
+            console.error(`❌ StoreProvider: Store.filter failed for slug:`, error);
             return [];
           }
         } else {
           try {
+            console.log(`🔍 StoreProvider: Getting first store (no slug specified)`);
             const result = await Store.findAll({ limit: 1 });
+            console.log(`📊 StoreProvider: Store.findAll result:`, result);
             return Array.isArray(result) ? result : [];
           } catch (error) {
-            console.error(`StoreProvider: Store.findAll failed:`, error);
+            console.error(`❌ StoreProvider: Store.findAll failed:`, error);
             return [];
           }
         }
@@ -196,9 +200,14 @@ export const StoreProvider = ({ children }) => {
 
       const selectedStore = stores?.[0];
       
+      console.log(`🏢 StoreProvider: Selected store:`, selectedStore);
+      console.log(`📊 StoreProvider: Total stores found: ${stores?.length || 0}`);
       
       if (!selectedStore) {
-        console.warn('No store found');
+        console.warn('⚠️ StoreProvider: No store found!');
+        console.warn('Available stores:', stores);
+        console.warn('Looking for slug:', storeIdentifier);
+        console.warn('Cache key:', storeCacheKey);
         setLoading(false);
         return;
       }

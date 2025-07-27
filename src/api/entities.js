@@ -209,14 +209,18 @@ class StoreService extends BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `stores?${queryString}` : 'stores';
       
+      console.log(`🚀 StoreService.filter: Calling ${url} with params:`, params);
       const response = await apiClient.publicRequest('GET', url);
+      console.log(`📊 StoreService.filter: Response:`, response);
       
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
+      console.log(`✅ StoreService.filter: Final result (${result.length} stores):`, result);
       
       return result;
     } catch (error) {
-      console.error(`StoreService.filter() error:`, error.message);
+      console.error(`❌ StoreService.filter() error:`, error.message);
+      console.error('Error details:', error);
       return [];
     }
   }
