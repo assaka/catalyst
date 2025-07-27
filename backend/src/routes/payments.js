@@ -411,9 +411,13 @@ router.post('/create-checkout', async (req, res) => {
           }
         }, discountStripeOptions);
 
+        // Apply the coupon to the session so it's pre-applied
         sessionConfig.discounts = [{
           coupon: stripeCoupon.id
         }];
+        
+        // Also allow promotion codes if the coupon has a promotion code
+        sessionConfig.allow_promotion_codes = false; // Disable since we're pre-applying
 
         console.log('Applied Stripe discount:', stripeCoupon.id, 'Amount:', discount_amount);
       } catch (discountError) {
@@ -422,79 +426,81 @@ router.post('/create-checkout', async (req, res) => {
       }
     }
 
-    // Set up shipping options based on selected method or default options
+    // Set up shipping with the pre-selected method
     if (shipping_method && shipping_cost !== undefined) {
-      // Use the selected shipping method from frontend
-      sessionConfig.shipping_options = [
-        {
-          shipping_rate_data: {
-            type: 'fixed_amount',
-            fixed_amount: {
-              amount: Math.round((shipping_cost || 0) * 100), // Convert to cents
-              currency: storeCurrency.toLowerCase(),
-            },
-            display_name: shipping_method.name || selected_shipping_method || 'Selected Shipping',
-            delivery_estimate: shipping_method.estimated_delivery_days ? {
-              minimum: {
-                unit: 'business_day',
-                value: Math.max(1, shipping_method.estimated_delivery_days - 1),
-              },
-              maximum: {
-                unit: 'business_day',
-                value: shipping_method.estimated_delivery_days + 1,
-              },
-            } : undefined,
-          },
+      // Create a shipping rate for the pre-selected method
+      const shippingRateData = {
+        type: 'fixed_amount',
+        fixed_amount: {
+          amount: Math.round((shipping_cost || 0) * 100), // Convert to cents
+          currency: storeCurrency.toLowerCase(),
         },
-      ];
-    } else if (shipping_address) {
-      // Fallback to default shipping options if we have a shipping address
-      sessionConfig.shipping_options = [
-        {
-          shipping_rate_data: {
-            type: 'fixed_amount',
-            fixed_amount: {
-              amount: 0,
-              currency: storeCurrency.toLowerCase(),
-            },
-            display_name: 'Free Standard Shipping',
-            delivery_estimate: {
-              minimum: {
-                unit: 'business_day',
-                value: 3,
-              },
-              maximum: {
-                unit: 'business_day',
-                value: 7,
-              },
-            },
+        display_name: shipping_method.name || selected_shipping_method || 'Selected Shipping',
+      };
+
+      // Add delivery estimate if available
+      if (shipping_method.estimated_delivery_days) {
+        shippingRateData.delivery_estimate = {
+          minimum: {
+            unit: 'business_day',
+            value: Math.max(1, shipping_method.estimated_delivery_days - 1),
           },
-        },
-        {
-          shipping_rate_data: {
-            type: 'fixed_amount',
-            fixed_amount: {
-              amount: 1500, // $15.00
-              currency: storeCurrency.toLowerCase(),
-            },
-            display_name: 'Express Shipping',
-            delivery_estimate: {
-              minimum: {
-                unit: 'business_day',
-                value: 1,
-              },
-              maximum: {
-                unit: 'business_day',
-                value: 2,
-              },
-            },
+          maximum: {
+            unit: 'business_day',
+            value: shipping_method.estimated_delivery_days + 1,
           },
+        };
+      }
+
+      // Create the shipping rate first
+      try {
+        const stripeOptions = {};
+        if (store.stripe_account_id) {
+          stripeOptions.stripeAccount = store.stripe_account_id;
+        }
+
+        const shippingRate = await stripe.shippingRates.create(shippingRateData, stripeOptions);
+        
+        // Use the created shipping rate in the session
+        sessionConfig.shipping_rate = shippingRate.id;
+        
+        console.log('Created and applied shipping rate:', shippingRate.id, 'for method:', shipping_method.name);
+      } catch (shippingError) {
+        console.error('Failed to create shipping rate:', shippingError.message);
+        // Fallback to line item for shipping
+        sessionConfig.line_items.push({
+          price_data: {
+            currency: storeCurrency.toLowerCase(),
+            product_data: {
+              name: `Shipping: ${shipping_method.name || selected_shipping_method}`,
+              metadata: {
+                item_type: 'shipping'
+              }
+            },
+            unit_amount: Math.round((shipping_cost || 0) * 100),
+          },
+          quantity: 1,
+        });
+      }
+    } else if (shipping_address && shipping_cost !== undefined) {
+      // If we have shipping cost but no method, add as line item
+      sessionConfig.line_items.push({
+        price_data: {
+          currency: storeCurrency.toLowerCase(),
+          product_data: {
+            name: 'Shipping',
+            metadata: {
+              item_type: 'shipping'
+            }
+          },
+          unit_amount: Math.round((shipping_cost || 0) * 100),
         },
-      ];
+        quantity: 1,
+      });
     }
 
-    // Enable shipping address collection if we have shipping options
-    if (sessionConfig.shipping_options) {
+    // Enable shipping address collection if we have shipping data
+    if (shipping_address || sessionConfig.shipping_rate) {
       sessionConfig.shipping_address_collection = {
         allowed_countries: ['US', 'CA', 'GB', 'AU', 'NL', 'DE', 'FR', 'ES', 'IT', 'BE', 'AT', 'CH']
       };
