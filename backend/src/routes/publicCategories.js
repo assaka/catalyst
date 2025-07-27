@@ -14,9 +14,7 @@ router.get('/', async (req, res) => {
     console.log('🔍 Public Categories API called with params:', req.query);
     console.log('🔍 Request URL:', req.originalUrl);
 
-    const where = {
-      is_active: true // Only show active categories publicly
-    };
+    const where = {};
     
     if (store_id) where.store_id = store_id;
     if (parent_id !== undefined) where.parent_id = parent_id;
@@ -32,12 +30,7 @@ router.get('/', async (req, res) => {
       where,
       limit: parseInt(limit),
       offset: parseInt(offset),
-      order: [['sort_order', 'ASC'], ['name', 'ASC']],
-      include: [{
-        model: Store,
-        as: 'store',
-        attributes: ['id', 'name', 'slug']
-      }]
+      order: [['name', 'ASC']] // Removed sort_order which might not exist
     });
 
     console.log('✅ Public Categories query result:', rows.length, 'categories found');

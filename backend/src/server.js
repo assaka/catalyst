@@ -698,6 +698,91 @@ app.post('/debug/fix-product-stores', async (req, res) => {
   }
 });
 
+// Create categories for store
+app.post('/debug/create-categories', async (req, res) => {
+  try {
+    console.log('📂 Creating categories...');
+    
+    const { Category, Store } = require('./models');
+    
+    // Find the Hamid store
+    const hamidStore = await Store.findOne({ where: { slug: 'hamid2' } });
+    
+    if (!hamidStore) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hamid store not found'
+      });
+    }
+    
+    // Check existing categories
+    const existingCategories = await Category.count({ where: { store_id: hamidStore.id } });
+    
+    if (existingCategories > 0) {
+      return res.json({
+        success: true,
+        message: 'Categories already exist',
+        data: {
+          store_id: hamidStore.id,
+          existing_categories: existingCategories
+        }
+      });
+    }
+    
+    // Create sample categories
+    const categories = [
+      {
+        name: 'Electronics',
+        slug: 'electronics',
+        description: 'Electronic products and gadgets',
+        store_id: hamidStore.id
+      },
+      {
+        name: 'Clothing',
+        slug: 'clothing', 
+        description: 'Fashion and apparel',
+        store_id: hamidStore.id
+      },
+      {
+        name: 'Home & Garden',
+        slug: 'home-garden',
+        description: 'Home and garden products',
+        store_id: hamidStore.id
+      }
+    ];
+    
+    let created = 0;
+    for (const catData of categories) {
+      try {
+        await Category.create(catData);
+        created++;
+      } catch (err) {
+        console.error('Category creation error:', err.message);
+      }
+    }
+    
+    const finalCount = await Category.count({ where: { store_id: hamidStore.id } });
+    
+    res.json({
+      success: true,
+      message: 'Categories created successfully',
+      data: {
+        store_id: hamidStore.id,
+        categories_created: created,
+        total_categories: finalCount
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Create categories failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create categories',
+      error: error.message
+    });
+  }
+});
+
 // Simple product test endpoint
 app.get('/debug/test-products', async (req, res) => {
   try {
