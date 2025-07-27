@@ -146,16 +146,14 @@ class ApiClient {
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
     // If user is not authenticated, try public endpoint first for certain routes
-    const publicRoutes = ['stores', 'products', 'categories', 'shipping', 'tax', 'delivery', 'attributes', 'coupons'];
+    const publicRoutes = ['stores', 'products', 'categories', 'shipping', 'tax', 'delivery', 'attributes', 'coupons', 'product-labels', 'attribute-sets', 'seo-templates', 'seo-settings', 'cookie-consent-settings'];
     const isPublicRoute = publicRoutes.some(route => endpoint.startsWith(route));
     
-    // For guest users (no token and never explicitly logged out) or logged out users, use public endpoints for public routes
-    const userLoggedOutFlag = localStorage.getItem('user_logged_out');
+    // For public routes, use public endpoint when user has no valid token
     const hasValidToken = this.getToken();
-    const isGuestUser = !hasValidToken && userLoggedOutFlag !== 'true';
     
-    if ((this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true' || !hasValidToken || isGuestUser) && isPublicRoute) {
-      console.log(`🔄 Using public endpoint for ${endpoint} (guest: ${isGuestUser}, loggedOut: ${this.isLoggedOut}, hasToken: ${!!hasValidToken})`);
+    if (!hasValidToken && isPublicRoute) {
+      console.log(`🔄 Using public endpoint for ${endpoint} (hasToken: ${!!hasValidToken})`);
       return this.publicRequest(method, endpoint, data, customHeaders);
     }
     

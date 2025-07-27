@@ -19,14 +19,14 @@ class BaseEntity {
       const hasToken = apiClient.getToken();
       const isLoggedOut = apiClient.isLoggedOut;
       
-      // For guest users (first-time visitors), always use public endpoints for public-friendly entities
+      // For public-friendly endpoints, use public API when user has no valid token
       const userLoggedOutFlag = localStorage.getItem('user_logged_out');
-      const isGuestUser = !hasToken && userLoggedOutFlag !== 'true'; // No token and never explicitly logged out
+      const shouldUsePublicEndpoint = !hasToken; // Simply check if there's no token
       
-      console.log(`🔍 BaseEntity ${this.endpoint}: hasToken=${!!hasToken}, isLoggedOut=${isLoggedOut}, isPublicFriendly=${isPublicFriendly}, isGuestUser=${isGuestUser}, userLoggedOutFlag=${userLoggedOutFlag}`);
+      console.log(`🔍 BaseEntity ${this.endpoint}: hasToken=${!!hasToken}, isLoggedOut=${isLoggedOut}, isPublicFriendly=${isPublicFriendly}, shouldUsePublicEndpoint=${shouldUsePublicEndpoint}, userLoggedOutFlag=${userLoggedOutFlag}`);
       
       let response;
-      if (isPublicFriendly && (!hasToken || isLoggedOut || isGuestUser)) {
+      if (isPublicFriendly && shouldUsePublicEndpoint) {
         console.log(`✅ Using PUBLIC endpoint for ${this.endpoint}`);
         // Use public endpoint for unauthenticated requests to public-friendly endpoints
         response = await apiClient.publicRequest('GET', url);
