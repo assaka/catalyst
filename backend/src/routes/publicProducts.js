@@ -13,6 +13,7 @@ router.get('/', async (req, res) => {
     
     console.log('🔍 Public Products API called with params:', req.query);
     console.log('📊 Featured param:', featured, typeof featured);
+    console.log('🔍 Request URL:', req.originalUrl);
 
     const where = {
       status: 'active' // Only show active products publicly

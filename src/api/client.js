@@ -77,6 +77,8 @@ class ApiClient {
     const publicEndpoint = endpoint.startsWith('public/') ? endpoint : `public/${endpoint}`;
     const url = this.buildUrl(publicEndpoint);
     
+    console.log('🔄 PublicRequest:', method, url);
+    
     const headers = {
       'Content-Type': 'application/json',
       ...customHeaders

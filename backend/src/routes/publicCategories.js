@@ -12,6 +12,7 @@ router.get('/', async (req, res) => {
     const offset = (page - 1) * limit;
     
     console.log('🔍 Public Categories API called with params:', req.query);
+    console.log('🔍 Request URL:', req.originalUrl);
 
     const where = {
       is_active: true // Only show active categories publicly
