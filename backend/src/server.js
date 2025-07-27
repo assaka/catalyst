@@ -642,6 +642,62 @@ app.post('/debug/seed', async (req, res) => {
   }
 });
 
+// Update products to correct store
+app.post('/debug/fix-product-stores', async (req, res) => {
+  try {
+    console.log('🔧 Fixing product store associations...');
+    
+    const { Product, Store } = require('./models');
+    
+    // Find the Hamid store
+    const hamidStore = await Store.findOne({ where: { slug: 'hamid2' } });
+    
+    if (!hamidStore) {
+      return res.status(404).json({
+        success: false,
+        message: 'Hamid store not found'
+      });
+    }
+    
+    console.log(`📍 Target store: ${hamidStore.name} (${hamidStore.id})`);
+    
+    // Update all products to belong to the Hamid store
+    const updateResult = await Product.update(
+      { store_id: hamidStore.id },
+      { where: {} } // Update all products
+    );
+    
+    console.log(`✅ Updated ${updateResult[0]} products`);
+    
+    // Verify the update
+    const productCount = await Product.count({ where: { store_id: hamidStore.id } });
+    const featuredCount = await Product.count({ where: { store_id: hamidStore.id, featured: true } });
+    
+    res.json({
+      success: true,
+      message: 'Product store associations fixed',
+      data: {
+        store: {
+          id: hamidStore.id,
+          name: hamidStore.name,
+          slug: hamidStore.slug
+        },
+        products_updated: updateResult[0],
+        total_products: productCount,
+        featured_products: featuredCount
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Fix product stores failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fix product stores',
+      error: error.message
+    });
+  }
+});
+
 // Simple product test endpoint
 app.get('/debug/test-products', async (req, res) => {
   try {
