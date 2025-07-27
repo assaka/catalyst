@@ -1,18 +1,215 @@
 const express = require('express');
+const { body, validationResult } = require('express-validator');
+const { ProductTab, Store } = require('../models');
+const auth = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/product-tabs
-// @desc    Get product tabs (placeholder route)
+// @desc    Get product tabs for a store
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    // Return empty array for now since this feature is not implemented
+    const { store_id } = req.query;
+    
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    const productTabs = await ProductTab.findAll({
+      where: { 
+        store_id,
+        is_active: true
+      },
+      order: [['sort_order', 'ASC'], ['name', 'ASC']]
+    });
+
     res.json({
       success: true,
-      data: []
+      data: productTabs
     });
   } catch (error) {
     console.error('Get product tabs error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   GET /api/product-tabs/:id
+// @desc    Get product tab by ID
+// @access  Public
+router.get('/:id', async (req, res) => {
+  try {
+    const productTab = await ProductTab.findByPk(req.params.id);
+    
+    if (!productTab) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product tab not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: productTab
+    });
+  } catch (error) {
+    console.error('Get product tab error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/product-tabs
+// @desc    Create new product tab
+// @access  Private
+router.post('/', auth, [
+  body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('content').optional().isString(),
+  body('sort_order').optional().isInt({ min: 0 }).withMessage('Sort order must be a non-negative integer'),
+  body('is_active').optional().isBoolean()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { store_id, name, content, sort_order, is_active } = req.body;
+
+    // Check store ownership
+    const store = await Store.findByPk(store_id);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    if (req.user.role !== 'admin' && store.owner_email !== req.user.email) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    const productTab = await ProductTab.create({
+      store_id,
+      name,
+      content: content || '',
+      sort_order: sort_order || 0,
+      is_active: is_active !== undefined ? is_active : true
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Product tab created successfully',
+      data: productTab
+    });
+  } catch (error) {
+    console.error('Create product tab error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   PUT /api/product-tabs/:id
+// @desc    Update product tab
+// @access  Private
+router.put('/:id', auth, [
+  body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
+  body('content').optional().isString(),
+  body('sort_order').optional().isInt({ min: 0 }).withMessage('Sort order must be a non-negative integer'),
+  body('is_active').optional().isBoolean()
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const productTab = await ProductTab.findByPk(req.params.id, {
+      include: [{ model: Store, attributes: ['owner_email'] }]
+    });
+    
+    if (!productTab) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product tab not found'
+      });
+    }
+
+    // Check ownership
+    if (req.user.role !== 'admin' && productTab.Store.owner_email !== req.user.email) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    await productTab.update(req.body);
+
+    res.json({
+      success: true,
+      message: 'Product tab updated successfully',
+      data: productTab
+    });
+  } catch (error) {
+    console.error('Update product tab error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   DELETE /api/product-tabs/:id
+// @desc    Delete product tab
+// @access  Private
+router.delete('/:id', auth, async (req, res) => {
+  try {
+    const productTab = await ProductTab.findByPk(req.params.id, {
+      include: [{ model: Store, attributes: ['owner_email'] }]
+    });
+    
+    if (!productTab) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product tab not found'
+      });
+    }
+
+    // Check ownership
+    if (req.user.role !== 'admin' && productTab.Store.owner_email !== req.user.email) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied'
+      });
+    }
+
+    await productTab.destroy();
+
+    res.json({
+      success: true,
+      message: 'Product tab deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete product tab error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

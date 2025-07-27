@@ -4,6 +4,62 @@ const { Order, OrderItem, Store, Product } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
+// @route   GET /api/orders/by-payment-reference/:paymentReference
+// @desc    Get order by payment reference (for order success page)
+// @access  Public (no auth required for order success)
+router.get('/by-payment-reference/:paymentReference', async (req, res) => {
+  try {
+    const { paymentReference } = req.params;
+    
+    console.log('🔍 Looking for order with payment reference:', paymentReference);
+    
+    const order = await Order.findOne({
+      where: {
+        [Op.or]: [
+          { payment_reference: paymentReference },
+          { stripe_payment_intent_id: paymentReference },
+          { stripe_session_id: paymentReference }
+        ]
+      },
+      include: [
+        {
+          model: Store,
+          attributes: ['id', 'name', 'currency']
+        },
+        {
+          model: OrderItem,
+          include: [{ 
+            model: Product, 
+            attributes: ['id', 'name', 'sku', 'images'] 
+          }]
+        }
+      ]
+    });
+
+    if (!order) {
+      console.log('❌ Order not found for payment reference:', paymentReference);
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    console.log('✅ Order found:', order.id, 'with', order.OrderItems?.length || 0, 'items');
+
+    res.json({
+      success: true,
+      data: order
+    });
+
+  } catch (error) {
+    console.error('❌ Error fetching order by payment reference:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   GET /api/orders
 // @desc    Get orders
 // @access  Private

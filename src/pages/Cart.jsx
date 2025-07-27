@@ -5,9 +5,11 @@ import { createPageUrl } from '@/utils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { Product } from '@/api/entities';
 import { Coupon } from '@/api/entities';
+import { Tax } from '@/api/entities';
 import { User } from '@/api/entities';
 import cartService from '@/services/cartService';
 import couponService from '@/services/couponService';
+import taxService from '@/services/taxService';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
@@ -86,6 +88,7 @@ export default function Cart() {
     const navigate = useNavigate();
     // Use StoreProvider data instead of making separate API calls
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
+    const [taxRules, setTaxRules] = useState([]);
     
     
     // Get currency symbol from settings
@@ -104,11 +107,25 @@ export default function Cart() {
         if (!storeLoading && store?.id) {
             const timeoutId = setTimeout(() => {
                 loadCartData();
+                loadTaxRules();
             }, 1000); // Reduced delay
             
             return () => clearTimeout(timeoutId);
         }
     }, [storeLoading, store?.id]);
+
+    const loadTaxRules = async () => {
+        try {
+            if (store?.id) {
+                const taxData = await Tax.filter({ store_id: store.id, is_active: true });
+                setTaxRules(taxData || []);
+                console.log('🧾 Cart: Loaded tax rules:', taxData);
+            }
+        } catch (error) {
+            console.error('Error loading tax rules:', error);
+            setTaxRules([]);
+        }
+    };
 
     // Load applied coupon from service on mount
     useEffect(() => {
@@ -526,28 +543,41 @@ export default function Cart() {
 
         const subAfterDiscount = calculatedSubtotal - disc;
         
-        const taxAmount = cartItems.reduce((acc, item) => {
-            if (!item || !item.product) return acc;
-            const taxRate = getProductTaxRate(item.product);
+        // Use new tax service for calculation
+        const taxAmount = (() => {
+            if (!store || !taxRules.length || !cartItems.length) {
+                return 0;
+            }
 
-            let basePrice = formatPrice(item.price);
-            if (basePrice <= 0) {
-                basePrice = formatPrice(item.product.sale_price || item.product.price);
-            }
-            let optionsPrice = 0;
-            if (item.selected_options && Array.isArray(item.selected_options)) {
-                optionsPrice = item.selected_options.reduce((sum, opt) => sum + formatPrice(opt.price), 0);
-            }
+            // Create a shipping address object from selected country
+            const shippingAddress = { country: selectedCountry || 'US' };
             
-            const taxableAmount = (basePrice + optionsPrice) * (formatPrice(item.quantity) || 1);
-            
-            return acc + (taxableAmount * taxRate);
-        }, 0);
+            // Create a simple product map for taxService
+            const cartProducts = {};
+            cartItems.forEach(item => {
+                if (item.product) {
+                    cartProducts[item.product_id] = item.product;
+                }
+            });
+
+            const taxResult = taxService.calculateTax(
+                cartItems,
+                cartProducts,
+                store,
+                taxRules,
+                shippingAddress,
+                calculatedSubtotal,
+                disc
+            );
+
+            console.log('🧾 Cart: Tax calculation result:', taxResult);
+            return taxResult.taxAmount || 0;
+        })();
         
         const totalAmount = subAfterDiscount + taxAmount;
 
         return { subtotal: calculatedSubtotal, discount: disc, tax: taxAmount, total: totalAmount };
-    }, [cartItems, appliedCoupon, getProductTaxRate, calculateSubtotal]);
+    }, [cartItems, appliedCoupon, store, taxRules, selectedCountry, calculateSubtotal]);
 
 
     // Wait for both store data and cart data to load

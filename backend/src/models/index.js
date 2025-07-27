@@ -26,6 +26,7 @@ const PaymentMethod = require('./PaymentMethod');
 const CookieConsentSettings = require('./CookieConsentSettings');
 const ConsentLog = require('./ConsentLog');
 const Address = require('./Address');
+const ProductTab = require('./ProductTab');
 
 // Define associations
 const defineAssociations = () => {
@@ -145,6 +146,10 @@ const defineAssociations = () => {
   // Address associations
   Address.belongsTo(User, { foreignKey: 'user_id' });
   User.hasMany(Address, { foreignKey: 'user_id' });
+
+  // ProductTab associations
+  ProductTab.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(ProductTab, { foreignKey: 'store_id' });
 };
 
 // Initialize associations
@@ -178,5 +183,6 @@ module.exports = {
   PaymentMethod,
   CookieConsentSettings,
   ConsentLog,
-  Address
+  Address,
+  ProductTab
 };

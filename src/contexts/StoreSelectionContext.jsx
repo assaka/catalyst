@@ -29,8 +29,18 @@ export const StoreSelectionProvider = ({ children }) => {
       setLoading(true);
     };
 
+    const handleStoreSelectionChanged = () => {
+      // Reload stores to get updated data
+      loadStores();
+    };
+
     window.addEventListener('userLoggedOut', handleLogout);
-    return () => window.removeEventListener('userLoggedOut', handleLogout);
+    window.addEventListener('storeSelectionChanged', handleStoreSelectionChanged);
+    
+    return () => {
+      window.removeEventListener('userLoggedOut', handleLogout);
+      window.removeEventListener('storeSelectionChanged', handleStoreSelectionChanged);
+    };
   }, []);
 
   const loadStores = async () => {
