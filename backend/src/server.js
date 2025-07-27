@@ -475,14 +475,16 @@ app.post('/debug/seed', async (req, res) => {
     let store = await Store.findOne({ where: { slug: 'hamid2' } });
     
     if (!store) {
+      // Create store with only essential fields
       store = await Store.create({
         name: 'Hamid',
         slug: 'hamid2',
         description: 'Sample store for testing',
-        owner_email: 'playamin998@gmail.com',
-        currency: 'USD',
-        status: 'active'
+        owner_email: 'playamin998@gmail.com'
       });
+      console.log('✅ Created new store:', store.name);
+    } else {
+      console.log('✅ Using existing store:', store.name);
     }
 
     // Check existing products
@@ -495,12 +497,8 @@ app.post('/debug/seed', async (req, res) => {
           name: 'Sample Product 1',
           slug: 'sample-product-1',
           description: 'This is a sample product for testing the storefront',
-          short_description: 'Sample product for testing',
           sku: 'SAMPLE-001',
           price: 29.99,
-          compare_price: 39.99,
-          stock_quantity: 100,
-          status: 'active',
           featured: true,
           store_id: store.id
         },
@@ -508,11 +506,8 @@ app.post('/debug/seed', async (req, res) => {
           name: 'Featured Product 2',
           slug: 'featured-product-2',
           description: 'Another great sample product',
-          short_description: 'Another sample product',
           sku: 'SAMPLE-002',
           price: 49.99,
-          stock_quantity: 50,
-          status: 'active',
           featured: true,
           store_id: store.id
         },
@@ -520,11 +515,8 @@ app.post('/debug/seed', async (req, res) => {
           name: 'Regular Product 3',
           slug: 'regular-product-3',
           description: 'A regular sample product',
-          short_description: 'Regular sample product',
           sku: 'SAMPLE-003',
           price: 19.99,
-          stock_quantity: 75,
-          status: 'active',
           featured: false,
           store_id: store.id
         },
@@ -532,12 +524,8 @@ app.post('/debug/seed', async (req, res) => {
           name: 'Premium Product 4',
           slug: 'premium-product-4',
           description: 'Premium sample product with great features',
-          short_description: 'Premium sample product',
           sku: 'SAMPLE-004',
           price: 99.99,
-          compare_price: 129.99,
-          stock_quantity: 25,
-          status: 'active',
           featured: true,
           store_id: store.id
         }
@@ -559,14 +547,12 @@ app.post('/debug/seed', async (req, res) => {
           name: 'Electronics',
           slug: 'electronics',
           description: 'Electronic products and gadgets',
-          status: 'active',
           store_id: store.id
         },
         {
           name: 'Clothing',
           slug: 'clothing',
           description: 'Fashion and clothing items',
-          status: 'active',
           store_id: store.id
         }
       ];
@@ -583,8 +569,7 @@ app.post('/debug/seed', async (req, res) => {
     const featuredProductCount = await Product.count({ 
       where: { 
         store_id: store.id, 
-        featured: true, 
-        status: 'active' 
+        featured: true 
       } 
     });
 
