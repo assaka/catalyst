@@ -252,15 +252,12 @@ export default function Auth() {
           const storefrontPages = ['/landing', '/', '/storefront', '/productdetail', '/cart', '/checkout', '/order-success', '/ordersuccess'];
           const isStorefrontContext = storefrontPages.some(page => currentPath.startsWith(page));
 
-          // Role-based redirection with context awareness
+          // Role-based validation and redirection
           if (userRole === 'customer') {
-            if (isStorefrontContext) {
-              // Customer logging in from storefront - stay on storefront
-              navigate(createPageUrl("Storefront"));
-            } else {
-              // Customer trying to access dashboard - redirect to customer dashboard
-              navigate(createPageUrl("CustomerDashboard"));
-            }
+            // Customers cannot log in through store owner auth page
+            setError("Invalid credentials. Customers should use the customer login page.");
+            await AuthService.logout();
+            return;
           } else if (userRole === 'store_owner' || userRole === 'admin' || !userRole) {
             if (isStorefrontContext) {
               // Store owner logging in from storefront - stay on storefront (shopping as guest)
@@ -311,10 +308,10 @@ export default function Auth() {
         <Card className="material-elevation-2 border-0">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">
-              {isLogin ? "Welcome Back" : "Create Account"}
+              Store Owner {isLogin ? "Login" : "Register"}
             </CardTitle>
             <CardDescription>
-              {isLogin ? "Sign in to your account to continue" : "Sign up for a new account"}
+              {isLogin ? "Access your store management dashboard" : "Create your store owner account"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -486,6 +483,15 @@ export default function Auth() {
                   {isLogin ? "Sign Up" : "Sign In"}
                 </button>
               </p>
+              
+              <div className="mt-4 text-center">
+                <Link 
+                  to={createPageUrl("CustomerAuth")}
+                  className="text-sm text-gray-600 hover:text-gray-500"
+                >
+                  Are you a customer? Login here
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>

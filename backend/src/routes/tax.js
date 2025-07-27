@@ -8,18 +8,36 @@ router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 10, store_id } = req.query;
     const offset = (page - 1) * limit;
+    
+    // Check if this is a public request
+    const isPublicRequest = req.originalUrl.includes('/api/public/tax');
 
     const where = {};
-    if (req.user.role !== 'admin') {
-      const userStores = await Store.findAll({
-        where: { owner_email: req.user.email },
-        attributes: ['id']
-      });
-      const storeIds = userStores.map(store => store.id);
-      where.store_id = { [Op.in]: storeIds };
+    
+    if (isPublicRequest) {
+      // Public access - only return active tax rules for specific store
+      where.is_active = true;
+      if (store_id) where.store_id = store_id;
+    } else {
+      // Authenticated access
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Access denied',
+          message: 'Authentication required'
+        });
+      }
+      
+      if (req.user.role !== 'admin') {
+        const userStores = await Store.findAll({
+          where: { owner_email: req.user.email },
+          attributes: ['id']
+        });
+        const storeIds = userStores.map(store => store.id);
+        where.store_id = { [Op.in]: storeIds };
+      }
+      
+      if (store_id) where.store_id = store_id;
     }
-
-    if (store_id) where.store_id = store_id;
 
     const { count, rows } = await Tax.findAndCountAll({
       where,
@@ -29,7 +47,13 @@ router.get('/', async (req, res) => {
       include: [{ model: Store, attributes: ['id', 'name'] }]
     });
 
-    res.json({ success: true, data: { tax_rules: rows, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
+    if (isPublicRequest) {
+      // Return just the array for public requests (for compatibility)
+      res.json(rows);
+    } else {
+      // Return wrapped response for authenticated requests
+      res.json({ success: true, data: { tax_rules: rows, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
+    }
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
   }

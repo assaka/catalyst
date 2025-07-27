@@ -4,6 +4,8 @@ import Landing from "./Landing";
 
 import Auth from "./Auth";
 
+import CustomerAuth from "./CustomerAuth";
+
 import Dashboard from "./Dashboard";
 
 import Products from "./Products";
@@ -95,6 +97,8 @@ const PAGES = {
     Landing: Landing,
     
     Auth: Auth,
+    
+    CustomerAuth: CustomerAuth,
     
     Dashboard: Dashboard,
     
@@ -210,6 +214,8 @@ function PagesContent() {
                 <Route path="/Landing" element={<Landing />} />
                 
                 <Route path="/Auth" element={<Auth />} />
+                
+                <Route path="/CustomerAuth" element={<CustomerAuth />} />
                 
                 <Route path="/Dashboard" element={<Dashboard />} />
                 
