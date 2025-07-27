@@ -590,6 +590,9 @@ app.use('/api/public/tax', taxRoutes);
 app.use('/api/public/delivery', deliveryRoutes);
 app.use('/api/public/attributes', attributeRoutes);
 app.use('/api/public/coupons', couponRoutes);
+app.use('/api/public/product-labels', productLabelRoutes);
+app.use('/api/public/attribute-sets', attributeSetRoutes);
+app.use('/api/public/seo-templates', seoTemplateRoutes);
 
 // Authenticated routes (keep existing for admin/authenticated users)
 app.use('/api/users', authMiddleware, userRoutes);

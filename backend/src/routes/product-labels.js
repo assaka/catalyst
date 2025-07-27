@@ -6,10 +6,13 @@ const router = express.Router();
 
 // @route   GET /api/product-labels
 // @desc    Get all product labels for a store
-// @access  Private
-router.get('/', auth, async (req, res) => {
+// @access  Public/Private
+router.get('/', async (req, res) => {
   try {
     const { store_id, is_active } = req.query;
+    
+    // Check if this is a public request
+    const isPublicRequest = req.originalUrl.includes('/api/public/product-labels');
 
     if (!store_id) {
       return res.status(400).json({
@@ -19,8 +22,22 @@ router.get('/', auth, async (req, res) => {
     }
 
     const whereClause = { store_id };
-    if (is_active !== undefined) {
-      whereClause.is_active = is_active === 'true';
+    
+    if (isPublicRequest) {
+      // Public access - only return active labels
+      whereClause.is_active = true;
+    } else {
+      // Authenticated access - check authentication
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Access denied',
+          message: 'Authentication required'
+        });
+      }
+      
+      if (is_active !== undefined) {
+        whereClause.is_active = is_active === 'true';
+      }
     }
 
     const labels = await ProductLabel.findAll({
@@ -28,10 +45,16 @@ router.get('/', auth, async (req, res) => {
       order: [['priority', 'DESC'], ['name', 'ASC']]
     });
 
-    res.json({
-      success: true,
-      data: { product_labels: labels }
-    });
+    if (isPublicRequest) {
+      // Return just the array for public requests (for compatibility)
+      res.json(labels);
+    } else {
+      // Return wrapped response for authenticated requests
+      res.json({
+        success: true,
+        data: { product_labels: labels }
+      });
+    }
   } catch (error) {
     console.error('Get product labels error:', error);
     res.status(500).json({

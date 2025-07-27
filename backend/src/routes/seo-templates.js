@@ -6,16 +6,29 @@ const router = express.Router();
 
 // @route   GET /api/seo-templates
 // @desc    Get SEO templates for a store
-// @access  Private
-router.get('/', auth, async (req, res) => {
+// @access  Public/Private
+router.get('/', async (req, res) => {
   try {
     const { store_id, page_type } = req.query;
+    
+    // Check if this is a public request
+    const isPublicRequest = req.originalUrl.includes('/api/public/seo-templates');
 
     if (!store_id) {
       return res.status(400).json({
         success: false,
         message: 'store_id is required'
       });
+    }
+
+    if (!isPublicRequest) {
+      // Authenticated access - check authentication
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Access denied',
+          message: 'Authentication required'
+        });
+      }
     }
 
     const whereClause = { store_id };
@@ -26,10 +39,16 @@ router.get('/', auth, async (req, res) => {
       order: [['page_type', 'ASC']]
     });
 
-    res.json({
-      success: true,
-      data: { seo_templates: templates }
-    });
+    if (isPublicRequest) {
+      // Return just the array for public requests (for compatibility)
+      res.json(templates);
+    } else {
+      // Return wrapped response for authenticated requests
+      res.json({
+        success: true,
+        data: { seo_templates: templates }
+      });
+    }
   } catch (error) {
     console.error('Get SEO templates error:', error);
     res.status(500).json({
