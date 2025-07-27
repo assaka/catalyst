@@ -278,7 +278,8 @@ class ProductService extends BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `products?${queryString}` : 'products';
       
-      const response = await apiClient.publicRequest('GET', url);
+      // Use authenticated request for admin API, not public API
+      const response = await apiClient.get(url);
       
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
@@ -333,13 +334,14 @@ class CategoryService extends BaseEntity {
     super('categories');
   }
 
-  // Public category access (no authentication required)
+  // Admin category access (authentication required)
   async filter(params = {}) {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `categories?${queryString}` : 'categories';
       
-      const response = await apiClient.publicRequest('GET', url);
+      // Use authenticated request for admin API, not public API
+      const response = await apiClient.get(url);
       
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
