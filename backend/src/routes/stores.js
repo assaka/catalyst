@@ -294,10 +294,57 @@ router.get('/debug', async (req, res) => {
   }
 });
 
-// @route   GET /api/stores
-// @desc    Get user's stores
-// @access  Private
-router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
+// @route   GET /api/public/stores (when accessed via /api/public/stores)
+// @desc    Get stores for public access (storefront)
+// @access  Public
+router.get('/', async (req, res) => {
+  // Check if this is a public request (will be true when accessed via /api/public/stores)
+  const isPublicRequest = req.originalUrl.includes('/api/public/stores');
+  
+  if (isPublicRequest) {
+    try {
+      const { slug, page = 1, limit = 10 } = req.query;
+      const offset = (page - 1) * limit;
+      
+      const where = {
+        is_active: true // Only return active stores
+      };
+      
+      // Filter by slug if provided
+      if (slug) {
+        where.slug = slug;
+      }
+      
+      const { count, rows } = await Store.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['created_at', 'DESC']]
+      });
+      
+      // Return just the data array for public requests (for compatibility with frontend)
+      return res.json(rows);
+    } catch (error) {
+      console.error('Get public stores error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Server error'
+      });
+    }
+  }
+  
+  // Continue with private store access (original code below)
+  const authorize = require('../middleware/auth').authorize;
+  
+  // Apply authorization for private requests
+  return authorize(['admin', 'store_owner'])(req, res, async () => {
+    // Private store access logic will go here
+    return privateStoreAccess(req, res);
+  });
+});
+
+// Private store access function
+async function privateStoreAccess(req, res) {
   try {
     const { page = 1, limit = 10 } = req.query;
     const offset = (page - 1) * limit;
@@ -316,15 +363,25 @@ router.get('/', authorize(['admin', 'store_owner']), async (req, res) => {
       order: [['created_at', 'DESC']]
     });
 
-    // Return direct array for frontend compatibility
-    // The frontend expects stores as a direct array, not nested in data object
-    res.json(rows);
+    res.json({
+      success: true,
+      data: rows,
+      pagination: {
+        total: count,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(count / limit)
+      }
+    });
   } catch (error) {
-    console.error('Get stores error:', error);
-    // Return empty array to prevent frontend .map() errors
-    res.json([]);
+    console.error('Get user stores error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
-});
+}
+
 
 // @route   GET /api/stores/:id
 // @desc    Get store by ID

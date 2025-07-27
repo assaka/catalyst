@@ -197,10 +197,46 @@ class StoreService extends BaseEntity {
     super('stores');
   }
 
-  // Get user's stores
+  // Get user's stores (authenticated)
   async getUserStores() {
     const result = await this.findAll();
     return Array.isArray(result) ? result : [];
+  }
+
+  // Public store access (no authentication required)
+  async filter(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `stores?${queryString}` : 'stores';
+      
+      const response = await apiClient.publicRequest('GET', url);
+      
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+      
+      return result;
+    } catch (error) {
+      console.error(`StoreService.filter() error:`, error.message);
+      return [];
+    }
+  }
+
+  // Public findAll (no authentication required)
+  async findAll(params = {}) {
+    try {
+      const queryString = new URLSearchParams(params).toString();
+      const url = queryString ? `stores?${queryString}` : 'stores';
+      
+      const response = await apiClient.publicRequest('GET', url);
+      
+      // Ensure response is always an array
+      const result = Array.isArray(response) ? response : [];
+      
+      return result;
+    } catch (error) {
+      console.error(`StoreService.findAll() error:`, error.message);
+      return [];
+    }
   }
 }
 
