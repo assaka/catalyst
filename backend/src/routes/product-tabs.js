@@ -115,9 +115,16 @@ router.post('/', auth, [
       });
     }
 
+    // Generate slug from name before creating
+    const generatedSlug = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const finalSlug = generatedSlug || `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    console.log('🔧 Route: Creating ProductTab with explicit slug:', { name: trimmedName, slug: finalSlug });
+
     const productTab = await ProductTab.create({
       store_id,
       name: trimmedName,
+      slug: finalSlug,
       tab_type: tab_type || 'text',
       content: content || '',
       attribute_ids: attribute_ids || [],

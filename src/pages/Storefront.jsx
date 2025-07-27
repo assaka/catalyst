@@ -9,6 +9,7 @@ import ProductLabelComponent from "@/components/storefront/ProductLabel";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import LayeredNavigation from "@/components/storefront/LayeredNavigation";
 import Breadcrumb from "@/components/storefront/Breadcrumb";
+import { formatDisplayPrice, calculateDisplayPrice } from "@/utils/priceUtils";
 import {
   ShoppingCart,
   Package,
@@ -24,7 +25,7 @@ const ensureArray = (data) => {
 };
 
 export default function Storefront() {
-  const { store, settings, loading: storeLoading, productLabels, categories: storeCategories, filterableAttributes } = useStore();
+  const { store, settings, loading: storeLoading, productLabels, categories: storeCategories, filterableAttributes, taxes, selectedCountry } = useStore();
   
   const [products, setProducts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -422,19 +423,37 @@ export default function Storefront() {
                           </Badge>
                         }
                         <div className="py-4 flex items-baseline gap-2">
-                          {/* FIXED: Inverted price logic to always show lowest price first */}
+                          {/* Tax-aware price display for homepage */}
                           {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                             <>
                               <p className="font-bold text-red-600 text-3xl">
-                                {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                {!settings?.hide_currency_product && formatDisplayPrice(
+                                  Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                                  settings?.currency_symbol || '$',
+                                  store,
+                                  taxes,
+                                  selectedCountry
+                                )}
                               </p>
                               <p className="text-gray-500 line-through text-xl">
-                                {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                {!settings?.hide_currency_product && formatDisplayPrice(
+                                  Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                                  settings?.currency_symbol || '$',
+                                  store,
+                                  taxes,
+                                  selectedCountry
+                                )}
                               </p>
                             </>
                           ) : (
                             <p className="font-bold text-gray-800 text-lg">
-                              {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
+                              {!settings?.hide_currency_product && formatDisplayPrice(
+                                parseFloat(product.price || 0),
+                                settings?.currency_symbol || '$',
+                                store,
+                                taxes,
+                                selectedCountry
+                              )}
                             </p>
                           )}
                         </div>
@@ -560,19 +579,37 @@ export default function Storefront() {
                                     </Badge>
                                 }
                                 <div className="flex items-baseline gap-2 my-4">
-                                  {/* FIXED: Inverted price logic to always show lowest price first */}
+                                  {/* Tax-aware price display with compare_price logic */}
                                   {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                                       <>
                                         <p className="font-bold text-red-600 text-3xl">
-                                          {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                          {!settings?.hide_currency_category && formatDisplayPrice(
+                                            Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                                            settings?.currency_symbol || '$',
+                                            store,
+                                            taxes,
+                                            selectedCountry
+                                          )}
                                         </p>
                                         <p className="text-gray-500 line-through text-xl">
-                                          {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                          {!settings?.hide_currency_category && formatDisplayPrice(
+                                            Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                                            settings?.currency_symbol || '$',
+                                            store,
+                                            taxes,
+                                            selectedCountry
+                                          )}
                                         </p>
                                       </>
                                   ) : (
                                       <p className="font-bold text-gray-800 text-lg">
-                                        {!settings?.hide_currency_category && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
+                                        {!settings?.hide_currency_category && formatDisplayPrice(
+                                          parseFloat(product.price || 0),
+                                          settings?.currency_symbol || '$',
+                                          store,
+                                          taxes,
+                                          selectedCountry
+                                        )}
                                       </p>
                                   )}
                                 </div>

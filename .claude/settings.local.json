@@ -38,7 +38,8 @@
       "Bash(rm:*)",
       "Bash(npm run test:*)",
       "Bash(npm start)",
-      "Bash(pkill:*)"
+      "Bash(pkill:*)",
+      "Bash(rg:*)"
     ],
     "deny": []
   }

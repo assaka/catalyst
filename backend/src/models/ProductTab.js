@@ -21,7 +21,10 @@ const ProductTab = sequelize.define('ProductTab', {
   },
   slug: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false,
+    defaultValue: function() {
+      return `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
   },
   tab_type: {
     type: DataTypes.ENUM('text', 'description', 'attributes', 'attribute_sets'),
@@ -60,31 +63,56 @@ const ProductTab = sequelize.define('ProductTab', {
   ],
   hooks: {
     beforeCreate: (tab) => {
+      console.log('🔧 ProductTab beforeCreate hook:', { name: tab.name, slug: tab.slug, tab_type: tab.tab_type });
+      
       // Always generate slug if not provided
       if (!tab.slug && tab.name) {
         tab.slug = tab.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        console.log('✅ Generated slug from name:', tab.slug);
       }
       // Fallback: if still no slug, generate one from tab type
       if (!tab.slug) {
-        tab.slug = `${tab.tab_type || 'tab'}-${Date.now()}`;
+        tab.slug = `${tab.tab_type || 'tab'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        console.log('⚠️ Generated fallback slug:', tab.slug);
       }
+      
+      console.log('🎯 Final slug before create:', tab.slug);
     },
     beforeUpdate: (tab) => {
+      console.log('🔧 ProductTab beforeUpdate hook:', { name: tab.name, slug: tab.slug, changed: tab.changed() });
+      
       if (tab.changed('name') && !tab.changed('slug')) {
         tab.slug = tab.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        console.log('✅ Updated slug from name change:', tab.slug);
       }
       // Ensure slug is never null
       if (!tab.slug) {
-        tab.slug = `${tab.tab_type || 'tab'}-${Date.now()}`;
+        tab.slug = `${tab.tab_type || 'tab'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        console.log('⚠️ Generated fallback slug on update:', tab.slug);
       }
     },
     beforeValidate: (tab) => {
+      console.log('🔧 ProductTab beforeValidate hook:', { name: tab.name, slug: tab.slug });
+      
       // Final safety check before validation
       if (!tab.slug && tab.name) {
         tab.slug = tab.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        console.log('✅ Generated slug in beforeValidate from name:', tab.slug);
       }
       if (!tab.slug) {
-        tab.slug = `${tab.tab_type || 'tab'}-${Date.now()}`;
+        tab.slug = `${tab.tab_type || 'tab'}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        console.log('⚠️ Generated final fallback slug in beforeValidate:', tab.slug);
+      }
+      
+      console.log('🎯 Final slug before validation:', tab.slug);
+    },
+    beforeSave: (tab) => {
+      console.log('🔧 ProductTab beforeSave hook (last chance):', { name: tab.name, slug: tab.slug });
+      
+      // Absolute final check - this should never be null when saving
+      if (!tab.slug) {
+        tab.slug = `emergency-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        console.log('🚨 EMERGENCY: Generated emergency slug in beforeSave:', tab.slug);
       }
     }
   }
