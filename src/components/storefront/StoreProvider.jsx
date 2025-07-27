@@ -117,13 +117,23 @@ const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION) => {
   // No cached data - must fetch fresh
   try {
     await delay(Math.random() * 3000 + 1000); // Random delay 1-4 seconds
+    console.log(`🚀 StoreProvider: Executing fresh API call for ${key}`);
     const result = await apiCall();
+    console.log(`✅ StoreProvider: API call successful for ${key}:`, result);
     apiCache.set(key, { data: result, timestamp: now });
     saveCacheToStorage();
     return result;
   } catch (error) {
-    console.error(`API call failed for ${key}:`, error);
-    // Return empty data instead of throwing
+    console.error(`❌ StoreProvider: API call failed for ${key}:`, error);
+    console.error(`❌ StoreProvider: Full error details:`, error.message, error.stack);
+    
+    // Don't cache empty results for critical API calls like products
+    if (key.includes('featured-products') || key.includes('products-category')) {
+      console.error(`🚨 StoreProvider: Not caching empty result for critical API: ${key}`);
+      throw error; // Let the component handle the error
+    }
+    
+    // Return empty data for non-critical calls
     const emptyData = [];
     apiCache.set(key, { data: emptyData, timestamp: now });
     return emptyData;

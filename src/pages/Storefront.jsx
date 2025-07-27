@@ -66,11 +66,18 @@ export default function Storefront() {
         setCurrentCategory(null);
         const featuredCacheKey = `featured-products-${store.id}`;
         console.log('🔍 Storefront: Calling StorefrontProduct.getFeatured()');
-        const featuredData = await cachedApiCall(
-          featuredCacheKey, 
-          () => StorefrontProduct.getFeatured({ store_id: store.id, status: 'active', limit: 12 })
-        );
-        console.log('📊 Storefront: Featured products result:', featuredData);
+        let featuredData = [];
+        try {
+          featuredData = await cachedApiCall(
+            featuredCacheKey, 
+            () => StorefrontProduct.getFeatured({ store_id: store.id, status: 'active', limit: 12 })
+          );
+          console.log('📊 Storefront: Featured products result:', featuredData);
+        } catch (featuredError) {
+          console.error('❌ Storefront: Featured products call failed:', featuredError);
+          console.error('❌ Storefront: This likely means the backend is not deployed or not accessible');
+          featuredData = []; // Use empty array as fallback
+        }
         const featuredArray = ensureArray(featuredData);
         setFeaturedProducts(featuredArray);
         setProducts([]);
