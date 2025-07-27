@@ -463,8 +463,10 @@ router.post('/create-checkout', async (req, res) => {
 
         const shippingRate = await stripe.shippingRates.create(shippingRateData, stripeOptions);
         
-        // Use the created shipping rate in the session
-        sessionConfig.shipping_rate = shippingRate.id;
+        // Use the created shipping rate in the session via shipping_options
+        sessionConfig.shipping_options = [{
+          shipping_rate: shippingRate.id
+        }];
         
         console.log('Created and applied shipping rate:', shippingRate.id, 'for method:', shipping_method.name);
       } catch (shippingError) {
@@ -502,7 +504,7 @@ router.post('/create-checkout', async (req, res) => {
     }
 
     // Enable shipping address collection if we have shipping data
-    if (shipping_address || sessionConfig.shipping_rate) {
+    if (shipping_address || sessionConfig.shipping_options) {
       sessionConfig.shipping_address_collection = {
         allowed_countries: ['US', 'CA', 'GB', 'AU', 'NL', 'DE', 'FR', 'ES', 'IT', 'BE', 'AT', 'CH']
       };
