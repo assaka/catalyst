@@ -189,10 +189,6 @@ export default function Auth() {
             navigate(createPageUrl("Storefront"));
           }
         }
-        // Default fallback to Dashboard
-        else {
-          navigate(createPageUrl("Dashboard"));
-        }
       }
     } catch (error) {
     }
