@@ -250,7 +250,45 @@ export default function OrderSuccess() {
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Thank You!</h1>
           <p className="text-lg text-gray-600 mb-4">Your order has been successfully placed</p>
-          <p className="text-sm text-gray-500">Order Number: <span className="font-semibold text-gray-900">#{order.order_number}</span></p>
+          <p className="text-sm text-gray-500 mb-4">Order Number: <span className="font-semibold text-gray-900">#{order.order_number}</span></p>
+          
+          {/* Download Invoice Button */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              // Create simple invoice content
+              const invoiceContent = `
+                INVOICE
+                Order #${order.order_number}
+                Date: ${formatDate(order.created_date || order.createdAt)}
+                
+                Customer: ${order.customer_email}
+                
+                Items:
+                ${orderItems.map(item => 
+                  `${item.product_name} x${item.quantity} - ${formatCurrency(item.total_price, order.currency)}`
+                ).join('\n                ')}
+                
+                Subtotal: ${formatCurrency(order.subtotal, order.currency)}
+                Shipping${order.shipping_method ? ` (${order.shipping_method})` : ''}: ${formatCurrency(order.shipping_amount || order.shipping_cost, order.currency)}
+                Tax: ${formatCurrency(order.tax_amount, order.currency)}
+                ${parseFloat(order.discount_amount || 0) > 0 ? `Discount: -${formatCurrency(order.discount_amount, order.currency)}\n                ` : ''}Total: ${formatCurrency(order.total_amount, order.currency)}
+              `;
+              
+              const blob = new Blob([invoiceContent], { type: 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `invoice-${order.order_number}.txt`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }}
+          >
+            📄 Download Invoice
+          </Button>
         </div>
 
         {/* Account Creation Success Alert */}
@@ -403,48 +441,6 @@ export default function OrderSuccess() {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Download Invoice */}
-            <Card>
-              <CardContent className="pt-6">
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    // Create simple invoice content
-                    const invoiceContent = `
-                      INVOICE
-                      Order #${order.order_number}
-                      Date: ${formatDate(order.created_date || order.createdAt)}
-                      
-                      Customer: ${order.customer_email}
-                      
-                      Items:
-                      ${orderItems.map(item => 
-                        `${item.product_name} x${item.quantity} - ${formatCurrency(item.total_price, order.currency)}`
-                      ).join('\n                      ')}
-                      
-                      Subtotal: ${formatCurrency(order.subtotal, order.currency)}
-                      Shipping: ${formatCurrency(order.shipping_cost, order.currency)}
-                      Tax: ${formatCurrency(order.tax_amount, order.currency)}
-                      ${parseFloat(order.discount_amount || 0) > 0 ? `Discount: -${formatCurrency(order.discount_amount, order.currency)}\n                      ` : ''}Total: ${formatCurrency(order.total_amount, order.currency)}
-                    `;
-                    
-                    const blob = new Blob([invoiceContent], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `invoice-${order.order_number}.txt`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                  }}
-                >
-                  📄 Download Invoice
-                </Button>
               </CardContent>
             </Card>
 
