@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:deployment": "node scripts/test-deployment.js",
+    "deploy:test": "git push && sleep 60 && npm run test:deployment"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.2",

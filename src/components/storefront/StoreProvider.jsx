@@ -1,14 +1,16 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { Store } from '@/api/entities';
-import { Tax } from '@/api/entities';
-import { Category } from '@/api/entities';
-import { ProductLabel } from '@/api/entities';
-import { Attribute } from '@/api/entities';
-import { AttributeSet } from '@/api/entities';
-import { SeoTemplate } from '@/api/entities';
-import { CookieConsentSettings } from '@/api/entities';
+import { 
+  StorefrontStore,
+  StorefrontTax,
+  StorefrontCategory,
+  StorefrontProductLabel,
+  StorefrontAttribute,
+  StorefrontAttributeSet,
+  StorefrontSeoTemplate,
+  StorefrontCookieConsentSettings
+} from '@/api/storefront-entities';
 // Removed SeoSetting import as it's now dynamically imported within fetchStoreData
 
 const StoreContext = createContext(null);
@@ -177,21 +179,21 @@ export const StoreProvider = ({ children }) => {
         if (storeIdentifier) {
           try {
             console.log(`🔍 StoreProvider: Looking for store with slug: ${storeIdentifier}`);
-            const result = await Store.filter({ slug: storeIdentifier });
-            console.log(`📊 StoreProvider: Store.filter result:`, result);
+            const result = await StorefrontStore.filter({ slug: storeIdentifier });
+            console.log(`📊 StoreProvider: StorefrontStore.filter result:`, result);
             return Array.isArray(result) ? result : [];
           } catch (error) {
-            console.error(`❌ StoreProvider: Store.filter failed for slug:`, error);
+            console.error(`❌ StoreProvider: StorefrontStore.filter failed for slug:`, error);
             return [];
           }
         } else {
           try {
             console.log(`🔍 StoreProvider: Getting first store (no slug specified)`);
-            const result = await Store.findAll({ limit: 1 });
-            console.log(`📊 StoreProvider: Store.findAll result:`, result);
+            const result = await StorefrontStore.findAll({ limit: 1 });
+            console.log(`📊 StoreProvider: StorefrontStore.findAll result:`, result);
             return Array.isArray(result) ? result : [];
           } catch (error) {
-            console.error(`❌ StoreProvider: Store.findAll failed:`, error);
+            console.error(`❌ StoreProvider: StorefrontStore.findAll failed:`, error);
             return [];
           }
         }
@@ -255,9 +257,9 @@ export const StoreProvider = ({ children }) => {
 
       // Load SEO settings separately and with priority
       try {
-        const { SeoSetting } = await import('@/api/entities');
+        const { StorefrontSeoSetting } = await import('@/api/storefront-entities');
         const seoSettingsData = await cachedApiCall(`seo-settings-${selectedStore.id}`, async () => {
-          const result = await SeoSetting.filter({ store_id: selectedStore.id });
+          const result = await StorefrontSeoSetting.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         });
         
@@ -315,7 +317,7 @@ export const StoreProvider = ({ children }) => {
       // Load cookie consent settings and update store settings
       try {
         const cookieConsentData = await cachedApiCall(`cookie-consent-${selectedStore.id}`, async () => {
-          const result = await CookieConsentSettings.filter({ store_id: selectedStore.id });
+          const result = await StorefrontCookieConsentSettings.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         });
         
@@ -382,27 +384,27 @@ export const StoreProvider = ({ children }) => {
       // Load other data with extreme caching - all in parallel with staggered delays
       const dataPromises = [
         cachedApiCall(`taxes-${selectedStore.id}`, async () => {
-          const result = await Tax.filter({ store_id: selectedStore.id });
+          const result = await StorefrontTax.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`categories-${selectedStore.id}`, async () => {
-          const result = await Category.filter({ store_id: selectedStore.id, limit: 1000 });
+          const result = await StorefrontCategory.filter({ store_id: selectedStore.id, limit: 1000 });
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`labels-${selectedStore.id}`, async () => {
-          const result = await ProductLabel.filter({ store_id: selectedStore.id, is_active: true });
+          const result = await StorefrontProductLabel.filter({ store_id: selectedStore.id, is_active: true });
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`attributes-${selectedStore.id}`, async () => {
-          const result = await Attribute.filter({ store_id: selectedStore.id });
+          const result = await StorefrontAttribute.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`attr-sets-${selectedStore.id}`, async () => {
-          const result = await AttributeSet.filter({ store_id: selectedStore.id });
+          const result = await StorefrontAttributeSet.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`seo-templates-${selectedStore.id}`, async () => {
-          const result = await SeoTemplate.filter({ store_id: selectedStore.id });
+          const result = await StorefrontSeoTemplate.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
         })
       ];
