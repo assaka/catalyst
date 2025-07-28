@@ -13,6 +13,7 @@ import taxService from '@/services/taxService';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
+import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -650,12 +651,12 @@ export default function Cart() {
                                                 />
                                                 <div className="flex-1">
                                                     <h3 className="text-lg font-semibold">{product.name}</h3>
-                                                    <p className="text-gray-600">{currencySymbol}{safeToFixed(basePriceForDisplay)} each</p>
+                                                    <p className="text-gray-600">{formatDisplayPrice(basePriceForDisplay, currencySymbol, store, taxes, selectedCountry)} each</p>
                                                     
                                                     {item.selected_options && item.selected_options.length > 0 && (
                                                         <div className="text-sm text-gray-500 mt-1">
                                                             {item.selected_options.map((option, idx) => (
-                                                                <div key={idx}>+ {option.name} (+{currencySymbol}{safeToFixed(option.price)})</div>
+                                                                <div key={idx}>+ {option.name} (+{formatDisplayPrice(option.price, currencySymbol, store, taxes, selectedCountry)})</div>
                                                             ))}
                                                         </div>
                                                     )}
@@ -687,7 +688,7 @@ export default function Cart() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="text-xl font-bold">{currencySymbol}{safeToFixed(itemTotal)}</p>
+                                                    <p className="text-xl font-bold">{formatDisplayPrice(itemTotal, currencySymbol, store, taxes, selectedCountry)}</p>
                                                 </div>
                                             </div>
                                         );

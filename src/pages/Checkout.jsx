@@ -40,7 +40,7 @@ import {
 import { Tag, CalendarIcon } from "lucide-react";
 
 export default function Checkout() {
-  const { store, settings, loading: storeLoading } = useStore();
+  const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
   
   // Get currency symbol from settings
   const currencySymbol = settings?.currency_symbol || '$';
@@ -72,7 +72,7 @@ export default function Checkout() {
     city: '',
     state: '',
     postal_code: '',
-    country: 'US',
+    country: selectedCountry || 'US',
     phone: ''
   });
   
@@ -83,7 +83,7 @@ export default function Checkout() {
     city: '',
     state: '',
     postal_code: '',
-    country: 'US',
+    country: selectedCountry || 'US',
     phone: ''
   });
   

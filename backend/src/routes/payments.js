@@ -1,6 +1,6 @@
 const express = require('express');
 const auth = require('../middleware/auth');
-const { Store, Order, OrderItem } = require('../models');
+const { Store, Order, OrderItem, Product } = require('../models');
 
 const router = express.Router();
 
@@ -879,6 +879,20 @@ async function createOrderFromCheckoutSession(session) {
     console.log('Product map has', productMap.size, 'products');
     
     for (const [productId, productData] of productMap) {
+      // Look up actual product name from database if needed
+      let actualProductName = productData.product_name;
+      if (!actualProductName || actualProductName === 'Product') {
+        try {
+          const product = await Product.findByPk(productId);
+          if (product) {
+            actualProductName = product.name;
+            console.log('Retrieved actual product name from database:', actualProductName);
+          }
+        } catch (productLookupError) {
+          console.warn('Could not look up product name for ID:', productId, productLookupError.message);
+        }
+      }
+      
       const optionsTotal = productData.selected_options.reduce((sum, opt) => sum + opt.total, 0);
       const totalPrice = productData.base_total + optionsTotal;
       
@@ -889,7 +903,7 @@ async function createOrderFromCheckoutSession(session) {
       const orderItemData = {
         order_id: order.id,
         product_id: productData.product_id,
-        product_name: productData.product_name,
+        product_name: actualProductName,
         product_sku: productData.product_sku,
         quantity: productData.quantity,
         unit_price: finalPrice,
