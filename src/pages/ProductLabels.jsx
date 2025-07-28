@@ -41,9 +41,6 @@ export default function ProductLabels() {
         ProductLabel.filter({ store_id: storeId })
       ]);
       
-      console.log('🔍 ProductLabels: Loaded attributes:', attributesData);
-      console.log('🔍 ProductLabels: Loaded labels:', labelsData);
-      
       setAttributes(attributesData || []);
       setLabels(labelsData || []);
     } catch (error) {
@@ -85,8 +82,6 @@ export default function ProductLabels() {
     // Remove the frontend field name
     delete backendData.text_color;
 
-    console.log('🔍 Submitting product label data:', backendData);
-
     try {
       if (editingLabel) {
         await ProductLabel.update(editingLabel.id, backendData);
@@ -96,7 +91,6 @@ export default function ProductLabels() {
       
       // Clear storefront cache for product labels to ensure new labels appear immediately
       if (typeof window !== 'undefined' && window.clearCache) {
-        console.log('🗑️ Clearing storefront cache after label creation');
         window.clearCache();
       }
       
@@ -144,8 +138,6 @@ export default function ProductLabels() {
     }
 
     try {
-      console.log('🧪 Creating test label for store:', storeId);
-      
       // Create test label data directly using the regular API
       const testLabelData = {
         name: 'Debug Test Label',
@@ -163,9 +155,8 @@ export default function ProductLabels() {
       // Use the existing handleSubmit logic which includes field mapping
       await handleSubmit(testLabelData);
       
-      console.log('✅ Test label created successfully');
     } catch (error) {
-      console.error('❌ Error creating test label:', error);
+      console.error('Error creating test label:', error);
       alert(`Error creating test label: ${error.message}`);
     }
   };

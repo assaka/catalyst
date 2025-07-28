@@ -418,59 +418,12 @@ export const StoreProvider = ({ children }) => {
           return Array.isArray(result) ? result : [];
         }),
         cachedApiCall(`labels-${selectedStore.id}`, async () => {
-          console.log('🏷️ StoreProvider: === PRODUCT LABELS LOADING START ===');
-          console.log('🏷️ StoreProvider: Store ID:', selectedStore.id);
-          console.log('🏷️ StoreProvider: Store Name:', selectedStore.name);
-          
-          // Check if we should force refresh
-          const forceRefresh = localStorage.getItem('forceRefreshLabels');
-          if (forceRefresh) {
-            console.log('🔄 StoreProvider: Force refreshing product labels');
-            localStorage.removeItem('forceRefreshLabels');
-          }
-          
           try {
-            console.log('📞 StoreProvider: About to call StorefrontProductLabel.filter with params:', { store_id: selectedStore.id });
-            
-            const startTime = Date.now();
             const result = await StorefrontProductLabel.filter({ store_id: selectedStore.id });
-            const endTime = Date.now();
-            
-            console.log('⏱️ StoreProvider: API call took', endTime - startTime, 'ms');
-            console.log('🔍 StoreProvider: Raw product labels result type:', typeof result);
-            console.log('🔍 StoreProvider: Raw product labels result:', result);
-            console.log('🔍 StoreProvider: Is array?', Array.isArray(result));
-            console.log('🔍 StoreProvider: Array length:', Array.isArray(result) ? result.length : 'N/A');
-            
-            if (Array.isArray(result) && result.length > 0) {
-              console.log('🏷️ StoreProvider: First label sample:', result[0]);
-              result.forEach((label, index) => {
-                console.log(`🏷️ StoreProvider: Label ${index + 1}:`, {
-                  id: label.id,
-                  name: label.name,
-                  text: label.text,
-                  is_active: label.is_active,
-                  position: label.position,
-                  background_color: label.background_color,
-                  conditions: label.conditions
-                });
-              });
-            }
-            
             const activeLabels = Array.isArray(result) ? result.filter(label => label.is_active !== false) : [];
-            console.log('✅ StoreProvider: Active product labels count:', activeLabels.length);
-            console.log('✅ StoreProvider: Active product labels:', activeLabels);
-            console.log('🏷️ StoreProvider: === PRODUCT LABELS LOADING END ===');
-            
             return activeLabels;
           } catch (error) {
-            console.error('❌ StoreProvider: Error fetching product labels:', error);
-            console.error('❌ StoreProvider: Error details:', {
-              message: error.message,
-              status: error.status,
-              stack: error.stack
-            });
-            console.log('🏷️ StoreProvider: === PRODUCT LABELS LOADING FAILED ===');
+            console.error('Error fetching product labels:', error);
             return [];
           }
         }),
@@ -505,12 +458,7 @@ export const StoreProvider = ({ children }) => {
       setCategories(processedCategories);
       
       const productLabelsData = results[2].status === 'fulfilled' ? (results[2].value || []) : [];
-      console.log('🏷️ StoreProvider: === SETTING PRODUCT LABELS TO STATE ===');
-      console.log('🏷️ StoreProvider: Loaded product labels data:', productLabelsData);
-      console.log('🏷️ StoreProvider: Setting productLabels state with', productLabelsData.length, 'labels');
       setProductLabels(productLabelsData);
-      console.log('✅ StoreProvider: Product labels state has been set');
-      console.log('🏷️ StoreProvider: === PRODUCT LABELS STATE UPDATE COMPLETE ===');
       
       const attrData = results[3].status === 'fulfilled' ? (results[3].value || []) : [];
       setAttributes(attrData);
