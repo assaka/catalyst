@@ -14,7 +14,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     
     console.log('🔍 *** DEPLOYMENT v3.0 ACTIVE *** - Fetching order with payment reference:', paymentReference);
     
-    // Simple approach - get order with relationships
+    // Use EXACT same logic as admin orders that works
     const order = await Order.findOne({
       where: {
         [Op.or]: [
@@ -26,14 +26,11 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       include: [
         {
           model: Store,
-          attributes: ['id', 'name', 'currency']
+          attributes: ['id', 'name']
         },
         {
           model: OrderItem,
-          include: [{ 
-            model: Product, 
-            attributes: ['id', 'name', 'sku', 'images'] 
-          }]
+          include: [{ model: Product, attributes: ['id', 'name', 'sku'] }]
         }
       ]
     });
@@ -46,54 +43,12 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       });
     }
 
-    console.log('✅ Order found with', order.OrderItems?.length || 0, 'items - Deployment timestamp:', new Date().toISOString());
+    console.log('✅ Order found with', order.OrderItems?.length || 0, 'items using admin-style query');
     
-    // Debug Sequelize result
-    console.log('🔍 Raw Sequelize result keys:', Object.keys(order.dataValues || order));
-    console.log('🔍 OrderItems property exists:', 'OrderItems' in order);
-    console.log('🔍 OrderItems value:', order.OrderItems);
-    console.log('🔍 Store property exists:', 'Store' in order);
-    console.log('🔍 Store value:', order.Store);
-    
-    // TEMPORARY FIX: Manually fetch OrderItems since associations aren't working
-    console.log('🔧 Manually fetching OrderItems for order:', order.id);
-    
-    try {
-      const manualOrderItems = await OrderItem.findAll({
-        where: { order_id: order.id },
-        include: [{ 
-          model: Product, 
-          attributes: ['id', 'name', 'sku', 'images'] 
-        }]
-      });
-      
-      console.log('🔧 Manual query found', manualOrderItems.length, 'OrderItems');
-      
-      // Convert order to plain object and attach manual OrderItems
-      const orderData = order.toJSON();
-      orderData.OrderItems = manualOrderItems.map(item => item.toJSON());
-      
-      // Also manually fetch Store if needed
-      if (!orderData.Store && order.store_id) {
-        const manualStore = await Store.findByPk(order.store_id);
-        orderData.Store = manualStore ? manualStore.toJSON() : null;
-      }
-      
-      console.log('🔧 Final manual result: OrderItems =', orderData.OrderItems.length, 'Store =', !!orderData.Store);
-      
-      res.json({
-        success: true,
-        data: orderData
-      });
-      
-    } catch (manualError) {
-      console.error('🔧 Manual fetch failed:', manualError);
-      
-      res.json({
-        success: true,
-        data: order
-      });
-    }
+    res.json({
+      success: true,
+      data: order
+    });
 
   } catch (error) {
     console.error('❌ Error fetching order by payment reference:', error);
