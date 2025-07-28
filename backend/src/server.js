@@ -12,6 +12,10 @@ const { sequelize } = require('./database/connection');
 const errorHandler = require('./middleware/errorHandler');
 const authMiddleware = require('./middleware/auth');
 
+// Import all models to ensure associations are loaded
+const models = require('./models');
+console.log('🔧 Models loaded with associations initialized');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
