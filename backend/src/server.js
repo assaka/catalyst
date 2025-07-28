@@ -63,6 +63,17 @@ const addressRoutes = require('./routes/addresses');
 
 const app = express();
 
+// DEPLOYMENT VERIFICATION - v4.0
+app.get('/deployment-status', (req, res) => {
+  res.json({
+    deployed: true,
+    version: '4.0',
+    timestamp: new Date().toISOString(),
+    message: 'OrderItems fix is DEPLOYED and ACTIVE',
+    pid: process.pid
+  });
+});
+
 // Trust proxy for Render.com
 app.set('trust proxy', 1);
 
