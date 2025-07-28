@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ProductTab } from "@/api/entities";
+import { StorefrontProductTab } from "@/api/storefront-entities";
 import { Wishlist } from "@/api/entities";
 import FlashMessage from "@/components/storefront/FlashMessage";
 // New imports for enhanced functionality
@@ -171,13 +171,20 @@ export default function ProductDetail() {
   const loadProductTabs = async () => {
     if (!store?.id) return;
     try {
+      console.log('🔍 ProductDetail: Loading product tabs for store:', store.id);
       const tabs = await cachedApiCall(
         `product-tabs-${store.id}`,
-        () => ProductTab.filter({ store_id: store.id, is_active: true })
+        () => {
+          console.log('📞 ProductDetail: About to call StorefrontProductTab.filter');
+          return StorefrontProductTab.filter({ store_id: store.id, is_active: true });
+        }
       );
+      console.log('🏷️ ProductDetail: Raw product tabs result:', tabs);
+      console.log('🏷️ ProductDetail: Product tabs array length:', Array.isArray(tabs) ? tabs.length : 'not an array');
       setProductTabs(tabs || []);
+      console.log('✅ ProductDetail: Product tabs set to state:', tabs || []);
     } catch (error) {
-      console.error('Error loading product tabs:', error);
+      console.error('❌ ProductDetail: Error loading product tabs:', error);
       setProductTabs([]);
     }
   };

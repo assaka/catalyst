@@ -276,6 +276,7 @@ export const StorefrontTax = new StorefrontBaseEntity('tax');
 export const StorefrontAttribute = new StorefrontBaseEntity('attributes');
 export const StorefrontAttributeSet = new StorefrontBaseEntity('attribute-sets');
 export const StorefrontProductLabel = new StorefrontBaseEntity('product-labels');
+export const StorefrontProductTab = new StorefrontBaseEntity('product-tabs');
 export const StorefrontSeoTemplate = new StorefrontBaseEntity('seo-templates');
 export const StorefrontSeoSetting = new StorefrontBaseEntity('seo-settings');
 export const StorefrontCookieConsentSettings = new StorefrontBaseEntity('cookie-consent-settings');
