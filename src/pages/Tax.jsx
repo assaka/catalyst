@@ -138,6 +138,21 @@ export default function TaxPage() {
         calculate_tax_after_discount: updateResult?.[0]?.settings?.calculate_tax_after_discount
       });
 
+      // Clear storefront cache to ensure tax setting changes are reflected immediately
+      console.log('🧹 Clearing storefront cache after tax settings update');
+      if (typeof window !== 'undefined') {
+        // Clear localStorage cache used by StoreProvider
+        localStorage.removeItem('storeProviderCache');
+        
+        // Clear any manual cache clearing flags
+        localStorage.setItem('forceRefreshStore', 'true');
+        
+        // Trigger global cache clear if available
+        if (window.clearCache) {
+          window.clearCache();
+        }
+      }
+
       // Update local state immediately for UI responsiveness
       const updatedStore = { ...selectedStore, settings: newSettings };
       

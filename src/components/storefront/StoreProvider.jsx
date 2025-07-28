@@ -174,6 +174,15 @@ export const StoreProvider = ({ children }) => {
     try {
       setLoading(true);
       
+      // Check if we need to force refresh the cache (e.g., after admin settings changes)
+      const forceRefresh = localStorage.getItem('forceRefreshStore');
+      if (forceRefresh) {
+        console.log('🧹 StoreProvider: Force refresh detected, clearing cache');
+        apiCache.clear();
+        localStorage.removeItem('storeProviderCache');
+        localStorage.removeItem('forceRefreshStore');
+      }
+      
       // Get store first with ultra-aggressive caching
       const path = location.pathname;
       
