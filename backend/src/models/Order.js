@@ -155,6 +155,74 @@ const Order = sequelize.define('Order', {
       if (!order.order_number) {
         order.order_number = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9).toUpperCase();
       }
+    },
+    afterCreate: async (order) => {
+      // If this is a guest order (no customer_id), create a customer record
+      if (!order.customer_id && order.customer_email && order.store_id) {
+        try {
+          const Customer = require('./Customer');
+          
+          // Parse name from billing address
+          let firstName = 'Guest';
+          let lastName = 'Customer';
+          
+          if (order.billing_address?.full_name) {
+            const nameParts = order.billing_address.full_name.trim().split(' ');
+            if (nameParts.length > 0) {
+              firstName = nameParts[0];
+              lastName = nameParts.slice(1).join(' ') || 'Customer';
+            }
+          } else if (order.shipping_address?.full_name) {
+            const nameParts = order.shipping_address.full_name.trim().split(' ');
+            if (nameParts.length > 0) {
+              firstName = nameParts[0];
+              lastName = nameParts.slice(1).join(' ') || 'Customer';
+            }
+          }
+          
+          // Check if customer already exists
+          const existingCustomer = await Customer.findOne({
+            where: {
+              store_id: order.store_id,
+              email: order.customer_email
+            }
+          });
+          
+          if (!existingCustomer) {
+            // Create new customer record
+            const newCustomer = await Customer.create({
+              store_id: order.store_id,
+              email: order.customer_email,
+              first_name: firstName,
+              last_name: lastName,
+              phone: order.customer_phone,
+              total_spent: order.total_amount || 0,
+              total_orders: 1,
+              last_order_date: new Date(),
+              notes: 'Auto-created from guest order'
+            });
+            
+            // Update the order with the new customer_id
+            await order.update({ customer_id: newCustomer.id });
+          } else {
+            // Update existing customer stats
+            const newTotalSpent = parseFloat(existingCustomer.total_spent || 0) + parseFloat(order.total_amount || 0);
+            const newTotalOrders = (existingCustomer.total_orders || 0) + 1;
+            
+            await existingCustomer.update({
+              total_spent: newTotalSpent,
+              total_orders: newTotalOrders,
+              last_order_date: new Date()
+            });
+            
+            // Update the order with the existing customer_id
+            await order.update({ customer_id: existingCustomer.id });
+          }
+        } catch (error) {
+          console.error('Error creating/updating customer for order:', error);
+          // Don't fail the order creation if customer creation fails
+        }
+      }
     }
   }
 });

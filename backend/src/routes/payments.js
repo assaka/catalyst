@@ -882,16 +882,22 @@ async function createOrderFromCheckoutSession(session) {
       const optionsTotal = productData.selected_options.reduce((sum, opt) => sum + opt.total, 0);
       const totalPrice = productData.base_total + optionsTotal;
       
+      const basePrice = productData.unit_price;
+      const optionsPrice = productData.selected_options.reduce((sum, opt) => sum + opt.price, 0);
+      const finalPrice = basePrice + optionsPrice;
+      
       const orderItemData = {
         order_id: order.id,
         product_id: productData.product_id,
         product_name: productData.product_name,
         product_sku: productData.product_sku,
         quantity: productData.quantity,
-        unit_price: (productData.unit_price + (productData.selected_options.reduce((sum, opt) => sum + opt.price, 0))),
+        unit_price: finalPrice,
         total_price: totalPrice,
+        original_price: finalPrice, // Store original price before any discounts
+        selected_options: productData.selected_options || [], // Store custom options directly
         product_attributes: {
-          selected_options: productData.selected_options
+          // Keep any other product attributes here
         }
       };
       

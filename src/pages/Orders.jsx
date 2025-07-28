@@ -335,7 +335,7 @@ export default function Orders() {
                                               <TableRow>
                                                 <TableHead>Product</TableHead>
                                                 <TableHead className="text-center">Qty</TableHead>
-                                                <TableHead className="text-right">Price</TableHead>
+                                                <TableHead className="text-right">Unit Price</TableHead>
                                                 <TableHead className="text-right">Total</TableHead>
                                               </TableRow>
                                             </TableHeader>
@@ -348,11 +348,32 @@ export default function Orders() {
                                                       {item.product_sku && (
                                                         <p className="text-sm text-gray-500">SKU: {item.product_sku}</p>
                                                       )}
+                                                      {item.selected_options && item.selected_options.length > 0 && (
+                                                        <div className="text-sm text-gray-600 mt-1">
+                                                          {item.selected_options.map((option, optIndex) => (
+                                                            <p key={optIndex}>
+                                                              {option.name}: {option.value}
+                                                              {option.price > 0 && ` (+${formatPrice(option.price)})`}
+                                                            </p>
+                                                          ))}
+                                                        </div>
+                                                      )}
                                                     </div>
                                                   </TableCell>
                                                   <TableCell className="text-center">{item.quantity || 1}</TableCell>
-                                                  <TableCell className="text-right">{formatPrice(item.price)}</TableCell>
-                                                  <TableCell className="text-right font-medium">{formatPrice(item.total_price || (item.price * item.quantity))}</TableCell>
+                                                  <TableCell className="text-right">
+                                                    <div>
+                                                      {item.original_price && parseFloat(item.original_price) !== parseFloat(item.unit_price || item.price) ? (
+                                                        <>
+                                                          <p className="text-sm text-gray-500 line-through">{formatPrice(item.original_price)}</p>
+                                                          <p className="text-red-600 font-medium">{formatPrice(item.unit_price || item.price)}</p>
+                                                        </>
+                                                      ) : (
+                                                        <p>{formatPrice(item.unit_price || item.price)}</p>
+                                                      )}
+                                                    </div>
+                                                  </TableCell>
+                                                  <TableCell className="text-right font-medium">{formatPrice(item.total_price || ((item.unit_price || item.price) * item.quantity))}</TableCell>
                                                 </TableRow>
                                               ))}
                                             </TableBody>

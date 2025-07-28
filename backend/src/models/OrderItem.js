@@ -37,6 +37,15 @@ const OrderItem = sequelize.define('OrderItem', {
     type: DataTypes.JSON,
     defaultValue: {}
   },
+  selected_options: {
+    type: DataTypes.JSON,
+    defaultValue: []
+  },
+  original_price: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+    comment: 'Price before any discounts'
+  },
   // Foreign keys
   order_id: {
     type: DataTypes.UUID,
