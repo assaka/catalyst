@@ -26,10 +26,19 @@ router.get('/', async (req, res) => {
       order: [['sort_order', 'ASC'], ['name', 'ASC']]
     });
 
-    res.json({
-      success: true,
-      data: productTabs
-    });
+    // Check if this is a public request - return just the array for consistency with other public APIs
+    const isPublicRequest = req.originalUrl.includes('/api/public/product-tabs');
+    
+    if (isPublicRequest) {
+      // Return just the array for public requests (for compatibility with StorefrontBaseEntity)
+      res.json(productTabs);
+    } else {
+      // Return wrapped response for authenticated requests
+      res.json({
+        success: true,
+        data: productTabs
+      });
+    }
   } catch (error) {
     console.error('Get product tabs error:', error);
     res.status(500).json({
