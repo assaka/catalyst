@@ -23,12 +23,14 @@ import {
 } from 'lucide-react';
 
 export default function OrderSuccess() {
-  console.log('OrderSuccess component loaded hamid - Version: Simplified Layout 4.0');
+  console.log('🔍 HAMID DEBUG: OrderSuccess component loaded - Version: Simplified Layout 4.0');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
   // Get session ID from URL
   let sessionId = searchParams.get('session_id');
+  console.log('🔍 HAMID DEBUG: Initial sessionId from searchParams:', sessionId);
+  console.log('🔍 HAMID DEBUG: Current URL:', window.location.href);
   
   // Fallback methods to get session ID
   if (!sessionId) {
@@ -45,6 +47,8 @@ export default function OrderSuccess() {
       sessionId = localStorage.getItem('stripe_session_id');
     }
   }
+
+  console.log('🔍 HAMID DEBUG: Final sessionId after fallbacks:', sessionId);
 
   const [order, setOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
@@ -90,8 +94,10 @@ export default function OrderSuccess() {
       }
 
       try {
-        console.log('Loading order from session ID:', sessionId);
+        console.log('🔍 HAMID DEBUG: Loading order from session ID:', sessionId);
         const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
+        console.log('🔍 HAMID DEBUG: API URL:', apiUrl);
+        console.log('🔍 HAMID DEBUG: Full API endpoint:', `${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
         const response = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
         const result = await response.json();
         
