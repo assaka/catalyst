@@ -100,17 +100,18 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
         }
         
         console.log('🔍 LayeredNavigation: Processing', attributes.length, 'attributes for', products.length, 'products');
-        console.log('🔍 LayeredNavigation: Filterable attributes:', attributes.filter(a => a.is_filterable).map(a => ({ 
-            name: a.name, 
-            code: a.code, 
-            options: a.options?.length || 0 
-        })));
+        if (attributes.length > 0) {
+            console.log('🔍 LayeredNavigation: Filterable attributes:', attributes.filter(a => a.is_filterable).map(a => ({ 
+                name: a.name, 
+                code: a.code, 
+                options: a.options?.length || 0 
+            })));
+        }
         
         const options = {};
         attributes.forEach(attr => {
-            console.log(`🔍 LayeredNavigation: Processing attribute "${attr.name}" (${attr.code}), is_filterable: ${attr.is_filterable}`);
-            
             if (attr.is_filterable) {
+                console.log(`🔍 LayeredNavigation: Processing filterable attribute "${attr.name}" (${attr.code})`);
                 const values = new Set();
                 
                 // Add values from products - try multiple possible attribute keys
