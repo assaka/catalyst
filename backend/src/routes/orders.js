@@ -19,6 +19,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     const maxRetries = 3;
     
     while (!order && retryCount < maxRetries) {
+      // Simplified query - first get the order, then add includes
       order = await Order.findOne({
         where: {
           [Op.or]: [
@@ -26,21 +27,30 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
             { stripe_payment_intent_id: paymentReference },
             { stripe_session_id: paymentReference }
           ]
-        },
-        include: [
-          {
-            model: Store,
-            attributes: ['id', 'name', 'currency']
-          },
-          {
-            model: OrderItem,
-            include: [{ 
-              model: Product, 
-              attributes: ['id', 'name', 'sku', 'images'] 
-            }]
-          }
-        ]
+        }
       });
+      
+      if (order) {
+        // Get OrderItems separately to avoid include conflicts
+        const orderItems = await OrderItem.findAll({
+          where: { order_id: order.id },
+          include: [{ 
+            model: Product, 
+            attributes: ['id', 'name', 'sku', 'images'] 
+          }]
+        });
+        
+        // Get Store separately
+        const store = await Store.findByPk(order.store_id, {
+          attributes: ['id', 'name', 'currency']
+        });
+        
+        // Manually attach associations
+        order.OrderItems = orderItems;
+        order.Store = store;
+        
+        console.log('🔧 Manually attached', orderItems.length, 'OrderItems and Store to order');
+      }
       
       if (!order && retryCount < maxRetries - 1) {
         console.log(`🔄 Order not found, retrying... (${retryCount + 1}/${maxRetries})`);
@@ -64,36 +74,8 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       console.log('⚠️ Order found but no OrderItems, attempting refetch...');
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      order = await Order.findOne({
-        where: { id: order.id },
-        include: [
-          {
-            model: Store,
-            attributes: ['id', 'name', 'currency']
-          },
-          {
-            model: OrderItem,
-            include: [{ 
-              model: Product, 
-              attributes: ['id', 'name', 'sku', 'images'] 
-            }]
-          }
-        ]
-      });
-    }
-
-    console.log('✅ Order found:', order.id, 'with', order.OrderItems?.length || 0, 'items');
-    
-    // Debug: Check if OrderItems exist directly
-    const directItemCount = await OrderItem.count({ where: { order_id: order.id } });
-    console.log('🔍 Direct OrderItem count for order', order.id, ':', directItemCount);
-    
-    if (order.OrderItems?.length === 0 && directItemCount > 0) {
-      console.log('❌ CRITICAL: OrderItems exist in DB but not returned by include!');
-      console.log('🔍 Association debug - trying direct fetch...');
-      
-      // Try to get OrderItems directly
-      const directItems = await OrderItem.findAll({ 
+      // Refetch OrderItems separately
+      const orderItems = await OrderItem.findAll({
         where: { order_id: order.id },
         include: [{ 
           model: Product, 
@@ -101,16 +83,12 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
         }]
       });
       
-      console.log('📋 Direct fetch found', directItems.length, 'items');
-      
-      // Manually attach OrderItems to the order object
-      order.OrderItems = directItems;
-      console.log('🔧 Manually attached OrderItems to order object');
+      // Update the attached OrderItems
+      order.OrderItems = orderItems;
+      console.log('🔧 Refetch: Manually attached', orderItems.length, 'OrderItems');
     }
-    
-    if (order.OrderItems?.length === 0) {
-      console.log('⚠️ OrderItems still empty after all attempts');
-    }
+
+    console.log('✅ Order found:', order.id, 'with', order.OrderItems?.length || 0, 'items');
 
     res.json({
       success: true,
