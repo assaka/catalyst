@@ -453,9 +453,15 @@ router.patch('/me', require('../middleware/auth'), async (req, res) => {
 });
 
 // @route   GET /api/auth/google
-// @desc    Initiate Google OAuth
+// @desc    Initiate Google OAuth with role specification
 // @access  Public
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google', (req, res, next) => {
+  // Store the intended role in the session for the callback
+  const intendedRole = req.query.role || 'store_owner'; // Default to store_owner for backward compatibility
+  req.session.intendedRole = intendedRole;
+  
+  passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
+});
 
 // @route   GET /api/auth/google/callback
 // @desc    Google OAuth callback
@@ -463,6 +469,7 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', { session: false }, async (err, user, info) => {
     const corsOrigin = process.env.CORS_ORIGIN || 'https://catalyst-pearl.vercel.app';
+    const intendedRole = req.session.intendedRole || 'store_owner';
     
     if (err) {
       console.error('OAuth authentication error:', err);
@@ -474,32 +481,56 @@ router.get('/google/callback', (req, res, next) => {
       
       // Handle database connection errors specifically
       if (err.message && err.message.includes('ENETUNREACH')) {
-        return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
+        const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
+        return res.redirect(`${corsOrigin}/${redirectPage}?error=database_connection_failed`);
       }
       
       if (err.message && err.message.includes('Database connection failed')) {
-        return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
+        const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
+        return res.redirect(`${corsOrigin}/${redirectPage}?error=database_connection_failed`);
       }
       
       // Pass along more specific error info
       const errorParam = err.message ? err.message.replace(/\s+/g, '_').toLowerCase() : 'oauth_failed';
-      return res.redirect(`${corsOrigin}/auth?error=${errorParam}`);
+      const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
+      return res.redirect(`${corsOrigin}/${redirectPage}?error=${errorParam}`);
     }
     
     if (!user) {
       console.error('OAuth failed: No user returned');
-      return res.redirect(`${corsOrigin}/auth?error=oauth_failed`);
+      const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
+      return res.redirect(`${corsOrigin}/${redirectPage}?error=oauth_failed`);
     }
     
     try {
-      console.log('✅ OAuth successful, generating token for user:', user.email);
+      // Set user role based on intended role from OAuth initiation
+      if (!user.role || user.role !== intendedRole) {
+        console.log(`✅ Setting user role to ${intendedRole} for OAuth user:`, user.email);
+        await User.update(
+          { 
+            role: intendedRole,
+            account_type: intendedRole === 'customer' ? 'individual' : 'agency'
+          },
+          { where: { id: user.id } }
+        );
+        
+        // Update user object with new role
+        user.role = intendedRole;
+        user.account_type = intendedRole === 'customer' ? 'individual' : 'agency';
+      }
+      
+      console.log('✅ OAuth successful, generating token for user:', user.email, 'with role:', user.role);
       const token = generateToken(user);
-      console.log('✅ Token generated successfully, redirecting to:', `${corsOrigin}/auth?token=${token}&oauth=success`);
-      res.redirect(`${corsOrigin}/auth?token=${token}&oauth=success`);
+      
+      // Redirect to appropriate auth page based on role
+      const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
+      console.log('✅ Token generated successfully, redirecting to:', `${corsOrigin}/${redirectPage}?token=${token}&oauth=success`);
+      res.redirect(`${corsOrigin}/${redirectPage}?token=${token}&oauth=success`);
     } catch (tokenError) {
       console.error('Token generation error:', tokenError);
       console.error('User object:', user);
-      res.redirect(`${corsOrigin}/auth?error=token_generation_failed`);
+      const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
+      res.redirect(`${corsOrigin}/${redirectPage}?error=token_generation_failed`);
     }
   })(req, res, next);
 });

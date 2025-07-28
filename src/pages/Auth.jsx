@@ -307,7 +307,8 @@ export default function Auth() {
   const handleGoogleAuth = () => {
     setLoading(true);
     setError("");
-    AuthService.googleLogin();
+    // Add role parameter to Google OAuth for store owners
+    window.location.href = `/api/auth/google?role=store_owner`;
   };
 
   return (
