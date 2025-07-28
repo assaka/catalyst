@@ -110,12 +110,18 @@ class BaseEntity {
 class AuthService {
   async login(email, password, rememberMe = false) {
     const response = await apiClient.post('auth/login', { email, password, rememberMe });
+    console.log("🔧 Auth.login - Raw response:", response);
+    
     if (response.data && response.data.token) {
       apiClient.setToken(response.data.token);
     } else if (response.token) {
       apiClient.setToken(response.token);
     }
-    return response.data || response;
+    
+    const result = response.data || response;
+    console.log("🔧 Auth.login - Processed result:", result);
+    
+    return result;
   }
 
   googleLogin() {
@@ -124,12 +130,19 @@ class AuthService {
 
   async register(userData) {
     const response = await apiClient.post('auth/register', userData);
+    console.log("🔧 Auth.register - Raw response:", response);
+    
     if (response.data && response.data.token) {
       apiClient.setToken(response.data.token);
     } else if (response.token) {
       apiClient.setToken(response.token);
     }
-    return response.data || response;
+    
+    // Return the full response to maintain compatibility
+    const result = response.data || response;
+    console.log("🔧 Auth.register - Processed result:", result);
+    
+    return result;
   }
 
   async logout() {

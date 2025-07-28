@@ -139,8 +139,22 @@ export default function CustomerAuth() {
         }
 
         // Set role-based session data for customer
+        // response is either the full backend response or just the data part
         const userData = response.data?.user || response.user;
         const token = response.data?.token || response.token;
+        
+        console.log("📊 Login response data:", {
+          response,
+          userData,
+          token,
+          hasUser: !!userData,
+          userRole: userData?.role
+        });
+        
+        if (!userData || !token) {
+          setError("Login failed - invalid response from server");
+          return;
+        }
         
         // Ensure we have the token set in apiClient first
         if (token) {
@@ -192,8 +206,22 @@ export default function CustomerAuth() {
         console.log("✅ CustomerAuth.jsx: Registration successful:", response);
 
         // Set role-based session data for new customer
+        // response is either the full backend response or just the data part
         const userData = response.data?.user || response.user;
         const token = response.data?.token || response.token;
+        
+        console.log("📊 Registration response data:", {
+          response,
+          userData,
+          token,
+          hasUser: !!userData,
+          userRole: userData?.role
+        });
+        
+        if (!userData || !token) {
+          setError("Registration failed - invalid response from server");
+          return;
+        }
         
         // Ensure we have the token set in apiClient first
         if (token) {
