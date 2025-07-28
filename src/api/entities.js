@@ -25,10 +25,6 @@ class BaseEntity {
       
       console.log(`🔍 BaseEntity ${this.endpoint}: hasToken=${!!hasToken}, isLoggedOut=${isLoggedOut}, isPublicFriendly=${isPublicFriendly}, shouldUsePublicEndpoint=${shouldUsePublicEndpoint}, userLoggedOutFlag=${userLoggedOutFlag}`);
       
-      if (this.endpoint === 'product-tabs') {
-        console.log(`🔍 ProductTabs specific debug: URL=${url}, params=${JSON.stringify(params)}`);
-      }
-      
       let response;
       if (isPublicFriendly && shouldUsePublicEndpoint) {
         console.log(`✅ Using PUBLIC endpoint for ${this.endpoint}`);
@@ -89,9 +85,7 @@ class BaseEntity {
   // Filter records (alias for findAll for compatibility)
   async filter(params = {}) {
     try {
-      console.log(`🔍 BaseEntity.filter() called for ${this.endpoint} with params:`, params);
       const result = await this.findAll(params);
-      console.log(`📊 BaseEntity.filter() result for ${this.endpoint}:`, result);
       
       // Double-check that result is an array
       const finalResult = Array.isArray(result) ? result : [];

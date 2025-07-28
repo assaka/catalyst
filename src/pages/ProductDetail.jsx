@@ -183,27 +183,10 @@ export default function ProductDetail() {
       console.log('🔍 Loading product tabs for store:', store.id);
       console.log('📞 About to call ProductTab.filter with params:', { store_id: store.id, is_active: true });
       
-      // Debug the ProductTab entity itself
-      console.log('🔍 ProductTab entity:', ProductTab);
-      console.log('🔍 ProductTab endpoint:', ProductTab.endpoint);
-      console.log('🔍 ProductTab filter method:', typeof ProductTab.filter);
-      
-      // Clear any existing cache first
-      const cacheKey = `product-tabs-${store.id}`;
-      console.log('🔍 Clearing cache for key:', cacheKey);
-      
-      // Test with different params to see if it's a data issue
-      console.log('🔍 Testing ProductTab.filter with just store_id');
-      try {
-        const allTabs = await ProductTab.filter({ store_id: store.id });
-        console.log('📊 All tabs (including inactive):', allTabs);
-      } catch (error) {
-        console.error('❌ Error getting all tabs:', error);
-      }
-      
-      // Now try with is_active filter
-      console.log('🔍 Calling ProductTab.filter directly (bypassing cache)');
-      const tabs = await ProductTab.filter({ store_id: store.id, is_active: true });
+      const tabs = await cachedApiCall(
+        `product-tabs-${store.id}`,
+        () => ProductTab.filter({ store_id: store.id, is_active: true })
+      );
       
       console.log('📊 Product tabs API response:', tabs);
       console.log('📊 Product tabs array length:', tabs?.length || 0);
@@ -788,7 +771,7 @@ export default function ProductDetail() {
       </div>
 
       {/* Product Tabs */}
-      {console.log('🔍 Rendering product tabs:', productTabs) || productTabs.length > 0 && (
+      {console.log('🔍 About to render tabs section, productTabs:', productTabs, 'length:', productTabs.length) || productTabs.length > 0 && (
         <div className="mt-12 border-t pt-8">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
