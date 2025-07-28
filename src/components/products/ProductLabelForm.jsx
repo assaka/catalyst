@@ -22,6 +22,8 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
       price_conditions: {}
     },
     is_active: true,
+    priority: 0,
+    sort_order: 0,
   });
 
   useEffect(() => {
@@ -37,6 +39,8 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
           price_conditions: {}
         },
         is_active: label.is_active !== false,
+        priority: label.priority || 0,
+        sort_order: label.sort_order || 0,
       });
     }
   }, [label]);
@@ -239,6 +243,33 @@ export default function ProductLabelForm({ label, attributes, onSubmit, onCancel
                   className="flex-1"
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="sort_order">Sort Order</Label>
+              <Input
+                id="sort_order"
+                type="number"
+                value={formData.sort_order}
+                onChange={(e) => handleInputChange('sort_order', parseInt(e.target.value) || 0)}
+                placeholder="0"
+                min="0"
+              />
+              <p className="text-xs text-gray-500 mt-1">Lower numbers appear first (only one label shown per product)</p>
+            </div>
+            <div>
+              <Label htmlFor="priority">Priority</Label>
+              <Input
+                id="priority"
+                type="number"
+                value={formData.priority}
+                onChange={(e) => handleInputChange('priority', parseInt(e.target.value) || 0)}
+                placeholder="0"
+                min="0"
+              />
+              <p className="text-xs text-gray-500 mt-1">Higher priority labels are favored when sort order is equal</p>
             </div>
           </div>
 

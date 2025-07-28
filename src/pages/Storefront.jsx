@@ -364,44 +364,61 @@ export default function Storefront() {
                             alt={product.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                          {productLabels && productLabels.map((label) => {
-                            let showLabel = false;
-                            if (!label.conditions || Object.keys(label.conditions).length === 0) {
-                                showLabel = true; 
-                            } else {
-                                if (label.conditions.price_conditions) {
-                                    const conditions = label.conditions.price_conditions;
-                                    if (conditions.has_sale_price && product.compare_price && product.compare_price > product.price) {
-                                        showLabel = true;
-                                    }
-                                    if (conditions.is_new && conditions.days_since_created) {
-                                        const productCreatedDate = new Date(product.created_date);
-                                        const now = new Date();
-                                        const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
-                                        if (daysSince <= conditions.days_since_created) {
-                                            showLabel = true;
-                                        }
-                                    }
-                                }
-                                if (label.conditions.attribute_conditions && product.attributes) {
-                                    const attributeMatch = label.conditions.attribute_conditions.some(cond => 
-                                        product.attributes[cond.attribute_code] === cond.attribute_value
-                                    );
-                                    if (attributeMatch) {
-                                        showLabel = true;
-                                    }
-                                }
-                            }
-                            if (showLabel) {
-                              return (
-                                <ProductLabelComponent
-                                  key={label.id}
-                                  label={label}
-                                />
-                              );
-                            }
-                            return null;
-                          })}
+                          {(() => {
+                            // Filter labels that match the product conditions
+                            const matchingLabels = productLabels?.filter((label) => {
+                              let showLabel = false;
+                              if (!label.conditions || Object.keys(label.conditions).length === 0) {
+                                  showLabel = true; 
+                              } else {
+                                  if (label.conditions.price_conditions) {
+                                      const conditions = label.conditions.price_conditions;
+                                      if (conditions.has_sale_price && product.compare_price && product.compare_price > product.price) {
+                                          showLabel = true;
+                                      }
+                                      if (conditions.is_new && conditions.days_since_created) {
+                                          const productCreatedDate = new Date(product.created_date);
+                                          const now = new Date();
+                                          const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
+                                          if (daysSince <= conditions.days_since_created) {
+                                              showLabel = true;
+                                          }
+                                      }
+                                  }
+                                  if (label.conditions.attribute_conditions && product.attributes) {
+                                      const attributeMatch = label.conditions.attribute_conditions.some(cond => 
+                                          product.attributes[cond.attribute_code] === cond.attribute_value
+                                      );
+                                      if (attributeMatch) {
+                                          showLabel = true;
+                                      }
+                                  }
+                              }
+                              return showLabel;
+                            }) || [];
+
+                            // Sort by sort_order (ASC) then by priority (DESC) and show only the first one
+                            const sortedLabels = matchingLabels.sort((a, b) => {
+                              const sortOrderA = a.sort_order || 0;
+                              const sortOrderB = b.sort_order || 0;
+                              if (sortOrderA !== sortOrderB) {
+                                return sortOrderA - sortOrderB; // ASC
+                              }
+                              const priorityA = a.priority || 0;
+                              const priorityB = b.priority || 0;
+                              return priorityB - priorityA; // DESC
+                            });
+
+                            // Show only the first (highest priority, lowest sort_order) label
+                            const labelToShow = sortedLabels[0];
+                            
+                            return labelToShow ? (
+                              <ProductLabelComponent
+                                key={labelToShow.id}
+                                label={labelToShow}
+                              />
+                            ) : null;
+                          })()}
                           {product.stock_quantity <= 0 && !product.infinite_stock && (
                             <Badge variant="destructive" className="absolute top-2 left-2">Out of Stock</Badge>
                           )}
@@ -519,8 +536,9 @@ export default function Storefront() {
                                         alt={product.name}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
-                                    {/* FIXED: Simplified product label condition */}
-                                    {productLabels && productLabels.map((label) => {
+                                    {(() => {
+                                      // Filter labels that match the product conditions
+                                      const matchingLabels = productLabels?.filter((label) => {
                                         let showLabel = false;
                                         if (!label.conditions || Object.keys(label.conditions).length === 0) {
                                             showLabel = true;
@@ -548,16 +566,31 @@ export default function Storefront() {
                                                 }
                                             }
                                         }
-                                        if (showLabel) {
-                                          return (
-                                            <ProductLabelComponent
-                                              key={label.id}
-                                              label={label}
-                                            />
-                                          );
+                                        return showLabel;
+                                      }) || [];
+
+                                      // Sort by sort_order (ASC) then by priority (DESC) and show only the first one
+                                      const sortedLabels = matchingLabels.sort((a, b) => {
+                                        const sortOrderA = a.sort_order || 0;
+                                        const sortOrderB = b.sort_order || 0;
+                                        if (sortOrderA !== sortOrderB) {
+                                          return sortOrderA - sortOrderB; // ASC
                                         }
-                                        return null;
-                                      })}
+                                        const priorityA = a.priority || 0;
+                                        const priorityB = b.priority || 0;
+                                        return priorityB - priorityA; // DESC
+                                      });
+
+                                      // Show only the first (highest priority, lowest sort_order) label
+                                      const labelToShow = sortedLabels[0];
+                                      
+                                      return labelToShow ? (
+                                        <ProductLabelComponent
+                                          key={labelToShow.id}
+                                          label={labelToShow}
+                                        />
+                                      ) : null;
+                                    })()}
                                     {product.stock_quantity <= 0 && !product.infinite_stock && (
                                         <Badge variant="destructive" className="absolute top-2 left-2">Out of Stock</Badge>
                                     )}

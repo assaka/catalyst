@@ -50,6 +50,10 @@ const ProductLabel = sequelize.define('ProductLabel', {
   priority: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  sort_order: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   }
 }, {
   tableName: 'product_labels',

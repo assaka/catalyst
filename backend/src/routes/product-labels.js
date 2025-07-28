@@ -53,7 +53,7 @@ router.get('/', optionalAuth, async (req, res) => {
 
     const labels = await ProductLabel.findAll({
       where: whereClause,
-      order: [['priority', 'DESC'], ['name', 'ASC']]
+      order: [['sort_order', 'ASC'], ['priority', 'DESC'], ['name', 'ASC']]
     });
 
     if (isPublicRequest) {
