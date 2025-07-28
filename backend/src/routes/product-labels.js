@@ -147,6 +147,12 @@ router.post('/test', auth, async (req, res) => {
 router.post('/', auth, async (req, res) => {
   try {
     console.log('🔍 Creating product label with data:', req.body);
+    console.log('🔍 Priority field debug (backend):', {
+      priority: req.body.priority,
+      priorityType: typeof req.body.priority,
+      sort_order: req.body.sort_order,
+      sortOrderType: typeof req.body.sort_order
+    });
     
     // Ensure slug is generated if not provided (fallback for hook issues)
     const labelData = { ...req.body };
@@ -156,7 +162,11 @@ router.post('/', auth, async (req, res) => {
     }
     
     const label = await ProductLabel.create(labelData);
-    console.log('✅ Product label created successfully:', label);
+    console.log('✅ Product label created successfully:', label.toJSON());
+    console.log('✅ Created label priority field:', {
+      priority: label.priority,
+      sort_order: label.sort_order
+    });
     res.status(201).json({
       success: true,
       data: label
@@ -182,6 +192,14 @@ router.post('/', auth, async (req, res) => {
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
   try {
+    console.log('🔍 Updating product label with data:', req.body);
+    console.log('🔍 Priority field debug (backend update):', {
+      priority: req.body.priority,
+      priorityType: typeof req.body.priority,
+      sort_order: req.body.sort_order,
+      sortOrderType: typeof req.body.sort_order
+    });
+    
     const label = await ProductLabel.findByPk(req.params.id);
 
     if (!label) {
@@ -192,6 +210,10 @@ router.put('/:id', auth, async (req, res) => {
     }
 
     await label.update(req.body);
+    console.log('✅ Updated label priority field:', {
+      priority: label.priority,
+      sort_order: label.sort_order
+    });
     res.json({
       success: true,
       data: label

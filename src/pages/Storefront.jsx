@@ -432,6 +432,13 @@ export default function Storefront() {
                               }
                               const priorityA = a.priority || 0;
                               const priorityB = b.priority || 0;
+                              console.log('🔍 Priority sorting debug:', {
+                                labelA: a.name,
+                                priorityA,
+                                labelB: b.name,
+                                priorityB,
+                                result: priorityB - priorityA
+                              });
                               return priorityB - priorityA; // DESC
                             });
 
@@ -630,6 +637,13 @@ export default function Storefront() {
                                         }
                                         const priorityA = a.priority || 0;
                                         const priorityB = b.priority || 0;
+                                        console.log('🔍 Priority sorting debug (category):', {
+                                          labelA: a.name,
+                                          priorityA,
+                                          labelB: b.name,
+                                          priorityB,
+                                          result: priorityB - priorityA
+                                        });
                                         return priorityB - priorityA; // DESC
                                       });
 

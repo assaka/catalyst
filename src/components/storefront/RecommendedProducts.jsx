@@ -190,6 +190,13 @@ const SimpleProductCard = ({ product, settings }) => {
                             }
                             const priorityA = a.priority || 0;
                             const priorityB = b.priority || 0;
+                            console.log('🔍 Priority sorting debug (recommended):', {
+                              labelA: a.name,
+                              priorityA,
+                              labelB: b.name,
+                              priorityB,
+                              result: priorityB - priorityA
+                            });
                             return priorityB - priorityA; // DESC
                           });
 

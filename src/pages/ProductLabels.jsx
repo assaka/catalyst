@@ -76,8 +76,17 @@ export default function ProductLabels() {
     const backendData = {
       ...labelData,
       color: labelData.text_color, // Map text_color to color
-      store_id: storeId
+      store_id: storeId,
+      priority: parseInt(labelData.priority) || 0, // Ensure priority is a number
+      sort_order: parseInt(labelData.sort_order) || 0 // Ensure sort_order is a number
     };
+    
+    console.log('🔍 Priority field debug:', {
+      originalPriority: labelData.priority,
+      convertedPriority: backendData.priority,
+      originalSortOrder: labelData.sort_order,
+      convertedSortOrder: backendData.sort_order
+    });
     
     // Remove the frontend field name
     delete backendData.text_color;
