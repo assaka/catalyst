@@ -318,16 +318,18 @@ export default function Storefront() {
             )}
           </div>
 
-          <div className="grid lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
-            <div className="lg:col-span-1">
-              <LayeredNavigation
-                products={products}
-                attributes={filterableAttributes}
-                onFilterChange={setActiveFilters}
-              />
-            </div>
+          <div className={`grid ${settings?.enable_product_filters ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
+            {settings?.enable_product_filters && (
+              <div className="lg:col-span-1">
+                <LayeredNavigation
+                  products={products}
+                  attributes={filterableAttributes}
+                  onFilterChange={setActiveFilters}
+                />
+              </div>
+            )}
             {/* FIXED: Maintain grid structure even when no products found */}
-            <div className="lg:col-span-3">
+            <div className={settings?.enable_product_filters ? "lg:col-span-3" : "lg:col-span-1"}>
               {loading ? (
                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
                     {[...Array(6)].map((_, i) => (

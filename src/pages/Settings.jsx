@@ -922,6 +922,25 @@ export default function Settings() {
                 <Separator />
 
                 <div>
+                  <h4 className="font-medium text-gray-800 mb-4">Product Filtering</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <Label htmlFor="enable_product_filters" className="font-medium">Enable Product Filters</Label>
+                        <p className="text-sm text-gray-500">Show layered navigation with filterable attributes on category pages</p>
+                      </div>
+                      <Switch 
+                        id="enable_product_filters" 
+                        checked={store?.settings?.enable_product_filters !== undefined ? store.settings.enable_product_filters : false} 
+                        onCheckedChange={(checked) => handleSettingsChange('enable_product_filters', checked)} 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
                   <h4 className="font-medium text-gray-800 mb-4">Allowed Countries for Shipping/Billing</h4>
                   <div className="space-y-2">
                     <Label>Select countries where your store operates</Label>
