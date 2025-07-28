@@ -31,6 +31,9 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       });
       
       if (order) {
+        // Convert to plain object first
+        order = order.toJSON();
+        
         // Get OrderItems separately to avoid include conflicts
         const orderItems = await OrderItem.findAll({
           where: { order_id: order.id },
@@ -45,9 +48,9 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
           attributes: ['id', 'name', 'currency']
         });
         
-        // Manually attach associations
-        order.OrderItems = orderItems;
-        order.Store = store;
+        // Manually attach associations to plain object
+        order.OrderItems = orderItems.map(item => item.toJSON());
+        order.Store = store ? store.toJSON() : null;
         
         console.log('🔧 Manually attached', orderItems.length, 'OrderItems and Store to order');
       }
@@ -83,12 +86,16 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
         }]
       });
       
-      // Update the attached OrderItems
-      order.OrderItems = orderItems;
+      // Update the attached OrderItems (order is already a plain object at this point)
+      order.OrderItems = orderItems.map(item => item.toJSON());
       console.log('🔧 Refetch: Manually attached', orderItems.length, 'OrderItems');
     }
 
     console.log('✅ Order found:', order.id, 'with', order.OrderItems?.length || 0, 'items');
+    
+    // Log what we're about to send (order is already a plain object)
+    console.log('📤 Sending order data with', order.OrderItems?.length || 0, 'OrderItems');
+    console.log('📤 First OrderItem:', order.OrderItems?.[0]);
 
     res.json({
       success: true,

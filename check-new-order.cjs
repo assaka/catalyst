@@ -1,16 +1,16 @@
-// Test fetching the specific order to see if OrderItems are included
+// Check OrderItems for the latest order
 const https = require('https');
 
-const sessionId = 'cs_test_b1fZ2fBwEvmDQAIl0WUNrf39xpLZNtbGDzWqTNXx5oysBChFKNoE8NNUNw';
+const orderId = 'd6588d24-3d47-4f60-b82b-14f95d5c921f';
 
 const options = {
   hostname: 'catalyst-backend-fzhu.onrender.com',
   port: 443,
-  path: `/api/orders/by-payment-reference/${sessionId}`,
+  path: `/api/payments/debug/order-items/${orderId}`,
   method: 'GET'
 };
 
-console.log('🔍 Testing order fetch for session:', sessionId);
+console.log('🔍 Checking OrderItems for new order:', orderId);
 
 const req = https.request(options, (res) => {
   let data = '';
@@ -24,10 +24,12 @@ const req = https.request(options, (res) => {
   res.on('end', () => {
     try {
       const result = JSON.parse(data);
-      console.log('✅ Order fetch result:');
-      console.log('Order ID:', result.data?.id);
-      console.log('OrderItems length:', result.data?.OrderItems?.length);
-      console.log('OrderItems:', JSON.stringify(result.data?.OrderItems, null, 2));
+      console.log('✅ OrderItems check result:', JSON.stringify(result, null, 2));
+      
+      if (result.order_items_count === 0) {
+        console.log('\n❌ CRITICAL: No OrderItems were created by the webhook!');
+        console.log('This means the webhook failed to create OrderItems during processing.');
+      }
     } catch (parseError) {
       console.log('Raw response:', data);
     }
