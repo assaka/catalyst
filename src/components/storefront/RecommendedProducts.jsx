@@ -8,6 +8,7 @@ import { ShoppingCart } from 'lucide-react';
 import { useStore, cachedApiCall } from '@/components/storefront/StoreProvider';
 import cartService from '@/services/cartService';
 import ProductLabelComponent from '@/components/storefront/ProductLabel';
+import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -109,7 +110,7 @@ const fetchRecommendationData = async (storeId, context = 'default') => {
 
 // A simplified ProductCard for this component
 const SimpleProductCard = ({ product, settings }) => {
-    const { productLabels } = useStore();
+    const { productLabels, store, taxes, selectedCountry } = useStore();
     
     return (
         <Card className="group overflow-hidden">
@@ -221,15 +222,33 @@ const SimpleProductCard = ({ product, settings }) => {
                         {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                             <>
                                 <p className="font-bold text-red-600 text-xl">
-                                    {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                    {formatDisplayPrice(
+                                      Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                                      settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
+                                      store,
+                                      taxes,
+                                      selectedCountry
+                                    )}
                                 </p>
                                 <p className="text-gray-500 line-through text-sm">
-                                    {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                                    {formatDisplayPrice(
+                                      Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                                      settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
+                                      store,
+                                      taxes,
+                                      selectedCountry
+                                    )}
                                 </p>
                             </>
                         ) : (
                             <p className="font-bold text-xl text-gray-900">
-                                {!settings?.hide_currency_product && (settings?.currency_symbol || '$')}{parseFloat(product.price || 0).toFixed(2)}
+                                {formatDisplayPrice(
+                                  parseFloat(product.price || 0),
+                                  settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
+                                  store,
+                                  taxes,
+                                  selectedCountry
+                                )}
                             </p>
                         )}
                     </div>

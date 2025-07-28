@@ -474,18 +474,18 @@ export default function Storefront() {
                           {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                             <>
                               <p className="font-bold text-red-600 text-3xl">
-                                {!settings?.hide_currency_product && formatDisplayPrice(
+                                {formatDisplayPrice(
                                   Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                  settings?.currency_symbol || '$',
+                                  settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
                                   store,
                                   taxes,
                                   selectedCountry
                                 )}
                               </p>
                               <p className="text-gray-500 line-through text-xl">
-                                {!settings?.hide_currency_product && formatDisplayPrice(
+                                {formatDisplayPrice(
                                   Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                  settings?.currency_symbol || '$',
+                                  settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
                                   store,
                                   taxes,
                                   selectedCountry
@@ -494,9 +494,9 @@ export default function Storefront() {
                             </>
                           ) : (
                             <p className="font-bold text-gray-800 text-lg">
-                              {!settings?.hide_currency_product && formatDisplayPrice(
+                              {formatDisplayPrice(
                                 parseFloat(product.price || 0),
-                                settings?.currency_symbol || '$',
+                                settings?.hide_currency_product ? '' : (settings?.currency_symbol || '$'),
                                 store,
                                 taxes,
                                 selectedCountry
@@ -679,18 +679,18 @@ export default function Storefront() {
                                   {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                                       <>
                                         <p className="font-bold text-red-600 text-3xl">
-                                          {!settings?.hide_currency_category && formatDisplayPrice(
+                                          {formatDisplayPrice(
                                             Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                            settings?.currency_symbol || '$',
+                                            settings?.hide_currency_category ? '' : (settings?.currency_symbol || '$'),
                                             store,
                                             taxes,
                                             selectedCountry
                                           )}
                                         </p>
                                         <p className="text-gray-500 line-through text-xl">
-                                          {!settings?.hide_currency_category && formatDisplayPrice(
+                                          {formatDisplayPrice(
                                             Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                                            settings?.currency_symbol || '$',
+                                            settings?.hide_currency_category ? '' : (settings?.currency_symbol || '$'),
                                             store,
                                             taxes,
                                             selectedCountry
@@ -699,9 +699,9 @@ export default function Storefront() {
                                       </>
                                   ) : (
                                       <p className="font-bold text-gray-800 text-lg">
-                                        {!settings?.hide_currency_category && formatDisplayPrice(
+                                        {formatDisplayPrice(
                                           parseFloat(product.price || 0),
-                                          settings?.currency_symbol || '$',
+                                          settings?.hide_currency_category ? '' : (settings?.currency_symbol || '$'),
                                           store,
                                           taxes,
                                           selectedCountry

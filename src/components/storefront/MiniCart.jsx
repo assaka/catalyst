@@ -277,7 +277,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
                         {item.selected_options && item.selected_options.length > 0 && (
                           <div className="text-xs text-gray-500 mt-1">
                             {item.selected_options.map((option, idx) => (
-                              <div key={idx}>+ {option.name} (+{formatDisplayPrice(option.price, currencySymbol, store, taxes, selectedCountry)})</div>
+                              <div key={idx}>+ {option.name} (+{formatDisplayPrice(parseFloat(option.price || 0), currencySymbol, store, taxes, selectedCountry)})</div>
                             ))}
                           </div>
                         )}

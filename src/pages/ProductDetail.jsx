@@ -651,18 +651,18 @@ export default function ProductDetail() {
                 {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                   <>
                     <span className="text-3xl font-bold text-red-600">
-                      {!settings?.hide_currency_product && formatDisplayPrice(
+                      {formatDisplayPrice(
                         Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                        currencySymbol,
+                        settings?.hide_currency_product ? '' : currencySymbol,
                         store,
                         taxes,
                         selectedCountry
                       )}
                     </span>
                     <span className="text-xl text-gray-500 line-through">
-                      {!settings?.hide_currency_product && formatDisplayPrice(
+                      {formatDisplayPrice(
                         Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
-                        currencySymbol,
+                        settings?.hide_currency_product ? '' : currencySymbol,
                         store,
                         taxes,
                         selectedCountry
@@ -671,9 +671,9 @@ export default function ProductDetail() {
                   </>
                 ) : (
                   <span className="text-3xl font-bold text-green-600">
-                    {!settings?.hide_currency_product && formatDisplayPrice(
+                    {formatDisplayPrice(
                       parseFloat(product.price || 0),
-                      currencySymbol,
+                      settings?.hide_currency_product ? '' : currencySymbol,
                       store,
                       taxes,
                       selectedCountry

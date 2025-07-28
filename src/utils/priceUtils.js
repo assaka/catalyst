@@ -6,6 +6,10 @@
  * @returns {number} - The parsed number or 0
  */
 export const formatPrice = (value) => {
+    // Handle null, undefined, empty string, or invalid types
+    if (value === null || value === undefined || value === '' || typeof value === 'object') {
+        return 0;
+    }
     const num = parseFloat(value);
     return isNaN(num) ? 0 : num;
 };
@@ -66,12 +70,18 @@ export const calculateDisplayPrice = (basePrice, store, taxRules = [], country =
     const price = formatPrice(basePrice);
     if (price <= 0) return 0;
 
+    // Handle missing store or settings gracefully
     const settings = store?.settings || {};
     const displayTaxInclusive = settings.display_tax_inclusive_prices || false;
     const defaultTaxIncludedInPrices = settings.default_tax_included_in_prices || false;
 
     // If tax display setting is same as input setting, no calculation needed
     if (displayTaxInclusive === defaultTaxIncludedInPrices) {
+        return price;
+    }
+
+    // Handle missing or invalid tax rules
+    if (!Array.isArray(taxRules)) {
         return price;
     }
 
@@ -141,6 +151,12 @@ export const getApplicableTaxRate = (taxRules, country = 'US') => {
  * @returns {string} - Formatted price string
  */
 export const formatDisplayPrice = (basePrice, currencySymbol = '$', store, taxRules = [], country = 'US') => {
+    // Handle invalid basePrice input
+    if (basePrice === null || basePrice === undefined || basePrice === '') {
+        console.warn('formatDisplayPrice: Invalid basePrice received:', basePrice);
+        return formatCurrency(0, currencySymbol);
+    }
+    
     const displayPrice = calculateDisplayPrice(basePrice, store, taxRules, country);
     return formatCurrency(displayPrice, currencySymbol);
 };
