@@ -476,14 +476,12 @@ export const StoreProvider = ({ children }) => {
       setTaxes(results[0].status === 'fulfilled' ? (results[0].value || []) : []);
       
       const categoriesResult = results[1].status === 'fulfilled' ? (results[1].value || []) : [];
-      console.log(`🔍 StoreProvider: Categories API result:`, categoriesResult);
       
       // Handle the case where API returns nested structure like {categories: [...], pagination: {...}}
       let processedCategories = categoriesResult;
       if (categoriesResult.length === 1 && categoriesResult[0]?.categories && Array.isArray(categoriesResult[0].categories)) {
         processedCategories = categoriesResult[0].categories;
       }
-      console.log(`📋 StoreProvider: Processed categories:`, processedCategories);
       setCategories(processedCategories);
       
       const productLabelsData = results[2].status === 'fulfilled' ? (results[2].value || []) : [];
@@ -493,14 +491,6 @@ export const StoreProvider = ({ children }) => {
       setAttributes(attrData);
       
       const filterableAttrs = attrData.filter(a => a?.is_filterable);
-      console.log('🔍 StoreProvider: All attributes loaded:', attrData.length);
-      console.log('🔍 StoreProvider: Filterable attributes:', filterableAttrs.length);
-      console.log('🔍 StoreProvider: Filterable attributes details:', filterableAttrs.map(a => ({ 
-        name: a.name, 
-        code: a.code, 
-        is_filterable: a.is_filterable,
-        options: a.options?.length || 0 
-      })));
       setFilterableAttributes(filterableAttrs);
       
       setAttributeSets(results[4].status === 'fulfilled' ? (results[4].value || []) : []);

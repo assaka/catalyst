@@ -9,7 +9,6 @@ import ProductCard from "@/components/storefront/ProductCard";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import LayeredNavigation from "@/components/storefront/LayeredNavigation";
 import Breadcrumb from "@/components/storefront/Breadcrumb";
-import AttributeDebug from "@/components/debug/AttributeDebug";
 import {
   Package,
 } from "lucide-react";
@@ -319,17 +318,8 @@ export default function Storefront() {
             )}
           </div>
 
-          {/* Temporary debug component */}
-          <AttributeDebug attributes={filterableAttributes} products={products} />
 
           <div className={`grid ${(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
-            {/* Debug logging for layered navigation */}
-            {console.log('🔍 Storefront layered navigation debug:', {
-              enable_product_filters: settings?.enable_product_filters,
-              filterableAttributesCount: filterableAttributes?.length,
-              productsCount: products?.length,
-              settings: settings
-            })}
             {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) && (
               <div className="lg:col-span-1">
                 <LayeredNavigation

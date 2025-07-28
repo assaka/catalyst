@@ -2,6 +2,16 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function AttributeDebug({ attributes, products }) {
+  const clearAttributeCache = () => {
+    // Clear the cached attributes data
+    const storeId = localStorage.getItem('selectedStoreId') || '157d4590-49bf-4b0b-bd77-abe131909528';
+    const cacheKey = `attributes-${storeId}`;
+    localStorage.removeItem(cacheKey);
+    
+    // Refresh the page to reload data
+    window.location.reload();
+  };
+
   if (!attributes || !products) {
     return (
       <Card className="mb-4 border-red-200">
@@ -11,6 +21,12 @@ export default function AttributeDebug({ attributes, products }) {
         <CardContent>
           <p>Attributes: {attributes ? 'Available' : 'Missing'}</p>
           <p>Products: {products ? 'Available' : 'Missing'}</p>
+          <button 
+            onClick={clearAttributeCache}
+            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            🔄 Clear Cache & Reload
+          </button>
         </CardContent>
       </Card>
     );
@@ -88,6 +104,14 @@ export default function AttributeDebug({ attributes, products }) {
         <div className="text-xs text-gray-500 mt-4">
           <p>This debug tool helps identify why Color attribute isn't showing in layered navigation.</p>
           <p>Remove this component once the issue is resolved.</p>
+          {attributes.length === 0 && (
+            <button 
+              onClick={clearAttributeCache}
+              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+            >
+              🔄 Clear Cache & Reload
+            </button>
+          )}
         </div>
       </CardContent>
     </Card>
