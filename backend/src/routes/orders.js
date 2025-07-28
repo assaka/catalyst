@@ -83,8 +83,33 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     }
 
     console.log('✅ Order found:', order.id, 'with', order.OrderItems?.length || 0, 'items');
+    
+    // Debug: Check if OrderItems exist directly
+    const directItemCount = await OrderItem.count({ where: { order_id: order.id } });
+    console.log('🔍 Direct OrderItem count for order', order.id, ':', directItemCount);
+    
+    if (order.OrderItems?.length === 0 && directItemCount > 0) {
+      console.log('❌ CRITICAL: OrderItems exist in DB but not returned by include!');
+      console.log('🔍 Association debug - trying direct fetch...');
+      
+      // Try to get OrderItems directly
+      const directItems = await OrderItem.findAll({ 
+        where: { order_id: order.id },
+        include: [{ 
+          model: Product, 
+          attributes: ['id', 'name', 'sku', 'images'] 
+        }]
+      });
+      
+      console.log('📋 Direct fetch found', directItems.length, 'items');
+      
+      // Manually attach OrderItems to the order object
+      order.OrderItems = directItems;
+      console.log('🔧 Manually attached OrderItems to order object');
+    }
+    
     if (order.OrderItems?.length === 0) {
-      console.log('⚠️ OrderItems still empty, may be a race condition issue');
+      console.log('⚠️ OrderItems still empty after all attempts');
     }
 
     res.json({
