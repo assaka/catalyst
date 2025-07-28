@@ -99,13 +99,11 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
             return {};
         }
         
-        console.log('🔍 LayeredNavigation: Received attributes:', attributes.length);
-        console.log('🔍 LayeredNavigation: Received products:', products.length);
-        console.log('🔍 LayeredNavigation: Attribute details:', attributes.map(a => ({ 
+        console.log('🔍 LayeredNavigation: Processing', attributes.length, 'attributes for', products.length, 'products');
+        console.log('🔍 LayeredNavigation: Filterable attributes:', attributes.filter(a => a.is_filterable).map(a => ({ 
             name: a.name, 
             code: a.code, 
-            is_filterable: a.is_filterable,
-            options: a.options 
+            options: a.options?.length || 0 
         })));
         
         const options = {};
@@ -119,15 +117,19 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                 products.forEach(p => {
                     const productAttributes = p.attributes || p.attribute_values || {};
                     
-                    // Try multiple possible keys for the attribute
+                    // Try multiple possible keys for the attribute (expanded list)
                     const possibleKeys = [
                         attr.code,
                         attr.name,
                         attr.code?.toLowerCase(),
                         attr.name?.toLowerCase(),
-                        attr.code?.replace(/[_-]/g, ''),
-                        attr.name?.replace(/[_-]/g, '')
-                    ];
+                        // Add more variations for color specifically
+                        attr.code?.toLowerCase().replace(/[_-\s]/g, ''),
+                        attr.name?.toLowerCase().replace(/[_-\s]/g, ''),
+                        // Common color attribute variations
+                        'color', 'Color', 'COLOR',
+                        'colour', 'Colour', 'COLOUR'
+                    ].filter(Boolean);
                     
                     let attributeValue = null;
                     for (const key of possibleKeys) {
@@ -162,11 +164,14 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                 // FIXED: Also add predefined options from attribute definition
                 if (attr.options && Array.isArray(attr.options)) {
                     attr.options.forEach(option => {
-                        if (option.value && option.value !== '') {
-                            values.add(String(option.value));
+                        // Handle different option formats
+                        const optionValue = option.value || option.label || option;
+                        if (optionValue && optionValue !== '') {
+                            values.add(String(optionValue));
                         }
                     });
                 }
+                
                 
                 // Debug Color attribute result
                 if (attr.name === 'Color' || attr.code === 'color') {
