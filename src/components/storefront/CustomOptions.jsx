@@ -3,8 +3,11 @@ import { CustomOptionRule, Product } from '@/api/entities';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatDisplayPrice } from '@/utils/priceUtils';
+import { useStore } from '@/components/storefront/StoreProvider';
 
 export default function CustomOptions({ product, onSelectionChange, selectedOptions = [], store, settings }) {
+    const { taxes, selectedCountry } = useStore();
     const [customOptions, setCustomOptions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [displayLabel, setDisplayLabel] = useState('Custom Options');
@@ -260,16 +263,16 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                                                 <div className="text-right">
                                                     <div className="flex items-center space-x-2">
                                                         <Badge variant={isSelected ? "default" : "outline"} className="font-semibold bg-red-100 text-red-800 border-red-300">
-                                                            +{currencySymbol}{displayPrice.toFixed(2)}
+                                                            +{formatDisplayPrice(displayPrice, currencySymbol, store, taxes, selectedCountry)}
                                                         </Badge>
                                                     </div>
                                                     <div className="text-xs text-gray-500 line-through mt-1">
-                                                        +{currencySymbol}{originalPrice.toFixed(2)}
+                                                        +{formatDisplayPrice(originalPrice, currencySymbol, store, taxes, selectedCountry)}
                                                     </div>
                                                 </div>
                                             ) : (
                                                 <Badge variant={isSelected ? "default" : "outline"} className="font-semibold">
-                                                    +{currencySymbol}{displayPrice.toFixed(2)}
+                                                    +{formatDisplayPrice(displayPrice, currencySymbol, store, taxes, selectedCountry)}
                                                 </Badge>
                                             )}
                                         </div>
@@ -295,7 +298,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                 <div className="border-t pt-4 mt-4">
                     <div className="flex justify-between items-center font-medium text-gray-700">
                         <span>Total Additional Options:</span>
-                        <span className="text-lg">{currencySymbol}{getTotalOptionsPrice().toFixed(2)}</span>
+                        <span className="text-lg">{formatDisplayPrice(getTotalOptionsPrice(), currencySymbol, store, taxes, selectedCountry)}</span>
                     </div>
                 </div>
             )}

@@ -7,6 +7,7 @@ import { CustomerWishlist, StorefrontProduct, CustomerAuth } from '@/api/storefr
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useStore } from '@/components/storefront/StoreProvider'; // FIXED: Corrected import path
+import { formatDisplayPrice } from '@/utils/priceUtils';
 
 // --- Start of helper functions ---
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -35,7 +36,8 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 // Session handling removed - now using proper customer authentication
 
 export default function WishlistDropdown() {
-  const { store } = useStore(); // Added store context
+  const { store, settings, taxes, selectedCountry } = useStore(); // Added store context
+  const currencySymbol = settings?.currency_symbol || '$';
   const [wishlistItems, setWishlistItems] = useState([]);
   const [user, setUser] = useState(null); // Preserve user state
   const [loading, setLoading] = useState(false); // Changed initial loading state to false
@@ -149,10 +151,9 @@ export default function WishlistDropdown() {
                     <Link to={createPageUrl(`ProductDetail?id=${item.product_id}`)}>
                       <p className="text-sm font-medium truncate hover:underline">{item.product?.name}</p>
                     </Link>
-                    <p className="text-sm text-gray-500">${(() => {
-                      const price = parseFloat(item.product?.price || 0);
-                      return isNaN(price) ? '0.00' : price.toFixed(2);
-                    })()}</p>
+                    <p className="text-sm text-gray-500">
+                      {formatDisplayPrice(item.product?.price, currencySymbol, store, taxes, selectedCountry)}
+                    </p>
                   </div>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveFromWishlist(item.product_id)}>
                     <X className="h-4 w-4" />
