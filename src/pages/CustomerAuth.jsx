@@ -139,9 +139,22 @@ export default function CustomerAuth() {
         }
 
         // Set role-based session data for customer
-        // response is either the full backend response or just the data part
-        const userData = response.data?.user || response.user;
-        const token = response.data?.token || response.token;
+        // Handle different response structures from API client processing
+        let userData, token;
+        
+        if (response.user && response.token) {
+          // Direct response structure
+          userData = response.user;
+          token = response.token;
+        } else if (response.data?.user && response.data?.token) {
+          // Nested response structure
+          userData = response.data.user;
+          token = response.data.token;
+        } else {
+          // Response might be just the user object itself
+          userData = response;
+          token = response.token || localStorage.getItem('auth_token');
+        }
         
         console.log("📊 Login response data:", {
           response,
@@ -206,16 +219,34 @@ export default function CustomerAuth() {
         console.log("✅ CustomerAuth.jsx: Registration successful:", response);
 
         // Set role-based session data for new customer
-        // response is either the full backend response or just the data part
-        const userData = response.data?.user || response.user;
-        const token = response.data?.token || response.token;
+        // Handle different response structures from API client processing
+        let userData, token;
+        
+        if (response.user && response.token) {
+          // Direct response structure
+          userData = response.user;
+          token = response.token;
+        } else if (response.data?.user && response.data?.token) {
+          // Nested response structure
+          userData = response.data.user;
+          token = response.data.token;
+        } else {
+          // Response might be just the user object itself
+          userData = response;
+          token = response.token || localStorage.getItem('auth_token');
+        }
         
         console.log("📊 Registration response data:", {
           response,
+          responseKeys: Object.keys(response || {}),
           userData,
           token,
           hasUser: !!userData,
-          userRole: userData?.role
+          userRole: userData?.role,
+          responseType: typeof response,
+          hasResponseData: !!response?.data,
+          hasResponseUser: !!response?.user,
+          hasResponseToken: !!response?.token
         });
         
         if (!userData || !token) {
