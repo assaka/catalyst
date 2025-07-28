@@ -194,8 +194,12 @@ export default function ProductDetail() {
       
       // Test with different params to see if it's a data issue
       console.log('🔍 Testing ProductTab.filter with just store_id');
-      const allTabs = await ProductTab.filter({ store_id: store.id });
-      console.log('📊 All tabs (including inactive):', allTabs);
+      try {
+        const allTabs = await ProductTab.filter({ store_id: store.id });
+        console.log('📊 All tabs (including inactive):', allTabs);
+      } catch (error) {
+        console.error('❌ Error getting all tabs:', error);
+      }
       
       // Now try with is_active filter
       console.log('🔍 Calling ProductTab.filter directly (bypassing cache)');
