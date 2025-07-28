@@ -114,7 +114,10 @@ const OrdersTab = ({ orders, getCountryName }) => (
                 </div>
               </CardHeader>
               <CardContent>
-                <p><strong>Total:</strong> ${order.total_amount.toFixed(2)}</p>
+                <p><strong>Total:</strong> ${(() => {
+                    const totalAmount = parseFloat(order.total_amount || 0);
+                    return isNaN(totalAmount) ? '0.00' : totalAmount.toFixed(2);
+                })()}</p>
                 <p>
                   <strong>Shipping to:</strong>{" "}
                   {order.shipping_address?.street}
@@ -158,7 +161,10 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts }) => {
                 <CardContent className="p-4 flex flex-col items-center text-center">
                   <img src={item.product.images?.[0]} alt={item.product.name} className="w-32 h-32 object-cover mb-2 rounded-lg" />
                   <p className="font-semibold">{item.product.name}</p>
-                  <p className="text-sm text-gray-600">${parseFloat(item.product?.price || 0).toFixed(2)}</p>
+                  <p className="text-sm text-gray-600">${(() => {
+                    const price = parseFloat(item.product?.price || 0);
+                    return isNaN(price) ? '0.00' : price.toFixed(2);
+                  })()}</p>
                   <Button variant="destructive" size="sm" className="mt-2" onClick={() => handleRemove(item.id)}>Remove</Button>
                 </CardContent>
               </Card>

@@ -150,11 +150,20 @@ export default function HeaderSearch() {
                       <p className="text-sm font-semibold text-gray-900">
                         {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                           <>
-                            <span className="text-red-600">{currencySymbol}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}</span>
-                            <span className="text-gray-500 line-through ml-1 text-xs">{currencySymbol}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}</span>
+                            <span className="text-red-600">{currencySymbol}{(() => {
+                              const minPrice = Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
+                              return isNaN(minPrice) ? '0.00' : minPrice.toFixed(2);
+                            })()}</span>
+                            <span className="text-gray-500 line-through ml-1 text-xs">{currencySymbol}{(() => {
+                              const maxPrice = Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0));
+                              return isNaN(maxPrice) ? '0.00' : maxPrice.toFixed(2);
+                            })()}</span>
                           </>
                         ) : (
-                          <span>{currencySymbol}{parseFloat(product.price || 0).toFixed(2)}</span>
+                          <span>{currencySymbol}{(() => {
+                            const price = parseFloat(product.price || 0);
+                            return isNaN(price) ? '0.00' : price.toFixed(2);
+                          })()}</span>
                         )}
                       </p>
                     </div>

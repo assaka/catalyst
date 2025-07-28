@@ -73,7 +73,10 @@ export default function Customers() {
             c.last_name,
             c.email,
             c.total_orders,
-            c.total_spent,
+            (() => {
+                const totalSpent = parseFloat(c.total_spent || 0);
+                return isNaN(totalSpent) ? '0.00' : totalSpent.toFixed(2);
+            })(),
             c.last_order_date ? new Date(c.last_order_date).toLocaleDateString() : ''
         ].join(','));
         
@@ -148,7 +151,10 @@ export default function Customers() {
                                         <td className="py-3 px-4">{customer.first_name} {customer.last_name}</td>
                                         <td className="py-3 px-4">{customer.email}</td>
                                         <td className="py-3 px-4">{customer.total_orders}</td>
-                                        <td className="py-3 px-4">${customer.total_spent?.toFixed(2) || '0.00'}</td>
+                                        <td className="py-3 px-4">${(() => {
+                                            const totalSpent = parseFloat(customer.total_spent || 0);
+                                            return isNaN(totalSpent) ? '0.00' : totalSpent.toFixed(2);
+                                        })()}</td>
                                         <td className="py-3 px-4">{customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString() : 'N/A'}</td>
                                     </tr>
                                 ))}

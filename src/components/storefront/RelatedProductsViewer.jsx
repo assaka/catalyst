@@ -15,7 +15,10 @@ const MiniProductCard = ({ product }) => (
                     className="w-full h-32 object-cover rounded-md mb-3"
                 />
                 <h4 className="font-semibold text-sm truncate">{product.name}</h4>
-                <p className="text-lg font-bold text-gray-800">${product.price.toFixed(2)}</p>
+                <p className="text-lg font-bold text-gray-800">${(() => {
+                  const price = parseFloat(product.price || 0);
+                  return isNaN(price) ? '0.00' : price.toFixed(2);
+                })()}</p>
                 {product.quantity > 0 || product.has_infinite_stock ? (
                      <Badge className="bg-green-100 text-green-800 mt-1">In Stock</Badge>
                 ) : (

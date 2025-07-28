@@ -78,15 +78,24 @@ export default function CustomOptions({
                 {option.compare_price && parseFloat(option.compare_price) > 0 && parseFloat(option.compare_price) !== parseFloat(option.price) ? (
                   <div>
                     <span className="font-semibold text-red-600">
-                      {settings?.hide_currency_product ? '' : '$'}{Math.min(parseFloat(option.price || 0), parseFloat(option.compare_price || 0)).toFixed(2)}
+                      {settings?.hide_currency_product ? '' : '$'}{(() => {
+                        const minPrice = Math.min(parseFloat(option.price || 0), parseFloat(option.compare_price || 0));
+                        return isNaN(minPrice) ? '0.00' : minPrice.toFixed(2);
+                      })()}
                     </span>
                     <div className="text-sm text-gray-500 line-through">
-                      {settings?.hide_currency_product ? '' : '$'}{Math.max(parseFloat(option.price || 0), parseFloat(option.compare_price || 0)).toFixed(2)}
+                      {settings?.hide_currency_product ? '' : '$'}{(() => {
+                        const maxPrice = Math.max(parseFloat(option.price || 0), parseFloat(option.compare_price || 0));
+                        return isNaN(maxPrice) ? '0.00' : maxPrice.toFixed(2);
+                      })()}
                     </div>
                   </div>
                 ) : (
                   <span className="font-semibold">
-                    {settings?.hide_currency_product ? '' : '$'}{option.price?.toFixed(2) || '0.00'}
+                    {settings?.hide_currency_product ? '' : '$'}{(() => {
+                      const price = parseFloat(option.price || 0);
+                      return isNaN(price) ? '0.00' : price.toFixed(2);
+                    })()}
                   </span>
                 )}
               </div>
@@ -102,7 +111,10 @@ export default function CustomOptions({
                 <div key={option.id} className="flex justify-between text-sm">
                   <span>{option.name}</span>
                   <span>
-                    {settings?.hide_currency_product ? '' : '$'}{option.price?.toFixed(2) || '0.00'}
+                    {settings?.hide_currency_product ? '' : '$'}{(() => {
+                      const price = parseFloat(option.price || 0);
+                      return isNaN(price) ? '0.00' : price.toFixed(2);
+                    })()}
                   </span>
                 </div>
               ))}
