@@ -12,7 +12,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   try {
     const { paymentReference } = req.params;
     
-    console.log('🔍 Fetching order with payment reference:', paymentReference);
+    console.log('🔍 SIMPLIFIED FETCH v2 - order with payment reference:', paymentReference);
     
     // Simple approach - get order with relationships
     const order = await Order.findOne({
