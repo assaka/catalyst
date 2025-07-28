@@ -4,10 +4,21 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// Optional auth middleware that doesn't block public requests
+const optionalAuth = (req, res, next) => {
+  // Check if this is a public request
+  if (req.originalUrl.includes('/api/public/')) {
+    // For public requests, skip authentication
+    return next();
+  }
+  // For non-public requests, require authentication
+  return auth(req, res, next);
+};
+
 // @route   GET /api/product-labels
 // @desc    Get all product labels for a store
 // @access  Public/Private
-router.get('/', auth, async (req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
   try {
     const { store_id, is_active } = req.query;
     
