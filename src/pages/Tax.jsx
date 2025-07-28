@@ -104,7 +104,12 @@ export default function TaxPage() {
     }
 
     console.log(`🔧 Updating tax setting: ${key} = ${value}`);
-    console.log('📊 Current store settings:', selectedStore.settings);
+    console.log('📊 Current store settings (full):', JSON.stringify(selectedStore.settings, null, 2));
+    console.log('📊 Current tax settings:', {
+      default_tax_included_in_prices: selectedStore.settings?.default_tax_included_in_prices,
+      display_tax_inclusive_prices: selectedStore.settings?.display_tax_inclusive_prices,
+      calculate_tax_after_discount: selectedStore.settings?.calculate_tax_after_discount
+    });
 
     // Create a deep copy of the settings object to avoid mutation issues
     // and ensure `settings` object exists if it's null/undefined
@@ -113,7 +118,12 @@ export default function TaxPage() {
     // Update the specific setting
     newSettings[key] = value;
 
-    console.log('📊 New settings to save:', newSettings);
+    console.log('📊 New settings to save (full):', JSON.stringify(newSettings, null, 2));
+    console.log('📊 New tax settings:', {
+      default_tax_included_in_prices: newSettings.default_tax_included_in_prices,
+      display_tax_inclusive_prices: newSettings.display_tax_inclusive_prices,
+      calculate_tax_after_discount: newSettings.calculate_tax_after_discount
+    });
 
     try {
       // Update the entire settings object in the store using admin API
@@ -121,6 +131,12 @@ export default function TaxPage() {
       const updateResult = await Store.update(selectedStore.id, { settings: newSettings });
       
       console.log('✅ Store settings updated successfully:', updateResult);
+      console.log('✅ Backend returned settings:', updateResult?.[0]?.settings);
+      console.log('✅ Backend returned tax settings:', {
+        default_tax_included_in_prices: updateResult?.[0]?.settings?.default_tax_included_in_prices,
+        display_tax_inclusive_prices: updateResult?.[0]?.settings?.display_tax_inclusive_prices,
+        calculate_tax_after_discount: updateResult?.[0]?.settings?.calculate_tax_after_discount
+      });
 
       // Update local state immediately for UI responsiveness
       const updatedStore = { ...selectedStore, settings: newSettings };
@@ -240,11 +256,15 @@ export default function TaxPage() {
               <div>
                 <Label htmlFor="default_tax_included_in_prices" className="font-medium">Prices Include Tax by Default</Label>
                 <p className="text-sm text-gray-500">Determines if entered product prices already include tax.</p>
+                <p className="text-xs text-blue-600 mt-1">Current value: {String(selectedStore?.settings?.default_tax_included_in_prices || false)}</p>
               </div>
               <Switch
                 id="default_tax_included_in_prices"
                 checked={selectedStore?.settings?.default_tax_included_in_prices || false}
-                onCheckedChange={(checked) => handleSettingsChange('default_tax_included_in_prices', checked)}
+                onCheckedChange={(checked) => {
+                  console.log('🔧 Toggling default_tax_included_in_prices:', { from: selectedStore?.settings?.default_tax_included_in_prices, to: checked });
+                  handleSettingsChange('default_tax_included_in_prices', checked);
+                }}
                 disabled={!selectedStore}
               />
             </div>
@@ -252,11 +272,15 @@ export default function TaxPage() {
               <div>
                 <Label htmlFor="display_tax_inclusive_prices" className="font-medium">Display Tax-Inclusive Prices</Label>
                 <p className="text-sm text-gray-500">Shows prices with tax included on your storefront.</p>
+                <p className="text-xs text-blue-600 mt-1">Current value: {String(selectedStore?.settings?.display_tax_inclusive_prices || false)}</p>
               </div>
               <Switch
                 id="display_tax_inclusive_prices"
                 checked={selectedStore?.settings?.display_tax_inclusive_prices || false}
-                onCheckedChange={(checked) => handleSettingsChange('display_tax_inclusive_prices', checked)}
+                onCheckedChange={(checked) => {
+                  console.log('🔧 Toggling display_tax_inclusive_prices:', { from: selectedStore?.settings?.display_tax_inclusive_prices, to: checked });
+                  handleSettingsChange('display_tax_inclusive_prices', checked);
+                }}
                 disabled={!selectedStore}
               />
             </div>
