@@ -691,6 +691,13 @@ export default function Storefront() {
                                       });
 
                                       // Show all labels (one per position)
+                                      console.log('🚨 CRITICAL: About to render labels:', {
+                                        productId: product.id,
+                                        isHomepage,
+                                        labelsToShowLength: labelsToShow.length,
+                                        labelsToShow: labelsToShow
+                                      });
+                                      
                                       return labelsToShow.map(label => (
                                         <ProductLabelComponent
                                           key={label.id}
