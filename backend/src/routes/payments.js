@@ -750,44 +750,52 @@ router.get('/debug/order-items/:orderId', async (req, res) => {
     const itemCount = await OrderItem.count({ where: { order_id: orderId } });
     console.log('📊 OrderItems count in database:', itemCount);
     
-    // Get actual OrderItems
-    const items = await OrderItem.findAll({ where: { order_id: orderId } });
-    console.log('📋 OrderItems found:', items.length);
-    
-    // Get Order with includes
-    const order = await Order.findByPk(orderId, {
-      include: [
-        {
-          model: Store,
-          attributes: ['id', 'name', 'currency']
-        },
-        {
-          model: OrderItem,
-          include: [{ 
-            model: Product, 
-            attributes: ['id', 'name', 'sku', 'images'] 
-          }]
-        }
-      ]
+    // Get actual OrderItems with raw data
+    const items = await OrderItem.findAll({ 
+      where: { order_id: orderId },
+      raw: true 
     });
+    console.log('📋 OrderItems raw data:', items);
+    
+    // Check the actual order_id values
+    if (items.length > 0) {
+      console.log('🔍 First OrderItem order_id:', items[0].order_id);
+      console.log('🔍 Looking for order_id:', orderId);
+      console.log('🔍 IDs match:', items[0].order_id === orderId);
+    }
+    
+    // Get Order with includes - try different approaches
+    const order1 = await Order.findByPk(orderId, {
+      include: [OrderItem]
+    });
+    
+    const order2 = await Order.findOne({
+      where: { id: orderId },
+      include: [OrderItem]
+    });
+    
+    // Check if associations are loaded properly
+    const associationsLoaded = Order.associations;
+    console.log('🔍 Order associations:', Object.keys(associationsLoaded));
+    console.log('🔍 OrderItem association exists:', !!associationsLoaded.OrderItems);
     
     res.json({
       success: true,
-      order_exists: !!order,
+      order_exists: !!order1,
       order_items_count: itemCount,
-      order_items_via_include: order?.OrderItems?.length || 0,
-      direct_items: items.map(item => ({
-        id: item.id,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        unit_price: item.unit_price,
-        total_price: item.total_price
-      }))
+      order_items_via_findByPk: order1?.OrderItems?.length || 0,
+      order_items_via_findOne: order2?.OrderItems?.length || 0,
+      associations_available: Object.keys(associationsLoaded),
+      has_orderitems_association: !!associationsLoaded.OrderItems,
+      direct_items: items,
+      first_item_order_id: items[0]?.order_id,
+      looking_for_order_id: orderId,
+      ids_match: items[0]?.order_id === orderId
     });
     
   } catch (error) {
     console.error('Debug OrderItems error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 
