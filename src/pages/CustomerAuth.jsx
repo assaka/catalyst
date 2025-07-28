@@ -42,7 +42,20 @@ export default function CustomerAuth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      checkAuthStatus();
+      // Only check auth status if user is not currently on customer auth page after a successful action
+      // This prevents unwanted redirects during the login process
+      const currentPath = window.location.pathname.toLowerCase();
+      const isOnCustomerAuthPage = currentPath === '/customerauth' || currentPath.endsWith('/customerauth');
+      
+      if (!isOnCustomerAuthPage) {
+        checkAuthStatus();
+      } else {
+        // On customer auth page, only check if user is already logged in to redirect them
+        const existingToken = apiClient.getToken();
+        if (existingToken && !apiClient.isLoggedOut) {
+          checkAuthStatus();
+        }
+      }
     }
   }, [searchParams]);
 
@@ -57,6 +70,12 @@ export default function CustomerAuth() {
 
   const checkAuthStatus = async (isGoogleOAuth = false) => {
     try {
+      // Don't redirect if user just logged in
+      if (localStorage.getItem('just_logged_in') === 'true') {
+        console.log('🔄 Skipping checkAuthStatus redirect - user just logged in');
+        return;
+      }
+      
       if (apiClient.isLoggedOut || !apiClient.getToken()) {
         return;
       }
@@ -164,8 +183,14 @@ export default function CustomerAuth() {
           hasToken: !!token
         });
 
+        // Set a temporary flag to prevent checkAuthStatus from redirecting
+        localStorage.setItem('just_logged_in', 'true');
+
         // Small delay to ensure session data is properly set
         setTimeout(() => {
+          // Clear the flag
+          localStorage.removeItem('just_logged_in');
+          
           // Redirect customer to appropriate page
           const returnTo = searchParams.get('returnTo');
           if (returnTo) {
@@ -211,8 +236,14 @@ export default function CustomerAuth() {
           hasToken: !!token
         });
 
+        // Set a temporary flag to prevent checkAuthStatus from redirecting
+        localStorage.setItem('just_logged_in', 'true');
+
         // Small delay to ensure session data is properly set  
         setTimeout(() => {
+          // Clear the flag
+          localStorage.removeItem('just_logged_in');
+          
           // Redirect to customer dashboard
           navigate(createPageUrl("CustomerDashboard"));
         }, 100);

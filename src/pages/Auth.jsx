@@ -43,7 +43,20 @@ export default function Auth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      checkAuthStatus();
+      // Only check auth status if user is not currently on auth page after a successful action
+      // This prevents unwanted redirects during the login process
+      const currentPath = window.location.pathname.toLowerCase();
+      const isOnAuthPage = currentPath === '/auth' || currentPath.endsWith('/auth');
+      
+      if (!isOnAuthPage) {
+        checkAuthStatus();
+      } else {
+        // On auth page, only check if user is already logged in to redirect them
+        const existingToken = apiClient.getToken();
+        if (existingToken && !apiClient.isLoggedOut) {
+          checkAuthStatus();
+        }
+      }
     }
 
     // Listen for logout events to prevent redirections after logout
@@ -66,6 +79,11 @@ export default function Auth() {
   };
 
   const checkAuthStatus = async (isGoogleOAuth = false) => {
+    // Don't redirect if user just logged in
+    if (localStorage.getItem('just_logged_in') === 'true') {
+      console.log('🔄 Skipping checkAuthStatus redirect - user just logged in');
+      return;
+    }
 
     // Debug: decode JWT token to see what's in it
     const token = apiClient.getToken();
@@ -277,6 +295,14 @@ export default function Auth() {
               sessionRole: localStorage.getItem('session_role'),
               hasToken: !!token
             });
+            
+            // Set a temporary flag to prevent checkAuthStatus from redirecting
+            localStorage.setItem('just_logged_in', 'true');
+            
+            // Clear the flag after a short delay
+            setTimeout(() => {
+              localStorage.removeItem('just_logged_in');
+            }, 200);
             if (isStorefrontContext) {
               // Store owner logging in from storefront - stay on storefront (shopping as guest)
               navigate(createPageUrl("Storefront"));
@@ -317,6 +343,14 @@ export default function Auth() {
             sessionRole: localStorage.getItem('session_role'),
             hasToken: !!token
           });
+          
+          // Set a temporary flag to prevent checkAuthStatus from redirecting
+          localStorage.setItem('just_logged_in', 'true');
+          
+          // Clear the flag after a short delay
+          setTimeout(() => {
+            localStorage.removeItem('just_logged_in');
+          }, 200);
           
           // Since we explicitly set role as store_owner during registration,
           // redirect directly to Dashboard
