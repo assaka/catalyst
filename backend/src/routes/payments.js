@@ -976,8 +976,13 @@ async function createOrderFromCheckoutSession(session) {
       console.log('🔍 Debug info:', {
         lineItemsCount: lineItems.data.length,
         sessionId: session.id,
-        metadata: session.metadata
+        metadata: session.metadata,
+        storeId: store_id,
+        stripeAccountId: store.stripe_account_id
       });
+      
+      // This is a critical error - we should not commit an order without items
+      throw new Error(`No valid products found in checkout session ${session.id}. LineItems: ${lineItems.data.length}, ProductMap: ${productMap.size}`);
     }
     
     for (const [productId, productData] of productMap) {
