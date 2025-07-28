@@ -183,7 +183,21 @@ export default function ProductDetail() {
       console.log('🔍 Loading product tabs for store:', store.id);
       console.log('📞 About to call ProductTab.filter with params:', { store_id: store.id, is_active: true });
       
-      // Temporarily bypass cache to debug
+      // Debug the ProductTab entity itself
+      console.log('🔍 ProductTab entity:', ProductTab);
+      console.log('🔍 ProductTab endpoint:', ProductTab.endpoint);
+      console.log('🔍 ProductTab filter method:', typeof ProductTab.filter);
+      
+      // Clear any existing cache first
+      const cacheKey = `product-tabs-${store.id}`;
+      console.log('🔍 Clearing cache for key:', cacheKey);
+      
+      // Test with different params to see if it's a data issue
+      console.log('🔍 Testing ProductTab.filter with just store_id');
+      const allTabs = await ProductTab.filter({ store_id: store.id });
+      console.log('📊 All tabs (including inactive):', allTabs);
+      
+      // Now try with is_active filter
       console.log('🔍 Calling ProductTab.filter directly (bypassing cache)');
       const tabs = await ProductTab.filter({ store_id: store.id, is_active: true });
       
