@@ -64,6 +64,59 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
 });
 
 
+// Database diagnostic endpoint
+router.get('/db-diagnostic/:sessionId', async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { QueryTypes } = require('sequelize');
+    const { sequelize } = require('../database/connection');
+    
+    // Direct SQL queries to check database state
+    const orderResult = await sequelize.query(
+      `SELECT id, order_number, customer_email, total_amount, store_id, created_at 
+       FROM orders 
+       WHERE payment_reference = :sessionId 
+          OR stripe_payment_intent_id = :sessionId 
+          OR stripe_session_id = :sessionId`,
+      {
+        replacements: { sessionId },
+        type: QueryTypes.SELECT
+      }
+    );
+    
+    let orderItemsResult = [];
+    if (orderResult.length > 0) {
+      const orderId = orderResult[0].id;
+      orderItemsResult = await sequelize.query(
+        `SELECT id, order_id, product_id, product_name, quantity, unit_price, total_price, created_at
+         FROM order_items 
+         WHERE order_id = :orderId`,
+        {
+          replacements: { orderId },
+          type: QueryTypes.SELECT
+        }
+      );
+    }
+    
+    res.json({
+      diagnostic: true,
+      timestamp: new Date().toISOString(),
+      session_id: sessionId,
+      order_found: orderResult.length > 0,
+      order_data: orderResult[0] || null,
+      order_items_count: orderItemsResult.length,
+      order_items: orderItemsResult
+    });
+    
+  } catch (error) {
+    res.status(500).json({ 
+      diagnostic: true,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // Deployment verification endpoint
 router.get('/deployment-check', (req, res) => {
   res.json({
