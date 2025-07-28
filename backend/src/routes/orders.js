@@ -64,6 +64,16 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
 });
 
 
+// Deployment verification endpoint
+router.get('/deployment-check', (req, res) => {
+  res.json({
+    version: '3.0',
+    timestamp: new Date().toISOString(),
+    message: 'DEPLOYMENT v3.0 ACTIVE - OrderItems fix deployed',
+    server_time: Date.now()
+  });
+});
+
 // Test endpoint - direct SQL bypass
 router.get('/test-direct/:orderId', async (req, res) => {
   try {
