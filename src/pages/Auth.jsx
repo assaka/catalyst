@@ -366,27 +366,14 @@ export default function Auth() {
     }
   };
 
-  const handleGoogleAuth = async () => {
+  const handleGoogleAuth = () => {
     setLoading(true);
     setError("");
     
-    try {
-      // Set store_owner role in session first using API client
-      const response = await apiClient.post('auth/set-oauth-role', {
-        role: 'store_owner'
-      });
-      
-      if (response.success) {
-        // Now redirect to Google OAuth via backend
-        window.location.href = `${apiClient.baseURL}/api/auth/google`;
-      } else {
-        throw new Error('Failed to set OAuth role');
-      }
-    } catch (error) {
-      console.error('Error setting OAuth role:', error);
-      setError('Failed to initialize Google authentication. Please try again.');
-      setLoading(false);
-    }
+    // Since Google OAuth is only for store owners, we can redirect directly
+    // The backend will automatically set the role to store_owner
+    console.log('🔐 Redirecting to Google OAuth for store owner...');
+    window.location.href = `${apiClient.baseURL}/api/auth/google`;
   };
 
   return (

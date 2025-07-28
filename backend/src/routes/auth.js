@@ -452,31 +452,6 @@ router.patch('/me', require('../middleware/auth'), async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/set-oauth-role
-// @desc    Set OAuth role in session before redirecting to Google (store_owner only)
-// @access  Public
-router.post('/set-oauth-role', (req, res) => {
-  const { role } = req.body;
-  
-  // Only allow store_owner role for Google OAuth
-  if (!role || role !== 'store_owner') {
-    return res.status(400).json({
-      success: false,
-      message: 'Google OAuth is only available for store owners'
-    });
-  }
-  
-  // Store the intended role in the session
-  req.session.intendedRole = 'store_owner';
-  console.log(`🔐 OAuth role set in session: store_owner`);
-  
-  res.json({
-    success: true,
-    message: 'Role set in session',
-    redirectUrl: '/api/auth/google'
-  });
-});
-
 // @route   GET /api/auth/google
 // @desc    Initiate Google OAuth (store_owner only)
 // @access  Public
