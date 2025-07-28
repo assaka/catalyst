@@ -139,36 +139,6 @@ export default function ProductLabels() {
     }
   };
 
-  const createTestLabel = async () => {
-    const storeId = getSelectedStoreId();
-    if (!storeId) {
-      console.error("Cannot create test label: No store selected.");
-      return;
-    }
-
-    try {
-      // Create test label data directly using the regular API
-      const testLabelData = {
-        name: 'Debug Test Label',
-        text: 'DEBUG',
-        background_color: '#FF0000',
-        text_color: '#FFFFFF', // Use text_color here, will be mapped to color in handleSubmit
-        position: 'top-right',
-        is_active: true,
-        conditions: {
-          attribute_conditions: [],
-          price_conditions: {}
-        }
-      };
-      
-      // Use the existing handleSubmit logic which includes field mapping
-      await handleSubmit(testLabelData);
-      
-    } catch (error) {
-      console.error('Error creating test label:', error);
-      alert(`Error creating test label: ${error.message}`);
-    }
-  };
 
   const closeForm = () => {
     setShowForm(false);
@@ -211,21 +181,12 @@ export default function ProductLabels() {
             <h1 className="text-3xl font-bold text-gray-900">Product Labels</h1>
             <p className="text-gray-600 mt-1">Create dynamic labels that appear on product images</p>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={createTestLabel}
-              variant="outline"
-              className="border-orange-500 text-orange-600 hover:bg-orange-50"
-            >
-              🧪 Create Test Label
-            </Button>
-            <Button 
-              onClick={() => handleEdit(null)} // Call handleEdit with null to signify adding a new label
-              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-            >
-              <Plus className="mr-2 h-4 w-4" /> Add Label
-            </Button>
-          </div>
+          <Button 
+            onClick={() => handleEdit(null)} // Call handleEdit with null to signify adding a new label
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
+          >
+            <Plus className="mr-2 h-4 w-4" /> Add Label
+          </Button>
         </div>
 
         {loading ? (
