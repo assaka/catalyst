@@ -197,10 +197,27 @@ export default function Auth() {
           }
         } else {
           // Default routing for other pages
-          if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
-            navigate(createPageUrl("Dashboard"));
-          } else if (isCustomer) {
-            navigate(createPageUrl("Storefront"));
+          // Check if we're on the auth page itself
+          const isOnAuthPage = currentPath === '/auth' || currentPath.endsWith('/auth');
+          
+          if (isOnAuthPage) {
+            // On auth page - only redirect if user is already authenticated
+            // This prevents interfering with the login process
+            if (isStoreOwner || isAdmin || isAgency) {
+              console.log('🔄 User already authenticated as store owner, redirecting to Dashboard');
+              navigate(createPageUrl("Dashboard"));
+            } else if (isCustomer) {
+              console.log('🔄 Customer on store owner auth page, redirecting to customer auth');
+              navigate(createPageUrl("CustomerAuth"));
+            }
+            // If hasNoRole, let them stay on auth page to complete setup
+          } else {
+            // Other pages - normal redirect logic
+            if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
+              navigate(createPageUrl("Dashboard"));
+            } else if (isCustomer) {
+              navigate(createPageUrl("Storefront"));
+            }
           }
         }
       }
@@ -299,21 +316,13 @@ export default function Auth() {
             // Set a temporary flag to prevent checkAuthStatus from redirecting
             localStorage.setItem('just_logged_in', 'true');
             
-            // Clear the flag after a short delay
+            // Always redirect store owners to Dashboard after login
             setTimeout(() => {
               localStorage.removeItem('just_logged_in');
-            }, 200);
-            if (isStorefrontContext) {
-              // Store owner logging in from storefront - stay on storefront (shopping as guest)
-              navigate(createPageUrl("Storefront"));
-            } else {
-              // Store owner accessing dashboard - allow access
               navigate(createPageUrl("Dashboard"));
-            }
-          } else {
-            // Fallback to checkAuthStatus
-            checkAuthStatus();
+            }, 100);
           }
+          // Note: No fallback to checkAuthStatus here to prevent unwanted redirects
         }
       } else {
         const response = await AuthService.register({
