@@ -183,10 +183,9 @@ export default function ProductDetail() {
       console.log('🔍 Loading product tabs for store:', store.id);
       console.log('📞 About to call ProductTab.filter with params:', { store_id: store.id, is_active: true });
       
-      const tabs = await cachedApiCall(
-        `product-tabs-${store.id}`,
-        () => ProductTab.filter({ store_id: store.id, is_active: true })
-      );
+      // Temporarily bypass cache to debug
+      console.log('🔍 Calling ProductTab.filter directly (bypassing cache)');
+      const tabs = await ProductTab.filter({ store_id: store.id, is_active: true });
       
       console.log('📊 Product tabs API response:', tabs);
       console.log('📊 Product tabs array length:', tabs?.length || 0);
