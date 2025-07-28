@@ -365,36 +365,62 @@ export default function Storefront() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           {(() => {
-                            // Filter labels that match the product conditions
+                            // Filter labels that match the product conditions (using same logic as ProductDetail)
                             const matchingLabels = productLabels?.filter((label) => {
-                              let showLabel = false;
-                              if (!label.conditions || Object.keys(label.conditions).length === 0) {
-                                  showLabel = true; 
-                              } else {
-                                  if (label.conditions.price_conditions) {
-                                      const conditions = label.conditions.price_conditions;
-                                      if (conditions.has_sale_price && product.compare_price && product.compare_price > product.price) {
-                                          showLabel = true;
-                                      }
-                                      if (conditions.is_new && conditions.days_since_created) {
-                                          const productCreatedDate = new Date(product.created_date);
-                                          const now = new Date();
-                                          const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
-                                          if (daysSince <= conditions.days_since_created) {
-                                              showLabel = true;
-                                          }
-                                      }
+                              let shouldShow = true; // Assume true, prove false (AND logic)
+
+                              if (label.conditions && Object.keys(label.conditions).length > 0) {
+                                // Check product_ids condition
+                                if (shouldShow && label.conditions.product_ids && Array.isArray(label.conditions.product_ids) && label.conditions.product_ids.length > 0) {
+                                  if (!label.conditions.product_ids.includes(product.id)) {
+                                    shouldShow = false;
                                   }
-                                  if (label.conditions.attribute_conditions && product.attributes) {
-                                      const attributeMatch = label.conditions.attribute_conditions.some(cond => 
-                                          product.attributes[cond.attribute_code] === cond.attribute_value
-                                      );
-                                      if (attributeMatch) {
-                                          showLabel = true;
-                                      }
+                                }
+
+                                // Check category_ids condition
+                                if (shouldShow && label.conditions.category_ids && Array.isArray(label.conditions.category_ids) && label.conditions.category_ids.length > 0) {
+                                  if (!product.category_ids || !product.category_ids.some(catId => label.conditions.category_ids.includes(catId))) {
+                                    shouldShow = false;
                                   }
+                                }
+
+                                // Check price conditions
+                                if (shouldShow && label.conditions.price_conditions) {
+                                  const conditions = label.conditions.price_conditions;
+                                  if (conditions.has_sale_price) {
+                                    const hasComparePrice = product.compare_price && parseFloat(product.compare_price) > 0;
+                                    const pricesAreDifferent = hasComparePrice && parseFloat(product.compare_price) !== parseFloat(product.price);
+                                    if (!pricesAreDifferent) {
+                                      shouldShow = false;
+                                    }
+                                  }
+                                  if (shouldShow && conditions.is_new && conditions.days_since_created) {
+                                    const productCreatedDate = new Date(product.created_date);
+                                    const now = new Date();
+                                    const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
+                                    if (daysSince > conditions.days_since_created) {
+                                      shouldShow = false;
+                                    }
+                                  }
+                                }
+
+                                // Check attribute conditions
+                                if (shouldShow && label.conditions.attribute_conditions && Array.isArray(label.conditions.attribute_conditions) && label.conditions.attribute_conditions.length > 0) {
+                                  const attributeMatch = label.conditions.attribute_conditions.every(cond => {
+                                    if (product.attributes && product.attributes[cond.attribute_code]) {
+                                      const productAttributeValue = String(product.attributes[cond.attribute_code]).toLowerCase();
+                                      const conditionValue = String(cond.attribute_value).toLowerCase();
+                                      return productAttributeValue === conditionValue;
+                                    }
+                                    return false;
+                                  });
+                                  if (!attributeMatch) {
+                                    shouldShow = false;
+                                  }
+                                }
                               }
-                              return showLabel;
+
+                              return shouldShow;
                             }) || [];
 
                             // Sort by sort_order (ASC) then by priority (DESC) and show only the first one
@@ -537,36 +563,62 @@ export default function Storefront() {
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
                                     {(() => {
-                                      // Filter labels that match the product conditions
+                                      // Filter labels that match the product conditions (using same logic as ProductDetail)
                                       const matchingLabels = productLabels?.filter((label) => {
-                                        let showLabel = false;
-                                        if (!label.conditions || Object.keys(label.conditions).length === 0) {
-                                            showLabel = true;
-                                        } else {
-                                            if (label.conditions.price_conditions) {
-                                                const conditions = label.conditions.price_conditions;
-                                                if (conditions.has_sale_price && product.compare_price && product.compare_price > product.price) {
-                                                    showLabel = true;
-                                                }
-                                                if (conditions.is_new && conditions.days_since_created) {
-                                                    const productCreatedDate = new Date(product.created_date);
-                                                    const now = new Date();
-                                                    const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
-                                                    if (daysSince <= conditions.days_since_created) {
-                                                        showLabel = true;
-                                                    }
-                                                }
+                                        let shouldShow = true; // Assume true, prove false (AND logic)
+
+                                        if (label.conditions && Object.keys(label.conditions).length > 0) {
+                                          // Check product_ids condition
+                                          if (shouldShow && label.conditions.product_ids && Array.isArray(label.conditions.product_ids) && label.conditions.product_ids.length > 0) {
+                                            if (!label.conditions.product_ids.includes(product.id)) {
+                                              shouldShow = false;
                                             }
-                                            if (label.conditions.attribute_conditions && product.attributes) {
-                                                const attributeMatch = label.conditions.attribute_conditions.some(cond => 
-                                                    product.attributes[cond.attribute_code] === cond.attribute_value
-                                                );
-                                                if (attributeMatch) {
-                                                    showLabel = true;
-                                                }
+                                          }
+
+                                          // Check category_ids condition
+                                          if (shouldShow && label.conditions.category_ids && Array.isArray(label.conditions.category_ids) && label.conditions.category_ids.length > 0) {
+                                            if (!product.category_ids || !product.category_ids.some(catId => label.conditions.category_ids.includes(catId))) {
+                                              shouldShow = false;
                                             }
+                                          }
+
+                                          // Check price conditions
+                                          if (shouldShow && label.conditions.price_conditions) {
+                                            const conditions = label.conditions.price_conditions;
+                                            if (conditions.has_sale_price) {
+                                              const hasComparePrice = product.compare_price && parseFloat(product.compare_price) > 0;
+                                              const pricesAreDifferent = hasComparePrice && parseFloat(product.compare_price) !== parseFloat(product.price);
+                                              if (!pricesAreDifferent) {
+                                                shouldShow = false;
+                                              }
+                                            }
+                                            if (shouldShow && conditions.is_new && conditions.days_since_created) {
+                                              const productCreatedDate = new Date(product.created_date);
+                                              const now = new Date();
+                                              const daysSince = Math.floor((now.getTime() - productCreatedDate.getTime()) / (1000 * 60 * 60 * 24));
+                                              if (daysSince > conditions.days_since_created) {
+                                                shouldShow = false;
+                                              }
+                                            }
+                                          }
+
+                                          // Check attribute conditions
+                                          if (shouldShow && label.conditions.attribute_conditions && Array.isArray(label.conditions.attribute_conditions) && label.conditions.attribute_conditions.length > 0) {
+                                            const attributeMatch = label.conditions.attribute_conditions.every(cond => {
+                                              if (product.attributes && product.attributes[cond.attribute_code]) {
+                                                const productAttributeValue = String(product.attributes[cond.attribute_code]).toLowerCase();
+                                                const conditionValue = String(cond.attribute_value).toLowerCase();
+                                                return productAttributeValue === conditionValue;
+                                              }
+                                              return false;
+                                            });
+                                            if (!attributeMatch) {
+                                              shouldShow = false;
+                                            }
+                                          }
                                         }
-                                        return showLabel;
+
+                                        return shouldShow;
                                       }) || [];
 
                                       // Sort by sort_order (ASC) then by priority (DESC) and show only the first one
