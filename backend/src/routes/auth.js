@@ -5,14 +5,29 @@ const { User, LoginAttempt } = require('../models');
 const passport = require('../config/passport');
 const router = express.Router();
 
-// Generate JWT token
+// Generate JWT token with role-specific session data
 const generateToken = (user, rememberMe = false) => {
   const expiresIn = rememberMe ? '30d' : (process.env.JWT_EXPIRES_IN || '24h');
+  const sessionId = generateSessionId();
+  
   return jwt.sign(
-    { id: user.id, email: user.email, role: user.role, account_type: user.account_type },
+    { 
+      id: user.id, 
+      email: user.email, 
+      role: user.role, 
+      account_type: user.account_type,
+      session_id: sessionId,
+      session_role: user.role,
+      issued_at: Date.now()
+    },
     process.env.JWT_SECRET,
     { expiresIn }
   );
+};
+
+// Generate unique session ID
+const generateSessionId = () => {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
 };
 
 // Password strength validator
@@ -177,7 +192,9 @@ router.post('/register', [
       message: 'User created successfully',
       data: {
         user,
-        token
+        token,
+        sessionRole: user.role,
+        sessionContext: user.role === 'customer' ? 'storefront' : 'dashboard'
       }
     });
   } catch (error) {
@@ -374,7 +391,9 @@ router.post('/login', [
       data: {
         user,
         token,
-        expiresIn: rememberMe ? '30 days' : '24 hours'
+        expiresIn: rememberMe ? '30 days' : '24 hours',
+        sessionRole: user.role,
+        sessionContext: user.role === 'customer' ? 'storefront' : 'dashboard'
       }
     });
   } catch (error) {

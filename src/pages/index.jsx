@@ -199,6 +199,8 @@ function _getCurrentPage(url) {
     return pageName || Object.keys(PAGES)[0];
 }
 
+import RoleProtectedRoute from '../components/RoleProtectedRoute.jsx';
+
 // Create a wrapper component that uses useLocation inside the Router context
 function PagesContent() {
     const location = useLocation();
@@ -213,17 +215,41 @@ function PagesContent() {
                 
                 <Route path="/Landing" element={<Landing />} />
                 
-                <Route path="/Auth" element={<Auth />} />
+                <Route path="/Auth" element={
+                    <RoleProtectedRoute requiresAuth={false}>
+                        <Auth />
+                    </RoleProtectedRoute>
+                } />
                 
-                <Route path="/CustomerAuth" element={<CustomerAuth />} />
+                <Route path="/CustomerAuth" element={
+                    <RoleProtectedRoute requiresAuth={false}>
+                        <CustomerAuth />
+                    </RoleProtectedRoute>
+                } />
                 
-                <Route path="/Dashboard" element={<Dashboard />} />
+                <Route path="/Dashboard" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Dashboard />
+                    </RoleProtectedRoute>
+                } />
                 
-                <Route path="/Products" element={<Products />} />
+                <Route path="/Products" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Products />
+                    </RoleProtectedRoute>
+                } />
                 
-                <Route path="/Categories" element={<Categories />} />
+                <Route path="/Categories" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Categories />
+                    </RoleProtectedRoute>
+                } />
                 
-                <Route path="/Settings" element={<Settings />} />
+                <Route path="/Settings" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Settings />
+                    </RoleProtectedRoute>
+                } />
                 
                 <Route path="/Attributes" element={<Attributes />} />
                 
@@ -246,9 +272,17 @@ function PagesContent() {
                 
                 <Route path="/Tax" element={<Tax />} />
                 
-                <Route path="/Orders" element={<Orders />} />
+                <Route path="/Orders" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Orders />
+                    </RoleProtectedRoute>
+                } />
                 
-                <Route path="/CustomerDashboard" element={<CustomerDashboard />} />
+                <Route path="/CustomerDashboard" element={
+                    <RoleProtectedRoute allowedRoles={['customer']}>
+                        <CustomerDashboard />
+                    </RoleProtectedRoute>
+                } />
                 
                 <Route path="/Coupons" element={<Coupons />} />
                 
@@ -279,7 +313,11 @@ function PagesContent() {
                 
                 <Route path="/HtmlSitemap" element={<HtmlSitemap />} />
                 
-                <Route path="/Customers" element={<Customers />} />
+                <Route path="/Customers" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Customers />
+                    </RoleProtectedRoute>
+                } />
                 
                 <Route path="/StockSettings" element={<StockSettings />} />
                 
@@ -299,7 +337,11 @@ function PagesContent() {
                 
                 <Route path="/ClientDashboard" element={<ClientDashboard />} />
                 
-                <Route path="/Stores" element={<Stores />} />
+                <Route path="/Stores" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Stores />
+                    </RoleProtectedRoute>
+                } />
                 
                 <Route path="/OrderCancel" element={<OrderCancel />} />
                 

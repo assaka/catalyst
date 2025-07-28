@@ -1,6 +1,7 @@
 const express = require('express');
 const { Customer } = require('../models');
 const auth = require('../middleware/auth');
+const { storeOwnerOnly } = require('../middleware/auth');
 const { Op } = require('sequelize');
 
 const router = express.Router();
@@ -8,7 +9,7 @@ const router = express.Router();
 // @route   GET /api/customers
 // @desc    Get all customers for a store
 // @access  Private
-router.get('/', auth, async (req, res) => {
+router.get('/', storeOwnerOnly, async (req, res) => {
   try {
     const { store_id, page = 1, limit = 20, search, sort_by = 'created_at', sort_order = 'DESC' } = req.query;
 

@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import apiClient from "@/api/client";
+import { setRoleBasedAuthData, validateRoleBasedSession, getSessionRole } from "@/utils/auth";
 
 export default function CustomerAuth() {
   const navigate = useNavigate();
@@ -40,6 +41,13 @@ export default function CustomerAuth() {
 
       const user = await User.me();
       if (user && user.role === 'customer') {
+        // Validate customer session
+        if (!validateRoleBasedSession('customer')) {
+          // Invalid session, clear data and stay on auth page
+          apiClient.clearToken();
+          return;
+        }
+        
         // Customer is already logged in, redirect appropriately
         const returnTo = searchParams.get('returnTo');
         if (returnTo) {
@@ -74,6 +82,10 @@ export default function CustomerAuth() {
           return;
         }
 
+        // Set role-based session data for customer
+        const userData = response.data?.user || response.user;
+        setRoleBasedAuthData(userData, response.data?.token || response.token);
+
         // Redirect customer to appropriate page
         const returnTo = searchParams.get('returnTo');
         if (returnTo) {
@@ -99,6 +111,10 @@ export default function CustomerAuth() {
 
         const response = await AuthService.register(registerData);
         console.log("✅ CustomerAuth.jsx: Registration successful:", response);
+
+        // Set role-based session data for new customer
+        const userData = response.data?.user || response.user;
+        setRoleBasedAuthData(userData, response.data?.token || response.token);
 
         // Redirect to customer dashboard
         navigate(createPageUrl("CustomerDashboard"));

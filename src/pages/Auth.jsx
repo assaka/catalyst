@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import apiClient from "@/api/client";
+import { setRoleBasedAuthData, validateRoleBasedSession, getSessionRole } from "@/utils/auth";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -259,6 +260,9 @@ export default function Auth() {
             await AuthService.logout();
             return;
           } else if (userRole === 'store_owner' || userRole === 'admin' || !userRole) {
+            // Set role-based session data for store owners/admins
+            const userData = response.data?.user || response.user;
+            setRoleBasedAuthData(userData, response.data?.token || response.token);
             if (isStorefrontContext) {
               // Store owner logging in from storefront - stay on storefront (shopping as guest)
               navigate(createPageUrl("Storefront"));
@@ -282,6 +286,10 @@ export default function Auth() {
         });
         if (response.success) {
           setSuccess("Registration successful! Redirecting...");
+          // Set role-based session data for new store owner
+          const userData = response.data?.user || response.user;
+          setRoleBasedAuthData(userData, response.data?.token || response.token);
+          
           // Since we explicitly set role as store_owner during registration,
           // redirect directly to Dashboard
           setTimeout(() => {
