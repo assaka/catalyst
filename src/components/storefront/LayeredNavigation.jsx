@@ -99,9 +99,18 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
             return {};
         }
         
+        console.log('🔍 LayeredNavigation: Received attributes:', attributes.length);
+        console.log('🔍 LayeredNavigation: Received products:', products.length);
+        console.log('🔍 LayeredNavigation: Attribute details:', attributes.map(a => ({ 
+            name: a.name, 
+            code: a.code, 
+            is_filterable: a.is_filterable,
+            options: a.options 
+        })));
         
         const options = {};
         attributes.forEach(attr => {
+            console.log(`🔍 LayeredNavigation: Processing attribute "${attr.name}" (${attr.code}), is_filterable: ${attr.is_filterable}`);
             
             if (attr.is_filterable) {
                 const values = new Set();
@@ -128,6 +137,17 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                         }
                     }
 
+                    // Debug Color attribute specifically
+                    if (attr.name === 'Color' || attr.code === 'color') {
+                        console.log(`🔍 LayeredNavigation: Color attribute for product "${p.name}":`, {
+                            possibleKeys,
+                            productAttributes,
+                            attributeValue,
+                            productHasAttributes: !!p.attributes,
+                            productHasAttributeValues: !!p.attribute_values
+                        });
+                    }
+
                     if (attributeValue !== undefined && attributeValue !== null && attributeValue !== '') {
                         if (Array.isArray(attributeValue)) {
                             attributeValue.forEach(val => {
@@ -148,6 +168,15 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
                     });
                 }
                 
+                // Debug Color attribute result
+                if (attr.name === 'Color' || attr.code === 'color') {
+                    console.log(`🔍 LayeredNavigation: Color attribute final result:`, {
+                        valuesFound: values.size,
+                        values: Array.from(values),
+                        willBeIncluded: values.size > 0
+                    });
+                }
+
                 if (values.size > 0) {
                     options[attr.code] = {
                         name: attr.name,
@@ -157,6 +186,7 @@ export default function LayeredNavigation({ products, attributes, onFilterChange
             }
         });
         
+        console.log('🔍 LayeredNavigation: Final filter options:', options);
         return options;
     }, [products, attributes]);
 

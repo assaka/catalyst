@@ -493,6 +493,14 @@ export const StoreProvider = ({ children }) => {
       setAttributes(attrData);
       
       const filterableAttrs = attrData.filter(a => a?.is_filterable);
+      console.log('🔍 StoreProvider: All attributes loaded:', attrData.length);
+      console.log('🔍 StoreProvider: Filterable attributes:', filterableAttrs.length);
+      console.log('🔍 StoreProvider: Filterable attributes details:', filterableAttrs.map(a => ({ 
+        name: a.name, 
+        code: a.code, 
+        is_filterable: a.is_filterable,
+        options: a.options?.length || 0 
+      })));
       setFilterableAttributes(filterableAttrs);
       
       setAttributeSets(results[4].status === 'fulfilled' ? (results[4].value || []) : []);
