@@ -171,13 +171,15 @@ export default function ProductDetail() {
   const loadProductTabs = async () => {
     if (!store?.id) return;
     try {
+      console.log('🔍 Loading product tabs for store:', store.id);
       const tabs = await cachedApiCall(
         `product-tabs-${store.id}`,
         () => ProductTab.filter({ store_id: store.id, is_active: true })
       );
+      console.log('📊 Product tabs loaded:', tabs);
       setProductTabs(tabs || []);
     } catch (error) {
-      console.error('Error loading product tabs:', error);
+      console.error('❌ Error loading product tabs:', error);
       setProductTabs([]);
     }
   };
@@ -753,7 +755,7 @@ export default function ProductDetail() {
       </div>
 
       {/* Product Tabs */}
-      {productTabs.length > 0 && (
+      {console.log('🔍 Rendering product tabs:', productTabs) || productTabs.length > 0 && (
         <div className="mt-12 border-t pt-8">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
@@ -767,7 +769,7 @@ export default function ProductDetail() {
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                   }`}
                 >
-                  {tab.title}
+                  {tab.name}
                 </button>
               ))}
             </nav>
@@ -776,10 +778,18 @@ export default function ProductDetail() {
           <div className="mt-6">
             {productTabs[activeTab] && (
               <div className="prose max-w-none">
-                {productTabs[activeTab].content_type === 'description' && product?.description && (
+                {/* Text content tab */}
+                {productTabs[activeTab].tab_type === 'text' && productTabs[activeTab].content && (
+                  <div dangerouslySetInnerHTML={{ __html: productTabs[activeTab].content }} />
+                )}
+                
+                {/* Description tab */}
+                {productTabs[activeTab].tab_type === 'description' && product?.description && (
                   <div dangerouslySetInnerHTML={{ __html: product.description }} />
                 )}
-                {productTabs[activeTab].content_type === 'attributes' ? (
+                
+                {/* Attributes tab */}
+                {productTabs[activeTab].tab_type === 'attributes' && (
                   product?.attributes && Object.keys(product.attributes).length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {Object.entries(product.attributes).map(([key, value]) => (
@@ -820,14 +830,19 @@ export default function ProductDetail() {
                   ) : (
                     <p className="text-gray-500">No additional attributes available for this product.</p>
                   )
-                ) : null}
-                {productTabs[activeTab].content_type === 'reviews' && (
+                )}
+                
+                {/* Attribute sets tab */}
+                {productTabs[activeTab].tab_type === 'attribute_sets' && (
                   <div className="text-gray-500">
-                    Reviews functionality coming soon...
+                    Attribute sets functionality will be implemented to show attributes from the selected attribute sets.
                   </div>
                 )}
-                {productTabs[activeTab].content_type === 'custom' && productTabs[activeTab].content && (
-                  <div dangerouslySetInnerHTML={{ __html: productTabs[activeTab].content }} />
+                
+                {/* Fallback for empty content */}
+                {!productTabs[activeTab].content && 
+                 productTabs[activeTab].tab_type === 'text' && (
+                  <p className="text-gray-500">No content available for this tab.</p>
                 )}
               </div>
             )}

@@ -2,23 +2,34 @@
   "name": "ProductTab",
   "type": "object",
   "properties": {
-    "title": {
-      "type": "string"
+    "name": {
+      "type": "string",
+      "description": "Display name of the tab"
     },
-    "content_type": {
+    "slug": {
+      "type": "string",
+      "description": "URL-friendly identifier for the tab"
+    },
+    "tab_type": {
       "type": "string",
       "enum": [
+        "text",
         "description",
         "attributes",
-        "reviews"
-      ]
+        "attribute_sets"
+      ],
+      "default": "text"
     },
-    "attribute_codes": {
+    "content": {
+      "type": "string",
+      "description": "HTML content for text type tabs"
+    },
+    "attribute_ids": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "List of attribute codes to display in this tab, if content_type is 'attributes'"
+      "description": "List of attribute IDs to display in this tab, if tab_type is 'attributes'"
     },
     "attribute_set_ids": {
       "type": "array",
@@ -40,8 +51,8 @@
     }
   },
   "required": [
-    "title",
-    "content_type",
+    "name",
+    "tab_type",
     "store_id"
   ]
 }
