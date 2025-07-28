@@ -27,6 +27,14 @@ const ensureArray = (data) => {
 export default function Storefront() {
   const { store, settings, loading: storeLoading, productLabels, categories: storeCategories, filterableAttributes, taxes, selectedCountry } = useStore();
   
+  // Add logging whenever productLabels changes
+  useEffect(() => {
+    console.log('🏷️ Storefront: productLabels from useStore changed:', productLabels);
+    console.log('🏷️ Storefront: productLabels type:', typeof productLabels);
+    console.log('🏷️ Storefront: productLabels isArray:', Array.isArray(productLabels));
+    console.log('🏷️ Storefront: productLabels length:', productLabels?.length);
+  }, [productLabels]);
+  
   const [products, setProducts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [currentCategory, setCurrentCategory] = useState(null);
@@ -365,11 +373,14 @@ export default function Storefront() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           {productLabels && productLabels.map((label) => {
-                            console.log('🏷️ Evaluating label for product:', { label, product: product.name });
+                            console.log('🏷️ Storefront (Featured): === EVALUATING LABEL ===');
+                            console.log('🏷️ Storefront (Featured): Label:', label);
+                            console.log('🏷️ Storefront (Featured): Product:', product.name);
+                            console.log('🏷️ Storefront (Featured): productLabels array length:', productLabels.length);
                             let showLabel = false;
                             // FIXED: Simplified product label condition
                             if (!label.conditions || Object.keys(label.conditions).length === 0) {
-                                console.log('✅ Label has no conditions, showing for all products');
+                                console.log('✅ Storefront (Featured): Label has no conditions, showing for all products');
                                 showLabel = true; 
                             } else {
                                 if (label.conditions.price_conditions) {
@@ -395,7 +406,9 @@ export default function Storefront() {
                                     }
                                 }
                             }
+                            console.log('🏷️ Storefront (Featured): Final showLabel decision:', showLabel);
                             if (showLabel) {
+                              console.log('✅ Storefront (Featured): Rendering label:', label.text);
                               return (
                                 <ProductLabelComponent
                                   key={label.id}
@@ -403,6 +416,7 @@ export default function Storefront() {
                                 />
                               );
                             }
+                            console.log('❌ Storefront (Featured): Not rendering label:', label.text);
                             return null;
                           })}
                           {product.stock_quantity <= 0 && !product.infinite_stock && (
