@@ -8,7 +8,8 @@ const session = require('express-session');
 const passport = require('./config/passport');
 require('dotenv').config();
 
-// Force deployment trigger - v2.1
+// Force deployment trigger - v3.0 - MAJOR UPDATE
+console.log('🚀 SERVER STARTING - VERSION 3.0 - OrderItems Fix Deployed');
 
 const { sequelize } = require('./database/connection');
 const errorHandler = require('./middleware/errorHandler');

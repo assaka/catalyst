@@ -12,7 +12,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   try {
     const { paymentReference } = req.params;
     
-    console.log('🔍 SIMPLIFIED FETCH v2 - order with payment reference:', paymentReference);
+    console.log('🔍 *** DEPLOYMENT v3.0 ACTIVE *** - Fetching order with payment reference:', paymentReference);
     
     // Simple approach - get order with relationships
     const order = await Order.findOne({
@@ -46,7 +46,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       });
     }
 
-    console.log('✅ Order found with', order.OrderItems?.length || 0, 'items');
+    console.log('✅ Order found with', order.OrderItems?.length || 0, 'items - Deployment timestamp:', new Date().toISOString());
     
     res.json({
       success: true,
