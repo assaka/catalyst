@@ -62,8 +62,10 @@ export default function OrderSuccess() {
 
   // Currency formatting helper
   const formatCurrency = (amount, currency) => {
-    if (!amount) return currency && currency !== 'USD' ? `${currency} 0.00` : '$0.00';
-    const formattedAmount = parseFloat(amount).toFixed(2);
+    if (!amount || amount === null || amount === undefined) return currency && currency !== 'USD' ? `${currency} 0.00` : '$0.00';
+    const numAmount = parseFloat(amount);
+    if (isNaN(numAmount)) return currency && currency !== 'USD' ? `${currency} 0.00` : '$0.00';
+    const formattedAmount = numAmount.toFixed(2);
     return currency && currency !== 'USD' ? `${currency} ${formattedAmount}` : `$${formattedAmount}`;
   };
 
@@ -414,31 +416,83 @@ export default function OrderSuccess() {
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {orderItems.map((item, index) => (
-                      <div key={index} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{item.product_name}</h4>
-                          <p className="text-sm text-gray-500">SKU: {item.product_sku}</p>
-                          <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                          
-                          {/* Custom Options */}
-                          {item.product_attributes?.selected_options && item.product_attributes.selected_options.length > 0 && (
-                            <div className="mt-2">
-                              <p className="text-xs text-gray-500 mb-1">Options:</p>
-                              {item.product_attributes.selected_options.map((option, optIndex) => (
-                                <p key={optIndex} className="text-xs text-gray-600">
-                                  • {option.name} {option.price > 0 && `(+${formatCurrency(option.price, order.currency)})`}
-                                </p>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">{formatCurrency(item.total_price, order.currency)}</p>
-                        </div>
+                  <div className="overflow-x-auto">
+                    {/* Table Header */}
+                    <div className="min-w-full">
+                      <div className="grid grid-cols-12 gap-4 py-3 px-4 bg-gray-100 rounded-t-lg text-sm font-medium text-gray-700">
+                        <div className="col-span-5">Product</div>
+                        <div className="col-span-2 text-center">Qty</div>
+                        <div className="col-span-3 text-right">Unit Price</div>
+                        <div className="col-span-2 text-right">Total</div>
                       </div>
-                    ))}
+                      
+                      {/* Table Rows */}
+                      {orderItems.map((item, index) => {
+                        // Calculate base unit price and options price
+                        const quantity = Math.max(1, parseFloat(item.quantity) || 1);
+                        const totalPrice = parseFloat(item.total_price) || (parseFloat(item.unit_price || item.price || 0) * quantity) || 0;
+                        const unitPrice = parseFloat(item.unit_price || item.price || 0);
+                        const selectedOptions = item.selected_options || item.product_attributes?.selected_options || [];
+                        const optionsPrice = selectedOptions.reduce((sum, option) => {
+                          const optionPrice = parseFloat(option.price || 0);
+                          return sum + (isNaN(optionPrice) ? 0 : optionPrice);
+                        }, 0);
+                        const baseUnitPrice = Math.max(0, unitPrice - optionsPrice);
+                        
+                        return (
+                          <div key={index} className="grid grid-cols-12 gap-4 py-4 px-4 border-b border-gray-200 text-sm">
+                            {/* Product Column */}
+                            <div className="col-span-5">
+                              <h4 className="font-medium text-gray-900 mb-1">{item.product_name}</h4>
+                              {item.product_sku && (
+                                <p className="text-xs text-gray-500 mb-2">SKU: {item.product_sku}</p>
+                              )}
+                              
+                              {/* Custom Options */}
+                              {selectedOptions && selectedOptions.length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                  {selectedOptions.map((option, optIndex) => (
+                                    <div key={optIndex} className="text-xs text-gray-600 flex justify-between">
+                                      <span>• {option.name}</span>
+                                      {parseFloat(option.price || 0) > 0 && (
+                                        <span className="text-green-600">(+{formatCurrency(option.price, order.currency)})</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Quantity Column */}
+                            <div className="col-span-2 text-center">
+                              <span className="font-medium">{quantity}</span>
+                            </div>
+                            
+                            {/* Unit Price Column */}
+                            <div className="col-span-3 text-right">
+                              <div className="space-y-1">
+                                <div className="font-medium">{formatCurrency(baseUnitPrice, order.currency)}</div>
+                                {selectedOptions && selectedOptions.length > 0 && (
+                                  <div className="text-xs text-gray-500">
+                                    Options: +{formatCurrency(optionsPrice, order.currency)}
+                                  </div>
+                                )}
+                                {selectedOptions && selectedOptions.length > 0 && (
+                                  <div className="text-xs font-medium border-t pt-1">
+                                    Total: {formatCurrency(unitPrice, order.currency)}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Total Column */}
+                            <div className="col-span-2 text-right">
+                              <span className="font-semibold">{formatCurrency(totalPrice, order.currency)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </CardContent>

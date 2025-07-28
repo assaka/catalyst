@@ -349,12 +349,15 @@ export default function Orders() {
                                                         <p className="text-sm text-gray-500">SKU: {item.product_sku}</p>
                                                       )}
                                                       {item.selected_options && item.selected_options.length > 0 && (
-                                                        <div className="text-sm text-gray-600 mt-1">
+                                                        <div className="text-sm text-gray-600 mt-2 space-y-1">
+                                                          <div className="text-xs text-gray-500 font-medium">Custom Options:</div>
                                                           {item.selected_options.map((option, optIndex) => (
-                                                            <p key={optIndex}>
-                                                              {option.name}: {option.value}
-                                                              {option.price > 0 && ` (+${formatPrice(option.price)})`}
-                                                            </p>
+                                                            <div key={optIndex} className="flex justify-between items-center">
+                                                              <span>• {option.name}: {option.value}</span>
+                                                              {parseFloat(option.price || 0) > 0 && (
+                                                                <span className="text-green-600 font-medium">(+{formatPrice(option.price)})</span>
+                                                              )}
+                                                            </div>
                                                           ))}
                                                         </div>
                                                       )}
@@ -363,14 +366,40 @@ export default function Orders() {
                                                   <TableCell className="text-center">{item.quantity || 1}</TableCell>
                                                   <TableCell className="text-right">
                                                     <div>
-                                                      {item.original_price && parseFloat(item.original_price) !== parseFloat(item.unit_price || item.price) ? (
-                                                        <>
-                                                          <p className="text-sm text-gray-500 line-through">{formatPrice(item.original_price)}</p>
-                                                          <p className="text-red-600 font-medium">{formatPrice(item.unit_price || item.price)}</p>
-                                                        </>
-                                                      ) : (
-                                                        <p>{formatPrice(item.unit_price || item.price)}</p>
-                                                      )}
+                                                      {(() => {
+                                                        // Calculate price breakdown
+                                                        const unitPrice = parseFloat(item.unit_price || item.price || 0);
+                                                        const selectedOptions = item.selected_options || [];
+                                                        const optionsPrice = selectedOptions.reduce((sum, option) => {
+                                                          const optionPrice = parseFloat(option.price || 0);
+                                                          return sum + (isNaN(optionPrice) ? 0 : optionPrice);
+                                                        }, 0);
+                                                        const baseUnitPrice = Math.max(0, unitPrice - optionsPrice);
+                                                        
+                                                        // Show original price vs discounted price if applicable
+                                                        if (item.original_price && parseFloat(item.original_price) !== unitPrice) {
+                                                          return (
+                                                            <>
+                                                              <p className="text-sm text-gray-500 line-through">{formatPrice(item.original_price)}</p>
+                                                              <p className="text-red-600 font-medium">{formatPrice(unitPrice)}</p>
+                                                            </>
+                                                          );
+                                                        }
+                                                        
+                                                        // Show price breakdown if there are custom options
+                                                        if (selectedOptions.length > 0 && optionsPrice > 0) {
+                                                          return (
+                                                            <div className="space-y-1">
+                                                              <div className="text-sm font-medium">{formatPrice(baseUnitPrice)}</div>
+                                                              <div className="text-xs text-gray-500">Options: +{formatPrice(optionsPrice)}</div>
+                                                              <div className="text-xs font-medium border-t pt-1">Total: {formatPrice(unitPrice)}</div>
+                                                            </div>
+                                                          );
+                                                        }
+                                                        
+                                                        // Default: show unit price only
+                                                        return <p className="font-medium">{formatPrice(unitPrice)}</p>;
+                                                      })()}
                                                     </div>
                                                   </TableCell>
                                                   <TableCell className="text-right font-medium">{formatPrice(item.total_price || ((item.unit_price || item.price) * item.quantity))}</TableCell>
