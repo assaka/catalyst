@@ -182,34 +182,46 @@ const SimpleProductCard = ({ product, settings }) => {
                             return shouldShow;
                           }) || [];
 
-                          // Sort by sort_order (ASC) then by priority (DESC) and show only the first one
-                          const sortedLabels = matchingLabels.sort((a, b) => {
-                            const sortOrderA = a.sort_order || 0;
-                            const sortOrderB = b.sort_order || 0;
-                            if (sortOrderA !== sortOrderB) {
-                              return sortOrderA - sortOrderB; // ASC
+                          // Group labels by position and show one label per position
+                          const labelsByPosition = matchingLabels.reduce((acc, label) => {
+                            const position = label.position || 'top-right';
+                            if (!acc[position]) {
+                              acc[position] = [];
                             }
-                            const priorityA = a.priority || 0;
-                            const priorityB = b.priority || 0;
-                            console.log('🔍 Priority sorting debug (recommended):', {
-                              labelA: a.name,
-                              priorityA,
-                              labelB: b.name,
-                              priorityB,
-                              result: priorityB - priorityA
-                            });
-                            return priorityB - priorityA; // DESC
-                          });
+                            acc[position].push(label);
+                            return acc;
+                          }, {});
 
-                          // Show only the first (highest priority, lowest sort_order) label
-                          const labelToShow = sortedLabels[0];
-                          
-                          return labelToShow ? (
+                          // For each position, sort by sort_order (ASC) then by priority (DESC) and take the first one
+                          const labelsToShow = Object.values(labelsByPosition).map(positionLabels => {
+                            const sortedLabels = positionLabels.sort((a, b) => {
+                              const sortOrderA = a.sort_order || 0;
+                              const sortOrderB = b.sort_order || 0;
+                              if (sortOrderA !== sortOrderB) {
+                                return sortOrderA - sortOrderB; // ASC
+                              }
+                              const priorityA = a.priority || 0;
+                              const priorityB = b.priority || 0;
+                              console.log('🔍 Priority sorting debug (recommended):', {
+                                position: a.position,
+                                labelA: a.name,
+                                priorityA,
+                                labelB: b.name,
+                                priorityB,
+                                result: priorityB - priorityA
+                              });
+                              return priorityB - priorityA; // DESC
+                            });
+                            return sortedLabels[0]; // Return highest priority label for this position
+                          }).filter(Boolean);
+
+                          // Show all labels (one per position)
+                          return labelsToShow.map(label => (
                             <ProductLabelComponent
-                              key={labelToShow.id}
-                              label={labelToShow}
+                              key={label.id}
+                              label={label}
                             />
-                          ) : null;
+                          ));
                         })()}
                     </div>
                 </Link>
