@@ -739,6 +739,58 @@ router.post('/webhook', async (req, res) => {
   res.json({ received: true });
 });
 
+// Debug endpoint to check OrderItems for a specific order
+router.get('/debug/order-items/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    console.log('🔍 Debug: Checking OrderItems for order:', orderId);
+    
+    // Count OrderItems
+    const itemCount = await OrderItem.count({ where: { order_id: orderId } });
+    console.log('📊 OrderItems count in database:', itemCount);
+    
+    // Get actual OrderItems
+    const items = await OrderItem.findAll({ where: { order_id: orderId } });
+    console.log('📋 OrderItems found:', items.length);
+    
+    // Get Order with includes
+    const order = await Order.findByPk(orderId, {
+      include: [
+        {
+          model: Store,
+          attributes: ['id', 'name', 'currency']
+        },
+        {
+          model: OrderItem,
+          include: [{ 
+            model: Product, 
+            attributes: ['id', 'name', 'sku', 'images'] 
+          }]
+        }
+      ]
+    });
+    
+    res.json({
+      success: true,
+      order_exists: !!order,
+      order_items_count: itemCount,
+      order_items_via_include: order?.OrderItems?.length || 0,
+      direct_items: items.map(item => ({
+        id: item.id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price
+      }))
+    });
+    
+  } catch (error) {
+    console.error('Debug OrderItems error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Debug endpoint to manually process a specific session
 router.post('/debug-session', async (req, res) => {
   try {

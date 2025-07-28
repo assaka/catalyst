@@ -1,7 +1,7 @@
 // Debug script to test specific session processing
 const https = require('https');
 
-const sessionId = 'cs_test_b1sCuCcm3s91qwRnjHak3rUKIZs7LdBkc5oJePRFp0OlJuLBFZCyd5SXFW';
+const sessionId = 'cs_test_b1fZ2fBwEvmDQAIl0WUNrf39xpLZNtbGDzWqTNXx5oysBChFKNoE8NNUNw';
 
 const postData = JSON.stringify({
   session_id: sessionId
