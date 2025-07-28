@@ -732,6 +732,9 @@ router.post('/webhook', async (req, res) => {
 
 // Helper function to create order from Stripe checkout session
 async function createOrderFromCheckoutSession(session) {
+  const { sequelize } = require('../database/connection');
+  const transaction = await sequelize.transaction();
+  
   try {
     const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code, shipping_method_name, shipping_method_id } = session.metadata || {};
     
@@ -826,7 +829,7 @@ async function createOrderFromCheckoutSession(session) {
     
     console.log('Generated order_number:', order_number);
     
-    // Create the order
+    // Create the order within transaction
     const order = await Order.create({
       order_number: order_number,
       store_id: store_id, // Keep as UUID string
@@ -849,7 +852,7 @@ async function createOrderFromCheckoutSession(session) {
       status: 'processing',
       coupon_code: coupon_code || null,
       shipping_method: shipping_method_name || null // Use shipping_method instead of shipping_method_name
-    });
+    }, { transaction });
     
     // Group line items by product and reconstruct order items
     const productMap = new Map();
@@ -944,14 +947,19 @@ async function createOrderFromCheckoutSession(session) {
       
       console.log('Creating order item:', JSON.stringify(orderItemData, null, 2));
       
-      const createdItem = await OrderItem.create(orderItemData);
+      const createdItem = await OrderItem.create(orderItemData, { transaction });
       console.log('Created order item with ID:', createdItem.id);
     }
+    
+    // Commit the transaction
+    await transaction.commit();
     
     console.log(`Order created successfully: ${order.order_number}`);
     return order;
     
   } catch (error) {
+    // Rollback the transaction on error
+    await transaction.rollback();
     console.error('Error creating order from checkout session:', error);
     throw error;
   }

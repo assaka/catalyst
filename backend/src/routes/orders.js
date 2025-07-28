@@ -45,6 +45,8 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     }
 
     console.log('✅ Order found:', order.id, 'with', order.OrderItems?.length || 0, 'items');
+    console.log('🔍 OrderItems debug:', JSON.stringify(order.OrderItems, null, 2));
+    console.log('🔍 Full order data structure:', Object.keys(order.dataValues || order));
 
     res.json({
       success: true,

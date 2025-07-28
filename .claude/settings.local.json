@@ -43,7 +43,8 @@
       "Bash(npm run sync:tables:*)",
       "Bash(npm run db:query:*)",
       "Bash(npx sequelize-cli:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "WebFetch(domain:localhost)"
     ],
     "deny": []
   }

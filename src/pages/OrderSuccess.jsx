@@ -100,18 +100,63 @@ export default function OrderSuccess() {
           console.log('Full order data loaded:', JSON.stringify(orderData, null, 2));
           setOrder(orderData);
           
-          // Set order items from order data
-          console.log('OrderItems from API:', orderData.OrderItems);
-          console.log('OrderItems type:', typeof orderData.OrderItems);
-          console.log('OrderItems length:', orderData.OrderItems?.length);
+          // Set order items from order data - check multiple possible keys
+          console.log('🔍 Order data structure debug:', {
+            hasOrderItems: !!orderData.OrderItems,
+            orderItemsType: typeof orderData.OrderItems,
+            orderItemsLength: orderData.OrderItems?.length,
+            hasOrderitemset: !!orderData.OrderItemSet,
+            hasItems: !!orderData.items,
+            availableKeys: Object.keys(orderData),
+            sampleOrderItem: orderData.OrderItems?.[0] || orderData.items?.[0],
+            // Add more detailed inspection
+            orderData_keys: Object.keys(orderData || {}),
+            orderData_dataValues_keys: Object.keys(orderData?.dataValues || {}),
+            rawOrderItems: orderData.OrderItems,
+            rawItems: orderData.items
+          });
           
-          if (orderData.OrderItems && Array.isArray(orderData.OrderItems)) {
-            console.log('Setting order items:', orderData.OrderItems.length, 'items');
-            console.log('Sample order item:', orderData.OrderItems[0]);
-            setOrderItems(orderData.OrderItems);
+          // Try different possible keys for order items
+          let items = orderData.OrderItems || orderData.items || orderData.orderItems || [];
+          
+          if (items && Array.isArray(items) && items.length > 0) {
+            console.log('✅ Setting order items:', items.length, 'items found');
+            console.log('🔍 Sample order item structure:', items[0]);
+            setOrderItems(items);
           } else {
-            console.log('No OrderItems found in order data');
-            console.log('Available keys in orderData:', Object.keys(orderData));
+            console.log('❌ No order items found in any expected location');
+            console.log('🔍 Full order data for debugging:', JSON.stringify(orderData, null, 2));
+            
+            // If no items found, try to reload the data after a short delay
+            // This handles the case where order items might still be being created
+            console.log('🔄 Attempting to reload order data in 2 seconds...');
+            setTimeout(async () => {
+              try {
+                console.log('🔄 Retrying order data fetch...');
+                const retryResponse = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
+                const retryResult = await retryResponse.json();
+                
+                if (retryResponse.ok && retryResult.success && retryResult.data) {
+                  const retryOrderData = retryResult.data;
+                  console.log('🔄 Retry order data:', JSON.stringify(retryOrderData, null, 2));
+                  
+                  const retryItems = retryOrderData.OrderItems || retryOrderData.items || retryOrderData.orderItems || [];
+                  if (retryItems && Array.isArray(retryItems) && retryItems.length > 0) {
+                    console.log('✅ Found items on retry:', retryItems.length, 'items');
+                    setOrderItems(retryItems);
+                    setOrder(retryOrderData); // Update order data too
+                  } else {
+                    console.log('❌ Still no items found on retry');
+                    setOrderItems([]);
+                  }
+                } else {
+                  console.log('❌ Retry fetch failed');
+                }
+              } catch (retryError) {
+                console.error('❌ Error during retry fetch:', retryError);
+              }
+            }, 2000);
+            
             setOrderItems([]);
           }
         } else {

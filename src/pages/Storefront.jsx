@@ -318,8 +318,15 @@ export default function Storefront() {
             )}
           </div>
 
-          <div className={`grid ${settings?.enable_product_filters ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
-            {settings?.enable_product_filters && (
+          <div className={`grid ${(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
+            {/* Debug logging for layered navigation */}
+            {console.log('🔍 Storefront layered navigation debug:', {
+              enable_product_filters: settings?.enable_product_filters,
+              filterableAttributesCount: filterableAttributes?.length,
+              productsCount: products?.length,
+              settings: settings
+            })}
+            {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) && (
               <div className="lg:col-span-1">
                 <LayeredNavigation
                   products={products}
@@ -329,7 +336,7 @@ export default function Storefront() {
               </div>
             )}
             {/* FIXED: Maintain grid structure even when no products found */}
-            <div className={settings?.enable_product_filters ? "lg:col-span-3" : "lg:col-span-1"}>
+            <div className={(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? "lg:col-span-3" : "lg:col-span-1"}>
               {loading ? (
                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
                     {[...Array(6)].map((_, i) => (
