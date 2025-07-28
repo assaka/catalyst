@@ -8,6 +8,8 @@ const session = require('express-session');
 const passport = require('./config/passport');
 require('dotenv').config();
 
+// Force deployment trigger - v2.1
+
 const { sequelize } = require('./database/connection');
 const errorHandler = require('./middleware/errorHandler');
 const authMiddleware = require('./middleware/auth');
