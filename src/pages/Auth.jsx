@@ -304,11 +304,32 @@ export default function Auth() {
     }
   };
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
     setLoading(true);
     setError("");
-    // Add role parameter to Google OAuth for store owners
-    window.location.href = `/api/auth/google?role=store_owner`;
+    
+    try {
+      // Set store_owner role in session first
+      const response = await fetch('/api/auth/set-oauth-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: 'store_owner' }),
+        credentials: 'include' // Important for session cookies
+      });
+      
+      if (response.ok) {
+        // Now redirect to Google OAuth
+        window.location.href = '/api/auth/google';
+      } else {
+        throw new Error('Failed to set OAuth role');
+      }
+    } catch (error) {
+      console.error('Error setting OAuth role:', error);
+      setError('Failed to initialize Google authentication. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (

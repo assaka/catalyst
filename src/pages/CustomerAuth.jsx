@@ -199,27 +199,58 @@ export default function CustomerAuth() {
     }));
   };
 
-  const handleGoogleAuth = () => {
+  const handleGoogleAuth = async () => {
     setLoading(true);
     setError("");
-    // Add role parameter to Google OAuth for customers
-    window.location.href = `/api/auth/google?role=customer`;
+    
+    try {
+      // Set customer role in session first
+      const response = await fetch('/api/auth/set-oauth-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: 'customer' }),
+        credentials: 'include' // Important for session cookies
+      });
+      
+      if (response.ok) {
+        // Now redirect to Google OAuth
+        window.location.href = '/api/auth/google';
+      } else {
+        throw new Error('Failed to set OAuth role');
+      }
+    } catch (error) {
+      console.error('Error setting OAuth role:', error);
+      setError('Failed to initialize Google authentication. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <Card className="shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              Customer {isLogin ? 'Login' : 'Register'}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-bold text-gray-900">
+            {isLogin ? 'Welcome Back!' : 'Join Our Store'}
+          </h2>
+          <p className="mt-2 text-gray-600">
+            {isLogin 
+              ? 'Sign in to your account to continue shopping'
+              : 'Create your account to start shopping with us'
+            }
+          </p>
+        </div>
+        <Card className="shadow-xl border-0">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-xl font-semibold text-gray-800">
+              {isLogin ? 'Sign In' : 'Create Account'}
             </CardTitle>
-            <CardDescription>
-              {isLogin 
-                ? 'Access your customer account'
-                : 'Create your customer account'
-              }
-            </CardDescription>
           </CardHeader>
           <CardContent>
             {error && (
@@ -341,10 +372,10 @@ export default function CustomerAuth() {
 
               <Button
                 type="submit"
-                className="w-full"
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5"
                 disabled={loading}
               >
-                {loading ? 'Processing...' : (isLogin ? 'Login' : 'Create Account')}
+                {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create My Account')}
               </Button>
             </form>
 
@@ -361,7 +392,7 @@ export default function CustomerAuth() {
               onClick={handleGoogleAuth}
               disabled={loading}
               variant="outline"
-              className="w-full"
+              className="w-full border-gray-300 hover:bg-gray-50 font-medium py-2.5"
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -369,7 +400,7 @@ export default function CustomerAuth() {
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              {loading ? "Redirecting..." : "Continue with Google"}
+              {loading ? "Connecting..." : "Sign in with Google"}
             </Button>
 
             <div className="mt-6">
@@ -384,8 +415,8 @@ export default function CustomerAuth() {
                   }}
                 >
                   {isLogin 
-                    ? "Don't have an account? Create one" 
-                    : "Already have an account? Login"
+                    ? "New customer? Create your account" 
+                    : "Already have an account? Sign in"
                   }
                 </button>
               </div>
@@ -393,9 +424,9 @@ export default function CustomerAuth() {
               <div className="mt-4 text-center">
                 <Link 
                   to={createPageUrl("Auth")}
-                  className="text-sm text-gray-600 hover:text-gray-500"
+                  className="text-sm text-gray-500 hover:text-gray-700 underline"
                 >
-                  Are you a store owner? Login here
+                  Store owner? Access admin panel
                 </Link>
               </div>
             </div>

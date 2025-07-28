@@ -452,13 +452,38 @@ router.patch('/me', require('../middleware/auth'), async (req, res) => {
   }
 });
 
+// @route   POST /api/auth/set-oauth-role
+// @desc    Set OAuth role in session before redirecting to Google
+// @access  Public
+router.post('/set-oauth-role', (req, res) => {
+  const { role } = req.body;
+  
+  // Validate role
+  if (!role || !['customer', 'store_owner'].includes(role)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid role. Must be customer or store_owner'
+    });
+  }
+  
+  // Store the intended role in the session
+  req.session.intendedRole = role;
+  console.log(`🔐 OAuth role set in session: ${role}`);
+  
+  res.json({
+    success: true,
+    message: 'Role set in session',
+    redirectUrl: '/api/auth/google'
+  });
+});
+
 // @route   GET /api/auth/google
-// @desc    Initiate Google OAuth with role specification
+// @desc    Initiate Google OAuth (role should be set in session)
 // @access  Public
 router.get('/google', (req, res, next) => {
-  // Store the intended role in the session for the callback
-  const intendedRole = req.query.role || 'store_owner'; // Default to store_owner for backward compatibility
-  req.session.intendedRole = intendedRole;
+  // Use role from session, default to store_owner for backward compatibility
+  const intendedRole = req.session.intendedRole || 'store_owner';
+  console.log(`🔐 Starting Google OAuth for role: ${intendedRole}`);
   
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
