@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export default function OrderSuccess() {
-  console.log('OrderSuccess component loaded - Version: Simplified Layout 4.0');
+  console.log('OrderSuccess component loaded hamid - Version: Simplified Layout 4.0');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
