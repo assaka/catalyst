@@ -628,6 +628,20 @@ export default function Storefront() {
                                         return shouldShow;
                                       }) || [];
 
+                                      console.log('🏷️ Storefront matching labels debug:', {
+                                        productId: product.id,
+                                        productName: product.name,
+                                        isHomepage: isHomepage,
+                                        matchingLabelsCount: matchingLabels.length,
+                                        matchingLabels: matchingLabels.map(l => ({ 
+                                          id: l.id, 
+                                          name: l.name, 
+                                          position: l.position,
+                                          priority: l.priority,
+                                          conditions: l.conditions
+                                        }))
+                                      });
+
                                       // Group labels by position and show one label per position
                                       const labelsByPosition = matchingLabels.reduce((acc, label) => {
                                         const position = label.position || 'top-right';
@@ -649,6 +663,9 @@ export default function Storefront() {
                                           const priorityA = a.priority || 0;
                                           const priorityB = b.priority || 0;
                                           console.log('🔍 Priority sorting debug (category):', {
+                                            productId: product.id,
+                                            productName: product.name,
+                                            isHomepage: isHomepage,
                                             position: a.position,
                                             labelA: a.name,
                                             priorityA,
@@ -660,6 +677,18 @@ export default function Storefront() {
                                         });
                                         return sortedLabels[0]; // Return highest priority label for this position
                                       }).filter(Boolean);
+
+                                      console.log('🏷️ Storefront final labels to show:', {
+                                        productId: product.id,
+                                        productName: product.name,
+                                        isHomepage: isHomepage,
+                                        labelsToShowCount: labelsToShow.length,
+                                        labelsToShow: labelsToShow.map(l => ({ 
+                                          id: l.id, 
+                                          name: l.name, 
+                                          position: l.position 
+                                        }))
+                                      });
 
                                       // Show all labels (one per position)
                                       return labelsToShow.map(label => (
