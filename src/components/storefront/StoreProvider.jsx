@@ -160,7 +160,10 @@ export const StoreProvider = ({ children }) => {
   const [attributeSets, setAttributeSets] = useState([]);
   const [seoTemplates, setSeoTemplates] = useState([]);
   const [seoSettings, setSeoSettings] = useState(null);
-  const [selectedCountry, setSelectedCountry] = useState('US');
+  const [selectedCountry, setSelectedCountry] = useState(() => {
+    // Load from localStorage or default to 'US'
+    return localStorage.getItem('selectedCountry') || 'US';
+  });
   const location = useLocation();
 
   useEffect(() => {
@@ -279,7 +282,19 @@ export const StoreProvider = ({ children }) => {
       setStore({ ...selectedStore, settings: mergedSettings });
       
       
-      setSelectedCountry(mergedSettings.allowed_countries?.[0] || 'US');
+      // Only set country if user hasn't selected one, or if current selection is not in allowed countries
+      const currentSelectedCountry = localStorage.getItem('selectedCountry') || 'US';
+      const allowedCountries = mergedSettings.allowed_countries || ['US'];
+      
+      if (!allowedCountries.includes(currentSelectedCountry)) {
+        // Current selection is not allowed, set to first allowed country
+        const newCountry = allowedCountries[0] || 'US';
+        setSelectedCountry(newCountry);
+        localStorage.setItem('selectedCountry', newCountry);
+      } else {
+        // Current selection is valid, keep it
+        setSelectedCountry(currentSelectedCountry);
+      }
 
       // Load SEO settings separately and with priority
       try {
@@ -485,6 +500,12 @@ export const StoreProvider = ({ children }) => {
     }
   };
 
+  // Wrapper function to persist country selection to localStorage
+  const handleSetSelectedCountry = (country) => {
+    setSelectedCountry(country);
+    localStorage.setItem('selectedCountry', country);
+  };
+
   const value = {
     store,
     settings: store?.settings || {},
@@ -498,7 +519,7 @@ export const StoreProvider = ({ children }) => {
     seoTemplates,
     seoSettings,
     selectedCountry,
-    setSelectedCountry,
+    setSelectedCountry: handleSetSelectedCountry,
   };
 
   return (
