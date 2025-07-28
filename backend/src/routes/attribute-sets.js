@@ -55,9 +55,20 @@ router.get('/', async (req, res) => {
 
 // @route   GET /api/attribute-sets/:id
 // @desc    Get single attribute set
-// @access  Private
-router.get('/:id', auth, async (req, res) => {
+// @access  Public/Private
+router.get('/:id', async (req, res) => {
   try {
+    // Check if this is a public request
+    const isPublicRequest = req.originalUrl.includes('/api/public/attribute-sets');
+
+    // For non-public requests, check authentication
+    if (!isPublicRequest && !req.user) {
+      return res.status(401).json({
+        error: 'Access denied',
+        message: 'Authentication required'
+      });
+    }
+
     const attributeSet = await AttributeSet.findByPk(req.params.id);
 
     if (!attributeSet) {
@@ -67,10 +78,16 @@ router.get('/:id', auth, async (req, res) => {
       });
     }
 
-    res.json({
-      success: true,
-      data: attributeSet
-    });
+    if (isPublicRequest) {
+      // Return just the data for public requests
+      res.json(attributeSet);
+    } else {
+      // Return wrapped response for authenticated requests
+      res.json({
+        success: true,
+        data: attributeSet
+      });
+    }
   } catch (error) {
     console.error('Get attribute set error:', error);
     res.status(500).json({

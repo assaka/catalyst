@@ -23,6 +23,7 @@ const publicCategoryRoutes = require('./routes/publicCategories');
 const orderRoutes = require('./routes/orders');
 const couponRoutes = require('./routes/coupons');
 const attributeRoutes = require('./routes/attributes');
+const populateAttributesRoutes = require('./routes/populate-attributes');
 const cmsRoutes = require('./routes/cms');
 const cmsBlockRoutes = require('./routes/cms-blocks');
 const shippingRoutes = require('./routes/shipping');
@@ -1361,6 +1362,7 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
 app.use('/api/orders', authMiddleware, orderRoutes);
 app.use('/api/coupons', authMiddleware, couponRoutes);
 app.use('/api/attributes', authMiddleware, attributeRoutes);
+app.use('/api/populate-attributes', populateAttributesRoutes);
 app.use('/api/cms', authMiddleware, cmsRoutes);
 app.use('/api/cms-blocks', authMiddleware, cmsBlockRoutes);
 app.use('/api/shipping', authMiddleware, shippingRoutes);
