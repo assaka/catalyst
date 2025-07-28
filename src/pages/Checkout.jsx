@@ -189,8 +189,9 @@ export default function Checkout() {
 
       // Set default selections
       if (paymentData?.length > 0) {
+        console.log('🔄 Setting default payment method:', paymentData[0]);
         setSelectedPaymentMethod(paymentData[0].code);
-        calculatePaymentFee(paymentData[0].code);
+        calculatePaymentFeeWithData(paymentData[0].code, paymentData);
       }
       if (shippingData?.length > 0) {
         setSelectedShippingMethod(shippingData[0].name);
@@ -324,13 +325,23 @@ export default function Checkout() {
   };
 
   const calculatePaymentFee = (paymentMethodCode) => {
-    if (!paymentMethodCode) {
+    calculatePaymentFeeWithData(paymentMethodCode, paymentMethods);
+  };
+
+  const calculatePaymentFeeWithData = (paymentMethodCode, paymentMethodsData) => {
+    console.log('🔍 Calculating payment fee:', { paymentMethodCode, paymentMethodsData: paymentMethodsData?.length });
+    
+    if (!paymentMethodCode || !paymentMethodsData) {
+      console.log('❌ Missing payment method code or data, setting fee to 0');
       setPaymentFee(0);
       return;
     }
     
-    const method = paymentMethods.find(m => m.code === paymentMethodCode);
+    const method = paymentMethodsData.find(m => m.code === paymentMethodCode);
+    console.log('🔍 Found payment method:', method);
+    
     if (!method || method.fee_type === 'none' || !method.fee_amount) {
+      console.log('❌ No method found or no fee configured, setting fee to 0');
       setPaymentFee(0);
       return;
     }
@@ -340,10 +351,13 @@ export default function Checkout() {
     
     if (method.fee_type === 'fixed') {
       fee = parseFloat(method.fee_amount) || 0;
+      console.log('💰 Fixed fee calculated:', fee);
     } else if (method.fee_type === 'percentage') {
       fee = subtotal * (parseFloat(method.fee_amount) / 100);
+      console.log('💰 Percentage fee calculated:', { subtotal, percentage: method.fee_amount, fee });
     }
     
+    console.log('✅ Setting payment fee to:', fee);
     setPaymentFee(fee);
   };
 
