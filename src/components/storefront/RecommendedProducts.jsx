@@ -124,6 +124,18 @@ const SimpleProductCard = ({ product, settings }) => {
                         />
                         {/* Product labels */}
                         {(() => {
+                          console.log('🏷️ RecommendedProducts label debug:', {
+                            productId: product.id,
+                            productName: product.name,
+                            productLabelsCount: productLabels?.length || 0,
+                            productLabels: productLabels?.map(l => ({ 
+                              id: l.id, 
+                              name: l.name, 
+                              is_active: l.is_active,
+                              conditions: l.conditions 
+                            }))
+                          });
+
                           // Filter labels that match the product conditions (using same logic as other pages)
                           const matchingLabels = productLabels?.filter((label) => {
                             let shouldShow = true; // Assume true, prove false (AND logic)
@@ -182,6 +194,17 @@ const SimpleProductCard = ({ product, settings }) => {
                             return shouldShow;
                           }) || [];
 
+                          console.log('🏷️ RecommendedProducts matching labels:', {
+                            productId: product.id,
+                            matchingLabelsCount: matchingLabels.length,
+                            matchingLabels: matchingLabels.map(l => ({ 
+                              id: l.id, 
+                              name: l.name, 
+                              position: l.position,
+                              priority: l.priority 
+                            }))
+                          });
+
                           // Group labels by position and show one label per position
                           const labelsByPosition = matchingLabels.reduce((acc, label) => {
                             const position = label.position || 'top-right';
@@ -214,6 +237,16 @@ const SimpleProductCard = ({ product, settings }) => {
                             });
                             return sortedLabels[0]; // Return highest priority label for this position
                           }).filter(Boolean);
+
+                          console.log('🏷️ RecommendedProducts final labels to show:', {
+                            productId: product.id,
+                            labelsToShowCount: labelsToShow.length,
+                            labelsToShow: labelsToShow.map(l => ({ 
+                              id: l.id, 
+                              name: l.name, 
+                              position: l.position 
+                            }))
+                          });
 
                           // Show all labels (one per position)
                           return labelsToShow.map(label => (
