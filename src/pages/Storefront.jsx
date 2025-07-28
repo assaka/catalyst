@@ -570,6 +570,13 @@ export default function Storefront() {
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
                                     {(() => {
+                                      console.log('🟢 FEATURED PRODUCTS LABEL PROCESSING START:', {
+                                        productId: product.id,
+                                        productName: product.name,
+                                        isHomepage: isHomepage,
+                                        productLabelsCount: productLabels?.length
+                                      });
+
                                       // Filter labels that match the product conditions (using same logic as ProductDetail)
                                       const matchingLabels = productLabels?.filter((label) => {
                                         let shouldShow = true; // Assume true, prove false (AND logic)
