@@ -13,40 +13,79 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     
     console.log('🔍 Looking for order with payment reference:', paymentReference);
     
-    const order = await Order.findOne({
-      where: {
-        [Op.or]: [
-          { payment_reference: paymentReference },
-          { stripe_payment_intent_id: paymentReference },
-          { stripe_session_id: paymentReference }
-        ]
-      },
-      include: [
-        {
-          model: Store,
-          attributes: ['id', 'name', 'currency']
+    // Try to find the order with a small retry mechanism to handle race conditions
+    let order = null;
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (!order && retryCount < maxRetries) {
+      order = await Order.findOne({
+        where: {
+          [Op.or]: [
+            { payment_reference: paymentReference },
+            { stripe_payment_intent_id: paymentReference },
+            { stripe_session_id: paymentReference }
+          ]
         },
-        {
-          model: OrderItem,
-          include: [{ 
-            model: Product, 
-            attributes: ['id', 'name', 'sku', 'images'] 
-          }]
-        }
-      ]
-    });
+        include: [
+          {
+            model: Store,
+            attributes: ['id', 'name', 'currency']
+          },
+          {
+            model: OrderItem,
+            include: [{ 
+              model: Product, 
+              attributes: ['id', 'name', 'sku', 'images'] 
+            }]
+          }
+        ]
+      });
+      
+      if (!order && retryCount < maxRetries - 1) {
+        console.log(`🔄 Order not found, retrying... (${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+        retryCount++;
+      } else {
+        break;
+      }
+    }
 
     if (!order) {
-      console.log('❌ Order not found for payment reference:', paymentReference);
+      console.log('❌ Order not found for payment reference after retries:', paymentReference);
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
 
+    // If order exists but has no OrderItems, try to refetch after a short delay
+    if (order.OrderItems?.length === 0) {
+      console.log('⚠️ Order found but no OrderItems, attempting refetch...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      order = await Order.findOne({
+        where: { id: order.id },
+        include: [
+          {
+            model: Store,
+            attributes: ['id', 'name', 'currency']
+          },
+          {
+            model: OrderItem,
+            include: [{ 
+              model: Product, 
+              attributes: ['id', 'name', 'sku', 'images'] 
+            }]
+          }
+        ]
+      });
+    }
+
     console.log('✅ Order found:', order.id, 'with', order.OrderItems?.length || 0, 'items');
-    console.log('🔍 OrderItems debug:', JSON.stringify(order.OrderItems, null, 2));
-    console.log('🔍 Full order data structure:', Object.keys(order.dataValues || order));
+    if (order.OrderItems?.length === 0) {
+      console.log('⚠️ OrderItems still empty, may be a race condition issue');
+    }
 
     res.json({
       success: true,

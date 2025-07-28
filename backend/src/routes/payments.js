@@ -704,6 +704,15 @@ router.post('/webhook', async (req, res) => {
         // Create order from checkout session
         const order = await createOrderFromCheckoutSession(session);
         console.log('Order created successfully with ID:', order.id, 'Order Number:', order.order_number);
+        
+        // Verify order items were created
+        const itemCount = await OrderItem.count({ where: { order_id: order.id } });
+        console.log('✅ Verified:', itemCount, 'OrderItems created for order', order.id);
+        
+        if (itemCount === 0) {
+          console.error('⚠️ WARNING: Order created but no OrderItems found!');
+        }
+        
       } catch (error) {
         console.error('Error creating order from checkout session:', error);
         console.error('Error details:', {
