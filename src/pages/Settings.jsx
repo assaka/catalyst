@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Save, Building2, Bell, Settings as SettingsIcon, Globe, RefreshCw, KeyRound } from 'lucide-react'; // Removed ReceiptText, BookOpen, Palette, Brush, ShoppingCart, Search icons
 import { CountrySelect } from "@/components/ui/country-select";
+import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -613,14 +614,15 @@ export default function Settings() {
                 </div>
                 <div>
                   <Label htmlFor="timezone">Timezone</Label>
-                  <Input 
-                    id="timezone" 
-                    name="timezone" 
-                    value={store?.timezone || 'UTC'} 
-                    onChange={(e) => setStore(prev => ({ ...prev, timezone: e.target.value }))}
-                    placeholder="UTC"
+                  <TimezoneSelect
+                    value={store?.timezone || 'UTC'}
+                    onChange={(timezone) => setStore(prev => ({ ...prev, timezone }))}
+                    placeholder="Select your store's timezone..."
+                    className="w-full"
                   />
-                  <p className="text-sm text-gray-500 mt-1">e.g., UTC, America/New_York</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    This timezone will be used for order timestamps, scheduling, and reports
+                  </p>
                 </div>
               </CardContent>
             </Card>
