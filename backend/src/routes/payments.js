@@ -312,16 +312,43 @@ router.post('/create-checkout', async (req, res) => {
     // Create line items for Stripe - separate main product and custom options
     const line_items = [];
     
+    // Pre-fetch product data for all items to get actual product names
+    const productIds = [...new Set(items.map(item => item.product_id).filter(Boolean))];
+    const productMap = new Map();
+    
+    if (productIds.length > 0) {
+      try {
+        const products = await Product.findAll({
+          where: { id: productIds }
+        });
+        products.forEach(product => {
+          productMap.set(product.id, product);
+        });
+        console.log('Pre-fetched product data for', products.length, 'products');
+      } catch (error) {
+        console.warn('Could not pre-fetch product data:', error.message);
+      }
+    }
+    
     items.forEach(item => {
       // Main product line item
       const basePrice = item.price || 0;
       const unit_amount = Math.round(basePrice * 100); // Convert to cents
       
-      // Handle different name formats from frontend
+      // Handle different name formats from frontend with database lookup
       let productName = item.product_name || 
                        item.name || 
                        item.product?.name || 
                        'Product';
+      
+      // Look up actual product name from database if needed
+      if ((!productName || productName === 'Product') && item.product_id) {
+        const product = productMap.get(item.product_id);
+        if (product) {
+          productName = product.name;
+          console.log('Using database product name for Stripe:', productName);
+        }
+      }
       
       // Add main product line item
       line_items.push({
