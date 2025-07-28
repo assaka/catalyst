@@ -40,7 +40,9 @@
       "Bash(npm start)",
       "Bash(pkill:*)",
       "Bash(rg:*)",
-      "Bash(npm run sync:tables:*)"
+      "Bash(npm run sync:tables:*)",
+      "Bash(npm run db:query:*)",
+      "Bash(npx sequelize-cli:*)"
     ],
     "deny": []
   }
