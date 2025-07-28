@@ -4,9 +4,6 @@ const { Order, OrderItem, Store, Product } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
-// Log associations to debug
-console.log('📋 Order associations:', Object.keys(Order.associations));
-console.log('📋 OrderItem associations:', Object.keys(OrderItem.associations));
 
 // @route   GET /api/orders/by-payment-reference/:paymentReference
 // @desc    Get order by payment reference (for order success page)
@@ -17,7 +14,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     
     console.log('🔍 Looking for order with payment reference:', paymentReference);
     
-    // Simple query with includes - as it should be!
+    // Get order without includes first
     const order = await Order.findOne({
       where: {
         [Op.or]: [
@@ -25,20 +22,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
           { stripe_payment_intent_id: paymentReference },
           { stripe_session_id: paymentReference }
         ]
-      },
-      include: [
-        {
-          model: OrderItem,
-          include: [{ 
-            model: Product, 
-            attributes: ['id', 'name', 'sku', 'images'] 
-          }]
-        },
-        {
-          model: Store,
-          attributes: ['id', 'name', 'currency']
-        }
-      ]
+      }
     });
 
     if (!order) {
@@ -49,16 +33,32 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       });
     }
 
-    console.log('✅ Order found:', order.id, 'with', order.OrderItems?.length || 0, 'items');
-    
-    // Debug what's actually in the order object
+    // Convert to plain object
     const orderData = order.toJSON();
-    console.log('🔍 Order data keys:', Object.keys(orderData));
-    console.log('🔍 OrderItems in data:', orderData.OrderItems?.length || 'undefined');
+    
+    // Manually fetch OrderItems
+    const orderItems = await OrderItem.findAll({
+      where: { order_id: orderData.id },
+      include: [{ 
+        model: Product, 
+        attributes: ['id', 'name', 'sku', 'images'] 
+      }]
+    });
+    
+    // Manually fetch Store
+    const store = await Store.findByPk(orderData.store_id, {
+      attributes: ['id', 'name', 'currency']
+    });
+    
+    // Attach to plain object
+    orderData.OrderItems = orderItems.map(item => item.toJSON());
+    orderData.Store = store ? store.toJSON() : null;
+    
+    console.log('✅ Order found:', orderData.id, 'with', orderData.OrderItems.length, 'items manually attached');
     
     res.json({
       success: true,
-      data: order
+      data: orderData
     });
 
   } catch (error) {
@@ -71,46 +71,6 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   }
 });
 
-// Test endpoint to debug associations
-router.get('/test-associations/:orderId', async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    
-    // Test 1: Basic findByPk
-    const order1 = await Order.findByPk(orderId);
-    
-    // Test 2: FindByPk with include
-    const order2 = await Order.findByPk(orderId, {
-      include: [OrderItem]
-    });
-    
-    // Test 3: FindOne with include
-    const order3 = await Order.findOne({
-      where: { id: orderId },
-      include: [{ model: OrderItem }]
-    });
-    
-    // Test 4: Get OrderItems directly
-    const directItems = await OrderItem.findAll({
-      where: { order_id: orderId }
-    });
-    
-    res.json({
-      associations_loaded: Object.keys(Order.associations),
-      test1_hasOrderItems: !!order1?.OrderItems,
-      test1_orderItemsLength: order1?.OrderItems?.length || 0,
-      test2_hasOrderItems: !!order2?.OrderItems,
-      test2_orderItemsLength: order2?.OrderItems?.length || 0,
-      test3_hasOrderItems: !!order3?.OrderItems,
-      test3_orderItemsLength: order3?.OrderItems?.length || 0,
-      direct_items_count: directItems.length,
-      order_exists: !!order1
-    });
-    
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // @route   GET /api/orders
 // @desc    Get orders
