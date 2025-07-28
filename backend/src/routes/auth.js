@@ -453,22 +453,22 @@ router.patch('/me', require('../middleware/auth'), async (req, res) => {
 });
 
 // @route   POST /api/auth/set-oauth-role
-// @desc    Set OAuth role in session before redirecting to Google
+// @desc    Set OAuth role in session before redirecting to Google (store_owner only)
 // @access  Public
 router.post('/set-oauth-role', (req, res) => {
   const { role } = req.body;
   
-  // Validate role
-  if (!role || !['customer', 'store_owner'].includes(role)) {
+  // Only allow store_owner role for Google OAuth
+  if (!role || role !== 'store_owner') {
     return res.status(400).json({
       success: false,
-      message: 'Invalid role. Must be customer or store_owner'
+      message: 'Google OAuth is only available for store owners'
     });
   }
   
   // Store the intended role in the session
-  req.session.intendedRole = role;
-  console.log(`🔐 OAuth role set in session: ${role}`);
+  req.session.intendedRole = 'store_owner';
+  console.log(`🔐 OAuth role set in session: store_owner`);
   
   res.json({
     success: true,
@@ -478,12 +478,12 @@ router.post('/set-oauth-role', (req, res) => {
 });
 
 // @route   GET /api/auth/google
-// @desc    Initiate Google OAuth (role should be set in session)
+// @desc    Initiate Google OAuth (store_owner only)
 // @access  Public
 router.get('/google', (req, res, next) => {
-  // Use role from session, default to store_owner for backward compatibility
-  const intendedRole = req.session.intendedRole || 'store_owner';
-  console.log(`🔐 Starting Google OAuth for role: ${intendedRole}`);
+  // Google OAuth is only for store owners
+  req.session.intendedRole = 'store_owner';
+  console.log(`🔐 Starting Google OAuth for store_owner role`);
   
   passport.authenticate('google', { scope: ['profile', 'email'] })(req, res, next);
 });
@@ -494,7 +494,8 @@ router.get('/google', (req, res, next) => {
 router.get('/google/callback', (req, res, next) => {
   passport.authenticate('google', { session: false }, async (err, user, info) => {
     const corsOrigin = process.env.CORS_ORIGIN || 'https://catalyst-pearl.vercel.app';
-    const intendedRole = req.session.intendedRole || 'store_owner';
+    // Google OAuth is always for store_owner
+    const intendedRole = 'store_owner';
     
     if (err) {
       console.error('OAuth authentication error:', err);
@@ -506,56 +507,50 @@ router.get('/google/callback', (req, res, next) => {
       
       // Handle database connection errors specifically
       if (err.message && err.message.includes('ENETUNREACH')) {
-        const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
-        return res.redirect(`${corsOrigin}/${redirectPage}?error=database_connection_failed`);
+        return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
       }
       
       if (err.message && err.message.includes('Database connection failed')) {
-        const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
-        return res.redirect(`${corsOrigin}/${redirectPage}?error=database_connection_failed`);
+        return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
       }
       
       // Pass along more specific error info
       const errorParam = err.message ? err.message.replace(/\s+/g, '_').toLowerCase() : 'oauth_failed';
-      const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
-      return res.redirect(`${corsOrigin}/${redirectPage}?error=${errorParam}`);
+      return res.redirect(`${corsOrigin}/auth?error=${errorParam}`);
     }
     
     if (!user) {
       console.error('OAuth failed: No user returned');
-      const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
-      return res.redirect(`${corsOrigin}/${redirectPage}?error=oauth_failed`);
+      return res.redirect(`${corsOrigin}/auth?error=oauth_failed`);
     }
     
     try {
-      // Set user role based on intended role from OAuth initiation
-      if (!user.role || user.role !== intendedRole) {
-        console.log(`✅ Setting user role to ${intendedRole} for OAuth user:`, user.email);
+      // Always set user role to store_owner for Google OAuth
+      if (!user.role || user.role !== 'store_owner') {
+        console.log(`✅ Setting user role to store_owner for OAuth user:`, user.email);
         await User.update(
           { 
-            role: intendedRole,
-            account_type: intendedRole === 'customer' ? 'individual' : 'agency'
+            role: 'store_owner',
+            account_type: 'agency'
           },
           { where: { id: user.id } }
         );
         
         // Update user object with new role
-        user.role = intendedRole;
-        user.account_type = intendedRole === 'customer' ? 'individual' : 'agency';
+        user.role = 'store_owner';
+        user.account_type = 'agency';
       }
       
-      console.log('✅ OAuth successful, generating token for user:', user.email, 'with role:', user.role);
+      console.log('✅ OAuth successful, generating token for store_owner:', user.email);
       const token = generateToken(user);
       
-      // Redirect to appropriate auth page based on role
-      const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
-      console.log('✅ Token generated successfully, redirecting to:', `${corsOrigin}/${redirectPage}?token=${token}&oauth=success`);
-      res.redirect(`${corsOrigin}/${redirectPage}?token=${token}&oauth=success`);
+      // Always redirect to store owner auth page for Google OAuth
+      console.log('✅ Token generated successfully, redirecting to:', `${corsOrigin}/auth?token=${token}&oauth=success`);
+      res.redirect(`${corsOrigin}/auth?token=${token}&oauth=success`);
     } catch (tokenError) {
       console.error('Token generation error:', tokenError);
       console.error('User object:', user);
-      const redirectPage = intendedRole === 'customer' ? 'customerauth' : 'auth';
-      res.redirect(`${corsOrigin}/${redirectPage}?error=token_generation_failed`);
+      res.redirect(`${corsOrigin}/auth?error=token_generation_failed`);
     }
   })(req, res, next);
 });
