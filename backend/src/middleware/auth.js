@@ -82,5 +82,83 @@ const authorize = (roles) => {
   };
 };
 
+// Role-specific session validation middleware
+const validateRoleSession = (allowedRoles) => {
+  return async (req, res, next) => {
+    try {
+      // First run standard auth middleware
+      await new Promise((resolve, reject) => {
+        authMiddleware(req, res, (err) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      });
+      
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Access denied',
+          message: 'Authentication required'
+        });
+      }
+      
+      // Check if user role is in allowed roles
+      if (allowedRoles && !allowedRoles.includes(req.user.role)) {
+        return res.status(403).json({
+          error: 'Access denied',
+          message: `Access restricted to ${allowedRoles.join(', ')} roles only`,
+          userRole: req.user.role,
+          allowedRoles
+        });
+      }
+      
+      // Validate session context based on request path
+      const requestPath = req.originalUrl;
+      const isStorefrontPath = requestPath.includes('/storefront') || 
+                              requestPath.includes('/cart') || 
+                              requestPath.includes('/checkout') ||
+                              requestPath.includes('/customer');
+      const isDashboardPath = requestPath.includes('/dashboard') ||
+                             requestPath.includes('/products') ||
+                             requestPath.includes('/categories') ||
+                             requestPath.includes('/settings') ||
+                             requestPath.includes('/admin');
+      
+      // Enforce role-based path restrictions
+      if (req.user.role === 'customer') {
+        if (isDashboardPath && !requestPath.includes('/customer')) {
+          return res.status(403).json({
+            error: 'Access denied',
+            message: 'Customers cannot access admin/store owner areas',
+            redirectTo: '/customerauth'
+          });
+        }
+      } else if (req.user.role === 'store_owner' || req.user.role === 'admin') {
+        // Store owners and admins can access both areas
+        // No additional restrictions needed
+      }
+      
+      next();
+    } catch (error) {
+      return res.status(401).json({
+        error: 'Access denied',
+        message: 'Session validation failed'
+      });
+    }
+  };
+};
+
+// Middleware specifically for customer-only routes
+const customerOnly = validateRoleSession(['customer']);
+
+// Middleware specifically for store owner/admin routes
+const storeOwnerOnly = validateRoleSession(['store_owner', 'admin']);
+
+// Middleware for routes that require admin privileges
+const adminOnly = validateRoleSession(['admin']);
+
 module.exports = authMiddleware;
 module.exports.authorize = authorize;
+module.exports.validateRoleSession = validateRoleSession;
+module.exports.customerOnly = customerOnly;
+module.exports.storeOwnerOnly = storeOwnerOnly;
+module.exports.adminOnly = adminOnly;
