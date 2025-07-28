@@ -63,15 +63,30 @@ export default function Customers() {
     const filteredCustomers = customers.filter(customer =>
         (customer.first_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (customer.last_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-        (customer.email?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+        (customer.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (customer.phone?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     );
     
     const handleExport = () => {
-        const headers = ["First Name", "Last Name", "Email", "Total Orders", "Total Spent", "Last Order Date"];
+        const headers = ["First Name", "Last Name", "Email", "Phone", "Address", "Total Orders", "Total Spent", "Last Order Date"];
         const rows = filteredCustomers.map(c => [
             c.first_name,
             c.last_name,
             c.email,
+            c.phone || '',
+            (() => {
+                const addressData = c.address_data?.shipping_address || c.address_data?.billing_address;
+                if (addressData) {
+                    const parts = [
+                        addressData.street,
+                        addressData.city,
+                        addressData.state,
+                        addressData.postal_code
+                    ].filter(Boolean);
+                    return parts.length > 0 ? parts.join(', ') : '';
+                }
+                return '';
+            })(),
             c.total_orders,
             (() => {
                 const totalSpent = parseFloat(c.total_spent || 0);
@@ -120,7 +135,7 @@ export default function Customers() {
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <Input
-                            placeholder="Search customers by name or email..."
+                            placeholder="Search customers by name, email, or phone..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="pl-10"
@@ -140,6 +155,8 @@ export default function Customers() {
                                 <tr className="border-b">
                                     <th className="text-left py-3 px-4 font-medium">Name</th>
                                     <th className="text-left py-3 px-4 font-medium">Email</th>
+                                    <th className="text-left py-3 px-4 font-medium">Phone</th>
+                                    <th className="text-left py-3 px-4 font-medium">Address</th>
                                     <th className="text-left py-3 px-4 font-medium">Total Orders</th>
                                     <th className="text-left py-3 px-4 font-medium">Total Spent</th>
                                     <th className="text-left py-3 px-4 font-medium">Last Order</th>
@@ -150,6 +167,23 @@ export default function Customers() {
                                     <tr key={customer.id} className="border-b hover:bg-gray-50">
                                         <td className="py-3 px-4">{customer.first_name} {customer.last_name}</td>
                                         <td className="py-3 px-4">{customer.email}</td>
+                                        <td className="py-3 px-4">{customer.phone || 'N/A'}</td>
+                                        <td className="py-3 px-4">
+                                            {(() => {
+                                                // Try to get address from address_data or fallback
+                                                const addressData = customer.address_data?.shipping_address || customer.address_data?.billing_address;
+                                                if (addressData) {
+                                                    const parts = [
+                                                        addressData.street,
+                                                        addressData.city,
+                                                        addressData.state,
+                                                        addressData.postal_code
+                                                    ].filter(Boolean);
+                                                    return parts.length > 0 ? parts.join(', ') : 'No address';
+                                                }
+                                                return 'No address';
+                                            })()}
+                                        </td>
                                         <td className="py-3 px-4">{customer.total_orders}</td>
                                         <td className="py-3 px-4">${(() => {
                                             const totalSpent = parseFloat(customer.total_spent || 0);

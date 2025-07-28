@@ -470,7 +470,13 @@ export default function Orders() {
                                             <p className="font-medium">{order.shipping_address.full_name || order.shipping_address.name}</p>
                                             <p>{order.shipping_address.street || order.shipping_address.line1 || order.shipping_address.address}</p>
                                             {order.shipping_address.line2 && <p>{order.shipping_address.line2}</p>}
-                                            <p>{order.shipping_address.city}, {order.shipping_address.state || order.shipping_address.province} {order.shipping_address.postal_code || order.shipping_address.zip}</p>
+                                            <p>
+                                              {[
+                                                order.shipping_address.city,
+                                                order.shipping_address.state || order.shipping_address.province,
+                                                order.shipping_address.postal_code || order.shipping_address.zip
+                                              ].filter(Boolean).join(', ')}
+                                            </p>
                                             <p>{order.shipping_address.country}</p>
                                             {order.shipping_address.phone && <p>Phone: {order.shipping_address.phone}</p>}
                                           </div>
@@ -486,7 +492,13 @@ export default function Orders() {
                                               <p className="font-medium">{order.billing_address.full_name || order.billing_address.name}</p>
                                               <p>{order.billing_address.street || order.billing_address.line1 || order.billing_address.address}</p>
                                               {order.billing_address.line2 && <p>{order.billing_address.line2}</p>}
-                                              <p>{order.billing_address.city}, {order.billing_address.state || order.billing_address.province} {order.billing_address.postal_code || order.billing_address.zip}</p>
+                                              <p>
+                                                {[
+                                                  order.billing_address.city,
+                                                  order.billing_address.state || order.billing_address.province,
+                                                  order.billing_address.postal_code || order.billing_address.zip
+                                                ].filter(Boolean).join(', ')}
+                                              </p>
                                               <p>{order.billing_address.country}</p>
                                             </div>
                                           </div>
