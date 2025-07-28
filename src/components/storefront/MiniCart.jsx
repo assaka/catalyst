@@ -13,10 +13,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { formatPrice, safeToFixed } from '@/utils/priceUtils';
+import { formatPrice, safeToFixed, calculateDisplayPrice, formatDisplayPrice } from '@/utils/priceUtils';
 
 export default function MiniCart({ cartUpdateTrigger }) {
-  const { store, settings } = useStore();
+  const { store, settings, taxes, selectedCountry } = useStore();
   
   
   // Get currency symbol from settings
@@ -207,7 +207,10 @@ export default function MiniCart({ cartUpdateTrigger }) {
         itemPrice += optionsPrice;
       }
       
-      return total + (itemPrice * formatPrice(item.quantity));
+      // Calculate tax-inclusive price if needed
+      const displayItemPrice = calculateDisplayPrice(itemPrice, store, taxes, selectedCountry);
+      
+      return total + (displayItemPrice * formatPrice(item.quantity));
     }, 0);
   };
 
@@ -269,12 +272,12 @@ export default function MiniCart({ cartUpdateTrigger }) {
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{product.name}</p>
-                        <p className="text-sm text-gray-500">{currencySymbol}{safeToFixed(basePrice)} each</p>
+                        <p className="text-sm text-gray-500">{formatDisplayPrice(basePrice, currencySymbol, store, taxes, selectedCountry)} each</p>
                         
                         {item.selected_options && item.selected_options.length > 0 && (
                           <div className="text-xs text-gray-500 mt-1">
                             {item.selected_options.map((option, idx) => (
-                              <div key={idx}>+ {option.name} (+{currencySymbol}{safeToFixed(option.price)})</div>
+                              <div key={idx}>+ {option.name} (+{formatDisplayPrice(option.price, currencySymbol, store, taxes, selectedCountry)})</div>
                             ))}
                           </div>
                         )}

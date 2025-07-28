@@ -7,6 +7,7 @@ import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
+import { formatDisplayPrice, calculateDisplayPrice } from "@/utils/priceUtils";
 import {
   ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye
 } from "lucide-react";
@@ -55,7 +56,7 @@ export default function ProductDetail() {
   
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
-  const { store, settings, loading: storeLoading, categories, productLabels } = useStore();
+  const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -229,7 +230,11 @@ export default function ProductDetail() {
     // Add selected options price
     const optionsPrice = selectedOptions.reduce((sum, option) => sum + (parseFloat(option.price) || 0), 0);
 
-    return (basePrice + optionsPrice) * quantity;
+    // Calculate tax-inclusive price if needed
+    const unitPrice = basePrice + optionsPrice;
+    const displayUnitPrice = calculateDisplayPrice(unitPrice, store, taxes, selectedCountry);
+
+    return displayUnitPrice * quantity;
   };
 
   const handleAddToCart = async () => {
@@ -646,15 +651,33 @@ export default function ProductDetail() {
                 {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                   <>
                     <span className="text-3xl font-bold text-red-600">
-                      {!settings?.hide_currency_product && currencySymbol}{Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                      {!settings?.hide_currency_product && formatDisplayPrice(
+                        Math.min(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                        currencySymbol,
+                        store,
+                        taxes,
+                        selectedCountry
+                      )}
                     </span>
                     <span className="text-xl text-gray-500 line-through">
-                      {!settings?.hide_currency_product && currencySymbol}{Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)).toFixed(2)}
+                      {!settings?.hide_currency_product && formatDisplayPrice(
+                        Math.max(parseFloat(product.price || 0), parseFloat(product.compare_price || 0)),
+                        currencySymbol,
+                        store,
+                        taxes,
+                        selectedCountry
+                      )}
                     </span>
                   </>
                 ) : (
                   <span className="text-3xl font-bold text-green-600">
-                    {!settings?.hide_currency_product && currencySymbol}{parseFloat(product.price || 0).toFixed(2)}
+                    {!settings?.hide_currency_product && formatDisplayPrice(
+                      parseFloat(product.price || 0),
+                      currencySymbol,
+                      store,
+                      taxes,
+                      selectedCountry
+                    )}
                   </span>
                 )}
               </div>

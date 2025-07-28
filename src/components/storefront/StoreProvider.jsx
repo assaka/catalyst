@@ -278,6 +278,11 @@ export const StoreProvider = ({ children }) => {
       
       console.log('🌍 StoreProvider: Merged settings allowed_countries:', mergedSettings.allowed_countries);
       console.log('🌍 StoreProvider: Original store settings:', selectedStore.settings);
+      console.log('💰 StoreProvider: Tax settings:', {
+        default_tax_included_in_prices: mergedSettings.default_tax_included_in_prices,
+        display_tax_inclusive_prices: mergedSettings.display_tax_inclusive_prices,
+        calculate_tax_after_discount: mergedSettings.calculate_tax_after_discount
+      });
       
       setStore({ ...selectedStore, settings: mergedSettings });
       
