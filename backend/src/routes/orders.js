@@ -71,6 +71,47 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   }
 });
 
+// Test endpoint to debug associations
+router.get('/test-associations/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    // Test 1: Basic findByPk
+    const order1 = await Order.findByPk(orderId);
+    
+    // Test 2: FindByPk with include
+    const order2 = await Order.findByPk(orderId, {
+      include: [OrderItem]
+    });
+    
+    // Test 3: FindOne with include
+    const order3 = await Order.findOne({
+      where: { id: orderId },
+      include: [{ model: OrderItem }]
+    });
+    
+    // Test 4: Get OrderItems directly
+    const directItems = await OrderItem.findAll({
+      where: { order_id: orderId }
+    });
+    
+    res.json({
+      associations_loaded: Object.keys(Order.associations),
+      test1_hasOrderItems: !!order1?.OrderItems,
+      test1_orderItemsLength: order1?.OrderItems?.length || 0,
+      test2_hasOrderItems: !!order2?.OrderItems,
+      test2_orderItemsLength: order2?.OrderItems?.length || 0,
+      test3_hasOrderItems: !!order3?.OrderItems,
+      test3_orderItemsLength: order3?.OrderItems?.length || 0,
+      direct_items_count: directItems.length,
+      order_exists: !!order1
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // @route   GET /api/orders
 // @desc    Get orders
 // @access  Private
