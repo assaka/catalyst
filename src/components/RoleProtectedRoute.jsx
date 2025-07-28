@@ -35,6 +35,16 @@ const RoleProtectedRoute = ({
         return;
       }
 
+      // Debug session data
+      const sessionRole = localStorage.getItem('session_role');
+      console.log('🔍 HAMID DEBUG: Session validation:', {
+        currentUser: currentUser,
+        currentUserRole: currentUser?.role,
+        sessionRole: sessionRole,
+        hasSessionRole: !!sessionRole,
+        rolesMatch: sessionRole === currentUser?.role
+      });
+      
       // Validate role-based session
       if (!validateRoleBasedSession()) {
         console.log('🔄 RoleProtectedRoute: Invalid role-based session for user:', currentUser.role);
