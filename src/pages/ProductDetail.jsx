@@ -150,15 +150,10 @@ export default function ProductDetail() {
         }
 
         // Load additional data in parallel (Custom options and product labels are now handled by separate components/context)
-        console.log('🔍 ProductDetail: About to load product tabs and wishlist status');
         Promise.all([
           loadProductTabs(),
           checkWishlistStatus(foundProduct.id)
-        ]).then(() => {
-          console.log('✅ ProductDetail: Finished loading tabs and wishlist');
-        }).catch(error => {
-          console.error('❌ ProductDetail: Error loading tabs/wishlist:', error);
-        });
+        ]);
       } else {
         setProduct(null);
       }
@@ -174,28 +169,15 @@ export default function ProductDetail() {
   // as their responsibilities are now handled by the CustomOptions component and the useStore context, respectively.
 
   const loadProductTabs = async () => {
-    console.log('🔍 loadProductTabs called, store:', store?.id);
-    if (!store?.id) {
-      console.log('⚠️ No store ID, skipping product tabs load');
-      return;
-    }
+    if (!store?.id) return;
     try {
-      console.log('🔍 Loading product tabs for store:', store.id);
-      console.log('📞 About to call ProductTab.filter with params:', { store_id: store.id, is_active: true });
-      
       const tabs = await cachedApiCall(
         `product-tabs-${store.id}`,
         () => ProductTab.filter({ store_id: store.id, is_active: true })
       );
-      
-      console.log('📊 Product tabs API response:', tabs);
-      console.log('📊 Product tabs array length:', tabs?.length || 0);
-      
       setProductTabs(tabs || []);
-      console.log('✅ Product tabs state updated');
     } catch (error) {
-      console.error('❌ Error loading product tabs:', error);
-      console.error('❌ Error details:', error.message, error.stack);
+      console.error('Error loading product tabs:', error);
       setProductTabs([]);
     }
   };
@@ -759,19 +741,8 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div className="mt-16">
-        {/* CMS Block Renderer for "above product tabs" position */}
-        <CmsBlockRenderer position="above_product_tabs" page="storefront_product" storeId={store?.id} />
-        {/* Recommended Products component */}
-        <RecommendedProducts 
-          product={product} 
-          storeId={store?.id} 
-          selectedOptions={selectedOptions} 
-        />
-      </div>
-
       {/* Product Tabs */}
-      {console.log('🔍 About to render tabs section, productTabs:', productTabs, 'length:', productTabs.length) || productTabs.length > 0 && (
+      {productTabs.length > 0 && (
         <div className="mt-12 border-t pt-8">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
@@ -865,6 +836,18 @@ export default function ProductDetail() {
           </div>
         </div>
       )}
+
+      <div className="mt-16">
+        {/* CMS Block Renderer for "above product tabs" position */}
+        <CmsBlockRenderer position="above_product_tabs" page="storefront_product" storeId={store?.id} />
+        {/* Recommended Products component */}
+        <RecommendedProducts 
+          product={product} 
+          storeId={store?.id} 
+          selectedOptions={selectedOptions} 
+        />
+      </div>
+
     </div>
   );
 }

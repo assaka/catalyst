@@ -27,14 +27,6 @@ const ensureArray = (data) => {
 export default function Storefront() {
   const { store, settings, loading: storeLoading, productLabels, categories: storeCategories, filterableAttributes, taxes, selectedCountry } = useStore();
   
-  console.log('🔍 Storefront useStore data:', {
-    storeName: store?.name,
-    storeSettings: store?.settings,
-    settings,
-    taxesCount: taxes?.length || 0,
-    selectedCountry
-  });
-  
   const [products, setProducts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [currentCategory, setCurrentCategory] = useState(null);
@@ -611,7 +603,7 @@ export default function Storefront() {
                                       </>
                                   ) : (
                                       <p className="font-bold text-gray-800 text-lg">
-                                        {console.log('🔍 Hide currency check:', settings?.hide_currency_category) || !settings?.hide_currency_category && formatDisplayPrice(
+                                        {!settings?.hide_currency_category && formatDisplayPrice(
                                           parseFloat(product.price || 0),
                                           settings?.currency_symbol || '$',
                                           store,
