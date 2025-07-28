@@ -739,6 +739,42 @@ router.post('/webhook', async (req, res) => {
   res.json({ received: true });
 });
 
+// Debug endpoint to manually process a specific session
+router.post('/debug-session', async (req, res) => {
+  try {
+    const { session_id } = req.body;
+    
+    if (!session_id) {
+      return res.status(400).json({ error: 'session_id is required' });
+    }
+    
+    console.log('🔍 Debug: Manually processing session:', session_id);
+    
+    // Get the session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    console.log('🔍 Debug: Retrieved session:', JSON.stringify(session, null, 2));
+    
+    // Process it like a webhook
+    const order = await createOrderFromCheckoutSession(session);
+    console.log('🔍 Debug: Order created:', order.id);
+    
+    // Count items
+    const itemCount = await OrderItem.count({ where: { order_id: order.id } });
+    console.log('🔍 Debug: OrderItems created:', itemCount);
+    
+    res.json({
+      success: true,
+      order_id: order.id,
+      order_number: order.order_number,
+      items_created: itemCount
+    });
+    
+  } catch (error) {
+    console.error('Debug session error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Helper function to create order from Stripe checkout session
 async function createOrderFromCheckoutSession(session) {
   const { sequelize } = require('../database/connection');
@@ -772,8 +808,18 @@ async function createOrderFromCheckoutSession(session) {
       expand: ['data.price.product']
     }, stripeOptions);
     
-    console.log('Line items retrieved:', JSON.stringify(lineItems, null, 2));
-    console.log('Number of line items:', lineItems.data.length);
+    console.log('🛒 Line items retrieved:', JSON.stringify(lineItems, null, 2));
+    console.log('📊 Number of line items:', lineItems.data.length);
+    
+    if (lineItems.data.length === 0) {
+      console.error('❌ CRITICAL: No line items found in Stripe session!');
+      console.log('Session details for debugging:', {
+        id: session.id,
+        metadata: session.metadata,
+        mode: session.mode,
+        status: session.status
+      });
+    }
     
     // Calculate order totals from session
     const subtotal = session.amount_subtotal / 100; // Convert from cents
@@ -867,21 +913,29 @@ async function createOrderFromCheckoutSession(session) {
     const productMap = new Map();
     
     for (const lineItem of lineItems.data) {
-      console.log('Processing line item:', JSON.stringify(lineItem, null, 2));
+      console.log('🔍 Processing line item:', JSON.stringify(lineItem, null, 2));
       
       const productMetadata = lineItem.price.product.metadata || {};
       const itemType = productMetadata.item_type || 'main_product';
       const productId = productMetadata.product_id;
       
-      console.log('Line item details:', {
+      console.log('📋 Line item details:', {
         productId,
         itemType,
         productName: lineItem.price.product.name,
-        metadata: productMetadata
+        metadata: productMetadata,
+        hasMetadata: Object.keys(productMetadata).length > 0,
+        allMetadataKeys: Object.keys(productMetadata)
       });
       
       if (!productId) {
-        console.warn('No product_id found in line item metadata, skipping item');
+        console.error('❌ CRITICAL: No product_id found in line item metadata, skipping item');
+        console.log('🔍 Metadata debug:', {
+          available_keys: Object.keys(productMetadata),
+          metadata_values: productMetadata,
+          product_name: lineItem.price.product.name,
+          price_id: lineItem.price.id
+        });
         continue;
       }
       
@@ -914,8 +968,17 @@ async function createOrderFromCheckoutSession(session) {
     }
     
     // Create order items from grouped data
-    console.log('Creating order items for order:', order.id);
-    console.log('Product map has', productMap.size, 'products');
+    console.log('🛍️ Creating order items for order:', order.id);
+    console.log('📊 Product map has', productMap.size, 'products');
+    
+    if (productMap.size === 0) {
+      console.error('❌ CRITICAL: No products in productMap! No OrderItems will be created!');
+      console.log('🔍 Debug info:', {
+        lineItemsCount: lineItems.data.length,
+        sessionId: session.id,
+        metadata: session.metadata
+      });
+    }
     
     for (const [productId, productData] of productMap) {
       // Look up actual product name from database if needed
