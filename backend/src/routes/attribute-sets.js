@@ -4,7 +4,17 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', async (req, res) => {
+// Conditional auth middleware
+const conditionalAuth = (req, res, next) => {
+  const isPublicRequest = req.originalUrl.includes('/api/public/attribute-sets');
+  if (isPublicRequest) {
+    next();
+  } else {
+    auth(req, res, next);
+  }
+};
+
+router.get('/', conditionalAuth, async (req, res) => {
   try {
     const { store_id } = req.query;
     
@@ -15,14 +25,6 @@ router.get('/', async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'store_id is required'
-      });
-    }
-
-    // For non-public requests, check authentication
-    if (!isPublicRequest && !req.user) {
-      return res.status(401).json({
-        error: 'Access denied',
-        message: 'Authentication required'
       });
     }
 
@@ -53,18 +55,10 @@ router.get('/', async (req, res) => {
 // @route   GET /api/attribute-sets/:id
 // @desc    Get single attribute set
 // @access  Public/Private
-router.get('/:id', async (req, res) => {
+router.get('/:id', conditionalAuth, async (req, res) => {
   try {
     // Check if this is a public request
     const isPublicRequest = req.originalUrl.includes('/api/public/attribute-sets');
-
-    // For non-public requests, check authentication
-    if (!isPublicRequest && !req.user) {
-      return res.status(401).json({
-        error: 'Access denied',
-        message: 'Authentication required'
-      });
-    }
 
     const attributeSet = await AttributeSet.findByPk(req.params.id);
 
