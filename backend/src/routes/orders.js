@@ -12,7 +12,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   try {
     const { paymentReference } = req.params;
     
-    console.log('🔍 *** DEPLOYMENT v3.0 ACTIVE *** - Fetching order with payment reference:', paymentReference);
+    console.log('🔍 *** DEPLOYMENT v5.0 CRITICAL UPDATE *** - Fetching order with payment reference:', paymentReference);
     
     // Use EXACT same logic as admin orders that works
     const order = await Order.findOne({
