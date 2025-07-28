@@ -4,9 +4,6 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// @route   GET /api/attribute-sets
-// @desc    Get all attribute sets for a store
-// @access  Public/Private
 router.get('/', async (req, res) => {
   try {
     const { store_id } = req.query;
