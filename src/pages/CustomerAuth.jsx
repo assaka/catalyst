@@ -148,15 +148,32 @@ export default function CustomerAuth() {
 
         // Set role-based session data for customer
         const userData = response.data?.user || response.user;
-        setRoleBasedAuthData(userData, response.data?.token || response.token);
-
-        // Redirect customer to appropriate page
-        const returnTo = searchParams.get('returnTo');
-        if (returnTo) {
-          navigate(returnTo);
-        } else {
-          navigate(createPageUrl("CustomerDashboard"));
+        const token = response.data?.token || response.token;
+        
+        // Ensure we have the token set in apiClient first
+        if (token) {
+          apiClient.setToken(token);
         }
+        
+        // Set role-based session data
+        setRoleBasedAuthData(userData, token);
+        
+        console.log('✅ Customer login successful, session data set:', {
+          role: userData.role,
+          sessionRole: localStorage.getItem('session_role'),
+          hasToken: !!token
+        });
+
+        // Small delay to ensure session data is properly set
+        setTimeout(() => {
+          // Redirect customer to appropriate page
+          const returnTo = searchParams.get('returnTo');
+          if (returnTo) {
+            navigate(returnTo);
+          } else {
+            navigate(createPageUrl("CustomerDashboard"));
+          }
+        }, 100);
       } else {
         // Register as customer
         if (formData.password !== formData.confirmPassword) {
@@ -178,10 +195,27 @@ export default function CustomerAuth() {
 
         // Set role-based session data for new customer
         const userData = response.data?.user || response.user;
-        setRoleBasedAuthData(userData, response.data?.token || response.token);
+        const token = response.data?.token || response.token;
+        
+        // Ensure we have the token set in apiClient first
+        if (token) {
+          apiClient.setToken(token);
+        }
+        
+        // Set role-based session data
+        setRoleBasedAuthData(userData, token);
+        
+        console.log('✅ Customer registration successful, session data set:', {
+          role: userData.role,
+          sessionRole: localStorage.getItem('session_role'),
+          hasToken: !!token
+        });
 
-        // Redirect to customer dashboard
-        navigate(createPageUrl("CustomerDashboard"));
+        // Small delay to ensure session data is properly set  
+        setTimeout(() => {
+          // Redirect to customer dashboard
+          navigate(createPageUrl("CustomerDashboard"));
+        }, 100);
       }
     } catch (error) {
       console.error("❌ CustomerAuth.jsx: Auth error:", error);

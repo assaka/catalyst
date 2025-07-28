@@ -262,7 +262,21 @@ export default function Auth() {
           } else if (userRole === 'store_owner' || userRole === 'admin' || !userRole) {
             // Set role-based session data for store owners/admins
             const userData = response.data?.user || response.user;
-            setRoleBasedAuthData(userData, response.data?.token || response.token);
+            const token = response.data?.token || response.token;
+            
+            // Ensure we have the token set in apiClient first
+            if (token) {
+              apiClient.setToken(token);
+            }
+            
+            // Set role-based session data
+            setRoleBasedAuthData(userData, token);
+            
+            console.log('✅ Store owner/admin login successful, session data set:', {
+              role: userData.role,
+              sessionRole: localStorage.getItem('session_role'),
+              hasToken: !!token
+            });
             if (isStorefrontContext) {
               // Store owner logging in from storefront - stay on storefront (shopping as guest)
               navigate(createPageUrl("Storefront"));
@@ -288,7 +302,21 @@ export default function Auth() {
           setSuccess("Registration successful! Redirecting...");
           // Set role-based session data for new store owner
           const userData = response.data?.user || response.user;
-          setRoleBasedAuthData(userData, response.data?.token || response.token);
+          const token = response.data?.token || response.token;
+          
+          // Ensure we have the token set in apiClient first
+          if (token) {
+            apiClient.setToken(token);
+          }
+          
+          // Set role-based session data
+          setRoleBasedAuthData(userData, token);
+          
+          console.log('✅ Store owner registration successful, session data set:', {
+            role: userData.role,
+            sessionRole: localStorage.getItem('session_role'),
+            hasToken: !!token
+          });
           
           // Since we explicitly set role as store_owner during registration,
           // redirect directly to Dashboard

@@ -30,15 +30,35 @@ const RoleProtectedRoute = ({
       
       // Check if user is logged in
       if (!currentUser) {
+        console.log('🔄 RoleProtectedRoute: No current user, redirecting to auth');
         redirectToAuth();
         return;
       }
 
       // Validate role-based session
       if (!validateRoleBasedSession()) {
-        console.log('Invalid role-based session, redirecting to auth');
-        redirectToAuth(currentUser.role);
-        return;
+        console.log('🔄 RoleProtectedRoute: Invalid role-based session for user:', currentUser.role);
+        
+        // Don't immediately redirect - try to verify with backend first
+        try {
+          const user = await User.me();
+          if (user && user.role) {
+            // Update local session data if backend has valid user
+            localStorage.setItem('user_data', JSON.stringify(user));
+            localStorage.setItem('session_role', user.role);
+            
+            console.log('✅ RoleProtectedRoute: Session refreshed from backend:', user.role);
+            
+            // Continue with validation
+          } else {
+            redirectToAuth(currentUser.role);
+            return;
+          }
+        } catch (error) {
+          console.log('🔄 RoleProtectedRoute: Backend verification failed, redirecting');
+          redirectToAuth(currentUser.role);
+          return;
+        }
       }
 
       // Check if user role is allowed
@@ -85,7 +105,13 @@ const RoleProtectedRoute = ({
   };
 
   const redirectToAuth = (userRole = null) => {
-    const authPath = userRole === 'customer' ? '/customerauth' : '/auth';
+    // Get the current user data to determine role if not provided
+    const currentUser = getCurrentUser();
+    const roleToUse = userRole || currentUser?.role;
+    
+    console.log('🔄 RoleProtectedRoute: Redirecting to auth for role:', roleToUse);
+    
+    const authPath = roleToUse === 'customer' ? '/customerauth' : '/auth';
     navigate(authPath);
   };
 
