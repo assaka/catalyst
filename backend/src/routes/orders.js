@@ -11,8 +11,20 @@ const router = express.Router();
 router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   try {
     const { paymentReference } = req.params;
+    const timestamp = new Date().toISOString();
     
+    console.log('\n========================================');
+    console.log('🔍 NEW REQUEST at', timestamp);
     console.log('🔍 Looking for order with payment reference:', paymentReference);
+    console.log('🔍 Request headers:', req.headers);
+    
+    // Add no-cache headers to response
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store'
+    });
     
     // Get order without includes first
     const order = await Order.findOne({
@@ -29,14 +41,23 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       console.log('❌ Order not found for payment reference:', paymentReference);
       return res.status(404).json({
         success: false,
-        message: 'Order not found'
+        message: 'Order not found',
+        timestamp
       });
     }
+
+    console.log('📋 Order found in DB:', {
+      id: order.id,
+      order_number: order.order_number,
+      created: order.createdAt
+    });
 
     // Convert to plain object
     const orderData = order.toJSON();
     
-    // Manually fetch OrderItems
+    // Manually fetch OrderItems with detailed logging
+    console.log('🔍 Fetching OrderItems for order_id:', orderData.id);
+    
     const orderItems = await OrderItem.findAll({
       where: { order_id: orderData.id },
       include: [{ 
@@ -44,6 +65,31 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
         attributes: ['id', 'name', 'sku', 'images'] 
       }]
     });
+    
+    console.log('📊 OrderItems query result:', {
+      count: orderItems.length,
+      items: orderItems.map(item => ({
+        id: item.id,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        quantity: item.quantity,
+        order_id: item.order_id
+      }))
+    });
+    
+    // Direct SQL query to double-check
+    const { QueryTypes } = require('sequelize');
+    const { sequelize } = require('../database/connection');
+    
+    const directSqlResult = await sequelize.query(
+      'SELECT COUNT(*) as count FROM order_items WHERE order_id = :orderId',
+      {
+        replacements: { orderId: orderData.id },
+        type: QueryTypes.SELECT
+      }
+    );
+    
+    console.log('🔍 Direct SQL count:', directSqlResult[0].count);
     
     // Manually fetch Store
     const store = await Store.findByPk(orderData.store_id, {
@@ -54,23 +100,75 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     orderData.OrderItems = orderItems.map(item => item.toJSON());
     orderData.Store = store ? store.toJSON() : null;
     
-    console.log('✅ Order found:', orderData.id, 'with', orderData.OrderItems.length, 'items manually attached');
+    console.log('✅ Final response data:', {
+      order_id: orderData.id,
+      orderItems_attached: orderData.OrderItems.length,
+      timestamp,
+      response_headers: res.getHeaders()
+    });
+    
+    console.log('📤 Sending response with', orderData.OrderItems.length, 'OrderItems');
+    console.log('========================================\n');
     
     res.json({
       success: true,
-      data: orderData
+      data: orderData,
+      debug: {
+        timestamp,
+        orderItems_count: orderData.OrderItems.length,
+        direct_sql_count: directSqlResult[0].count
+      }
     });
 
   } catch (error) {
     console.error('❌ Error fetching order by payment reference:', error);
+    console.error('Stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Server error',
-      error: error.message
+      error: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
 
+
+// Test endpoint - direct SQL bypass
+router.get('/test-direct/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { QueryTypes } = require('sequelize');
+    const { sequelize } = require('../database/connection');
+    
+    // Direct SQL queries
+    const orderResult = await sequelize.query(
+      'SELECT * FROM orders WHERE id = :orderId',
+      {
+        replacements: { orderId },
+        type: QueryTypes.SELECT
+      }
+    );
+    
+    const itemsResult = await sequelize.query(
+      'SELECT * FROM order_items WHERE order_id = :orderId',
+      {
+        replacements: { orderId },
+        type: QueryTypes.SELECT
+      }
+    );
+    
+    res.json({
+      order_found: orderResult.length > 0,
+      order: orderResult[0] || null,
+      items_count: itemsResult.length,
+      items: itemsResult,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // @route   GET /api/orders
 // @desc    Get orders
