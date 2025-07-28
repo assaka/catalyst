@@ -4,6 +4,10 @@ const { Order, OrderItem, Store, Product } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
+// Log associations to debug
+console.log('📋 Order associations:', Object.keys(Order.associations));
+console.log('📋 OrderItem associations:', Object.keys(OrderItem.associations));
+
 // @route   GET /api/orders/by-payment-reference/:paymentReference
 // @desc    Get order by payment reference (for order success page)
 // @access  Public (no auth required for order success)
@@ -13,90 +17,45 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     
     console.log('🔍 Looking for order with payment reference:', paymentReference);
     
-    // Try to find the order with a small retry mechanism to handle race conditions
-    let order = null;
-    let retryCount = 0;
-    const maxRetries = 3;
-    
-    while (!order && retryCount < maxRetries) {
-      // Simplified query - first get the order, then add includes
-      order = await Order.findOne({
-        where: {
-          [Op.or]: [
-            { payment_reference: paymentReference },
-            { stripe_payment_intent_id: paymentReference },
-            { stripe_session_id: paymentReference }
-          ]
-        }
-      });
-      
-      if (order) {
-        // Convert to plain object first
-        order = order.toJSON();
-        
-        // Get OrderItems separately to avoid include conflicts
-        const orderItems = await OrderItem.findAll({
-          where: { order_id: order.id },
+    // Simple query with includes - as it should be!
+    const order = await Order.findOne({
+      where: {
+        [Op.or]: [
+          { payment_reference: paymentReference },
+          { stripe_payment_intent_id: paymentReference },
+          { stripe_session_id: paymentReference }
+        ]
+      },
+      include: [
+        {
+          model: OrderItem,
           include: [{ 
             model: Product, 
             attributes: ['id', 'name', 'sku', 'images'] 
           }]
-        });
-        
-        // Get Store separately
-        const store = await Store.findByPk(order.store_id, {
+        },
+        {
+          model: Store,
           attributes: ['id', 'name', 'currency']
-        });
-        
-        // Manually attach associations to plain object
-        order.OrderItems = orderItems.map(item => item.toJSON());
-        order.Store = store ? store.toJSON() : null;
-        
-        console.log('🔧 Manually attached', orderItems.length, 'OrderItems and Store to order');
-      }
-      
-      if (!order && retryCount < maxRetries - 1) {
-        console.log(`🔄 Order not found, retrying... (${retryCount + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
-        retryCount++;
-      } else {
-        break;
-      }
-    }
+        }
+      ]
+    });
 
     if (!order) {
-      console.log('❌ Order not found for payment reference after retries:', paymentReference);
+      console.log('❌ Order not found for payment reference:', paymentReference);
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
 
-    // If order exists but has no OrderItems, try to refetch after a short delay
-    if (order.OrderItems?.length === 0) {
-      console.log('⚠️ Order found but no OrderItems, attempting refetch...');
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Refetch OrderItems separately
-      const orderItems = await OrderItem.findAll({
-        where: { order_id: order.id },
-        include: [{ 
-          model: Product, 
-          attributes: ['id', 'name', 'sku', 'images'] 
-        }]
-      });
-      
-      // Update the attached OrderItems (order is already a plain object at this point)
-      order.OrderItems = orderItems.map(item => item.toJSON());
-      console.log('🔧 Refetch: Manually attached', orderItems.length, 'OrderItems');
-    }
-
     console.log('✅ Order found:', order.id, 'with', order.OrderItems?.length || 0, 'items');
     
-    // Log what we're about to send (order is already a plain object)
-    console.log('📤 Sending order data with', order.OrderItems?.length || 0, 'OrderItems');
-    console.log('📤 First OrderItem:', order.OrderItems?.[0]);
-
+    // Debug what's actually in the order object
+    const orderData = order.toJSON();
+    console.log('🔍 Order data keys:', Object.keys(orderData));
+    console.log('🔍 OrderItems in data:', orderData.OrderItems?.length || 'undefined');
+    
     res.json({
       success: true,
       data: order
@@ -106,7 +65,8 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     console.error('❌ Error fetching order by payment reference:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: error.message
     });
   }
 });
