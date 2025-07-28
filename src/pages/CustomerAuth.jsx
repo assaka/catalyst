@@ -204,19 +204,14 @@ export default function CustomerAuth() {
     setError("");
     
     try {
-      // Set customer role in session first
-      const response = await fetch('/api/auth/set-oauth-role', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ role: 'customer' }),
-        credentials: 'include' // Important for session cookies
+      // Set customer role in session first using API client
+      const response = await apiClient.post('auth/set-oauth-role', {
+        role: 'customer'
       });
       
-      if (response.ok) {
-        // Now redirect to Google OAuth
-        window.location.href = '/api/auth/google';
+      if (response.success) {
+        // Now redirect to Google OAuth via backend
+        window.location.href = `${apiClient.baseURL}/api/auth/google`;
       } else {
         throw new Error('Failed to set OAuth role');
       }
