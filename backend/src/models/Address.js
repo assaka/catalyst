@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');
 const { sequelize } = require('../database/connection');
 
 const Address = sequelize.define('Address', {
@@ -58,12 +58,20 @@ const Address = sequelize.define('Address', {
     allowNull: false,
     defaultValue: false
   },
-  // Foreign key
+  // Foreign keys - support both users and customers
   user_id: {
     type: DataTypes.UUID,
-    allowNull: false,
+    allowNull: true, // Make optional since we can have customer_id instead
     references: {
       model: 'users',
+      key: 'id'
+    }
+  },
+  customer_id: {
+    type: DataTypes.UUID,
+    allowNull: true, // Make optional since we can have user_id instead
+    references: {
+      model: 'customers',
       key: 'id'
     }
   }
@@ -71,20 +79,37 @@ const Address = sequelize.define('Address', {
   tableName: 'addresses',
   hooks: {
     beforeCreate: async (address) => {
-      // If this is set as default, unset all other defaults for this user
+      // If this is set as default, unset all other defaults for this user/customer
       if (address.is_default) {
+        const whereClause = { type: address.type };
+        if (address.user_id) {
+          whereClause.user_id = address.user_id;
+        } else if (address.customer_id) {
+          whereClause.customer_id = address.customer_id;
+        }
+        
         await Address.update(
           { is_default: false },
-          { where: { user_id: address.user_id, type: address.type } }
+          { where: whereClause }
         );
       }
     },
     beforeUpdate: async (address) => {
-      // If this is set as default, unset all other defaults for this user
+      // If this is set as default, unset all other defaults for this user/customer
       if (address.is_default && address.changed('is_default')) {
+        const whereClause = { 
+          type: address.type, 
+          id: { [Op.ne]: address.id }
+        };
+        if (address.user_id) {
+          whereClause.user_id = address.user_id;
+        } else if (address.customer_id) {
+          whereClause.customer_id = address.customer_id;
+        }
+        
         await Address.update(
           { is_default: false },
-          { where: { user_id: address.user_id, type: address.type, id: { [sequelize.Op.ne]: address.id } } }
+          { where: whereClause }
         );
       }
     }

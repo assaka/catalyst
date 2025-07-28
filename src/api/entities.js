@@ -108,8 +108,10 @@ class BaseEntity {
 
 // Authentication service
 class AuthService {
-  async login(email, password, rememberMe = false) {
-    const response = await apiClient.post('auth/login', { email, password, rememberMe });
+  async login(email, password, rememberMe = false, role = 'store_owner') {
+    // Use customer-specific endpoint for customer login
+    const endpoint = role === 'customer' ? 'auth/customer/login' : 'auth/login';
+    const response = await apiClient.post(endpoint, { email, password, rememberMe, role });
     console.log("🔧 Auth.login - Raw response:", response);
     
     if (response.data && response.data.token) {
@@ -129,7 +131,9 @@ class AuthService {
   }
 
   async register(userData) {
-    const response = await apiClient.post('auth/register', userData);
+    // Use customer-specific endpoint for customer registration
+    const endpoint = userData.role === 'customer' ? 'auth/customer/register' : 'auth/register';
+    const response = await apiClient.post(endpoint, userData);
     console.log("🔧 Auth.register - Raw response:", response);
     
     if (response.data && response.data.token) {

@@ -60,11 +60,11 @@ const User = sequelize.define('User', {
     allowNull: true
   },
   role: {
-    type: DataTypes.ENUM('admin', 'store_owner', 'customer'),
+    type: DataTypes.ENUM('admin', 'store_owner'),
     defaultValue: 'store_owner'
   },
   account_type: {
-    type: DataTypes.ENUM('agency', 'individual', 'customer'),
+    type: DataTypes.ENUM('agency', 'individual'),
     defaultValue: 'agency'
   }
 }, {

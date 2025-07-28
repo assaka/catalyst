@@ -278,7 +278,7 @@ export default function Auth() {
     setLoading(true);
     try {
       if (isLogin) {
-        const response = await AuthService.login(formData.email, formData.password, formData.rememberMe);
+        const response = await AuthService.login(formData.email, formData.password, formData.rememberMe, 'store_owner');
         if (response.success) {
           // Check user role from response and redirect accordingly
           const userRole = response.data?.user?.role || response.user?.role;

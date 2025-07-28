@@ -1,9 +1,29 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
-const { User, LoginAttempt } = require('../models');
+const { User, Customer, LoginAttempt } = require('../models');
 const passport = require('../config/passport');
 const router = express.Router();
+
+// Helper function to determine which model to use based on role
+const getModelForRole = (role) => {
+  if (role === 'customer') {
+    return Customer;
+  } else if (role === 'store_owner' || role === 'admin') {
+    return User;
+  }
+  throw new Error('Invalid role specified');
+};
+
+// Helper function to determine which model to use based on context
+const getModelForContext = (endpoint) => {
+  // Check if this is a customer-specific endpoint
+  if (endpoint.includes('/customer') || endpoint.includes('customerauth')) {
+    return Customer;
+  }
+  // Default to User model for store owners and admins
+  return User;
+};
 
 // Generate JWT token with role-specific session data
 const generateToken = (user, rememberMe = false) => {
@@ -80,17 +100,21 @@ router.post('/register', [
 
     const { email, password, first_name, last_name, phone, role = 'store_owner', account_type = 'agency', send_welcome_email = false, address_data } = req.body;
 
-    // Check if user exists with same email and role
-    const existingUser = await User.findOne({ where: { email, role } });
+    // Determine which model to use based on role
+    const ModelClass = getModelForRole(role);
+    const tableName = role === 'customer' ? 'customers' : 'users';
+
+    // Check if user exists with same email in the appropriate table
+    const existingUser = await ModelClass.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: `User with this email already exists for the ${role} role`
+        message: `User with this email already exists in the ${tableName} table`
       });
     }
 
-    // Create user
-    const user = await User.create({
+    // Create user in the appropriate table
+    const user = await ModelClass.create({
       email,
       password,
       first_name,
@@ -109,8 +133,7 @@ router.post('/register', [
         // Create shipping address if provided
         if (address_data.shipping_address && address_data.shipping_address.street) {
           const shippingAddr = address_data.shipping_address;
-          await Address.create({
-            user_id: user.id,
+          const addressData = {
             type: 'shipping',
             full_name: fullName,
             street: shippingAddr.street,
@@ -122,8 +145,17 @@ router.post('/register', [
             phone: phone || null,
             email: email,
             is_default: true
-          });
-          console.log('Created shipping address for user:', user.id);
+          };
+          
+          // Set the appropriate foreign key based on user type
+          if (role === 'customer') {
+            addressData.customer_id = user.id;
+          } else {
+            addressData.user_id = user.id;
+          }
+          
+          await Address.create(addressData);
+          console.log('Created shipping address for', role === 'customer' ? 'customer' : 'user', ':', user.id);
         }
         
         // Create billing address if provided and different from shipping
@@ -139,8 +171,7 @@ router.post('/register', [
           );
           
           if (isDifferent) {
-            await Address.create({
-              user_id: user.id,
+            const billingAddressData = {
               type: 'billing',
               full_name: fullName,
               street: billingAddr.street,
@@ -152,13 +183,29 @@ router.post('/register', [
               phone: phone || null,
               email: email,
               is_default: true
-            });
-            console.log('Created billing address for user:', user.id);
+            };
+            
+            // Set the appropriate foreign key based on user type
+            if (role === 'customer') {
+              billingAddressData.customer_id = user.id;
+            } else {
+              billingAddressData.user_id = user.id;
+            }
+            
+            await Address.create(billingAddressData);
+            console.log('Created billing address for', role === 'customer' ? 'customer' : 'user', ':', user.id);
           } else {
             // If addresses are the same, update shipping address to be 'both'
+            const whereClause = { type: 'shipping' };
+            if (role === 'customer') {
+              whereClause.customer_id = user.id;
+            } else {
+              whereClause.user_id = user.id;
+            }
+            
             await Address.update(
               { type: 'both' },
-              { where: { user_id: user.id, type: 'shipping' } }
+              { where: whereClause }
             );
             console.log('Updated shipping address to be both shipping and billing');
           }
@@ -294,17 +341,24 @@ router.post('/login', [
       });
     }
 
-    // Find users with this email, prioritizing the specified role if provided
-    const whereClause = { email };
-    if (role) {
-      whereClause.role = role;
-    }
+    // Find users/customers with this email based on role
+    let users = [];
     
-    let users = await User.findAll({ where: whereClause });
-    
-    // If no users found with specific role, try all users with this email
-    if (role && (!users || users.length === 0)) {
-      users = await User.findAll({ where: { email } });
+    if (role === 'customer') {
+      // Search in customers table
+      users = await Customer.findAll({ where: { email } });
+    } else if (role === 'store_owner' || role === 'admin') {
+      // Search in users table
+      const whereClause = { email };
+      if (role) {
+        whereClause.role = role;
+      }
+      users = await User.findAll({ where: whereClause });
+    } else {
+      // No role specified - search both tables
+      const customerUsers = await Customer.findAll({ where: { email } });
+      const storeOwnerUsers = await User.findAll({ where: { email } });
+      users = [...customerUsers, ...storeOwnerUsers];
     }
     
     if (!users || users.length === 0) {
@@ -568,6 +622,249 @@ router.post('/logout', require('../middleware/auth'), async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Logout failed'
+    });
+  }
+});
+
+// @route   POST /api/auth/customer/register
+// @desc    Register a new customer
+// @access  Public
+router.post('/customer/register', [
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('password').custom(value => {
+    const error = validatePasswordStrength(value);
+    if (error) throw new Error(error);
+    return true;
+  }),
+  body('first_name').trim().notEmpty().withMessage('First name is required'),
+  body('last_name').trim().notEmpty().withMessage('Last name is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { email, password, first_name, last_name, phone, send_welcome_email = false, address_data } = req.body;
+
+    // Check if customer exists with same email
+    const existingCustomer = await Customer.findOne({ where: { email } });
+    if (existingCustomer) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer with this email already exists'
+      });
+    }
+
+    // Create customer
+    const customer = await Customer.create({
+      email,
+      password,
+      first_name,
+      last_name,
+      phone,
+      role: 'customer',
+      account_type: 'individual'
+    });
+
+    // Create addresses if provided
+    if (address_data) {
+      try {
+        const { Address } = require('../models');
+        const fullName = `${first_name} ${last_name}`;
+        
+        // Create shipping address if provided
+        if (address_data.shipping_address && address_data.shipping_address.street) {
+          const shippingAddr = address_data.shipping_address;
+          await Address.create({
+            customer_id: customer.id,
+            type: 'shipping',
+            full_name: fullName,
+            street: shippingAddr.street,
+            street_2: shippingAddr.street2 || null,
+            city: shippingAddr.city,
+            state: shippingAddr.state,
+            postal_code: shippingAddr.postal_code,
+            country: shippingAddr.country || 'US',
+            phone: phone || null,
+            email: email,
+            is_default: true
+          });
+          console.log('Created shipping address for customer:', customer.id);
+        }
+        
+        // Create billing address if provided and different from shipping
+        if (address_data.billing_address && address_data.billing_address.street) {
+          const billingAddr = address_data.billing_address;
+          const shippingAddr = address_data.shipping_address || {};
+          
+          const isDifferent = (
+            billingAddr.street !== shippingAddr.street ||
+            billingAddr.city !== shippingAddr.city ||
+            billingAddr.postal_code !== shippingAddr.postal_code
+          );
+          
+          if (isDifferent) {
+            await Address.create({
+              customer_id: customer.id,
+              type: 'billing',
+              full_name: fullName,
+              street: billingAddr.street,
+              street_2: billingAddr.street2 || null,
+              city: billingAddr.city,
+              state: billingAddr.state,
+              postal_code: billingAddr.postal_code,
+              country: billingAddr.country || 'US',
+              phone: phone || null,
+              email: email,
+              is_default: true
+            });
+            console.log('Created billing address for customer:', customer.id);
+          } else {
+            await Address.update(
+              { type: 'both' },
+              { where: { customer_id: customer.id, type: 'shipping' } }
+            );
+            console.log('Updated shipping address to be both shipping and billing');
+          }
+        }
+      } catch (addressError) {
+        console.error('Failed to create addresses:', addressError);
+      }
+    }
+
+    // Send welcome email if requested
+    if (send_welcome_email) {
+      try {
+        console.log(`Welcome email should be sent to: ${email}`);
+        console.log(`Welcome message: Hello ${first_name}, welcome to our store! Your account has been created successfully.`);
+      } catch (emailError) {
+        console.error('Failed to send welcome email:', emailError);
+      }
+    }
+
+    // Generate token
+    const token = generateToken(customer);
+
+    res.status(201).json({
+      success: true,
+      message: 'Customer created successfully',
+      data: {
+        user: customer,
+        token,
+        sessionRole: customer.role,
+        sessionContext: 'storefront'
+      }
+    });
+  } catch (error) {
+    console.error('Customer registration error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   POST /api/auth/customer/login
+// @desc    Login customer
+// @access  Public
+router.post('/customer/login', [
+  body('email').isEmail().normalizeEmail().withMessage('Please enter a valid email'),
+  body('password').notEmpty().withMessage('Password is required'),
+  body('rememberMe').optional().isBoolean().withMessage('Remember me must be a boolean')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const { email, password, rememberMe } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress;
+
+    // Check rate limiting
+    const isRateLimited = await LoginAttempt.checkRateLimit(email, ipAddress);
+    if (isRateLimited) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many login attempts. Please try again later.'
+      });
+    }
+
+    // Find customer with this email
+    const customer = await Customer.findOne({ where: { email } });
+    
+    if (!customer) {
+      await LoginAttempt.create({
+        email,
+        ip_address: ipAddress,
+        success: false
+      });
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Check password
+    const isMatch = await customer.comparePassword(password);
+    if (!isMatch) {
+      await LoginAttempt.create({
+        email,
+        ip_address: ipAddress,
+        success: false
+      });
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Check if customer is active
+    if (!customer.is_active) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account is inactive'
+      });
+    }
+
+    // Log successful attempt
+    await LoginAttempt.create({
+      email,
+      ip_address: ipAddress,
+      success: true
+    });
+
+    // Update last login
+    await customer.update({ last_login: new Date() });
+
+    // Generate token
+    const token = generateToken(customer, rememberMe);
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      data: {
+        user: customer,
+        token,
+        expiresIn: rememberMe ? '30 days' : '24 hours',
+        sessionRole: customer.role,
+        sessionContext: 'storefront'
+      }
+    });
+  } catch (error) {
+    console.error('Customer login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
     });
   }
 });

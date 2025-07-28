@@ -143,9 +143,11 @@ const defineAssociations = () => {
   ConsentLog.belongsTo(User, { foreignKey: 'user_id' });
   Store.hasMany(ConsentLog, { foreignKey: 'store_id' });
 
-  // Address associations
+  // Address associations - support both Users and Customers
   Address.belongsTo(User, { foreignKey: 'user_id' });
+  Address.belongsTo(Customer, { foreignKey: 'customer_id' });
   User.hasMany(Address, { foreignKey: 'user_id' });
+  Customer.hasMany(Address, { foreignKey: 'customer_id' });
 
   // ProductTab associations
   ProductTab.belongsTo(Store, { foreignKey: 'store_id' });

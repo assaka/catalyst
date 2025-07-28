@@ -125,8 +125,8 @@ export default function CustomerAuth() {
 
     try {
       if (isLogin) {
-        // Login
-        const response = await AuthService.login(formData.email, formData.password, formData.rememberMe);
+        // Login with customer role
+        const response = await AuthService.login(formData.email, formData.password, formData.rememberMe, 'customer');
         console.log("✅ CustomerAuth.jsx: Login successful:", response);
 
         // Check user role from response
