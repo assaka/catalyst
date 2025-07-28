@@ -203,7 +203,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
               />
             </div>
              <div className="flex items-center justify-between">
-              <Label htmlFor="is_usable_in_conditions" className="pr-4">Use for Attribute Condition in Product Option Rule</Label>
+              <Label htmlFor="is_usable_in_conditions" className="pr-4">Use for Rule Condition</Label>
               <Switch
                 id="is_usable_in_conditions"
                 checked={formData.is_usable_in_conditions}
