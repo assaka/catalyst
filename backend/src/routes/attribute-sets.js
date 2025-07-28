@@ -7,7 +7,7 @@ const router = express.Router();
 // @route   GET /api/attribute-sets
 // @desc    Get all attribute sets for a store
 // @access  Public/Private
-router.get('/', auth, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { store_id } = req.query;
     
@@ -21,14 +21,12 @@ router.get('/', auth, async (req, res) => {
       });
     }
 
-    if (!isPublicRequest) {
-      // Authenticated access - check authentication
-      if (!req.user) {
-        return res.status(401).json({
-          error: 'Access denied',
-          message: 'Authentication required'
-        });
-      }
+    // For non-public requests, check authentication
+    if (!isPublicRequest && !req.user) {
+      return res.status(401).json({
+        error: 'Access denied',
+        message: 'Authentication required'
+      });
     }
 
     const attributeSets = await AttributeSet.findAll({

@@ -15,8 +15,7 @@ router.get('/', async (req, res) => {
     const where = {};
     
     if (isPublicRequest) {
-      // Public access - only return active attributes for specific store
-      where.is_active = true;
+      // Public access - return all attributes for specific store (no is_active field in Attribute model)
       if (store_id) where.store_id = store_id;
     } else {
       // Authenticated access
@@ -55,7 +54,8 @@ router.get('/', async (req, res) => {
       res.json({ success: true, data: { attributes: rows, pagination: { current_page: parseInt(page), per_page: parseInt(limit), total: count, total_pages: Math.ceil(count / limit) } } });
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('❌ Attributes API error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
 
