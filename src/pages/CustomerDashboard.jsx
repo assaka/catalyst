@@ -438,7 +438,7 @@ const GuestWelcome = ({ onLogin }) => (
           <Button onClick={onLogin} className="bg-blue-600 hover:bg-blue-700">
             Sign In to Your Account
           </Button>
-          <Link to={createPageUrl('Auth')}>
+          <Link to={createPageUrl('CustomerAuth')}>
             <Button variant="outline">
               Create New Account
             </Button>
