@@ -43,3 +43,23 @@
 - ✅ Customer can login even when store owner is active session
 - ✅ Both roles maintain independent sessions
 - ✅ Auth pages are accessible for role switching
+- ✅ Logging in doesn't automatically override currently active session
+- ✅ Added UI role switcher for explicit session switching
+
+## How Role Activation Works
+
+### Login Behavior (Non-Disruptive)
+- **Customer login**: Only becomes active if no session exists OR customer was already active
+- **Store owner login**: Only becomes active if no session exists OR store owner was already active
+- **Existing active session is preserved** when other role logs in
+
+### Role Switching Options
+1. **Via Auth Pages**: Visit `/auth` or `/customerauth` to switch roles
+2. **Via RoleSwitcher UI**: Use the floating role switcher widget (top-right)
+3. **Programmatic**: Use `activateRoleSession(role)` function
+
+### RoleSwitcher Widget
+- Only shows when both customer and store owner are logged in
+- Displays current active session with badge
+- Allows one-click switching between roles
+- Automatically navigates to appropriate dashboard after switch

@@ -157,16 +157,17 @@ export const setRoleBasedAuthData = (user, token) => {
     localStorage.setItem('customer_session_id', generateSessionId());
     console.log('✅ Customer session stored separately');
     
-    // If no store owner is logged in, set customer as active
-    if (!existingStoreOwnerToken) {
+    // Only set customer as active if no existing active session OR if customer was already active
+    const currentActiveRole = localStorage.getItem('session_role');
+    if (!currentActiveRole || currentActiveRole === 'customer') {
       localStorage.setItem('auth_token', token);
       localStorage.setItem('user_data', JSON.stringify(user));
       localStorage.setItem('session_role', user.role);
       apiClient.setToken(token);
       console.log('✅ Customer set as active session');
     } else {
-      console.log('🔄 Customer session stored, but store owner remains active');
-      // Keep store owner active - don't change auth_token
+      console.log('🔄 Customer session stored, keeping existing active role:', currentActiveRole);
+      // Keep existing active session - don't change auth_token
     }
     
   } else if (user.role === 'store_owner' || user.role === 'admin') {
@@ -175,12 +176,18 @@ export const setRoleBasedAuthData = (user, token) => {
     localStorage.setItem('store_owner_session_id', generateSessionId());
     console.log('✅ Store owner session stored separately');
     
-    // Always set store owner as active when they login
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user_data', JSON.stringify(user));
-    localStorage.setItem('session_role', user.role);
-    apiClient.setToken(token);
-    console.log('✅ Store owner set as active session');
+    // Only set store owner as active if no existing active session OR if store owner was already active
+    const currentActiveRole = localStorage.getItem('session_role');
+    if (!currentActiveRole || currentActiveRole === 'store_owner' || currentActiveRole === 'admin') {
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('user_data', JSON.stringify(user));
+      localStorage.setItem('session_role', user.role);
+      apiClient.setToken(token);
+      console.log('✅ Store owner set as active session');
+    } else {
+      console.log('🔄 Store owner session stored, keeping existing active role:', currentActiveRole);
+      // Keep existing active session - don't change auth_token
+    }
   }
   
   localStorage.setItem('session_created_at', new Date().toISOString());
@@ -325,6 +332,53 @@ export const getUserDataForRole = (role) => {
     console.error(`Error parsing user data for role ${role}:`, error);
   }
   return null;
+};
+
+/**
+ * Explicitly activate a specific role session (used for UI switching)
+ */
+export const activateRoleSession = (targetRole) => {
+  console.log('🔄 Activating role session:', targetRole);
+  
+  if (targetRole === 'customer') {
+    const customerToken = localStorage.getItem('customer_auth_token');
+    const customerUserData = localStorage.getItem('customer_user_data');
+    
+    if (customerToken && customerUserData) {
+      localStorage.setItem('auth_token', customerToken);
+      localStorage.setItem('user_data', customerUserData);
+      localStorage.setItem('session_role', 'customer');
+      apiClient.setToken(customerToken);
+      console.log('✅ Customer session activated');
+      
+      // Trigger a page refresh or navigation to update UI
+      window.dispatchEvent(new CustomEvent('roleSessionChanged', { detail: { role: 'customer' } }));
+      return true;
+    }
+  } else if (targetRole === 'store_owner' || targetRole === 'admin') {
+    const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+    const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
+    
+    if (storeOwnerToken && storeOwnerUserData) {
+      try {
+        const userData = JSON.parse(storeOwnerUserData);
+        localStorage.setItem('auth_token', storeOwnerToken);
+        localStorage.setItem('user_data', storeOwnerUserData);
+        localStorage.setItem('session_role', userData.role);
+        apiClient.setToken(storeOwnerToken);
+        console.log('✅ Store owner session activated');
+        
+        // Trigger a page refresh or navigation to update UI
+        window.dispatchEvent(new CustomEvent('roleSessionChanged', { detail: { role: userData.role } }));
+        return true;
+      } catch (e) {
+        console.error('Error parsing store owner data:', e);
+      }
+    }
+  }
+  
+  console.log('❌ Failed to activate role session:', targetRole);
+  return false;
 };
 
 /**

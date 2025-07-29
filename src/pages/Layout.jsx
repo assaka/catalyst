@@ -10,6 +10,7 @@ import { hasBothRolesLoggedIn } from "@/utils/auth";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
+import RoleSwitcher from '@/components/RoleSwitcher';
 
 import {
   Menu,
@@ -277,6 +278,7 @@ export default function Layout({ children, currentPageName }) {
   if (isPublicPage) {
     return (
       <div className="min-h-screen bg-gray-50">
+        <RoleSwitcher />
         {gtmConfig?.gtm_script && (
           <div dangerouslySetInnerHTML={{ __html: gtmConfig.gtm_script }} />
         )}
@@ -422,6 +424,7 @@ export default function Layout({ children, currentPageName }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      <RoleSwitcher />
       <style>{`
         :root {
           --primary: 220 90% 56%;

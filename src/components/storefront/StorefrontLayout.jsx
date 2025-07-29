@@ -20,6 +20,7 @@ import { CountrySelect } from "@/components/ui/country-select";
 import SeoHeadManager from './SeoHeadManager';
 import DataLayerManager from '@/components/storefront/DataLayerManager';
 import CookieConsentBanner from '@/components/storefront/CookieConsentBanner';
+import RoleSwitcher from '@/components/RoleSwitcher';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -226,6 +227,7 @@ export default function StorefrontLayout({ children }) {
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
+            <RoleSwitcher />
             <DataLayerManager />
             {googleFontLink && (
               <link href={googleFontLink} rel="stylesheet" />
