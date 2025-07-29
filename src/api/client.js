@@ -53,7 +53,6 @@ class ApiClient {
                              currentPath.includes('/storefront') || 
                              currentPath.includes('/cart') || 
                              currentPath.includes('/checkout') ||
-                             currentPath.includes('/customerauth') ||
                              currentPath.includes('/customerdashboard');
     
     // Check role-specific tokens

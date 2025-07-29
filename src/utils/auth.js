@@ -122,8 +122,7 @@ export const getCurrentUser = () => {
     const isCustomerContext = currentPath.startsWith('/public/') ||
                              currentPath.includes('/storefront') || 
                              currentPath.includes('/cart') || 
-                             currentPath.includes('/checkout') ||
-                             currentPath.includes('/customerauth');
+                             currentPath.includes('/checkout');
     
     if (isCustomerContext) {
       const customerData = localStorage.getItem('customer_user_data');

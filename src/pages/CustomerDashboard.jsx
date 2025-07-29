@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { createPublicUrl } from "@/utils/urlUtils";
+import { useStore } from "@/components/storefront/StoreProvider";
 import { User, Auth } from "@/api/entities";
 import { Order } from "@/api/entities";
 import { OrderItem } from "@/api/entities";
@@ -438,7 +440,7 @@ const GuestWelcome = ({ onLogin }) => (
           <Button onClick={onLogin} className="bg-blue-600 hover:bg-blue-700">
             Sign In to Your Account
           </Button>
-          <Link to={createPageUrl('CustomerAuth')}>
+          <Link to={createPublicUrl(store?.slug || 'default', 'CUSTOMER_AUTH')}>
             <Button variant="outline">
               Create New Account
             </Button>
