@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test:deployment": "node scripts/test-deployment.js",
-    "test:frontend": "node scripts/test-frontend.js", 
+    "test:frontend": "node scripts/test-frontend.js",
     "test:all": "node scripts/test-deployment.js && node scripts/test-frontend.js",
     "deploy:test": "git push && sleep 60 && npm run test:all"
   },
@@ -44,6 +44,7 @@
     "@stripe/react-stripe-js": "^3.7.0",
     "@stripe/stripe-js": "^7.4.0",
     "class-variance-authority": "^0.7.1",
+    "claude": "^0.1.2",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",

@@ -217,12 +217,27 @@ class UserService extends BaseEntity {
     super('users');
   }
 
-  // Get current user (alias for auth/me)
+  // Get current user (alias for auth/me) - fetches user based on current token
   async me() {
-    const response = await apiClient.get('auth/me');
-    const data = response.data || response;
-    // Handle case where data is returned as an array
-    return Array.isArray(data) ? data[0] : data;
+    try {
+      const response = await apiClient.get('auth/me');
+      const data = response.data || response;
+      // Handle case where data is returned as an array
+      const user = Array.isArray(data) ? data[0] : data;
+      
+      // Ensure we return null if no valid user data
+      if (!user || !user.id) {
+        return null;
+      }
+      
+      return user;
+    } catch (error) {
+      // Clear invalid token if authentication fails
+      if (error.status === 401 || error.status === 403) {
+        apiClient.setToken(null);
+      }
+      return null;
+    }
   }
 
   // Update profile

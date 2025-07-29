@@ -1,0 +1,232 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { createPageUrl, createStoreUrl, getStoreSlugFromUrl } from "@/utils";
+import { Auth as AuthService, User } from "@/api/entities";
+import apiClient from "@/api/client";
+import StoreOwnerAuthLayout from "./StoreOwnerAuthLayout";
+import CustomerAuthLayout from "./CustomerAuthLayout";
+
+export default function AuthMiddleware({ role = 'store_owner' }) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    const oauth = searchParams.get('oauth');
+    const errorParam = searchParams.get('error');
+
+    if (token && oauth === 'success') {
+      apiClient.setToken(token);
+      checkAuthStatus();
+    } else if (errorParam) {
+      setError(getErrorMessage(errorParam));
+    } else {
+      // Check if user is already logged in based on role
+      const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
+      const existingToken = localStorage.getItem(tokenKey);
+      
+      if (existingToken) {
+        apiClient.setToken(existingToken);
+        checkAuthStatus();
+      }
+    }
+  }, [searchParams, role]);
+
+  const getErrorMessage = (error) => {
+    const errorMessages = {
+      'oauth_failed': 'Google authentication failed. Please try again.',
+      'token_generation_failed': 'Failed to generate authentication token. Please try again.',
+      'database_connection_failed': 'Database connection issue. Please try again in a few moments.'
+    };
+    return errorMessages[error] || 'An error occurred. Please try again.';
+  };
+
+  const checkAuthStatus = async () => {
+    try {
+      if (apiClient.isLoggedOut) return;
+      
+      const user = await User.me();
+      if (!user) return;
+      
+      // Redirect based on user role and expected role
+      if (role === 'customer') {
+        if (user.role === 'store_owner' || user.role === 'admin') {
+          navigate(createPageUrl("Auth"));
+        } else if (user.role === 'customer') {
+          const returnTo = searchParams.get('returnTo');
+          if (returnTo) {
+            navigate(returnTo);
+          } else {
+            navigate(getStorefrontUrl());
+          }
+        }
+      } else {
+        if (user.role === 'customer') {
+          navigate(createPageUrl("CustomerAuth"));
+        } else if (user.role === 'store_owner' || user.role === 'admin') {
+          navigate(createPageUrl("Dashboard"));
+        }
+      }
+    } catch (error) {
+      // User not authenticated, stay on auth page
+    }
+  };
+
+  const getStorefrontUrl = () => {
+    const savedStoreCode = localStorage.getItem('customer_auth_store_code');
+    if (savedStoreCode) {
+      return createStoreUrl(savedStoreCode, 'storefront');
+    }
+    
+    const currentStoreSlug = getStoreSlugFromUrl(window.location.pathname);
+    if (currentStoreSlug) {
+      return createStoreUrl(currentStoreSlug, 'storefront');
+    }
+    
+    return createStoreUrl('hamid2', 'storefront');
+  };
+
+  const handleAuth = async (formData, isLogin) => {
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      if (isLogin) {
+        const response = await AuthService.login(
+          formData.email, 
+          formData.password, 
+          formData.rememberMe, 
+          role
+        );
+        
+        if (response.success) {
+          const token = response.data?.token || response.token;
+          
+          if (token) {
+            // Store token based on role
+            const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
+            localStorage.setItem(tokenKey, token);
+            apiClient.setToken(token);
+            
+            // Verify user role by fetching from server
+            const user = await User.me();
+            
+            // Validate role matches expected
+            if (role === 'customer' && user.role !== 'customer') {
+              setError("Invalid credentials. Customers should use the customer login page.");
+              await AuthService.logout();
+              localStorage.removeItem(tokenKey);
+              return;
+            } else if (role === 'store_owner' && user.role === 'customer') {
+              setError("Invalid credentials. Customers should use the customer login page.");
+              await AuthService.logout();
+              localStorage.removeItem(tokenKey);
+              return;
+            }
+            
+            // Clear store auth info for customers
+            if (role === 'customer') {
+              localStorage.removeItem('customer_auth_store_id');
+              localStorage.removeItem('customer_auth_store_code');
+              
+              const returnTo = searchParams.get('returnTo');
+              if (returnTo) {
+                navigate(returnTo);
+              } else {
+                navigate(getStorefrontUrl());
+              }
+            } else {
+              navigate(createPageUrl("Dashboard"));
+            }
+          }
+        }
+      } else {
+        // Registration
+        if (formData.password !== formData.confirmPassword) {
+          setError("Passwords do not match");
+          return;
+        }
+
+        const registerData = {
+          email: formData.email,
+          password: formData.password,
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          role: role,
+          account_type: role === 'customer' ? 'individual' : 'agency'
+        };
+
+        // Add store_id for customer registration
+        if (role === 'customer') {
+          const savedStoreId = localStorage.getItem('customer_auth_store_id');
+          registerData.store_id = savedStoreId;
+        }
+        
+        const response = await AuthService.register(registerData);
+        
+        if (response.success) {
+          const token = response.data?.token || response.token;
+          
+          if (token) {
+            const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
+            localStorage.setItem(tokenKey, token);
+            apiClient.setToken(token);
+            
+            if (role === 'customer') {
+              localStorage.removeItem('customer_auth_store_id');
+              localStorage.removeItem('customer_auth_store_code');
+              navigate(getStorefrontUrl());
+            } else {
+              setSuccess("Registration successful! Redirecting...");
+              setTimeout(() => {
+                navigate(createPageUrl("Dashboard"));
+              }, 1500);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      setError(error.message || `${isLogin ? 'Login' : 'Registration'} failed`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = () => {
+    if (role === 'customer') {
+      setError("Google authentication is not available for customers.");
+      return;
+    }
+    
+    setLoading(true);
+    setError("");
+    window.location.href = `${apiClient.baseURL}/api/auth/google`;
+  };
+
+  // Render appropriate layout based on role
+  if (role === 'customer') {
+    return (
+      <CustomerAuthLayout
+        loading={loading}
+        error={error}
+        success={success}
+        onAuth={handleAuth}
+        onGoogleAuth={handleGoogleAuth}
+      />
+    );
+  } else {
+    return (
+      <StoreOwnerAuthLayout
+        loading={loading}
+        error={error}
+        success={success}
+        onAuth={handleAuth}
+        onGoogleAuth={handleGoogleAuth}
+      />
+    );
+  }
+}
