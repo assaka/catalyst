@@ -5,7 +5,7 @@ import { createPageUrl } from '@/utils';
 import { handleLogout } from '@/utils/auth';
 import { StorefrontCategory } from '@/api/storefront-entities';
 import { CustomerAuth } from '@/api/storefront-entities';
-import { DeliverySettings } from '@/api/entities';
+import { DeliverySettings, User, apiClient } from '@/api/entities';
 import { ShoppingBag, User as UserIcon, Globe, Menu, Search, ChevronDown, Settings, Package, LogOut, X } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -85,6 +85,13 @@ export default function StorefrontLayout({ children }) {
     useEffect(() => {
         const fetchData = async () => {
             if (loading || !store) return;
+            
+            console.log('🔍 StorefrontLayout: Starting user fetch, current auth state:', {
+                hasToken: !!apiClient.getToken(),
+                token: apiClient.getToken()?.substring(0, 20) + '...',
+                isLoggedOut: apiClient.isLoggedOut,
+                sessionRole: localStorage.getItem('session_role')
+            });
 
             try {
                 // Languages feature temporarily disabled for storefront
@@ -104,8 +111,10 @@ export default function StorefrontLayout({ children }) {
                     const userData = await retryApiCall(async () => {
                         return await User.me();
                     }, 5, 3000, null);
+                    console.log('🔍 StorefrontLayout: User data received:', userData);
                     setUser(userData);
                 } catch (e) {
+                    console.log('🔍 StorefrontLayout: User.me() failed:', e.message);
                     setUser(null);
                 } finally {
                     setUserLoading(false);
