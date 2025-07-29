@@ -140,8 +140,15 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
           keys: Object.keys(response)
         });
         
-        if (response.success) {
-          const token = response.data?.token || response.token;
+        // Handle both array and object responses
+        let actualResponse = response;
+        if (Array.isArray(response)) {
+          console.log('🔍 Response is array, taking first element');
+          actualResponse = response[0];
+        }
+        
+        if (actualResponse?.success) {
+          const token = actualResponse.data?.token || actualResponse.token;
           console.log('🔍 Extracted token:', token ? 'Token found' : 'No token found');
           
           if (token) {
@@ -220,8 +227,15 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         
         const response = await AuthService.register(registerData);
         
-        if (response.success) {
-          const token = response.data?.token || response.token;
+        // Handle both array and object responses for registration
+        let actualRegResponse = response;
+        if (Array.isArray(response)) {
+          console.log('🔍 Registration response is array, taking first element');
+          actualRegResponse = response[0];
+        }
+        
+        if (actualRegResponse?.success) {
+          const token = actualRegResponse.data?.token || actualRegResponse.token;
           
           if (token) {
             // Clear logged out flag before setting token
