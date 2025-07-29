@@ -261,20 +261,54 @@ export default function StorefrontLayout({ children }) {
                                             </Button>
                                         )}
                                         {user ? (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => {
-                                                    if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
-                                                        window.location.href = createPageUrl('Dashboard');
-                                                    } else {
-                                                        window.location.href = createPageUrl('CustomerDashboard');
-                                                    }
-                                                }}
-                                                disabled={userLoading}
-                                            >
-                                                <UserIcon className="w-5 h-5" />
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        disabled={userLoading}
+                                                    >
+                                                        <UserIcon className="w-5 h-5" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent className="w-48">
+                                                    <DropdownMenuLabel>
+                                                        {user.role === 'customer' ? 'Customer Account' : 'Store Owner'}
+                                                    </DropdownMenuLabel>
+                                                    <DropdownMenuSeparator />
+                                                    {user.role === 'customer' ? (
+                                                        <>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                window.location.href = createPageUrl('CustomerDashboard');
+                                                            }}>
+                                                                <Settings className="mr-2 h-4 w-4" />
+                                                                <span>My Account</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                handleLogout();
+                                                            }}>
+                                                                <LogOut className="mr-2 h-4 w-4" />
+                                                                <span>Logout</span>
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                window.location.href = createPageUrl('Dashboard');
+                                                            }}>
+                                                                <Settings className="mr-2 h-4 w-4" />
+                                                                <span>Admin Dashboard</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => {
+                                                                handleLogout();
+                                                            }}>
+                                                                <LogOut className="mr-2 h-4 w-4" />
+                                                                <span>Logout</span>
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         ) : (
                                             <Button 
                                                 variant="ghost" 
@@ -331,29 +365,46 @@ export default function StorefrontLayout({ children }) {
                                                             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
                                                         >
                                                             <UserIcon className="w-4 h-4" />
-                                                            <span>My Account2  - {user.role} - {user.name}</span>
+                                                            <span>My Account</span>
                                                             <ChevronDown className="w-4 h-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent className="w-56">
-                                                        <DropdownMenuLabel>My Account3 - {user.role} - {user.name} </DropdownMenuLabel>
+                                                        <DropdownMenuLabel>
+                                                            {user.role === 'customer' ? 'Customer Account' : 'Store Owner'}
+                                                        </DropdownMenuLabel>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem onClick={() => {
-                                                            if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
-                                                                window.location.href = createPageUrl('Dashboard');
-                                                            } else {
-                                                                window.location.href = createPageUrl('CustomerDashboard');
-                                                            }
-                                                        }}>
-                                                            <Settings className="mr-2 h-4 w-4" />
-                                                            <span>Dashboard</span>
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem onClick={() => {
-                                                            handleLogout();
-                                                        }}>
-                                                            <LogOut className="mr-2 h-4 w-4" />
-                                                            <span>Logout</span>
-                                                        </DropdownMenuItem>
+                                                        {user.role === 'customer' ? (
+                                                            <>
+                                                                <DropdownMenuItem onClick={() => {
+                                                                    window.location.href = createPageUrl('CustomerDashboard');
+                                                                }}>
+                                                                    <Settings className="mr-2 h-4 w-4" />
+                                                                    <span>My Account</span>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => {
+                                                                    handleLogout();
+                                                                }}>
+                                                                    <LogOut className="mr-2 h-4 w-4" />
+                                                                    <span>Logout</span>
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <DropdownMenuItem onClick={() => {
+                                                                    window.location.href = createPageUrl('Dashboard');
+                                                                }}>
+                                                                    <Settings className="mr-2 h-4 w-4" />
+                                                                    <span>Admin Dashboard</span>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => {
+                                                                    handleLogout();
+                                                                }}>
+                                                                    <LogOut className="mr-2 h-4 w-4" />
+                                                                    <span>Logout</span>
+                                                                </DropdownMenuItem>
+                                                            </>
+                                                        )}
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </div>
