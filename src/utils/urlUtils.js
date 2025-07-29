@@ -12,15 +12,26 @@ export const URL_CONFIG = {
   // SEO-friendly slugs
   PAGES: {
     // Public storefront pages
-    STOREFRONT: 'shop',
+    STOREFRONT: '',  // Root store page
+    SHOP: 'shop',
     PRODUCT_DETAIL: 'product',
+    PRODUCT_SHORT: 'p',  // Short product URL
     CATEGORY: 'category',
+    CATEGORY_SHORT: 'c',  // Short category URL
+    BRAND: 'brand',
+    COLLECTION: 'collection',
+    SEARCH: 'search',
     CART: 'cart',
     CHECKOUT: 'checkout',
     ORDER_SUCCESS: 'order-success',
+    THANK_YOU: 'thank-you',
     CUSTOMER_AUTH: 'login',
+    CUSTOMER_REGISTER: 'register',
+    CUSTOMER_FORGOT_PASSWORD: 'forgot-password',
     CUSTOMER_DASHBOARD: 'account',
+    MY_ACCOUNT: 'my-account',
     CUSTOMER_ORDERS: 'orders',
+    MY_ORDERS: 'my-orders',
     CUSTOMER_PROFILE: 'profile',
     CMS_PAGE: 'cms-page',
     SITEMAP: 'sitemap',
@@ -98,18 +109,54 @@ export function createPublicUrl(storeSlug, pageName, params = {}) {
  * Create SEO-friendly product URL
  * Example: /public/storename/product/wireless-headphones-sony-wh1000xm4
  */
-export function createProductUrl(storeSlug, productSlug, productId, params = {}) {
-  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.PRODUCT_DETAIL}/${productSlug}-${productId}`;
+export function createProductUrl(storeSlug, productSlug, productId, params = {}, useShortUrl = false) {
+  const productPage = useShortUrl ? URL_CONFIG.PAGES.PRODUCT_SHORT : URL_CONFIG.PAGES.PRODUCT_DETAIL;
+  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${productPage}/${productSlug}-${productId}`;
   return addUrlParams(baseUrl, params);
+}
+
+/**
+ * Create SEO-friendly brand URL
+ * Example: /public/storename/brand/nike
+ */
+export function createBrandUrl(storeSlug, brandSlug, filters = {}, params = {}) {
+  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.BRAND}/${brandSlug}`;
+  const filterParams = buildFilterParams(filters);
+  const allParams = { ...filterParams, ...params };
+  return addUrlParams(baseUrl, allParams);
+}
+
+/**
+ * Create SEO-friendly collection URL
+ * Example: /public/storename/collection/summer-2024
+ */
+export function createCollectionUrl(storeSlug, collectionSlug, filters = {}, params = {}) {
+  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.COLLECTION}/${collectionSlug}`;
+  const filterParams = buildFilterParams(filters);
+  const allParams = { ...filterParams, ...params };
+  return addUrlParams(baseUrl, allParams);
+}
+
+/**
+ * Create SEO-friendly search URL
+ * Example: /public/storename/search/wireless-headphones
+ */
+export function createSearchUrl(storeSlug, searchQuery, filters = {}, params = {}) {
+  const searchSlug = encodeURIComponent(searchQuery.toLowerCase().replace(/\s+/g, '-'));
+  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.SEARCH}/${searchSlug}`;
+  const filterParams = buildFilterParams(filters);
+  const allParams = { ...filterParams, ...params };
+  return addUrlParams(baseUrl, allParams);
 }
 
 /**
  * Create SEO-friendly category URL with layered navigation
  * Example: /public/storename/category/electronics/headphones?brand=sony,apple&price=100-500&color=black
  */
-export function createCategoryUrl(storeSlug, categoryPath, filters = {}, params = {}) {
+export function createCategoryUrl(storeSlug, categoryPath, filters = {}, params = {}, useShortUrl = false) {
   const categorySlug = Array.isArray(categoryPath) ? categoryPath.join('/') : categoryPath;
-  let baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.CATEGORY}/${categorySlug}`;
+  const categoryPage = useShortUrl ? URL_CONFIG.PAGES.CATEGORY_SHORT : URL_CONFIG.PAGES.CATEGORY;
+  let baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${categoryPage}/${categorySlug}`;
   
   // Convert filters to SEO-friendly URL structure
   const filterParams = buildFilterParams(filters);
@@ -228,17 +275,25 @@ export function getStoreSlugFromPublicUrl(pathname) {
 }
 
 /**
- * Parse product details from SEO URL
+ * Parse product details from SEO URL (supports both long and short URLs)
  */
 export function parseProductUrl(pathname) {
-  const regex = new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/${URL_CONFIG.PAGES.PRODUCT_DETAIL}/(.+)-(\\d+)$`);
-  const match = pathname.match(regex);
+  // Try long URL format first
+  let regex = new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/${URL_CONFIG.PAGES.PRODUCT_DETAIL}/(.+)-(\\d+)$`);
+  let match = pathname.match(regex);
+  
+  // Try short URL format
+  if (!match) {
+    regex = new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/${URL_CONFIG.PAGES.PRODUCT_SHORT}/(.+)-(\\d+)$`);
+    match = pathname.match(regex);
+  }
   
   if (match) {
     return {
       storeSlug: match[1],
       productSlug: match[2],
-      productId: parseInt(match[3])
+      productId: parseInt(match[3]),
+      isShortUrl: pathname.includes(`/${URL_CONFIG.PAGES.PRODUCT_SHORT}/`)
     };
   }
   
@@ -246,16 +301,76 @@ export function parseProductUrl(pathname) {
 }
 
 /**
- * Parse category details from SEO URL
+ * Parse category details from SEO URL (supports both long and short URLs)
  */
 export function parseCategoryUrl(pathname) {
-  const regex = new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/${URL_CONFIG.PAGES.CATEGORY}/(.+)$`);
+  // Try long URL format first
+  let regex = new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/${URL_CONFIG.PAGES.CATEGORY}/(.+)$`);
+  let match = pathname.match(regex);
+  
+  // Try short URL format
+  if (!match) {
+    regex = new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/${URL_CONFIG.PAGES.CATEGORY_SHORT}/(.+)$`);
+    match = pathname.match(regex);
+  }
+  
+  if (match) {
+    return {
+      storeSlug: match[1],
+      categoryPath: match[2].split('/'),
+      isShortUrl: pathname.includes(`/${URL_CONFIG.PAGES.CATEGORY_SHORT}/`)
+    };
+  }
+  
+  return null;
+}
+
+/**
+ * Parse brand details from SEO URL
+ */
+export function parseBrandUrl(pathname) {
+  const regex = new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/${URL_CONFIG.PAGES.BRAND}/(.+)$`);
   const match = pathname.match(regex);
   
   if (match) {
     return {
       storeSlug: match[1],
-      categoryPath: match[2].split('/')
+      brandSlug: match[2]
+    };
+  }
+  
+  return null;
+}
+
+/**
+ * Parse collection details from SEO URL
+ */
+export function parseCollectionUrl(pathname) {
+  const regex = new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/${URL_CONFIG.PAGES.COLLECTION}/(.+)$`);
+  const match = pathname.match(regex);
+  
+  if (match) {
+    return {
+      storeSlug: match[1],
+      collectionSlug: match[2]
+    };
+  }
+  
+  return null;
+}
+
+/**
+ * Parse search details from SEO URL
+ */
+export function parseSearchUrl(pathname) {
+  const regex = new RegExp(`^${URL_CONFIG.PUBLIC_PREFIX}/([^/]+)/${URL_CONFIG.PAGES.SEARCH}/(.+)$`);
+  const match = pathname.match(regex);
+  
+  if (match) {
+    return {
+      storeSlug: match[1],
+      searchSlug: match[2],
+      searchQuery: decodeURIComponent(match[2].replace(/-/g, ' '))
     };
   }
   
@@ -285,8 +400,44 @@ export function generateBreadcrumbs(pathname, searchParams) {
           currentPath = currentPath ? `${currentPath}/${segment}` : segment;
           breadcrumbs.push({
             label: segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            url: createCategoryUrl(storeSlug, currentPath)
+            url: createCategoryUrl(storeSlug, currentPath, {}, {}, categoryData.isShortUrl)
           });
+        });
+      }
+      
+      // Add product breadcrumbs
+      const productData = parseProductUrl(pathname);
+      if (productData) {
+        breadcrumbs.push({
+          label: productData.productSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          url: pathname
+        });
+      }
+      
+      // Add brand breadcrumbs
+      const brandData = parseBrandUrl(pathname);
+      if (brandData) {
+        breadcrumbs.push({
+          label: `Brand: ${brandData.brandSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+          url: pathname
+        });
+      }
+      
+      // Add collection breadcrumbs
+      const collectionData = parseCollectionUrl(pathname);
+      if (collectionData) {
+        breadcrumbs.push({
+          label: `Collection: ${collectionData.collectionSlug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+          url: pathname
+        });
+      }
+      
+      // Add search breadcrumbs
+      const searchData = parseSearchUrl(pathname);
+      if (searchData) {
+        breadcrumbs.push({
+          label: `Search: "${searchData.searchQuery}"`,
+          url: pathname
         });
       }
     }

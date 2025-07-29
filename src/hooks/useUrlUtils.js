@@ -10,7 +10,10 @@ import {
   getCurrentUrlType,
   getStoreSlugFromPublicUrl,
   parseProductUrl,
-  parseCategoryUrl
+  parseCategoryUrl,
+  parseBrandUrl,
+  parseCollectionUrl,
+  parseSearchUrl
 } from '@/utils/urlUtils';
 
 /**
@@ -24,12 +27,32 @@ export function useUrlContext() {
     const storeSlug = getStoreSlugFromPublicUrl(location.pathname);
     const productData = parseProductUrl(location.pathname);
     const categoryData = parseCategoryUrl(location.pathname);
+    const brandData = parseBrandUrl(location.pathname);
+    const collectionData = parseCollectionUrl(location.pathname);
+    const searchData = parseSearchUrl(location.pathname);
+    
+    // Determine page type
+    let pageType = 'unknown';
+    if (productData) pageType = 'product';
+    else if (categoryData) pageType = 'category';
+    else if (brandData) pageType = 'brand';
+    else if (collectionData) pageType = 'collection';
+    else if (searchData) pageType = 'search';
+    else if (location.pathname.endsWith('/cart')) pageType = 'cart';
+    else if (location.pathname.endsWith('/checkout')) pageType = 'checkout';
+    else if (location.pathname.includes('/account') || location.pathname.includes('/my-account')) pageType = 'account';
+    else if (location.pathname.includes('/orders') || location.pathname.includes('/my-orders')) pageType = 'orders';
+    else if (storeSlug && (location.pathname === `/public/${storeSlug}` || location.pathname === `/public/${storeSlug}/` || location.pathname.endsWith('/shop'))) pageType = 'storefront';
     
     return {
       urlType,
       storeSlug,
+      pageType,
       productData,
       categoryData,
+      brandData,
+      collectionData,
+      searchData,
       pathname: location.pathname,
       search: location.search
     };

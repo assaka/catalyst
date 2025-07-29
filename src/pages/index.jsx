@@ -266,31 +266,98 @@ function PagesContent() {
                 } />
                 
                 {/* PUBLIC STOREFRONT ROUTES */}
+                <Route path="/public/:storeCode" element={<Storefront />} />
+                <Route path="/public/:storeCode/" element={<Storefront />} />
                 <Route path="/public/:storeCode/shop" element={<Storefront />} />
+                <Route path="/public/:storeCode/shop/*" element={<Storefront />} />
                 
+                {/* SEO-friendly category routes */}
+                <Route path="/public/:storeCode/category/:categorySlug" element={<Categories />} />
+                <Route path="/public/:storeCode/category/:categorySlug/*" element={<Categories />} />
+                <Route path="/public/:storeCode/c/:categorySlug" element={<Categories />} />
+                <Route path="/public/:storeCode/c/:categorySlug/*" element={<Categories />} />
+                
+                {/* SEO-friendly product routes */}
                 <Route path="/public/:storeCode/product/:productSlug" element={<ProductDetail />} />
+                <Route path="/public/:storeCode/p/:productSlug" element={<ProductDetail />} />
                 
-                <Route path="/public/:storeCode/category/*" element={<Categories />} />
+                {/* Brand and collection pages */}
+                <Route path="/public/:storeCode/brand/:brandSlug" element={<Storefront />} />
+                <Route path="/public/:storeCode/brand/:brandSlug/*" element={<Storefront />} />
+                <Route path="/public/:storeCode/collection/:collectionSlug" element={<Storefront />} />
+                <Route path="/public/:storeCode/collection/:collectionSlug/*" element={<Storefront />} />
                 
+                {/* Search results */}
+                <Route path="/public/:storeCode/search" element={<Storefront />} />
+                <Route path="/public/:storeCode/search/*" element={<Storefront />} />
+                
+                {/* Shopping and checkout */}
                 <Route path="/public/:storeCode/cart" element={<Cart />} />
-                
                 <Route path="/public/:storeCode/checkout" element={<Checkout />} />
+                <Route path="/public/:storeCode/checkout/*" element={<Checkout />} />
                 
+                {/* Order completion */}
                 <Route path="/public/:storeCode/order-success" element={<OrderSuccess />} />
+                <Route path="/public/:storeCode/order-success/:orderNumber" element={<OrderSuccess />} />
+                <Route path="/public/:storeCode/thank-you" element={<OrderSuccess />} />
+                <Route path="/public/:storeCode/thank-you/:orderNumber" element={<OrderSuccess />} />
                 
+                {/* Customer authentication */}
                 <Route path="/public/:storeCode/login" element={
                     <RoleProtectedRoute requiresAuth={false}>
                         <CustomerAuth />
                     </RoleProtectedRoute>
                 } />
+                <Route path="/public/:storeCode/register" element={
+                    <RoleProtectedRoute requiresAuth={false}>
+                        <CustomerAuth />
+                    </RoleProtectedRoute>
+                } />
+                <Route path="/public/:storeCode/forgot-password" element={
+                    <RoleProtectedRoute requiresAuth={false}>
+                        <CustomerAuth />
+                    </RoleProtectedRoute>
+                } />
                 
+                {/* Customer account */}
                 <Route path="/public/:storeCode/account" element={
                     <RoleProtectedRoute allowedRoles={['customer']}>
                         <CustomerDashboard />
                     </RoleProtectedRoute>
                 } />
+                <Route path="/public/:storeCode/account/*" element={
+                    <RoleProtectedRoute allowedRoles={['customer']}>
+                        <CustomerDashboard />
+                    </RoleProtectedRoute>
+                } />
+                <Route path="/public/:storeCode/my-account" element={
+                    <RoleProtectedRoute allowedRoles={['customer']}>
+                        <CustomerDashboard />
+                    </RoleProtectedRoute>
+                } />
+                <Route path="/public/:storeCode/my-account/*" element={
+                    <RoleProtectedRoute allowedRoles={['customer']}>
+                        <CustomerDashboard />
+                    </RoleProtectedRoute>
+                } />
                 
+                {/* Customer orders */}
                 <Route path="/public/:storeCode/orders" element={
+                    <RoleProtectedRoute allowedRoles={['customer']}>
+                        <Orders />
+                    </RoleProtectedRoute>
+                } />
+                <Route path="/public/:storeCode/orders/:orderNumber" element={
+                    <RoleProtectedRoute allowedRoles={['customer']}>
+                        <Orders />
+                    </RoleProtectedRoute>
+                } />
+                <Route path="/public/:storeCode/my-orders" element={
+                    <RoleProtectedRoute allowedRoles={['customer']}>
+                        <Orders />
+                    </RoleProtectedRoute>
+                } />
+                <Route path="/public/:storeCode/my-orders/*" element={
                     <RoleProtectedRoute allowedRoles={['customer']}>
                         <Orders />
                     </RoleProtectedRoute>

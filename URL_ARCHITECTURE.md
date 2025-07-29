@@ -41,18 +41,70 @@ All admin/management URLs are prefixed with `/admin/`:
 ```
 
 ### Public URLs (Storefront)
-All public storefront URLs are prefixed with `/public/{storeCode}/`:
+All public storefront URLs are prefixed with `/public/{storeCode}/` and are SEO-friendly:
 
+#### Core Storefront
 ```
-/public/{storeCode}/shop                    - Main storefront
-/public/{storeCode}/product/{slug}-{id}     - Product detail page
-/public/{storeCode}/category/{categoryPath} - Category pages with layered navigation
+/public/{storeCode}                         - Store homepage (root)
+/public/{storeCode}/shop                    - Main storefront with filters
+```
+
+#### Categories (Hierarchical & SEO-friendly)
+```
+/public/{storeCode}/category/electronics    - Electronics category
+/public/{storeCode}/category/electronics/headphones - Nested category
+/public/{storeCode}/c/electronics           - Short category URL
+/public/{storeCode}/c/electronics/headphones - Short nested category
+```
+
+#### Products (SEO-friendly with slugs)
+```
+/public/{storeCode}/product/wireless-headphones-sony-123  - Full product URL
+/public/{storeCode}/p/wireless-headphones-sony-123       - Short product URL
+```
+
+#### Brands & Collections
+```
+/public/{storeCode}/brand/nike              - Brand page
+/public/{storeCode}/brand/nike/shoes        - Brand with subcategory
+/public/{storeCode}/collection/summer-2024  - Collection page
+```
+
+#### Search (SEO-friendly search URLs)
+```
+/public/{storeCode}/search/wireless-headphones - Search results page
+```
+
+#### Shopping & Checkout
+```
 /public/{storeCode}/cart                    - Shopping cart
 /public/{storeCode}/checkout                - Checkout process
+/public/{storeCode}/checkout/shipping       - Checkout steps
 /public/{storeCode}/order-success           - Order confirmation
+/public/{storeCode}/order-success/12345     - Order confirmation with number
+/public/{storeCode}/thank-you               - Alternative order confirmation
+/public/{storeCode}/thank-you/12345         - Alternative with order number
+```
+
+#### Customer Authentication
+```
 /public/{storeCode}/login                   - Customer login
+/public/{storeCode}/register                - Customer registration
+/public/{storeCode}/forgot-password         - Password reset
+```
+
+#### Customer Account
+```
 /public/{storeCode}/account                 - Customer dashboard
+/public/{storeCode}/account/profile         - Account profile
+/public/{storeCode}/my-account              - Alternative account URL
 /public/{storeCode}/orders                  - Customer order history
+/public/{storeCode}/orders/12345            - Specific order details
+/public/{storeCode}/my-orders               - Alternative orders URL
+```
+
+#### Content & SEO Pages
+```
 /public/{storeCode}/cms-page/{slug}         - CMS content pages
 /public/{storeCode}/sitemap                 - HTML sitemap
 /public/{storeCode}/sitemap.xml             - XML sitemap
@@ -77,12 +129,28 @@ Some routes don't require prefixes as they're system-level:
 Product URLs include SEO-friendly slugs with the product ID:
 ```
 /public/storename/product/wireless-headphones-sony-wh1000xm4-123
+/public/storename/p/gaming-mouse-logitech-456                    (short URL)
 ```
 
 ### Category URLs with Layered Navigation
 Category URLs support hierarchical navigation and filters:
 ```
 /public/storename/category/electronics/headphones?brand=sony,apple&price=100-500&color=black&sort=price-asc&page=2
+/public/storename/c/home-garden/outdoor?brand=weber&price=200-800 (short URL)
+```
+
+### Brand & Collection Pages
+Brand and collection pages with filters:
+```
+/public/storename/brand/nike?category=shoes&size=10,11&color=black
+/public/storename/collection/summer-2024?price=50-200&sort=newest
+```
+
+### Search Results
+SEO-friendly search URLs:
+```
+/public/storename/search/wireless-headphones?brand=sony&price=100-300
+/public/storename/search/home-garden-tools?sort=rating&page=2
 ```
 
 ### Filter Parameters
@@ -136,24 +204,52 @@ Legacy URLs are no longer automatically redirected. The system now uses the new 
 
 ### Creating URLs in Components
 ```javascript
-import { createAdminUrl, createPublicUrl, createProductUrl, createCategoryUrl } from '@/utils/urlUtils';
+import { 
+  createAdminUrl, 
+  createPublicUrl, 
+  createProductUrl, 
+  createCategoryUrl,
+  createBrandUrl,
+  createCollectionUrl,
+  createSearchUrl
+} from '@/utils/urlUtils';
 
 // Admin URLs
 const dashboardUrl = createAdminUrl('DASHBOARD');
 const productsUrl = createAdminUrl('PRODUCTS');
 
-// Public URLs
+// Basic public URLs
 const storefrontUrl = createPublicUrl('storename', 'STOREFRONT');
 const cartUrl = createPublicUrl('storename', 'CART');
 
-// Product URLs
+// SEO-friendly product URLs
 const productUrl = createProductUrl('storename', 'wireless-headphones-sony', 123);
+const shortProductUrl = createProductUrl('storename', 'gaming-mouse', 456, {}, true);
 
-// Category URLs with filters
+// Category URLs with filters and short URLs
 const categoryUrl = createCategoryUrl('storename', 'electronics/headphones', {
   brand: ['sony', 'apple'],
   price: { min: 100, max: 500 },
   color: 'black'
+});
+const shortCategoryUrl = createCategoryUrl('storename', 'home-garden', {}, {}, true);
+
+// Brand pages with filters
+const brandUrl = createBrandUrl('storename', 'nike', {
+  category: 'shoes',
+  size: ['10', '11'],
+  color: 'black'
+});
+
+// Collection pages
+const collectionUrl = createCollectionUrl('storename', 'summer-2024', {
+  price: { min: 50, max: 200 }
+});
+
+// Search URLs
+const searchUrl = createSearchUrl('storename', 'wireless headphones', {
+  brand: 'sony',
+  price: { min: 100, max: 300 }
 });
 ```
 
@@ -162,7 +258,14 @@ const categoryUrl = createCategoryUrl('storename', 'electronics/headphones', {
 import { useUrlContext, useFilters, useBreadcrumbs } from '@/hooks/useUrlUtils';
 
 function ProductListPage() {
-  const { storeSlug, categoryData } = useUrlContext();
+  const { 
+    storeSlug, 
+    pageType, 
+    categoryData, 
+    brandData, 
+    collectionData, 
+    searchData 
+  } = useUrlContext();
   const { filters, updateFilter, clearAllFilters } = useFilters();
   const breadcrumbs = useBreadcrumbs();
   
@@ -176,8 +279,29 @@ function ProductListPage() {
     clearAllFilters();
   };
   
+  // Get page title based on context
+  const getPageTitle = () => {
+    switch (pageType) {
+      case 'category':
+        return `Category: ${categoryData.categoryPath.join(' > ')}`;
+      case 'brand':
+        return `Brand: ${brandData.brandSlug}`;
+      case 'collection':
+        return `Collection: ${collectionData.collectionSlug}`;
+      case 'search':
+        return `Search: "${searchData.searchQuery}"`;
+      case 'product':
+        return 'Product Details';
+      default:
+        return 'Store';
+    }
+  };
+  
   return (
     <div>
+      {/* Page title */}
+      <h1>{getPageTitle()}</h1>
+      
       {/* Breadcrumbs */}
       <nav>
         {breadcrumbs.map(crumb => (
