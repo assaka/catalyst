@@ -145,7 +145,7 @@ export default function CustomerAuth() {
     try {
       if (isLogin) {
         // Clear any existing admin tokens before customer login
-        apiClient.clearToken();
+        apiClient.setToken(null);
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
         localStorage.removeItem('session_role');

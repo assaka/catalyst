@@ -297,9 +297,14 @@ export default function Auth() {
         console.log('🔍 HAMID DEBUG: About to call AuthService.login with role: store_owner');
         console.log('🔍 HAMID DEBUG: FormData:', { email: formData.email, rememberMe: formData.rememberMe });
         const response = await AuthService.login(formData.email, formData.password, formData.rememberMe, 'store_owner');
+        console.log('🔍 Auth.jsx: Full login response structure:', response);
+        console.log('🔍 Auth.jsx: Response keys:', Object.keys(response || {}));
+        console.log('🔍 Auth.jsx: Response.success:', response.success);
+        
         if (response.success) {
           // Check user role from response and redirect accordingly
           const userRole = response.data?.user?.role || response.user?.role;
+          console.log('🔍 Auth.jsx: Extracted userRole:', userRole);
           
           // Determine current context (storefront vs dashboard)
           const currentPath = window.location.pathname.toLowerCase();

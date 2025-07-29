@@ -31,6 +31,9 @@ const RoleProtectedRoute = ({
       // Check if user is logged in
       if (!currentUser) {
         console.log('🔄 RoleProtectedRoute: No current user, redirecting to auth');
+        console.log('🔍 Debug: localStorage auth_token:', !!localStorage.getItem('auth_token'));
+        console.log('🔍 Debug: localStorage user_data:', !!localStorage.getItem('user_data'));
+        console.log('🔍 Debug: localStorage session_role:', localStorage.getItem('session_role'));
         redirectToAuth();
         return;
       }
