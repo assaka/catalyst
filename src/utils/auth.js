@@ -20,18 +20,43 @@ export const handleLogout = async () => {
     // Clear role-specific session data
     clearRoleBasedAuthData(userRole);
     
-    // Redirect to appropriate auth page based on role
-    const authUrl = userRole === 'customer' ? createPageUrl('CustomerAuth') : createPageUrl('Auth');
-    window.location.href = authUrl;
+    // Redirect based on role - customers stay on storefront, others go to auth
+    if (userRole === 'customer') {
+      // For customers, redirect back to the storefront they were on
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('/storefront')) {
+        // Stay on the same storefront URL
+        window.location.href = currentPath;
+      } else {
+        // Default to first available store or generic storefront
+        window.location.href = '/storefront';
+      }
+    } else {
+      const authUrl = createPageUrl('Auth');
+      window.location.href = authUrl;
+    }
     
   } catch (error) {
     console.error('❌ Logout failed:', error);
     
-    // Even if logout fails, redirect to appropriate auth page for security
+    // Even if logout fails, redirect appropriately for security
     const currentUser = getCurrentUser();
     const userRole = currentUser?.role;
-    const authUrl = userRole === 'customer' ? createPageUrl('CustomerAuth') : createPageUrl('Auth');
-    window.location.href = authUrl;
+    
+    if (userRole === 'customer') {
+      // For customers, redirect back to the storefront they were on
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('/storefront')) {
+        // Stay on the same storefront URL
+        window.location.href = currentPath;
+      } else {
+        // Default to first available store or generic storefront
+        window.location.href = '/storefront';
+      }
+    } else {
+      const authUrl = createPageUrl('Auth');
+      window.location.href = authUrl;
+    }
   }
 };
 
@@ -50,18 +75,41 @@ export const handleLogoutWithNavigate = async (navigate) => {
     // Clear role-specific session data
     clearRoleBasedAuthData(userRole);
     
-    // Navigate to appropriate auth page based on role
-    const authPath = userRole === 'customer' ? '/customerauth' : '/auth';
-    navigate(authPath);
+    // Navigate based on role - customers stay on storefront, others go to auth
+    if (userRole === 'customer') {
+      // For customers, redirect back to the storefront they were on
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('/storefront')) {
+        // Stay on the same storefront URL (reload the page to clear auth state)
+        window.location.href = currentPath;
+      } else {
+        // Default to first available store or generic storefront
+        navigate('/storefront');
+      }
+    } else {
+      navigate('/auth');
+    }
     
   } catch (error) {
     console.error('❌ Logout failed:', error);
     
-    // Even if logout fails, navigate to appropriate auth page for security
+    // Even if logout fails, navigate appropriately for security
     const currentUser = getCurrentUser();
     const userRole = currentUser?.role;
-    const authPath = userRole === 'customer' ? '/customerauth' : '/auth';
-    navigate(authPath);
+    
+    if (userRole === 'customer') {
+      // For customers, redirect back to the storefront they were on
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('/storefront')) {
+        // Stay on the same storefront URL (reload the page to clear auth state)
+        window.location.href = currentPath;
+      } else {
+        // Default to first available store or generic storefront
+        navigate('/storefront');
+      }
+    } else {
+      navigate('/auth');
+    }
   }
 };
 
