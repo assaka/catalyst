@@ -109,7 +109,7 @@ const ProductCard = ({ product, settings, className = "" }) => {
   return (
     <Card className={`group overflow-hidden ${className}`}>
       <CardContent className="p-0">
-        <Link to={createProductUrl(store.slug, product.slug, product.id || '')}>
+        <Link to={createProductUrl(store.slug, product.slug)}>
           <div className="relative">
             <img
               src={product.images?.[0] || 'https://placehold.co/400x400?text=No+Image'}
@@ -122,7 +122,7 @@ const ProductCard = ({ product, settings, className = "" }) => {
         </Link>
         <div className="p-4">
           <h3 className="font-semibold text-lg truncate mt-1">
-            <Link to={createProductUrl(store.slug, product.slug, product.id || '')}>{product.name}</Link>
+            <Link to={createProductUrl(store.slug, product.slug)}>{product.name}</Link>
           </h3>
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-baseline gap-2">

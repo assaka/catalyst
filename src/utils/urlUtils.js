@@ -107,11 +107,11 @@ export function createPublicUrl(storeSlug, pageName, params = {}) {
 
 /**
  * Create SEO-friendly product URL
- * Example: /public/storename/product/wireless-headphones-sony-wh1000xm4
+ * Example: /public/storename/product/wireless-headphones-sony
  */
-export function createProductUrl(storeSlug, productSlug, productId, params = {}, useShortUrl = false) {
+export function createProductUrl(storeSlug, productSlug, params = {}, useShortUrl = false) {
   const productPage = useShortUrl ? URL_CONFIG.PAGES.PRODUCT_SHORT : URL_CONFIG.PAGES.PRODUCT_DETAIL;
-  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${productPage}/${productSlug}-${productId}`;
+  const baseUrl = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${productPage}/${productSlug}`;
   return addUrlParams(baseUrl, params);
 }
 
