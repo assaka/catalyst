@@ -209,11 +209,14 @@ export default function Auth() {
           if (isOnAuthPage) {
             // On auth page - only redirect if user is already authenticated
             // This prevents interfering with the login process
+            console.log('🔍 Auth.jsx checkAuthStatus: On auth page, user roles:', {
+              isStoreOwner, isAdmin, isAgency, isCustomer, hasNoRole
+            });
             if (isStoreOwner || isAdmin || isAgency) {
-              console.log('🔄 User already authenticated as store owner, redirecting to Dashboard');
+              console.log('🔄 Auth.jsx checkAuthStatus: User already authenticated as store owner, redirecting to Dashboard');
               navigate(createPageUrl("Dashboard"));
             } else if (isCustomer) {
-              console.log('🔄 Customer on store owner auth page, redirecting to customer auth');
+              console.log('🔄 Auth.jsx checkAuthStatus: Customer on store owner auth page, redirecting to customer auth');
               navigate(createPageUrl("CustomerAuth"));
             }
             // If hasNoRole, let them stay on auth page to complete setup
@@ -327,7 +330,9 @@ export default function Auth() {
             localStorage.removeItem('user_logged_out');
             
             // Always redirect store owners to Dashboard after login
+            console.log('🔄 Auth.jsx: Setting up redirect to Dashboard for store owner');
             setTimeout(() => {
+              console.log('🔄 Auth.jsx: Executing redirect to Dashboard');
               localStorage.removeItem('just_logged_in');
               navigate(createPageUrl("Dashboard"));
             }, 100);

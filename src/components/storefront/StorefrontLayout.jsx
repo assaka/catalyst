@@ -112,7 +112,14 @@ export default function StorefrontLayout({ children }) {
                         return await User.me();
                     }, 5, 3000, null);
                     console.log('🔍 StorefrontLayout: User data received:', userData);
-                    setUser(userData);
+                    
+                    // Only show user as logged in if they are a customer in storefront context
+                    if (userData && userData.role === 'customer') {
+                        setUser(userData);
+                    } else {
+                        // Store owners/admins should not appear as logged in on storefront
+                        setUser(null);
+                    }
                 } catch (e) {
                     console.log('🔍 StorefrontLayout: User.me() failed:', e.message);
                     setUser(null);
