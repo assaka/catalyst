@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
-import { createPageUrl } from "@/utils";
+import { createPageUrl, createStoreUrl, getStoreSlugFromUrl } from "@/utils";
 import { Auth as AuthService, User, Store } from "@/api/entities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -68,6 +68,19 @@ export default function CustomerAuth() {
     return errorMessages[error] || 'An error occurred. Please try again.';
   };
 
+  const getStorefrontUrl = () => {
+    // Try to get store slug from current URL
+    const currentStoreSlug = getStoreSlugFromUrl(window.location.pathname);
+    
+    // If we have a store slug from URL, use it
+    if (currentStoreSlug) {
+      return createStoreUrl(currentStoreSlug, 'storefront');
+    }
+    
+    // Default to hamid2 store if no store context
+    return createStoreUrl('hamid2', 'storefront');
+  };
+
   const checkAuthStatus = async (isGoogleOAuth = false) => {
     try {
       // Don't redirect if user just logged in
@@ -108,7 +121,7 @@ export default function CustomerAuth() {
           if (returnTo) {
             navigate(returnTo);
           } else {
-            navigate("/CustomerDashboard");
+            navigate(getStorefrontUrl());
           }
         }
       }
@@ -198,7 +211,7 @@ export default function CustomerAuth() {
           if (returnTo) {
             navigate(returnTo);
           } else {
-            navigate("/CustomerDashboard");
+            navigate(getStorefrontUrl());
           }
         }, 100);
       } else {
@@ -280,8 +293,8 @@ export default function CustomerAuth() {
           // Clear the flag
           localStorage.removeItem('just_logged_in');
           
-          // Redirect to customer dashboard
-          navigate("/CustomerDashboard");
+          // Redirect to storefront
+          navigate(getStorefrontUrl());
         }, 100);
       }
     } catch (error) {
