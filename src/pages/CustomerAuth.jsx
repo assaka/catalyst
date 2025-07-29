@@ -148,8 +148,9 @@ export default function CustomerAuth() {
         const response = await AuthService.login(formData.email, formData.password, formData.rememberMe, 'customer');
         console.log("✅ CustomerAuth.jsx: Login successful:", response);
 
-        // Check user role from response
-        const userRole = response.data?.user?.role || response.user?.role;
+        // Check user role from response - handle array response
+        const responseData = Array.isArray(response) ? response[0] : response;
+        const userRole = responseData.data?.user?.role || responseData.user?.role;
         
         if (userRole !== 'customer') {
           setError("Invalid credentials. This login is for customers only.");
@@ -161,18 +162,18 @@ export default function CustomerAuth() {
         // Handle different response structures from API client processing
         let userData, token;
         
-        if (response.user && response.token) {
+        if (responseData.user && responseData.token) {
           // Direct response structure
-          userData = response.user;
-          token = response.token;
-        } else if (response.data?.user && response.data?.token) {
+          userData = responseData.user;
+          token = responseData.token;
+        } else if (responseData.data?.user && responseData.data?.token) {
           // Nested response structure
-          userData = response.data.user;
-          token = response.data.token;
+          userData = responseData.data.user;
+          token = responseData.data.token;
         } else {
           // Response might be just the user object itself
-          userData = response;
-          token = response.token || localStorage.getItem('auth_token');
+          userData = responseData;
+          token = responseData.token || localStorage.getItem('auth_token');
         }
         
         console.log("📊 Login response data:", {
@@ -249,20 +250,21 @@ export default function CustomerAuth() {
 
         // Set role-based session data for new customer
         // Handle different response structures from API client processing
+        const regResponseData = Array.isArray(response) ? response[0] : response;
         let userData, token;
         
-        if (response.user && response.token) {
+        if (regResponseData.user && regResponseData.token) {
           // Direct response structure
-          userData = response.user;
-          token = response.token;
-        } else if (response.data?.user && response.data?.token) {
+          userData = regResponseData.user;
+          token = regResponseData.token;
+        } else if (regResponseData.data?.user && regResponseData.data?.token) {
           // Nested response structure
-          userData = response.data.user;
-          token = response.data.token;
+          userData = regResponseData.data.user;
+          token = regResponseData.data.token;
         } else {
           // Response might be just the user object itself
-          userData = response;
-          token = response.token || localStorage.getItem('auth_token');
+          userData = regResponseData;
+          token = regResponseData.token || localStorage.getItem('auth_token');
         }
         
         console.log("📊 Registration response data:", {
