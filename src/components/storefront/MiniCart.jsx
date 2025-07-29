@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { createPublicUrl } from '@/utils/urlUtils';
 import { StorefrontProduct } from '@/api/storefront-entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import cartService from '@/services/cartService';
@@ -322,13 +323,13 @@ export default function MiniCart({ cartUpdateTrigger }) {
                 
                 <div className="space-y-2">
                   <Button asChild className="w-full btn-view-cart" onClick={() => setIsOpen(false)}>
-                    <Link to={createPageUrl('Cart')}>
+                    <Link to={createPublicUrl(store.slug, 'CART')}>
                       View Cart
                     </Link>
                   </Button>
                   {!settings?.hide_header_checkout && (
                     <Button asChild className="w-full btn-checkout" onClick={() => setIsOpen(false)}>
-                      <Link to={createPageUrl('Checkout')}>
+                      <Link to={createPublicUrl(store.slug, 'CHECKOUT')}>
                         Checkout
                       </Link>
                     </Button>
