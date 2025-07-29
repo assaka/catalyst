@@ -69,6 +69,12 @@ export default function CustomerAuth() {
   };
 
   const getStorefrontUrl = () => {
+    // Try to get store code from localStorage (saved when user clicked sign in)
+    const savedStoreCode = localStorage.getItem('customer_auth_store_code');
+    if (savedStoreCode) {
+      return createStoreUrl(savedStoreCode, 'storefront');
+    }
+    
     // Try to get store slug from current URL
     const currentStoreSlug = getStoreSlugFromUrl(window.location.pathname);
     
@@ -206,6 +212,10 @@ export default function CustomerAuth() {
           // Clear the flag
           localStorage.removeItem('just_logged_in');
           
+          // Clear store auth info after successful login
+          localStorage.removeItem('customer_auth_store_id');
+          localStorage.removeItem('customer_auth_store_code');
+          
           // Redirect customer to appropriate page
           const returnTo = searchParams.get('returnTo');
           if (returnTo) {
@@ -221,13 +231,17 @@ export default function CustomerAuth() {
           return;
         }
 
+        // Get store_id from localStorage (saved when user clicked sign in)
+        const savedStoreId = localStorage.getItem('customer_auth_store_id');
+        
         const registerData = {
           email: formData.email,
           password: formData.password,
           first_name: formData.firstName,
           last_name: formData.lastName,
           role: 'customer',
-          account_type: 'individual'
+          account_type: 'individual',
+          store_id: savedStoreId
         };
 
         const response = await AuthService.register(registerData);
@@ -292,6 +306,10 @@ export default function CustomerAuth() {
         setTimeout(() => {
           // Clear the flag
           localStorage.removeItem('just_logged_in');
+          
+          // Clear store auth info after successful registration
+          localStorage.removeItem('customer_auth_store_id');
+          localStorage.removeItem('customer_auth_store_code');
           
           // Redirect to storefront
           navigate(getStorefrontUrl());

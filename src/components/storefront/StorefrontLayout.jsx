@@ -279,7 +279,12 @@ export default function StorefrontLayout({ children }) {
                                             <Button 
                                                 variant="ghost" 
                                                 size="icon" 
-                                                onClick={() => navigate(createPageUrl("CustomerAuth"))}
+                                                onClick={() => {
+                                                    // Save store info for redirect after login
+                                                    localStorage.setItem('customer_auth_store_id', store.id);
+                                                    localStorage.setItem('customer_auth_store_code', store.slug);
+                                                    navigate(createPageUrl("CustomerAuth"));
+                                                }}
                                                 disabled={userLoading}
                                             >
                                                 <UserIcon className="w-5 h-5" />
@@ -354,7 +359,12 @@ export default function StorefrontLayout({ children }) {
                                             </div>
                                         ) : (
                                             <Button 
-                                                onClick={() => navigate(createPageUrl("CustomerAuth"))}
+                                                onClick={() => {
+                                                    // Save store info for redirect after login
+                                                    localStorage.setItem('customer_auth_store_id', store.id);
+                                                    localStorage.setItem('customer_auth_store_code', store.slug);
+                                                    navigate(createPageUrl("CustomerAuth"));
+                                                }}
                                                 disabled={userLoading}
                                                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
                                             >
