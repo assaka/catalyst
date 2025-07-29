@@ -201,7 +201,7 @@ export default function Layout({ children, currentPageName }) {
     }
   };
 
-  const publicPages = ['Landing', 'Auth', 'Pricing', 'Onboarding'];
+  const publicPages = ['Landing', 'Auth', 'CustomerAuth', 'Pricing', 'Onboarding'];
   const storefrontPages = ['Storefront', 'ProductDetail', 'Cart', 'Checkout', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'HtmlSitemap'];
   const isPublicPage = publicPages.includes(currentPageName);
   const isStorefrontPage = storefrontPages.includes(currentPageName);

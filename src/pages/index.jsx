@@ -226,6 +226,11 @@ function PagesContent() {
                         <CustomerAuth />
                     </RoleProtectedRoute>
                 } />
+                <Route path="/customerauth" element={
+                    <RoleProtectedRoute requiresAuth={false}>
+                        <CustomerAuth />
+                    </RoleProtectedRoute>
+                } />
                 
                 <Route path="/Dashboard" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
