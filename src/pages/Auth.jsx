@@ -578,15 +578,6 @@ export default function Auth() {
                   {isLogin ? "Sign Up" : "Sign In"}
                 </button>
               </p>
-              
-              <div className="mt-4 text-center">
-                <Link 
-                  to={createPageUrl("CustomerAuth")}
-                  className="text-sm text-gray-600 hover:text-gray-500"
-                >
-                  Are you a customer? Login here
-                </Link>
-              </div>
             </div>
           </CardContent>
         </Card>
