@@ -109,8 +109,10 @@ class BaseEntity {
 // Authentication service
 class AuthService {
   async login(email, password, rememberMe = false, role = 'store_owner') {
+    console.log('🔍 HAMID DEBUG: AuthService.login called with role:', role);
     // Use customer-specific endpoint for customer login
     const endpoint = role === 'customer' ? 'auth/customer/login' : 'auth/login';
+    console.log('🔍 HAMID DEBUG: Using endpoint:', endpoint);
     const response = await apiClient.post(endpoint, { email, password, rememberMe, role });
     console.log("🔧 Auth.login - Raw response:", response);
     
