@@ -755,10 +755,14 @@ export default function CustomerDashboard() {
   const handleLogout = async () => {
     try {
       await Auth.logout();
-      navigate(createPageUrl('Storefront'));
+      // Redirect to the current store's storefront using the new URL structure
+      const storefrontUrl = createPublicUrl(store?.slug || 'default', 'STOREFRONT');
+      navigate(storefrontUrl);
     } catch (error) {
       console.error('❌ Customer logout error:', error);
-      navigate(createPageUrl('Storefront'));
+      // Redirect to the current store's storefront using the new URL structure
+      const storefrontUrl = createPublicUrl(store?.slug || 'default', 'STOREFRONT');
+      navigate(storefrontUrl);
     }
   };
 
