@@ -183,9 +183,9 @@ The system preserves all tracking parameters across navigation:
 /public/storename/shop?utm_source=google&utm_medium=cpc&utm_campaign=summer2024&gclid=abc123
 ```
 
-## Legacy URL Support
+## Clean URL Architecture
 
-Legacy URLs are no longer automatically redirected. The system now uses the new URL structure exclusively. Applications should be updated to use the new URL patterns directly.
+This system uses a clean, modern URL architecture exclusively. No legacy URL support is provided - all URLs follow the new SEO-friendly structure with `/public` and `/admin` prefixes.
 
 ## Implementation Files
 
@@ -348,7 +348,8 @@ const storefrontUrl = createPublicUrl('storename', 'STOREFRONT'); // Returns '/p
 - URL parsing is memoized in React hooks to prevent unnecessary re-renders
 - Filter state is managed through URL parameters to maintain browser history
 - Tracking parameters are preserved to maintain attribution accuracy
-- Direct URL structure implementation eliminates redirect overhead
+- Clean URL structure with no legacy redirects provides optimal performance
+- Direct routing implementation eliminates unnecessary complexity
 
 ## Browser Compatibility
 

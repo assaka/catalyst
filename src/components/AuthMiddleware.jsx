@@ -117,15 +117,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       console.error('Failed to fetch stores:', error);
     }
     
-    // Default fallback to new URL structure  
-    // Try to get from current URL path if it contains a store code
-    const pathMatch = window.location.pathname.match(/\/(?:public\/)?([^\/]+)\//);
-    const storeFromPath = pathMatch ? pathMatch[1] : null;
-    
-    if (storeFromPath && storeFromPath !== 'public') {
-      return createPublicUrl(storeFromPath, 'STOREFRONT');
-    }
-    
+    // Default fallback to new URL structure
     return createPublicUrl('default', 'STOREFRONT');
   };
 
