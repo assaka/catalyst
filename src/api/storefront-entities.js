@@ -222,51 +222,107 @@ class StorefrontCategoryService extends StorefrontBaseEntity {
   }
 }
 
-// Cart service (customer-specific)
-class StorefrontCartService extends CustomerBaseEntity {
+// Cart service (hybrid - supports both authenticated and guest users)
+class StorefrontCartService {
   constructor() {
-    super('cart');
+    this.endpoint = 'cart';
+    this.client = storefrontApiClient;
   }
 
   async addItem(productId, quantity = 1, options = {}) {
-    return this.create({ product_id: productId, quantity, options });
+    const data = { product_id: productId, quantity, options };
+    
+    try {
+      return await this.client.customerRequest('POST', this.endpoint, data);
+    } catch (error) {
+      console.error(`Cart addItem error:`, error.message);
+      throw error;
+    }
   }
 
   async updateItem(itemId, quantity) {
-    return this.update(itemId, { quantity });
+    const data = { quantity };
+    
+    try {
+      return await this.client.customerRequest('PUT', `${this.endpoint}/${itemId}`, data);
+    } catch (error) {
+      console.error(`Cart updateItem error:`, error.message);
+      throw error;
+    }
   }
 
   async removeItem(itemId) {
-    return this.delete(itemId);
+    try {
+      return await this.client.customerRequest('DELETE', `${this.endpoint}/${itemId}`);
+    } catch (error) {
+      console.error(`Cart removeItem error:`, error.message);
+      throw error;
+    }
   }
 
   async getItems() {
-    return this.findAll();
+    try {
+      const response = await this.client.customerRequest('GET', this.endpoint);
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error(`Cart getItems error:`, error.message);
+      return [];
+    }
   }
 
   async clear() {
-    const response = await this.client.deleteCustomer('cart/clear');
-    return response;
+    try {
+      return await this.client.customerRequest('DELETE', 'cart/clear');
+    } catch (error) {
+      console.error(`Cart clear error:`, error.message);
+      throw error;
+    }
   }
 }
 
-// Wishlist service (customer-specific)  
-class StorefrontWishlistService extends CustomerBaseEntity {
+// Wishlist service (hybrid - supports both authenticated and guest users)
+class StorefrontWishlistService {
   constructor() {
-    super('wishlist');
+    this.endpoint = 'wishlist';
+    this.client = storefrontApiClient;
+  }
+
+  // Check if user is authenticated and should use authenticated endpoints
+  isAuthenticated() {
+    return this.client.isCustomerAuthenticated();
   }
 
   async addItem(productId) {
-    return this.create({ product_id: productId });
+    const data = { product_id: productId };
+    
+    try {
+      // Use customerRequest which handles both authenticated and guest users
+      return await this.client.customerRequest('POST', this.endpoint, data);
+    } catch (error) {
+      console.error(`Wishlist addItem error:`, error.message);
+      throw error;
+    }
   }
 
   async removeItem(productId) {
-    const response = await this.client.deleteCustomer(`wishlist/product/${productId}`);
-    return response;
+    try {
+      // Use customerRequest which handles both authenticated and guest users
+      return await this.client.customerRequest('DELETE', `${this.endpoint}/product/${productId}`);
+    } catch (error) {
+      console.error(`Wishlist removeItem error:`, error.message);
+      throw error;
+    }
   }
 
   async getItems() {
-    return this.findAll();
+    try {
+      // Always use customerRequest which handles both authenticated and guest users
+      const response = await this.client.customerRequest('GET', this.endpoint);
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error(`Wishlist ${this.endpoint}.getItems() error:`, error.message);
+      return []; // Return empty array instead of throwing for guest users
+    }
   }
 }
 

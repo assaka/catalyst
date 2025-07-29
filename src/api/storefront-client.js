@@ -10,10 +10,6 @@ class StorefrontApiClient {
     // Initialize or get guest session ID
     this.sessionId = this.getOrCreateSessionId();
     
-    console.log('🔧 StorefrontApiClient initialized:', {
-      hasCustomerToken: !!this.customerToken,
-      sessionId: this.sessionId
-    });
   }
 
   // Get or create a guest session ID
@@ -23,9 +19,6 @@ class StorefrontApiClient {
       // Generate a new session ID
       sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
       localStorage.setItem('guest_session_id', sessionId);
-      console.log('🆕 Generated new guest session ID:', sessionId);
-    } else {
-      console.log('♻️ Using existing guest session ID:', sessionId);
     }
     return sessionId;
   }
@@ -142,13 +135,7 @@ class StorefrontApiClient {
     const url = this.buildAuthUrl(finalEndpoint);
     const headers = this.getCustomerHeaders(customHeaders);
 
-    console.log(`👤 Storefront Customer Request: ${method} ${url}`, {
-      hasToken: !!token,
-      sessionId: this.sessionId,
-      endpoint: endpoint,
-      finalEndpoint: finalEndpoint,
-      data: data
-    });
+    console.log(`👤 Storefront Customer Request: ${method} ${url}`);
 
     const config = {
       method,
