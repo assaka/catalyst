@@ -6,28 +6,18 @@ class ApiClient {
     
     // Check if user was explicitly logged out (persists across page reloads)
     const logoutFlag = localStorage.getItem('user_logged_out');
-    const storedToken = localStorage.getItem('auth_token');
     
     this.isLoggedOut = logoutFlag === 'true';
-    this.token = storedToken;
-    
-    // If user was logged out, don't load token even if it exists
-    if (this.isLoggedOut) {
-      this.token = null;
-    } else if (!this.token) {
-      this.isLoggedOut = true;
-    }
+    this.token = null; // Will be set dynamically based on current context
   }
 
   // Set auth token
   setToken(token) {
     this.token = token;
     if (token) {
-      localStorage.setItem('auth_token', token);
       localStorage.removeItem('user_logged_out'); // Clear logout flag when setting new token
       this.isLoggedOut = false; // Reset logout state when setting new token
     } else {
-      localStorage.removeItem('auth_token');
       localStorage.setItem('user_logged_out', 'true'); // Persist logout state across page reloads
       // Ensure in-memory token is also cleared
       this.token = null;
@@ -35,19 +25,48 @@ class ApiClient {
     }
   }
 
-  // Get auth token
+  // Get auth token - automatically determine which role-specific token to use
   getToken() {
     // Always check the logout flag in localStorage as well
     if (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true') {
       return null;
     }
-    // If token was explicitly set to null, don't fall back to localStorage
-    if (this.token === null) {
-      return null;
+    
+    // If token was explicitly set (e.g., by role switching), use it
+    if (this.token) {
+      return this.token;
     }
     
-    const token = this.token || localStorage.getItem('auth_token');
-    return token;
+    // Auto-determine token based on current context - prioritize store owner for admin pages
+    const currentPath = window.location.pathname.toLowerCase();
+    const isDashboardContext = currentPath.includes('/dashboard') || 
+                              currentPath.includes('/products') || 
+                              currentPath.includes('/categories') || 
+                              currentPath.includes('/settings') ||
+                              currentPath.includes('/auth');
+    
+    const isCustomerContext = currentPath.includes('/storefront') || 
+                             currentPath.includes('/cart') || 
+                             currentPath.includes('/checkout') ||
+                             currentPath.includes('/customerauth');
+    
+    // Check role-specific tokens
+    const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+    const customerToken = localStorage.getItem('customer_auth_token');
+    
+    if (isDashboardContext && storeOwnerToken) {
+      return storeOwnerToken;
+    } else if (isCustomerContext && customerToken) {
+      return customerToken;
+    } else if (storeOwnerToken) {
+      // Default to store owner token if available (admin priority)
+      return storeOwnerToken;
+    } else if (customerToken) {
+      // Fallback to customer token
+      return customerToken;
+    }
+    
+    return null;
   }
 
   // Build full URL
@@ -307,11 +326,19 @@ class ApiClient {
     }
   }
 
+  // Clear token (for role switching)
+  clearToken() {
+    this.token = null;
+  }
+
   // Manual logout for testing
   manualLogout() {
-    localStorage.removeItem('auth_token');
+    // Clear role-specific tokens
+    localStorage.removeItem('customer_auth_token');
+    localStorage.removeItem('customer_user_data');
+    localStorage.removeItem('store_owner_auth_token');
+    localStorage.removeItem('store_owner_user_data');
     localStorage.setItem('user_logged_out', 'true');
-    localStorage.removeItem('user_data');
     localStorage.removeItem('selectedStoreId');
     this.token = null;
     this.isLoggedOut = true;
