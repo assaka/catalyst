@@ -108,7 +108,7 @@ export default function CustomerAuth() {
           if (returnTo) {
             navigate(returnTo);
           } else {
-            navigate(createPageUrl("CustomerDashboard"));
+            navigate("/CustomerDashboard");
           }
         }
       }
@@ -196,7 +196,7 @@ export default function CustomerAuth() {
           if (returnTo) {
             navigate(returnTo);
           } else {
-            navigate(createPageUrl("CustomerDashboard"));
+            navigate("/CustomerDashboard");
           }
         }, 100);
       } else {
@@ -277,7 +277,7 @@ export default function CustomerAuth() {
           localStorage.removeItem('just_logged_in');
           
           // Redirect to customer dashboard
-          navigate(createPageUrl("CustomerDashboard"));
+          navigate("/CustomerDashboard");
         }, 100);
       }
     } catch (error) {
