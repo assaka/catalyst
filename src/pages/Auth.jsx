@@ -43,9 +43,32 @@ export default function Auth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      // Allow access to Auth even if store owner is logged in
-      // This allows store owners to switch accounts, log out, or register new accounts
-      console.log('🔍 Auth.jsx: Auth page accessed');
+      // Check if store owner is already logged in as the active session
+      const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+      const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
+      const currentActiveRole = localStorage.getItem('session_role');
+      
+      // Only redirect if store owner is logged in AND is the currently active session
+      if (storeOwnerToken && storeOwnerUserData && currentActiveRole === 'store_owner') {
+        try {
+          const userData = JSON.parse(storeOwnerUserData);
+          if (userData.role === 'store_owner' || userData.role === 'admin') {
+            console.log('🔄 Auth.jsx: Store owner is active session, redirecting to Dashboard');
+            navigate(createPageUrl("Dashboard"));
+            return;
+          }
+        } catch (e) {
+          console.error('Error parsing store owner data:', e);
+        }
+      }
+      
+      // If store owner is logged in but not active, allow them to access auth page
+      // This allows switching between roles or re-activating store owner session
+      console.log('🔍 Auth.jsx: Auth page accessible', {
+        hasStoreOwnerSession: !!(storeOwnerToken && storeOwnerUserData),
+        currentActiveRole: currentActiveRole,
+        isStoreOwnerActive: currentActiveRole === 'store_owner'
+      });
     }
 
     // Listen for logout events to prevent redirections after logout
@@ -274,9 +297,10 @@ export default function Auth() {
     setLoading(true);
     try {
       if (isLogin) {
-        // Clear any existing customer tokens before store owner login
-        localStorage.removeItem('customer_auth_token');
-        localStorage.removeItem('customer_user_data');
+        // Don't clear customer tokens - maintain dual sessions
+        // Only clear main session tokens to set store owner as active
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
         localStorage.removeItem('session_role');
         
         console.log('🔍 HAMID DEBUG: About to call AuthService.login with role: store_owner');

@@ -42,9 +42,26 @@ export default function CustomerAuth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      // Allow access to CustomerAuth even if customer is logged in
-      // This allows customers to switch accounts, log out, or register new accounts
-      console.log('🔍 CustomerAuth.jsx: CustomerAuth page accessed');
+      // Check if customer is already logged in and redirect accordingly
+      const customerToken = localStorage.getItem('customer_auth_token');
+      const customerUserData = localStorage.getItem('customer_user_data');
+      const currentActiveRole = localStorage.getItem('session_role');
+      
+      // Only redirect if customer is the currently active session
+      if (customerToken && customerUserData && currentActiveRole === 'customer') {
+        try {
+          const userData = JSON.parse(customerUserData);
+          if (userData.role === 'customer') {
+            console.log('🔄 CustomerAuth.jsx: Customer is active session, redirecting to storefront');
+            navigate(getStorefrontUrl());
+            return;
+          }
+        } catch (e) {
+          console.error('Error parsing customer data:', e);
+        }
+      } else {
+        console.log('🔍 CustomerAuth.jsx: CustomerAuth page accessible - no active customer session');
+      }
     }
   }, [searchParams]);
 
@@ -133,7 +150,8 @@ export default function CustomerAuth() {
 
     try {
       if (isLogin) {
-        // Clear any existing admin tokens before customer login
+        // Don't clear store owner tokens - maintain dual sessions
+        // Only clear main session tokens to set customer as active
         apiClient.setToken(null);
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
