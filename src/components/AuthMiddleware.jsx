@@ -91,18 +91,18 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
     }
   };
 
-  const getStorefrontUrl = async () => {
+  const getCustomerAccountUrl = async () => {
     // First try to get from localStorage
     const savedStoreCode = localStorage.getItem('customer_auth_store_code');
     if (savedStoreCode) {
-      return createPublicUrl(savedStoreCode, 'STOREFRONT');
+      return createPublicUrl(savedStoreCode, 'CUSTOMER_DASHBOARD');
     }
     
     // Try to get from current URL (new and legacy)
     const currentStoreSlug = getStoreSlugFromPublicUrl(window.location.pathname) || 
                              getStoreSlugFromUrl(window.location.pathname);
     if (currentStoreSlug) {
-      return createPublicUrl(currentStoreSlug, 'STOREFRONT');
+      return createPublicUrl(currentStoreSlug, 'CUSTOMER_DASHBOARD');
     }
     
     // Try to fetch the first available store
@@ -111,14 +111,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       const stores = await Store.findAll();
       if (stores && stores.length > 0) {
         const firstStore = stores[0];
-        return createPublicUrl(firstStore.slug, 'STOREFRONT');
+        return createPublicUrl(firstStore.slug, 'CUSTOMER_DASHBOARD');
       }
     } catch (error) {
       console.error('Failed to fetch stores:', error);
     }
     
     // Default fallback to new URL structure
-    return createPublicUrl('default', 'STOREFRONT');
+    return createPublicUrl('default', 'CUSTOMER_DASHBOARD');
   };
 
   const handleAuth = async (formData, isLogin) => {
@@ -195,9 +195,9 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                 console.log('🔍 Navigating to returnTo:', returnTo);
                 navigate(returnTo);
               } else {
-                const storefrontUrl = await getStorefrontUrl();
-                console.log('🔍 Navigating to storefront:', storefrontUrl);
-                navigate(storefrontUrl);
+                const accountUrl = await getCustomerAccountUrl();
+                console.log('🔍 Navigating to customer account:', accountUrl);
+                navigate(accountUrl);
               }
               return;
             }
@@ -266,8 +266,8 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             if (role === 'customer') {
               localStorage.removeItem('customer_auth_store_id');
               localStorage.removeItem('customer_auth_store_code');
-              const storefrontUrl = await getStorefrontUrl();
-              navigate(storefrontUrl);
+              const accountUrl = await getCustomerAccountUrl();
+              navigate(accountUrl);
             } else {
               setSuccess("Registration successful! Redirecting...");
               setTimeout(() => {

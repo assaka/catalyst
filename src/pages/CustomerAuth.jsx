@@ -272,19 +272,19 @@ export default function CustomerAuth() {
     }
   };
 
-  const getStorefrontUrl = async () => {
+  const getCustomerAccountUrl = async () => {
     // Use current store from URL
     if (storeCode) {
-      return createPublicUrl(storeCode, 'STOREFRONT');
+      return createPublicUrl(storeCode, 'CUSTOMER_DASHBOARD');
     }
     
     // Fallback to saved store code
     const savedStoreCode = localStorage.getItem('customer_auth_store_code');
     if (savedStoreCode) {
-      return createPublicUrl(savedStoreCode, 'STOREFRONT');
+      return createPublicUrl(savedStoreCode, 'CUSTOMER_DASHBOARD');
     }
     
-    return createPublicUrl('default', 'STOREFRONT');
+    return createPublicUrl('default', 'CUSTOMER_DASHBOARD');
   };
 
   const handleAuth = async (formData, isLogin) => {
@@ -323,9 +323,9 @@ export default function CustomerAuth() {
             localStorage.setItem('customer_auth_token', token);
             apiClient.setToken(token);
             
-            // Navigate to storefront
-            const storefrontUrl = await getStorefrontUrl();
-            navigate(storefrontUrl);
+            // Navigate to customer account
+            const accountUrl = await getCustomerAccountUrl();
+            navigate(accountUrl);
             return;
           }
         }
@@ -369,8 +369,8 @@ export default function CustomerAuth() {
             localStorage.setItem('customer_auth_token', token);
             apiClient.setToken(token);
             
-            const storefrontUrl = await getStorefrontUrl();
-            navigate(storefrontUrl);
+            const accountUrl = await getCustomerAccountUrl();
+            navigate(accountUrl);
             return;
           }
         }
