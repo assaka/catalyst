@@ -22,6 +22,12 @@ export const URL_CONFIG = {
     CUSTOMER_DASHBOARD: 'account',
     CUSTOMER_ORDERS: 'orders',
     CUSTOMER_PROFILE: 'profile',
+    CMS_PAGE: 'cms-page',
+    SITEMAP: 'sitemap',
+    XML_SITEMAP: 'sitemap.xml',
+    ROBOTS_TXT: 'robots.txt',
+    ORDER_CANCEL: 'order-cancel',
+    COOKIE_CONSENT: 'cookie-consent',
     
     // Admin pages
     ADMIN_AUTH: 'login',
@@ -31,7 +37,27 @@ export const URL_CONFIG = {
     ORDERS: 'orders',
     CUSTOMERS: 'customers',
     SETTINGS: 'settings',
-    ANALYTICS: 'analytics'
+    ANALYTICS: 'analytics',
+    ATTRIBUTES: 'attributes',
+    PLUGINS: 'plugins',
+    CMS_BLOCKS: 'cms-blocks',
+    TAX: 'tax',
+    COUPONS: 'coupons',
+    CMS_PAGES: 'cms-pages',
+    PRODUCT_TABS: 'product-tabs',
+    PRODUCT_LABELS: 'product-labels',
+    CUSTOM_OPTION_RULES: 'custom-option-rules',
+    SHIPPING_METHODS: 'shipping-methods',
+    GOOGLE_TAG_MANAGER: 'google-tag-manager',
+    DELIVERY_SETTINGS: 'delivery-settings',
+    THEME_LAYOUT: 'theme-layout',
+    MARKETPLACE_EXPORT: 'marketplace-export',
+    IMAGE_MANAGER: 'image-manager',
+    STOCK_SETTINGS: 'stock-settings',
+    PAYMENT_METHODS: 'payment-methods',
+    SEO_TOOLS: 'seo-tools',
+    STORES: 'stores',
+    CUSTOMER_ACTIVITY: 'customer-activity'
   },
   
   // Filter parameter mapping for SEO URLs

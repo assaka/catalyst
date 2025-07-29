@@ -10,14 +10,34 @@ This document describes the new URL architecture implemented for the Catalyst e-
 All admin/management URLs are prefixed with `/admin/`:
 
 ```
-/admin/login              - Admin login page
-/admin/dashboard          - Main dashboard
-/admin/products           - Product management
-/admin/categories         - Category management
-/admin/orders             - Order management
-/admin/customers          - Customer management
-/admin/settings           - Store settings
-/admin/analytics          - Analytics dashboard
+/admin/login                   - Admin login page
+/admin/dashboard               - Main dashboard
+/admin/products                - Product management
+/admin/categories              - Category management
+/admin/orders                  - Order management
+/admin/customers               - Customer management
+/admin/settings                - Store settings
+/admin/analytics               - Analytics dashboard
+/admin/attributes              - Product attributes
+/admin/plugins                 - Plugin management
+/admin/cms-blocks              - CMS block management
+/admin/tax                     - Tax settings
+/admin/coupons                 - Coupon management
+/admin/cms-pages               - CMS page management
+/admin/product-tabs            - Product tab configuration
+/admin/product-labels          - Product label management
+/admin/custom-option-rules     - Custom option rules
+/admin/shipping-methods        - Shipping configuration
+/admin/google-tag-manager      - GTM settings
+/admin/delivery-settings       - Delivery configuration
+/admin/theme-layout            - Theme customization
+/admin/marketplace-export      - Marketplace integration
+/admin/image-manager           - Image management
+/admin/stock-settings          - Inventory settings
+/admin/payment-methods         - Payment configuration
+/admin/seo-tools               - SEO utilities
+/admin/stores                  - Multi-store management
+/admin/customer-activity       - Customer analytics
 ```
 
 ### Public URLs (Storefront)
@@ -33,6 +53,22 @@ All public storefront URLs are prefixed with `/public/{storeCode}/`:
 /public/{storeCode}/login                   - Customer login
 /public/{storeCode}/account                 - Customer dashboard
 /public/{storeCode}/orders                  - Customer order history
+/public/{storeCode}/cms-page/{slug}         - CMS content pages
+/public/{storeCode}/sitemap                 - HTML sitemap
+/public/{storeCode}/sitemap.xml             - XML sitemap
+/public/{storeCode}/robots.txt              - Robots.txt file
+/public/{storeCode}/order-cancel            - Order cancellation
+/public/{storeCode}/cookie-consent          - Cookie consent page
+```
+
+### Special Routes (No Prefix)
+Some routes don't require prefixes as they're system-level:
+
+```
+/landing                 - Marketing landing page
+/onboarding             - System onboarding
+/billing                - Billing management
+/client-dashboard       - Client management portal
 ```
 
 ## SEO-Friendly Features

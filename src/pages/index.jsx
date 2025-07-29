@@ -297,43 +297,153 @@ function PagesContent() {
                 } />
                 
                 {/* =========================== */}
-                {/* UTILITY & CMS ROUTES */}
+                {/* ADDITIONAL ADMIN ROUTES */}
                 {/* =========================== */}
                 
-                <Route path="/Landing" element={<Landing />} />
-                <Route path="/Attributes" element={<Attributes />} />
-                <Route path="/Plugins" element={<Plugins />} />
-                <Route path="/CmsBlocks" element={<CmsBlocks />} />
-                <Route path="/Tax" element={<Tax />} />
-                <Route path="/Coupons" element={<Coupons />} />
-                <Route path="/CmsPages" element={<CmsPages />} />
-                <Route path="/CmsPageViewer" element={<CmsPageViewer />} />
-                <Route path="/ProductTabs" element={<ProductTabs />} />
-                <Route path="/ProductLabels" element={<ProductLabels />} />
-                <Route path="/CustomOptionRules" element={<CustomOptionRules />} />
-                <Route path="/ShippingMethods" element={<ShippingMethods />} />
-                <Route path="/GoogleTagManager" element={<GoogleTagManager />} />
-                <Route path="/DeliverySettings" element={<DeliverySettings />} />
-                <Route path="/ThemeLayout" element={<ThemeLayout />} />
-                <Route path="/MarketplaceExport" element={<MarketplaceExport />} />
-                <Route path="/ImageManager" element={<ImageManager />} />
-                <Route path="/HtmlSitemap" element={<HtmlSitemap />} />
-                <Route path="/StockSettings" element={<StockSettings />} />
-                <Route path="/PaymentMethods" element={<PaymentMethods />} />
-                <Route path="/SeoTools" element={<SeoTools />} />
-                <Route path="/XmlSitemap" element={<XmlSitemap />} />
-                <Route path="/RobotsTxt" element={<RobotsTxt />} />
-                <Route path="/Onboarding" element={<Onboarding />} />
-                <Route path="/Billing" element={<Billing />} />
-                <Route path="/ClientDashboard" element={<ClientDashboard />} />
-                <Route path="/Stores" element={
+                <Route path="/admin/attributes" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Attributes />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/plugins" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Plugins />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/cms-blocks" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CmsBlocks />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/tax" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Tax />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/coupons" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Coupons />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/cms-pages" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CmsPages />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/product-tabs" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ProductTabs />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/product-labels" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ProductLabels />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/custom-option-rules" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CustomOptionRules />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/shipping-methods" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ShippingMethods />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/google-tag-manager" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <GoogleTagManager />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/delivery-settings" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <DeliverySettings />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/theme-layout" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ThemeLayout />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/marketplace-export" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <MarketplaceExport />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/image-manager" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ImageManager />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/stock-settings" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <StockSettings />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/payment-methods" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PaymentMethods />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/stores" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Stores />
                     </RoleProtectedRoute>
                 } />
-                <Route path="/OrderCancel" element={<OrderCancel />} />
-                <Route path="/CustomerActivity" element={<CustomerActivity />} />
-                <Route path="/CookieConsent" element={<CookieConsent />} />
+                
+                <Route path="/admin/customer-activity" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CustomerActivity />
+                    </RoleProtectedRoute>
+                } />
+                
+                {/* =========================== */}
+                {/* PUBLIC CONTENT ROUTES */}
+                {/* =========================== */}
+                
+                <Route path="/public/:storeCode/cms-page/:slug" element={<CmsPageViewer />} />
+                
+                <Route path="/public/:storeCode/sitemap" element={<HtmlSitemap />} />
+                
+                <Route path="/public/:storeCode/sitemap.xml" element={<XmlSitemap />} />
+                
+                <Route path="/public/:storeCode/robots.txt" element={<RobotsTxt />} />
+                
+                <Route path="/public/:storeCode/order-cancel" element={<OrderCancel />} />
+                
+                <Route path="/public/:storeCode/cookie-consent" element={<CookieConsent />} />
+                
+                {/* =========================== */}
+                {/* SPECIAL ROUTES */}
+                {/* =========================== */}
+                
+                <Route path="/landing" element={<Landing />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/billing" element={<Billing />} />
+                <Route path="/client-dashboard" element={<ClientDashboard />} />
                 
             </Routes>
         </Layout>
