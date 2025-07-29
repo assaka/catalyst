@@ -48,7 +48,8 @@ class ApiClient {
     const isCustomerContext = currentPath.includes('/storefront') || 
                              currentPath.includes('/cart') || 
                              currentPath.includes('/checkout') ||
-                             currentPath.includes('/customerauth');
+                             currentPath.includes('/customerauth') ||
+                             currentPath.includes('/customerdashboard');
     
     // Check role-specific tokens
     const storeOwnerToken = localStorage.getItem('store_owner_auth_token');

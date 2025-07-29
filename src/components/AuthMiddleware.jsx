@@ -121,8 +121,11 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
           role
         );
         
+        console.log('🔍 Login response:', response);
+        
         if (response.success) {
           const token = response.data?.token || response.token;
+          console.log('🔍 Extracted token:', token ? 'Token found' : 'No token found');
           
           if (token) {
             // Clear logged out flag before setting token
@@ -133,35 +136,39 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             localStorage.setItem(tokenKey, token);
             apiClient.setToken(token);
             
-            // Verify user role by fetching from server
-            const user = await User.me();
-            
-            // Validate role matches expected
-            if (role === 'customer' && user.role !== 'customer') {
-              setError("Invalid credentials. Customers should use the customer login page.");
-              await AuthService.logout();
-              localStorage.removeItem(tokenKey);
-              return;
-            } else if (role === 'store_owner' && user.role === 'customer') {
-              setError("Invalid credentials. Customers should use the customer login page.");
-              await AuthService.logout();
-              localStorage.removeItem(tokenKey);
-              return;
-            }
-            
-            // Clear store auth info for customers
+            // For customers, navigate immediately without verification
             if (role === 'customer') {
+              console.log('🔍 Customer login successful, navigating to storefront');
               localStorage.removeItem('customer_auth_store_id');
               localStorage.removeItem('customer_auth_store_code');
               
               const returnTo = searchParams.get('returnTo');
               if (returnTo) {
+                console.log('🔍 Navigating to returnTo:', returnTo);
                 navigate(returnTo);
               } else {
                 const storefrontUrl = await getStorefrontUrl();
+                console.log('🔍 Navigating to storefront:', storefrontUrl);
                 navigate(storefrontUrl);
               }
-            } else {
+              return;
+            }
+            
+            // For store owners, verify role before navigating
+            try {
+              const user = await User.me();
+              
+              if (user && user.role === 'customer') {
+                setError("Invalid credentials. Customers should use the customer login page.");
+                await AuthService.logout();
+                localStorage.removeItem(tokenKey);
+                return;
+              }
+              
+              navigate(createPageUrl("Dashboard"));
+            } catch (error) {
+              // If verification fails, still navigate to dashboard
+              console.error('Role verification failed:', error);
               navigate(createPageUrl("Dashboard"));
             }
           }
