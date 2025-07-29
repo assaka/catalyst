@@ -147,7 +147,18 @@ export default function Layout({ children, currentPageName }) {
 
   const loadUserAndHandleCredits = async () => {
     try {
+      console.log('🔍 Layout.jsx: Loading user data');
+      console.log('🔍 Layout.jsx: Current token:', !!apiClient.getToken());
+      console.log('🔍 Layout.jsx: Session role:', localStorage.getItem('session_role'));
+      
       let userData = await retryApiCall(() => User.me());
+      
+      console.log('🔍 Layout.jsx: User data received:', {
+        id: userData?.id,
+        role: userData?.role,
+        account_type: userData?.account_type,
+        email: userData?.email
+      });
       
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -167,6 +178,7 @@ export default function Layout({ children, currentPageName }) {
       
       setUser(userData);
     } catch (error) {
+      console.log('🔍 Layout.jsx: Error loading user:', error);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -229,8 +241,27 @@ export default function Layout({ children, currentPageName }) {
   
   // Handle admin pages
   if (isAdminPage) {
+      console.log('🔍 Layout.jsx: Checking admin page access:', {
+        currentPageName,
+        user: user,
+        userRole: user?.role,
+        accountType: user?.account_type,
+        isLoading,
+        hasProperAdminRole: user && (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner')
+      });
+      
       if (!isLoading && (!user || (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner'))) {
-          const destination = user ? "CustomerDashboard" : "Landing";
+          // Determine redirect destination based on user role
+          let destination = "Landing";
+          if (user) {
+            if (user.role === 'customer') {
+              destination = "CustomerDashboard";
+            } else {
+              // For users without proper admin roles but not customers, redirect to landing
+              destination = "Landing";
+            }
+          }
+          console.log(`🔄 Layout.jsx: User lacks admin access, redirecting ${user?.role || 'no-user'} to ${destination}`);
           navigate(createPageUrl(destination));
           return (
               <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
