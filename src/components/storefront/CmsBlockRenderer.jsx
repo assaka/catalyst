@@ -51,9 +51,15 @@ const loadCmsBlocksWithCache = async (storeId) => {
   // Create new request to load CMS blocks
   const requestPromise = retryApiCall(async () => {
     console.log('🔄 Loading CMS blocks for store:', storeId);
-    const blocks = await CmsBlock.findAll({ store_id: storeId });
-    console.log('✅ Loaded CMS blocks:', blocks?.length || 0);
-    return blocks;
+    try {
+      const blocks = await CmsBlock.findAll({ store_id: storeId });
+      console.log('✅ Loaded CMS blocks:', blocks?.length || 0);
+      return blocks;
+    } catch (error) {
+      console.warn('⚠️ CmsBlockRenderer: Backend CMS blocks API failed, this is expected if backend is not properly configured:', error.message);
+      // Return empty array instead of throwing - CMS blocks are optional
+      return [];
+    }
   })
     .then(blocks => {
       const result = blocks || [];
@@ -62,7 +68,7 @@ const loadCmsBlocksWithCache = async (storeId) => {
       return result;
     })
     .catch(error => {
-      console.error("Error loading CMS blocks:", error);
+      console.warn("⚠️ CmsBlockRenderer: Failed to load CMS blocks, continuing without them:", error.message);
       pendingRequests.delete(cacheKey);
       return [];
     });

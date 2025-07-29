@@ -41,7 +41,12 @@ class BaseEntity {
       
       return result;
     } catch (error) {
-      console.error(`BaseEntity.findAll() error for ${this.endpoint}:`, error.message);
+      // Use different log levels based on endpoint - CMS blocks failures are common due to backend issues
+      if (this.endpoint === 'cms-blocks') {
+        console.warn(`⚠️ BaseEntity.findAll() warning for ${this.endpoint}:`, error.message, '(CMS blocks are optional)');
+      } else {
+        console.error(`BaseEntity.findAll() error for ${this.endpoint}:`, error.message);
+      }
       return [];
     }
   }
@@ -92,7 +97,12 @@ class BaseEntity {
       
       return finalResult;
     } catch (error) {
-      console.error(`BaseEntity.filter() error for ${this.endpoint}:`, error.message);
+      // Use different log levels based on endpoint - CMS blocks failures are common due to backend issues
+      if (this.endpoint === 'cms-blocks') {
+        console.warn(`⚠️ BaseEntity.filter() warning for ${this.endpoint}:`, error.message, '(CMS blocks are optional)');
+      } else {
+        console.error(`BaseEntity.filter() error for ${this.endpoint}:`, error.message);
+      }
       return [];
     }
   }
