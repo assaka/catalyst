@@ -42,22 +42,9 @@ export default function CustomerAuth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      // Check if customer is already logged in (not store owner)
-      const customerToken = localStorage.getItem('customer_auth_token');
-      const customerUserData = localStorage.getItem('customer_user_data');
-      
-      if (customerToken && customerUserData) {
-        try {
-          const userData = JSON.parse(customerUserData);
-          if (userData.role === 'customer') {
-            console.log('🔄 CustomerAuth.jsx: Customer already logged in, redirecting to storefront');
-            navigate(getStorefrontUrl());
-            return;
-          }
-        } catch (e) {
-          console.error('Error parsing customer data:', e);
-        }
-      }
+      // Allow access to CustomerAuth even if customer is logged in
+      // This allows customers to switch accounts, log out, or register new accounts
+      console.log('🔍 CustomerAuth.jsx: CustomerAuth page accessed');
     }
   }, [searchParams]);
 

@@ -43,22 +43,9 @@ export default function Auth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      // Check if store owner is already logged in (not customer)
-      const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
-      const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
-      
-      if (storeOwnerToken && storeOwnerUserData) {
-        try {
-          const userData = JSON.parse(storeOwnerUserData);
-          if (userData.role === 'store_owner' || userData.role === 'admin') {
-            console.log('🔄 Auth.jsx: Store owner already logged in, redirecting to Dashboard');
-            navigate(createPageUrl("Dashboard"));
-            return;
-          }
-        } catch (e) {
-          console.error('Error parsing store owner data:', e);
-        }
-      }
+      // Allow access to Auth even if store owner is logged in
+      // This allows store owners to switch accounts, log out, or register new accounts
+      console.log('🔍 Auth.jsx: Auth page accessed');
     }
 
     // Listen for logout events to prevent redirections after logout
