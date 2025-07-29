@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Product } from '@/api/entities';
+import { StorefrontProduct } from '@/api/storefront-entities';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,7 +48,7 @@ export default function RelatedProductsViewer({ productIds }) {
 
         const fetchRelatedProducts = async () => {
             try {
-                const products = await Product.filter({ id: { $in: productIds } });
+                const products = await StorefrontProduct.filter({ id: { $in: productIds } });
                 setRelatedProducts(products || []);
             } catch (error) {
                 console.error("Failed to fetch related products:", error);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Product } from '@/api/entities';
+import { StorefrontProduct } from '@/api/storefront-entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -49,7 +49,7 @@ export default function HeaderSearch() {
 
       setLoading(true);
       try {
-        const products = await Product.list('-created_date', 10);
+        const products = await StorefrontProduct.list('-created_date', 10);
         const searchLower = searchQuery.toLowerCase();
         
         const filteredProducts = products.filter(product => 

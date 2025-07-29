@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { CustomOptionRule, Product } from '@/api/entities';
+import { CustomOptionRule } from '@/api/entities';
+import { StorefrontProduct } from '@/api/storefront-entities';
 import { Badge } from '@/components/ui/badge';
 import { Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -77,7 +78,7 @@ export default function CustomOptions({ product, onSelectionChange, selectedOpti
                         }
                         
                         try {
-                            const products = await Product.filter({ 
+                            const products = await StorefrontProduct.filter({ 
                                 id: productId,
                                 status: 'active'
                             });

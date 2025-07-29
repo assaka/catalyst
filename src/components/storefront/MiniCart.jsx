@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Product } from '@/api/entities';
+import { StorefrontProduct } from '@/api/storefront-entities';
 import { useStore } from '@/components/storefront/StoreProvider';
 import cartService from '@/services/cartService';
 import { ShoppingCart, Trash2, Plus, Minus } from 'lucide-react';
@@ -83,7 +83,7 @@ export default function MiniCart({ cartUpdateTrigger }) {
           for (const item of cartResult.items) {
             if (!productDetails[item.product_id]) {
               try {
-                const result = await Product.filter({ id: item.product_id });
+                const result = await StorefrontProduct.filter({ id: item.product_id });
                 const products = Array.isArray(result) ? result : [];
                 if (products.length > 0) {
                   const foundProduct = products[0];
