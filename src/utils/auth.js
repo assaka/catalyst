@@ -88,17 +88,31 @@ export const isAuthenticated = (requiredRole = null) => {
 };
 
 /**
- * Get current user data from localStorage - prioritize store owner, then customer
+ * Get current user data based on context and active session
  */
 export const getCurrentUser = () => {
   try {
-    // Check store owner first (admin interface priority)
+    // Determine based on current URL context first
+    const currentPath = window.location.pathname.toLowerCase();
+    const isCustomerContext = currentPath.includes('/storefront') || 
+                             currentPath.includes('/cart') || 
+                             currentPath.includes('/checkout') ||
+                             currentPath.includes('/customerauth');
+    
+    if (isCustomerContext) {
+      const customerData = localStorage.getItem('customer_user_data');
+      if (customerData) {
+        return JSON.parse(customerData);
+      }
+    }
+    
+    // For admin contexts or default, prioritize store owner
     const storeOwnerData = localStorage.getItem('store_owner_user_data');
     if (storeOwnerData) {
       return JSON.parse(storeOwnerData);
     }
     
-    // Then check customer
+    // Fallback to customer
     const customerData = localStorage.getItem('customer_user_data');
     if (customerData) {
       return JSON.parse(customerData);

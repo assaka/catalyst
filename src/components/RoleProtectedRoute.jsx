@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
-  getCurrentUser, 
-  activateRoleSession 
+  getCurrentUser
 } from '@/utils/auth';
 import { User } from '@/api/entities';
 
@@ -46,41 +45,6 @@ const RoleProtectedRoute = ({
         return;
       }
       
-      // Check if we need to auto-switch roles for dual-session users
-      if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser.role)) {
-        console.log(`🔍 Current role '${currentUser.role}' not allowed for this route, checking for dual sessions...`);
-        
-        // Check if user has the required role in another session
-        let canAutoSwitch = false;
-        let targetRole = null;
-        
-        for (const requiredRole of allowedRoles) {
-          // Check role-specific tokens to see if user has that role logged in
-          let hasRoleSession = false;
-          if (requiredRole === 'customer') {
-            hasRoleSession = !!(localStorage.getItem('customer_auth_token') && localStorage.getItem('customer_user_data'));
-          } else if (requiredRole === 'store_owner' || requiredRole === 'admin') {
-            hasRoleSession = !!(localStorage.getItem('store_owner_auth_token') && localStorage.getItem('store_owner_user_data'));
-          }
-          
-          if (hasRoleSession) {
-            console.log(`✅ Found ${requiredRole} session, auto-switching...`);
-            canAutoSwitch = true;
-            targetRole = requiredRole;
-            break;
-          }
-        }
-        
-        if (canAutoSwitch && targetRole) {
-          // Auto-switch to the required role
-          if (activateRoleSession(targetRole)) {
-            console.log(`✅ Auto-switched to ${targetRole} role for this route`);
-            // Re-run checkAccess after role switch
-            setTimeout(() => checkAccess(), 100);
-            return;
-          }
-        }
-      }
 
       console.log('🔍 RoleProtectedRoute: Current user role:', currentUser?.role);
 
