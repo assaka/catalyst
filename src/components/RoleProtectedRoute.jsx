@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { 
   getCurrentUser, 
-  validateRoleBasedSession, 
-  hasValidRoleSession,
-  getUserDataForRole,
   activateRoleSession 
 } from '@/utils/auth';
 import { User } from '@/api/entities';
@@ -32,14 +29,19 @@ const RoleProtectedRoute = ({
         return;
       }
 
-      const currentUser = getCurrentUser();
+      // Check if any user is logged in by checking role-specific tokens
+      const hasCustomerToken = !!(localStorage.getItem('customer_auth_token') && localStorage.getItem('customer_user_data'));
+      const hasStoreOwnerToken = !!(localStorage.getItem('store_owner_auth_token') && localStorage.getItem('store_owner_user_data'));
       
-      // Check if user is logged in
+      if (!hasCustomerToken && !hasStoreOwnerToken) {
+        console.log('🔄 RoleProtectedRoute: No valid tokens, redirecting to auth');
+        redirectToAuth();
+        return;
+      }
+      
+      const currentUser = getCurrentUser();
       if (!currentUser) {
-        console.log('🔄 RoleProtectedRoute: No current user, redirecting to auth');
-        console.log('🔍 Debug: localStorage auth_token:', !!localStorage.getItem('auth_token'));
-        console.log('🔍 Debug: localStorage user_data:', !!localStorage.getItem('user_data'));
-        console.log('🔍 Debug: localStorage session_role:', localStorage.getItem('session_role'));
+        console.log('🔄 RoleProtectedRoute: No current user data, redirecting to auth');
         redirectToAuth();
         return;
       }
@@ -80,41 +82,7 @@ const RoleProtectedRoute = ({
         }
       }
 
-      // Debug session data
-      const sessionRole = localStorage.getItem('session_role');
-      console.log('🔍 HAMID DEBUG: Session validation:', {
-        currentUser: currentUser,
-        currentUserRole: currentUser?.role,
-        sessionRole: sessionRole,
-        hasSessionRole: !!sessionRole,
-        rolesMatch: sessionRole === currentUser?.role
-      });
-      
-      // Validate role-based session
-      if (!validateRoleBasedSession()) {
-        console.log('🔄 RoleProtectedRoute: Invalid role-based session for user:', currentUser.role);
-        
-        // Don't immediately redirect - try to verify with backend first
-        try {
-          const user = await User.me();
-          if (user && user.role) {
-            // Update local session data if backend has valid user
-            localStorage.setItem('user_data', JSON.stringify(user));
-            localStorage.setItem('session_role', user.role);
-            
-            console.log('✅ RoleProtectedRoute: Session refreshed from backend:', user.role);
-            
-            // Continue with validation
-          } else {
-            redirectToAuth(currentUser.role);
-            return;
-          }
-        } catch (error) {
-          console.log('🔄 RoleProtectedRoute: Backend verification failed, redirecting');
-          redirectToAuth(currentUser.role);
-          return;
-        }
-      }
+      console.log('🔍 RoleProtectedRoute: Current user role:', currentUser?.role);
 
       // Check if user role is allowed for this route
       if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser.role)) {
@@ -141,13 +109,14 @@ const RoleProtectedRoute = ({
           return;
         }
 
-        // Check if user's role has changed
+        // Check if user's role has changed and update role-specific data
         if (user.role !== currentUser.role) {
-          console.log('User role has changed, updating session');
-          localStorage.setItem('user_data', JSON.stringify(user));
-          localStorage.setItem('session_role', user.role);
-          
-          // Continue with updated user data - no role restrictions
+          console.log('User role has changed, updating role-specific session');
+          if (user.role === 'customer') {
+            localStorage.setItem('customer_user_data', JSON.stringify(user));
+          } else if (user.role === 'store_owner' || user.role === 'admin') {
+            localStorage.setItem('store_owner_user_data', JSON.stringify(user));
+          }
         }
 
         setIsAuthorized(true);

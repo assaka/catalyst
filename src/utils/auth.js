@@ -74,22 +74,37 @@ export const isAuthenticated = (requiredRole = null) => {
     return false;
   }
   
-  const hasToken = !!localStorage.getItem('auth_token');
-  if (!hasToken) {
-    return false;
+  // Check role-specific tokens directly
+  if (requiredRole === 'customer') {
+    return !!(localStorage.getItem('customer_auth_token') && localStorage.getItem('customer_user_data'));
+  } else if (requiredRole === 'store_owner' || requiredRole === 'admin') {
+    return !!(localStorage.getItem('store_owner_auth_token') && localStorage.getItem('store_owner_user_data'));
+  } else {
+    // If no specific role required, check if any role is authenticated
+    const hasCustomer = !!(localStorage.getItem('customer_auth_token') && localStorage.getItem('customer_user_data'));
+    const hasStoreOwner = !!(localStorage.getItem('store_owner_auth_token') && localStorage.getItem('store_owner_user_data'));
+    return hasCustomer || hasStoreOwner;
   }
-  
-  // Validate role-based session
-  return validateRoleBasedSession(requiredRole);
 };
 
 /**
- * Get current user data from localStorage
+ * Get current user data from localStorage - prioritize store owner, then customer
  */
 export const getCurrentUser = () => {
   try {
-    const userData = localStorage.getItem('user_data');
-    return userData ? JSON.parse(userData) : null;
+    // Check store owner first (admin interface priority)
+    const storeOwnerData = localStorage.getItem('store_owner_user_data');
+    if (storeOwnerData) {
+      return JSON.parse(storeOwnerData);
+    }
+    
+    // Then check customer
+    const customerData = localStorage.getItem('customer_user_data');
+    if (customerData) {
+      return JSON.parse(customerData);
+    }
+    
+    return null;
   } catch (error) {
     console.error('Error parsing user data:', error);
     return null;
@@ -103,14 +118,13 @@ export const clearAuthData = () => {
   const currentUser = getCurrentUser();
   const userRole = currentUser?.role;
   
-  localStorage.removeItem('auth_token');
-  localStorage.removeItem('user_data');
   localStorage.removeItem('selectedStoreId');
   localStorage.removeItem('storeProviderCache');
   localStorage.removeItem('onboarding_form_data');
   localStorage.removeItem('guest_session_id');
   localStorage.removeItem('cart_session_id');
   localStorage.removeItem('user_logged_out'); // Clear logout flag for fresh start
+  localStorage.removeItem('session_created_at');
   
   // Clear role-specific session data
   clearRoleBasedAuthData(userRole);
@@ -141,37 +155,25 @@ export const clearRoleBasedAuthData = (role) => {
 };
 
 /**
- * Set role-based authentication data - truly independent dual sessions
+ * Set role-based authentication data - independent dual sessions
  */
 export const setRoleBasedAuthData = (user, token) => {
   console.log('🔧 Setting auth data for:', user.role);
   
-  // Always store role-specific data separately to maintain both sessions
+  // Store role-specific data separately to maintain both sessions
   if (user.role === 'customer') {
     localStorage.setItem('customer_auth_token', token);
     localStorage.setItem('customer_user_data', JSON.stringify(user));
     localStorage.setItem('customer_session_id', generateSessionId());
-    console.log('✅ Customer session stored separately');
-    
-    // Always set customer as the active session when they login
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user_data', JSON.stringify(user));
-    localStorage.setItem('session_role', user.role);
     apiClient.setToken(token);
-    console.log('✅ Customer set as active session');
+    console.log('✅ Customer session stored');
     
   } else if (user.role === 'store_owner' || user.role === 'admin') {
     localStorage.setItem('store_owner_auth_token', token);
     localStorage.setItem('store_owner_user_data', JSON.stringify(user));
     localStorage.setItem('store_owner_session_id', generateSessionId());
-    console.log('✅ Store owner session stored separately');
-    
-    // Always set store owner as the active session when they login
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('user_data', JSON.stringify(user));
-    localStorage.setItem('session_role', user.role);
     apiClient.setToken(token);
-    console.log('✅ Store owner set as active session');
+    console.log('✅ Store owner session stored');
   }
   
   localStorage.setItem('session_created_at', new Date().toISOString());
@@ -184,69 +186,6 @@ const generateSessionId = () => {
   return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + '_' + Date.now();
 };
 
-/**
- * Get current session role
- */
-export const getSessionRole = () => {
-  return localStorage.getItem('session_role');
-};
-
-/**
- * Validate role-based session
- */
-export const validateRoleBasedSession = (requiredRole) => {
-  const sessionRole = getSessionRole();
-  const currentUser = getCurrentUser();
-  
-  // Check if session role matches current user role
-  if (!sessionRole || !currentUser || sessionRole !== currentUser.role) {
-    return false;
-  }
-  
-  // Check if required role matches session role
-  if (requiredRole && requiredRole !== sessionRole) {
-    return false;
-  }
-  
-  // Check if session is expired (optional)
-  const sessionCreatedAt = localStorage.getItem('session_created_at');
-  if (sessionCreatedAt) {
-    const createdTime = new Date(sessionCreatedAt);
-    const currentTime = new Date();
-    const sessionAge = currentTime - createdTime;
-    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-    
-    if (sessionAge > maxAge) {
-      return false;
-    }
-  }
-  
-  return true;
-};
-
-/**
- * Check if user has appropriate session for the current context
- */
-export const hasValidRoleSession = (contextRole) => {
-  const currentUser = getCurrentUser();
-  const sessionRole = getSessionRole();
-  
-  if (!currentUser || !sessionRole) {
-    return false;
-  }
-  
-  // Ensure session role matches user role
-  if (sessionRole !== currentUser.role) {
-    return false;
-  }
-  
-  // Ensure session role is appropriate for context
-  if (contextRole && contextRole !== sessionRole) {
-    return false;
-  }
-  
-  return true;
-};
 
 /**
  * Switch active session to specific role (maintaining both sessions)
@@ -256,31 +195,19 @@ export const switchToRole = (targetRole) => {
   
   if (targetRole === 'customer') {
     const customerToken = localStorage.getItem('customer_auth_token');
-    const customerUserData = localStorage.getItem('customer_user_data');
     
-    if (customerToken && customerUserData) {
-      localStorage.setItem('auth_token', customerToken);
-      localStorage.setItem('user_data', customerUserData);
-      localStorage.setItem('session_role', 'customer');
-      
+    if (customerToken) {
       // Update API client
       apiClient.setToken(customerToken);
-      
       console.log('✅ Switched to customer session');
       return true;
     }
   } else if (targetRole === 'store_owner' || targetRole === 'admin') {
     const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
-    const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
     
-    if (storeOwnerToken && storeOwnerUserData) {
-      localStorage.setItem('auth_token', storeOwnerToken);
-      localStorage.setItem('user_data', storeOwnerUserData);
-      localStorage.setItem('session_role', targetRole);
-      
+    if (storeOwnerToken) {
       // Update API client
       apiClient.setToken(storeOwnerToken);
-      
       console.log('✅ Switched to store owner/admin session');
       return true;
     }
@@ -338,12 +265,8 @@ export const activateRoleSession = (targetRole) => {
   
   if (targetRole === 'customer') {
     const customerToken = localStorage.getItem('customer_auth_token');
-    const customerUserData = localStorage.getItem('customer_user_data');
     
-    if (customerToken && customerUserData) {
-      localStorage.setItem('auth_token', customerToken);
-      localStorage.setItem('user_data', customerUserData);
-      localStorage.setItem('session_role', 'customer');
+    if (customerToken) {
       apiClient.setToken(customerToken);
       console.log('✅ Customer session activated');
       
@@ -358,9 +281,6 @@ export const activateRoleSession = (targetRole) => {
     if (storeOwnerToken && storeOwnerUserData) {
       try {
         const userData = JSON.parse(storeOwnerUserData);
-        localStorage.setItem('auth_token', storeOwnerToken);
-        localStorage.setItem('user_data', storeOwnerUserData);
-        localStorage.setItem('session_role', userData.role);
         apiClient.setToken(storeOwnerToken);
         console.log('✅ Store owner session activated');
         
@@ -385,24 +305,16 @@ export const forceActivateRole = (targetRole) => {
   
   if (targetRole === 'customer') {
     const customerToken = localStorage.getItem('customer_auth_token');
-    const customerUserData = localStorage.getItem('customer_user_data');
     
-    if (customerToken && customerUserData) {
-      localStorage.setItem('auth_token', customerToken);
-      localStorage.setItem('user_data', customerUserData);
-      localStorage.setItem('session_role', 'customer');
+    if (customerToken) {
       apiClient.setToken(customerToken);
       console.log('✅ Forced customer session active');
       return true;
     }
   } else if (targetRole === 'store_owner' || targetRole === 'admin') {
     const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
-    const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
     
-    if (storeOwnerToken && storeOwnerUserData) {
-      localStorage.setItem('auth_token', storeOwnerToken);
-      localStorage.setItem('user_data', storeOwnerUserData);
-      localStorage.setItem('session_role', targetRole);
+    if (storeOwnerToken) {
       apiClient.setToken(storeOwnerToken);
       console.log('✅ Forced store owner session active');
       return true;

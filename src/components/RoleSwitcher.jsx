@@ -5,8 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   getUserDataForRole, 
   activateRoleSession, 
-  getSessionRole, 
-  hasBothRolesLoggedIn 
+  hasBothRolesLoggedIn,
+  getCurrentUser 
 } from '@/utils/auth';
 import { createPageUrl, createStoreUrl } from '@/utils';
 import { User as UserIcon, Store as StoreIcon } from 'lucide-react';
@@ -32,7 +32,8 @@ const RoleSwitcher = () => {
   }, []);
 
   const updateRoleData = () => {
-    const currentRole = getSessionRole();
+    const currentUser = getCurrentUser();
+    const currentRole = currentUser?.role;
     const customer = getUserDataForRole('customer');
     const storeOwner = getUserDataForRole('store_owner') || getUserDataForRole('admin');
     const bothRoles = hasBothRolesLoggedIn();

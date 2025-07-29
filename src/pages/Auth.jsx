@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import apiClient from "@/api/client";
-import { setRoleBasedAuthData, validateRoleBasedSession, getSessionRole } from "@/utils/auth";
+import { setRoleBasedAuthData } from "@/utils/auth";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -43,17 +43,16 @@ export default function Auth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      // Check if store owner is already logged in as the active session
+      // Check if store owner is already logged in
       const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
       const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
-      const currentActiveRole = localStorage.getItem('session_role');
       
-      // Only redirect if store owner is logged in AND is the currently active session
-      if (storeOwnerToken && storeOwnerUserData && currentActiveRole === 'store_owner') {
+      // If store owner has valid session, redirect to Dashboard
+      if (storeOwnerToken && storeOwnerUserData) {
         try {
           const userData = JSON.parse(storeOwnerUserData);
           if (userData.role === 'store_owner' || userData.role === 'admin') {
-            console.log('🔄 Auth.jsx: Store owner is active session, redirecting to Dashboard');
+            console.log('🔄 Auth.jsx: Store owner session exists, redirecting to Dashboard');
             navigate(createPageUrl("Dashboard"));
             return;
           }
@@ -62,13 +61,7 @@ export default function Auth() {
         }
       }
       
-      // If store owner is logged in but not active, allow them to access auth page
-      // This allows switching between roles or re-activating store owner session
-      console.log('🔍 Auth.jsx: Auth page accessible', {
-        hasStoreOwnerSession: !!(storeOwnerToken && storeOwnerUserData),
-        currentActiveRole: currentActiveRole,
-        isStoreOwnerActive: currentActiveRole === 'store_owner'
-      });
+      console.log('🔍 Auth.jsx: Auth page accessible - no valid store owner session');
     }
 
     // Listen for logout events to prevent redirections after logout
@@ -222,17 +215,20 @@ export default function Auth() {
               isStoreOwner, isAdmin, isAgency, isCustomer, hasNoRole
             });
             
-            // Only redirect if the current active session matches store owner role
-            // Don't redirect store owners who might want to switch sessions
-            const currentActiveRole = localStorage.getItem('session_role');
-            if ((isStoreOwner || isAdmin || isAgency) && currentActiveRole === user.role) {
-              console.log('🔄 Auth.jsx checkAuthStatus: Store owner is active session, redirecting to Dashboard');
-              navigate(createPageUrl("Dashboard"));
-            } else if (isCustomer && currentActiveRole === 'customer') {
-              console.log('🔄 Auth.jsx checkAuthStatus: Customer is active session, redirecting to customer auth');
-              navigate(createPageUrl("CustomerAuth"));
+            // Check if store owner has valid session for dashboard redirect
+            if (isStoreOwner || isAdmin || isAgency) {
+              const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+              if (storeOwnerToken) {
+                console.log('🔄 Auth.jsx checkAuthStatus: Store owner has valid session, redirecting to Dashboard');
+                navigate(createPageUrl("Dashboard"));
+              }
+            } else if (isCustomer) {
+              const customerToken = localStorage.getItem('customer_auth_token');
+              if (customerToken) {
+                console.log('🔄 Auth.jsx checkAuthStatus: Customer has valid session, redirecting to customer auth');
+                navigate(createPageUrl("CustomerAuth"));
+              }
             }
-            // If roles don't match active session or hasNoRole, let them stay on auth page
           } else {
             // Other pages - normal redirect logic based on current user role
             if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
@@ -300,11 +296,7 @@ export default function Auth() {
     setLoading(true);
     try {
       if (isLogin) {
-        // Don't clear customer tokens or store owner tokens - maintain dual sessions
-        // Only clear main session tokens so the new login becomes active
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        localStorage.removeItem('session_role');
+        // Don't clear any tokens - maintain dual sessions
         
         console.log('🔍 HAMID DEBUG: About to call AuthService.login with role: store_owner');
         console.log('🔍 HAMID DEBUG: FormData:', { email: formData.email, rememberMe: formData.rememberMe });

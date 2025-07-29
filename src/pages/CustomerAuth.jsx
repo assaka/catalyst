@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import apiClient from "@/api/client";
-import { setRoleBasedAuthData, validateRoleBasedSession, getSessionRole } from "@/utils/auth";
+import { setRoleBasedAuthData } from "@/utils/auth";
 
 export default function CustomerAuth() {
   const navigate = useNavigate();
@@ -42,26 +42,25 @@ export default function CustomerAuth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      // Check if customer is already logged in and redirect accordingly
+      // Check if customer is already logged in
       const customerToken = localStorage.getItem('customer_auth_token');
       const customerUserData = localStorage.getItem('customer_user_data');
-      const currentActiveRole = localStorage.getItem('session_role');
       
-      // Only redirect if customer is the currently active session
-      if (customerToken && customerUserData && currentActiveRole === 'customer') {
+      // If customer has valid session, redirect to storefront
+      if (customerToken && customerUserData) {
         try {
           const userData = JSON.parse(customerUserData);
           if (userData.role === 'customer') {
-            console.log('🔄 CustomerAuth.jsx: Customer is active session, redirecting to storefront');
+            console.log('🔄 CustomerAuth.jsx: Customer session exists, redirecting to storefront');
             navigate(getStorefrontUrl());
             return;
           }
         } catch (e) {
           console.error('Error parsing customer data:', e);
         }
-      } else {
-        console.log('🔍 CustomerAuth.jsx: CustomerAuth page accessible - no active customer session');
       }
+      
+      console.log('🔍 CustomerAuth.jsx: CustomerAuth page accessible - no valid customer session');
     }
   }, [searchParams]);
 
@@ -150,12 +149,7 @@ export default function CustomerAuth() {
 
     try {
       if (isLogin) {
-        // Don't clear store owner tokens - maintain dual sessions
-        // Only clear main session tokens to set customer as active
-        apiClient.setToken(null);
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        localStorage.removeItem('session_role');
+        // Don't clear any tokens - maintain dual sessions
         
         // Login with customer role
         const response = await AuthService.login(formData.email, formData.password, formData.rememberMe, 'customer');
