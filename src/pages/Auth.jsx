@@ -43,19 +43,24 @@ export default function Auth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      // Only check auth status if user is not currently on auth page after a successful action
-      // This prevents unwanted redirects during the login process
+      // Only check auth status once on initial load and only if user appears to be logged in
+      // Don't auto-redirect on every auth page visit to prevent loops
       const currentPath = window.location.pathname.toLowerCase();
       const isOnAuthPage = currentPath === '/auth' || currentPath.endsWith('/auth');
+      const existingToken = apiClient.getToken();
+      const hasUserLoggedOutFlag = localStorage.getItem('user_logged_out') === 'true';
       
-      if (!isOnAuthPage) {
-        checkAuthStatus();
-      } else {
-        // On auth page, only check if user is already logged in to redirect them
-        const existingToken = apiClient.getToken();
-        if (existingToken && !apiClient.isLoggedOut) {
-          checkAuthStatus();
-        }
+      // Only check auth status if:
+      // 1. User has a token AND
+      // 2. User hasn't explicitly logged out AND  
+      // 3. User hasn't just completed a login action
+      if (existingToken && !apiClient.isLoggedOut && !hasUserLoggedOutFlag && !localStorage.getItem('just_logged_in')) {
+        // Add a small delay to prevent race conditions
+        setTimeout(() => {
+          if (isOnAuthPage) {
+            checkAuthStatus();
+          }
+        }, 200);
       }
     }
 
@@ -63,6 +68,7 @@ export default function Auth() {
     const handleLogout = () => {
       setError('');
       setSuccess('');
+      localStorage.setItem('user_logged_out', 'true');
     };
 
     window.addEventListener('userLoggedOut', handleLogout);
@@ -315,6 +321,8 @@ export default function Auth() {
             
             // Set a temporary flag to prevent checkAuthStatus from redirecting
             localStorage.setItem('just_logged_in', 'true');
+            // Clear logout flag since user is now logging in
+            localStorage.removeItem('user_logged_out');
             
             // Always redirect store owners to Dashboard after login
             setTimeout(() => {
@@ -355,6 +363,8 @@ export default function Auth() {
           
           // Set a temporary flag to prevent checkAuthStatus from redirecting
           localStorage.setItem('just_logged_in', 'true');
+          // Clear logout flag since user is now registering
+          localStorage.removeItem('user_logged_out');
           
           // Clear the flag after a short delay
           setTimeout(() => {

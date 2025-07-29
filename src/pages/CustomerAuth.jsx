@@ -185,6 +185,8 @@ export default function CustomerAuth() {
 
         // Set a temporary flag to prevent checkAuthStatus from redirecting
         localStorage.setItem('just_logged_in', 'true');
+        // Clear logout flag since user is now logging in
+        localStorage.removeItem('user_logged_out');
 
         // Small delay to ensure session data is properly set
         setTimeout(() => {
@@ -270,6 +272,8 @@ export default function CustomerAuth() {
 
         // Set a temporary flag to prevent checkAuthStatus from redirecting
         localStorage.setItem('just_logged_in', 'true');
+        // Clear logout flag since user is now registering
+        localStorage.removeItem('user_logged_out');
 
         // Small delay to ensure session data is properly set  
         setTimeout(() => {
