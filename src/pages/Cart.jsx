@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { createPublicUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { StorefrontProduct } from '@/api/storefront-entities';
 import { Coupon } from '@/api/entities';
@@ -751,7 +752,7 @@ export default function Cart() {
                                         <span>{currencySymbol}{safeToFixed(total)}</span>
                                     </div>
                                     <div className="border-t mt-6 pt-6">
-                                        <Link to={createPageUrl('Checkout')}>
+                                        <Link to={createPublicUrl(store.slug, 'CHECKOUT')}>
                                             <Button 
                                                 size="lg" 
                                                 className="w-full"
