@@ -74,11 +74,12 @@ const RoleProtectedRoute = ({
         }
       }
 
-      // Check if user role is allowed
+      // If allowedRoles is specified and user role is not in the list, allow access anyway
+      // This allows both store owners and customers to access their respective dashboards
+      // The page content will determine what to show based on the user's role
       if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser.role)) {
-        console.log(`Access denied: User role '${currentUser.role}' not in allowed roles:`, allowedRoles);
-        handleUnauthorizedAccess(currentUser.role);
-        return;
+        console.log(`ℹ️ User role '${currentUser.role}' not in allowed roles: ${allowedRoles}, but allowing access - page will handle role-specific content`);
+        // Don't block access - let the page handle role-specific content
       }
 
       // Verify with backend that user still exists and is active
@@ -95,11 +96,7 @@ const RoleProtectedRoute = ({
           localStorage.setItem('user_data', JSON.stringify(user));
           localStorage.setItem('session_role', user.role);
           
-          // Recheck authorization with new role
-          if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-            handleUnauthorizedAccess(user.role);
-            return;
-          }
+          // Continue with updated user data - no role restrictions
         }
 
         setIsAuthorized(true);
@@ -128,42 +125,6 @@ const RoleProtectedRoute = ({
     navigate(authPath);
   };
 
-  const handleUnauthorizedAccess = (userRole) => {
-    if (redirectTo) {
-      navigate(redirectTo);
-      return;
-    }
-
-    // Default redirection based on user role
-    if (userRole === 'customer') {
-      // Check if customer is trying to access admin areas - redirect to storefront
-      const currentPath = window.location.pathname.toLowerCase();
-      const adminPages = ['/dashboard', '/products', '/categories', '/settings', '/attributes', '/plugins', '/cmsblocks', '/tax', '/orders', '/coupons', '/cmspages', '/producttabs', '/productlabels', '/customoptionrules', '/shippingmethods', '/googletagmanager', '/deliverysettings', '/themelayout', '/marketplaceexport', '/imagemanager', '/htmlsitemap', '/customers', '/stocksettings', '/analyticssettings', '/paymentmethods', '/seotools', '/xmlsitemap', '/robotstxt', '/onboarding', '/billing', '/clientdashboard', '/stores', '/ordercancel', '/customeractivity', '/cookieconsent'];
-      
-      if (adminPages.some(page => currentPath.startsWith(page))) {
-        // Customer trying to access admin area - redirect to storefront
-        navigate(createPageUrl('Storefront'));
-      } else {
-        // Customer trying to access customer area - redirect to customer dashboard
-        navigate(createPageUrl('CustomerDashboard'));
-      }
-    } else if (userRole === 'store_owner' || userRole === 'admin') {
-      // Check if store owner is trying to access customer areas - redirect to dashboard
-      const currentPath = window.location.pathname.toLowerCase();
-      const customerPages = ['/customerdashboard'];
-      
-      if (customerPages.some(page => currentPath.startsWith(page))) {
-        // Store owner trying to access customer area - redirect to main dashboard
-        console.log('🔄 Store owner trying to access customer area, redirecting to Dashboard');
-        navigate(createPageUrl('Dashboard'));
-      } else {
-        // Store owner trying to access admin area - redirect to dashboard (normal case)
-        navigate(createPageUrl('Dashboard'));
-      }
-    } else {
-      redirectToAuth(userRole);
-    }
-  };
 
   if (isLoading) {
     return (
