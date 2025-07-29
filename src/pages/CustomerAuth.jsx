@@ -42,18 +42,20 @@ export default function CustomerAuth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      // Only check auth status if user is not currently on customer auth page after a successful action
-      // This prevents unwanted redirects during the login process
-      const currentPath = window.location.pathname.toLowerCase();
-      const isOnCustomerAuthPage = currentPath === '/customerauth' || currentPath.endsWith('/customerauth');
+      // Check if customer is already logged in (not store owner)
+      const customerToken = localStorage.getItem('customer_auth_token');
+      const customerUserData = localStorage.getItem('customer_user_data');
       
-      if (!isOnCustomerAuthPage) {
-        checkAuthStatus();
-      } else {
-        // On customer auth page, only check if user is already logged in to redirect them
-        const existingToken = apiClient.getToken();
-        if (existingToken && !apiClient.isLoggedOut) {
-          checkAuthStatus();
+      if (customerToken && customerUserData) {
+        try {
+          const userData = JSON.parse(customerUserData);
+          if (userData.role === 'customer') {
+            console.log('🔄 CustomerAuth.jsx: Customer already logged in, redirecting to storefront');
+            navigate(getStorefrontUrl());
+            return;
+          }
+        } catch (e) {
+          console.error('Error parsing customer data:', e);
         }
       }
     }

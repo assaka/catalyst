@@ -43,24 +43,21 @@ export default function Auth() {
     } else if (errorParam) {
       setError(getErrorMessage(errorParam));
     } else {
-      // Only check auth status once on initial load and only if user appears to be logged in
-      // Don't auto-redirect on every auth page visit to prevent loops
-      const currentPath = window.location.pathname.toLowerCase();
-      const isOnAuthPage = currentPath === '/auth' || currentPath.endsWith('/auth');
-      const existingToken = apiClient.getToken();
-      const hasUserLoggedOutFlag = localStorage.getItem('user_logged_out') === 'true';
+      // Check if store owner is already logged in (not customer)
+      const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+      const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
       
-      // Only check auth status if:
-      // 1. User has a token AND
-      // 2. User hasn't explicitly logged out AND  
-      // 3. User hasn't just completed a login action
-      if (existingToken && !apiClient.isLoggedOut && !hasUserLoggedOutFlag && !localStorage.getItem('just_logged_in')) {
-        // Add a small delay to prevent race conditions
-        setTimeout(() => {
-          if (isOnAuthPage) {
-            checkAuthStatus();
+      if (storeOwnerToken && storeOwnerUserData) {
+        try {
+          const userData = JSON.parse(storeOwnerUserData);
+          if (userData.role === 'store_owner' || userData.role === 'admin') {
+            console.log('🔄 Auth.jsx: Store owner already logged in, redirecting to Dashboard');
+            navigate(createPageUrl("Dashboard"));
+            return;
           }
-        }, 200);
+        } catch (e) {
+          console.error('Error parsing store owner data:', e);
+        }
       }
     }
 

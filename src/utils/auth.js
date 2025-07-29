@@ -146,8 +146,9 @@ export const clearRoleBasedAuthData = (role) => {
 export const setRoleBasedAuthData = (user, token) => {
   console.log('🔧 Setting auth data for:', user.role);
   
-  const currentActiveRole = localStorage.getItem('session_role');
-  const isFirstLogin = !currentActiveRole;
+  // Check if there's already a different role logged in
+  const existingCustomerToken = localStorage.getItem('customer_auth_token');
+  const existingStoreOwnerToken = localStorage.getItem('store_owner_auth_token');
   
   // Store role-specific data separately to maintain both sessions
   if (user.role === 'customer') {
@@ -156,15 +157,16 @@ export const setRoleBasedAuthData = (user, token) => {
     localStorage.setItem('customer_session_id', generateSessionId());
     console.log('✅ Customer session stored separately');
     
-    // Only set as active session if this is the first login
-    if (isFirstLogin) {
+    // If no store owner is logged in, set customer as active
+    if (!existingStoreOwnerToken) {
       localStorage.setItem('auth_token', token);
       localStorage.setItem('user_data', JSON.stringify(user));
       localStorage.setItem('session_role', user.role);
       apiClient.setToken(token);
-      console.log('✅ Customer set as active session (first login)');
+      console.log('✅ Customer set as active session');
     } else {
-      console.log('🔄 Customer session stored but keeping existing active session:', currentActiveRole);
+      console.log('🔄 Customer session stored, but store owner remains active');
+      // Keep store owner active - don't change auth_token
     }
     
   } else if (user.role === 'store_owner' || user.role === 'admin') {
@@ -173,16 +175,12 @@ export const setRoleBasedAuthData = (user, token) => {
     localStorage.setItem('store_owner_session_id', generateSessionId());
     console.log('✅ Store owner session stored separately');
     
-    // Only set as active session if this is the first login
-    if (isFirstLogin) {
-      localStorage.setItem('auth_token', token);
-      localStorage.setItem('user_data', JSON.stringify(user));
-      localStorage.setItem('session_role', user.role);
-      apiClient.setToken(token);
-      console.log('✅ Store owner set as active session (first login)');
-    } else {
-      console.log('🔄 Store owner session stored but keeping existing active session:', currentActiveRole);
-    }
+    // Always set store owner as active when they login
+    localStorage.setItem('auth_token', token);
+    localStorage.setItem('user_data', JSON.stringify(user));
+    localStorage.setItem('session_role', user.role);
+    apiClient.setToken(token);
+    console.log('✅ Store owner set as active session');
   }
   
   localStorage.setItem('session_created_at', new Date().toISOString());
