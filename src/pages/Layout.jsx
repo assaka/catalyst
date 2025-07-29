@@ -535,7 +535,7 @@ export default function Layout({ children, currentPageName }) {
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56">
-                <DropdownMenuLabel>My Account5 - {user.role} - {user.name}</DropdownMenuLabel>
+                <DropdownMenuLabel>{user?.first_name || user?.name || user?.email} ({user?.role})</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => window.open(createPageUrl("Storefront"), '_blank')}>
                     <ShoppingBag className="mr-2 h-4 w-4" />
@@ -582,7 +582,7 @@ export default function Layout({ children, currentPageName }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
-                  {user?.full_name || 'User'}
+                  {user?.first_name || user?.full_name || user?.name || user?.email} ({user?.role})
                 </p>
                 <p className="text-xs text-gray-500 truncate">{user?.email}</p>
               </div>
@@ -685,7 +685,7 @@ export default function Layout({ children, currentPageName }) {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user?.name || 'User'}</p>
+                    <p className="text-sm font-medium leading-none">{user?.first_name || user?.name || user?.email} ({user?.role})</p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user?.email}
                     </p>
