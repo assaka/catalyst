@@ -201,6 +201,7 @@ function _getCurrentPage(url) {
 
 import RoleProtectedRoute from '../components/RoleProtectedRoute.jsx';
 import { StoreProvider } from '../components/storefront/StoreProvider.jsx';
+import StorefrontLayout from '../components/storefront/StorefrontLayout.jsx';
 
 // Helper function to determine if route needs StoreProvider
 function isPublicRoute(pathname) {
@@ -213,8 +214,8 @@ function PagesContent() {
     const currentPage = _getCurrentPage(location.pathname);
     const needsStoreProvider = isPublicRoute(location.pathname);
     
-    const content = (
-        <Layout currentPageName={currentPage}>
+    const content = needsStoreProvider ? (
+        <StorefrontLayout>
             <Routes>            
                 {/* Root redirect */}
                 <Route path="/" element={<Landing />} />
@@ -511,6 +512,200 @@ function PagesContent() {
                 
                 <Route path="/public/:storeCode/cookie-consent" element={<CookieConsent />} />
                 
+                
+                {/* =========================== */}
+                {/* SPECIAL ROUTES */}
+                {/* =========================== */}
+                
+                <Route path="/landing" element={<Landing />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/billing" element={<Billing />} />
+                <Route path="/client-dashboard" element={<ClientDashboard />} />
+                
+            </Routes>
+        </StorefrontLayout>
+    ) : (
+        <Layout currentPageName={currentPage}>
+            <Routes>            
+                {/* Root redirect */}
+                <Route path="/" element={<Landing />} />
+                
+                {/* =========================== */}
+                {/* NEW URL STRUCTURE */}
+                {/* =========================== */}
+                
+                {/* ADMIN ROUTES */}
+                <Route path="/admin/login" element={
+                    <RoleProtectedRoute requiresAuth={false}>
+                        <Auth />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/dashboard" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Dashboard />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/products" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Products />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/categories" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Categories />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/orders" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Orders />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/customers" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Customers />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/settings" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Settings />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/analytics" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <AnalyticsSettings />
+                    </RoleProtectedRoute>
+                } />
+                
+                {/* =========================== */}
+                {/* ADDITIONAL ADMIN ROUTES */}
+                {/* =========================== */}
+                
+                <Route path="/admin/attributes" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Attributes />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/plugins" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Plugins />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/cms-blocks" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CmsBlocks />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/tax" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Tax />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/coupons" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Coupons />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/cms-pages" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CmsPages />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/product-tabs" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ProductTabs />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/product-labels" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ProductLabels />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/custom-option-rules" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CustomOptionRules />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/shipping-methods" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ShippingMethods />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/google-tag-manager" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <GoogleTagManager />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/delivery-settings" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <DeliverySettings />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/theme-layout" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ThemeLayout />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/marketplace-export" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <MarketplaceExport />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/image-manager" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ImageManager />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/stock-settings" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <StockSettings />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/payment-methods" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PaymentMethods />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/stores" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Stores />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/customer-activity" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CustomerActivity />
+                    </RoleProtectedRoute>
+                } />
                 
                 {/* =========================== */}
                 {/* SPECIAL ROUTES */}

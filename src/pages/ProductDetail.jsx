@@ -50,9 +50,9 @@ const ProductLabelComponent = ({ label }) => {
 };
 
 export default function ProductDetail() {
-  const { slug: paramSlug } = useParams();
+  const { slug: paramSlug, productSlug: routeProductSlug } = useParams();
   const [searchParams] = useSearchParams();
-  const slug = searchParams.get('slug') || paramSlug;
+  const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
   
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
