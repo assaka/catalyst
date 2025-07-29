@@ -74,12 +74,21 @@ const RoleProtectedRoute = ({
         }
       }
 
-      // If allowedRoles is specified and user role is not in the list, allow access anyway
-      // This allows both store owners and customers to access their respective dashboards
-      // The page content will determine what to show based on the user's role
+      // Check if user role is allowed for this route
       if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser.role)) {
-        console.log(`ℹ️ User role '${currentUser.role}' not in allowed roles: ${allowedRoles}, but allowing access - page will handle role-specific content`);
-        // Don't block access - let the page handle role-specific content
+        console.log(`🚫 Access denied: User role '${currentUser.role}' not in allowed roles:`, allowedRoles);
+        
+        // Redirect based on user role
+        if (currentUser.role === 'customer') {
+          console.log('🔄 RoleProtectedRoute: Redirecting customer to CustomerDashboard');
+          navigate(createPageUrl('CustomerDashboard'));
+        } else if (currentUser.role === 'store_owner' || currentUser.role === 'admin') {
+          console.log('🔄 RoleProtectedRoute: Redirecting store owner to Dashboard');
+          navigate(createPageUrl('Dashboard'));
+        } else {
+          redirectToAuth(currentUser.role);
+        }
+        return;
       }
 
       // Verify with backend that user still exists and is active
