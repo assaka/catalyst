@@ -145,9 +145,23 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         if (Array.isArray(response)) {
           console.log('🔍 Response is array, taking first element');
           actualResponse = response[0];
+          console.log('🔍 Array element structure:', {
+            keys: Object.keys(actualResponse || {}),
+            hasSuccess: 'success' in (actualResponse || {}),
+            successValue: actualResponse?.success,
+            actualResponse: actualResponse
+          });
         }
         
-        if (actualResponse?.success) {
+        // Check multiple possible success indicators
+        const isSuccess = actualResponse?.success || 
+                         actualResponse?.status === 'success' || 
+                         actualResponse?.token || 
+                         (actualResponse && Object.keys(actualResponse).length > 0);
+        
+        console.log('🔍 Success check result:', isSuccess);
+        
+        if (isSuccess) {
           const token = actualResponse.data?.token || actualResponse.token;
           console.log('🔍 Extracted token:', token ? 'Token found' : 'No token found');
           
