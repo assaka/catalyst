@@ -648,7 +648,7 @@ router.post('/customer/register', [
       });
     }
 
-    const { email, password, first_name, last_name, phone, send_welcome_email = false, address_data } = req.body;
+    const { email, password, first_name, last_name, phone, send_welcome_email = false, address_data, store_id } = req.body;
 
     // Check if customer exists with same email
     const existingCustomer = await Customer.findOne({ where: { email } });
@@ -659,6 +659,18 @@ router.post('/customer/register', [
       });
     }
 
+    // Determine store_id - use provided store_id or find default store
+    let customerStoreId = store_id;
+    if (!customerStoreId) {
+      // Get the first active store as default
+      const { Store } = require('../models');
+      const defaultStore = await Store.findOne({ where: { active: true } });
+      if (defaultStore) {
+        customerStoreId = defaultStore.id;
+        console.log('🏪 Assigned customer to default store:', defaultStore.name, defaultStore.id);
+      }
+    }
+
     // Create customer
     const customer = await Customer.create({
       email,
@@ -667,7 +679,8 @@ router.post('/customer/register', [
       last_name,
       phone,
       role: 'customer',
-      account_type: 'individual'
+      account_type: 'individual',
+      store_id: customerStoreId
     });
 
     // Create addresses if provided
@@ -873,7 +886,7 @@ router.post('/customer/login', [
 router.get('/debug/customers', async (req, res) => {
   try {
     const customers = await Customer.findAll({
-      attributes: ['id', 'email', 'first_name', 'last_name', 'created_at'],
+      attributes: ['id', 'email', 'first_name', 'last_name', 'store_id', 'created_at'],
       limit: 10
     });
     
@@ -881,6 +894,35 @@ router.get('/debug/customers', async (req, res) => {
       success: true,
       count: customers.length,
       customers: customers
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Fix endpoint to assign store_id to customers with null store_id
+router.post('/debug/fix-customer-stores', async (req, res) => {
+  try {
+    const { Store } = require('../models');
+    
+    // Get the first active store as default
+    const defaultStore = await Store.findOne({ where: { active: true } });
+    if (!defaultStore) {
+      return res.status(400).json({ error: 'No active store found' });
+    }
+    
+    // Update customers with null store_id
+    const result = await Customer.update(
+      { store_id: defaultStore.id },
+      { where: { store_id: null } }
+    );
+    
+    console.log('🏪 Fixed customers with null store_id, assigned to store:', defaultStore.name);
+    
+    res.json({
+      success: true,
+      message: `Updated ${result[0]} customers with store_id: ${defaultStore.id}`,
+      store: { id: defaultStore.id, name: defaultStore.name }
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
