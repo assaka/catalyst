@@ -6,7 +6,7 @@ import { createPageUrl } from "@/utils";
 import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
-import { switchToRole, hasBothRolesLoggedIn } from "@/utils/auth";
+import { switchToRole, hasBothRolesLoggedIn, forceActivateRole } from "@/utils/auth";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
@@ -252,7 +252,7 @@ export default function Layout({ children, currentPageName }) {
     if (bothRolesLoggedIn) {
       if (currentPageName === 'Dashboard' && user.role === 'customer') {
         console.log('🔄 Layout.jsx: Customer active but accessing Dashboard, switching to store owner');
-        switchToRole('store_owner');
+        forceActivateRole('store_owner');
         // Reload to get updated user data
         window.location.reload();
         return (
@@ -264,7 +264,7 @@ export default function Layout({ children, currentPageName }) {
       
       if (currentPageName === 'CustomerDashboard' && (user.role === 'store_owner' || user.role === 'admin')) {
         console.log('🔄 Layout.jsx: Store owner active but accessing CustomerDashboard, switching to customer');
-        switchToRole('customer');
+        forceActivateRole('customer');
         // Reload to get updated user data
         window.location.reload();
         return (

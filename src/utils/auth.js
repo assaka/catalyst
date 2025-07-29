@@ -141,10 +141,13 @@ export const clearRoleBasedAuthData = (role) => {
 };
 
 /**
- * Set role-based authentication data - dual session approach
+ * Set role-based authentication data - truly independent dual sessions
  */
 export const setRoleBasedAuthData = (user, token) => {
   console.log('🔧 Setting auth data for:', user.role);
+  
+  const currentActiveRole = localStorage.getItem('session_role');
+  const isFirstLogin = !currentActiveRole;
   
   // Store role-specific data separately to maintain both sessions
   if (user.role === 'customer') {
@@ -152,20 +155,37 @@ export const setRoleBasedAuthData = (user, token) => {
     localStorage.setItem('customer_user_data', JSON.stringify(user));
     localStorage.setItem('customer_session_id', generateSessionId());
     console.log('✅ Customer session stored separately');
+    
+    // Only set as active session if this is the first login
+    if (isFirstLogin) {
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('user_data', JSON.stringify(user));
+      localStorage.setItem('session_role', user.role);
+      apiClient.setToken(token);
+      console.log('✅ Customer set as active session (first login)');
+    } else {
+      console.log('🔄 Customer session stored but keeping existing active session:', currentActiveRole);
+    }
+    
   } else if (user.role === 'store_owner' || user.role === 'admin') {
     localStorage.setItem('store_owner_auth_token', token);
     localStorage.setItem('store_owner_user_data', JSON.stringify(user));
     localStorage.setItem('store_owner_session_id', generateSessionId());
     console.log('✅ Store owner session stored separately');
+    
+    // Only set as active session if this is the first login
+    if (isFirstLogin) {
+      localStorage.setItem('auth_token', token);
+      localStorage.setItem('user_data', JSON.stringify(user));
+      localStorage.setItem('session_role', user.role);
+      apiClient.setToken(token);
+      console.log('✅ Store owner set as active session (first login)');
+    } else {
+      console.log('🔄 Store owner session stored but keeping existing active session:', currentActiveRole);
+    }
   }
   
-  // Set the active session data
-  localStorage.setItem('auth_token', token);
-  localStorage.setItem('user_data', JSON.stringify(user));
-  localStorage.setItem('session_role', user.role);
   localStorage.setItem('session_created_at', new Date().toISOString());
-  
-  console.log('✅ Active session set for:', user.role);
 };
 
 /**
@@ -307,5 +327,41 @@ export const getUserDataForRole = (role) => {
     console.error(`Error parsing user data for role ${role}:`, error);
   }
   return null;
+};
+
+/**
+ * Force set a role as the active session (used for explicit switching)
+ */
+export const forceActivateRole = (targetRole) => {
+  console.log('🔄 Force activating role:', targetRole);
+  
+  if (targetRole === 'customer') {
+    const customerToken = localStorage.getItem('customer_auth_token');
+    const customerUserData = localStorage.getItem('customer_user_data');
+    
+    if (customerToken && customerUserData) {
+      localStorage.setItem('auth_token', customerToken);
+      localStorage.setItem('user_data', customerUserData);
+      localStorage.setItem('session_role', 'customer');
+      apiClient.setToken(customerToken);
+      console.log('✅ Forced customer session active');
+      return true;
+    }
+  } else if (targetRole === 'store_owner' || targetRole === 'admin') {
+    const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+    const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
+    
+    if (storeOwnerToken && storeOwnerUserData) {
+      localStorage.setItem('auth_token', storeOwnerToken);
+      localStorage.setItem('user_data', storeOwnerUserData);
+      localStorage.setItem('session_role', targetRole);
+      apiClient.setToken(storeOwnerToken);
+      console.log('✅ Forced store owner session active');
+      return true;
+    }
+  }
+  
+  console.log('❌ Failed to force activate role:', targetRole);
+  return false;
 };
 
