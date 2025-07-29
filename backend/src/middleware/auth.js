@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User } = require('../models');
+const { User, Customer } = require('../models');
 const { supabase } = require('../database/connection');
 
 const authMiddleware = async (req, res, next) => {
@@ -17,10 +17,15 @@ const authMiddleware = async (req, res, next) => {
     
     let user;
     
+    // Determine which table to query based on role in JWT
+    const isCustomer = decoded.role === 'customer';
+    const tableName = isCustomer ? 'customers' : 'users';
+    const ModelClass = isCustomer ? Customer : User;
+    
     // Try Supabase first
     try {
       const { data: supabaseUser, error } = await supabase
-        .from('users')
+        .from(tableName)
         .select('id, email, first_name, last_name, phone, avatar_url, is_active, email_verified, last_login, role, account_type, created_at, updated_at')
         .eq('id', decoded.id)
         .single();
@@ -31,10 +36,10 @@ const authMiddleware = async (req, res, next) => {
       
       user = supabaseUser;
     } catch (supabaseError) {
-      console.error('❌ Supabase auth error, falling back to Sequelize:', supabaseError);
+      console.error(`❌ Supabase auth error for ${tableName}, falling back to Sequelize:`, supabaseError);
       
-      // Fallback to Sequelize
-      user = await User.findByPk(decoded.id);
+      // Fallback to Sequelize with appropriate model
+      user = await ModelClass.findByPk(decoded.id);
     }
     
     if (!user) {
