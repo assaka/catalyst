@@ -28,11 +28,21 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
       const existingToken = localStorage.getItem(tokenKey);
       
+      console.log('🔍 Checking existing token:', { 
+        role, 
+        tokenKey, 
+        hasToken: !!existingToken, 
+        loggedOut: localStorage.getItem('user_logged_out') 
+      });
+      
       if (existingToken && localStorage.getItem('user_logged_out') !== 'true') {
+        console.log('🔍 Found valid existing token, setting up...');
         // Clear any logout flag and set token
         localStorage.removeItem('user_logged_out');
         apiClient.setToken(existingToken);
         checkAuthStatus();
+      } else {
+        console.log('🔍 No valid existing token found');
       }
     }
   }, [searchParams, role]);
@@ -122,19 +132,32 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         );
         
         console.log('🔍 Login response:', response);
+        console.log('🔍 Response structure:', {
+          hasSuccess: 'success' in response,
+          success: response.success,
+          hasData: 'data' in response,
+          hasToken: response.token || response.data?.token,
+          keys: Object.keys(response)
+        });
         
         if (response.success) {
           const token = response.data?.token || response.token;
           console.log('🔍 Extracted token:', token ? 'Token found' : 'No token found');
           
           if (token) {
+            console.log('🔍 Processing login token:', { role, tokenLength: token.length });
+            
             // Clear logged out flag before setting token
             localStorage.removeItem('user_logged_out');
+            console.log('🔍 Cleared user_logged_out flag');
             
             // Store token based on role
             const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
             localStorage.setItem(tokenKey, token);
+            console.log('🔍 Stored token in localStorage with key:', tokenKey);
+            
             apiClient.setToken(token);
+            console.log('🔍 Set token in apiClient, isLoggedOut:', apiClient.isLoggedOut);
             
             // For customers, navigate immediately without verification
             if (role === 'customer') {
@@ -223,6 +246,12 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         }
       }
     } catch (error) {
+      console.error('🔍 Auth error:', error);
+      console.error('🔍 Error details:', {
+        message: error.message,
+        status: error.status,
+        data: error.data
+      });
       setError(error.message || `${isLogin ? 'Login' : 'Registration'} failed`);
     } finally {
       setLoading(false);
