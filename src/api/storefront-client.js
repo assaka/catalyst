@@ -125,19 +125,18 @@ class StorefrontApiClient {
 
   // Customer request method (optional authentication)
   async customerRequest(method, endpoint, data = null, customHeaders = {}) {
-    // Add session_id to the request if not authenticated
+    // Add session_id to the request if not authenticated or if token is invalid
     const token = this.getCustomerToken();
     let finalEndpoint = endpoint;
     
-    if (!token) {
-      // Ensure we have a fresh session ID
-      this.sessionId = this.getOrCreateSessionId();
-      
-      if (this.sessionId) {
-        // For non-authenticated requests, add session_id as a query parameter
-        const separator = endpoint.includes('?') ? '&' : '?';
-        finalEndpoint = `${endpoint}${separator}session_id=${this.sessionId}`;
-      }
+    // Always ensure we have a session ID for guest functionality
+    this.sessionId = this.getOrCreateSessionId();
+    
+    // If no token or we need guest session support, add session_id
+    if (!token || this.sessionId) {
+      // For non-authenticated or guest requests, add session_id as a query parameter
+      const separator = endpoint.includes('?') ? '&' : '?';
+      finalEndpoint = `${endpoint}${separator}session_id=${this.sessionId}`;
     }
     
     const url = this.buildAuthUrl(finalEndpoint);
@@ -158,8 +157,8 @@ class StorefrontApiClient {
     };
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-      // Also add session_id to the body data if not authenticated
-      if (!token && this.sessionId) {
+      // Also add session_id to the body data if not authenticated or for guest support
+      if ((!token || this.sessionId) && this.sessionId) {
         data = { ...data, session_id: this.sessionId };
       }
       config.body = JSON.stringify(data);

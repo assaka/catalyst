@@ -423,7 +423,7 @@ export default function StorefrontLayout({ children }) {
                                                         ) : (
                                                             <>
                                                                 <DropdownMenuItem onClick={() => {
-                                                                    window.location.href = createPageUrl('Dashboard');
+                                                                    window.location.href = '/admin/dashboard';
                                                                 }}>
                                                                     <Settings className="mr-2 h-4 w-4" />
                                                                     <span>Admin Dashboard</span>
@@ -528,7 +528,7 @@ export default function StorefrontLayout({ children }) {
                                             <button
                                                 onClick={() => {
                                                     if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
-                                                        window.location.href = createPageUrl('Dashboard');
+                                                        window.location.href = '/admin/dashboard';
                                                     } else {
                                                         navigate(createPublicUrl(store.slug, 'CUSTOMER_ACCOUNT'));
                                                     }
