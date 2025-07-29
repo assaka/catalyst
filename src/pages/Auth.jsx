@@ -90,6 +90,8 @@ export default function Auth() {
       console.log('🔄 Skipping checkAuthStatus redirect - user just logged in');
       return;
     }
+    
+    console.log('🔍 Auth.jsx checkAuthStatus: Starting check, current path:', window.location.pathname);
 
     // Debug: decode JWT token to see what's in it
     const token = apiClient.getToken();
