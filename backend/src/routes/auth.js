@@ -662,9 +662,9 @@ router.post('/customer/register', [
     // Determine store_id - use provided store_id or find default store
     let customerStoreId = store_id;
     if (!customerStoreId) {
-      // Get the first active store as default
+      // Get the first available store as default
       const { Store } = require('../models');
-      const defaultStore = await Store.findOne({ where: { active: true } });
+      const defaultStore = await Store.findOne();
       if (defaultStore) {
         customerStoreId = defaultStore.id;
         console.log('🏪 Assigned customer to default store:', defaultStore.name, defaultStore.id);
@@ -905,8 +905,8 @@ router.post('/debug/fix-customer-stores', async (req, res) => {
   try {
     const { Store } = require('../models');
     
-    // Get the first active store as default
-    const defaultStore = await Store.findOne({ where: { active: true } });
+    // Get the first available store as default
+    const defaultStore = await Store.findOne();
     if (!defaultStore) {
       return res.status(400).json({ error: 'No active store found' });
     }
