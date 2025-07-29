@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Product } from "@/api/entities";
+import { StorefrontProduct } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 import couponService from "@/services/couponService";
@@ -226,7 +226,7 @@ export default function Checkout() {
         for (const item of cartItems) {
           if (!productDetails[item.product_id]) {
             try {
-              const result = await Product.filter({ id: item.product_id });
+              const result = await StorefrontProduct.filter({ id: item.product_id });
               const products = Array.isArray(result) ? result : [];
               if (products.length > 0) {
                 productDetails[item.product_id] = products[0];

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { useStore } from '@/components/storefront/StoreProvider';
-import { Product } from '@/api/entities';
+import { StorefrontProduct } from '@/api/storefront-entities';
 import { Coupon } from '@/api/entities';
 import { Tax } from '@/api/entities';
 import { User } from '@/api/entities';
@@ -221,7 +221,7 @@ export default function Cart() {
             // Fetch products individually to avoid object parameter issues
             const products = await retryApiCall(async () => {
                 const productPromises = productIds.map(id => 
-                    Product.filter({ id: id }).catch(error => {
+                    StorefrontProduct.filter({ id: id }).catch(error => {
                         console.error(`Failed to fetch product ${id}:`, error);
                         return null;
                     })

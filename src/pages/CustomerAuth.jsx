@@ -144,6 +144,12 @@ export default function CustomerAuth() {
 
     try {
       if (isLogin) {
+        // Clear any existing admin tokens before customer login
+        apiClient.clearToken();
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_data');
+        localStorage.removeItem('session_role');
+        
         // Login with customer role
         const response = await AuthService.login(formData.email, formData.password, formData.rememberMe, 'customer');
         console.log("✅ CustomerAuth.jsx: Login successful:", response);

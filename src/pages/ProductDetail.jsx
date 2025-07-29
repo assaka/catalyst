@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Product } from "@/api/entities";
+import { StorefrontProduct } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
@@ -104,14 +104,14 @@ export default function ProductDetail() {
       
       // First try to find by slug
       let products = await cachedApiCall(cacheKey, () =>
-        Product.filter({ store_id: store.id, slug: slug, status: 'active' })
+        StorefrontProduct.filter({ store_id: store.id, slug: slug, status: 'active' })
       );
       
       // If no product found by slug, try searching by SKU as fallback
       if (!products || products.length === 0) {
         const skuCacheKey = `product-detail-sku-${slug}-${store.id}`;
         products = await cachedApiCall(skuCacheKey, () =>
-          Product.filter({ store_id: store.id, sku: slug, status: 'active' })
+          StorefrontProduct.filter({ store_id: store.id, sku: slug, status: 'active' })
         );
       }
 

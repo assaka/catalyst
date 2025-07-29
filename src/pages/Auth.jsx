@@ -289,6 +289,11 @@ export default function Auth() {
     setLoading(true);
     try {
       if (isLogin) {
+        // Clear any existing customer tokens before store owner login
+        localStorage.removeItem('customer_auth_token');
+        localStorage.removeItem('customer_user_data');
+        localStorage.removeItem('session_role');
+        
         console.log('🔍 HAMID DEBUG: About to call AuthService.login with role: store_owner');
         console.log('🔍 HAMID DEBUG: FormData:', { email: formData.email, rememberMe: formData.rememberMe });
         const response = await AuthService.login(formData.email, formData.password, formData.rememberMe, 'store_owner');
