@@ -6,6 +6,7 @@ import { createPageUrl } from "@/utils";
 import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
+import { switchToRole, hasBothRolesLoggedIn } from "@/utils/auth";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
@@ -151,6 +152,9 @@ export default function Layout({ children, currentPageName }) {
       console.log('🔍 Layout.jsx: Current page:', currentPageName);
       console.log('🔍 Layout.jsx: Current token:', !!apiClient.getToken());
       console.log('🔍 Layout.jsx: Session role:', localStorage.getItem('session_role'));
+      console.log('🔍 Layout.jsx: Both roles logged in:', hasBothRolesLoggedIn());
+      console.log('🔍 Layout.jsx: Customer token exists:', !!localStorage.getItem('customer_auth_token'));
+      console.log('🔍 Layout.jsx: Store owner token exists:', !!localStorage.getItem('store_owner_auth_token'));
       
       let userData = await retryApiCall(() => User.me());
       
@@ -240,28 +244,56 @@ export default function Layout({ children, currentPageName }) {
       );
   }
   
-  // Handle role-based dashboard access
+  // Handle role-based dashboard access with automatic switching
   if (!isLoading && user) {
-    // Check if customer is trying to access admin dashboard
-    if (currentPageName === 'Dashboard' && user.role === 'customer') {
-      console.log('🔄 Layout.jsx: Customer trying to access admin Dashboard, redirecting to CustomerDashboard');
-      navigate(createPageUrl('CustomerDashboard'));
-      return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-          <p className="text-lg text-gray-700 mb-4">Redirecting to Customer Dashboard...</p>
-        </div>
-      );
-    }
+    const bothRolesLoggedIn = hasBothRolesLoggedIn();
     
-    // Check if store owner is trying to access customer dashboard
-    if (currentPageName === 'CustomerDashboard' && (user.role === 'store_owner' || user.role === 'admin')) {
-      console.log('🔄 Layout.jsx: Store owner trying to access CustomerDashboard, redirecting to Dashboard');
-      navigate(createPageUrl('Dashboard'));
-      return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-          <p className="text-lg text-gray-700 mb-4">Redirecting to Admin Dashboard...</p>
-        </div>
-      );
+    // If both roles are logged in, switch to appropriate role based on page
+    if (bothRolesLoggedIn) {
+      if (currentPageName === 'Dashboard' && user.role === 'customer') {
+        console.log('🔄 Layout.jsx: Customer active but accessing Dashboard, switching to store owner');
+        switchToRole('store_owner');
+        // Reload to get updated user data
+        window.location.reload();
+        return (
+          <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+            <p className="text-lg text-gray-700 mb-4">Switching to Admin Dashboard...</p>
+          </div>
+        );
+      }
+      
+      if (currentPageName === 'CustomerDashboard' && (user.role === 'store_owner' || user.role === 'admin')) {
+        console.log('🔄 Layout.jsx: Store owner active but accessing CustomerDashboard, switching to customer');
+        switchToRole('customer');
+        // Reload to get updated user data
+        window.location.reload();
+        return (
+          <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+            <p className="text-lg text-gray-700 mb-4">Switching to Customer Dashboard...</p>
+          </div>
+        );
+      }
+    } else {
+      // If only one role is logged in, redirect to appropriate dashboard
+      if (currentPageName === 'Dashboard' && user.role === 'customer') {
+        console.log('🔄 Layout.jsx: Customer trying to access admin Dashboard, redirecting to CustomerDashboard');
+        navigate(createPageUrl('CustomerDashboard'));
+        return (
+          <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+            <p className="text-lg text-gray-700 mb-4">Redirecting to Customer Dashboard...</p>
+          </div>
+        );
+      }
+      
+      if (currentPageName === 'CustomerDashboard' && (user.role === 'store_owner' || user.role === 'admin')) {
+        console.log('🔄 Layout.jsx: Store owner trying to access CustomerDashboard, redirecting to Dashboard');
+        navigate(createPageUrl('Dashboard'));
+        return (
+          <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+            <p className="text-lg text-gray-700 mb-4">Redirecting to Admin Dashboard...</p>
+          </div>
+        );
+      }
     }
   }
 
