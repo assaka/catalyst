@@ -328,27 +328,11 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                {/* Customer account */}
-                <Route path="/public/:storeCode/account" element={
-                    <RoleProtectedRoute allowedRoles={['customer']}>
-                        <CustomerDashboard />
-                    </RoleProtectedRoute>
-                } />
-                <Route path="/public/:storeCode/account/*" element={
-                    <RoleProtectedRoute allowedRoles={['customer']}>
-                        <CustomerDashboard />
-                    </RoleProtectedRoute>
-                } />
-                <Route path="/public/:storeCode/my-account" element={
-                    <RoleProtectedRoute allowedRoles={['customer']}>
-                        <CustomerDashboard />
-                    </RoleProtectedRoute>
-                } />
-                <Route path="/public/:storeCode/my-account/*" element={
-                    <RoleProtectedRoute allowedRoles={['customer']}>
-                        <CustomerDashboard />
-                    </RoleProtectedRoute>
-                } />
+                {/* Customer account - shows login form if not authenticated, dashboard if authenticated */}
+                <Route path="/public/:storeCode/account" element={<CustomerAuth />} />
+                <Route path="/public/:storeCode/account/*" element={<CustomerAuth />} />
+                <Route path="/public/:storeCode/my-account" element={<CustomerAuth />} />
+                <Route path="/public/:storeCode/my-account/*" element={<CustomerAuth />} />
                 
                 {/* Customer orders */}
                 <Route path="/public/:storeCode/orders" element={
