@@ -260,7 +260,7 @@ export default function StorefrontLayout({ children }) {
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="flex items-center justify-between h-16">
                                 <div className="flex items-center">
-                                    <Link to={createPageUrl(`Storefront?slug=${store.slug}`)} className="flex items-center space-x-2">
+                                    <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="flex items-center space-x-2">
                                         {store?.logo_url ? (
                                             <img src={store.logo_url} alt={store.name || 'Store Logo'} className="h-8 w-8 object-contain" />
                                         ) : (
@@ -598,7 +598,7 @@ export default function StorefrontLayout({ children }) {
                             <ul className="mt-4 space-y-2">
                                 <li><Link to="#" className="text-base text-gray-300 hover:text-white">Contact Us</Link></li>
                                 <li><Link to="#" className="text-base text-gray-300 hover:text-white">Shipping & Returns</Link></li>
-                                <li><Link to={createPageUrl('HtmlSitemap')} className="text-base text-gray-300 hover:text-white">Sitemap</Link></li>
+                                <li><Link to={createPublicUrl(store.slug, 'SITEMAP')} className="text-base text-gray-300 hover:text-white">Sitemap</Link></li>
                             </ul>
                         </div>
                         <div>

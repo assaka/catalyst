@@ -1,9 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '@/utils';
+import { createPublicUrl } from '@/utils/urlUtils';
+import { useStore } from '@/components/storefront/StoreProvider';
 import { ChevronRight, Home } from 'lucide-react';
 
 export default function Breadcrumb({ items = [] }) {
+    const { store } = useStore();
+    
     if (!items || items.length === 0) {
         return null;
     }
@@ -11,7 +14,7 @@ export default function Breadcrumb({ items = [] }) {
     return (
         <nav className="flex items-center space-x-1 text-sm text-gray-500 mb-6" aria-label="Breadcrumb">
             <Link 
-                to={createPageUrl('Storefront')} 
+                to={createPublicUrl(store?.slug || 'default', 'STOREFRONT')} 
                 className="flex items-center hover:text-blue-600 transition-colors"
             >
                 <Home className="w-4 h-4 mr-1" />
