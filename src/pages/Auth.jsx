@@ -199,6 +199,7 @@ export default function Auth() {
             if (currentPath === '/customerdashboard') {
               return; // Allow access to customer dashboard
             } else {
+              // Customer trying to access admin areas - redirect to storefront
               navigate(createPageUrl("Storefront"));
               return;
             }
@@ -346,7 +347,11 @@ export default function Auth() {
             setTimeout(() => {
               console.log('🔄 Auth.jsx: Executing redirect to Dashboard');
               localStorage.removeItem('just_logged_in');
-              navigate(createPageUrl("Dashboard"));
+              
+              // Ensure we navigate to the correct dashboard
+              const dashboardUrl = createPageUrl("Dashboard");
+              console.log('🔄 Auth.jsx: Navigating to:', dashboardUrl);
+              navigate(dashboardUrl);
             }, 100);
           }
           // Note: No fallback to checkAuthStatus here to prevent unwanted redirects

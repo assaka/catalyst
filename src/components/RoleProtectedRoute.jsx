@@ -136,9 +136,30 @@ const RoleProtectedRoute = ({
 
     // Default redirection based on user role
     if (userRole === 'customer') {
-      navigate(createPageUrl('CustomerDashboard'));
+      // Check if customer is trying to access admin areas - redirect to storefront
+      const currentPath = window.location.pathname.toLowerCase();
+      const adminPages = ['/dashboard', '/products', '/categories', '/settings', '/attributes', '/plugins', '/cmsblocks', '/tax', '/orders', '/coupons', '/cmspages', '/producttabs', '/productlabels', '/customoptionrules', '/shippingmethods', '/googletagmanager', '/deliverysettings', '/themelayout', '/marketplaceexport', '/imagemanager', '/htmlsitemap', '/customers', '/stocksettings', '/analyticssettings', '/paymentmethods', '/seotools', '/xmlsitemap', '/robotstxt', '/onboarding', '/billing', '/clientdashboard', '/stores', '/ordercancel', '/customeractivity', '/cookieconsent'];
+      
+      if (adminPages.some(page => currentPath.startsWith(page))) {
+        // Customer trying to access admin area - redirect to storefront
+        navigate(createPageUrl('Storefront'));
+      } else {
+        // Customer trying to access customer area - redirect to customer dashboard
+        navigate(createPageUrl('CustomerDashboard'));
+      }
     } else if (userRole === 'store_owner' || userRole === 'admin') {
-      navigate(createPageUrl('Dashboard'));
+      // Check if store owner is trying to access customer areas - redirect to dashboard
+      const currentPath = window.location.pathname.toLowerCase();
+      const customerPages = ['/customerdashboard'];
+      
+      if (customerPages.some(page => currentPath.startsWith(page))) {
+        // Store owner trying to access customer area - redirect to main dashboard
+        console.log('🔄 Store owner trying to access customer area, redirecting to Dashboard');
+        navigate(createPageUrl('Dashboard'));
+      } else {
+        // Store owner trying to access admin area - redirect to dashboard (normal case)
+        navigate(createPageUrl('Dashboard'));
+      }
     } else {
       redirectToAuth(userRole);
     }
