@@ -48,21 +48,40 @@ const RoleProtectedRoute = ({
 
       console.log('🔍 RoleProtectedRoute: Current user role:', currentUser?.role);
 
-      // Check if user role is allowed for this route
-      if (allowedRoles.length > 0 && !allowedRoles.includes(currentUser.role)) {
-        console.log(`🚫 Access denied: User role '${currentUser.role}' not in allowed roles:`, allowedRoles);
+      // Check if user has the required role token for this route
+      if (allowedRoles.length > 0) {
+        let hasRequiredRoleToken = false;
         
-        // Redirect based on user role
-        if (currentUser.role === 'customer') {
-          console.log('🔄 RoleProtectedRoute: Redirecting customer to CustomerDashboard');
-          navigate(createPageUrl('CustomerDashboard'));
-        } else if (currentUser.role === 'store_owner' || currentUser.role === 'admin') {
-          console.log('🔄 RoleProtectedRoute: Redirecting store owner to Dashboard');
-          navigate(createPageUrl('Dashboard'));
-        } else {
-          redirectToAuth(currentUser.role);
+        for (const requiredRole of allowedRoles) {
+          if (requiredRole === 'customer') {
+            const customerToken = localStorage.getItem('customer_auth_token');
+            if (customerToken) {
+              hasRequiredRoleToken = true;
+              break;
+            }
+          } else if (requiredRole === 'store_owner' || requiredRole === 'admin') {
+            const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+            if (storeOwnerToken) {
+              hasRequiredRoleToken = true;
+              break;
+            }
+          }
         }
-        return;
+        
+        if (!hasRequiredRoleToken) {
+          console.log(`🚫 Access denied: No valid token for required roles:`, allowedRoles);
+          
+          // Redirect to appropriate auth page based on required role
+          const requiresCustomerRole = allowedRoles.includes('customer');
+          if (requiresCustomerRole) {
+            console.log('🔄 RoleProtectedRoute: Redirecting to customer auth');
+            navigate(createPageUrl('CustomerAuth'));
+          } else {
+            console.log('🔄 RoleProtectedRoute: Redirecting to store owner auth');
+            navigate(createPageUrl('Auth'));
+          }
+          return;
+        }
       }
 
       // Verify with backend that user still exists and is active
