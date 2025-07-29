@@ -1263,6 +1263,7 @@ app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes); // Fallback for legacy paths
 
 // Public routes for guest access
+app.use('/api/public/auth', authRoutes); // Public auth endpoints (login, register, etc.)
 app.use('/api/public/stores', storeRoutes);
 app.use('/api/public/products', publicProductRoutes);
 app.use('/api/public/categories', publicCategoryRoutes);
