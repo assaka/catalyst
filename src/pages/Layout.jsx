@@ -6,7 +6,6 @@ import { createPageUrl } from "@/utils";
 import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
-import { switchToRole, hasBothRolesLoggedIn } from "@/utils/auth";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
@@ -152,23 +151,6 @@ export default function Layout({ children, currentPageName }) {
       console.log('🔍 Layout.jsx: Current page:', currentPageName);
       console.log('🔍 Layout.jsx: Current token:', !!apiClient.getToken());
       console.log('🔍 Layout.jsx: Session role:', localStorage.getItem('session_role'));
-      console.log('🔍 Layout.jsx: Both roles logged in:', hasBothRolesLoggedIn());
-      
-      // Check if we need to switch roles based on page context
-      const adminPages = ['Dashboard', 'Products', 'Categories', 'Settings', 'Attributes', 'Plugins', 'CmsBlocks', 'Tax', 'Orders', 'Coupons', 'CmsPages', 'ProductTabs', 'ProductLabels', 'CustomOptionRules', 'ShippingMethods', 'GoogleTagManager', 'DeliverySettings', 'ThemeLayout', 'MarketplaceExport', 'ImageManager', 'HtmlSitemap', 'StockSettings', 'AnalyticsSettings', 'PaymentMethods', 'SeoTools', 'XmlSitemap', 'RobotsTxt', 'Onboarding', 'Billing', 'ClientDashboard', 'Stores', 'OrderCancel', 'CustomerActivity', 'CookieConsent'];
-      const customerPages = ['CustomerDashboard'];
-      
-      if (hasBothRolesLoggedIn()) {
-        console.log('🔄 Both roles are logged in, checking page context for auto-switch');
-        
-        if (adminPages.includes(currentPageName)) {
-          console.log('🔄 Admin page detected, switching to store owner session');
-          switchToRole('store_owner');
-        } else if (customerPages.includes(currentPageName)) {
-          console.log('🔄 Customer page detected, switching to customer session');
-          switchToRole('customer');
-        }
-      }
       
       let userData = await retryApiCall(() => User.me());
       
@@ -258,6 +240,31 @@ export default function Layout({ children, currentPageName }) {
       );
   }
   
+  // Handle role-based dashboard access
+  if (!isLoading && user) {
+    // Check if customer is trying to access admin dashboard
+    if (currentPageName === 'Dashboard' && user.role === 'customer') {
+      console.log('🔄 Layout.jsx: Customer trying to access admin Dashboard, redirecting to CustomerDashboard');
+      navigate(createPageUrl('CustomerDashboard'));
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+          <p className="text-lg text-gray-700 mb-4">Redirecting to Customer Dashboard...</p>
+        </div>
+      );
+    }
+    
+    // Check if store owner is trying to access customer dashboard
+    if (currentPageName === 'CustomerDashboard' && (user.role === 'store_owner' || user.role === 'admin')) {
+      console.log('🔄 Layout.jsx: Store owner trying to access CustomerDashboard, redirecting to Dashboard');
+      navigate(createPageUrl('Dashboard'));
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
+          <p className="text-lg text-gray-700 mb-4">Redirecting to Admin Dashboard...</p>
+        </div>
+      );
+    }
+  }
+
   // Handle admin pages
   if (isAdminPage) {
       console.log('🔍 Layout.jsx: Checking admin page access:', {
@@ -272,13 +279,8 @@ export default function Layout({ children, currentPageName }) {
       if (!isLoading && (!user || (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner'))) {
           // Determine redirect destination based on user role
           let destination = "Landing";
-          if (user) {
-            if (user.role === 'customer') {
-              destination = "CustomerDashboard";
-            } else {
-              // For users without proper admin roles but not customers, redirect to landing
-              destination = "Landing";
-            }
+          if (user && user.role === 'customer') {
+            destination = "CustomerDashboard";
           }
           console.log(`🔄 Layout.jsx: User lacks admin access, redirecting ${user?.role || 'no-user'} to ${destination}`);
           navigate(createPageUrl(destination));
