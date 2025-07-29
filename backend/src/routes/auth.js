@@ -869,4 +869,22 @@ router.post('/customer/login', [
   }
 });
 
+// Debug endpoint to check customers (REMOVE IN PRODUCTION)
+router.get('/debug/customers', async (req, res) => {
+  try {
+    const customers = await Customer.findAll({
+      attributes: ['id', 'email', 'first_name', 'last_name', 'created_at'],
+      limit: 10
+    });
+    
+    res.json({
+      success: true,
+      count: customers.length,
+      customers: customers
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
