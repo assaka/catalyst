@@ -42,9 +42,18 @@ export default function Landing() {
   const checkAuthStatus = async () => {
     try {
       const userData = await User.me();
-      setUser(userData);
+      
+      // Only show admin users as logged in on admin pages like Landing
+      // Customers should not appear as logged in on admin areas
+      if (userData && (userData.role === 'store_owner' || userData.role === 'admin' || userData.account_type === 'agency')) {
+        setUser(userData);
+      } else {
+        // Customers should not appear as logged in on admin landing page
+        setUser(null);
+      }
     } catch (error) {
       // User not authenticated - this is fine for landing page
+      setUser(null);
     } finally {
       setIsLoading(false);
     }
@@ -150,12 +159,12 @@ export default function Landing() {
                           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-1"
                       >
                         <UserIcon className="w-4 h-4" />
-                        <span>My Account - {user.role} - {user.name}</span>
+                        <span>{user.first_name || user.name || user.email} ({user.role})</span>
                         <ChevronDown className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-56">
-                      <DropdownMenuLabel>My Account4 - {user.role} - {user.name}</DropdownMenuLabel>
+                      <DropdownMenuLabel>{user.first_name || user.name || user.email} ({user.role})</DropdownMenuLabel>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => {
                         if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
