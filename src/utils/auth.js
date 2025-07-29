@@ -1,5 +1,6 @@
 import { Auth } from '@/api/entities';
 import { createPageUrl } from '@/utils';
+import { createAdminUrl, createPublicUrl, getCurrentUrlType, getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
 import apiClient from '@/api/client';
 
 /**
@@ -20,19 +21,13 @@ export const handleLogout = async () => {
     // Clear role-specific session data
     clearRoleBasedAuthData(userRole);
     
-    // Redirect based on role - customers stay on storefront, others go to auth
+    // Redirect based on role - customers reload page, others go to auth
     if (userRole === 'customer') {
-      // For customers, redirect back to the storefront they were on
-      const currentPath = window.location.pathname;
-      if (currentPath.includes('/storefront')) {
-        // Stay on the same storefront URL
-        window.location.href = currentPath;
-      } else {
-        // Default to first available store or generic storefront
-        window.location.href = '/storefront';
-      }
+      // For customers, just reload the current page after logout
+      window.location.reload();
     } else {
-      const authUrl = createPageUrl('Auth');
+      // For admin users, redirect to new admin login URL
+      const authUrl = createAdminUrl('ADMIN_AUTH');
       window.location.href = authUrl;
     }
     
@@ -44,17 +39,11 @@ export const handleLogout = async () => {
     const userRole = currentUser?.role;
     
     if (userRole === 'customer') {
-      // For customers, redirect back to the storefront they were on
-      const currentPath = window.location.pathname;
-      if (currentPath.includes('/storefront')) {
-        // Stay on the same storefront URL
-        window.location.href = currentPath;
-      } else {
-        // Default to first available store or generic storefront
-        window.location.href = '/storefront';
-      }
+      // For customers, just reload the current page after logout
+      window.location.reload();
     } else {
-      const authUrl = createPageUrl('Auth');
+      // For admin users, redirect to new admin login URL
+      const authUrl = createAdminUrl('ADMIN_AUTH');
       window.location.href = authUrl;
     }
   }
@@ -75,19 +64,13 @@ export const handleLogoutWithNavigate = async (navigate) => {
     // Clear role-specific session data
     clearRoleBasedAuthData(userRole);
     
-    // Navigate based on role - customers stay on storefront, others go to auth
+    // Navigate based on role - customers reload page, others go to auth
     if (userRole === 'customer') {
-      // For customers, redirect back to the storefront they were on
-      const currentPath = window.location.pathname;
-      if (currentPath.includes('/storefront')) {
-        // Stay on the same storefront URL (reload the page to clear auth state)
-        window.location.href = currentPath;
-      } else {
-        // Default to first available store or generic storefront
-        navigate('/storefront');
-      }
+      // For customers, just reload the current page after logout
+      window.location.reload();
     } else {
-      navigate('/auth');
+      // For admin users, navigate to new admin login URL
+      navigate('/admin/login');
     }
     
   } catch (error) {
@@ -98,17 +81,11 @@ export const handleLogoutWithNavigate = async (navigate) => {
     const userRole = currentUser?.role;
     
     if (userRole === 'customer') {
-      // For customers, redirect back to the storefront they were on
-      const currentPath = window.location.pathname;
-      if (currentPath.includes('/storefront')) {
-        // Stay on the same storefront URL (reload the page to clear auth state)
-        window.location.href = currentPath;
-      } else {
-        // Default to first available store or generic storefront
-        navigate('/storefront');
-      }
+      // For customers, just reload the current page after logout
+      window.location.reload();
     } else {
-      navigate('/auth');
+      // For admin users, navigate to new admin login URL
+      navigate('/admin/login');
     }
   }
 };
@@ -142,7 +119,8 @@ export const getCurrentUser = () => {
   try {
     // Determine based on current URL context first
     const currentPath = window.location.pathname.toLowerCase();
-    const isCustomerContext = currentPath.includes('/storefront') || 
+    const isCustomerContext = currentPath.startsWith('/public/') ||
+                             currentPath.includes('/storefront') || 
                              currentPath.includes('/cart') || 
                              currentPath.includes('/checkout') ||
                              currentPath.includes('/customerauth');

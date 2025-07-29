@@ -209,149 +209,130 @@ function PagesContent() {
     return (
         <Layout currentPageName={currentPage}>
             <Routes>            
+                {/* Root redirect */}
+                <Route path="/" element={<Landing />} />
                 
-                    <Route path="/" element={<Landing />} />
+                {/* =========================== */}
+                {/* NEW URL STRUCTURE */}
+                {/* =========================== */}
                 
-                
-                <Route path="/Landing" element={<Landing />} />
-                
-                <Route path="/Auth" element={
+                {/* ADMIN ROUTES */}
+                <Route path="/admin/login" element={
                     <RoleProtectedRoute requiresAuth={false}>
                         <Auth />
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/CustomerAuth" element={
-                    <RoleProtectedRoute requiresAuth={false}>
-                        <CustomerAuth />
-                    </RoleProtectedRoute>
-                } />
-                <Route path="/customerauth" element={
-                    <RoleProtectedRoute requiresAuth={false}>
-                        <CustomerAuth />
-                    </RoleProtectedRoute>
-                } />
-                
-                <Route path="/Dashboard" element={
+                <Route path="/admin/dashboard" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Dashboard />
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/Products" element={
+                <Route path="/admin/products" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Products />
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/Categories" element={
+                <Route path="/admin/categories" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Categories />
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/Settings" element={
-                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <Settings />
-                    </RoleProtectedRoute>
-                } />
-                
-                <Route path="/Attributes" element={<Attributes />} />
-                
-                <Route path="/Plugins" element={<Plugins />} />
-                
-                <Route path="/Storefront" element={<Storefront />} />
-                <Route path="/:storeCode/storefront" element={<Storefront />} />
-                <Route path="/:storeCode/productdetail" element={<ProductDetail />} />
-                <Route path="/:storeCode/cart" element={<Cart />} />
-                <Route path="/:storeCode/checkout" element={<Checkout />} />
-                <Route path="/:storeCode/order-success" element={<OrderSuccess />} />
-                
-                <Route path="/ProductDetail" element={<ProductDetail />} />
-                
-                <Route path="/Cart" element={<Cart />} />
-                
-                <Route path="/CmsBlocks" element={<CmsBlocks />} />
-                
-                <Route path="/Checkout" element={<Checkout />} />
-                
-                <Route path="/Tax" element={<Tax />} />
-                
-                <Route path="/Orders" element={
+                <Route path="/admin/orders" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Orders />
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/CustomerDashboard" element={
-                    <RoleProtectedRoute allowedRoles={['customer']}>
-                        <CustomerDashboard />
-                    </RoleProtectedRoute>
-                } />
-                
-                <Route path="/Coupons" element={<Coupons />} />
-                
-                <Route path="/CmsPages" element={<CmsPages />} />
-                
-                <Route path="/CmsPageViewer" element={<CmsPageViewer />} />
-                
-                <Route path="/ProductTabs" element={<ProductTabs />} />
-                
-                <Route path="/ProductLabels" element={<ProductLabels />} />
-                
-                <Route path="/CustomOptionRules" element={<CustomOptionRules />} />
-                
-                <Route path="/OrderSuccess" element={<OrderSuccess />} />
-                <Route path="/order-success" element={<OrderSuccess />} />
-                
-                <Route path="/ShippingMethods" element={<ShippingMethods />} />
-                
-                <Route path="/GoogleTagManager" element={<GoogleTagManager />} />
-                
-                <Route path="/DeliverySettings" element={<DeliverySettings />} />
-                
-                <Route path="/ThemeLayout" element={<ThemeLayout />} />
-                
-                <Route path="/MarketplaceExport" element={<MarketplaceExport />} />
-                
-                <Route path="/ImageManager" element={<ImageManager />} />
-                
-                <Route path="/HtmlSitemap" element={<HtmlSitemap />} />
-                
-                <Route path="/Customers" element={
+                <Route path="/admin/customers" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Customers />
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/settings" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Settings />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/analytics" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <AnalyticsSettings />
+                    </RoleProtectedRoute>
+                } />
+                
+                {/* PUBLIC STOREFRONT ROUTES */}
+                <Route path="/public/:storeCode/shop" element={<Storefront />} />
+                
+                <Route path="/public/:storeCode/product/:productSlug" element={<ProductDetail />} />
+                
+                <Route path="/public/:storeCode/category/*" element={<Categories />} />
+                
+                <Route path="/public/:storeCode/cart" element={<Cart />} />
+                
+                <Route path="/public/:storeCode/checkout" element={<Checkout />} />
+                
+                <Route path="/public/:storeCode/order-success" element={<OrderSuccess />} />
+                
+                <Route path="/public/:storeCode/login" element={
+                    <RoleProtectedRoute requiresAuth={false}>
+                        <CustomerAuth />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/public/:storeCode/account" element={
+                    <RoleProtectedRoute allowedRoles={['customer']}>
+                        <CustomerDashboard />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/public/:storeCode/orders" element={
+                    <RoleProtectedRoute allowedRoles={['customer']}>
+                        <Orders />
+                    </RoleProtectedRoute>
+                } />
+                
+                {/* =========================== */}
+                {/* UTILITY & CMS ROUTES */}
+                {/* =========================== */}
+                
+                <Route path="/Landing" element={<Landing />} />
+                <Route path="/Attributes" element={<Attributes />} />
+                <Route path="/Plugins" element={<Plugins />} />
+                <Route path="/CmsBlocks" element={<CmsBlocks />} />
+                <Route path="/Tax" element={<Tax />} />
+                <Route path="/Coupons" element={<Coupons />} />
+                <Route path="/CmsPages" element={<CmsPages />} />
+                <Route path="/CmsPageViewer" element={<CmsPageViewer />} />
+                <Route path="/ProductTabs" element={<ProductTabs />} />
+                <Route path="/ProductLabels" element={<ProductLabels />} />
+                <Route path="/CustomOptionRules" element={<CustomOptionRules />} />
+                <Route path="/ShippingMethods" element={<ShippingMethods />} />
+                <Route path="/GoogleTagManager" element={<GoogleTagManager />} />
+                <Route path="/DeliverySettings" element={<DeliverySettings />} />
+                <Route path="/ThemeLayout" element={<ThemeLayout />} />
+                <Route path="/MarketplaceExport" element={<MarketplaceExport />} />
+                <Route path="/ImageManager" element={<ImageManager />} />
+                <Route path="/HtmlSitemap" element={<HtmlSitemap />} />
                 <Route path="/StockSettings" element={<StockSettings />} />
-                
-                <Route path="/AnalyticsSettings" element={<AnalyticsSettings />} />
-                
                 <Route path="/PaymentMethods" element={<PaymentMethods />} />
-                
                 <Route path="/SeoTools" element={<SeoTools />} />
-                
                 <Route path="/XmlSitemap" element={<XmlSitemap />} />
-                
                 <Route path="/RobotsTxt" element={<RobotsTxt />} />
-                
                 <Route path="/Onboarding" element={<Onboarding />} />
-                
                 <Route path="/Billing" element={<Billing />} />
-                
                 <Route path="/ClientDashboard" element={<ClientDashboard />} />
-                
                 <Route path="/Stores" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Stores />
                     </RoleProtectedRoute>
                 } />
-                
                 <Route path="/OrderCancel" element={<OrderCancel />} />
-                
                 <Route path="/CustomerActivity" element={<CustomerActivity />} />
-                
                 <Route path="/CookieConsent" element={<CookieConsent />} />
                 
             </Routes>

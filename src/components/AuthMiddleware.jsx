@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl, createStoreUrl, getStoreSlugFromUrl } from "@/utils";
+import { createAdminUrl, createPublicUrl, getStoreSlugFromPublicUrl } from "@/utils/urlUtils";
 import { Auth as AuthService, User } from "@/api/entities";
 import apiClient from "@/api/client";
 import StoreOwnerAuthLayout from "./StoreOwnerAuthLayout";
@@ -66,7 +67,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       // Redirect based on user role and expected role
       if (role === 'customer') {
         if (user.role === 'store_owner' || user.role === 'admin') {
-          navigate(createPageUrl("Auth"));
+          navigate(createAdminUrl("ADMIN_AUTH"));
         } else if (user.role === 'customer') {
           const returnTo = searchParams.get('returnTo');
           if (returnTo) {
@@ -78,9 +79,11 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         }
       } else {
         if (user.role === 'customer') {
-          navigate(createPageUrl("CustomerAuth"));
+          // Get store slug from current URL or use default
+          const currentStoreSlug = getStoreSlugFromPublicUrl(window.location.pathname) || 'default';
+          navigate(createPublicUrl(currentStoreSlug, "CUSTOMER_AUTH"));
         } else if (user.role === 'store_owner' || user.role === 'admin') {
-          navigate(createPageUrl("Dashboard"));
+          navigate(createAdminUrl("DASHBOARD"));
         }
       }
     } catch (error) {
@@ -92,13 +95,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
     // First try to get from localStorage
     const savedStoreCode = localStorage.getItem('customer_auth_store_code');
     if (savedStoreCode) {
-      return createStoreUrl(savedStoreCode, 'storefront');
+      return createPublicUrl(savedStoreCode, 'STOREFRONT');
     }
     
-    // Try to get from current URL
-    const currentStoreSlug = getStoreSlugFromUrl(window.location.pathname);
+    // Try to get from current URL (new and legacy)
+    const currentStoreSlug = getStoreSlugFromPublicUrl(window.location.pathname) || 
+                             getStoreSlugFromUrl(window.location.pathname);
     if (currentStoreSlug) {
-      return createStoreUrl(currentStoreSlug, 'storefront');
+      return createPublicUrl(currentStoreSlug, 'STOREFRONT');
     }
     
     // Try to fetch the first available store
@@ -107,14 +111,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       const stores = await Store.findAll();
       if (stores && stores.length > 0) {
         const firstStore = stores[0];
-        return createStoreUrl(firstStore.slug, 'storefront');
+        return createPublicUrl(firstStore.slug, 'STOREFRONT');
       }
     } catch (error) {
       console.error('Failed to fetch stores:', error);
     }
     
-    // Default fallback
-    return '/storefront';
+    // Default fallback to new URL structure
+    return createPublicUrl('default', 'STOREFRONT');
   };
 
   const handleAuth = async (formData, isLogin) => {
@@ -209,11 +213,11 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
                 return;
               }
               
-              navigate(createPageUrl("Dashboard"));
+              navigate(createAdminUrl("DASHBOARD"));
             } catch (error) {
               // If verification fails, still navigate to dashboard
               console.error('Role verification failed:', error);
-              navigate(createPageUrl("Dashboard"));
+              navigate(createAdminUrl("DASHBOARD"));
             }
           }
         }
@@ -267,7 +271,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             } else {
               setSuccess("Registration successful! Redirecting...");
               setTimeout(() => {
-                navigate(createPageUrl("Dashboard"));
+                navigate(createAdminUrl("DASHBOARD"));
               }, 1500);
             }
           }

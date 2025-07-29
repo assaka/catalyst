@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { createAdminUrl, createPublicUrl, getCurrentUrlType, getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
 import { 
   getCurrentUser
 } from '@/utils/auth';
@@ -71,10 +72,14 @@ const RoleProtectedRoute = ({
         if (!hasRequiredRoleToken) {
           console.log(`🚫 Access denied: No valid token for required roles:`, allowedRoles);
           
-          // Check for specific paths
+          // Check for specific paths and URL types
           const currentPath = window.location.pathname.toLowerCase();
-          const isCustomerDashboard = currentPath.includes('/customerdashboard');
-          const isDashboardPath = currentPath.includes('/dashboard') || 
+          const urlType = getCurrentUrlType();
+          const isPublicRoute = currentPath.startsWith('/public/');
+          const isAdminRoute = currentPath.startsWith('/admin/');
+          const isCustomerDashboard = currentPath.includes('/customerdashboard') || currentPath.includes('/account');
+          const isDashboardPath = isAdminRoute || 
+                                 currentPath.includes('/dashboard') || 
                                  currentPath.includes('/products') || 
                                  currentPath.includes('/categories') || 
                                  currentPath.includes('/settings') ||
@@ -88,22 +93,24 @@ const RoleProtectedRoute = ({
             const hasStoreOwnerToken = localStorage.getItem('store_owner_auth_token');
             if (hasStoreOwnerToken) {
               console.log('🔄 RoleProtectedRoute: Store owner trying to access customer dashboard, redirecting to customer auth');
-              navigate(createPageUrl('CustomerAuth'));
+              const storeSlug = getStoreSlugFromPublicUrl(currentPath) || 'default';
+              navigate(createPublicUrl(storeSlug, 'CUSTOMER_AUTH'));
               return;
             }
           }
           
-          // Redirect to appropriate auth page based on required role
+          // Redirect to appropriate auth page based on required role and URL structure
           const requiresCustomerRole = allowedRoles.includes('customer');
-          if (requiresCustomerRole) {
+          if (requiresCustomerRole || isPublicRoute) {
             console.log('🔄 RoleProtectedRoute: Redirecting to customer auth');
-            navigate(createPageUrl('CustomerAuth'));
-          } else if (isDashboardPath || allowedRoles.includes('store_owner') || allowedRoles.includes('admin')) {
-            console.log('🔄 RoleProtectedRoute: Redirecting to store owner auth');
-            navigate(createPageUrl('Auth'));
+            const storeSlug = getStoreSlugFromPublicUrl(currentPath) || 'default';
+            navigate(createPublicUrl(storeSlug, 'CUSTOMER_AUTH'));
+          } else if (isDashboardPath || allowedRoles.includes('store_owner') || allowedRoles.includes('admin') || isAdminRoute) {
+            console.log('🔄 RoleProtectedRoute: Redirecting to admin auth');
+            navigate(createAdminUrl('ADMIN_AUTH'));
           } else {
-            console.log('🔄 RoleProtectedRoute: Redirecting to store owner auth (default)');
-            navigate(createPageUrl('Auth'));
+            console.log('🔄 RoleProtectedRoute: Redirecting to admin auth (default)');
+            navigate(createAdminUrl('ADMIN_AUTH'));
           }
           return;
         }
@@ -149,8 +156,13 @@ const RoleProtectedRoute = ({
     
     console.log('🔄 RoleProtectedRoute: Redirecting to auth for role:', roleToUse);
     
-    const authPath = roleToUse === 'customer' ? '/customerauth' : '/auth';
-    navigate(authPath);
+    if (roleToUse === 'customer') {
+      const currentPath = window.location.pathname.toLowerCase();
+      const storeSlug = getStoreSlugFromPublicUrl(currentPath) || 'default';
+      navigate(createPublicUrl(storeSlug, 'CUSTOMER_AUTH'));
+    } else {
+      navigate(createAdminUrl('ADMIN_AUTH'));
+    }
   };
 
 

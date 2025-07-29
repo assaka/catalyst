@@ -39,13 +39,18 @@ class ApiClient {
     
     // Auto-determine token based on current context - prioritize store owner for admin pages
     const currentPath = window.location.pathname.toLowerCase();
-    const isDashboardContext = currentPath.includes('/dashboard') || 
-                              currentPath.includes('/products') || 
-                              currentPath.includes('/categories') || 
-                              currentPath.includes('/settings') ||
-                              currentPath.includes('/auth');
     
-    const isCustomerContext = currentPath.includes('/storefront') || 
+    // Admin context: /admin/* routes
+    const isAdminContext = currentPath.startsWith('/admin/') ||
+                          currentPath.includes('/dashboard') || 
+                          currentPath.includes('/products') || 
+                          currentPath.includes('/categories') || 
+                          currentPath.includes('/settings') ||
+                          currentPath.includes('/auth');
+    
+    // Customer context: /public/* routes and legacy customer routes
+    const isCustomerContext = currentPath.startsWith('/public/') ||
+                             currentPath.includes('/storefront') || 
                              currentPath.includes('/cart') || 
                              currentPath.includes('/checkout') ||
                              currentPath.includes('/customerauth') ||
@@ -55,7 +60,7 @@ class ApiClient {
     const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
     const customerToken = localStorage.getItem('customer_auth_token');
     
-    if (isDashboardContext && storeOwnerToken) {
+    if (isAdminContext && storeOwnerToken) {
       return storeOwnerToken;
     } else if (isCustomerContext && customerToken) {
       return customerToken;
