@@ -68,10 +68,15 @@ class CustomerBaseEntity {
   // Customer operations require authentication
   async findAll(params = {}) {
     try {
-      const queryString = new URLSearchParams(params).toString();
-      const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+      let url = this.endpoint;
       
-      console.log(`👤 Customer API: ${this.endpoint}.findAll()`);
+      // Add params as query string if provided
+      if (params && Object.keys(params).length > 0) {
+        const queryString = new URLSearchParams(params).toString();
+        url = `${this.endpoint}?${queryString}`;
+      }
+      
+      console.log(`👤 Customer API: ${this.endpoint}.findAll() with URL: ${url}`);
       const response = await this.client.getCustomer(url);
       
       return Array.isArray(response) ? response : [];
