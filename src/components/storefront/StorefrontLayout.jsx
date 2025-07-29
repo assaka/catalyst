@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { Auth } from '@/api/entities';
+import { handleLogout } from '@/utils/auth';
 import { StorefrontCategory } from '@/api/storefront-entities';
 import { CustomerAuth } from '@/api/storefront-entities';
 import { DeliverySettings, User, apiClient } from '@/api/entities';
@@ -309,7 +310,7 @@ export default function StorefrontLayout({ children }) {
                                                     {user.role === 'customer' ? (
                                                         <>
                                                             <DropdownMenuItem onClick={() => {
-                                                                navigate(createPublicUrl(store.slug, 'CUSTOMER_DASHBOARD'));
+                                                                navigate(createPublicUrl(store.slug, 'CUSTOMER_ACCOUNT'));
                                                             }}>
                                                                 <Settings className="mr-2 h-4 w-4" />
                                                                 <span>My Account</span>
@@ -330,7 +331,7 @@ export default function StorefrontLayout({ children }) {
                                                                 <span>Admin Dashboard</span>
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem onClick={() => {
-                                                                handleCustomerLogout();
+                                                                handleLogout();
                                                             }}>
                                                                 <LogOut className="mr-2 h-4 w-4" />
                                                                 <span>Logout</span>
@@ -413,7 +414,7 @@ export default function StorefrontLayout({ children }) {
                                                                     <span>My Account</span>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem onClick={() => {
-                                                                    handleLogout();
+                                                                    handleCustomerLogout();
                                                                 }}>
                                                                     <LogOut className="mr-2 h-4 w-4" />
                                                                     <span>Logout</span>
@@ -529,7 +530,7 @@ export default function StorefrontLayout({ children }) {
                                                     if (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner') {
                                                         window.location.href = createPageUrl('Dashboard');
                                                     } else {
-                                                        navigate(createPublicUrl(store.slug, 'CUSTOMER_DASHBOARD'));
+                                                        navigate(createPublicUrl(store.slug, 'CUSTOMER_ACCOUNT'));
                                                     }
                                                 }}
                                                 className="w-full flex items-center py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
@@ -539,7 +540,11 @@ export default function StorefrontLayout({ children }) {
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    handleCustomerLogout();
+                                                    if (user.role === 'customer') {
+                                                        handleCustomerLogout();
+                                                    } else {
+                                                        handleLogout();
+                                                    }
                                                 }}
                                                 className="w-full flex items-center py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
                                             >
