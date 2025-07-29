@@ -28,7 +28,9 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
       const existingToken = localStorage.getItem(tokenKey);
       
-      if (existingToken) {
+      if (existingToken && localStorage.getItem('user_logged_out') !== 'true') {
+        // Clear any logout flag and set token
+        localStorage.removeItem('user_logged_out');
         apiClient.setToken(existingToken);
         checkAuthStatus();
       }
@@ -60,7 +62,8 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
           if (returnTo) {
             navigate(returnTo);
           } else {
-            navigate(getStorefrontUrl());
+            const storefrontUrl = await getStorefrontUrl();
+            navigate(storefrontUrl);
           }
         }
       } else {
@@ -75,18 +78,33 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
     }
   };
 
-  const getStorefrontUrl = () => {
+  const getStorefrontUrl = async () => {
+    // First try to get from localStorage
     const savedStoreCode = localStorage.getItem('customer_auth_store_code');
     if (savedStoreCode) {
       return createStoreUrl(savedStoreCode, 'storefront');
     }
     
+    // Try to get from current URL
     const currentStoreSlug = getStoreSlugFromUrl(window.location.pathname);
     if (currentStoreSlug) {
       return createStoreUrl(currentStoreSlug, 'storefront');
     }
     
-    return createStoreUrl('hamid2', 'storefront');
+    // Try to fetch the first available store
+    try {
+      const { Store } = await import('@/api/entities');
+      const stores = await Store.findAll();
+      if (stores && stores.length > 0) {
+        const firstStore = stores[0];
+        return createStoreUrl(firstStore.slug, 'storefront');
+      }
+    } catch (error) {
+      console.error('Failed to fetch stores:', error);
+    }
+    
+    // Default fallback
+    return '/storefront';
   };
 
   const handleAuth = async (formData, isLogin) => {
@@ -107,6 +125,9 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
           const token = response.data?.token || response.token;
           
           if (token) {
+            // Clear logged out flag before setting token
+            localStorage.removeItem('user_logged_out');
+            
             // Store token based on role
             const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
             localStorage.setItem(tokenKey, token);
@@ -137,7 +158,8 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               if (returnTo) {
                 navigate(returnTo);
               } else {
-                navigate(getStorefrontUrl());
+                const storefrontUrl = await getStorefrontUrl();
+                navigate(storefrontUrl);
               }
             } else {
               navigate(createPageUrl("Dashboard"));
@@ -172,6 +194,9 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
           const token = response.data?.token || response.token;
           
           if (token) {
+            // Clear logged out flag before setting token
+            localStorage.removeItem('user_logged_out');
+            
             const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
             localStorage.setItem(tokenKey, token);
             apiClient.setToken(token);
@@ -179,7 +204,8 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             if (role === 'customer') {
               localStorage.removeItem('customer_auth_store_id');
               localStorage.removeItem('customer_auth_store_code');
-              navigate(getStorefrontUrl());
+              const storefrontUrl = await getStorefrontUrl();
+              navigate(storefrontUrl);
             } else {
               setSuccess("Registration successful! Redirecting...");
               setTimeout(() => {
