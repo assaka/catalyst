@@ -6,6 +6,20 @@ class StorefrontApiClient {
     
     // Storefront client is public by default
     this.isPublic = true;
+    
+    // Initialize or get guest session ID
+    this.sessionId = this.getOrCreateSessionId();
+  }
+
+  // Get or create a guest session ID
+  getOrCreateSessionId() {
+    let sessionId = localStorage.getItem('guest_session_id');
+    if (!sessionId) {
+      // Generate a new session ID
+      sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+      localStorage.setItem('guest_session_id', sessionId);
+    }
+    return sessionId;
   }
 
   // Set customer auth token
@@ -103,7 +117,17 @@ class StorefrontApiClient {
 
   // Customer request method (optional authentication)
   async customerRequest(method, endpoint, data = null, customHeaders = {}) {
-    const url = this.buildAuthUrl(endpoint);
+    // Add session_id to the request if not authenticated
+    const token = this.getCustomerToken();
+    let finalEndpoint = endpoint;
+    
+    if (!token && this.sessionId) {
+      // For non-authenticated requests, add session_id as a query parameter
+      const separator = endpoint.includes('?') ? '&' : '?';
+      finalEndpoint = `${endpoint}${separator}session_id=${this.sessionId}`;
+    }
+    
+    const url = this.buildAuthUrl(finalEndpoint);
     const headers = this.getCustomerHeaders(customHeaders);
 
     console.log(`👤 Storefront Customer Request: ${method} ${url}`);
@@ -115,6 +139,10 @@ class StorefrontApiClient {
     };
 
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+      // Also add session_id to the body data if not authenticated
+      if (!token && this.sessionId) {
+        data = { ...data, session_id: this.sessionId };
+      }
       config.body = JSON.stringify(data);
     }
 

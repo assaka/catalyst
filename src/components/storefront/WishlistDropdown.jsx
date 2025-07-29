@@ -47,18 +47,15 @@ export default function WishlistDropdown() {
     try {
       setLoading(true);
       
-      // Only load wishlist if customer is authenticated
-      if (!CustomerAuth.isAuthenticated()) {
-        setWishlistItems([]);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
+      // Try to get current user (if authenticated)
       const currentUser = await CustomerAuth.me().catch(() => null);
       setUser(currentUser);
 
-      const result = await retryApiCall(() => CustomerWishlist.getItems());
+      // Load wishlist items - this should work for both authenticated and guest users
+      const result = await retryApiCall(() => CustomerWishlist.getItems()).catch((error) => {
+        console.warn("WishlistDropdown: Could not load wishlist items:", error.message);
+        return [];
+      });
       const items = Array.isArray(result) ? result : [];
 
       if (items.length > 0) {
@@ -90,6 +87,7 @@ export default function WishlistDropdown() {
 
   // FIXED: Listen for wishlist updates and store changes
   useEffect(() => {
+    // Load wishlist for both authenticated and guest users
     if (store?.id) {
       loadWishlistItems();
     }
@@ -107,11 +105,6 @@ export default function WishlistDropdown() {
 
   const handleRemoveFromWishlist = async (productId) => {
     try {
-      if (!CustomerAuth.isAuthenticated()) {
-        console.warn("Cannot remove from wishlist: Customer not authenticated");
-        return;
-      }
-
       await retryApiCall(() => CustomerWishlist.removeItem(productId));
       window.dispatchEvent(new CustomEvent('wishlistUpdated')); // Dispatch global event to trigger reload
     } catch (error) {
