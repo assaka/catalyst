@@ -90,7 +90,7 @@ import CustomerActivity from "./CustomerActivity";
 
 import CookieConsent from "./CookieConsent";
 
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
 const PAGES = {
     
@@ -200,6 +200,8 @@ function _getCurrentPage(url) {
 }
 
 import RoleProtectedRoute from '../components/RoleProtectedRoute.jsx';
+import LegacyRedirectHandler from '../components/LegacyRedirectHandler.jsx';
+import UrlDebugger from '../components/UrlDebugger.jsx';
 
 // Create a wrapper component that uses useLocation inside the Router context
 function PagesContent() {
@@ -208,6 +210,7 @@ function PagesContent() {
     
     return (
         <Layout currentPageName={currentPage}>
+            <UrlDebugger />
             <Routes>            
                 {/* Root redirect */}
                 <Route path="/" element={<Landing />} />
@@ -270,6 +273,7 @@ function PagesContent() {
                 <Route path="/public/:storeCode/" element={<Storefront />} />
                 <Route path="/public/:storeCode/shop" element={<Storefront />} />
                 <Route path="/public/:storeCode/shop/*" element={<Storefront />} />
+                <Route path="/public/:storeCode/storefront" element={<Storefront />} />
                 
                 {/* SEO-friendly category routes */}
                 <Route path="/public/:storeCode/category/:categorySlug" element={<Categories />} />
@@ -502,6 +506,34 @@ function PagesContent() {
                 <Route path="/public/:storeCode/order-cancel" element={<OrderCancel />} />
                 
                 <Route path="/public/:storeCode/cookie-consent" element={<CookieConsent />} />
+                
+                {/* =========================== */}
+                {/* LEGACY URL REDIRECTS */}
+                {/* =========================== */}
+                
+                {/* Legacy storefront URLs - redirect to new structure */}
+                <Route path="/storefront" element={<LegacyRedirectHandler redirectPattern="/public/default/shop" />} />
+                <Route path="/:storeCode/storefront" element={<LegacyRedirectHandler redirectPattern="/public/:storeCode/shop" />} />
+                <Route path="/:storeCode/productdetail" element={<LegacyRedirectHandler redirectPattern="/public/:storeCode/shop" />} />
+                <Route path="/:storeCode/cart" element={<LegacyRedirectHandler redirectPattern="/public/:storeCode/cart" />} />
+                <Route path="/:storeCode/checkout" element={<LegacyRedirectHandler redirectPattern="/public/:storeCode/checkout" />} />
+                <Route path="/:storeCode/order-success" element={<LegacyRedirectHandler redirectPattern="/public/:storeCode/order-success" />} />
+                
+                {/* Legacy admin URLs */}
+                <Route path="/auth" element={<Navigate to="/admin/login" replace />} />
+                <Route path="/Auth" element={<Navigate to="/admin/login" replace />} />
+                <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="/Dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="/products" element={<Navigate to="/admin/products" replace />} />
+                <Route path="/Products" element={<Navigate to="/admin/products" replace />} />
+                <Route path="/categories" element={<Navigate to="/admin/categories" replace />} />
+                <Route path="/Categories" element={<Navigate to="/admin/categories" replace />} />
+                
+                {/* Legacy customer URLs */}
+                <Route path="/customerauth" element={<Navigate to="/public/default/login" replace />} />
+                <Route path="/CustomerAuth" element={<Navigate to="/public/default/login" replace />} />
+                <Route path="/customerdashboard" element={<Navigate to="/public/default/account" replace />} />
+                <Route path="/CustomerDashboard" element={<Navigate to="/public/default/account" replace />} />
                 
                 {/* =========================== */}
                 {/* SPECIAL ROUTES */}
