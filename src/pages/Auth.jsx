@@ -217,21 +217,24 @@ export default function Auth() {
           const isOnAuthPage = currentPath === '/auth' || currentPath.endsWith('/auth');
           
           if (isOnAuthPage) {
-            // On auth page - only redirect if user is already authenticated
-            // This prevents interfering with the login process
+            // On auth page - check if we should redirect based on current active session
             console.log('🔍 Auth.jsx checkAuthStatus: On auth page, user roles:', {
               isStoreOwner, isAdmin, isAgency, isCustomer, hasNoRole
             });
-            if (isStoreOwner || isAdmin || isAgency) {
-              console.log('🔄 Auth.jsx checkAuthStatus: User already authenticated as store owner, redirecting to Dashboard');
+            
+            // Only redirect if the current active session matches store owner role
+            // Don't redirect store owners who might want to switch sessions
+            const currentActiveRole = localStorage.getItem('session_role');
+            if ((isStoreOwner || isAdmin || isAgency) && currentActiveRole === user.role) {
+              console.log('🔄 Auth.jsx checkAuthStatus: Store owner is active session, redirecting to Dashboard');
               navigate(createPageUrl("Dashboard"));
-            } else if (isCustomer) {
-              console.log('🔄 Auth.jsx checkAuthStatus: Customer on store owner auth page, redirecting to customer auth');
+            } else if (isCustomer && currentActiveRole === 'customer') {
+              console.log('🔄 Auth.jsx checkAuthStatus: Customer is active session, redirecting to customer auth');
               navigate(createPageUrl("CustomerAuth"));
             }
-            // If hasNoRole, let them stay on auth page to complete setup
+            // If roles don't match active session or hasNoRole, let them stay on auth page
           } else {
-            // Other pages - normal redirect logic
+            // Other pages - normal redirect logic based on current user role
             if (isStoreOwner || isAdmin || isAgency || hasNoRole) {
               navigate(createPageUrl("Dashboard"));
             } else if (isCustomer) {
@@ -297,8 +300,8 @@ export default function Auth() {
     setLoading(true);
     try {
       if (isLogin) {
-        // Don't clear customer tokens - maintain dual sessions
-        // Only clear main session tokens to set store owner as active
+        // Don't clear customer tokens or store owner tokens - maintain dual sessions
+        // Only clear main session tokens so the new login becomes active
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
         localStorage.removeItem('session_role');
