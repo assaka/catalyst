@@ -71,8 +71,9 @@ const RoleProtectedRoute = ({
         if (!hasRequiredRoleToken) {
           console.log(`🚫 Access denied: No valid token for required roles:`, allowedRoles);
           
-          // Check for specific dashboard-related paths that always need store owner auth
+          // Check for specific paths
           const currentPath = window.location.pathname.toLowerCase();
+          const isCustomerDashboard = currentPath.includes('/customerdashboard');
           const isDashboardPath = currentPath.includes('/dashboard') || 
                                  currentPath.includes('/products') || 
                                  currentPath.includes('/categories') || 
@@ -80,6 +81,17 @@ const RoleProtectedRoute = ({
                                  currentPath.includes('/orders') ||
                                  currentPath.includes('/customers') ||
                                  currentPath.includes('/stores');
+          
+          // Special handling for customer dashboard
+          if (isCustomerDashboard) {
+            // Check if a store owner/admin is trying to access customer dashboard
+            const hasStoreOwnerToken = localStorage.getItem('store_owner_auth_token');
+            if (hasStoreOwnerToken) {
+              console.log('🔄 RoleProtectedRoute: Store owner trying to access customer dashboard, redirecting to customer auth');
+              navigate(createPageUrl('CustomerAuth'));
+              return;
+            }
+          }
           
           // Redirect to appropriate auth page based on required role
           const requiresCustomerRole = allowedRoles.includes('customer');
