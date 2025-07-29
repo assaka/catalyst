@@ -186,7 +186,11 @@ export const StoreProvider = ({ children }) => {
       // Get store first with ultra-aggressive caching
       const path = location.pathname;
       
-      // Check for new store slug pattern: /:storeSlug/storefront
+      // Check for new public URL pattern: /public/{storeCode}/...
+      const publicUrlMatch = path.match(/^\/public\/([^\/]+)/);
+      const publicStoreSlug = publicUrlMatch ? publicUrlMatch[1] : null;
+      
+      // Check for legacy store slug pattern: /:storeSlug/... (keep for backward compatibility)
       const storeSlugMatch = path.match(/^\/([^\/]+)\/(storefront|productdetail|cart|checkout|order-success)/);
       const storeSlug = storeSlugMatch ? storeSlugMatch[1] : null;
       
@@ -194,11 +198,14 @@ export const StoreProvider = ({ children }) => {
       const oldStoreSlugMatch = path.match(/\/storefront\/([^\/]+)/);
       const oldStoreSlug = oldStoreSlugMatch ? oldStoreSlugMatch[1] : null;
       
-      // Use new pattern first, then old pattern, then default to first store
+      // Use public URL pattern first, then legacy patterns, then default to first store
       let storeCacheKey = 'first-store';
       let storeIdentifier = null;
       
-      if (storeSlug && storeSlug !== 'storefront' && storeSlug !== 'productdetail' && storeSlug !== 'cart' && storeSlug !== 'checkout' && storeSlug !== 'order-success') {
+      if (publicStoreSlug) {
+        storeCacheKey = `store-slug-${publicStoreSlug}`;
+        storeIdentifier = publicStoreSlug;
+      } else if (storeSlug && storeSlug !== 'storefront' && storeSlug !== 'productdetail' && storeSlug !== 'cart' && storeSlug !== 'checkout' && storeSlug !== 'order-success') {
         storeCacheKey = `store-slug-${storeSlug}`;
         storeIdentifier = storeSlug;
       } else if (oldStoreSlug) {

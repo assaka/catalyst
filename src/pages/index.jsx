@@ -200,13 +200,20 @@ function _getCurrentPage(url) {
 }
 
 import RoleProtectedRoute from '../components/RoleProtectedRoute.jsx';
+import { StoreProvider } from '../components/storefront/StoreProvider.jsx';
+
+// Helper function to determine if route needs StoreProvider
+function isPublicRoute(pathname) {
+    return pathname.startsWith('/public/');
+}
 
 // Create a wrapper component that uses useLocation inside the Router context
 function PagesContent() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
+    const needsStoreProvider = isPublicRoute(location.pathname);
     
-    return (
+    const content = (
         <Layout currentPageName={currentPage}>
             <Routes>            
                 {/* Root redirect */}
@@ -273,10 +280,10 @@ function PagesContent() {
                 <Route path="/public/:storeCode/storefront" element={<Storefront />} />
                 
                 {/* SEO-friendly category routes */}
-                <Route path="/public/:storeCode/category/:categorySlug" element={<Categories />} />
-                <Route path="/public/:storeCode/category/:categorySlug/*" element={<Categories />} />
-                <Route path="/public/:storeCode/c/:categorySlug" element={<Categories />} />
-                <Route path="/public/:storeCode/c/:categorySlug/*" element={<Categories />} />
+                <Route path="/public/:storeCode/category/:categorySlug" element={<Storefront />} />
+                <Route path="/public/:storeCode/category/:categorySlug/*" element={<Storefront />} />
+                <Route path="/public/:storeCode/c/:categorySlug" element={<Storefront />} />
+                <Route path="/public/:storeCode/c/:categorySlug/*" element={<Storefront />} />
                 
                 {/* SEO-friendly product routes */}
                 <Route path="/public/:storeCode/product/:productSlug" element={<ProductDetail />} />
@@ -517,6 +524,13 @@ function PagesContent() {
             </Routes>
         </Layout>
     );
+    
+    // Wrap with StoreProvider if it's a public route
+    return needsStoreProvider ? (
+        <StoreProvider>
+            {content}
+        </StoreProvider>
+    ) : content;
 }
 
 export default function Pages() {

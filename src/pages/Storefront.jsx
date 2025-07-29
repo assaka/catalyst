@@ -31,10 +31,10 @@ export default function Storefront() {
   const [activeFilters, setActiveFilters] = useState({});
   const [isHomepage, setIsHomepage] = useState(true);
   
-  const { slug } = useParams();
+  const { slug, categorySlug: routeCategorySlug } = useParams();
   const [searchParams] = useSearchParams();
   
-  const categorySlug = searchParams.get('category') || slug;
+  const categorySlug = searchParams.get('category') || routeCategorySlug || slug;
   
 
   const categories = useMemo(() => storeCategories || [], [storeCategories]);
