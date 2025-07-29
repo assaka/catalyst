@@ -12,9 +12,6 @@ import { Wishlist } from "@/api/entities";
 import { Product } from "@/api/entities";
 import { Cart as CartEntity } from "@/api/entities";
 
-// Added useStore
-import { useStore } from "@/components/storefront/StoreProvider";
-
 import {
   User as UserIcon,
   MapPin,
