@@ -6,6 +6,7 @@ import { createPageUrl } from "@/utils";
 import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
+import { switchToRole, hasBothRolesLoggedIn } from "@/utils/auth";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
@@ -148,8 +149,26 @@ export default function Layout({ children, currentPageName }) {
   const loadUserAndHandleCredits = async () => {
     try {
       console.log('🔍 Layout.jsx: Loading user data');
+      console.log('🔍 Layout.jsx: Current page:', currentPageName);
       console.log('🔍 Layout.jsx: Current token:', !!apiClient.getToken());
       console.log('🔍 Layout.jsx: Session role:', localStorage.getItem('session_role'));
+      console.log('🔍 Layout.jsx: Both roles logged in:', hasBothRolesLoggedIn());
+      
+      // Check if we need to switch roles based on page context
+      const adminPages = ['Dashboard', 'Products', 'Categories', 'Settings', 'Attributes', 'Plugins', 'CmsBlocks', 'Tax', 'Orders', 'Coupons', 'CmsPages', 'ProductTabs', 'ProductLabels', 'CustomOptionRules', 'ShippingMethods', 'GoogleTagManager', 'DeliverySettings', 'ThemeLayout', 'MarketplaceExport', 'ImageManager', 'HtmlSitemap', 'StockSettings', 'AnalyticsSettings', 'PaymentMethods', 'SeoTools', 'XmlSitemap', 'RobotsTxt', 'Onboarding', 'Billing', 'ClientDashboard', 'Stores', 'OrderCancel', 'CustomerActivity', 'CookieConsent'];
+      const customerPages = ['CustomerDashboard'];
+      
+      if (hasBothRolesLoggedIn()) {
+        console.log('🔄 Both roles are logged in, checking page context for auto-switch');
+        
+        if (adminPages.includes(currentPageName)) {
+          console.log('🔄 Admin page detected, switching to store owner session');
+          switchToRole('store_owner');
+        } else if (customerPages.includes(currentPageName)) {
+          console.log('🔄 Customer page detected, switching to customer session');
+          switchToRole('customer');
+        }
+      }
       
       let userData = await retryApiCall(() => User.me());
       
