@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { handleLogout } from '@/utils/auth';
 import { StorefrontCategory } from '@/api/storefront-entities';
 import { CustomerAuth } from '@/api/storefront-entities';
@@ -469,10 +470,10 @@ export default function StorefrontLayout({ children }) {
                         {mobileMenuOpen && (
                             <div className="md:hidden border-t border-gray-200 bg-white">
                                 <div className="px-4 py-3 space-y-2">
-                                    {Array.isArray(categories) && categories.filter(c => !c.parent_id).map(category => (
+                                    {Array.isArray(categories) && store && categories.filter(c => !c.parent_id).map(category => (
                                         <Link
                                             key={category.id}
-                                            to={createPageUrl(`Storefront?category=${category.slug}`)}
+                                            to={createCategoryUrl(store.slug, category.slug)}
                                             onClick={() => setMobileMenuOpen(false)}
                                             className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
                                         >
@@ -567,9 +568,9 @@ export default function StorefrontLayout({ children }) {
                         <div>
                             <h3 className="text-sm font-semibold tracking-wider uppercase">Shop</h3>
                             <ul className="mt-4 space-y-2">
-                                {Array.isArray(categories) && categories.filter(c => !c.parent_id).slice(0, 4).map(c => (
+                                {Array.isArray(categories) && store && categories.filter(c => !c.parent_id).slice(0, 4).map(c => (
                                     <li key={c.id}>
-                                        <Link to={createPageUrl(`Storefront?category=${c.slug}`)} className="text-base text-gray-300 hover:text-white">{c.name}</Link>
+                                        <Link to={createCategoryUrl(store.slug, c.slug)} className="text-base text-gray-300 hover:text-white">{c.name}</Link>
                                     </li>
                                 ))}
                             </ul>

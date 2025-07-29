@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { createProductUrl } from '@/utils/urlUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { useStore } from '@/components/storefront/StoreProvider';
 import ProductLabelComponent from '@/components/storefront/ProductLabel';
@@ -9,7 +10,7 @@ import { formatDisplayPrice } from '@/utils/priceUtils';
 const ProductCard = ({ product, settings, className = "" }) => {
   const { productLabels, store, taxes, selectedCountry } = useStore();
 
-  if (!product) return null;
+  if (!product || !store) return null;
 
   // Product label logic - unified across all components
   const renderProductLabels = () => {
@@ -108,7 +109,7 @@ const ProductCard = ({ product, settings, className = "" }) => {
   return (
     <Card className={`group overflow-hidden ${className}`}>
       <CardContent className="p-0">
-        <Link to={createPageUrl(`ProductDetail?slug=${product.slug}`)}>
+        <Link to={createProductUrl(store.slug, product.slug, product.id || '')}>
           <div className="relative">
             <img
               src={product.images?.[0] || 'https://placehold.co/400x400?text=No+Image'}
@@ -121,7 +122,7 @@ const ProductCard = ({ product, settings, className = "" }) => {
         </Link>
         <div className="p-4">
           <h3 className="font-semibold text-lg truncate mt-1">
-            <Link to={createPageUrl(`ProductDetail?slug=${product.slug}`)}>{product.name}</Link>
+            <Link to={createProductUrl(store.slug, product.slug, product.id || '')}>{product.name}</Link>
           </h3>
           <div className="flex items-center justify-between mt-4">
             <div className="flex items-baseline gap-2">
