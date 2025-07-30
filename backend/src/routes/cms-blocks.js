@@ -23,22 +23,22 @@ router.get('/public', async (req, res) => {
 
     console.log('🔍 CMS Blocks API: Querying database with raw SQL...');
     
-    // Use raw SQL to avoid Sequelize model issues
+    // Use raw SQL with explicit casting (copied from working simple test)
     const blocks = await sequelize.query(`
       SELECT 
-        id, 
-        title, 
-        identifier, 
-        content, 
-        placement, 
-        sort_order, 
+        id::text as id,
+        title,
+        identifier,
+        content,
+        placement,
+        sort_order,
         is_active
       FROM cms_blocks 
-      WHERE store_id = :storeId 
+      WHERE store_id::text = $1
       AND is_active = true
       ORDER BY sort_order ASC, title ASC
     `, {
-      replacements: { storeId: store_id },
+      bind: [store_id],
       type: QueryTypes.SELECT
     });
 
