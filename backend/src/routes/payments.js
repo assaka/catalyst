@@ -433,7 +433,7 @@ router.post('/create-checkout', async (req, res) => {
     
     // Add tax as a line item if provided
     if (taxAmountNum > 0) {
-      console.log('💰 Adding tax line item:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100));
+      console.log('💰 Adding tax line item:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100), 'from original:', tax_amount);
       
       const taxPercentage = subtotal > 0 ? ((taxAmountNum / subtotal) * 100).toFixed(2) : '';
       const taxName = taxPercentage ? `Tax (${taxPercentage}%)` : 'Tax';

@@ -686,7 +686,7 @@ export default function Checkout() {
         shippingAddress: getShippingCountry() === shippingAddress.country ? shippingAddress : userAddresses.find(a => a.id === selectedShippingAddress),
         billingAddress: useShippingForBilling ? (getShippingCountry() === shippingAddress.country ? shippingAddress : userAddresses.find(a => a.id === selectedShippingAddress)) : (getBillingCountry() === billingAddress.country ? billingAddress : userAddresses.find(a => a.id === selectedBillingAddress)),
         store,
-        taxAmount,
+        taxAmount: calculateTax(),
         shippingCost,
         paymentFee,
         shippingMethod: selectedMethod,
