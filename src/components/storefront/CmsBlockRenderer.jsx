@@ -110,9 +110,7 @@ export default function CmsBlockRenderer({ position, page }) {
             blockPosition = placement.position || 'before_content';
             blockPages = placement.pages || ['storefront_home'];
           }
-          
-          console.log(`🔍 CMS Block "${block.title}": position="${blockPosition}", pages="${blockPages.join(',')}", looking for position="${position}", page="${page}"`);
-          
+
           return blockPosition === position && 
                  (blockPages.includes('all_pages') || blockPages.includes(page));
         });

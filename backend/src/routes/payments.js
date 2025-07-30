@@ -266,6 +266,8 @@ router.post('/create-checkout', async (req, res) => {
       shipping_method,
       selected_shipping_method,
       shipping_cost,
+      tax_amount,
+      payment_fee,
       discount_amount,
       applied_coupon,
       delivery_date,
@@ -396,6 +398,40 @@ router.post('/create-checkout', async (req, res) => {
         });
       }
     });
+
+    // Add tax as a line item if provided
+    if (tax_amount && tax_amount > 0) {
+      line_items.push({
+        price_data: {
+          currency: storeCurrency.toLowerCase(),
+          product_data: {
+            name: 'Tax',
+            metadata: {
+              item_type: 'tax'
+            }
+          },
+          unit_amount: Math.round(tax_amount * 100), // Convert to cents
+        },
+        quantity: 1,
+      });
+    }
+
+    // Add payment fee as a line item if provided
+    if (payment_fee && payment_fee > 0) {
+      line_items.push({
+        price_data: {
+          currency: storeCurrency.toLowerCase(),
+          product_data: {
+            name: 'Payment Processing Fee',
+            metadata: {
+              item_type: 'payment_fee'
+            }
+          },
+          unit_amount: Math.round(payment_fee * 100), // Convert to cents
+        },
+        quantity: 1,
+      });
+    }
 
     // Build checkout session configuration
     const sessionConfig = {
@@ -532,9 +568,18 @@ router.post('/create-checkout', async (req, res) => {
 
     // Enable shipping address collection if we have shipping data
     if (shipping_address || sessionConfig.shipping_options) {
+      // Get the country from shipping address, default to US
+      const preselectedCountry = shipping_address?.country || 'US';
+      
       sessionConfig.shipping_address_collection = {
         allowed_countries: ['US', 'CA', 'GB', 'AU', 'NL', 'DE', 'FR', 'ES', 'IT', 'BE', 'AT', 'CH']
       };
+      
+      // If we have a shipping address, set the customer's default shipping address
+      if (shipping_address && shipping_address.street && shipping_address.city) {
+        // This will be handled in the customer creation section below
+        console.log('Will preselect country:', preselectedCountry);
+      }
     }
 
     // Pre-fill customer details if we have shipping address
@@ -569,6 +614,37 @@ router.post('/create-checkout', async (req, res) => {
           if (customers.data.length > 0) {
             customer = customers.data[0];
             console.log('Found existing customer:', customer.id);
+            
+            // Update existing customer with current address info if provided
+            if (customerName && line1) {
+              try {
+                await stripe.customers.update(customer.id, {
+                  name: customerName,
+                  address: {
+                    line1: line1,
+                    line2: line2 || undefined,
+                    city: city || undefined,
+                    state: state || undefined,
+                    postal_code: postal_code || undefined,
+                    country: country
+                  },
+                  shipping: {
+                    name: customerName,
+                    address: {
+                      line1: line1,
+                      line2: line2 || undefined,
+                      city: city || undefined,
+                      state: state || undefined,
+                      postal_code: postal_code || undefined,
+                      country: country
+                    }
+                  }
+                }, customerStripeOptions);
+                console.log('Updated existing customer with current address');
+              } catch (updateError) {
+                console.log('Could not update existing customer address:', updateError.message);
+              }
+            }
           } else {
             // Create new customer with address in the appropriate account
             customer = await stripe.customers.create({
@@ -594,7 +670,7 @@ router.post('/create-checkout', async (req, res) => {
                 }
               } : undefined
             }, customerStripeOptions);
-            console.log('Created new customer:', customer.id);
+            console.log('Created new customer:', customer.id, 'with country:', country);
           }
           
           sessionConfig.customer = customer.id;

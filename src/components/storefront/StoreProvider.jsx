@@ -126,9 +126,7 @@ const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION) => {
   // No cached data - must fetch fresh
   try {
     await delay(Math.random() * 3000 + 1000); // Random delay 1-4 seconds
-    console.log(`🚀 StoreProvider: Executing fresh API call for ${key}`);
     const result = await apiCall();
-    console.log(`✅ StoreProvider: API call successful for ${key}:`, result);
     apiCache.set(key, { data: result, timestamp: now });
     saveCacheToStorage();
     return result;
@@ -177,7 +175,6 @@ export const StoreProvider = ({ children }) => {
       // Check if we need to force refresh the cache (e.g., after admin settings changes)
       const forceRefresh = localStorage.getItem('forceRefreshStore');
       if (forceRefresh) {
-        console.log('🧹 StoreProvider: Force refresh detected, clearing cache');
         apiCache.clear();
         localStorage.removeItem('storeProviderCache');
         localStorage.removeItem('forceRefreshStore');
@@ -216,9 +213,7 @@ export const StoreProvider = ({ children }) => {
       const stores = await cachedApiCall(storeCacheKey, async () => {
         if (storeIdentifier) {
           try {
-            console.log(`🔍 StoreProvider: Looking for store with slug: ${storeIdentifier}`);
             const result = await StorefrontStore.filter({ slug: storeIdentifier });
-            console.log(`📊 StoreProvider: StorefrontStore.filter result:`, result);
             return Array.isArray(result) ? result : [];
           } catch (error) {
             console.error(`❌ StoreProvider: StorefrontStore.filter failed for slug:`, error);
@@ -226,9 +221,7 @@ export const StoreProvider = ({ children }) => {
           }
         } else {
           try {
-            console.log(`🔍 StoreProvider: Getting first store (no slug specified)`);
             const result = await StorefrontStore.findAll({ limit: 1 });
-            console.log(`📊 StoreProvider: StorefrontStore.findAll result:`, result);
             return Array.isArray(result) ? result : [];
           } catch (error) {
             console.error(`❌ StoreProvider: StorefrontStore.findAll failed:`, error);
@@ -239,10 +232,7 @@ export const StoreProvider = ({ children }) => {
 
 
       const selectedStore = stores?.[0];
-      
-      console.log(`🏢 StoreProvider: Selected store:`, selectedStore);
-      console.log(`📊 StoreProvider: Total stores found: ${stores?.length || 0}`);
-      
+
       if (!selectedStore) {
         console.warn('⚠️ StoreProvider: No store found!');
         console.warn('Available stores:', stores);

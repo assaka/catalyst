@@ -12,11 +12,8 @@ class StorefrontBaseEntity {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
-      
-      console.log(`🌐 Storefront Public API: ${this.endpoint}.findAll() with URL: ${url}`);
-      console.log(`🔍 API params:`, params);
+
       const response = await this.client.getPublic(url);
-      console.log(`✅ API response for ${this.endpoint}:`, response);
       
       return Array.isArray(response) ? response : [];
     } catch (error) {
@@ -75,8 +72,7 @@ class CustomerBaseEntity {
         const queryString = new URLSearchParams(params).toString();
         url = `${this.endpoint}?${queryString}`;
       }
-      
-      console.log(`👤 Customer API: ${this.endpoint}.findAll() with URL: ${url}`);
+
       const response = await this.client.getCustomer(url);
       
       return Array.isArray(response) ? response : [];
@@ -87,23 +83,19 @@ class CustomerBaseEntity {
   }
 
   async findById(id) {
-    const response = await this.client.getCustomer(`${this.endpoint}/${id}`);
-    return response;
+    return await this.client.getCustomer(`${this.endpoint}/${id}`);
   }
 
   async create(data) {
-    const response = await this.client.postCustomer(this.endpoint, data);
-    return response;
+    return await this.client.postCustomer(this.endpoint, data);
   }
 
   async update(id, data) {
-    const response = await this.client.putCustomer(`${this.endpoint}/${id}`, data);
-    return response;
+    return await this.client.putCustomer(`${this.endpoint}/${id}`, data);
   }
 
   async delete(id) {
-    const response = await this.client.deleteCustomer(`${this.endpoint}/${id}`);
-    return response;
+    return await this.client.deleteCustomer(`${this.endpoint}/${id}`);
   }
 
   async filter(params = {}) {
@@ -167,8 +159,7 @@ class StorefrontStoreService extends StorefrontBaseEntity {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `stores?${queryString}` : 'stores';
-      
-      console.log(`🏪 Storefront Store Filter: ${url}`);
+
       const response = await this.client.getPublic(url);
       
       return Array.isArray(response) ? response : [];
