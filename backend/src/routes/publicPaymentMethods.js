@@ -32,8 +32,6 @@ router.get('/', async (req, res) => {
         'code',
         'name',
         'description',
-        'instructions',
-        'icon_url',
         'fee_type',
         'fee_amount',
         'countries',

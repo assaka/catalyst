@@ -172,13 +172,17 @@ export default function Checkout() {
 
       // Load payment methods, shipping methods, delivery settings, and tax rules
       const [paymentData, shippingData, deliveryData, taxData] = await Promise.all([
-        PaymentMethod.filter({ store_id: store.id, is_active: true }),
-        ShippingMethod.filter({ store_id: store.id, is_active: true }),
+        PaymentMethod.filter({ store_id: store.id }),
+        ShippingMethod.filter({ store_id: store.id }),
         DeliverySettings.filter({ store_id: store.id }),
-        Tax.filter({ store_id: store.id, is_active: true })
+        Tax.filter({ store_id: store.id })
       ]);
 
 
+      console.log('📊 Payment methods loaded:', paymentData);
+      console.log('🚚 Shipping methods loaded:', shippingData);
+      console.log('📦 Delivery settings loaded:', deliveryData);
+      
       setPaymentMethods(paymentData || []);
       setShippingMethods(shippingData || []);
       setDeliverySettings(deliveryData && deliveryData.length > 0 ? deliveryData[0] : null);
@@ -598,10 +602,16 @@ export default function Checkout() {
 
   const getEligiblePaymentMethods = () => {
     const country = getBillingCountry();
-    return paymentMethods.filter(method => {
+    console.log('💳 Getting eligible payment methods for country:', country);
+    console.log('💳 All payment methods:', paymentMethods);
+    
+    const eligible = paymentMethods.filter(method => {
       if (!method.countries || method.countries.length === 0) return true;
       return method.countries.includes(country);
     });
+    
+    console.log('💳 Eligible payment methods:', eligible);
+    return eligible;
   };
 
   const getDeliveryDateConstraints = () => {
