@@ -134,10 +134,10 @@ const OrdersTab = ({ orders, getCountryName }) => (
   </Card>
 );
 
-const WishlistTab = ({ wishlistProducts, setWishlistProducts }) => {
+const WishlistTab = ({ wishlistProducts, setWishlistProducts, store }) => {
   const handleRemove = async (itemId) => {
       try {
-          await CustomerWishlist.removeItem(itemId);
+          await CustomerWishlist.removeItem(itemId, store?.id);
           setWishlistProducts(prev => prev.filter(p => p.id !== itemId));
           window.dispatchEvent(new CustomEvent('wishlistUpdated'));
       } catch (error) {
@@ -1004,7 +1004,7 @@ export default function CustomerDashboard() {
               )}
 
               {activeTab === 'wishlist' && (
-                <WishlistTab wishlistProducts={wishlistProducts} setWishlistProducts={setWishlistProducts} />
+                <WishlistTab wishlistProducts={wishlistProducts} setWishlistProducts={setWishlistProducts} store={store} />
               )}
             </div>
           </div>

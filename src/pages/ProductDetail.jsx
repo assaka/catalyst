@@ -300,14 +300,14 @@ export default function ProductDetail() {
 
     try {
       if (isInWishlist) {
-        await CustomerWishlist.removeItem(product.id);
+        await CustomerWishlist.removeItem(product.id, store.id);
         setIsInWishlist(false);
         setFlashMessage({
           type: 'success',
           message: 'Product removed from wishlist'
         });
       } else {
-        await CustomerWishlist.addItem(product.id);
+        await CustomerWishlist.addItem(product.id, store.id);
         setIsInWishlist(true);
         setFlashMessage({
           type: 'success',

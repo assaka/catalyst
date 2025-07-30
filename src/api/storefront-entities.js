@@ -292,8 +292,11 @@ class StorefrontWishlistService {
     return this.client.isCustomerAuthenticated();
   }
 
-  async addItem(productId) {
-    const data = { product_id: productId };
+  async addItem(productId, storeId) {
+    const data = { 
+      product_id: productId,
+      store_id: storeId 
+    };
     
     try {
       // Use customerRequest which handles both authenticated and guest users
@@ -304,10 +307,13 @@ class StorefrontWishlistService {
     }
   }
 
-  async removeItem(productId) {
+  async removeItem(productId, storeId) {
     try {
       // Use customerRequest which handles both authenticated and guest users
-      return await this.client.customerRequest('DELETE', `${this.endpoint}/product/${productId}`);
+      const endpoint = storeId 
+        ? `${this.endpoint}/product/${productId}?store_id=${storeId}`
+        : `${this.endpoint}/product/${productId}`;
+      return await this.client.customerRequest('DELETE', endpoint);
     } catch (error) {
       console.error(`Wishlist removeItem error:`, error.message);
       throw error;

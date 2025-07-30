@@ -105,7 +105,7 @@ export default function WishlistDropdown() {
 
   const handleRemoveFromWishlist = async (productId) => {
     try {
-      await retryApiCall(() => CustomerWishlist.removeItem(productId));
+      await retryApiCall(() => CustomerWishlist.removeItem(productId, store?.id));
       window.dispatchEvent(new CustomEvent('wishlistUpdated')); // Dispatch global event to trigger reload
     } catch (error) {
       console.error("WishlistDropdown: Error removing item from wishlist:", error);
