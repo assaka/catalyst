@@ -24,30 +24,47 @@ const optionalAuth = (req, res, next) => {
 
 // @route   GET /api/addresses
 // @desc    Get addresses for a user
-// @access  Public (but requires user_id parameter)
-router.get('/', async (req, res) => {
+// @access  Public (supports both user_id parameter and authentication)
+router.get('/', optionalAuth, async (req, res) => {
   try {
     const { user_id, session_id } = req.query;
 
     // Guest users (session_id only) have no saved addresses
-    if (!user_id && session_id) {
+    if (!user_id && session_id && !req.user) {
       return res.json({
         success: true,
         data: []
       });
     }
 
-    if (!user_id) {
+    let whereClause = {};
+
+    // If authenticated, get addresses for the authenticated user
+    if (req.user) {
+      const isCustomer = req.user.role === 'customer';
+      if (isCustomer) {
+        whereClause.customer_id = req.user.id;
+      } else {
+        whereClause.user_id = req.user.id;
+      }
+      console.log('🔍 Getting addresses for authenticated user:', req.user.id, 'role:', req.user.role);
+    } else if (user_id) {
+      // Fallback to user_id parameter (legacy support)
+      whereClause.user_id = user_id;
+      console.log('🔍 Getting addresses for user_id parameter:', user_id);
+    } else {
       return res.status(400).json({
         success: false,
-        message: 'user_id is required'
+        message: 'Authentication or user_id is required'
       });
     }
 
     const addresses = await Address.findAll({
-      where: { user_id },
+      where: whereClause,
       order: [['is_default', 'DESC'], ['createdAt', 'DESC']]
     });
+
+    console.log('✅ Found addresses:', addresses.length);
 
     res.json({
       success: true,
@@ -150,10 +167,18 @@ router.post('/', optionalAuth, async (req, res) => {
     
     console.log(`✅ User verified in ${tableName} table:`, req.user.id);
 
+    // Set the correct foreign key field based on user role
     const addressData = {
-      ...req.body,
-      user_id: req.user.id
+      ...req.body
     };
+    
+    if (isCustomer) {
+      addressData.customer_id = req.user.id;
+      console.log('💾 Setting customer_id for address:', req.user.id);
+    } else {
+      addressData.user_id = req.user.id;
+      console.log('💾 Setting user_id for address:', req.user.id);
+    }
 
     console.log('💾 Creating address for verified user:', req.user.id);
     const address = await Address.create(addressData);
@@ -177,12 +202,17 @@ router.post('/', optionalAuth, async (req, res) => {
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
   try {
-    const address = await Address.findOne({
-      where: {
-        id: req.params.id,
-        user_id: req.user.id
-      }
-    });
+    // Build where clause based on user role
+    const isCustomer = req.user.role === 'customer';
+    const whereClause = { id: req.params.id };
+    
+    if (isCustomer) {
+      whereClause.customer_id = req.user.id;
+    } else {
+      whereClause.user_id = req.user.id;
+    }
+
+    const address = await Address.findOne({ where: whereClause });
 
     if (!address) {
       return res.status(404).json({
@@ -211,12 +241,17 @@ router.put('/:id', auth, async (req, res) => {
 // @access  Private
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const address = await Address.findOne({
-      where: {
-        id: req.params.id,
-        user_id: req.user.id
-      }
-    });
+    // Build where clause based on user role
+    const isCustomer = req.user.role === 'customer';
+    const whereClause = { id: req.params.id };
+    
+    if (isCustomer) {
+      whereClause.customer_id = req.user.id;
+    } else {
+      whereClause.user_id = req.user.id;
+    }
+
+    const address = await Address.findOne({ where: whereClause });
 
     if (!address) {
       return res.status(404).json({
