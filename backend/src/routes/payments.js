@@ -415,13 +415,25 @@ router.post('/create-checkout', async (req, res) => {
     const taxAmountNum = parseFloat(tax_amount) || 0;
     if (taxAmountNum > 0) {
       console.log('💰 Adding tax line item:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100));
+      
+      // Add tax percentage if we can calculate it
+      const subtotal = items.reduce((sum, item) => {
+        const itemTotal = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
+        return sum + itemTotal;
+      }, 0);
+      
+      const taxPercentage = subtotal > 0 ? ((taxAmountNum / subtotal) * 100).toFixed(2) : '';
+      const taxName = taxPercentage ? `Tax (${taxPercentage}%)` : 'Tax';
+      
       line_items.push({
         price_data: {
           currency: storeCurrency.toLowerCase(),
           product_data: {
-            name: 'Tax',
+            name: taxName,
+            description: 'Sales Tax',
             metadata: {
-              item_type: 'tax'
+              item_type: 'tax',
+              tax_rate: taxPercentage
             }
           },
           unit_amount: Math.round(taxAmountNum * 100), // Convert to cents
@@ -478,8 +490,8 @@ router.post('/create-checkout', async (req, res) => {
       payment_method_types: ['card'],
       line_items: line_items,
       mode: 'payment',
-      success_url: success_url || `${process.env.CORS_ORIGIN}/order-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancel_url || `${process.env.CORS_ORIGIN}/cart`,
+      success_url: success_url || `${process.env.CORS_ORIGIN}/${store.slug}/order-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancel_url || `${process.env.CORS_ORIGIN}/${store.slug}/cart`,
       metadata: {
         store_id: store_id.toString(),
         delivery_date: delivery_date || '',
@@ -490,6 +502,7 @@ router.post('/create-checkout', async (req, res) => {
         shipping_method_name: shipping_method?.name || selected_shipping_method || '',
         shipping_method_id: shipping_method?.id?.toString() || '',
         shipping_cost: shipping_cost?.toString() || '0',
+        tax_amount: taxAmountNum.toString() || '0',
         payment_fee: paymentFeeNum.toString() || '0',
         payment_method: selected_payment_method || ''
       }
@@ -975,7 +988,7 @@ async function createOrderFromCheckoutSession(session) {
   const transaction = await sequelize.transaction();
   
   try {
-    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code, shipping_method_name, shipping_method_id, payment_fee, payment_method } = session.metadata || {};
+    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code, shipping_method_name, shipping_method_id, payment_fee, payment_method, tax_amount } = session.metadata || {};
     
     // Validate store_id
     if (!store_id) {
@@ -1017,7 +1030,11 @@ async function createOrderFromCheckoutSession(session) {
     
     // Calculate order totals from session
     const subtotal = session.amount_subtotal / 100; // Convert from cents
-    const tax_amount = (session.total_details?.amount_tax || 0) / 100;
+    // Use tax from metadata if available, otherwise from Stripe's total_details
+    const tax_amount_calculated = (session.total_details?.amount_tax || 0) / 100;
+    const tax_amount_from_metadata = parseFloat(tax_amount) || 0;
+    const final_tax_amount = tax_amount_from_metadata || tax_amount_calculated;
+    
     let shipping_cost = (session.total_details?.amount_shipping || 0) / 100;
     const payment_fee_amount = parseFloat(payment_fee) || 0;
     const total_amount = session.amount_total / 100;
@@ -1088,7 +1105,7 @@ async function createOrderFromCheckoutSession(session) {
       billing_address: session.customer_details?.address || {},
       shipping_address: session.shipping_details?.address || session.customer_details?.address || {},
       subtotal: subtotal,
-      tax_amount: tax_amount,
+      tax_amount: final_tax_amount,
       shipping_amount: shipping_cost, // Use shipping_amount instead of shipping_cost
       discount_amount: (session.total_details?.amount_discount || 0) / 100,
       payment_fee_amount: payment_fee_amount,
