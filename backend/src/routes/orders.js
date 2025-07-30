@@ -5,6 +5,18 @@ const { Op } = require('sequelize');
 const auth = require('../middleware/auth');
 const router = express.Router();
 
+// @route   GET /api/orders/test
+// @desc    Test endpoint to verify deployment
+// @access  Public (no auth required)
+router.get('/test', (req, res) => {
+  console.log('🔍 Orders test endpoint hit');
+  res.json({
+    success: true,
+    message: 'Orders routes are working',
+    timestamp: new Date().toISOString(),
+    deployment_version: '2.0'
+  });
+});
 
 // @route   GET /api/orders/by-payment-reference/:paymentReference
 // @desc    Get order by payment reference (for order success page)
