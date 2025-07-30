@@ -248,7 +248,7 @@ router.get('/customer-orders', auth, async (req, res) => {
       include: [
         {
           model: Store,
-          attributes: ['id', 'name', 'logo', 'owner_email']
+          attributes: ['id', 'name', 'logo_url', 'owner_email']
         },
         {
           model: OrderItem,
