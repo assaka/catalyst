@@ -73,9 +73,36 @@ router.get('/:id', async (req, res) => {
 
 // @route   POST /api/addresses
 // @desc    Create new address
-// @access  Private
-router.post('/', auth, async (req, res) => {
+// @access  Private (requires authentication) or Public (guest sessions return error)
+router.post('/', async (req, res) => {
   try {
+    const { session_id } = req.query;
+    
+    console.log('🔍 Address creation attempt:', {
+      hasUser: !!req.user,
+      userId: req.user?.id,
+      sessionId: session_id,
+      body: req.body
+    });
+    
+    // Guest users cannot save addresses
+    if (session_id && !req.user) {
+      console.log('❌ Guest user tried to save address');
+      return res.status(400).json({
+        success: false,
+        message: 'Guest users cannot save addresses. Please create an account to save addresses.'
+      });
+    }
+    
+    // Require authentication for saving addresses
+    if (!req.user || !req.user.id) {
+      console.log('❌ No authentication for address creation');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required to save addresses'
+      });
+    }
+
     const addressData = {
       ...req.body,
       user_id: req.user.id
