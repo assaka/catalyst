@@ -32,7 +32,6 @@ const ProductTab = require('./ProductTab');
 const defineAssociations = () => {
   // User associations
   User.hasMany(Store, { foreignKey: 'owner_email', sourceKey: 'email' });
-  User.hasMany(Order, { foreignKey: 'customer_id' });
 
   // Store associations
   Store.belongsTo(User, { foreignKey: 'owner_email', targetKey: 'email' });
@@ -67,7 +66,7 @@ const defineAssociations = () => {
 
   // Order associations
   Order.belongsTo(Store, { foreignKey: 'store_id' });
-  Order.belongsTo(User, { as: 'customer', foreignKey: 'customer_id' });
+  Order.belongsTo(Customer, { as: 'customer', foreignKey: 'customer_id' });
   Order.hasMany(OrderItem, { foreignKey: 'order_id' });
 
   // OrderItem associations
@@ -94,6 +93,7 @@ const defineAssociations = () => {
 
   // Customer associations
   Customer.belongsTo(Store, { foreignKey: 'store_id' });
+  Customer.hasMany(Order, { foreignKey: 'customer_id' });
   Store.hasMany(Customer, { foreignKey: 'store_id' });
 
   // Cart associations
