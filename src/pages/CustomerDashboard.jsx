@@ -582,7 +582,7 @@ export default function CustomerDashboard() {
   const loadWishlist = async (userId) => {
       if (!userId) return;
       try {
-        const wishlistItems = await retryApiCall(() => CustomerWishlist.getItems());
+        const wishlistItems = await retryApiCall(() => CustomerWishlist.getItems(store?.id));
         if (wishlistItems && wishlistItems.length > 0) {
             const productIds = wishlistItems.map(i => i.product_id);
             const products = await retryApiCall(() => Product.filter({ id: { "$in": productIds } }));

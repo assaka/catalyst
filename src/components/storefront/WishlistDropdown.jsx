@@ -52,11 +52,13 @@ export default function WishlistDropdown() {
       setUser(currentUser);
 
       // Load wishlist items - this should work for both authenticated and guest users
-      const result = await retryApiCall(() => CustomerWishlist.getItems()).catch((error) => {
+      const result = await retryApiCall(() => CustomerWishlist.getItems(store?.id)).catch((error) => {
         console.warn("WishlistDropdown: Could not load wishlist items:", error.message);
         return [];
       });
       const items = Array.isArray(result) ? result : [];
+
+      console.log(`🛒 WishlistDropdown: Loaded ${items.length} wishlist items for store ${store?.id}:`, items);
 
       if (items.length > 0) {
         const productIds = [...new Set(items.map(item => item.product_id))];
@@ -94,6 +96,7 @@ export default function WishlistDropdown() {
 
     // Listen for wishlist updates
     const handleWishlistUpdate = () => {
+      console.log('🔔 WishlistDropdown: Received wishlistUpdated event, reloading items...');
       if (store?.id) {
         loadWishlistItems();
       }

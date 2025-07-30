@@ -193,7 +193,7 @@ export default function ProductDetail() {
   const checkWishlistStatus = async (productId) => {
     if (!store?.id || !productId) return;
     try {
-      const wishlistItems = await CustomerWishlist.getItems();
+      const wishlistItems = await CustomerWishlist.getItems(store?.id);
       // Check if this specific product is in the wishlist
       const isProductInWishlist = wishlistItems && wishlistItems.some(item => 
         item.product_id === productId || item.product_id === parseInt(productId)
@@ -316,6 +316,11 @@ export default function ProductDetail() {
       }
 
       window.dispatchEvent(new CustomEvent('wishlistUpdated'));
+      
+      // Refresh wishlist status to ensure UI is in sync
+      if (product?.id) {
+        checkWishlistStatus(product.id);
+      }
 
     } catch (error) {
       console.error("Error toggling wishlist:", error);

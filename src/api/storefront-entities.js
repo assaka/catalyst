@@ -320,10 +320,13 @@ class StorefrontWishlistService {
     }
   }
 
-  async getItems() {
+  async getItems(storeId) {
     try {
       // Always use customerRequest which handles both authenticated and guest users
-      const response = await this.client.customerRequest('GET', this.endpoint);
+      const endpoint = storeId 
+        ? `${this.endpoint}?store_id=${storeId}`
+        : this.endpoint;
+      const response = await this.client.customerRequest('GET', endpoint);
       return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error(`Wishlist ${this.endpoint}.getItems() error:`, error.message);
