@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { CmsBlock, Store } = require('../models');
 const { Op } = require('sequelize');
+const { sequelize } = require('../database/connection');
 const router = express.Router();
 
 // @route   GET /api/public/cms-blocks
@@ -20,14 +21,25 @@ router.get('/public', async (req, res) => {
       });
     }
 
-    console.log('🔍 CMS Blocks API: Querying database for blocks...');
-    const blocks = await CmsBlock.findAll({
-      where: { 
-        store_id,
-        is_active: true
-      },
-      order: [['sort_order', 'ASC'], ['title', 'ASC']],
-      attributes: ['id', 'title', 'identifier', 'content', 'placement', 'sort_order', 'is_active']
+    console.log('🔍 CMS Blocks API: Querying database with raw SQL...');
+    
+    // Use raw SQL to avoid Sequelize model issues
+    const blocks = await sequelize.query(`
+      SELECT 
+        id, 
+        title, 
+        identifier, 
+        content, 
+        placement, 
+        sort_order, 
+        is_active
+      FROM cms_blocks 
+      WHERE store_id = :storeId 
+      AND is_active = true
+      ORDER BY sort_order ASC, title ASC
+    `, {
+      replacements: { storeId: store_id },
+      type: require('sequelize').QueryTypes.SELECT
     });
 
     console.log('🔍 CMS Blocks API: Found blocks:', blocks.length);
