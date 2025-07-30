@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CountrySelect } from '@/components/ui/country-select';
 import { formatDisplayPrice } from '@/utils/priceUtils';
+import cartService from '@/services/cartService';
 
 // --- Utilities ---
 let globalRequestQueue = Promise.resolve();
@@ -367,18 +368,35 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, t
 
   const handleAddToCart = async (product) => {
       try {
-          // Add to cart and show success message
-          window.dispatchEvent(new CustomEvent('addToCart', { 
-              detail: { 
-                  product: product,
-                  quantity: 1 
-              } 
-          }));
-          
-          // Optional: Remove from wishlist after adding to cart
-          // await handleRemove(item.id);
-          
-          console.log('Added to cart:', product.name);
+          if (!product || !product.id) {
+              console.error('Invalid product for add to cart');
+              return;
+          }
+
+          if (!store?.id) {
+              console.error('Store ID is required for add to cart');
+              return;
+          }
+
+          // Add to cart using cartService
+          const result = await cartService.addItem(
+              product.id, 
+              1, // quantity
+              product.price || 0,
+              [], // selectedOptions 
+              store.id
+          );
+
+          if (result.success !== false) {
+              // Dispatch cart updated event to refresh MiniCart
+              window.dispatchEvent(new CustomEvent('cartUpdated'));
+              console.log('Successfully added to cart:', product.name);
+              
+              // Optional: Show success message or remove from wishlist
+              // You could add a toast notification here
+          } else {
+              console.error('Failed to add to cart:', result.error);
+          }
       } catch (error) {
           console.error("Failed to add to cart", error);
       }
