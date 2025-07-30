@@ -279,9 +279,9 @@ router.post('/create-checkout', async (req, res) => {
     // Debug: Log received data
     console.log('🔍 Stripe checkout request data:', {
       customer_email,
-      tax_amount,
-      payment_fee,
-      shipping_cost,
+      tax_amount: { value: tax_amount, type: typeof tax_amount },
+      payment_fee: { value: payment_fee, type: typeof payment_fee },
+      shipping_cost: { value: shipping_cost, type: typeof shipping_cost },
       shipping_address,
       items: items?.length || 0
     });
@@ -410,8 +410,9 @@ router.post('/create-checkout', async (req, res) => {
     });
 
     // Add tax as a line item if provided
-    if (tax_amount && tax_amount > 0) {
-      console.log('💰 Adding tax line item:', tax_amount, 'cents:', Math.round(tax_amount * 100));
+    const taxAmountNum = parseFloat(tax_amount) || 0;
+    if (taxAmountNum > 0) {
+      console.log('💰 Adding tax line item:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100));
       line_items.push({
         price_data: {
           currency: storeCurrency.toLowerCase(),
@@ -421,17 +422,18 @@ router.post('/create-checkout', async (req, res) => {
               item_type: 'tax'
             }
           },
-          unit_amount: Math.round(tax_amount * 100), // Convert to cents
+          unit_amount: Math.round(taxAmountNum * 100), // Convert to cents
         },
         quantity: 1,
       });
     } else {
-      console.log('⚠️ No tax amount provided or tax is 0:', tax_amount);
+      console.log('⚠️ No tax amount provided or tax is 0:', tax_amount, 'parsed:', taxAmountNum);
     }
 
     // Add payment fee as a line item if provided
-    if (payment_fee && payment_fee > 0) {
-      console.log('💳 Adding payment fee line item:', payment_fee, 'cents:', Math.round(payment_fee * 100));
+    const paymentFeeNum = parseFloat(payment_fee) || 0;
+    if (paymentFeeNum > 0) {
+      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100));
       line_items.push({
         price_data: {
           currency: storeCurrency.toLowerCase(),
@@ -441,12 +443,12 @@ router.post('/create-checkout', async (req, res) => {
               item_type: 'payment_fee'
             }
           },
-          unit_amount: Math.round(payment_fee * 100), // Convert to cents
+          unit_amount: Math.round(paymentFeeNum * 100), // Convert to cents
         },
         quantity: 1,
       });
     } else {
-      console.log('⚠️ No payment fee provided or fee is 0:', payment_fee);
+      console.log('⚠️ No payment fee provided or fee is 0:', payment_fee, 'parsed:', paymentFeeNum);
     }
 
     // Build checkout session configuration
@@ -583,20 +585,16 @@ router.post('/create-checkout', async (req, res) => {
       });
     }
 
-    // Enable shipping address collection if we have shipping data
-    if (shipping_address || sessionConfig.shipping_options) {
-      // Get the country from shipping address, default to US
-      const preselectedCountry = shipping_address?.country || 'US';
-      
+    // Enable shipping address collection only if we don't have complete shipping data
+    if (sessionConfig.shipping_options && (!shipping_address || !shipping_address.street || !shipping_address.city)) {
+      // Only enable shipping address collection if we're missing shipping details
       sessionConfig.shipping_address_collection = {
         allowed_countries: ['US', 'CA', 'GB', 'AU', 'NL', 'DE', 'FR', 'ES', 'IT', 'BE', 'AT', 'CH']
       };
-      
-      // If we have a shipping address, set the customer's default shipping address
-      if (shipping_address && shipping_address.street && shipping_address.city) {
-        // This will be handled in the customer creation section below
-        console.log('Will preselect country:', preselectedCountry);
-      }
+      console.log('🚚 Enabled shipping address collection - missing shipping details');
+    } else if (shipping_address && shipping_address.street && shipping_address.city) {
+      console.log('🚚 Complete shipping address provided - skipping address collection');
+      // We have complete shipping address, so we'll use the customer with prefilled address
     }
 
     // Pre-fill customer details if we have shipping address
@@ -703,10 +701,13 @@ router.post('/create-checkout', async (req, res) => {
       sessionConfig.customer_email = customer_email;
       console.log('📧 Set customer_email directly:', customer_email);
     } else if (customer_email && customerCreated) {
-      console.log('📧 Customer created with email attached to customer ID');
+      console.log('📧 Customer created with email attached to customer ID:', customer_email);
     } else if (!customer_email) {
       console.log('⚠️ No customer_email provided');
     }
+    
+    // Log shipping address collection status
+    console.log('🚚 Shipping address collection enabled:', !!sessionConfig.shipping_address_collection);
 
     // Use Connect account if available
     const stripeOptions = {};
