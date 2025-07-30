@@ -809,7 +809,7 @@ router.post('/create-checkout', async (req, res) => {
     });
 
     // Create preliminary order and OrderItems immediately for lazy loading
-    console.log('💾 Creating preliminary order for immediate availability...');
+    console.log('💾 *** LAZY LOADING v7.0 *** Creating preliminary order for immediate availability...');
     try {
       await createPreliminaryOrder(session, {
         items,

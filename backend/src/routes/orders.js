@@ -12,7 +12,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   try {
     const { paymentReference } = req.params;
     
-    console.log('🔍 *** DEPLOYMENT v6.0 ORDERITEMS FIX *** - Fetching order with payment reference:', paymentReference);
+    console.log('🔍 *** DEPLOYMENT v7.0 LAZY LOADING + ASSOCIATION FIX *** - Fetching order with payment reference:', paymentReference);
     
     // Use EXACT same logic as admin orders that works
     const order = await Order.findOne({
@@ -26,11 +26,17 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       include: [
         {
           model: Store,
-          attributes: ['id', 'name']
+          attributes: ['id', 'name'],
+          required: false // Allow null Store
         },
         {
           model: OrderItem,
-          include: [{ model: Product, attributes: ['id', 'name', 'sku'] }]
+          include: [{ 
+            model: Product, 
+            attributes: ['id', 'name', 'sku'],
+            required: false 
+          }],
+          required: false // Allow empty OrderItems
         }
       ]
     });
