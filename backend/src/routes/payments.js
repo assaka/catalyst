@@ -430,35 +430,9 @@ router.post('/create-checkout', async (req, res) => {
       return sum + itemTotal;
     }, 0);
     
-    // Order: Products (already added) → Tax → Payment Method Fee → Shipping
+    // Order: Products (already added) → Payment Method Fee → Tax → Shipping
     
-    // 1. Add tax as a line item if provided
-    if (taxAmountNum > 0) {
-      console.log('💰 Adding tax line item:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100), 'from original:', tax_amount);
-      
-      const taxPercentage = subtotal > 0 ? ((taxAmountNum / subtotal) * 100).toFixed(2) : '';
-      const taxName = taxPercentage ? `Tax (${taxPercentage}%)` : 'Tax';
-      
-      line_items.push({
-        price_data: {
-          currency: storeCurrency.toLowerCase(),
-          product_data: {
-            name: taxName,
-            description: 'Sales Tax',
-            metadata: {
-              item_type: 'tax',
-              tax_rate: taxPercentage
-            }
-          },
-          unit_amount: Math.round(taxAmountNum * 100), // Convert to cents
-        },
-        quantity: 1,
-      });
-    } else {
-      console.log('⚠️ No tax amount provided or tax is 0:', tax_amount, 'parsed:', taxAmountNum);
-    }
-    
-    // 2. Add payment fee as a line item if provided
+    // 1. Add payment fee as a line item if provided (after subtotal)
     if (paymentFeeNum > 0) {
       console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method, 'name:', selected_payment_method_name);
       
@@ -482,6 +456,32 @@ router.post('/create-checkout', async (req, res) => {
       });
     } else {
       console.log('⚠️ No payment fee provided or fee is 0:', payment_fee, 'parsed:', paymentFeeNum);
+    }
+    
+    // 2. Add tax as a line item if provided
+    if (taxAmountNum > 0) {
+      console.log('💰 Adding tax line item:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100), 'from original:', tax_amount);
+      
+      const taxPercentage = subtotal > 0 ? ((taxAmountNum / subtotal) * 100).toFixed(2) : '';
+      const taxName = taxPercentage ? `Tax (${taxPercentage}%)` : 'Tax';
+      
+      line_items.push({
+        price_data: {
+          currency: storeCurrency.toLowerCase(),
+          product_data: {
+            name: taxName,
+            description: 'Sales Tax',
+            metadata: {
+              item_type: 'tax',
+              tax_rate: taxPercentage
+            }
+          },
+          unit_amount: Math.round(taxAmountNum * 100), // Convert to cents
+        },
+        quantity: 1,
+      });
+    } else {
+      console.log('⚠️ No tax amount provided or tax is 0:', tax_amount, 'parsed:', taxAmountNum);
     }
 
     // Build checkout session configuration
