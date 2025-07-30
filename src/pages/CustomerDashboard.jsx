@@ -8,7 +8,6 @@ import { User, Auth } from "@/api/entities";
 import { Order } from "@/api/entities";
 import { OrderItem } from "@/api/entities";
 import { CustomerWishlist, CustomerAddress } from "@/api/storefront-entities";
-import { Address } from "@/api/entities";
 import { Product } from "@/api/entities";
 import { Cart as CartEntity } from "@/api/entities";
 
@@ -713,7 +712,7 @@ export default function CustomerDashboard() {
             console.log('🔍 Fallback data without user_id:', fallbackData);
             
             try {
-              const result = await retryApiCall(() => Address.create(fallbackData));
+              const result = await retryApiCall(() => CustomerAddress.create(fallbackData));
               console.log('✅ Fallback Address create result:', result);
               setFlashMessage({ type: 'success', message: 'Address added successfully!' });
             } catch (fallbackError) {

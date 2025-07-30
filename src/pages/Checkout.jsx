@@ -2,14 +2,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { StorefrontProduct } from "@/api/storefront-entities";
+import { StorefrontProduct, CustomerAddress } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
 import couponService from "@/services/couponService";
 import taxService from "@/services/taxService";
 import { PaymentMethod } from "@/api/entities";
 import { ShippingMethod } from "@/api/entities";
-import { Address } from "@/api/entities";
 import { Coupon } from "@/api/entities";
 import { Tax } from "@/api/entities";
 import { DeliverySettings } from "@/api/entities";
@@ -164,7 +163,7 @@ export default function Checkout() {
         // Load user addresses if logged in
         if (userData?.id) {
           try {
-            const addresses = await Address.filter({ user_id: userData.id });
+            const addresses = await CustomerAddress.findAll();
             setUserAddresses(addresses || []);
           } catch (error) {
             console.warn('Addresses API not available:', error);
@@ -641,8 +640,8 @@ export default function Checkout() {
         is_default: userAddresses.length === 0
       };
       
-      const savedAddress = await Address.create(addressToSave);
-      const updatedAddresses = await Address.filter({ user_id: user.id });
+      const savedAddress = await CustomerAddress.create(addressToSave);
+      const updatedAddresses = await CustomerAddress.findAll();
       setUserAddresses(updatedAddresses || []);
       
       return savedAddress;
