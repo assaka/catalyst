@@ -52,26 +52,20 @@ export default function WishlistDropdown() {
       setUser(currentUser);
 
       // Load wishlist items - this should work for both authenticated and guest users
-      console.log(`🔍 WishlistDropdown: About to call CustomerWishlist.getItems(${store?.id})`);
       const result = await retryApiCall(() => CustomerWishlist.getItems(store?.id)).catch((error) => {
         console.warn("WishlistDropdown: Could not load wishlist items:", error.message);
         return [];
       });
-      console.log(`🔍 WishlistDropdown: CustomerWishlist.getItems() returned:`, result);
       const items = Array.isArray(result) ? result : [];
-
-      console.log(`🛒 WishlistDropdown: Loaded ${items.length} wishlist items for store ${store?.id}:`, items);
 
       if (items.length > 0) {
         const productIds = [...new Set(items.map(item => item.product_id))];
-        console.log(`🔍 WishlistDropdown: Loading products for IDs:`, productIds);
         
         // Load products individually since bulk filter might not work
         const productPromises = productIds.map(async (productId) => {
           try {
             await delay(200); // Small delay between requests
             const response = await retryApiCall(() => StorefrontProduct.findById(productId));
-            console.log(`📦 WishlistDropdown: Raw product response for ${productId}:`, response);
             
             // Handle wrapped response structure
             let product = null;
@@ -81,7 +75,6 @@ export default function WishlistDropdown() {
               product = response; // Direct product object
             }
             
-            console.log(`📦 WishlistDropdown: Extracted product ${productId}:`, product);
             return product;
           } catch (error) {
             console.warn(`WishlistDropdown: Could not load product ${productId}:`, error.message);
@@ -90,7 +83,6 @@ export default function WishlistDropdown() {
         });
 
         const products = (await Promise.all(productPromises)).filter(Boolean);
-        console.log(`📦 WishlistDropdown: Total products loaded:`, products.length, products);
 
         const productLookup = products.reduce((acc, product) => {
           if (product && product.id) acc[product.id] = product;
@@ -102,7 +94,6 @@ export default function WishlistDropdown() {
           return product ? { ...item, product } : null;
         }).filter(Boolean);
 
-        console.log(`🛒 WishlistDropdown: Final wishlist items with products:`, newWishlistItems);
         setWishlistItems(newWishlistItems);
       } else {
         setWishlistItems([]);
@@ -123,7 +114,6 @@ export default function WishlistDropdown() {
 
     // Listen for wishlist updates
     const handleWishlistUpdate = () => {
-      console.log('🔔 WishlistDropdown: Received wishlistUpdated event, reloading items...');
       if (store?.id) {
         loadWishlistItems();
       }
@@ -156,16 +146,7 @@ export default function WishlistDropdown() {
       </PopoverTrigger>
       <PopoverContent className="w-80">
         <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h4 className="font-medium leading-none">Wishlist</h4>
-            <button 
-              onClick={loadWishlistItems} 
-              className="text-xs text-blue-600 hover:underline"
-              disabled={loading}
-            >
-              {loading ? 'Loading...' : 'Refresh'}
-            </button>
-          </div>
+          <h4 className="font-medium leading-none mb-4">Wishlist</h4>
           {loading ? (
             <div className="flex justify-center items-center h-24">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>

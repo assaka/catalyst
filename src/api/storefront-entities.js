@@ -327,27 +327,16 @@ class StorefrontWishlistService {
       const endpoint = storeId 
         ? `${this.endpoint}?store_id=${storeId}`
         : this.endpoint;
-      console.log(`📋 Wishlist.getItems() called with storeId: ${storeId}, endpoint: ${endpoint}`);
       const response = await this.client.customerRequest('GET', endpoint);
-      
-      console.log(`📋 RAW Wishlist.getItems() response:`, response);
-      console.log(`📋 RAW Wishlist.getItems() response type:`, typeof response);
-      console.log(`📋 RAW Wishlist.getItems() response.success:`, response?.success);
-      console.log(`📋 RAW Wishlist.getItems() response.data:`, response?.data);
       
       // Handle wrapped response structure from backend
       let items = [];
       if (response && response.success && response.data) {
         items = Array.isArray(response.data) ? response.data : [];
-        console.log(`📋 Using response.data:`, items);
       } else if (Array.isArray(response)) {
         items = response;
-        console.log(`📋 Using direct array response:`, items);
-      } else {
-        console.log(`📋 No valid data found in response`);
       }
       
-      console.log(`📋 Wishlist.getItems() returning ${items.length} items:`, items);
       return items;
     } catch (error) {
       console.error(`Wishlist ${this.endpoint}.getItems() error:`, error.message);
