@@ -4,9 +4,13 @@ const { supabase } = require('../database/connection');
 
 const authMiddleware = async (req, res, next) => {
   try {
+    console.log('🔍 Auth middleware called for:', req.method, req.path);
     const token = req.header('Authorization')?.replace('Bearer ', '');
+    console.log('🔍 Token present:', !!token);
+    console.log('🔍 Token (first 20 chars):', token?.substring(0, 20));
     
     if (!token) {
+      console.log('❌ No token provided');
       return res.status(401).json({
         error: 'Access denied',
         message: 'No token provided'
@@ -14,6 +18,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('🔍 JWT decoded successfully:', JSON.stringify(decoded, null, 2));
     
     let user;
     
@@ -21,6 +26,7 @@ const authMiddleware = async (req, res, next) => {
     const isCustomer = decoded.role === 'customer';
     const tableName = isCustomer ? 'customers' : 'users';
     const ModelClass = isCustomer ? Customer : User;
+    console.log('🔍 User lookup details:', { isCustomer, tableName, userId: decoded.id });
     
     // Try Supabase first
     try {
@@ -43,13 +49,17 @@ const authMiddleware = async (req, res, next) => {
     }
     
     if (!user) {
+      console.log('❌ User not found after lookup');
       return res.status(401).json({
         error: 'Access denied',
         message: 'Invalid token'
       });
     }
 
+    console.log('✅ User found:', { id: user.id, email: user.email, role: user.role });
+
     if (!user.is_active) {
+      console.log('❌ User account is inactive');
       return res.status(401).json({
         error: 'Access denied',
         message: 'Account is inactive'
@@ -57,8 +67,10 @@ const authMiddleware = async (req, res, next) => {
     }
 
     req.user = user;
+    console.log('✅ Auth middleware completed successfully');
     next();
   } catch (error) {
+    console.error('❌ Auth middleware error:', error);
     return res.status(401).json({
       error: 'Access denied',
       message: 'Invalid token'
