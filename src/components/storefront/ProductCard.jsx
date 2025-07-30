@@ -200,9 +200,12 @@ const ProductCard = ({ product, settings, className = "" }) => {
             </div>
             <Button 
               onClick={handleAddToCart}
-              className="w-full"
+              className="w-full text-white border-0 hover:brightness-90 transition-all duration-200"
               size="sm"
-              variant="outline"
+              style={{ 
+                backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
+                color: 'white'
+              }}
             >
               <ShoppingCart className="w-4 h-4 mr-2" />
               Add to Cart

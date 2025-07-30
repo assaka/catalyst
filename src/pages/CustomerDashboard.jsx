@@ -429,10 +429,13 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, t
                   </p>
                   <div className="flex gap-2 w-full">
                     <Button 
-                      variant="outline" 
                       size="sm" 
-                      className="flex-1" 
+                      className="flex-1 text-white border-0 hover:brightness-90 transition-all duration-200" 
                       onClick={() => handleAddToCart(item.product)}
+                      style={{ 
+                        backgroundColor: settings?.theme?.add_to_cart_button_color || '#3B82F6',
+                        color: 'white'
+                      }}
                     >
                       <ShoppingCart className="w-4 h-4 mr-1" />
                       Add to Cart
