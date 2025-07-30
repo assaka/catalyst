@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Fragment } from "react";
 import { NavLink, useLocation, useNavigate, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { createAdminUrl } from "@/utils/urlUtils";
 import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
@@ -260,12 +261,14 @@ export default function Layout({ children, currentPageName }) {
       
       if (!isLoading && (!user || (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner'))) {
           // Determine redirect destination based on user role
-          let destination = "Landing";
           if (user && user.role === 'customer') {
-            destination = "CustomerDashboard";
+            console.log(`🔄 Layout.jsx: Customer user redirecting to customer dashboard`);
+            navigate(createPageUrl("CustomerDashboard"));
+          } else {
+            // For unauthenticated users or non-admin users, redirect to admin auth
+            console.log(`🔄 Layout.jsx: User lacks admin access, redirecting ${user?.role || 'no-user'} to admin auth`);
+            navigate(createAdminUrl('ADMIN_AUTH'));
           }
-          console.log(`🔄 Layout.jsx: User lacks admin access, redirecting ${user?.role || 'no-user'} to ${destination}`);
-          navigate(createPageUrl(destination));
           return (
               <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
                   <p className="text-lg text-gray-700 mb-4">Redirecting...</p>
