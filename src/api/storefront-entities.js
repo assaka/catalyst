@@ -374,7 +374,7 @@ export const StorefrontCookieConsentSettings = new StorefrontBaseEntity('cookie-
 // Customer entities (authentication required)
 export const CustomerCart = new StorefrontCartService();
 export const CustomerWishlist = new StorefrontWishlistService();
-export const CustomerOrder = new CustomerBaseEntity('orders/customer');
+export const CustomerOrder = new CustomerBaseEntity('orders/my-orders');
 export const CustomerAddress = new CustomerBaseEntity('addresses');
 export const CustomerProfile = new CustomerBaseEntity('customers');
 

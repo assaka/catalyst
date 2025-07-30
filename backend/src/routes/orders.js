@@ -419,10 +419,10 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// @route   GET /api/orders/customer
+// @route   GET /api/orders/my-orders
 // @desc    Get orders for authenticated customer
 // @access  Private (customer authentication required)
-router.get('/customer', auth, async (req, res) => {
+router.get('/my-orders', auth, async (req, res) => {
   try {
     console.log('🔍 Customer orders request from user:', req.user?.id, 'role:', req.user?.role);
     console.log('🔍 Full user object:', JSON.stringify(req.user, null, 2));
@@ -451,10 +451,17 @@ router.get('/customer', auth, async (req, res) => {
     }
 
     // Simple query without complex associations to avoid 500 errors
+    console.log('🔍 About to execute Sequelize query with customer_id:', customerId);
+    
+    const whereClause = { customer_id: customerId };
+    console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
+    
     const orders = await Order.findAll({
-      where: { customer_id: customerId },
+      where: whereClause,
       order: [['created_at', 'DESC']]
     });
+    
+    console.log('🔍 Query executed successfully');
 
     console.log('🔍 Found orders for customer:', orders.length);
 
