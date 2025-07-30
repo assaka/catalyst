@@ -325,6 +325,59 @@ router.post('/create-checkout', async (req, res) => {
     // Get store currency
     const storeCurrency = store.currency || 'usd';
     
+    // Calculate amounts and prepare additional charges
+    const taxAmountNum = parseFloat(tax_amount) || 0;
+    const paymentFeeNum = parseFloat(payment_fee) || 0;
+    const shippingCostNum = parseFloat(shipping_cost) || 0;
+    
+    console.log('💵 Calculated amounts:', {
+      tax: taxAmountNum,
+      paymentFee: paymentFeeNum,
+      shipping: shippingCostNum
+    });
+    
+    // Calculate subtotal for tax percentage
+    const subtotal = items.reduce((sum, item) => {
+      const itemTotal = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
+      return sum + itemTotal;
+    }, 0);
+    
+    // Create separate rates for charges (similar to shipping rates)
+    let taxRateId = null;
+    
+    // Determine Stripe options for Connect account
+    const stripeOptions = {};
+    if (store.stripe_account_id) {
+      stripeOptions.stripeAccount = store.stripe_account_id;
+    }
+    
+    // Create tax rate if provided
+    if (taxAmountNum > 0) {
+      try {
+        console.log('💰 Creating tax rate:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100));
+        
+        const taxPercentage = subtotal > 0 ? ((taxAmountNum / subtotal) * 100).toFixed(2) : '';
+        const taxName = taxPercentage ? `Tax (${taxPercentage}%)` : 'Tax';
+        
+        const taxRate = await stripe.taxRates.create({
+          display_name: taxName,
+          description: 'Sales Tax',
+          percentage: parseFloat(taxPercentage) || 0,
+          inclusive: false,
+          metadata: {
+            item_type: 'tax',
+            tax_rate: taxPercentage
+          }
+        }, stripeOptions);
+        
+        taxRateId = taxRate.id;
+        console.log('✅ Created tax rate:', taxRateId);
+      } catch (taxError) {
+        console.error('Failed to create tax rate:', taxError.message);
+        taxRateId = null;
+      }
+    }
+
     // Create line items for Stripe - separate main product and custom options
     const line_items = [];
     
@@ -367,7 +420,7 @@ router.post('/create-checkout', async (req, res) => {
       }
       
       // Add main product line item
-      line_items.push({
+      const productLineItem = {
         price_data: {
           currency: storeCurrency.toLowerCase(),
           product_data: {
@@ -383,7 +436,14 @@ router.post('/create-checkout', async (req, res) => {
           unit_amount: unit_amount,
         },
         quantity: item.quantity || 1,
-      });
+      };
+      
+      // Apply tax rate if created
+      if (taxRateId) {
+        productLineItem.tax_rates = [taxRateId];
+      }
+      
+      line_items.push(productLineItem);
       
       // Add separate line items for each custom option
       if (item.selected_options && item.selected_options.length > 0) {
@@ -391,7 +451,7 @@ router.post('/create-checkout', async (req, res) => {
           if (option.price && option.price > 0) {
             const optionUnitAmount = Math.round(option.price * 100); // Convert to cents
             
-            line_items.push({
+            const optionLineItem = {
               price_data: {
                 currency: storeCurrency.toLowerCase(),
                 product_data: {
@@ -407,32 +467,20 @@ router.post('/create-checkout', async (req, res) => {
                 unit_amount: optionUnitAmount,
               },
               quantity: item.quantity || 1,
-            });
+            };
+            
+            // Apply tax rate to options too
+            if (taxRateId) {
+              optionLineItem.tax_rates = [taxRateId];
+            }
+            
+            line_items.push(optionLineItem);
           }
         });
       }
     });
 
-    // Calculate amounts and prepare additional charges
-    const taxAmountNum = parseFloat(tax_amount) || 0;
-    const paymentFeeNum = parseFloat(payment_fee) || 0;
-    const shippingCostNum = parseFloat(shipping_cost) || 0;
-    
-    console.log('💵 Calculated amounts:', {
-      tax: taxAmountNum,
-      paymentFee: paymentFeeNum,
-      shipping: shippingCostNum
-    });
-    
-    // Calculate subtotal for tax percentage
-    const subtotal = items.reduce((sum, item) => {
-      const itemTotal = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
-      return sum + itemTotal;
-    }, 0);
-    
-    // Order: Products (already added) → Payment Method Fee → Tax → Shipping
-    
-    // 1. Add payment fee as a line item if provided (after subtotal)
+    // Add payment fee as line item (no direct rate support like shipping)
     if (paymentFeeNum > 0) {
       console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method, 'name:', selected_payment_method_name);
       
@@ -450,38 +498,10 @@ router.post('/create-checkout', async (req, res) => {
               payment_method_name: selected_payment_method_name || ''
             }
           },
-          unit_amount: Math.round(paymentFeeNum * 100), // Convert to cents
+          unit_amount: Math.round(paymentFeeNum * 100),
         },
         quantity: 1,
       });
-    } else {
-      console.log('⚠️ No payment fee provided or fee is 0:', payment_fee, 'parsed:', paymentFeeNum);
-    }
-    
-    // 2. Add tax as a line item if provided
-    if (taxAmountNum > 0) {
-      console.log('💰 Adding tax line item:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100), 'from original:', tax_amount);
-      
-      const taxPercentage = subtotal > 0 ? ((taxAmountNum / subtotal) * 100).toFixed(2) : '';
-      const taxName = taxPercentage ? `Tax (${taxPercentage}%)` : 'Tax';
-      
-      line_items.push({
-        price_data: {
-          currency: storeCurrency.toLowerCase(),
-          product_data: {
-            name: taxName,
-            description: 'Sales Tax',
-            metadata: {
-              item_type: 'tax',
-              tax_rate: taxPercentage
-            }
-          },
-          unit_amount: Math.round(taxAmountNum * 100), // Convert to cents
-        },
-        quantity: 1,
-      });
-    } else {
-      console.log('⚠️ No tax amount provided or tax is 0:', tax_amount, 'parsed:', taxAmountNum);
     }
 
     // Build checkout session configuration
