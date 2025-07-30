@@ -428,10 +428,9 @@ router.post('/create-checkout', async (req, res) => {
       return sum + itemTotal;
     }, 0);
     
-    // NOTE: Shipping will be added separately via shipping_options or as a line item
-    // We'll add other charges in the correct order here
+    // Order: Products (already added) → Tax → Payment Method Fee → Shipping
     
-    // Add tax as a line item if provided
+    // 1. Add tax as a line item if provided
     if (taxAmountNum > 0) {
       console.log('💰 Adding tax line item:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100), 'from original:', tax_amount);
       
@@ -455,6 +454,31 @@ router.post('/create-checkout', async (req, res) => {
       });
     } else {
       console.log('⚠️ No tax amount provided or tax is 0:', tax_amount, 'parsed:', taxAmountNum);
+    }
+    
+    // 2. Add payment fee as a line item if provided
+    if (paymentFeeNum > 0) {
+      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method);
+      
+      // Use exact payment method name
+      let paymentMethodName = selected_payment_method || 'Payment Method';
+      
+      line_items.push({
+        price_data: {
+          currency: storeCurrency.toLowerCase(),
+          product_data: {
+            name: paymentMethodName,
+            metadata: {
+              item_type: 'payment_fee',
+              payment_method: selected_payment_method || ''
+            }
+          },
+          unit_amount: Math.round(paymentFeeNum * 100), // Convert to cents
+        },
+        quantity: 1,
+      });
+    } else {
+      console.log('⚠️ No payment fee provided or fee is 0:', payment_fee, 'parsed:', paymentFeeNum);
     }
 
     // Build checkout session configuration
@@ -518,7 +542,7 @@ router.post('/create-checkout', async (req, res) => {
       sessionConfig.allow_promotion_codes = true;
     }
 
-    // Set up shipping with the pre-selected method
+    // 3. Set up shipping as the last charge item
     console.log('🚚 Shipping setup - method:', shipping_method?.name, 'cost:', shipping_cost);
     if (shipping_method && shipping_cost !== undefined) {
       // Create a shipping rate for the pre-selected method
@@ -592,46 +616,6 @@ router.post('/create-checkout', async (req, res) => {
         },
         quantity: 1,
       });
-    }
-
-    // Add payment fee as a line item AFTER shipping
-    if (paymentFeeNum > 0) {
-      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method);
-      
-      // Format payment method name properly
-      let paymentMethodName = 'Payment Processing Fee';
-      if (selected_payment_method) {
-        // Handle different payment method codes
-        const methodNames = {
-          'bank': 'Bank Transfer',
-          'card': 'Card Payment',
-          'paypal': 'PayPal',
-          'stripe': 'Stripe',
-          'cash': 'Cash on Delivery',
-          'cod': 'Cash on Delivery'
-        };
-        
-        const displayName = methodNames[selected_payment_method.toLowerCase()] || 
-                           selected_payment_method.charAt(0).toUpperCase() + selected_payment_method.slice(1).toLowerCase();
-        paymentMethodName = `${displayName} Fee`;
-      }
-      
-      line_items.push({
-        price_data: {
-          currency: storeCurrency.toLowerCase(),
-          product_data: {
-            name: paymentMethodName,
-            metadata: {
-              item_type: 'payment_fee',
-              payment_method: selected_payment_method || ''
-            }
-          },
-          unit_amount: Math.round(paymentFeeNum * 100), // Convert to cents
-        },
-        quantity: 1,
-      });
-    } else {
-      console.log('⚠️ No payment fee provided or fee is 0:', payment_fee, 'parsed:', paymentFeeNum);
     }
 
     // Enable shipping address collection only if we don't have complete shipping data
