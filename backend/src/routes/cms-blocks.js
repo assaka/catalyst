@@ -6,61 +6,80 @@ const { sequelize } = require('../database/connection');
 const router = express.Router();
 
 // @route   GET /api/public/cms-blocks
-// @desc    Get active CMS blocks for public display
+// @desc    Get active CMS blocks for public display (redirect to working endpoint)
 // @access  Public
 router.get('/public', async (req, res) => {
   try {
+    console.log('🔀 CMS Blocks API: Redirecting to working endpoint...');
+    
+    // Redirect to the working clean endpoint
     const { store_id } = req.query;
+    const queryString = new URLSearchParams(req.query).toString();
+    const redirectUrl = `/api/public-cms-blocks?${queryString}`;
     
-    console.log('🔍 CMS Blocks API: Public request received', { store_id });
+    console.log('🔀 Redirecting to:', redirectUrl);
     
-    if (!store_id) {
-      return res.status(400).json({
+    // Internal redirect - make a request to our own working endpoint
+    const axios = require('axios');
+    const baseUrl = req.protocol + '://' + req.get('host');
+    const fullUrl = `${baseUrl}${redirectUrl}`;
+    
+    console.log('🔀 Making internal request to:', fullUrl);
+    
+    const response = await axios.get(fullUrl);
+    
+    console.log('🔀 Internal request successful');
+    res.json(response.data);
+    
+  } catch (error) {
+    console.error('🚨 Redirect failed, falling back to direct query:', error.message);
+    
+    // Fallback: execute the query directly if redirect fails
+    try {
+      const { store_id } = req.query;
+      
+      if (!store_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Store ID is required'
+        });
+      }
+
+      console.log('🔍 Fallback: Using direct query...');
+      
+      const blocks = await sequelize.query(`
+        SELECT 
+          id::text as id,
+          title,
+          identifier,
+          content,
+          placement,
+          sort_order,
+          is_active
+        FROM cms_blocks 
+        WHERE store_id::text = $1
+        AND is_active = true
+        ORDER BY sort_order ASC, title ASC
+      `, {
+        bind: [store_id],
+        type: QueryTypes.SELECT
+      });
+
+      console.log('🔍 Fallback query successful, found blocks:', blocks.length);
+      
+      res.json({
+        success: true,
+        data: blocks
+      });
+      
+    } catch (fallbackError) {
+      console.error('🚨 Fallback also failed:', fallbackError);
+      res.status(500).json({
         success: false,
-        message: 'Store ID is required'
+        message: 'Server error',
+        error: process.env.NODE_ENV === 'development' ? fallbackError.message : 'Internal server error'
       });
     }
-
-    console.log('🔍 CMS Blocks API: Using working query from clean route...');
-    
-    // Use exact same working query as the clean route
-    const blocks = await sequelize.query(`
-      SELECT 
-        id::text as id,
-        title,
-        identifier,
-        content,
-        placement,
-        sort_order,
-        is_active
-      FROM cms_blocks 
-      WHERE store_id::text = $1
-      AND is_active = true
-      ORDER BY sort_order ASC, title ASC
-    `, {
-      bind: [store_id],
-      type: QueryTypes.SELECT
-    });
-
-    console.log('🔍 CMS Blocks API: Query successful, found blocks:', blocks.length);
-    
-    res.json({
-      success: true,
-      data: blocks
-    });
-  } catch (error) {
-    console.error('🚨 CMS Blocks API error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      sql: error.sql || 'No SQL query'
-    });
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
-    });
   }
 });
 

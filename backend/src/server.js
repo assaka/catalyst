@@ -33,6 +33,7 @@ const attributeRoutes = require('./routes/attributes');
 const populateAttributesRoutes = require('./routes/populate-attributes');
 const cmsRoutes = require('./routes/cms');
 const cmsBlockRoutes = require('./routes/cms-blocks');
+const cmsBlocksPublicOnlyRoutes = require('./routes/cms-blocks-public-only');
 const shippingRoutes = require('./routes/shipping');
 const taxRoutes = require('./routes/tax');
 const deliveryRoutes = require('./routes/delivery');
@@ -1283,7 +1284,8 @@ app.use('/api/public/attribute-sets', attributeSetRoutes);
 app.use('/api/public/seo-templates', seoTemplateRoutes);
 app.use('/api/public/seo-settings', seoSettingsRoutes);
 app.use('/api/public/cookie-consent-settings', cookieConsentRoutes);
-app.use('/api/public/cms-blocks', cmsBlockRoutes);
+// Use dedicated working route for public CMS blocks
+app.use('/api/public/cms-blocks', cmsBlocksPublicOnlyRoutes);
 app.use('/api/public/product-tabs', productTabRoutes);
 
 // Authenticated routes (keep existing for admin/authenticated users)
