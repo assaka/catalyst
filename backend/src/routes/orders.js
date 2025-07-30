@@ -12,7 +12,7 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   try {
     const { paymentReference } = req.params;
     
-    console.log('🔍 *** DEPLOYMENT v5.0 CRITICAL UPDATE *** - Fetching order with payment reference:', paymentReference);
+    console.log('🔍 *** DEPLOYMENT v6.0 ORDERITEMS FIX *** - Fetching order with payment reference:', paymentReference);
     
     // Use EXACT same logic as admin orders that works
     const order = await Order.findOne({
@@ -44,6 +44,23 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     }
 
     console.log('✅ Order found with', order.OrderItems?.length || 0, 'items using admin-style query');
+    console.log('🔍 Order debug - Raw object keys:', Object.keys(order.dataValues || order));
+    console.log('🔍 OrderItems raw:', order.OrderItems);
+    console.log('🔍 OrderItems type:', typeof order.OrderItems);
+    console.log('🔍 OrderItems is array:', Array.isArray(order.OrderItems));
+    
+    // Manual query to verify OrderItems exist
+    const manualOrderItems = await OrderItem.findAll({
+      where: { order_id: order.id },
+      include: [{ model: Product, attributes: ['id', 'name', 'sku'] }]
+    });
+    console.log('🔍 Manual OrderItems query result:', manualOrderItems.length, 'items');
+    
+    // If the association didn't work but manual query did, use manual query result
+    if ((!order.OrderItems || order.OrderItems.length === 0) && manualOrderItems.length > 0) {
+      console.log('🔧 Using manual OrderItems query result');
+      order.OrderItems = manualOrderItems;
+    }
     
     res.json({
       success: true,
