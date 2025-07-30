@@ -560,7 +560,7 @@ export default function CustomerDashboard() {
     }
 
     try {
-      let addressData = await retryApiCall(() => CustomerAddress.findAll({ user_id: currentUserId }));
+      let addressData = await retryApiCall(() => CustomerAddress.findAll());
       
       if (addressData && Array.isArray(addressData)) {
         setAddresses(addressData);
@@ -617,7 +617,16 @@ export default function CustomerDashboard() {
       }
     });
     
-    dataToSave.user_id = user.id;
+    // Remove user_id - let CustomerAddress entity handle user association via authentication token
+    delete dataToSave.user_id;
+    
+    // Debug logging for address data
+    console.log('🔍 Creating address with data:', dataToSave);
+    
+    // Ensure state is provided (required by database)
+    if (!dataToSave.state) {
+      dataToSave.state = '';
+    }
 
     // Validation
     const requiredFields = ['full_name', 'street', 'city', 'postal_code', 'country'];

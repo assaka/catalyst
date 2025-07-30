@@ -158,6 +158,45 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   }
 });
 
+// Test JOIN query endpoint  
+router.get('/test-join/:paymentReference', async (req, res) => {
+  try {
+    const { paymentReference } = req.params;
+    const { QueryTypes } = require('sequelize');
+    const { sequelize } = require('../database/connection');
+    
+    console.log('🧪 Testing JOIN query for payment reference:', paymentReference);
+    
+    const result = await sequelize.query(`
+      SELECT 
+        o.id as order_id,
+        o.order_number,
+        oi.id as order_item_id,
+        oi.product_name,
+        oi.quantity
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      WHERE o.payment_reference = :paymentReference
+    `, {
+      replacements: { paymentReference },
+      type: QueryTypes.SELECT
+    });
+    
+    res.json({
+      success: true,
+      test: 'JOIN query test',
+      payment_reference: paymentReference,
+      results: result
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
 
 // Database diagnostic endpoint
 router.get('/db-diagnostic/:sessionId', async (req, res) => {
