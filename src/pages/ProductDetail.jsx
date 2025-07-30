@@ -338,6 +338,9 @@ export default function ProductDetail() {
 
       window.dispatchEvent(new CustomEvent('wishlistUpdated'));
       
+      // Add a small delay to ensure backend persistence completes
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Refresh wishlist status to ensure UI is in sync
       if (product?.id) {
         checkWishlistStatus(product.id);

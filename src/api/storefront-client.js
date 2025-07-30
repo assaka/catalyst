@@ -187,6 +187,11 @@ class StorefrontApiClient {
         throw error;
       }
 
+      // Add debugging for wishlist requests
+      if (finalEndpoint.includes('wishlist')) {
+        console.log(`📋 Wishlist API Response for ${method} ${finalEndpoint}:`, result);
+      }
+
       return result;
     } catch (error) {
       console.error(`Storefront customer API request failed: ${method} ${url}`, error);
