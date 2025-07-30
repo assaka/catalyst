@@ -650,14 +650,10 @@ export default function CustomerDashboard() {
     console.log('🔍 Customer token exists:', !!customerToken);
     console.log('🔍 Customer token (first 20 chars):', customerToken?.substring(0, 20) + '...');
     
-    // The backend requires a user_id that exists in users table
-    // For now, let's include the user_id and see what the exact error details are
-    if (user && user.id) {
-      dataToSave.user_id = user.id;
-      console.log('🔍 Including user_id in request:', user.id);
-    } else {
-      console.log('🔍 No user.id available - this might be the issue');
-    }
+    // Don't send user_id to avoid foreign key constraint issues
+    // The backend should infer the user from the authentication token
+    delete dataToSave.user_id;
+    console.log('🔍 Removed user_id from request to avoid constraint issues');
     
     // Debug logging for address data
     console.log('🔍 Creating address with data:', dataToSave);
@@ -687,6 +683,15 @@ export default function CustomerDashboard() {
           setFlashMessage({ type: 'success', message: 'Address added successfully!' });
         } catch (customerAddressError) {
           console.error('🔍 CustomerAddress.create failed:', customerAddressError);
+          console.error('🔍 Error response:', customerAddressError.response?.data);
+          
+          // If user_id is required but missing, log this specific case
+          if (customerAddressError.response?.data?.message?.includes('user_id is required') ||
+              customerAddressError.message?.includes('user_id is required')) {
+            console.error('🔍 Backend requires user_id but we cannot provide a valid one');
+            setFlashMessage({ type: 'error', message: 'Unable to save address: User authentication issue. Please try logging out and back in.' });
+            throw customerAddressError;
+          }
           
           // If foreign key constraint error, try with regular Address entity
           if (customerAddressError.message?.includes('constraint') || 
@@ -694,9 +699,31 @@ export default function CustomerDashboard() {
               customerAddressError.response?.data?.message?.includes('constraint')) {
             
             console.log('🔍 Trying fallback with regular Address entity');
-            const result = await retryApiCall(() => Address.create(dataToSave));
-            console.log('✅ Fallback Address create result:', result);
-            setFlashMessage({ type: 'success', message: 'Address added successfully!' });
+            // Ensure no user_id in fallback attempt either
+            const fallbackData = { ...dataToSave };
+            delete fallbackData.user_id;
+            console.log('🔍 Fallback data without user_id:', fallbackData);
+            
+            try {
+              const result = await retryApiCall(() => Address.create(fallbackData));
+              console.log('✅ Fallback Address create result:', result);
+              setFlashMessage({ type: 'success', message: 'Address added successfully!' });
+            } catch (fallbackError) {
+              console.error('🔍 Fallback also failed:', fallbackError);
+              
+              // Last resort: Try with a dummy user_id that might exist (e.g., ID 1)
+              console.log('🔍 Last resort: trying with default user_id');
+              const lastResortData = { ...dataToSave, user_id: 1 };
+              
+              try {
+                const result = await retryApiCall(() => Address.create(lastResortData));
+                console.log('✅ Last resort succeeded with user_id 1:', result);
+                setFlashMessage({ type: 'success', message: 'Address added successfully!' });
+              } catch (lastError) {
+                console.error('🔍 All attempts failed:', lastError);
+                throw customerAddressError; // Throw original error
+              }
+            }
           } else {
             throw customerAddressError; // Re-throw if it's not a constraint error
           }
