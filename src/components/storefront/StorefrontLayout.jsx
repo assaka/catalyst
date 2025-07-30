@@ -67,7 +67,7 @@ export default function StorefrontLayout({ children }) {
     // Custom logout handler for storefront - just reload the page
     const handleCustomerLogout = async () => {
         try {
-            await Auth.logout();
+            await CustomerAuth.logout();
             window.location.reload();
         } catch (error) {
             console.error('❌ Customer logout error:', error);
@@ -123,7 +123,7 @@ export default function StorefrontLayout({ children }) {
                 try {
                     await delay(200 + Math.random() * 300);
                     const userData = await retryApiCall(async () => {
-                        return await User.me();
+                        return await CustomerAuth.me();
                     }, 5, 3000, null);
                     console.log('🔍 StorefrontLayout: User data received:', userData);
                     
@@ -135,7 +135,7 @@ export default function StorefrontLayout({ children }) {
                         setUser(null);
                     }
                 } catch (e) {
-                    console.log('🔍 StorefrontLayout: User.me() failed:', e.message);
+                    console.log('🔍 StorefrontLayout: CustomerAuth.me() failed:', e.message);
                     setUser(null);
                 } finally {
                     setUserLoading(false);

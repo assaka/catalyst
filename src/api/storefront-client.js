@@ -12,6 +12,7 @@ class StorefrontApiClient {
     
     console.log('🔧 StorefrontApiClient initialized:', {
       hasCustomerToken: !!this.customerToken,
+      customerTokenPreview: this.customerToken ? this.customerToken.substring(0, 20) + '...' : null,
       sessionId: this.sessionId,
       baseURL: this.baseURL
     });
@@ -225,18 +226,28 @@ class StorefrontApiClient {
 
   // Customer logout
   async customerLogout() {
+    console.log('🚪 Customer logout initiated');
+    
     try {
       if (this.getCustomerToken()) {
+        console.log('🔐 Calling logout API with token');
         await this.postCustomer('auth/logout');
       }
     } catch (error) {
       console.error('Customer logout failed:', error.message);
     }
     
+    // Clear all customer-related data
+    console.log('🧹 Clearing customer authentication data');
     this.setCustomerToken(null);
     localStorage.removeItem('customer_user_data');
     localStorage.removeItem('cart_session_id');
+    localStorage.removeItem('user_logged_out'); // Clear this flag too
     
+    // Reset customer token reference
+    this.customerToken = null;
+    
+    console.log('✅ Customer logout completed');
     return { success: true };
   }
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, ConsentLog } from '@/api/entities';
+import { CustomerAuth } from '@/api/storefront-entities';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -45,7 +46,7 @@ export default function CookieConsentBanner() {
 
   const loadUser = async () => {
     try {
-      const userData = await User.me();
+      const userData = await CustomerAuth.me().catch(() => null);
       setUser(userData);
     } catch (error) {
       setUser(null);
