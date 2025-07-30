@@ -486,8 +486,8 @@ router.post('/create-checkout', async (req, res) => {
       payment_method_types: ['card'],
       line_items: line_items,
       mode: 'payment',
-      success_url: success_url || `${process.env.CORS_ORIGIN}/${store.slug}/order-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancel_url || `${process.env.CORS_ORIGIN}/${store.slug}/cart`,
+      success_url: success_url || `${process.env.CORS_ORIGIN}/order-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancel_url || `${process.env.CORS_ORIGIN}/cart`,
       metadata: {
         store_id: store_id.toString(),
         delivery_date: delivery_date || '',
