@@ -169,18 +169,8 @@ class ApiClient {
 
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
-    // Check for different route types
-    const publicRoutes = ['stores', 'products', 'categories', 'shipping', 'tax', 'delivery', 'attributes', 'coupons', 'product-labels', 'attribute-sets', 'seo-templates', 'seo-settings', 'cookie-consent-settings'];
-    const isPublicRoute = publicRoutes.some(route => endpoint.startsWith(route));
+    // Check for auth routes
     const isAuthRoute = endpoint.startsWith('auth/');
-    
-    // For public routes, use public endpoint when user has no valid token
-    const hasValidToken = this.getToken();
-    
-    if (!hasValidToken && isPublicRoute) {
-      console.log(`🔄 Using public endpoint for ${endpoint} (hasToken: ${!!hasValidToken})`);
-      return this.publicRequest(method, endpoint, data, customHeaders);
-    }
     
     // Prevent authenticated requests if user has been logged out, except for auth routes
     if (!isAuthRoute && (this.isLoggedOut || localStorage.getItem('user_logged_out') === 'true')) {
@@ -334,6 +324,34 @@ class ApiClient {
   // Clear token (for role switching)
   clearToken() {
     this.token = null;
+  }
+
+  // Get current user role
+  getCurrentUserRole() {
+    // Check if we have cached user data
+    const storeOwnerData = localStorage.getItem('store_owner_user_data');
+    const customerData = localStorage.getItem('customer_user_data');
+    
+    if (storeOwnerData) {
+      try {
+        const data = JSON.parse(storeOwnerData);
+        return data.role || 'store_owner';
+      } catch (e) {
+        // Invalid data
+      }
+    }
+    
+    if (customerData) {
+      try {
+        const data = JSON.parse(customerData);
+        return data.role || 'customer';
+      } catch (e) {
+        // Invalid data
+      }
+    }
+    
+    // Default to guest if no user data
+    return 'guest';
   }
 
   // Manual logout for testing

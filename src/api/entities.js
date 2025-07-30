@@ -1,4 +1,5 @@
 import apiClient from './client';
+import { shouldUsePublicAPI, hasAccessToEndpoint } from './endpointAccess';
 
 // Base Entity class for common CRUD operations
 class BaseEntity {
@@ -12,20 +13,14 @@ class BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
       
-      // Check if user is not authenticated and this is a public-friendly endpoint
-      const publicFriendlyEndpoints = ['tax', 'attributes', 'product-labels', 'attribute-sets', 'seo-templates', 'seo-settings', 'cookie-consent-settings', 'cms-blocks', 'product-tabs', 'payment-methods', 'shipping', 'delivery'];
-      const isPublicFriendly = publicFriendlyEndpoints.includes(this.endpoint);
-      
+      // Check authentication status and determine which API to use
       const hasToken = apiClient.getToken();
-      const isLoggedOut = apiClient.isLoggedOut;
-      
-      // For public-friendly endpoints, use public API when user has no valid token
-      const userLoggedOutFlag = localStorage.getItem('user_logged_out');
-      const shouldUsePublicEndpoint = !hasToken; // Simply check if there's no token
+      const userRole = apiClient.getCurrentUserRole();
+      const usePublicAPI = shouldUsePublicAPI(this.endpoint, hasToken, userRole);
 
       let response;
-      if (isPublicFriendly && shouldUsePublicEndpoint) {
-        // Use public endpoint for unauthenticated requests to public-friendly endpoints
+      if (usePublicAPI) {
+        // Use public endpoint for endpoints that support it
         response = await apiClient.publicRequest('GET', url);
       } else {
         // Use regular authenticated endpoint
