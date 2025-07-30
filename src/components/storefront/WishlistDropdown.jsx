@@ -62,12 +62,26 @@ export default function WishlistDropdown() {
 
       if (items.length > 0) {
         const productIds = [...new Set(items.map(item => item.product_id))];
-        await delay(500); // Stagger calls
-        const productResult = await retryApiCall(() => StorefrontProduct.filter({ id: { $in: productIds } }));
-        const products = Array.isArray(productResult) ? productResult : [];
+        console.log(`🔍 WishlistDropdown: Loading products for IDs:`, productIds);
+        
+        // Load products individually since bulk filter might not work
+        const productPromises = productIds.map(async (productId) => {
+          try {
+            await delay(200); // Small delay between requests
+            const product = await retryApiCall(() => StorefrontProduct.findById(productId));
+            console.log(`📦 WishlistDropdown: Loaded product ${productId}:`, product);
+            return product;
+          } catch (error) {
+            console.warn(`WishlistDropdown: Could not load product ${productId}:`, error.message);
+            return null;
+          }
+        });
+
+        const products = (await Promise.all(productPromises)).filter(Boolean);
+        console.log(`📦 WishlistDropdown: Total products loaded:`, products.length, products);
 
         const productLookup = products.reduce((acc, product) => {
-          if (product) acc[product.id] = product;
+          if (product && product.id) acc[product.id] = product;
           return acc;
         }, {});
 
@@ -76,6 +90,7 @@ export default function WishlistDropdown() {
           return product ? { ...item, product } : null;
         }).filter(Boolean);
 
+        console.log(`🛒 WishlistDropdown: Final wishlist items with products:`, newWishlistItems);
         setWishlistItems(newWishlistItems);
       } else {
         setWishlistItems([]);
@@ -144,7 +159,7 @@ export default function WishlistDropdown() {
                     className="w-12 h-12 object-cover rounded"
                   />
                   <div className="flex-1 min-w-0">
-                    <Link to={createPageUrl(`ProductDetail?id=${item.product_id}`)}>
+                    <Link to={createPageUrl(`ProductDetail?slug=${item.product?.slug || item.product_id}`)}>
                       <p className="text-sm font-medium truncate hover:underline">{item.product?.name}</p>
                     </Link>
                     <p className="text-sm text-gray-500">

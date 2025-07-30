@@ -309,10 +309,11 @@ class StorefrontWishlistService {
 
   async removeItem(productId, storeId) {
     try {
-      // Use DELETE with body data instead of query parameters to avoid route conflicts
-      const endpoint = `${this.endpoint}/product/${productId}`;
-      const data = storeId ? { store_id: storeId } : {};
-      return await this.client.customerRequest('DELETE', endpoint, data);
+      // Simple approach: use the same pattern as getItems but for removal
+      const endpoint = storeId 
+        ? `${this.endpoint}/remove?product_id=${productId}&store_id=${storeId}`
+        : `${this.endpoint}/remove?product_id=${productId}`;
+      return await this.client.customerRequest('DELETE', endpoint);
     } catch (error) {
       console.error(`Wishlist removeItem error:`, error.message);
       throw error;

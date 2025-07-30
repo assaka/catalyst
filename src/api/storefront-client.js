@@ -125,18 +125,16 @@ class StorefrontApiClient {
 
   // Customer request method (optional authentication)
   async customerRequest(method, endpoint, data = null, customHeaders = {}) {
-    // Add session_id to the request if not authenticated or if token is invalid
     const token = this.getCustomerToken();
     let finalEndpoint = endpoint;
     
     // Always ensure we have a session ID for guest functionality
     this.sessionId = this.getOrCreateSessionId();
     
-    // Always add session_id for guest/session-based functionality
+    // Always add session_id to URL - simpler approach
     const separator = endpoint.includes('?') ? '&' : '?';
     finalEndpoint = `${endpoint}${separator}session_id=${this.sessionId}`;
     
-    // If we have a token, we'll send both (backend will prioritize token over session_id)
     console.log(`🔍 Session ID added to endpoint: ${finalEndpoint}`);
     
     const url = this.buildAuthUrl(finalEndpoint);
@@ -155,12 +153,7 @@ class StorefrontApiClient {
       credentials: 'include'
     };
 
-    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
-      // Always add session_id to the body data for guest support
-      if (this.sessionId) {
-        data = { ...data, session_id: this.sessionId };
-        console.log(`🔍 Session ID added to request body:`, { session_id: this.sessionId });
-      }
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
       config.body = JSON.stringify(data);
     }
 
@@ -225,8 +218,8 @@ class StorefrontApiClient {
     return this.customerRequest('PATCH', endpoint, data, customHeaders);
   }
 
-  async deleteCustomer(endpoint, data = null, customHeaders = {}) {
-    return this.customerRequest('DELETE', endpoint, data, customHeaders);
+  async deleteCustomer(endpoint, customHeaders = {}) {
+    return this.customerRequest('DELETE', endpoint, null, customHeaders);
   }
 
   // Customer logout
