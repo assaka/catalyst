@@ -309,10 +309,10 @@ class StorefrontWishlistService {
 
   async removeItem(productId, storeId) {
     try {
-      // Simple approach: use the same pattern as getItems but for removal
+      // Use the same endpoint as addItem but with DELETE method and query params
       const endpoint = storeId 
-        ? `${this.endpoint}/remove?product_id=${productId}&store_id=${storeId}`
-        : `${this.endpoint}/remove?product_id=${productId}`;
+        ? `${this.endpoint}?product_id=${productId}&store_id=${storeId}`
+        : `${this.endpoint}?product_id=${productId}`;
       return await this.client.customerRequest('DELETE', endpoint);
     } catch (error) {
       console.error(`Wishlist removeItem error:`, error.message);
