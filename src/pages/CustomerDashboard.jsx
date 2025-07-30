@@ -8,6 +8,7 @@ import { User, Auth } from "@/api/entities";
 import { Order } from "@/api/entities";
 import { OrderItem } from "@/api/entities";
 import { CustomerWishlist, CustomerAddress } from "@/api/storefront-entities";
+import { Address } from "@/api/entities";
 import { Product } from "@/api/entities";
 import { Cart as CartEntity } from "@/api/entities";
 
@@ -641,9 +642,22 @@ export default function CustomerDashboard() {
     console.log('🔍 Current user object:', user);
     console.log('🔍 User ID:', user?.id);
     console.log('🔍 User email:', user?.email);
+    console.log('🔍 User role:', user?.role);
+    console.log('🔍 All user fields:', Object.keys(user || {}));
     
-    // Let the backend handle user association through authentication token
-    // Don't include user_id to avoid foreign key constraint issues
+    // Check authentication token
+    const customerToken = localStorage.getItem('customer_auth_token');
+    console.log('🔍 Customer token exists:', !!customerToken);
+    console.log('🔍 Customer token (first 20 chars):', customerToken?.substring(0, 20) + '...');
+    
+    // The backend requires a user_id that exists in users table
+    // For now, let's include the user_id and see what the exact error details are
+    if (user && user.id) {
+      dataToSave.user_id = user.id;
+      console.log('🔍 Including user_id in request:', user.id);
+    } else {
+      console.log('🔍 No user.id available - this might be the issue');
+    }
     
     // Debug logging for address data
     console.log('🔍 Creating address with data:', dataToSave);
@@ -667,9 +681,26 @@ export default function CustomerDashboard() {
         setFlashMessage({ type: 'success', message: 'Address updated successfully!' });
       } else {
         console.log('🔍 Creating new address with data:', dataToSave);
-        const result = await retryApiCall(() => CustomerAddress.create(dataToSave));
-        console.log('✅ Address create result:', result);
-        setFlashMessage({ type: 'success', message: 'Address added successfully!' });
+        try {
+          const result = await retryApiCall(() => CustomerAddress.create(dataToSave));
+          console.log('✅ Address create result:', result);
+          setFlashMessage({ type: 'success', message: 'Address added successfully!' });
+        } catch (customerAddressError) {
+          console.error('🔍 CustomerAddress.create failed:', customerAddressError);
+          
+          // If foreign key constraint error, try with regular Address entity
+          if (customerAddressError.message?.includes('constraint') || 
+              customerAddressError.message?.includes('foreign key') ||
+              customerAddressError.response?.data?.message?.includes('constraint')) {
+            
+            console.log('🔍 Trying fallback with regular Address entity');
+            const result = await retryApiCall(() => Address.create(dataToSave));
+            console.log('✅ Fallback Address create result:', result);
+            setFlashMessage({ type: 'success', message: 'Address added successfully!' });
+          } else {
+            throw customerAddressError; // Re-throw if it's not a constraint error
+          }
+        }
       }
 
       setShowAddressForm(false);
@@ -679,6 +710,12 @@ export default function CustomerDashboard() {
       
     } catch (error) {
       console.error('15. ERROR during address save:', error);
+      console.error('🔍 Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        name: error.name
+      });
       setFlashMessage({ type: 'error', message: `Failed to save address: ${error.message}` });
     } finally {
       setSaving(false);
