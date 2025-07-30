@@ -571,6 +571,10 @@ export default function CustomerDashboard() {
     console.log('🔍 Full user object when loading addresses:', user);
 
     try {
+      console.log('🔍 About to call CustomerAddress.findAll()');
+      console.log('🔍 Customer token exists:', !!localStorage.getItem('customer_token'));
+      console.log('🔍 Customer token (first 20 chars):', localStorage.getItem('customer_token')?.substring(0, 20));
+      
       // Try without user_id first - let authentication handle it
       let addressData = await retryApiCall(() => CustomerAddress.findAll());
       console.log('🔍 Address data received:', addressData);

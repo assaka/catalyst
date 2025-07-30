@@ -73,7 +73,11 @@ class CustomerBaseEntity {
         url = `${this.endpoint}?${queryString}`;
       }
 
+      console.log(`🔍 CustomerBaseEntity(${this.endpoint}).findAll() calling:`, url);
+      console.log(`🔍 Customer token available:`, !!this.client.getCustomerToken());
+      
       const response = await this.client.getCustomer(url);
+      console.log(`🔍 CustomerBaseEntity(${this.endpoint}).findAll() response:`, response);
       
       return Array.isArray(response) ? response : [];
     } catch (error) {
