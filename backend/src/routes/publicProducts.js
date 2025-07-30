@@ -59,7 +59,16 @@ router.get('/', async (req, res) => {
     if (featured === 'true' || featured === true) where.featured = true;
     if (slug) where.slug = slug;
     if (sku) where.sku = sku;
-    if (id) where.id = id;
+    if (id) {
+      try {
+        // Handle JSON objects like {"$in":["uuid"]} or simple strings
+        const parsedId = typeof id === 'string' && id.startsWith('{') ? JSON.parse(id) : id;
+        where.id = parsedId;
+      } catch (error) {
+        console.error('Error parsing id parameter:', error);
+        where.id = id; // fallback to original value
+      }
+    }
     
     if (search) {
       where[Op.or] = [

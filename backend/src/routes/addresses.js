@@ -9,7 +9,15 @@ const router = express.Router();
 // @access  Public (but requires user_id parameter)
 router.get('/', async (req, res) => {
   try {
-    const { user_id } = req.query;
+    const { user_id, session_id } = req.query;
+
+    // Guest users (session_id only) have no saved addresses
+    if (!user_id && session_id) {
+      return res.json({
+        success: true,
+        data: []
+      });
+    }
 
     if (!user_id) {
       return res.status(400).json({

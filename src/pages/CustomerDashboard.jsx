@@ -190,6 +190,13 @@ const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, edit
         <CardTitle>{editingAddress ? 'Edit Address' : 'Add New Address'}</CardTitle>
       </CardHeader>
       <CardContent>
+        {!editingAddress && (
+          <Alert className="mb-4 border-yellow-200 bg-yellow-50">
+            <AlertDescription className="text-yellow-800">
+              Note: Address saving for customer accounts is currently limited. If you experience issues, please contact support.
+            </AlertDescription>
+          </Alert>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -711,18 +718,13 @@ export default function CustomerDashboard() {
             } catch (fallbackError) {
               console.error('🔍 Fallback also failed:', fallbackError);
               
-              // Last resort: Try with a dummy user_id that might exist (e.g., ID 1)
-              console.log('🔍 Last resort: trying with default user_id');
-              const lastResortData = { ...dataToSave, user_id: 1 };
-              
-              try {
-                const result = await retryApiCall(() => Address.create(lastResortData));
-                console.log('✅ Last resort succeeded with user_id 1:', result);
-                setFlashMessage({ type: 'success', message: 'Address added successfully!' });
-              } catch (lastError) {
-                console.error('🔍 All attempts failed:', lastError);
-                throw customerAddressError; // Throw original error
-              }
+              // Last resort: Don't save address if it requires a valid user_id
+              console.log('🔍 Cannot save address due to database constraint');
+              setFlashMessage({ 
+                type: 'error', 
+                message: 'Unable to save address. This is a known issue with customer accounts. Please contact support.' 
+              });
+              return; // Don't throw error, just return
             }
           } else {
             throw customerAddressError; // Re-throw if it's not a constraint error
