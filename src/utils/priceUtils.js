@@ -67,17 +67,9 @@ export const calculateItemTotal = (item, product) => {
  * @returns {number} - Price adjusted for tax-inclusive display
  */
 export const calculateDisplayPrice = (basePrice, store, taxRules = [], country = 'US') => {
-    console.log('🧮 calculateDisplayPrice called with:', {
-        basePrice,
-        storeId: store?.id,
-        settings: store?.settings,
-        taxRulesCount: taxRules?.length,
-        country
-    });
 
     const price = formatPrice(basePrice);
     if (price <= 0) {
-        console.log('⚠️ calculateDisplayPrice: Invalid price, returning 0');
         return 0;
     }
 

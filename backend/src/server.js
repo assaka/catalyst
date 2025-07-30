@@ -62,6 +62,7 @@ const addCustomOptionRulesTableRoutes = require('./routes/add-custom-option-rule
 const addressRoutes = require('./routes/addresses');
 const createCmsBlocksTableRoutes = require('./routes/create-cms-blocks-table');
 const checkCmsBlocksSchemaRoutes = require('./routes/check-cms-blocks-schema');
+const addCmsBlocksColumnsRoutes = require('./routes/add-cms-blocks-columns');
 
 const app = express();
 
@@ -1419,6 +1420,7 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/debug', addCustomOptionRulesTableRoutes);
 app.use('/api/create-cms-blocks-table', createCmsBlocksTableRoutes);
 app.use('/api/check-cms-blocks-schema', checkCmsBlocksSchemaRoutes);
+app.use('/api/add-cms-blocks-columns', addCmsBlocksColumnsRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
