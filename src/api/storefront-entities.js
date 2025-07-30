@@ -309,11 +309,10 @@ class StorefrontWishlistService {
 
   async removeItem(productId, storeId) {
     try {
-      // Use customerRequest which handles both authenticated and guest users
-      const endpoint = storeId 
-        ? `${this.endpoint}/product/${productId}?store_id=${storeId}`
-        : `${this.endpoint}/product/${productId}`;
-      return await this.client.customerRequest('DELETE', endpoint);
+      // Use DELETE with body data instead of query parameters to avoid route conflicts
+      const endpoint = `${this.endpoint}/product/${productId}`;
+      const data = storeId ? { store_id: storeId } : {};
+      return await this.client.customerRequest('DELETE', endpoint, data);
     } catch (error) {
       console.error(`Wishlist removeItem error:`, error.message);
       throw error;

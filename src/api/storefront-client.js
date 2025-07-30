@@ -155,7 +155,7 @@ class StorefrontApiClient {
       credentials: 'include'
     };
 
-    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE')) {
       // Always add session_id to the body data for guest support
       if (this.sessionId) {
         data = { ...data, session_id: this.sessionId };
@@ -225,8 +225,8 @@ class StorefrontApiClient {
     return this.customerRequest('PATCH', endpoint, data, customHeaders);
   }
 
-  async deleteCustomer(endpoint, customHeaders = {}) {
-    return this.customerRequest('DELETE', endpoint, null, customHeaders);
+  async deleteCustomer(endpoint, data = null, customHeaders = {}) {
+    return this.customerRequest('DELETE', endpoint, data, customHeaders);
   }
 
   // Customer logout
