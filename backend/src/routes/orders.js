@@ -206,7 +206,7 @@ router.get('/test-direct/:orderId', async (req, res) => {
 });
 
 // @route   GET /api/orders/customer-orders
-// @desc    Get orders for authenticated customer (temporary workaround)
+// @desc    Get orders for authenticated customer with full details (temporary workaround)
 // @access  Private (customer authentication required)
 router.get('/customer-orders', auth, async (req, res) => {
   try {
@@ -236,23 +236,78 @@ router.get('/customer-orders', auth, async (req, res) => {
       });
     }
 
-    // Simple query without complex associations to avoid 500 errors
-    console.log('🔍 About to execute Sequelize query with customer_id:', customerId);
+    // Enhanced query with full order details including order items and store info
+    console.log('🔍 About to execute enhanced Sequelize query with customer_id:', customerId);
     
     const whereClause = { customer_id: customerId };
     console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
     
     const orders = await Order.findAll({
       where: whereClause,
-      order: [['created_at', 'DESC']]
+      order: [['created_at', 'DESC']],
+      include: [
+        {
+          model: Store,
+          attributes: ['id', 'name', 'logo', 'owner_email']
+        },
+        {
+          model: OrderItem,
+          include: [
+            {
+              model: Product,
+              attributes: ['id', 'name', 'sku', 'images', 'price']
+            }
+          ]
+        }
+      ]
     });
     
-    console.log('🔍 Query executed successfully');
+    console.log('🔍 Enhanced query executed successfully');
     console.log('🔍 Found orders for customer:', orders.length);
+    
+    // Add payment method details if available
+    const ordersWithDetails = orders.map(order => {
+      const orderData = order.toJSON();
+      
+      // Parse payment method details if stored as JSON
+      if (orderData.payment_method_details) {
+        try {
+          orderData.payment_method_details = typeof orderData.payment_method_details === 'string' 
+            ? JSON.parse(orderData.payment_method_details) 
+            : orderData.payment_method_details;
+        } catch (e) {
+          console.warn('Could not parse payment_method_details for order:', orderData.id);
+        }
+      }
+      
+      // Parse shipping address if stored as JSON
+      if (orderData.shipping_address) {
+        try {
+          orderData.shipping_address = typeof orderData.shipping_address === 'string' 
+            ? JSON.parse(orderData.shipping_address) 
+            : orderData.shipping_address;
+        } catch (e) {
+          console.warn('Could not parse shipping_address for order:', orderData.id);
+        }
+      }
+      
+      // Parse billing address if stored as JSON
+      if (orderData.billing_address) {
+        try {
+          orderData.billing_address = typeof orderData.billing_address === 'string' 
+            ? JSON.parse(orderData.billing_address) 
+            : orderData.billing_address;
+        } catch (e) {
+          console.warn('Could not parse billing_address for order:', orderData.id);
+        }
+      }
+      
+      return orderData;
+    });
 
     res.json({
       success: true,
-      data: orders
+      data: ordersWithDetails
     });
   } catch (error) {
     console.error('Get customer orders error:', error);
@@ -261,6 +316,98 @@ router.get('/customer-orders', auth, async (req, res) => {
       stack: error.stack,
       name: error.name
     });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+// @route   PUT /api/orders/customer-orders/:orderId/status
+// @desc    Update order status for customer orders
+// @access  Private (customer authentication required)
+router.put('/customer-orders/:orderId/status', auth, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status, notes } = req.body;
+    
+    // Only allow customer role to access this endpoint
+    if (req.user?.role !== 'customer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Customer access required.'
+      });
+    }
+
+    const customerId = req.user.id;
+    console.log('🔍 Customer updating order status:', { orderId, status, customerId });
+    
+    // Validate status
+    const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status. Allowed statuses: ${allowedStatuses.join(', ')}`
+      });
+    }
+    
+    // Find the order and verify it belongs to the customer
+    const order = await Order.findOne({
+      where: { 
+        id: orderId,
+        customer_id: customerId 
+      }
+    });
+    
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found or access denied'
+      });
+    }
+    
+    // Only allow customers to cancel their own orders if not already processed
+    if (req.user.role === 'customer') {
+      const customerAllowedStatuses = ['cancelled'];
+      const currentStatus = order.status;
+      
+      if (!customerAllowedStatuses.includes(status)) {
+        return res.status(403).json({
+          success: false,
+          message: 'Customers can only cancel orders'
+        });
+      }
+      
+      if (['shipped', 'delivered', 'cancelled', 'refunded'].includes(currentStatus)) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot modify order with status: ${currentStatus}`
+        });
+      }
+    }
+    
+    // Update the order
+    await order.update({
+      status,
+      status_notes: notes || null,
+      updated_at: new Date()
+    });
+    
+    console.log('🔍 Order status updated successfully:', { orderId, oldStatus: order.status, newStatus: status });
+    
+    res.json({
+      success: true,
+      message: 'Order status updated successfully',
+      data: {
+        id: order.id,
+        status: order.status,
+        status_notes: order.status_notes,
+        updated_at: order.updated_at
+      }
+    });
+  } catch (error) {
+    console.error('Update order status error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',

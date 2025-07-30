@@ -120,6 +120,15 @@ class CustomerBaseEntity {
   async filter(params = {}) {
     return this.findAll(params);
   }
+
+  async updateStatus(orderId, status, notes = null) {
+    const data = { status };
+    if (notes) data.notes = notes;
+    
+    const response = await this.client.putCustomer(`${this.endpoint}/${orderId}/status`, data);
+    // Handle wrapped response format {success: true, data: {...}}
+    return (response && response.success && response.data) ? response.data : response;
+  }
 }
 
 // Customer Authentication service
