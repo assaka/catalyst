@@ -62,8 +62,19 @@ router.get('/', async (req, res) => {
     if (id) {
       try {
         // Handle JSON objects like {"$in":["uuid"]} or simple strings
-        const parsedId = typeof id === 'string' && id.startsWith('{') ? JSON.parse(id) : id;
-        where.id = parsedId;
+        if (typeof id === 'string' && id.startsWith('{')) {
+          const parsedId = JSON.parse(id);
+          console.log('Parsed ID object:', parsedId);
+          
+          // Handle Sequelize operators
+          if (parsedId.$in && Array.isArray(parsedId.$in)) {
+            where.id = { [Op.in]: parsedId.$in };
+          } else {
+            where.id = parsedId;
+          }
+        } else {
+          where.id = id;
+        }
       } catch (error) {
         console.error('Error parsing id parameter:', error);
         where.id = id; // fallback to original value
