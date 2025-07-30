@@ -10,8 +10,6 @@ router.get('/', async (req, res) => {
   try {
     const { store_id, country } = req.query;
     
-    console.log('🚚 Public Shipping API called with params:', req.query);
-    
     if (!store_id) {
       return res.status(400).json({ 
         success: false, 
@@ -52,8 +50,6 @@ router.get('/', async (req, res) => {
       });
     }
 
-    console.log(`✅ Found ${filteredMethods.length} shipping methods for store ${store_id}`);
-    
     res.json({ 
       success: true, 
       data: filteredMethods 

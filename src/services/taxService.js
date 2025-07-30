@@ -77,7 +77,6 @@ class TaxService {
         taxIncludedInPrices: defaultTaxIncludedInPrices
       };
 
-      console.log('✅ Tax calculation result:', result);
       return result;
 
     } catch (error) {
@@ -99,14 +98,6 @@ class TaxService {
    */
   findApplicableTaxRule(taxRules, shippingAddress) {
     const country = shippingAddress?.country || 'US';
-    
-    console.log('🔍 Finding applicable tax rule for country:', country);
-    console.log('📋 Available tax rules:', taxRules.map(r => ({ 
-      name: r.name, 
-      is_active: r.is_active, 
-      is_default: r.is_default,
-      countries: r.country_rates?.map(cr => cr.country) 
-    })));
 
     // First, try to find a rule that has rates for the specific country
     const rulesWithCountry = taxRules.filter(rule => 
