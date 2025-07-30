@@ -437,19 +437,10 @@ router.get('/customer', auth, async (req, res) => {
     const customerId = req.user.id;
     console.log('🔍 Loading orders for customer ID:', customerId);
 
+    // Simple query without complex associations to avoid 500 errors
     const orders = await Order.findAll({
       where: { customer_id: customerId },
-      order: [['created_at', 'DESC']],
-      include: [
-        {
-          model: Store,
-          attributes: ['id', 'name']
-        },
-        {
-          model: OrderItem,
-          include: [{ model: Product, attributes: ['id', 'name', 'sku'] }]
-        }
-      ]
+      order: [['created_at', 'DESC']]
     });
 
     console.log('🔍 Found orders for customer:', orders.length);
@@ -460,9 +451,15 @@ router.get('/customer', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Get customer orders error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
