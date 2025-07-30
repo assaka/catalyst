@@ -13,7 +13,7 @@ class BaseEntity {
       const url = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
       
       // Check if user is not authenticated and this is a public-friendly endpoint
-      const publicFriendlyEndpoints = ['tax', 'attributes', 'product-labels', 'attribute-sets', 'seo-templates', 'seo-settings', 'cookie-consent-settings', 'cms-blocks', 'product-tabs'];
+      const publicFriendlyEndpoints = ['tax', 'attributes', 'product-labels', 'attribute-sets', 'seo-templates', 'seo-settings', 'cookie-consent-settings', 'cms-blocks', 'product-tabs', 'payment-methods', 'shipping', 'delivery'];
       const isPublicFriendly = publicFriendlyEndpoints.includes(this.endpoint);
       
       const hasToken = apiClient.getToken();
