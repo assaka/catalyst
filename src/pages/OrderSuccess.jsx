@@ -4,6 +4,7 @@ import { Order } from '@/api/entities';
 import { OrderItem } from '@/api/entities';
 import { Product } from '@/api/entities';
 import { Auth } from '@/api/entities';
+import { User } from '@/api/entities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -53,6 +54,7 @@ export default function OrderSuccess() {
   const [order, setOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   // Account creation state - simplified to password only
   const [showCreateAccount, setShowCreateAccount] = useState(false);
@@ -83,6 +85,19 @@ export default function OrderSuccess() {
       day: 'numeric'
     });
   };
+
+  // Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const userData = await User.me();
+        setIsAuthenticated(!!userData?.id);
+      } catch (error) {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+  }, []);
 
   // Load order data
   useEffect(() => {
@@ -125,13 +140,23 @@ export default function OrderSuccess() {
           // Try different possible keys for order items
           let items = orderData.OrderItems || orderData.items || orderData.orderItems || [];
           
+          // Additional debugging to see exact structure
+          console.log('🔍 DETAILED ORDER DATA STRUCTURE:');
+          console.log('- orderData type:', typeof orderData);
+          console.log('- orderData.OrderItems exists:', !!orderData.OrderItems);
+          console.log('- orderData.OrderItems type:', typeof orderData.OrderItems);
+          console.log('- orderData.OrderItems isArray:', Array.isArray(orderData.OrderItems));
+          console.log('- orderData.OrderItems length:', orderData.OrderItems?.length);
+          console.log('- Raw OrderItems data:', orderData.OrderItems);
+          
           if (items && Array.isArray(items) && items.length > 0) {
             console.log('✅ Setting order items:', items.length, 'items found');
-            console.log('🔍 Sample order item structure:', items[0]);
+            console.log('🔍 Sample order item structure:', JSON.stringify(items[0], null, 2));
             setOrderItems(items);
           } else {
             console.log('❌ No order items found in any expected location');
-            console.log('🔍 Full order data for debugging:', JSON.stringify(orderData, null, 2));
+            console.log('🔍 Available keys in orderData:', Object.keys(orderData || {}));
+            console.log('🔍 OrderData.OrderItems specifically:', orderData.OrderItems);
             
             // If no items found, try to reload the data after a short delay
             // This handles the case where order items might still be being created
@@ -294,7 +319,7 @@ export default function OrderSuccess() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Success Header */}
         <div className="text-center mb-8">
@@ -656,14 +681,15 @@ export default function OrderSuccess() {
               </Card>
             )}
 
-            {/* Create Account - Simplified */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <UserPlus className="w-5 h-5 mr-2 text-blue-600" />
-                  Create Account
-                </CardTitle>
-              </CardHeader>
+            {/* Create Account - Only show for guest users */}
+            {!isAuthenticated && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <UserPlus className="w-5 h-5 mr-2 text-blue-600" />
+                    Create Account
+                  </CardTitle>
+                </CardHeader>
               <CardContent>
                 <p className="text-sm text-gray-600 mb-4">
                   Create an account using your email <strong>{order.customer_email}</strong> to track your orders and save your details for faster checkout. We'll send you a welcome email to get started.
@@ -740,7 +766,8 @@ export default function OrderSuccess() {
                   </div>
                 )}
               </CardContent>
-            </Card>
+              </Card>
+            )}
           </div>
         </div>
 
