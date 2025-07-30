@@ -7,8 +7,7 @@ import { useStore } from "@/components/storefront/StoreProvider";
 import { User, Auth } from "@/api/entities";
 import { Order } from "@/api/entities";
 import { OrderItem } from "@/api/entities";
-import { Address } from "@/api/entities";
-import { CustomerWishlist } from "@/api/storefront-entities";
+import { CustomerWishlist, CustomerAddress } from "@/api/storefront-entities";
 import { Product } from "@/api/entities";
 import { Cart as CartEntity } from "@/api/entities";
 
@@ -561,7 +560,7 @@ export default function CustomerDashboard() {
     }
 
     try {
-      let addressData = await retryApiCall(() => Address.filter({ user_id: currentUserId }));
+      let addressData = await retryApiCall(() => CustomerAddress.findAll({ user_id: currentUserId }));
       
       if (addressData && Array.isArray(addressData)) {
         setAddresses(addressData);
@@ -633,10 +632,10 @@ export default function CustomerDashboard() {
 
     try {
       if (editingAddress) {
-        const result = await retryApiCall(() => Address.update(editingAddress.id, dataToSave));
+        const result = await retryApiCall(() => CustomerAddress.update(editingAddress.id, dataToSave));
         setFlashMessage({ type: 'success', message: 'Address updated successfully!' });
       } else {
-        const result = await retryApiCall(() => Address.create(dataToSave));
+        const result = await retryApiCall(() => CustomerAddress.create(dataToSave));
         setFlashMessage({ type: 'success', message: 'Address added successfully!' });
       }
 
@@ -679,7 +678,7 @@ export default function CustomerDashboard() {
       setFlashMessage(null);
       
       try {
-          await retryApiCall(() => Address.delete(addressId));
+          await retryApiCall(() => CustomerAddress.delete(addressId));
           setAddresses(prev => prev.filter(addr => addr.id !== addressId));
           setFlashMessage({ type: 'success', message: 'Address deleted successfully!' });
       } catch (error) {

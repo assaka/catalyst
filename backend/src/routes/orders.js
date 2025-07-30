@@ -11,37 +11,45 @@ const router = express.Router();
 router.get('/by-payment-reference/:paymentReference', async (req, res) => {
   try {
     const { paymentReference } = req.params;
+    const { QueryTypes } = require('sequelize');
+    const { sequelize } = require('../database/connection');
     
-    console.log('🔍 *** DEPLOYMENT v7.0 LAZY LOADING + ASSOCIATION FIX *** - Fetching order with payment reference:', paymentReference);
+    console.log('🔍 *** DEPLOYMENT v8.0 JOIN FIX *** - Fetching order with payment reference:', paymentReference);
     
-    // Use EXACT same logic as admin orders that works
-    const order = await Order.findOne({
-      where: {
-        [Op.or]: [
-          { payment_reference: paymentReference },
-          { stripe_payment_intent_id: paymentReference },
-          { stripe_session_id: paymentReference }
-        ]
-      },
-      include: [
-        {
-          model: Store,
-          attributes: ['id', 'name'],
-          required: false // Allow null Store
-        },
-        {
-          model: OrderItem,
-          include: [{ 
-            model: Product, 
-            attributes: ['id', 'name', 'sku'],
-            required: false 
-          }],
-          required: false // Allow empty OrderItems
-        }
-      ]
+    // Use raw SQL with proper JOIN to fetch order and order items
+    const queryResult = await sequelize.query(`
+      SELECT 
+        o.*,
+        s.id as store_id,
+        s.name as store_name,
+        oi.id as order_item_id,
+        oi.product_id,
+        oi.product_name,
+        oi.product_sku,
+        oi.quantity,
+        oi.unit_price,
+        oi.total_price,
+        oi.original_price,
+        oi.selected_options,
+        oi.product_attributes,
+        p.id as product_db_id,
+        p.name as product_db_name,
+        p.sku as product_db_sku
+      FROM orders o
+      LEFT JOIN stores s ON o.store_id = s.id
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
+      WHERE 
+        o.payment_reference = :paymentReference 
+        OR o.stripe_payment_intent_id = :paymentReference 
+        OR o.stripe_session_id = :paymentReference
+      ORDER BY oi.created_at ASC
+    `, {
+      replacements: { paymentReference },
+      type: QueryTypes.SELECT
     });
 
-    if (!order) {
+    if (!queryResult || queryResult.length === 0) {
       console.log('❌ Order not found for payment reference:', paymentReference);
       return res.status(404).json({
         success: false,
@@ -49,24 +57,91 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       });
     }
 
-    console.log('✅ Order found with', order.OrderItems?.length || 0, 'items using admin-style query');
-    console.log('🔍 Order debug - Raw object keys:', Object.keys(order.dataValues || order));
-    console.log('🔍 OrderItems raw:', order.OrderItems);
-    console.log('🔍 OrderItems type:', typeof order.OrderItems);
-    console.log('🔍 OrderItems is array:', Array.isArray(order.OrderItems));
+    // Transform the flat result into proper order structure
+    const firstRow = queryResult[0];
     
-    // Manual query to verify OrderItems exist
-    const manualOrderItems = await OrderItem.findAll({
-      where: { order_id: order.id },
-      include: [{ model: Product, attributes: ['id', 'name', 'sku'] }]
+    // Build the order object
+    const order = {
+      id: firstRow.id,
+      order_number: firstRow.order_number,
+      status: firstRow.status,
+      payment_status: firstRow.payment_status,
+      fulfillment_status: firstRow.fulfillment_status,
+      customer_id: firstRow.customer_id,
+      customer_email: firstRow.customer_email,
+      customer_phone: firstRow.customer_phone,
+      billing_address: firstRow.billing_address,
+      shipping_address: firstRow.shipping_address,
+      subtotal: firstRow.subtotal,
+      tax_amount: firstRow.tax_amount,
+      shipping_amount: firstRow.shipping_amount,
+      discount_amount: firstRow.discount_amount,
+      payment_fee_amount: firstRow.payment_fee_amount,
+      total_amount: firstRow.total_amount,
+      currency: firstRow.currency,
+      delivery_date: firstRow.delivery_date,
+      delivery_time_slot: firstRow.delivery_time_slot,
+      delivery_instructions: firstRow.delivery_instructions,
+      payment_method: firstRow.payment_method,
+      payment_reference: firstRow.payment_reference,
+      shipping_method: firstRow.shipping_method,
+      tracking_number: firstRow.tracking_number,
+      coupon_code: firstRow.coupon_code,
+      notes: firstRow.notes,
+      admin_notes: firstRow.admin_notes,
+      store_id: firstRow.store_id,
+      shipped_at: firstRow.shipped_at,
+      delivered_at: firstRow.delivered_at,
+      cancelled_at: firstRow.cancelled_at,
+      createdAt: firstRow.createdAt,
+      updatedAt: firstRow.updatedAt,
+      
+      // Add Store information
+      Store: firstRow.store_id ? {
+        id: firstRow.store_id,
+        name: firstRow.store_name
+      } : null,
+      
+      // Build OrderItems array
+      OrderItems: []
+    };
+
+    // Group order items
+    const orderItemsMap = new Map();
+    
+    queryResult.forEach(row => {
+      if (row.order_item_id) {
+        if (!orderItemsMap.has(row.order_item_id)) {
+          orderItemsMap.set(row.order_item_id, {
+            id: row.order_item_id,
+            order_id: row.id,
+            product_id: row.product_id,
+            product_name: row.product_name,
+            product_sku: row.product_sku,
+            quantity: row.quantity,
+            unit_price: row.unit_price,
+            total_price: row.total_price,
+            original_price: row.original_price,
+            selected_options: row.selected_options,
+            product_attributes: row.product_attributes,
+            Product: row.product_db_id ? {
+              id: row.product_db_id,
+              name: row.product_db_name,
+              sku: row.product_db_sku
+            } : null
+          });
+        }
+      }
     });
-    console.log('🔍 Manual OrderItems query result:', manualOrderItems.length, 'items');
-    
-    // If the association didn't work but manual query did, use manual query result
-    if ((!order.OrderItems || order.OrderItems.length === 0) && manualOrderItems.length > 0) {
-      console.log('🔧 Using manual OrderItems query result');
-      order.OrderItems = manualOrderItems;
-    }
+
+    order.OrderItems = Array.from(orderItemsMap.values());
+
+    console.log('✅ Order found with', order.OrderItems.length, 'items using JOIN query');
+    console.log('🔍 OrderItems:', order.OrderItems.map(item => ({ 
+      id: item.id, 
+      name: item.product_name, 
+      quantity: item.quantity 
+    })));
     
     res.json({
       success: true,

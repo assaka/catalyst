@@ -305,12 +305,26 @@ class ProductService extends BaseEntity {
   async filter(params = {}) {
     try {
       console.log('🔍 ProductService.filter() called with params:', params);
-      const queryString = new URLSearchParams(params).toString();
+      
+      // Safely serialize params, converting objects to strings
+      const sanitizedParams = {};
+      for (const [key, value] of Object.entries(params)) {
+        if (value !== null && value !== undefined) {
+          if (typeof value === 'object') {
+            // Handle objects by stringifying them or using specific ID
+            sanitizedParams[key] = value.id || JSON.stringify(value);
+          } else {
+            sanitizedParams[key] = value;
+          }
+        }
+      }
+      
+      const queryString = new URLSearchParams(sanitizedParams).toString();
       const url = queryString ? `products?${queryString}` : 'products';
       console.log('📡 ProductService making request to URL:', url);
       
-      // Use authenticated request for admin API, not public API
-      const response = await apiClient.get(url);
+      // Use public request for product filtering (no authentication required)
+      const response = await apiClient.publicRequest('GET', url);
       
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
