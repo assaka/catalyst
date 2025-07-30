@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { CmsBlock, Store } = require('../models');
-const { Op } = require('sequelize');
+const { Op, QueryTypes } = require('sequelize');
 const { sequelize } = require('../database/connection');
 const router = express.Router();
 
@@ -39,7 +39,7 @@ router.get('/public', async (req, res) => {
       ORDER BY sort_order ASC, title ASC
     `, {
       replacements: { storeId: store_id },
-      type: require('sequelize').QueryTypes.SELECT
+      type: QueryTypes.SELECT
     });
 
     console.log('🔍 CMS Blocks API: Found blocks:', blocks.length);
