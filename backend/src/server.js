@@ -60,6 +60,7 @@ const consentLogRoutes = require('./routes/consent-logs');
 const customOptionRuleRoutes = require('./routes/custom-option-rules');
 const addCustomOptionRulesTableRoutes = require('./routes/add-custom-option-rules-table');
 const addressRoutes = require('./routes/addresses');
+const createCmsBlocksTableRoutes = require('./routes/create-cms-blocks-table');
 
 const app = express();
 
@@ -1415,6 +1416,7 @@ app.use('/api/consent-logs', authMiddleware, consentLogRoutes);
 app.use('/api/custom-option-rules', authMiddleware, customOptionRuleRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/debug', addCustomOptionRulesTableRoutes);
+app.use('/api/create-cms-blocks-table', createCmsBlocksTableRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

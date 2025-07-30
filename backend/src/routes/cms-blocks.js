@@ -11,6 +11,8 @@ router.get('/public', async (req, res) => {
   try {
     const { store_id } = req.query;
     
+    console.log('🔍 CMS Blocks API: Public request received', { store_id });
+    
     if (!store_id) {
       return res.status(400).json({
         success: false,
@@ -18,6 +20,7 @@ router.get('/public', async (req, res) => {
       });
     }
 
+    console.log('🔍 CMS Blocks API: Querying database for blocks...');
     const blocks = await CmsBlock.findAll({
       where: { 
         store_id,
@@ -27,15 +30,24 @@ router.get('/public', async (req, res) => {
       attributes: ['id', 'title', 'identifier', 'content', 'placement', 'sort_order', 'is_active']
     });
 
+    console.log('🔍 CMS Blocks API: Found blocks:', blocks.length);
+    
     res.json({
       success: true,
       data: blocks
     });
   } catch (error) {
     console.error('Get public CMS blocks error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      sql: error.sql || 'No SQL query'
+    });
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
     });
   }
 });

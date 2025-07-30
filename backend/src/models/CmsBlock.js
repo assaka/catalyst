@@ -13,8 +13,7 @@ const CmsBlock = sequelize.define('CmsBlock', {
   },
   identifier: {
     type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
+    allowNull: false
   },
   content: {
     type: DataTypes.TEXT,
@@ -27,6 +26,11 @@ const CmsBlock = sequelize.define('CmsBlock', {
   sort_order: {
     type: DataTypes.INTEGER,
     defaultValue: 0
+  },
+  placement: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'content'  // Default placement location
   },
   // SEO fields
   meta_title: {
@@ -52,6 +56,12 @@ const CmsBlock = sequelize.define('CmsBlock', {
   }
 }, {
   tableName: 'cms_blocks',
+  indexes: [
+    {
+      unique: true,
+      fields: ['identifier', 'store_id']  // Unique identifier per store
+    }
+  ],
   hooks: {
     beforeCreate: (block) => {
       if (!block.identifier && block.title) {
