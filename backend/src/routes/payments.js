@@ -510,7 +510,7 @@ router.post('/create-checkout', async (req, res) => {
       line_items: line_items,
       mode: 'payment',
       success_url: success_url || `${process.env.CORS_ORIGIN}/order-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancel_url || `${process.env.CORS_ORIGIN}/cart`,
+      cancel_url: cancel_url || `${process.env.CORS_ORIGIN}/checkout`,
       metadata: {
         store_id: store_id.toString(),
         delivery_date: delivery_date || '',
