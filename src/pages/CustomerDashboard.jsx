@@ -91,48 +91,239 @@ const StatsCard = ({ icon: Icon, title, value, subtitle }) => (
 );
 
 
-const OrdersTab = ({ orders, getCountryName }) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Your Orders</CardTitle>
-    </CardHeader>
-    <CardContent>
-      {orders.length === 0 ? (
-        <p>You haven't placed any orders yet.</p>
-      ) : (
-        <div className="space-y-4">
-          {orders.map(order => (
-            <Card key={order.id}>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="text-base">Order #{order.order_number}</CardTitle>
-                    <p className="text-sm text-gray-500">Placed on {new Date(order.created_date).toLocaleDateString()}</p>
-                  </div>
-                  <Badge>{order.status}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p><strong>Total:</strong> ${(() => {
-                    const totalAmount = parseFloat(order.total_amount || 0);
-                    return isNaN(totalAmount) ? '0.00' : totalAmount.toFixed(2);
-                })()}</p>
-                <p>
-                  <strong>Shipping to:</strong>{" "}
-                  {order.shipping_address?.street}
-                  {order.shipping_address?.city ? `, ${order.shipping_address.city}` : ''}
-                  {order.shipping_address?.state ? `, ${order.shipping_address.state}` : ''}
-                  {order.shipping_address?.postal_code ? ` ${order.shipping_address.postal_code}` : ''}
-                  {order.shipping_address?.country ? `, ${getCountryName(order.shipping_address.country)}` : ''}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </CardContent>
-  </Card>
-);
+const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
+  const [expandedOrders, setExpandedOrders] = useState(new Set());
+  const [updatingStatus, setUpdatingStatus] = useState(new Set());
+
+  const handleToggleExpand = (orderId) => {
+    const newExpanded = new Set(expandedOrders);
+    if (newExpanded.has(orderId)) {
+      newExpanded.delete(orderId);
+    } else {
+      newExpanded.add(orderId);
+    }
+    setExpandedOrders(newExpanded);
+  };
+
+  const handleStatusUpdate = async (orderId, newStatus) => {
+    if (!window.confirm(`Are you sure you want to ${newStatus} this order?`)) {
+      return;
+    }
+
+    setUpdatingStatus(prev => new Set([...prev, orderId]));
+    try {
+      await CustomerOrder.updateStatus(orderId, newStatus, `Customer requested ${newStatus}`);
+      if (onStatusUpdate) {
+        onStatusUpdate(orderId, newStatus);
+      }
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+      alert(`Failed to ${newStatus} order: ${error.message}`);
+    } finally {
+      setUpdatingStatus(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(orderId);
+        return newSet;
+      });
+    }
+  };
+
+  const canCancel = (order) => {
+    const status = order.status?.toLowerCase();
+    return ['pending', 'processing'].includes(status);
+  };
+
+  const getStatusBadgeColor = (status) => {
+    const statusLower = status?.toLowerCase();
+    switch (statusLower) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'processing': return 'bg-blue-100 text-blue-800';
+      case 'shipped': return 'bg-purple-100 text-purple-800';
+      case 'delivered': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      case 'refunded': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Your Orders</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {orders.length === 0 ? (
+          <div className="text-center py-8">
+            <ShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-lg font-medium text-gray-900 mb-2">No orders yet</p>
+            <p className="text-gray-600">Your order history will appear here once you make a purchase.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {orders.map(order => {
+              const isExpanded = expandedOrders.has(order.id);
+              const isUpdating = updatingStatus.has(order.id);
+              
+              return (
+                <Card key={order.id} className="border-l-4 border-l-blue-500">
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <CardTitle className="text-lg">Order #{order.order_number}</CardTitle>
+                          <Badge className={getStatusBadgeColor(order.status)}>
+                            {order.status}
+                          </Badge>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
+                          <div>
+                            <p><strong>Placed:</strong> {new Date(order.created_at || order.created_date).toLocaleDateString()}</p>
+                            <p><strong>Total:</strong> ${(() => {
+                                const totalAmount = parseFloat(order.total_amount || 0);
+                                return isNaN(totalAmount) ? '0.00' : totalAmount.toFixed(2);
+                            })()}</p>
+                          </div>
+                          <div>
+                            {order.Store && (
+                              <p><strong>Store:</strong> {order.Store.name}</p>
+                            )}
+                            {order.payment_method && (
+                              <p><strong>Payment:</strong> {order.payment_method}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {canCancel(order) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                            disabled={isUpdating}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            {isUpdating ? 'Cancelling...' : 'Cancel Order'}
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleToggleExpand(order.id)}
+                        >
+                          <Eye className="w-4 h-4" />
+                          {isExpanded ? 'Less' : 'Details'}
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  {isExpanded && (
+                    <CardContent className="pt-0">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Shipping Address */}
+                        <div>
+                          <h4 className="font-semibold mb-2">Shipping Address</h4>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            {order.shipping_address ? (
+                              <>
+                                <p>{order.shipping_address.street}</p>
+                                <p>
+                                  {order.shipping_address.city}
+                                  {order.shipping_address.state ? `, ${order.shipping_address.state}` : ''}
+                                  {order.shipping_address.postal_code ? ` ${order.shipping_address.postal_code}` : ''}
+                                </p>
+                                <p>{getCountryName(order.shipping_address.country)}</p>
+                              </>
+                            ) : (
+                              <p className="text-gray-400">No shipping address</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Payment Details */}
+                        <div>
+                          <h4 className="font-semibold mb-2">Payment Information</h4>
+                          <div className="text-sm text-gray-600 space-y-1">
+                            {order.payment_method && <p><strong>Method:</strong> {order.payment_method}</p>}
+                            {order.payment_method_details && (
+                              <div>
+                                <p><strong>Details:</strong></p>
+                                <div className="ml-2 text-xs bg-gray-50 p-2 rounded">
+                                  {typeof order.payment_method_details === 'object' ? 
+                                    JSON.stringify(order.payment_method_details, null, 2) :
+                                    order.payment_method_details
+                                  }
+                                </div>
+                              </div>
+                            )}
+                            {order.total_amount && (
+                              <div className="pt-2 border-t">
+                                <p><strong>Total Paid:</strong> ${parseFloat(order.total_amount).toFixed(2)}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Order Items */}
+                      {order.OrderItems && order.OrderItems.length > 0 && (
+                        <div className="mt-6">
+                          <h4 className="font-semibold mb-3">Order Items</h4>
+                          <div className="space-y-3">
+                            {order.OrderItems.map(item => (
+                              <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                                {item.Product?.images?.[0] && (
+                                  <img 
+                                    src={item.Product.images[0]} 
+                                    alt={item.product_name || item.Product.name}
+                                    className="w-16 h-16 object-cover rounded"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <h5 className="font-medium">{item.product_name || item.Product?.name}</h5>
+                                  {item.product_sku && (
+                                    <p className="text-sm text-gray-500">SKU: {item.product_sku}</p>
+                                  )}
+                                  {item.selected_options && (
+                                    <p className="text-sm text-gray-500">
+                                      Options: {typeof item.selected_options === 'object' ? 
+                                        JSON.stringify(item.selected_options) : item.selected_options}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="text-right">
+                                  <p className="font-medium">Qty: {item.quantity}</p>
+                                  <p className="text-sm text-gray-600">
+                                    ${parseFloat(item.unit_price || 0).toFixed(2)} each
+                                  </p>
+                                  <p className="font-semibold">
+                                    ${parseFloat(item.total_price || item.unit_price * item.quantity || 0).toFixed(2)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Status Notes */}
+                      {order.status_notes && (
+                        <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                          <h5 className="font-medium text-blue-900 mb-1">Status Notes</h5>
+                          <p className="text-sm text-blue-800">{order.status_notes}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  )}
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, taxes, selectedCountry }) => {
   const handleRemove = async (itemId) => {
@@ -559,6 +750,29 @@ export default function CustomerDashboard() {
         console.error("Error loading orders:", error);
         setOrders([]);
         setFlashMessage({ type: 'error', message: 'Failed to load orders. Please try again.' });
+    }
+  };
+
+  // Handle order status updates
+  const handleOrderStatusUpdate = async (orderId, newStatus) => {
+    // Update the order in the local state immediately for better UX
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, status: newStatus, updated_at: new Date().toISOString() }
+          : order
+      )
+    );
+    
+    // Show success message
+    setFlashMessage({ 
+      type: 'success', 
+      message: `Order ${newStatus === 'cancelled' ? 'cancelled' : 'updated'} successfully!` 
+    });
+    
+    // Reload orders to get the latest data from server
+    if (user?.id) {
+      await loadOrders(user.id);
     }
   };
 
@@ -1010,7 +1224,11 @@ export default function CustomerDashboard() {
               )}
               
               {activeTab === 'orders' && (
-                <OrdersTab orders={orders} getCountryName={getCountryName} />
+                <OrdersTab 
+                  orders={orders} 
+                  getCountryName={getCountryName} 
+                  onStatusUpdate={handleOrderStatusUpdate}
+                />
               )}
 
               {activeTab === 'addresses' && (
