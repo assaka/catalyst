@@ -617,16 +617,18 @@ export default function CustomerDashboard() {
       }
     });
     
-    // Remove user_id - let CustomerAddress entity handle user association via authentication token
-    delete dataToSave.user_id;
+    // Debug user information
+    console.log('🔍 Current user object:', user);
+    console.log('🔍 User ID:', user?.id);
+    console.log('🔍 User email:', user?.email);
+    
+    // Include user_id from authenticated customer user
+    if (user && user.id) {
+      dataToSave.user_id = user.id;
+    }
     
     // Debug logging for address data
     console.log('🔍 Creating address with data:', dataToSave);
-    
-    // Ensure state is provided (required by database)
-    if (!dataToSave.state) {
-      dataToSave.state = '';
-    }
 
     // Validation
     const requiredFields = ['full_name', 'street', 'city', 'postal_code', 'country'];
@@ -641,10 +643,14 @@ export default function CustomerDashboard() {
 
     try {
       if (editingAddress) {
+        console.log('🔍 Updating address with ID:', editingAddress.id, 'data:', dataToSave);
         const result = await retryApiCall(() => CustomerAddress.update(editingAddress.id, dataToSave));
+        console.log('✅ Address update result:', result);
         setFlashMessage({ type: 'success', message: 'Address updated successfully!' });
       } else {
+        console.log('🔍 Creating new address with data:', dataToSave);
         const result = await retryApiCall(() => CustomerAddress.create(dataToSave));
+        console.log('✅ Address create result:', result);
         setFlashMessage({ type: 'success', message: 'Address added successfully!' });
       }
 
