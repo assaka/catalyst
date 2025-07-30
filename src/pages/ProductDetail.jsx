@@ -198,6 +198,14 @@ export default function ProductDetail() {
       const isProductInWishlist = wishlistItems && wishlistItems.some(item => 
         item.product_id === productId || item.product_id === parseInt(productId)
       );
+      
+      console.log(`🔍 ProductDetail: Checking wishlist status for product ${productId}:`, {
+        wishlistItemsCount: wishlistItems?.length || 0,
+        wishlistItems: wishlistItems,
+        isProductInWishlist,
+        storeId: store?.id
+      });
+      
       setIsInWishlist(isProductInWishlist);
     } catch (error) {
       console.error('Error checking wishlist status:', error);
@@ -307,12 +315,25 @@ export default function ProductDetail() {
           message: 'Product removed from wishlist'
         });
       } else {
-        await CustomerWishlist.addItem(product.id, store.id);
-        setIsInWishlist(true);
-        setFlashMessage({
-          type: 'success',
-          message: 'Product added to wishlist'
-        });
+        try {
+          await CustomerWishlist.addItem(product.id, store.id);
+          setIsInWishlist(true);
+          setFlashMessage({
+            type: 'success',
+            message: 'Product added to wishlist'
+          });
+        } catch (addError) {
+          // Handle "Item already in wishlist" as a success case
+          if (addError.message?.includes('already in wishlist')) {
+            setIsInWishlist(true);
+            setFlashMessage({
+              type: 'success',
+              message: 'Product is already in your wishlist'
+            });
+          } else {
+            throw addError; // Re-throw other errors
+          }
+        }
       }
 
       window.dispatchEvent(new CustomEvent('wishlistUpdated'));

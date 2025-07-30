@@ -326,8 +326,11 @@ class StorefrontWishlistService {
       const endpoint = storeId 
         ? `${this.endpoint}?store_id=${storeId}`
         : this.endpoint;
+      console.log(`📋 Wishlist.getItems() called with storeId: ${storeId}, endpoint: ${endpoint}`);
       const response = await this.client.customerRequest('GET', endpoint);
-      return Array.isArray(response) ? response : [];
+      const items = Array.isArray(response) ? response : [];
+      console.log(`📋 Wishlist.getItems() returning ${items.length} items:`, items);
+      return items;
     } catch (error) {
       console.error(`Wishlist ${this.endpoint}.getItems() error:`, error.message);
       return []; // Return empty array instead of throwing for guest users
