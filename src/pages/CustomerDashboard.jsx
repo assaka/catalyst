@@ -133,6 +133,16 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
     return ['pending', 'processing'].includes(status);
   };
 
+  const canShip = (order) => {
+    const status = order.status?.toLowerCase();
+    return status === 'processing';
+  };
+
+  const canCredit = (order) => {
+    const status = order.status?.toLowerCase();
+    return ['processing', 'shipped', 'delivered'].includes(status);
+  };
+
   const getStatusBadgeColor = (status) => {
     const statusLower = status?.toLowerCase();
     switch (statusLower) {
@@ -169,15 +179,18 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <CardTitle className="text-lg">Order #{order.order_number}</CardTitle>
-                          <Badge className={getStatusBadgeColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                        </div>
+                        <CardTitle className="text-lg mb-2">Order #{order.order_number}</CardTitle>
                         <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
                           <div>
-                            <p><strong>Placed:</strong> {new Date(order.created_at || order.created_date).toLocaleDateString()}</p>
+                            <p><strong>Placed:</strong> {(() => {
+                              const dateStr = order.created_at || order.created_date || order.createdAt;
+                              if (!dateStr) return 'Date not available';
+                              try {
+                                return new Date(dateStr).toLocaleDateString();
+                              } catch (e) {
+                                return 'Invalid date';
+                              }
+                            })()}</p>
                             <p><strong>Total:</strong> ${(() => {
                                 const totalAmount = parseFloat(order.total_amount || 0);
                                 return isNaN(totalAmount) ? '0.00' : totalAmount.toFixed(2);
@@ -193,18 +206,10 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        {canCancel(order) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleStatusUpdate(order.id, 'cancelled')}
-                            disabled={isUpdating}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            {isUpdating ? 'Cancelling...' : 'Cancel Order'}
-                          </Button>
-                        )}
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge className={getStatusBadgeColor(order.status)}>
+                          {order.status}
+                        </Badge>
                         <Button
                           variant="outline"
                           size="sm"
@@ -284,10 +289,11 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                                   {item.product_sku && (
                                     <p className="text-sm text-gray-500">SKU: {item.product_sku}</p>
                                   )}
-                                  {item.selected_options && (
+                                  {item.selected_options && Object.keys(item.selected_options || {}).length > 0 && (
                                     <p className="text-sm text-gray-500">
                                       Options: {typeof item.selected_options === 'object' ? 
-                                        JSON.stringify(item.selected_options) : item.selected_options}
+                                        Object.entries(item.selected_options).map(([key, value]) => `${key}: ${value}`).join(', ') :
+                                        item.selected_options}
                                     </p>
                                   )}
                                 </div>
@@ -313,6 +319,43 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                           <p className="text-sm text-blue-800">{order.status_notes}</p>
                         </div>
                       )}
+
+                      {/* Action Buttons - Bottom Right */}
+                      <div className="flex justify-end gap-2 mt-6 pt-4 border-t">
+                        {canCancel(order) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStatusUpdate(order.id, 'cancelled')}
+                            disabled={isUpdating}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            {isUpdating ? 'Cancelling...' : 'Cancel Order'}
+                          </Button>
+                        )}
+                        {canShip(order) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStatusUpdate(order.id, 'shipped')}
+                            disabled={isUpdating}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            {isUpdating ? 'Shipping...' : 'Ship Order'}
+                          </Button>
+                        )}
+                        {canCredit(order) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStatusUpdate(order.id, 'refunded')}
+                            disabled={isUpdating}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            {isUpdating ? 'Processing...' : 'Credit/Refund'}
+                          </Button>
+                        )}
+                      </div>
                     </CardContent>
                   )}
                 </Card>

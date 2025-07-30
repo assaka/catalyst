@@ -367,22 +367,32 @@ router.put('/customer-orders/:orderId/status', auth, async (req, res) => {
       });
     }
     
-    // Only allow customers to cancel their own orders if not already processed
+    // Allow customers to perform different actions based on current status
     if (req.user.role === 'customer') {
-      const customerAllowedStatuses = ['cancelled'];
-      const currentStatus = order.status;
+      const currentStatus = order.status?.toLowerCase();
       
-      if (!customerAllowedStatuses.includes(status)) {
+      // Define allowed transitions for customers
+      const allowedTransitions = {
+        'pending': ['cancelled'],
+        'processing': ['cancelled', 'shipped', 'refunded'],
+        'shipped': ['refunded'],
+        'delivered': ['refunded']
+      };
+      
+      const allowedStatusesForCurrent = allowedTransitions[currentStatus] || [];
+      
+      if (!allowedStatusesForCurrent.includes(status)) {
         return res.status(403).json({
           success: false,
-          message: 'Customers can only cancel orders'
+          message: `Cannot change order from ${currentStatus} to ${status}. Allowed changes: ${allowedStatusesForCurrent.join(', ') || 'none'}`
         });
       }
       
-      if (['shipped', 'delivered', 'cancelled', 'refunded'].includes(currentStatus)) {
+      // Additional validation for final statuses
+      if (['cancelled', 'refunded'].includes(currentStatus)) {
         return res.status(400).json({
           success: false,
-          message: `Cannot modify order with status: ${currentStatus}`
+          message: `Order is already ${currentStatus} and cannot be modified`
         });
       }
     }
