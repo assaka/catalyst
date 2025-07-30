@@ -559,8 +559,13 @@ export default function CustomerDashboard() {
       return;
     }
 
+    console.log('🔍 Loading addresses for user ID:', currentUserId);
+    console.log('🔍 Full user object when loading addresses:', user);
+
     try {
+      // Try without user_id first - let authentication handle it
       let addressData = await retryApiCall(() => CustomerAddress.findAll());
+      console.log('🔍 Address data received:', addressData);
       
       if (addressData && Array.isArray(addressData)) {
         setAddresses(addressData);
@@ -568,12 +573,27 @@ export default function CustomerDashboard() {
         setAddresses([]);
       }
     } catch (error) {
-      console.error("5. ERROR loading addresses:", error);
-      setAddresses([]);
-      setFlashMessage({
-            type: 'error',
-            message: 'Failed to load addresses. Please try again.'
+      console.error('🔍 Error loading addresses without user_id:', error);
+      
+      // Fallback: try with user_id if needed
+      try {
+        console.log('🔍 Trying fallback with user_id:', currentUserId);
+        let fallbackData = await retryApiCall(() => CustomerAddress.findAll({ user_id: currentUserId }));
+        console.log('🔍 Fallback address data:', fallbackData);
+        
+        if (fallbackData && Array.isArray(fallbackData)) {
+          setAddresses(fallbackData);
+        } else {
+          setAddresses([]);
+        }
+      } catch (fallbackError) {
+        console.error('🔍 Fallback also failed:', fallbackError);
+        setAddresses([]);
+        setFlashMessage({
+          type: 'error',
+          message: 'Failed to load addresses. Please try again.'
         });
+      }
     }
   };
 
@@ -622,10 +642,8 @@ export default function CustomerDashboard() {
     console.log('🔍 User ID:', user?.id);
     console.log('🔍 User email:', user?.email);
     
-    // Include user_id from authenticated customer user
-    if (user && user.id) {
-      dataToSave.user_id = user.id;
-    }
+    // Let the backend handle user association through authentication token
+    // Don't include user_id to avoid foreign key constraint issues
     
     // Debug logging for address data
     console.log('🔍 Creating address with data:', dataToSave);

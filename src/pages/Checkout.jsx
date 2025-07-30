@@ -631,35 +631,23 @@ export default function Checkout() {
   };
 
   const saveAddressToAccount = async (addressData, type) => {
-    if (!user?.id) {
-      console.log('❌ Cannot save address: No user ID');
-      return;
-    }
-    
-    console.log('💾 Attempting to save address:', { type, addressData, userId: user.id });
+    if (!user?.id) return;
     
     try {
       const addressToSave = {
         ...addressData,
         user_id: user.id,
-        type: type, // 'shipping' or 'billing'
-        is_default: userAddresses.length === 0 // Make first address default
+        type: type,
+        is_default: userAddresses.length === 0
       };
       
-      console.log('💾 Address data to save:', addressToSave);
-      
       const savedAddress = await Address.create(addressToSave);
-      console.log('✅ Address saved successfully:', savedAddress);
-      
-      // Reload addresses
       const updatedAddresses = await Address.filter({ user_id: user.id });
-      console.log('🔄 Updated addresses:', updatedAddresses);
       setUserAddresses(updatedAddresses || []);
       
       return savedAddress;
     } catch (error) {
-      console.error('❌ Failed to save address:', error);
-      console.error('❌ Error details:', error.response?.data || error);
+      console.error('Failed to save address:', error);
     }
   };
 
@@ -768,22 +756,11 @@ export default function Checkout() {
     setIsProcessing(true);
     try {
       // Save addresses if requested by user
-      console.log('🔍 Checkout address save check:', {
-        hasUser: !!user,
-        saveShippingAddress,
-        selectedShippingAddress,
-        saveBillingAddress,
-        selectedBillingAddress,
-        useShippingForBilling
-      });
-      
       if (user && saveShippingAddress && selectedShippingAddress === 'new') {
-        console.log('💾 Saving shipping address during checkout');
         await saveAddressToAccount(shippingAddress, 'shipping');
       }
       
       if (user && saveBillingAddress && selectedBillingAddress === 'new' && !useShippingForBilling) {
-        console.log('💾 Saving billing address during checkout');
         await saveAddressToAccount(billingAddress, 'billing');
       }
       

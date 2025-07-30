@@ -14,198 +14,83 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     const { QueryTypes } = require('sequelize');
     const { sequelize } = require('../database/connection');
     
-    console.log('🔍 *** DEPLOYMENT v9.0 JOIN DEBUG *** - Fetching order with payment reference:', paymentReference);
-    
-    // Use raw SQL with proper JOIN to fetch order and order items
-    console.log('🔍 About to execute JOIN query...');
-    const queryResult = await sequelize.query(`
+    // Fetch order with items using efficient JOIN query
+    const rows = await sequelize.query(`
       SELECT 
         o.*,
-        s.id as store_id,
         s.name as store_name,
-        oi.id as order_item_id,
+        oi.id as item_id,
         oi.product_id,
         oi.product_name,
         oi.product_sku,
         oi.quantity,
         oi.unit_price,
         oi.total_price,
-        oi.original_price,
         oi.selected_options,
-        oi.product_attributes,
-        p.id as product_db_id,
         p.name as product_db_name,
         p.sku as product_db_sku
       FROM orders o
       LEFT JOIN stores s ON o.store_id = s.id
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
-      WHERE 
-        o.payment_reference = :paymentReference 
-        OR o.stripe_payment_intent_id = :paymentReference 
-        OR o.stripe_session_id = :paymentReference
+      WHERE o.payment_reference = :ref OR o.stripe_payment_intent_id = :ref OR o.stripe_session_id = :ref
       ORDER BY oi.created_at ASC
     `, {
-      replacements: { paymentReference },
+      replacements: { ref: paymentReference },
       type: QueryTypes.SELECT
     });
 
-    console.log('🔍 JOIN query result:', queryResult.length, 'rows');
-    console.log('🔍 First row sample:', queryResult[0] ? {
-      id: queryResult[0].id,
-      order_number: queryResult[0].order_number,
-      order_item_id: queryResult[0].order_item_id,
-      product_name: queryResult[0].product_name
-    } : 'No rows');
-
-    if (!queryResult || queryResult.length === 0) {
-      console.log('❌ Order not found for payment reference:', paymentReference);
+    if (!rows.length) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
       });
     }
 
-    // Transform the flat result into proper order structure
-    const firstRow = queryResult[0];
-    
-    // Build the order object
+    // Build response from query results
+    const first = rows[0];
     const order = {
-      id: firstRow.id,
-      order_number: firstRow.order_number,
-      status: firstRow.status,
-      payment_status: firstRow.payment_status,
-      fulfillment_status: firstRow.fulfillment_status,
-      customer_id: firstRow.customer_id,
-      customer_email: firstRow.customer_email,
-      customer_phone: firstRow.customer_phone,
-      billing_address: firstRow.billing_address,
-      shipping_address: firstRow.shipping_address,
-      subtotal: firstRow.subtotal,
-      tax_amount: firstRow.tax_amount,
-      shipping_amount: firstRow.shipping_amount,
-      discount_amount: firstRow.discount_amount,
-      payment_fee_amount: firstRow.payment_fee_amount,
-      total_amount: firstRow.total_amount,
-      currency: firstRow.currency,
-      delivery_date: firstRow.delivery_date,
-      delivery_time_slot: firstRow.delivery_time_slot,
-      delivery_instructions: firstRow.delivery_instructions,
-      payment_method: firstRow.payment_method,
-      payment_reference: firstRow.payment_reference,
-      shipping_method: firstRow.shipping_method,
-      tracking_number: firstRow.tracking_number,
-      coupon_code: firstRow.coupon_code,
-      notes: firstRow.notes,
-      admin_notes: firstRow.admin_notes,
-      store_id: firstRow.store_id,
-      shipped_at: firstRow.shipped_at,
-      delivered_at: firstRow.delivered_at,
-      cancelled_at: firstRow.cancelled_at,
-      createdAt: firstRow.createdAt,
-      updatedAt: firstRow.updatedAt,
-      
-      // Add Store information
-      Store: firstRow.store_id ? {
-        id: firstRow.store_id,
-        name: firstRow.store_name
-      } : null,
-      
-      // Build OrderItems array
-      OrderItems: []
+      ...first,
+      Store: first.store_name ? { id: first.store_id, name: first.store_name } : null,
+      OrderItems: rows
+        .filter(row => row.item_id)
+        .map(row => ({
+          id: row.item_id,
+          product_id: row.product_id,
+          product_name: row.product_name,
+          product_sku: row.product_sku,
+          quantity: row.quantity,
+          unit_price: row.unit_price,
+          total_price: row.total_price,
+          selected_options: row.selected_options,
+          Product: row.product_db_name ? {
+            id: row.product_id,
+            name: row.product_db_name,
+            sku: row.product_db_sku
+          } : null
+        }))
     };
 
-    // Group order items
-    const orderItemsMap = new Map();
-    
-    queryResult.forEach(row => {
-      if (row.order_item_id) {
-        if (!orderItemsMap.has(row.order_item_id)) {
-          orderItemsMap.set(row.order_item_id, {
-            id: row.order_item_id,
-            order_id: row.id,
-            product_id: row.product_id,
-            product_name: row.product_name,
-            product_sku: row.product_sku,
-            quantity: row.quantity,
-            unit_price: row.unit_price,
-            total_price: row.total_price,
-            original_price: row.original_price,
-            selected_options: row.selected_options,
-            product_attributes: row.product_attributes,
-            Product: row.product_db_id ? {
-              id: row.product_db_id,
-              name: row.product_db_name,
-              sku: row.product_db_sku
-            } : null
-          });
-        }
-      }
-    });
+    // Clean up internal fields
+    delete order.store_name;
+    delete order.item_id;
+    delete order.product_db_name;
+    delete order.product_db_sku;
 
-    order.OrderItems = Array.from(orderItemsMap.values());
-
-    console.log('✅ Order found with', order.OrderItems.length, 'items using JOIN query');
-    console.log('🔍 OrderItems:', order.OrderItems.map(item => ({ 
-      id: item.id, 
-      name: item.product_name, 
-      quantity: item.quantity 
-    })));
-    
     res.json({
       success: true,
       data: order
     });
 
   } catch (error) {
-    console.error('❌ Error fetching order by payment reference:', error);
+    console.error('Error fetching order:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     });
   }
 });
 
-// Test JOIN query endpoint  
-router.get('/test-join/:paymentReference', async (req, res) => {
-  try {
-    const { paymentReference } = req.params;
-    const { QueryTypes } = require('sequelize');
-    const { sequelize } = require('../database/connection');
-    
-    console.log('🧪 Testing JOIN query for payment reference:', paymentReference);
-    
-    const result = await sequelize.query(`
-      SELECT 
-        o.id as order_id,
-        o.order_number,
-        oi.id as order_item_id,
-        oi.product_name,
-        oi.quantity
-      FROM orders o
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE o.payment_reference = :paymentReference
-    `, {
-      replacements: { paymentReference },
-      type: QueryTypes.SELECT
-    });
-    
-    res.json({
-      success: true,
-      test: 'JOIN query test',
-      payment_reference: paymentReference,
-      results: result
-    });
-    
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      stack: error.stack
-    });
-  }
-});
 
 // Database diagnostic endpoint
 router.get('/db-diagnostic/:sessionId', async (req, res) => {
