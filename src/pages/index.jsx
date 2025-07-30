@@ -231,6 +231,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/auth" element={
+                    <RoleProtectedRoute requiresAuth={false}>
+                        <Auth />
+                    </RoleProtectedRoute>
+                } />
+                
                 <Route path="/admin/dashboard" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Dashboard />
@@ -520,6 +526,12 @@ function PagesContent() {
                 
                 {/* ADMIN ROUTES */}
                 <Route path="/admin/login" element={
+                    <RoleProtectedRoute requiresAuth={false}>
+                        <Auth />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/auth" element={
                     <RoleProtectedRoute requiresAuth={false}>
                         <Auth />
                     </RoleProtectedRoute>
