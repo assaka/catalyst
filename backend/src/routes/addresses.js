@@ -4,6 +4,24 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// Custom middleware that applies auth but doesn't fail for guests
+const optionalAuth = (req, res, next) => {
+  // Try to apply auth middleware
+  auth(req, res, (err) => {
+    // If auth fails but we have a session_id, continue as guest
+    if (err && req.query.session_id) {
+      req.user = null; // Ensure req.user is null for guests
+      return next();
+    }
+    // If auth fails and no session_id, pass the error
+    if (err) {
+      return next(err);
+    }
+    // Auth succeeded, continue
+    next();
+  });
+};
+
 // @route   GET /api/addresses
 // @desc    Get addresses for a user
 // @access  Public (but requires user_id parameter)
@@ -74,7 +92,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/addresses
 // @desc    Create new address
 // @access  Private (requires authentication) or Public (guest sessions return error)
-router.post('/', async (req, res) => {
+router.post('/', optionalAuth, async (req, res) => {
   try {
     const { session_id } = req.query;
     
@@ -82,20 +100,23 @@ router.post('/', async (req, res) => {
       hasUser: !!req.user,
       userId: req.user?.id,
       sessionId: session_id,
-      body: req.body
+      headers: {
+        authorization: req.headers.authorization ? 'Present' : 'Missing',
+        userAgent: req.headers['user-agent']?.substring(0, 50)
+      }
     });
     
-    // Guest users cannot save addresses
-    if (session_id && !req.user) {
+    // Check authentication first (prioritize over session_id)
+    if (req.user && req.user.id) {
+      console.log('✅ Authenticated user creating address:', req.user.id);
+      // User is authenticated, proceed with address creation
+    } else if (session_id && !req.user) {
       console.log('❌ Guest user tried to save address');
       return res.status(400).json({
         success: false,
         message: 'Guest users cannot save addresses. Please create an account to save addresses.'
       });
-    }
-    
-    // Require authentication for saving addresses
-    if (!req.user || !req.user.id) {
+    } else {
       console.log('❌ No authentication for address creation');
       return res.status(401).json({
         success: false,
