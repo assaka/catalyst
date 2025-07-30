@@ -27,6 +27,9 @@ const productRoutes = require('./routes/products');
 const categoryRoutes = require('./routes/categories');
 const publicProductRoutes = require('./routes/publicProducts');
 const publicCategoryRoutes = require('./routes/publicCategories');
+const publicShippingRoutes = require('./routes/publicShipping');
+const publicDeliveryRoutes = require('./routes/publicDelivery');
+const publicPaymentMethodRoutes = require('./routes/publicPaymentMethods');
 const orderRoutes = require('./routes/orders');
 const couponRoutes = require('./routes/coupons');
 const attributeRoutes = require('./routes/attributes');
@@ -1276,9 +1279,9 @@ app.use('/api/public/auth', authRoutes); // Public auth endpoints (login, regist
 app.use('/api/public/stores', storeRoutes);
 app.use('/api/public/products', publicProductRoutes);
 app.use('/api/public/categories', publicCategoryRoutes);
-app.use('/api/public/shipping', shippingRoutes);
+app.use('/api/public/shipping', publicShippingRoutes);
 app.use('/api/public/tax', taxRoutes);
-app.use('/api/public/delivery', deliveryRoutes);
+app.use('/api/public/delivery', publicDeliveryRoutes);
 app.use('/api/public/attributes', attributeRoutes);
 app.use('/api/public/coupons', couponRoutes);
 app.use('/api/public/product-labels', productLabelRoutes);
@@ -1289,6 +1292,7 @@ app.use('/api/public/cookie-consent-settings', cookieConsentRoutes);
 // Use dedicated working route for public CMS blocks
 app.use('/api/public/cms-blocks', cmsBlocksPublicOnlyRoutes);
 app.use('/api/public/product-tabs', productTabRoutes);
+app.use('/api/public/payment-methods', publicPaymentMethodRoutes);
 
 // Authenticated routes (keep existing for admin/authenticated users)
 app.use('/api/users', authMiddleware, userRoutes);
