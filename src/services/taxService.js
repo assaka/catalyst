@@ -12,19 +12,8 @@ class TaxService {
    */
   calculateTax(cartItems, cartProducts, store, taxRules, shippingAddress, subtotal, discount = 0) {
     try {
-      console.log('🧮 TaxService: Calculating tax...');
-      console.log('📊 Tax calculation inputs:', {
-        cartItemsCount: cartItems?.length || 0,
-        subtotal,
-        discount,
-        storeSettings: store?.settings,
-        taxRulesCount: taxRules?.length || 0,
-        shippingCountry: shippingAddress?.country
-      });
-
       // If no tax rules exist, return 0 tax
       if (!taxRules || taxRules.length === 0) {
-        console.log('⚠️ No tax rules found, returning 0 tax');
         return {
           taxAmount: 0,
           taxDetails: [],
@@ -43,13 +32,10 @@ class TaxService {
         taxableAmount = Math.max(0, subtotal - discount);
       }
 
-      console.log('💰 Taxable amount:', taxableAmount);
-
       // Find applicable tax rule
       const applicableTaxRule = this.findApplicableTaxRule(taxRules, shippingAddress);
       
       if (!applicableTaxRule) {
-        console.log('⚠️ No applicable tax rule found');
         return {
           taxAmount: 0,
           taxDetails: [],
@@ -57,12 +43,8 @@ class TaxService {
         };
       }
 
-      console.log('📋 Using tax rule:', applicableTaxRule.name);
-
       // Get tax rate for the shipping country
       const taxRate = this.getTaxRateForCountry(applicableTaxRule, shippingAddress?.country || 'US');
-      
-      console.log('📊 Tax rate:', `${taxRate}%`);
 
       if (taxRate === 0) {
         return {
@@ -136,33 +118,27 @@ class TaxService {
     );
 
     if (rulesWithCountry.length > 0) {
-      console.log('✅ Found rules with country rates:', rulesWithCountry.map(r => r.name));
       // Prefer default rule if it has country rates
       const defaultRuleWithCountry = rulesWithCountry.find(rule => rule.is_default);
       if (defaultRuleWithCountry) {
-        console.log('🎯 Using default rule with country rates:', defaultRuleWithCountry.name);
         return defaultRuleWithCountry;
       }
       // Otherwise use the first rule with country rates
-      console.log('🎯 Using first rule with country rates:', rulesWithCountry[0].name);
       return rulesWithCountry[0];
     }
 
     // Fallback: find the default tax rule
     const defaultRule = taxRules.find(rule => rule.is_default && rule.is_active);
     if (defaultRule) {
-      console.log('🎯 Using default rule as fallback:', defaultRule.name);
       return defaultRule;
     }
 
     // Final fallback: use the first active rule
     const firstActiveRule = taxRules.find(rule => rule.is_active);
     if (firstActiveRule) {
-      console.log('🎯 Using first active rule as final fallback:', firstActiveRule.name);
       return firstActiveRule;
     }
-    
-    console.log('❌ No applicable tax rule found');
+
     return null;
   }
 
