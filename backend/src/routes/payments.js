@@ -411,16 +411,29 @@ router.post('/create-checkout', async (req, res) => {
       }
     });
 
-    // Add tax as a line item if provided
+    // Calculate amounts and prepare additional charges
     const taxAmountNum = parseFloat(tax_amount) || 0;
+    const paymentFeeNum = parseFloat(payment_fee) || 0;
+    const shippingCostNum = parseFloat(shipping_cost) || 0;
+    
+    console.log('💵 Calculated amounts:', {
+      tax: taxAmountNum,
+      paymentFee: paymentFeeNum,
+      shipping: shippingCostNum
+    });
+    
+    // Calculate subtotal for tax percentage
+    const subtotal = items.reduce((sum, item) => {
+      const itemTotal = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
+      return sum + itemTotal;
+    }, 0);
+    
+    // NOTE: Shipping will be added separately via shipping_options or as a line item
+    // We'll add other charges in the correct order here
+    
+    // Add tax as a line item if provided
     if (taxAmountNum > 0) {
       console.log('💰 Adding tax line item:', taxAmountNum, 'cents:', Math.round(taxAmountNum * 100));
-      
-      // Add tax percentage if we can calculate it
-      const subtotal = items.reduce((sum, item) => {
-        const itemTotal = (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1);
-        return sum + itemTotal;
-      }, 0);
       
       const taxPercentage = subtotal > 0 ? ((taxAmountNum / subtotal) * 100).toFixed(2) : '';
       const taxName = taxPercentage ? `Tax (${taxPercentage}%)` : 'Tax';
@@ -442,47 +455,6 @@ router.post('/create-checkout', async (req, res) => {
       });
     } else {
       console.log('⚠️ No tax amount provided or tax is 0:', tax_amount, 'parsed:', taxAmountNum);
-    }
-
-    // Add payment fee as a line item if provided
-    const paymentFeeNum = parseFloat(payment_fee) || 0;
-    if (paymentFeeNum > 0) {
-      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method);
-      
-      // Format payment method name properly
-      let paymentMethodName = 'Payment Processing Fee';
-      if (selected_payment_method) {
-        // Handle different payment method codes
-        const methodNames = {
-          'bank': 'Bank Transfer',
-          'card': 'Card Payment',
-          'paypal': 'PayPal',
-          'stripe': 'Stripe',
-          'cash': 'Cash on Delivery',
-          'cod': 'Cash on Delivery'
-        };
-        
-        const displayName = methodNames[selected_payment_method.toLowerCase()] || 
-                           selected_payment_method.charAt(0).toUpperCase() + selected_payment_method.slice(1).toLowerCase();
-        paymentMethodName = `${displayName} Fee`;
-      }
-      
-      line_items.push({
-        price_data: {
-          currency: storeCurrency.toLowerCase(),
-          product_data: {
-            name: paymentMethodName,
-            metadata: {
-              item_type: 'payment_fee',
-              payment_method: selected_payment_method || ''
-            }
-          },
-          unit_amount: Math.round(paymentFeeNum * 100), // Convert to cents
-        },
-        quantity: 1,
-      });
-    } else {
-      console.log('⚠️ No payment fee provided or fee is 0:', payment_fee, 'parsed:', paymentFeeNum);
     }
 
     // Build checkout session configuration
@@ -620,6 +592,46 @@ router.post('/create-checkout', async (req, res) => {
         },
         quantity: 1,
       });
+    }
+
+    // Add payment fee as a line item AFTER shipping
+    if (paymentFeeNum > 0) {
+      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method);
+      
+      // Format payment method name properly
+      let paymentMethodName = 'Payment Processing Fee';
+      if (selected_payment_method) {
+        // Handle different payment method codes
+        const methodNames = {
+          'bank': 'Bank Transfer',
+          'card': 'Card Payment',
+          'paypal': 'PayPal',
+          'stripe': 'Stripe',
+          'cash': 'Cash on Delivery',
+          'cod': 'Cash on Delivery'
+        };
+        
+        const displayName = methodNames[selected_payment_method.toLowerCase()] || 
+                           selected_payment_method.charAt(0).toUpperCase() + selected_payment_method.slice(1).toLowerCase();
+        paymentMethodName = `${displayName} Fee`;
+      }
+      
+      line_items.push({
+        price_data: {
+          currency: storeCurrency.toLowerCase(),
+          product_data: {
+            name: paymentMethodName,
+            metadata: {
+              item_type: 'payment_fee',
+              payment_method: selected_payment_method || ''
+            }
+          },
+          unit_amount: Math.round(paymentFeeNum * 100), // Convert to cents
+        },
+        quantity: 1,
+      });
+    } else {
+      console.log('⚠️ No payment fee provided or fee is 0:', payment_fee, 'parsed:', paymentFeeNum);
     }
 
     // Enable shipping address collection only if we don't have complete shipping data
@@ -770,8 +782,20 @@ router.post('/create-checkout', async (req, res) => {
     console.log('Line items:', sessionConfig.line_items?.map(item => ({
       name: item.price_data?.product_data?.name,
       amount: item.price_data?.unit_amount,
-      quantity: item.quantity
+      quantity: item.quantity,
+      type: item.price_data?.product_data?.metadata?.item_type
     })));
+    
+    // Specifically log tax and fee items
+    const taxItems = sessionConfig.line_items?.filter(item => 
+      item.price_data?.product_data?.metadata?.item_type === 'tax'
+    );
+    const feeItems = sessionConfig.line_items?.filter(item => 
+      item.price_data?.product_data?.metadata?.item_type === 'payment_fee'
+    );
+    
+    console.log('🔍 Tax line items:', taxItems.length, taxItems.length > 0 ? taxItems[0].price_data?.product_data?.name : 'None');
+    console.log('🔍 Fee line items:', feeItems.length, feeItems.length > 0 ? feeItems[0].price_data?.product_data?.name : 'None');
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create(sessionConfig, stripeOptions);
