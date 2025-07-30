@@ -23,7 +23,9 @@ export const createStripeCheckout = async (checkoutData) => {
       email: checkoutData.email,
       taxAmount: checkoutData.taxAmount,
       paymentFee: checkoutData.paymentFee,
-      shippingCost: checkoutData.shippingCost
+      shippingCost: checkoutData.shippingCost,
+      userId: checkoutData.userId,
+      sessionId: checkoutData.sessionId
     });
     
     // Extract data from checkoutData object
@@ -69,8 +71,13 @@ export const createStripeCheckout = async (checkoutData) => {
       delivery_time_slot: deliveryTimeSlot,
       delivery_instructions: deliveryComments,
       session_id: sessionId, // Include session_id for guest checkout
-      user_id: userId // Include user_id for authenticated checkout
+      customer_id: userId // Use customer_id instead of user_id for customer orders
     };
+
+    console.log('🔍 Final request payload:', {
+      ...requestPayload,
+      items: requestPayload.items?.length || 0 + ' items' // Don't log full items array
+    });
 
     // Use storefront API client instead of admin API client for guest/customer checkout
     const response = await storefrontApiClient.postCustomer('payments/create-checkout', requestPayload);

@@ -3,9 +3,12 @@ import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createProductUrl } from '@/utils/urlUtils';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useStore } from '@/components/storefront/StoreProvider';
 import ProductLabelComponent from '@/components/storefront/ProductLabel';
 import { formatDisplayPrice } from '@/utils/priceUtils';
+import cartService from '@/services/cartService';
+import { ShoppingCart } from 'lucide-react';
 
 const ProductCard = ({ product, settings, className = "" }) => {
   const { productLabels, store, taxes, selectedCountry } = useStore();
@@ -106,6 +109,42 @@ const ProductCard = ({ product, settings, className = "" }) => {
     ));
   };
 
+  const handleAddToCart = async (e) => {
+    e.preventDefault(); // Prevent navigation when clicking the button
+    e.stopPropagation();
+    
+    try {
+      if (!product || !product.id) {
+        console.error('Invalid product for add to cart');
+        return;
+      }
+
+      if (!store?.id) {
+        console.error('Store ID is required for add to cart');
+        return;
+      }
+
+      // Add to cart using cartService
+      const result = await cartService.addItem(
+        product.id, 
+        1, // quantity
+        product.price || 0,
+        [], // selectedOptions 
+        store.id
+      );
+
+      if (result.success !== false) {
+        // Dispatch cart updated event to refresh MiniCart
+        window.dispatchEvent(new CustomEvent('cartUpdated'));
+        console.log('Successfully added to cart:', product.name);
+      } else {
+        console.error('Failed to add to cart:', result.error);
+      }
+    } catch (error) {
+      console.error("Failed to add to cart", error);
+    }
+  };
+
   return (
     <Card className={`group overflow-hidden ${className}`}>
       <CardContent className="p-0">
@@ -124,7 +163,7 @@ const ProductCard = ({ product, settings, className = "" }) => {
           <h3 className="font-semibold text-lg truncate mt-1">
             <Link to={createProductUrl(store.slug, product.slug)}>{product.name}</Link>
           </h3>
-          <div className="flex items-center justify-between mt-4">
+          <div className="space-y-3 mt-4">
             <div className="flex items-baseline gap-2">
               {product.compare_price && parseFloat(product.compare_price) > 0 && parseFloat(product.compare_price) !== parseFloat(product.price) ? (
                 <>
@@ -159,6 +198,15 @@ const ProductCard = ({ product, settings, className = "" }) => {
                 </p>
               )}
             </div>
+            <Button 
+              onClick={handleAddToCart}
+              className="w-full"
+              size="sm"
+              variant="outline"
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Add to Cart
+            </Button>
           </div>
         </div>
       </CardContent>
