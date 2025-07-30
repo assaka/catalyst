@@ -344,7 +344,7 @@ router.put('/customer-orders/:orderId/status', auth, async (req, res) => {
     console.log('🔍 Customer updating order status:', { orderId, status, customerId });
     
     // Validate status
-    const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded'];
+    const allowedStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded', 'return_requested'];
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
@@ -367,16 +367,16 @@ router.put('/customer-orders/:orderId/status', auth, async (req, res) => {
       });
     }
     
-    // Allow customers to perform different actions based on current status
+    // Allow customers to perform limited actions based on current status
     if (req.user.role === 'customer') {
       const currentStatus = order.status?.toLowerCase();
       
-      // Define allowed transitions for customers
+      // Define allowed transitions for customers (more restrictive)
       const allowedTransitions = {
         'pending': ['cancelled'],
-        'processing': ['cancelled', 'shipped', 'refunded'],
-        'shipped': ['refunded'],
-        'delivered': ['refunded']
+        'processing': ['return_requested'],
+        'shipped': ['return_requested'],
+        'delivered': ['return_requested']
       };
       
       const allowedStatusesForCurrent = allowedTransitions[currentStatus] || [];
@@ -384,12 +384,12 @@ router.put('/customer-orders/:orderId/status', auth, async (req, res) => {
       if (!allowedStatusesForCurrent.includes(status)) {
         return res.status(403).json({
           success: false,
-          message: `Cannot change order from ${currentStatus} to ${status}. Allowed changes: ${allowedStatusesForCurrent.join(', ') || 'none'}`
+          message: `Cannot change order from ${currentStatus} to ${status}. Customer allowed changes: ${allowedStatusesForCurrent.join(', ') || 'none'}`
         });
       }
       
       // Additional validation for final statuses
-      if (['cancelled', 'refunded'].includes(currentStatus)) {
+      if (['cancelled', 'refunded', 'return_requested'].includes(currentStatus)) {
         return res.status(400).json({
           success: false,
           message: `Order is already ${currentStatus} and cannot be modified`

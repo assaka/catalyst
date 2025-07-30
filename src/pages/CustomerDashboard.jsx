@@ -130,15 +130,10 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
 
   const canCancel = (order) => {
     const status = order.status?.toLowerCase();
-    return ['pending', 'processing'].includes(status);
+    return status === 'pending'; // Only pending orders can be cancelled
   };
 
-  const canShip = (order) => {
-    const status = order.status?.toLowerCase();
-    return status === 'processing';
-  };
-
-  const canCredit = (order) => {
+  const canRequestReturn = (order) => {
     const status = order.status?.toLowerCase();
     return ['processing', 'shipped', 'delivered'].includes(status);
   };
@@ -152,6 +147,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
       case 'delivered': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
       case 'refunded': return 'bg-gray-100 text-gray-800';
+      case 'return_requested': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -333,26 +329,15 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
                             {isUpdating ? 'Cancelling...' : 'Cancel Order'}
                           </Button>
                         )}
-                        {canShip(order) && (
+                        {canRequestReturn(order) && (
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleStatusUpdate(order.id, 'shipped')}
+                            onClick={() => handleStatusUpdate(order.id, 'return_requested')}
                             disabled={isUpdating}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                           >
-                            {isUpdating ? 'Shipping...' : 'Ship Order'}
-                          </Button>
-                        )}
-                        {canCredit(order) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleStatusUpdate(order.id, 'refunded')}
-                            disabled={isUpdating}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          >
-                            {isUpdating ? 'Processing...' : 'Credit/Refund'}
+                            {isUpdating ? 'Requesting...' : 'Request Return'}
                           </Button>
                         )}
                       </div>
