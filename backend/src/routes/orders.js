@@ -205,6 +205,70 @@ router.get('/test-direct/:orderId', async (req, res) => {
   }
 });
 
+// @route   GET /api/orders/my-orders
+// @desc    Get orders for authenticated customer
+// @access  Private (customer authentication required)
+router.get('/my-orders', auth, async (req, res) => {
+  try {
+    console.log('🔍 Customer orders request from user:', req.user?.id, 'role:', req.user?.role);
+    console.log('🔍 Full user object:', JSON.stringify(req.user, null, 2));
+    
+    // Only allow customer role to access this endpoint
+    if (req.user?.role !== 'customer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Customer access required.'
+      });
+    }
+
+    const customerId = req.user.id;
+    console.log('🔍 Loading orders for customer ID:', customerId);
+    console.log('🔍 Customer ID type:', typeof customerId);
+    console.log('🔍 Customer ID length:', customerId?.length);
+    
+    // Validate that customerId is a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!customerId || !uuidRegex.test(customerId)) {
+      console.error('❌ Invalid customer ID format:', customerId);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid customer ID format'
+      });
+    }
+
+    // Simple query without complex associations to avoid 500 errors
+    console.log('🔍 About to execute Sequelize query with customer_id:', customerId);
+    
+    const whereClause = { customer_id: customerId };
+    console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
+    
+    const orders = await Order.findAll({
+      where: whereClause,
+      order: [['created_at', 'DESC']]
+    });
+    
+    console.log('🔍 Query executed successfully');
+    console.log('🔍 Found orders for customer:', orders.length);
+
+    res.json({
+      success: true,
+      data: orders
+    });
+  } catch (error) {
+    console.error('Get customer orders error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
 // @route   GET /api/orders
 // @desc    Get orders
 // @access  Private
@@ -427,136 +491,6 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Server error'
-    });
-  }
-});
-
-// @route   GET /api/orders/customer
-// @desc    Get orders for authenticated customer (legacy endpoint)
-// @access  Private (customer authentication required)
-router.get('/customer', auth, async (req, res) => {
-  try {
-    console.log('🔍 Legacy customer orders endpoint called');
-    console.log('🔍 Customer orders request from user:', req.user?.id, 'role:', req.user?.role);
-    console.log('🔍 Full user object:', JSON.stringify(req.user, null, 2));
-    
-    // Only allow customer role to access this endpoint
-    if (req.user?.role !== 'customer') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Customer access required.'
-      });
-    }
-
-    const customerId = req.user.id;
-    console.log('🔍 Loading orders for customer ID:', customerId);
-    console.log('🔍 Customer ID type:', typeof customerId);
-    console.log('🔍 Customer ID length:', customerId?.length);
-    
-    // Validate that customerId is a valid UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!customerId || !uuidRegex.test(customerId)) {
-      console.error('❌ Invalid customer ID format:', customerId);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid customer ID format'
-      });
-    }
-
-    // Simple query without complex associations to avoid 500 errors
-    console.log('🔍 About to execute Sequelize query with customer_id:', customerId);
-    
-    const whereClause = { customer_id: customerId };
-    console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
-    
-    const orders = await Order.findAll({
-      where: whereClause,
-      order: [['created_at', 'DESC']]
-    });
-    
-    console.log('🔍 Query executed successfully');
-    console.log('🔍 Found orders for customer:', orders.length);
-
-    res.json({
-      success: true,
-      data: orders
-    });
-  } catch (error) {
-    console.error('Get customer orders error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
-});
-
-// @route   GET /api/orders/my-orders
-// @desc    Get orders for authenticated customer
-// @access  Private (customer authentication required)
-router.get('/my-orders', auth, async (req, res) => {
-  try {
-    console.log('🔍 Customer orders request from user:', req.user?.id, 'role:', req.user?.role);
-    console.log('🔍 Full user object:', JSON.stringify(req.user, null, 2));
-    
-    // Only allow customer role to access this endpoint
-    if (req.user?.role !== 'customer') {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Customer access required.'
-      });
-    }
-
-    const customerId = req.user.id;
-    console.log('🔍 Loading orders for customer ID:', customerId);
-    console.log('🔍 Customer ID type:', typeof customerId);
-    console.log('🔍 Customer ID length:', customerId?.length);
-    
-    // Validate that customerId is a valid UUID format
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!customerId || !uuidRegex.test(customerId)) {
-      console.error('❌ Invalid customer ID format:', customerId);
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid customer ID format'
-      });
-    }
-
-    // Simple query without complex associations to avoid 500 errors
-    console.log('🔍 About to execute Sequelize query with customer_id:', customerId);
-    
-    const whereClause = { customer_id: customerId };
-    console.log('🔍 Where clause:', JSON.stringify(whereClause, null, 2));
-    
-    const orders = await Order.findAll({
-      where: whereClause,
-      order: [['created_at', 'DESC']]
-    });
-    
-    console.log('🔍 Query executed successfully');
-
-    console.log('🔍 Found orders for customer:', orders.length);
-
-    res.json({
-      success: true,
-      data: orders
-    });
-  } catch (error) {
-    console.error('Get customer orders error:', error);
-    console.error('Error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
