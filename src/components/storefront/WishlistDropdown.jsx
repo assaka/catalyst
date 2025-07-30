@@ -52,10 +52,12 @@ export default function WishlistDropdown() {
       setUser(currentUser);
 
       // Load wishlist items - this should work for both authenticated and guest users
+      console.log(`🔍 WishlistDropdown: About to call CustomerWishlist.getItems(${store?.id})`);
       const result = await retryApiCall(() => CustomerWishlist.getItems(store?.id)).catch((error) => {
         console.warn("WishlistDropdown: Could not load wishlist items:", error.message);
         return [];
       });
+      console.log(`🔍 WishlistDropdown: CustomerWishlist.getItems() returned:`, result);
       const items = Array.isArray(result) ? result : [];
 
       console.log(`🛒 WishlistDropdown: Loaded ${items.length} wishlist items for store ${store?.id}:`, items);
@@ -144,7 +146,16 @@ export default function WishlistDropdown() {
       </PopoverTrigger>
       <PopoverContent className="w-80">
         <div className="p-4">
-          <h4 className="font-medium leading-none mb-4">Wishlist</h4>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="font-medium leading-none">Wishlist</h4>
+            <button 
+              onClick={loadWishlistItems} 
+              className="text-xs text-blue-600 hover:underline"
+              disabled={loading}
+            >
+              {loading ? 'Loading...' : 'Refresh'}
+            </button>
+          </div>
           {loading ? (
             <div className="flex justify-center items-center h-24">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900"></div>
