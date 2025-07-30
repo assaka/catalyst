@@ -12,6 +12,7 @@
     "migrate:tabs": "node src/database/migrations/run-product-tabs-migration.js",
     "sync:tables": "node src/database/sync-tables.js",
     "migrate:alter-tabs": "node src/database/migrations/run-alter-product-tabs.js",
+    "migrate:payment-fee": "node run-payment-fee-migration-simple.js",
     "seed": "node src/database/seed.js",
     "test": "jest",
     "db:check": "node check-database.js",
