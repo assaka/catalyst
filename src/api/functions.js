@@ -49,8 +49,8 @@ export const createStripeCheckout = async (checkoutData) => {
     const requestPayload = {
       items: cartItems, // Map cartItems to items
       store_id: store?.id,
-      success_url: `${window.location.origin}/order-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${window.location.origin}/cart`,
+      success_url: `${window.location.origin}/${store.slug}/order-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${window.location.origin}/${store.slug}/cart`,
       customer_email: email,
       shipping_address: shippingAddress,
       shipping_method: shippingMethod,
