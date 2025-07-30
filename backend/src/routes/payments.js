@@ -276,6 +276,16 @@ router.post('/create-checkout', async (req, res) => {
       coupon_code
     } = req.body;
 
+    // Debug: Log received data
+    console.log('🔍 Stripe checkout request data:', {
+      customer_email,
+      tax_amount,
+      payment_fee,
+      shipping_cost,
+      shipping_address,
+      items: items?.length || 0
+    });
+
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({
@@ -401,6 +411,7 @@ router.post('/create-checkout', async (req, res) => {
 
     // Add tax as a line item if provided
     if (tax_amount && tax_amount > 0) {
+      console.log('💰 Adding tax line item:', tax_amount, 'cents:', Math.round(tax_amount * 100));
       line_items.push({
         price_data: {
           currency: storeCurrency.toLowerCase(),
@@ -414,10 +425,13 @@ router.post('/create-checkout', async (req, res) => {
         },
         quantity: 1,
       });
+    } else {
+      console.log('⚠️ No tax amount provided or tax is 0:', tax_amount);
     }
 
     // Add payment fee as a line item if provided
     if (payment_fee && payment_fee > 0) {
+      console.log('💳 Adding payment fee line item:', payment_fee, 'cents:', Math.round(payment_fee * 100));
       line_items.push({
         price_data: {
           currency: storeCurrency.toLowerCase(),
@@ -431,6 +445,8 @@ router.post('/create-checkout', async (req, res) => {
         },
         quantity: 1,
       });
+    } else {
+      console.log('⚠️ No payment fee provided or fee is 0:', payment_fee);
     }
 
     // Build checkout session configuration
@@ -492,6 +508,7 @@ router.post('/create-checkout', async (req, res) => {
     }
 
     // Set up shipping with the pre-selected method
+    console.log('🚚 Shipping setup - method:', shipping_method?.name, 'cost:', shipping_cost);
     if (shipping_method && shipping_cost !== undefined) {
       // Create a shipping rate for the pre-selected method
       const shippingRateData = {
@@ -684,6 +701,11 @@ router.post('/create-checkout', async (req, res) => {
     // Add customer email if provided and no customer was created
     if (customer_email && !customerCreated) {
       sessionConfig.customer_email = customer_email;
+      console.log('📧 Set customer_email directly:', customer_email);
+    } else if (customer_email && customerCreated) {
+      console.log('📧 Customer created with email attached to customer ID');
+    } else if (!customer_email) {
+      console.log('⚠️ No customer_email provided');
     }
 
     // Use Connect account if available
@@ -699,8 +721,19 @@ router.post('/create-checkout', async (req, res) => {
     console.log('Creating Stripe session with config:', {
       success_url: sessionConfig.success_url,
       cancel_url: sessionConfig.cancel_url,
+      customer: sessionConfig.customer,
+      customer_email: sessionConfig.customer_email,
+      line_items_count: sessionConfig.line_items?.length || 0,
+      shipping_options: sessionConfig.shipping_options?.length || 0,
       metadata: sessionConfig.metadata
     });
+    
+    // Log line items for debugging
+    console.log('Line items:', sessionConfig.line_items?.map(item => ({
+      name: item.price_data?.product_data?.name,
+      amount: item.price_data?.unit_amount,
+      quantity: item.quantity
+    })));
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create(sessionConfig, stripeOptions);

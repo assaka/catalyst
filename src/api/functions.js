@@ -18,6 +18,12 @@ export const createPaymentIntent = async (amount, currency = 'usd', metadata = {
 export const createStripeCheckout = async (checkoutData) => {
   try {
     console.log('Creating Stripe checkout with data:', checkoutData);
+    console.log('🔍 Key values being sent:', {
+      email: checkoutData.email,
+      taxAmount: checkoutData.taxAmount,
+      paymentFee: checkoutData.paymentFee,
+      shippingCost: checkoutData.shippingCost
+    });
     
     // Extract data from checkoutData object
     const {
