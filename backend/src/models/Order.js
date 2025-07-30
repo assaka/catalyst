@@ -29,7 +29,7 @@ const Order = sequelize.define('Order', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'users',
+      model: 'customers',
       key: 'id'
     }
   },
