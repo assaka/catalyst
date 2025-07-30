@@ -124,11 +124,24 @@ router.post('/', optionalAuth, async (req, res) => {
       });
     }
 
+    // Verify user exists before creating address
+    const { User } = require('../models');
+    const userExists = await User.findByPk(req.user.id);
+    
+    if (!userExists) {
+      console.log('❌ User not found in database:', req.user.id);
+      return res.status(400).json({
+        success: false,
+        message: 'User account not found. Please log in again.'
+      });
+    }
+
     const addressData = {
       ...req.body,
       user_id: req.user.id
     };
 
+    console.log('💾 Creating address for verified user:', req.user.id);
     const address = await Address.create(addressData);
 
     res.status(201).json({
