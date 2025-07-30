@@ -295,7 +295,8 @@ class StorefrontWishlistService {
   async addItem(productId, storeId) {
     const data = { 
       product_id: productId,
-      store_id: storeId 
+      store_id: storeId,
+      session_id: this.client.getOrCreateSessionId() // Include session_id in body for guest users
     };
     
     try {
