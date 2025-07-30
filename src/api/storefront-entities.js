@@ -79,6 +79,13 @@ class CustomerBaseEntity {
       const response = await this.client.getCustomer(url);
       console.log(`🔍 CustomerBaseEntity(${this.endpoint}).findAll() response:`, response);
       
+      // Handle wrapped response format {success: true, data: [...]}
+      if (response && response.success && Array.isArray(response.data)) {
+        console.log(`🔍 CustomerBaseEntity(${this.endpoint}) extracted data:`, response.data);
+        return response.data;
+      }
+      
+      // Handle direct array response
       return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error(`Customer ${this.endpoint}.findAll() error:`, error.message);
@@ -87,19 +94,27 @@ class CustomerBaseEntity {
   }
 
   async findById(id) {
-    return await this.client.getCustomer(`${this.endpoint}/${id}`);
+    const response = await this.client.getCustomer(`${this.endpoint}/${id}`);
+    // Handle wrapped response format {success: true, data: {...}}
+    return (response && response.success && response.data) ? response.data : response;
   }
 
   async create(data) {
-    return await this.client.postCustomer(this.endpoint, data);
+    const response = await this.client.postCustomer(this.endpoint, data);
+    // Handle wrapped response format {success: true, data: {...}}
+    return (response && response.success && response.data) ? response.data : response;
   }
 
   async update(id, data) {
-    return await this.client.putCustomer(`${this.endpoint}/${id}`, data);
+    const response = await this.client.putCustomer(`${this.endpoint}/${id}`, data);
+    // Handle wrapped response format {success: true, data: {...}}
+    return (response && response.success && response.data) ? response.data : response;
   }
 
   async delete(id) {
-    return await this.client.deleteCustomer(`${this.endpoint}/${id}`);
+    const response = await this.client.deleteCustomer(`${this.endpoint}/${id}`);
+    // Handle wrapped response format {success: true, data: {...}}
+    return (response && response.success && response.data) ? response.data : response;
   }
 
   async filter(params = {}) {
