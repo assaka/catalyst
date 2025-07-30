@@ -14,9 +14,10 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
     const { QueryTypes } = require('sequelize');
     const { sequelize } = require('../database/connection');
     
-    console.log('🔍 *** DEPLOYMENT v8.0 JOIN FIX *** - Fetching order with payment reference:', paymentReference);
+    console.log('🔍 *** DEPLOYMENT v9.0 JOIN DEBUG *** - Fetching order with payment reference:', paymentReference);
     
     // Use raw SQL with proper JOIN to fetch order and order items
+    console.log('🔍 About to execute JOIN query...');
     const queryResult = await sequelize.query(`
       SELECT 
         o.*,
@@ -48,6 +49,14 @@ router.get('/by-payment-reference/:paymentReference', async (req, res) => {
       replacements: { paymentReference },
       type: QueryTypes.SELECT
     });
+
+    console.log('🔍 JOIN query result:', queryResult.length, 'rows');
+    console.log('🔍 First row sample:', queryResult[0] ? {
+      id: queryResult[0].id,
+      order_number: queryResult[0].order_number,
+      order_item_id: queryResult[0].order_item_id,
+      product_name: queryResult[0].product_name
+    } : 'No rows');
 
     if (!queryResult || queryResult.length === 0) {
       console.log('❌ Order not found for payment reference:', paymentReference);
