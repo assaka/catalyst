@@ -176,7 +176,7 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store }) => {
 };
 
 
-const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, editingAddress, saving, onCancel }) => {
+const AddressForm = ({ addressForm, handleInputChange, handleAddressSubmit, editingAddress, saving, onCancel, settings }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -926,6 +926,7 @@ export default function CustomerDashboard() {
                         handleAddressSubmit={handleAddressSubmit}
                         editingAddress={editingAddress}
                         saving={saving}
+                        settings={settings}
                         onCancel={() => {
                           setShowAddressForm(false);
                           resetAddressForm();
