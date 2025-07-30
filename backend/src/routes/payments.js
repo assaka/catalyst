@@ -268,6 +268,7 @@ router.post('/create-checkout', async (req, res) => {
       shipping_cost,
       tax_amount,
       payment_fee,
+      selected_payment_method,
       discount_amount,
       applied_coupon,
       delivery_date,
@@ -430,23 +431,10 @@ router.post('/create-checkout', async (req, res) => {
       console.log('⚠️ No tax amount provided or tax is 0:', tax_amount, 'parsed:', taxAmountNum);
     }
 
-    // Add payment fee as a line item if provided
+    // Log payment fee info (but don't add as line item)
     const paymentFeeNum = parseFloat(payment_fee) || 0;
     if (paymentFeeNum > 0) {
-      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100));
-      line_items.push({
-        price_data: {
-          currency: storeCurrency.toLowerCase(),
-          product_data: {
-            name: 'Payment Processing Fee',
-            metadata: {
-              item_type: 'payment_fee'
-            }
-          },
-          unit_amount: Math.round(paymentFeeNum * 100), // Convert to cents
-        },
-        quantity: 1,
-      });
+      console.log('💳 Payment fee amount:', paymentFeeNum, 'method:', selected_payment_method);
     } else {
       console.log('⚠️ No payment fee provided or fee is 0:', payment_fee, 'parsed:', paymentFeeNum);
     }
@@ -467,7 +455,9 @@ router.post('/create-checkout', async (req, res) => {
         discount_amount: discount_amount?.toString() || '0',
         shipping_method_name: shipping_method?.name || selected_shipping_method || '',
         shipping_method_id: shipping_method?.id?.toString() || '',
-        shipping_cost: shipping_cost?.toString() || '0'
+        shipping_cost: shipping_cost?.toString() || '0',
+        payment_fee: paymentFeeNum.toString() || '0',
+        payment_method: selected_payment_method || ''
       }
     };
 
@@ -951,7 +941,7 @@ async function createOrderFromCheckoutSession(session) {
   const transaction = await sequelize.transaction();
   
   try {
-    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code, shipping_method_name, shipping_method_id } = session.metadata || {};
+    const { store_id, delivery_date, delivery_time_slot, delivery_instructions, coupon_code, shipping_method_name, shipping_method_id, payment_fee, payment_method } = session.metadata || {};
     
     // Validate store_id
     if (!store_id) {
@@ -995,6 +985,7 @@ async function createOrderFromCheckoutSession(session) {
     const subtotal = session.amount_subtotal / 100; // Convert from cents
     const tax_amount = (session.total_details?.amount_tax || 0) / 100;
     let shipping_cost = (session.total_details?.amount_shipping || 0) / 100;
+    const payment_fee_amount = parseFloat(payment_fee) || 0;
     const total_amount = session.amount_total / 100;
     
     console.log('Session details:', {
@@ -1066,6 +1057,7 @@ async function createOrderFromCheckoutSession(session) {
       tax_amount: tax_amount,
       shipping_amount: shipping_cost, // Use shipping_amount instead of shipping_cost
       discount_amount: (session.total_details?.amount_discount || 0) / 100,
+      payment_fee_amount: payment_fee_amount,
       total_amount: total_amount,
       currency: session.currency.toUpperCase(),
       delivery_date: delivery_date ? new Date(delivery_date) : null,
