@@ -101,8 +101,8 @@ export default function CmsBlockRenderer({ position, page }) {
           let blockPosition, blockPages;
           
           if (typeof block.placement === 'string') {
-            // Simple string format: "content", "above_add_to_cart", etc.
-            blockPosition = block.placement === 'content' ? 'above_add_to_cart' : block.placement;
+            // Simple string format: only use exact matches, no automatic mapping
+            blockPosition = block.placement;
             blockPages = ['all_pages']; // Default to all pages for string format
           } else {
             // Object format: { position: "above_add_to_cart", pages: ["storefront_product"] }

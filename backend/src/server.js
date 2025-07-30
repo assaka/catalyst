@@ -68,6 +68,7 @@ const testCmsBlocksRoutes = require('./routes/test-cms-blocks');
 const simpleCmsTestRoutes = require('./routes/simple-cms-test');
 const publicCmsBlocksRoutes = require('./routes/public-cms-blocks');
 const updateUspsBlockPlacementRoutes = require('./routes/update-usps-block-placement');
+const updateTestBlockPlacementRoutes = require('./routes/update-test-block-placement');
 
 const app = express();
 
@@ -1431,6 +1432,7 @@ app.use('/api/test-cms-blocks', testCmsBlocksRoutes);
 app.use('/api/simple-cms-test', simpleCmsTestRoutes);
 app.use('/api/public-cms-blocks', publicCmsBlocksRoutes);
 app.use('/api/update-usps-block-placement', updateUspsBlockPlacementRoutes);
+app.use('/api/update-test-block-placement', updateTestBlockPlacementRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
