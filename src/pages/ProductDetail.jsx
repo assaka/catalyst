@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StorefrontProductTab } from "@/api/storefront-entities";
-import { Wishlist } from "@/api/entities";
+import { CustomerWishlist } from "@/api/storefront-entities";
 import FlashMessage from "@/components/storefront/FlashMessage";
 // New imports for enhanced functionality
 import CustomOptions from "@/components/storefront/CustomOptions";
@@ -193,25 +193,12 @@ export default function ProductDetail() {
   const checkWishlistStatus = async (productId) => {
     if (!store?.id || !productId) return;
     try {
-      let sessionId = localStorage.getItem('guest_session_id');
-      if (!sessionId) {
-        sessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('guest_session_id', sessionId);
-      }
-
-      const wishlistFilter = {
-        product_id: productId,
-        store_id: store.id,
-      };
-
-      if (user?.id) {
-        wishlistFilter.user_id = user.id;
-      } else {
-        wishlistFilter.session_id = sessionId;
-      }
-
-      const wishlistItems = await Wishlist.filter(wishlistFilter);
-      setIsInWishlist(wishlistItems && wishlistItems.length > 0);
+      const wishlistItems = await CustomerWishlist.getItems();
+      // Check if this specific product is in the wishlist
+      const isProductInWishlist = wishlistItems && wishlistItems.some(item => 
+        item.product_id === productId || item.product_id === parseInt(productId)
+      );
+      setIsInWishlist(isProductInWishlist);
     } catch (error) {
       console.error('Error checking wishlist status:', error);
       setIsInWishlist(false);
@@ -312,41 +299,15 @@ export default function ProductDetail() {
     if (!product || !store?.id) return;
 
     try {
-      let sessionId = localStorage.getItem('guest_session_id');
-      if (!sessionId) {
-        sessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('guest_session_id', sessionId);
-      }
-
-      const wishlistFilter = {
-        product_id: product.id,
-        store_id: store.id,
-      };
-
-      if (user?.id) {
-        wishlistFilter.user_id = user.id;
-      } else {
-        wishlistFilter.session_id = sessionId;
-      }
-
-      const wishlistItems = await Wishlist.filter(wishlistFilter);
-
       if (isInWishlist) {
-        if (wishlistItems && wishlistItems.length > 0) {
-          await Wishlist.delete(wishlistItems[0].id);
-        }
+        await CustomerWishlist.removeItem(product.id);
         setIsInWishlist(false);
         setFlashMessage({
           type: 'success',
           message: 'Product removed from wishlist'
         });
       } else {
-        await Wishlist.create({
-          product_id: product.id,
-          store_id: store.id,
-          user_id: user?.id || null,
-          session_id: sessionId
-        });
+        await CustomerWishlist.addItem(product.id);
         setIsInWishlist(true);
         setFlashMessage({
           type: 'success',
