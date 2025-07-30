@@ -5,9 +5,8 @@ import { createPageUrl } from "@/utils";
 import { createPublicUrl } from "@/utils/urlUtils";
 import { useStore } from "@/components/storefront/StoreProvider";
 import { User, Auth } from "@/api/entities";
-import { Order } from "@/api/entities";
 import { OrderItem } from "@/api/entities";
-import { CustomerWishlist, CustomerAddress } from "@/api/storefront-entities";
+import { CustomerWishlist, CustomerAddress, CustomerOrder } from "@/api/storefront-entities";
 import { Product } from "@/api/entities";
 import { Cart as CartEntity } from "@/api/entities";
 
@@ -35,6 +34,7 @@ import FlashMessage from "@/components/storefront/FlashMessage";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CountrySelect } from '@/components/ui/country-select';
+import { formatDisplayPrice } from '@/utils/priceUtils';
 
 // --- Utilities ---
 let globalRequestQueue = Promise.resolve();
@@ -134,7 +134,7 @@ const OrdersTab = ({ orders, getCountryName }) => (
   </Card>
 );
 
-const WishlistTab = ({ wishlistProducts, setWishlistProducts, store }) => {
+const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, taxes, selectedCountry }) => {
   const handleRemove = async (itemId) => {
       try {
           await CustomerWishlist.removeItem(itemId, store?.id);
@@ -160,10 +160,9 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store }) => {
                 <CardContent className="p-4 flex flex-col items-center text-center">
                   <img src={item.product.images?.[0]} alt={item.product.name} className="w-32 h-32 object-cover mb-2 rounded-lg" />
                   <p className="font-semibold">{item.product.name}</p>
-                  <p className="text-sm text-gray-600">${(() => {
-                    const price = parseFloat(item.product?.price || 0);
-                    return isNaN(price) ? '0.00' : price.toFixed(2);
-                  })()}</p>
+                  <p className="text-sm text-gray-600">
+                    {formatDisplayPrice(item.product?.price, settings?.currency_symbol || '$', store, taxes, selectedCountry)}
+                  </p>
                   <Button variant="destructive" size="sm" className="mt-2" onClick={() => handleRemove(item.id)}>Remove</Button>
                 </CardContent>
               </Card>
@@ -462,7 +461,7 @@ const GuestWelcome = ({ onLogin }) => (
 export default function CustomerDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { store, settings } = useStore();
+  const { store, settings, taxes, selectedCountry } = useStore();
   const [user, setUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -552,7 +551,9 @@ export default function CustomerDashboard() {
   // Extracted loadOrders function
   const loadOrders = async (userId) => {
     try {
-        const userOrders = await retryApiCall(() => Order.filter({ user_id: userId }));
+        console.log('🔍 Loading orders for user ID:', userId);
+        const userOrders = await retryApiCall(() => CustomerOrder.findAll());
+        console.log('🔍 Orders data received:', userOrders);
         setOrders(userOrders || []);
     } catch (error) {
         console.error("Error loading orders:", error);
@@ -587,10 +588,10 @@ export default function CustomerDashboard() {
     } catch (error) {
       console.error('🔍 Error loading addresses without user_id:', error);
       
-      // Fallback: try with user_id if needed
+      // Fallback: try with customer_id if needed
       try {
-        console.log('🔍 Trying fallback with user_id:', currentUserId);
-        let fallbackData = await retryApiCall(() => CustomerAddress.findAll({ user_id: currentUserId }));
+        console.log('🔍 Trying fallback with customer_id:', currentUserId);
+        let fallbackData = await retryApiCall(() => CustomerAddress.findAll({ customer_id: currentUserId }));
         console.log('🔍 Fallback address data:', fallbackData);
         
         if (fallbackData && Array.isArray(fallbackData)) {
@@ -656,15 +657,23 @@ export default function CustomerDashboard() {
     console.log('🔍 User role:', user?.role);
     console.log('🔍 All user fields:', Object.keys(user || {}));
     
+    // Check if we should use customer_id instead of user_id
+    console.log('🔍 Checking for customer_id field:', user?.customer_id);
+    
     // Check authentication token
     const customerToken = localStorage.getItem('customer_auth_token');
     console.log('🔍 Customer token exists:', !!customerToken);
     console.log('🔍 Customer token (first 20 chars):', customerToken?.substring(0, 20) + '...');
     
-    // Don't send user_id to avoid foreign key constraint issues
-    // The backend should infer the user from the authentication token
-    delete dataToSave.user_id;
-    console.log('🔍 Removed user_id from request to avoid constraint issues');
+    // Use customer_id instead of user_id for addresses
+    delete dataToSave.user_id; // Remove user_id first
+    
+    if (user && user.id) {
+      dataToSave.customer_id = user.id; // Use customer_id instead
+      console.log('🔍 Using customer_id instead of user_id:', user.id);
+    } else {
+      console.log('🔍 No customer ID available');
+    }
     
     // Debug logging for address data
     console.log('🔍 Creating address with data:', dataToSave);
@@ -696,11 +705,11 @@ export default function CustomerDashboard() {
           console.error('🔍 CustomerAddress.create failed:', customerAddressError);
           console.error('🔍 Error response:', customerAddressError.response?.data);
           
-          // If user_id is required but missing, log this specific case
+          // If user_id is required, we should be using customer_id instead
           if (customerAddressError.response?.data?.message?.includes('user_id is required') ||
               customerAddressError.message?.includes('user_id is required')) {
-            console.error('🔍 Backend requires user_id but we cannot provide a valid one');
-            setFlashMessage({ type: 'error', message: 'Unable to save address: User authentication issue. Please try logging out and back in.' });
+            console.error('🔍 Backend requires user_id but we are using customer_id instead');
+            setFlashMessage({ type: 'error', message: 'Address field mismatch detected. Please contact support.' });
             throw customerAddressError;
           }
           
@@ -710,10 +719,10 @@ export default function CustomerDashboard() {
               customerAddressError.response?.data?.message?.includes('constraint')) {
             
             console.log('🔍 Trying fallback with regular Address entity');
-            // Ensure no user_id in fallback attempt either
+            // Keep customer_id but remove user_id in fallback attempt
             const fallbackData = { ...dataToSave };
-            delete fallbackData.user_id;
-            console.log('🔍 Fallback data without user_id:', fallbackData);
+            delete fallbackData.user_id; // Ensure no user_id
+            console.log('🔍 Fallback data with customer_id:', fallbackData);
             
             try {
               const result = await retryApiCall(() => CustomerAddress.create(fallbackData));
@@ -1107,7 +1116,14 @@ export default function CustomerDashboard() {
               )}
 
               {activeTab === 'wishlist' && (
-                <WishlistTab wishlistProducts={wishlistProducts} setWishlistProducts={setWishlistProducts} store={store} />
+                <WishlistTab 
+                  wishlistProducts={wishlistProducts} 
+                  setWishlistProducts={setWishlistProducts} 
+                  store={store} 
+                  settings={settings}
+                  taxes={taxes}
+                  selectedCountry={selectedCountry}
+                />
               )}
             </div>
           </div>
