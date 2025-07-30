@@ -2,6 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { Order, OrderItem, Store, Product } = require('../models');
 const { Op } = require('sequelize');
+const auth = require('../middleware/auth');
 const router = express.Router();
 
 
@@ -411,6 +412,54 @@ router.put('/:id', async (req, res) => {
     });
   } catch (error) {
     console.error('Update order error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   GET /api/orders/customer
+// @desc    Get orders for authenticated customer
+// @access  Private (customer authentication required)
+router.get('/customer', auth, async (req, res) => {
+  try {
+    console.log('🔍 Customer orders request from user:', req.user?.id, 'role:', req.user?.role);
+    
+    // Only allow customer role to access this endpoint
+    if (req.user?.role !== 'customer') {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Customer access required.'
+      });
+    }
+
+    const customerId = req.user.id;
+    console.log('🔍 Loading orders for customer ID:', customerId);
+
+    const orders = await Order.findAll({
+      where: { customer_id: customerId },
+      order: [['created_at', 'DESC']],
+      include: [
+        {
+          model: Store,
+          attributes: ['id', 'name']
+        },
+        {
+          model: OrderItem,
+          include: [{ model: Product, attributes: ['id', 'name', 'sku'] }]
+        }
+      ]
+    });
+
+    console.log('🔍 Found orders for customer:', orders.length);
+
+    res.json({
+      success: true,
+      data: orders
+    });
+  } catch (error) {
+    console.error('Get customer orders error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
