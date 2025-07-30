@@ -280,9 +280,10 @@ router.post('/create-checkout', async (req, res) => {
     // Debug: Log received data
     console.log('🔍 Stripe checkout request data:', {
       customer_email,
-      tax_amount: { value: tax_amount, type: typeof tax_amount },
-      payment_fee: { value: payment_fee, type: typeof payment_fee },
+      tax_amount: { value: tax_amount, type: typeof tax_amount, parsed: parseFloat(tax_amount) },
+      payment_fee: { value: payment_fee, type: typeof payment_fee, parsed: parseFloat(payment_fee) },
       shipping_cost: { value: shipping_cost, type: typeof shipping_cost },
+      selected_payment_method,
       shipping_address,
       items: items?.length || 0
     });
@@ -431,10 +432,43 @@ router.post('/create-checkout', async (req, res) => {
       console.log('⚠️ No tax amount provided or tax is 0:', tax_amount, 'parsed:', taxAmountNum);
     }
 
-    // Log payment fee info (but don't add as line item)
+    // Add payment fee as a line item if provided
     const paymentFeeNum = parseFloat(payment_fee) || 0;
     if (paymentFeeNum > 0) {
-      console.log('💳 Payment fee amount:', paymentFeeNum, 'method:', selected_payment_method);
+      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method);
+      
+      // Format payment method name properly
+      let paymentMethodName = 'Payment Processing Fee';
+      if (selected_payment_method) {
+        // Handle different payment method codes
+        const methodNames = {
+          'bank': 'Bank Transfer',
+          'card': 'Card Payment',
+          'paypal': 'PayPal',
+          'stripe': 'Stripe',
+          'cash': 'Cash on Delivery',
+          'cod': 'Cash on Delivery'
+        };
+        
+        const displayName = methodNames[selected_payment_method.toLowerCase()] || 
+                           selected_payment_method.charAt(0).toUpperCase() + selected_payment_method.slice(1).toLowerCase();
+        paymentMethodName = `${displayName} Fee`;
+      }
+      
+      line_items.push({
+        price_data: {
+          currency: storeCurrency.toLowerCase(),
+          product_data: {
+            name: paymentMethodName,
+            metadata: {
+              item_type: 'payment_fee',
+              payment_method: selected_payment_method || ''
+            }
+          },
+          unit_amount: Math.round(paymentFeeNum * 100), // Convert to cents
+        },
+        quantity: 1,
+      });
     } else {
       console.log('⚠️ No payment fee provided or fee is 0:', payment_fee, 'parsed:', paymentFeeNum);
     }
