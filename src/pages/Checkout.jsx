@@ -71,6 +71,8 @@ export default function Checkout() {
     password: '',
     rememberMe: false
   });
+  const [saveShippingAddress, setSaveShippingAddress] = useState(false);
+  const [saveBillingAddress, setSaveBillingAddress] = useState(false);
   
   const [shippingAddress, setShippingAddress] = useState({
     full_name: '',
@@ -628,6 +630,29 @@ export default function Checkout() {
     }));
   };
 
+  const saveAddressToAccount = async (addressData, type) => {
+    if (!user?.id) return;
+    
+    try {
+      const addressToSave = {
+        ...addressData,
+        user_id: user.id,
+        type: type, // 'shipping' or 'billing'
+        is_default: userAddresses.length === 0 // Make first address default
+      };
+      
+      const savedAddress = await Address.create(addressToSave);
+      
+      // Reload addresses
+      const updatedAddresses = await Address.filter({ user_id: user.id });
+      setUserAddresses(updatedAddresses || []);
+      
+      return savedAddress;
+    } catch (error) {
+      console.error('Failed to save address:', error);
+    }
+  };
+
   const handleShippingMethodChange = (methodName) => {
     setSelectedShippingMethod(methodName);
     const method = shippingMethods.find(m => m.name === methodName);
@@ -732,6 +757,15 @@ export default function Checkout() {
     
     setIsProcessing(true);
     try {
+      // Save addresses if requested by user
+      if (user && saveShippingAddress && selectedShippingAddress === 'new') {
+        await saveAddressToAccount(shippingAddress, 'shipping');
+      }
+      
+      if (user && saveBillingAddress && selectedBillingAddress === 'new' && !useShippingForBilling) {
+        await saveAddressToAccount(billingAddress, 'billing');
+      }
+      
       const selectedMethod = shippingMethods.find(m => m.name === selectedShippingMethod);
       const selectedPaymentMethodObj = paymentMethods.find(m => m.code === selectedPaymentMethod);
       
@@ -1148,45 +1182,61 @@ export default function Checkout() {
             </CardHeader>
             <CardContent>
               {user && userAddresses.length > 0 ? (
-                <div className="space-y-3">
-                  {userAddresses.map((address) => (
-                    <div key={address.id} className="flex items-center space-x-2">
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    {userAddresses.map((address) => (
+                      <div key={address.id} className="border rounded-lg p-3 hover:bg-gray-50">
+                        <div className="flex items-start space-x-3">
+                          <input
+                            type="radio"
+                            id={`shipping-${address.id}`}
+                            name="shippingAddress"
+                            value={address.id}
+                            checked={selectedShippingAddress === address.id}
+                            onChange={(e) => setSelectedShippingAddress(e.target.value)}
+                            className="text-blue-600 mt-1"
+                          />
+                          <label htmlFor={`shipping-${address.id}`} className="flex-1 cursor-pointer">
+                            <div className="text-sm">
+                              <p className="font-medium text-gray-900">{address.full_name}</p>
+                              <p className="text-gray-600">{address.street}</p>
+                              <p className="text-gray-600">{address.city}, {address.state} {address.postal_code}</p>
+                              <p className="text-gray-600">{address.country}</p>
+                              {address.phone && <p className="text-gray-500 text-xs mt-1">Phone: {address.phone}</p>}
+                              {address.is_default && (
+                                <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="border rounded-lg p-3 border-dashed border-gray-300">
+                    <div className="flex items-center space-x-2">
                       <input
                         type="radio"
-                        id={`shipping-${address.id}`}
+                        id="new-shipping-address"
                         name="shippingAddress"
-                        value={address.id}
-                        checked={selectedShippingAddress === address.id}
+                        value="new"
+                        checked={selectedShippingAddress === 'new'}
                         onChange={(e) => setSelectedShippingAddress(e.target.value)}
                         className="text-blue-600"
                       />
-                      <label htmlFor={`shipping-${address.id}`} className="flex-1 cursor-pointer">
-                        <div className="text-sm">
-                          <p className="font-medium">{address.full_name}</p>
-                          <p>{address.street}</p>
-                          <p>{address.city}, {address.state} {address.postal_code}</p>
-                          <p>{address.country}</p>
-                        </div>
+                      <label htmlFor="new-shipping-address" className="cursor-pointer text-blue-600 font-medium">
+                        + Add a new shipping address
                       </label>
                     </div>
-                  ))}
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      id="new-shipping-address"
-                      name="shippingAddress"
-                      value="new"
-                      checked={selectedShippingAddress === 'new'}
-                      onChange={(e) => setSelectedShippingAddress(e.target.value)}
-                      className="text-blue-600"
-                    />
-                    <label htmlFor="new-shipping-address" className="cursor-pointer">
-                      Use a new address
-                    </label>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-600 mb-4">Enter your shipping address</p>
+                user ? (
+                  <p className="text-sm text-gray-600 mb-4">You don't have any saved addresses. Add one below.</p>
+                ) : (
+                  <p className="text-sm text-gray-600 mb-4">Enter your shipping address</p>
+                )
               )}
 
               {(!user || userAddresses.length === 0 || selectedShippingAddress === 'new') && (
@@ -1231,6 +1281,21 @@ export default function Checkout() {
                     placeholder="Select country..."
                     allowedCountries={settings?.allowed_countries}
                   />
+                  
+                  {user && selectedShippingAddress === 'new' && (
+                    <div className="md:col-span-2 flex items-center space-x-2 mt-3">
+                      <input
+                        type="checkbox"
+                        id="save-shipping-address"
+                        checked={saveShippingAddress}
+                        onChange={(e) => setSaveShippingAddress(e.target.checked)}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <Label htmlFor="save-shipping-address" className="text-sm text-gray-700">
+                        Save this address to my account for future orders
+                      </Label>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -1380,39 +1445,49 @@ export default function Checkout() {
                     {user && userAddresses.length > 0 ? (
                       <div className="space-y-3">
                         {userAddresses.map((address) => (
-                          <div key={address.id} className="flex items-center space-x-2">
+                          <div key={address.id} className="border rounded-lg p-3 hover:bg-gray-50">
+                            <div className="flex items-start space-x-3">
+                              <input
+                                type="radio"
+                                id={`billing-${address.id}`}
+                                name="billingAddress"
+                                value={address.id}
+                                checked={selectedBillingAddress === address.id}
+                                onChange={(e) => setSelectedBillingAddress(e.target.value)}
+                                className="text-blue-600 mt-1"
+                              />
+                              <label htmlFor={`billing-${address.id}`} className="flex-1 cursor-pointer">
+                                <div className="text-sm">
+                                  <p className="font-medium text-gray-900">{address.full_name}</p>
+                                  <p className="text-gray-600">{address.street}</p>
+                                  <p className="text-gray-600">{address.city}, {address.state} {address.postal_code}</p>
+                                  <p className="text-gray-600">{address.country}</p>
+                                  {address.phone && <p className="text-gray-500 text-xs mt-1">Phone: {address.phone}</p>}
+                                  {address.is_default && (
+                                    <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
+                                      Default
+                                    </span>
+                                  )}
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="border rounded-lg p-3 border-dashed border-gray-300">
+                          <div className="flex items-center space-x-2">
                             <input
                               type="radio"
-                              id={`billing-${address.id}`}
+                              id="new-billing-address"
                               name="billingAddress"
-                              value={address.id}
-                              checked={selectedBillingAddress === address.id}
+                              value="new"
+                              checked={selectedBillingAddress === 'new'}
                               onChange={(e) => setSelectedBillingAddress(e.target.value)}
                               className="text-blue-600"
                             />
-                            <label htmlFor={`billing-${address.id}`} className="flex-1 cursor-pointer">
-                              <div className="text-sm">
-                                <p className="font-medium">{address.full_name}</p>
-                                <p>{address.street}</p>
-                                <p>{address.city}, {address.state} {address.postal_code}</p>
-                                <p>{address.country}</p>
-                              </div>
+                            <label htmlFor="new-billing-address" className="cursor-pointer text-blue-600 font-medium">
+                              + Add a new billing address
                             </label>
                           </div>
-                        ))}
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="new-billing-address"
-                            name="billingAddress"
-                            value="new"
-                            checked={selectedBillingAddress === 'new'}
-                            onChange={(e) => setSelectedBillingAddress(e.target.value)}
-                            className="text-blue-600"
-                          />
-                          <label htmlFor="new-billing-address" className="cursor-pointer">
-                            Use a new address
-                          </label>
                         </div>
                       </div>
                     ) : null}
@@ -1459,6 +1534,21 @@ export default function Checkout() {
                           placeholder="Select country..."
                           allowedCountries={settings?.allowed_countries}
                         />
+                        
+                        {user && selectedBillingAddress === 'new' && (
+                          <div className="md:col-span-2 flex items-center space-x-2 mt-3">
+                            <input
+                              type="checkbox"
+                              id="save-billing-address"
+                              checked={saveBillingAddress}
+                              onChange={(e) => setSaveBillingAddress(e.target.checked)}
+                              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            <Label htmlFor="save-billing-address" className="text-sm text-gray-700">
+                              Save this billing address to my account for future orders
+                            </Label>
+                          </div>
+                        )}
                       </div>
                     )}
                   </>
