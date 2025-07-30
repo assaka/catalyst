@@ -269,6 +269,7 @@ router.post('/create-checkout', async (req, res) => {
       tax_amount,
       payment_fee,
       selected_payment_method,
+      selected_payment_method_name,
       discount_amount,
       applied_coupon,
       delivery_date,
@@ -284,6 +285,7 @@ router.post('/create-checkout', async (req, res) => {
       payment_fee: { value: payment_fee, type: typeof payment_fee, parsed: parseFloat(payment_fee) },
       shipping_cost: { value: shipping_cost, type: typeof shipping_cost },
       selected_payment_method,
+      selected_payment_method_name,
       shipping_address,
       items: items?.length || 0
     });
@@ -458,10 +460,10 @@ router.post('/create-checkout', async (req, res) => {
     
     // 2. Add payment fee as a line item if provided
     if (paymentFeeNum > 0) {
-      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method);
+      console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method, 'name:', selected_payment_method_name);
       
-      // Use exact payment method name
-      let paymentMethodName = selected_payment_method || 'Payment Method';
+      // Use the payment method name from frontend (e.g., "Bank Transfer", "Credit Card")
+      let paymentMethodName = selected_payment_method_name || selected_payment_method || 'Payment Method';
       
       line_items.push({
         price_data: {
@@ -470,7 +472,8 @@ router.post('/create-checkout', async (req, res) => {
             name: paymentMethodName,
             metadata: {
               item_type: 'payment_fee',
-              payment_method: selected_payment_method || ''
+              payment_method: selected_payment_method || '',
+              payment_method_name: selected_payment_method_name || ''
             }
           },
           unit_amount: Math.round(paymentFeeNum * 100), // Convert to cents

@@ -678,6 +678,7 @@ export default function Checkout() {
     setIsProcessing(true);
     try {
       const selectedMethod = shippingMethods.find(m => m.name === selectedShippingMethod);
+      const selectedPaymentMethodObj = paymentMethods.find(m => m.code === selectedPaymentMethod);
       
       const discount = calculateDiscount();
       
@@ -692,6 +693,7 @@ export default function Checkout() {
         shippingMethod: selectedMethod,
         selectedShippingMethod,
         selectedPaymentMethod,
+        selectedPaymentMethodName: selectedPaymentMethodObj?.name || selectedPaymentMethod,
         discountAmount: discount,
         appliedCoupon,
         deliveryDate: deliveryDate ? deliveryDate.toISOString().split('T')[0] : null,
