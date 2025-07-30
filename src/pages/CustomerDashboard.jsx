@@ -8,7 +8,7 @@ import { User, Auth } from "@/api/entities";
 import { Order } from "@/api/entities";
 import { OrderItem } from "@/api/entities";
 import { Address } from "@/api/entities";
-import { Wishlist } from "@/api/entities";
+import { CustomerWishlist } from "@/api/storefront-entities";
 import { Product } from "@/api/entities";
 import { Cart as CartEntity } from "@/api/entities";
 
@@ -137,7 +137,7 @@ const OrdersTab = ({ orders, getCountryName }) => (
 const WishlistTab = ({ wishlistProducts, setWishlistProducts }) => {
   const handleRemove = async (itemId) => {
       try {
-          await Wishlist.delete(itemId);
+          await CustomerWishlist.removeItem(itemId);
           setWishlistProducts(prev => prev.filter(p => p.id !== itemId));
           window.dispatchEvent(new CustomEvent('wishlistUpdated'));
       } catch (error) {
@@ -582,7 +582,7 @@ export default function CustomerDashboard() {
   const loadWishlist = async (userId) => {
       if (!userId) return;
       try {
-        const wishlistItems = await retryApiCall(() => Wishlist.filter({ user_id: userId }));
+        const wishlistItems = await retryApiCall(() => CustomerWishlist.getItems());
         if (wishlistItems && wishlistItems.length > 0) {
             const productIds = wishlistItems.map(i => i.product_id);
             const products = await retryApiCall(() => Product.filter({ id: { "$in": productIds } }));
