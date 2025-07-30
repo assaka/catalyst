@@ -808,6 +808,35 @@ router.post('/create-checkout', async (req, res) => {
       success_url: session.success_url
     });
 
+    // Create preliminary order and OrderItems immediately for lazy loading
+    console.log('💾 Creating preliminary order for immediate availability...');
+    try {
+      await createPreliminaryOrder(session, {
+        items,
+        store_id,
+        customer_email,
+        shipping_address,
+        billing_address: shipping_address, // Use shipping as billing if not provided separately
+        shipping_method,
+        selected_shipping_method,
+        shipping_cost,
+        tax_amount,
+        payment_fee,
+        selected_payment_method,
+        selected_payment_method_name,
+        discount_amount,
+        applied_coupon,
+        delivery_date,
+        delivery_time_slot,
+        delivery_instructions,
+        store
+      });
+      console.log('✅ Preliminary order created successfully');
+    } catch (preliminaryOrderError) {
+      console.error('⚠️ Failed to create preliminary order (will retry in webhook):', preliminaryOrderError.message);
+      // Don't fail the checkout if preliminary order fails - webhook will handle it
+    }
+
     res.json({
       success: true,
       data: {
@@ -874,27 +903,55 @@ router.post('/webhook', async (req, res) => {
       console.log('Session customer details:', session.customer_details);
       
       try {
-        // Create order from checkout session
-        const order = await createOrderFromCheckoutSession(session);
-        console.log('Order created successfully with ID:', order.id, 'Order Number:', order.order_number);
+        // Check if preliminary order already exists
+        const existingOrder = await Order.findOne({
+          where: { payment_reference: session.id }
+        });
         
-        // Verify order items were created
-        const itemCount = await OrderItem.count({ where: { order_id: order.id } });
-        console.log('✅ Verified:', itemCount, 'OrderItems created for order', order.id);
-        
-        if (itemCount === 0) {
-          console.error('⚠️ WARNING: Order created but no OrderItems found!');
+        if (existingOrder) {
+          console.log('✅ Found existing preliminary order:', existingOrder.id, existingOrder.order_number);
+          console.log('🔄 Updating order status to paid/processing...');
+          
+          // Update the existing preliminary order to mark as paid and processing
+          await existingOrder.update({
+            status: 'processing',
+            payment_status: 'paid',
+            updatedAt: new Date()
+          });
+          
+          // Verify order items exist
+          const itemCount = await OrderItem.count({ where: { order_id: existingOrder.id } });
+          console.log('✅ Verified:', itemCount, 'OrderItems already exist for order', existingOrder.id);
+          
+          if (itemCount === 0) {
+            console.error('⚠️ WARNING: Preliminary order exists but no OrderItems found! Creating them now...');
+            // Fallback: create order items from session if they don't exist
+            await createOrderFromCheckoutSession(session);
+          }
+        } else {
+          console.log('⚠️ No preliminary order found, creating new order from session...');
+          // Fallback: create order from checkout session (original behavior)
+          const order = await createOrderFromCheckoutSession(session);
+          console.log('Order created successfully with ID:', order.id, 'Order Number:', order.order_number);
+          
+          // Verify order items were created
+          const itemCount = await OrderItem.count({ where: { order_id: order.id } });
+          console.log('✅ Verified:', itemCount, 'OrderItems created for order', order.id);
+          
+          if (itemCount === 0) {
+            console.error('⚠️ WARNING: Order created but no OrderItems found!');
+          }
         }
         
       } catch (error) {
-        console.error('Error creating order from checkout session:', error);
+        console.error('Error processing order from checkout session:', error);
         console.error('Error details:', {
           message: error.message,
           name: error.name,
           code: error.code,
           sql: error.sql
         });
-        return res.status(500).json({ error: 'Failed to create order' });
+        return res.status(500).json({ error: 'Failed to process order' });
       }
       
       break;
@@ -1007,6 +1064,110 @@ router.post('/debug-session', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Helper function to create preliminary order immediately after checkout session creation
+async function createPreliminaryOrder(session, orderData) {
+  const { sequelize } = require('../database/connection');
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const {
+      items,
+      store_id,
+      customer_email,
+      shipping_address,
+      billing_address,
+      shipping_method,
+      selected_shipping_method,
+      shipping_cost,
+      tax_amount,
+      payment_fee,
+      selected_payment_method,
+      selected_payment_method_name,
+      discount_amount,
+      applied_coupon,
+      delivery_date,
+      delivery_time_slot,
+      delivery_instructions,
+      store
+    } = orderData;
+
+    console.log('💾 Creating preliminary order with session ID:', session.id);
+
+    // Calculate totals
+    const subtotal = items.reduce((sum, item) => {
+      const basePrice = parseFloat(item.price || 0);
+      const optionsPrice = (item.selected_options || []).reduce((optSum, opt) => optSum + parseFloat(opt.price || 0), 0);
+      return sum + ((basePrice + optionsPrice) * (item.quantity || 1));
+    }, 0);
+
+    const taxAmountNum = parseFloat(tax_amount) || 0;
+    const shippingCostNum = parseFloat(shipping_cost) || 0;
+    const paymentFeeNum = parseFloat(payment_fee) || 0;
+    const discountAmountNum = parseFloat(discount_amount) || 0;
+    const totalAmount = subtotal + taxAmountNum + shippingCostNum + paymentFeeNum - discountAmountNum;
+
+    // Create the preliminary order
+    const order = await Order.create({
+      status: 'pending', // Will be updated to 'processing' in webhook
+      payment_status: 'pending', // Will be updated to 'paid' in webhook
+      fulfillment_status: 'pending',
+      customer_email,
+      billing_address: billing_address || shipping_address,
+      shipping_address,
+      subtotal: subtotal.toFixed(2),
+      tax_amount: taxAmountNum.toFixed(2),
+      shipping_amount: shippingCostNum.toFixed(2),
+      discount_amount: discountAmountNum.toFixed(2),
+      payment_fee_amount: paymentFeeNum.toFixed(2),
+      total_amount: totalAmount.toFixed(2),
+      currency: store.currency || 'USD',
+      delivery_date: delivery_date ? new Date(delivery_date) : null,
+      delivery_time_slot,
+      delivery_instructions,
+      payment_method: 'stripe',
+      payment_reference: session.id, // Use session ID as payment reference
+      shipping_method: selected_shipping_method,
+      coupon_code: applied_coupon?.code || null,
+      store_id
+    }, { transaction });
+
+    console.log('💾 Preliminary order created:', order.id, order.order_number);
+
+    // Create OrderItems
+    for (const item of items) {
+      const basePrice = parseFloat(item.price || 0);
+      const optionsPrice = (item.selected_options || []).reduce((sum, opt) => sum + parseFloat(opt.price || 0), 0);
+      const unitPrice = basePrice + optionsPrice;
+      const totalPrice = unitPrice * (item.quantity || 1);
+
+      const orderItemData = {
+        order_id: order.id,
+        product_id: item.product_id,
+        product_name: item.product_name || item.name || 'Product',
+        product_sku: item.sku || '',
+        quantity: item.quantity || 1,
+        unit_price: unitPrice.toFixed(2),
+        total_price: totalPrice.toFixed(2),
+        original_price: unitPrice.toFixed(2),
+        selected_options: item.selected_options || [],
+        product_attributes: {}
+      };
+
+      console.log('💾 Creating preliminary OrderItem:', orderItemData.product_name);
+      await OrderItem.create(orderItemData, { transaction });
+    }
+
+    await transaction.commit();
+    console.log('✅ Preliminary order and items created successfully');
+    return order;
+    
+  } catch (error) {
+    await transaction.rollback();
+    console.error('❌ Error creating preliminary order:', error);
+    throw error;
+  }
+}
 
 // Helper function to create order from Stripe checkout session
 async function createOrderFromCheckoutSession(session) {
