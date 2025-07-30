@@ -121,7 +121,6 @@ export default function Cart() {
             if (store?.id) {
                 const taxData = await Tax.filter({ store_id: store.id, is_active: true });
                 setTaxRules(taxData || []);
-                console.log('🧾 Cart: Loaded tax rules:', taxData);
             }
         } catch (error) {
             console.error('Error loading tax rules:', error);
@@ -572,7 +571,6 @@ export default function Cart() {
                 disc
             );
 
-            console.log('🧾 Cart: Tax calculation result:', taxResult);
             return taxResult.taxAmount || 0;
         })();
         

@@ -81,13 +81,6 @@ export default function ProductLabels() {
       sort_order: parseInt(labelData.sort_order) || 0 // Ensure sort_order is a number
     };
     
-    console.log('🔍 Priority field debug:', {
-      originalPriority: labelData.priority,
-      convertedPriority: backendData.priority,
-      originalSortOrder: labelData.sort_order,
-      convertedSortOrder: backendData.sort_order
-    });
-    
     // Remove the frontend field name
     delete backendData.text_color;
 

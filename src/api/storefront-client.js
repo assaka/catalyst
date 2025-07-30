@@ -10,12 +10,6 @@ class StorefrontApiClient {
     // Initialize or get guest session ID
     this.sessionId = this.getOrCreateSessionId();
     
-    console.log('🔧 StorefrontApiClient initialized:', {
-      hasCustomerToken: !!this.customerToken,
-      customerTokenPreview: this.customerToken ? this.customerToken.substring(0, 20) + '...' : null,
-      sessionId: this.sessionId,
-      baseURL: this.baseURL
-    });
   }
 
   // Get or create a guest session ID
@@ -25,7 +19,6 @@ class StorefrontApiClient {
       // Generate a new session ID
       sessionId = 'guest_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
       localStorage.setItem('guest_session_id', sessionId);
-      console.log('🆕 Generated new guest session ID:', sessionId);
     }
     return sessionId;
   }
@@ -85,8 +78,6 @@ class StorefrontApiClient {
     const url = this.buildPublicUrl(endpoint);
     const headers = this.getPublicHeaders(customHeaders);
 
-    console.log(`🌐 Storefront Public Request: ${method} ${url}`);
-    console.log(`🔍 Original endpoint: ${endpoint}`);
 
     const config = {
       method,
@@ -135,17 +126,10 @@ class StorefrontApiClient {
     const separator = endpoint.includes('?') ? '&' : '?';
     finalEndpoint = `${endpoint}${separator}session_id=${this.sessionId}`;
     
-    console.log(`🔍 Session ID added to endpoint: ${finalEndpoint}`);
     
     const url = this.buildAuthUrl(finalEndpoint);
     const headers = this.getCustomerHeaders(customHeaders);
 
-    console.log(`👤 Storefront Customer Request: ${method} ${url}`, {
-      hasToken: !!token,
-      sessionId: this.sessionId,
-      finalEndpoint: finalEndpoint,
-      originalEndpoint: endpoint
-    });
 
     const config = {
       method,
@@ -180,10 +164,6 @@ class StorefrontApiClient {
         throw error;
       }
 
-      // Add debugging for wishlist requests
-      if (finalEndpoint.includes('wishlist')) {
-        console.log(`📋 Wishlist API Response for ${method} ${finalEndpoint}:`, result);
-      }
 
       return result;
     } catch (error) {
@@ -224,11 +204,8 @@ class StorefrontApiClient {
 
   // Customer logout
   async customerLogout() {
-    console.log('🚪 Customer logout initiated');
-    
     try {
       if (this.getCustomerToken()) {
-        console.log('🔐 Calling logout API with token');
         await this.postCustomer('auth/logout');
       }
     } catch (error) {
@@ -236,7 +213,6 @@ class StorefrontApiClient {
     }
     
     // Clear all customer-related data
-    console.log('🧹 Clearing customer authentication data');
     this.setCustomerToken(null);
     localStorage.removeItem('customer_user_data');
     localStorage.removeItem('cart_session_id');
@@ -245,7 +221,6 @@ class StorefrontApiClient {
     // Reset customer token reference
     this.customerToken = null;
     
-    console.log('✅ Customer logout completed');
     return { success: true };
   }
 

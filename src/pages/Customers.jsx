@@ -47,11 +47,7 @@ export default function Customers() {
 
         try {
             setLoading(true);
-            console.log('🔍 Loading customers for store:', storeId);
             const customerData = await Customer.filter({ store_id: storeId }, '-last_order_date');
-            console.log('🔍 Customer data received:', customerData);
-            console.log('🔍 Customer data type:', typeof customerData);
-            console.log('🔍 Customer data length:', customerData?.length);
             setCustomers(customerData || []);
         } catch (error) {
             console.error("❌ Error loading customers:", error);

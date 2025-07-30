@@ -22,24 +22,18 @@ class BaseEntity {
       // For public-friendly endpoints, use public API when user has no valid token
       const userLoggedOutFlag = localStorage.getItem('user_logged_out');
       const shouldUsePublicEndpoint = !hasToken; // Simply check if there's no token
-      
-      console.log(`🔍 BaseEntity ${this.endpoint}: hasToken=${!!hasToken}, isLoggedOut=${isLoggedOut}, isPublicFriendly=${isPublicFriendly}, shouldUsePublicEndpoint=${shouldUsePublicEndpoint}, userLoggedOutFlag=${userLoggedOutFlag}`);
-      
+
       let response;
       if (isPublicFriendly && shouldUsePublicEndpoint) {
-        console.log(`✅ Using PUBLIC endpoint for ${this.endpoint}`);
         // Use public endpoint for unauthenticated requests to public-friendly endpoints
         response = await apiClient.publicRequest('GET', url);
       } else {
-        console.log(`🔒 Using AUTHENTICATED endpoint for ${this.endpoint}`);
         // Use regular authenticated endpoint
         response = await apiClient.get(url);
       }
       
       // Ensure response is always an array
-      const result = Array.isArray(response) ? response : [];
-      
-      return result;
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       // Use different log levels based on endpoint - CMS blocks failures are common due to backend issues
       if (this.endpoint === 'cms-blocks') {
@@ -53,26 +47,22 @@ class BaseEntity {
 
   // Get single record by ID
   async findById(id) {
-    const response = await apiClient.get(`${this.endpoint}/${id}`);
-    return response;
+    return await apiClient.get(`${this.endpoint}/${id}`);;
   }
 
   // Create new record
   async create(data) {
-    const response = await apiClient.post(this.endpoint, data);
-    return response;
+    return await apiClient.post(this.endpoint, data);;
   }
 
   // Update record by ID
   async update(id, data) {
-    const response = await apiClient.put(`${this.endpoint}/${id}`, data);
-    return response;
+    return await apiClient.put(`${this.endpoint}/${id}`, data);;
   }
 
   // Delete record by ID
   async delete(id) {
-    const response = await apiClient.delete(`${this.endpoint}/${id}`);
-    return response;
+    return await apiClient.delete(`${this.endpoint}/${id}`);
   }
 
   // List records with optional ordering (alias for findAll)

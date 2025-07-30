@@ -40,10 +40,8 @@ export default function Storefront() {
   const categories = useMemo(() => storeCategories || [], [storeCategories]);
 
   useEffect(() => {
-    console.log('🔍 Storefront useEffect:', { storeLoading, storeId: store?.id, categorySlug });
     if (!storeLoading && store?.id) {
         const homepage = !categorySlug;
-        console.log('📍 Storefront: Loading data, homepage:', homepage);
         setIsHomepage(homepage);
         loadData(homepage);
     }
@@ -51,29 +49,22 @@ export default function Storefront() {
 
   const loadData = async (isHome = false) => {
     try {
-      console.log('🔍 Storefront loadData called:', { isHome, storeId: store?.id });
       setLoading(true);
       setActiveFilters({});
       if (!store) {
-        console.log('❌ Storefront: No store, returning');
         return;
       }
 
       if (isHome) {
-        console.log('🏠 Storefront: Loading homepage data');
         setCurrentCategory(null);
         const featuredCacheKey = `featured-products-${store.id}`;
-        console.log('🔍 Storefront: Calling StorefrontProduct.getFeatured()');
         let featuredData = [];
         try {
           featuredData = await cachedApiCall(
             featuredCacheKey, 
             () => StorefrontProduct.getFeatured({ store_id: store.id, limit: 12 })
           );
-          console.log('📊 Storefront: Featured products result:', featuredData);
         } catch (featuredError) {
-          console.error('❌ Storefront: Featured products call failed:', featuredError);
-          console.error('❌ Storefront: This likely means the backend is not deployed or not accessible');
           featuredData = []; // Use empty array as fallback
         }
         const featuredArray = ensureArray(featuredData);
@@ -116,10 +107,8 @@ export default function Storefront() {
           const filtered = (allProducts || []).filter(product => {
             const hasCategories = product.category_ids && Array.isArray(product.category_ids);
             const includesCategory = hasCategories && product.category_ids.includes(category.id);
-            console.log(`🔍 Product "${product.name}": category_ids=${JSON.stringify(product.category_ids)}, looking for ${category.id}, match=${includesCategory}`);
             return includesCategory;
           });
-          console.log(`📊 Category filtering: ${allProducts?.length || 0} total products, ${filtered.length} match category "${category.name}"`);
           return filtered;
         });
         

@@ -56,19 +56,14 @@ export const createStripeCheckout = async (checkoutData) => {
       delivery_instructions: deliveryComments
     };
 
-    console.log('Request payload:', requestPayload);
-    
     const response = await apiClient.post('payments/create-checkout', requestPayload);
-    console.log('API response:', response);
-    
+
     // Ensure we return the data
     const result = response.data || response;
-    console.log('Returning result:', result);
-    
+
     // Store session ID for fallback on order-success page
     if (result.data?.session_id) {
       localStorage.setItem('stripe_session_id', result.data.session_id);
-      console.log('Stored session ID in localStorage:', result.data.session_id);
     }
     
     return result;

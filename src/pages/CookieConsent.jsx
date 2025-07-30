@@ -188,12 +188,10 @@ export default function CookieConsent() {
       
       // Load cookie consent settings
       const cookieSettings = await retryApiCall(() => CookieConsentSettings.filter({ store_id: selectedStore.id }));
-      console.log('🔍 CookieConsent: Loaded settings from API:', JSON.stringify(cookieSettings, null, 2));
 
       if (cookieSettings && cookieSettings.length > 0) {
         // Map backend fields to frontend fields
         const mappedSettings = mapBackendToFrontend(cookieSettings[0]);
-        console.log('🔄 CookieConsent: Mapped settings:', JSON.stringify(mappedSettings, null, 2));
         setSettings(mappedSettings);
       } else {
         // Create default settings with valid store_id - use the same structure as mapBackendToFrontend
@@ -243,20 +241,15 @@ export default function CookieConsent() {
     try {
       // Map frontend settings to backend format
       const backendSettings = mapFrontendToBackend(settings);
-      console.log('🔧 CookieConsent: Saving settings:', JSON.stringify(backendSettings, null, 2));
 
       let result;
       if (settings.id) {
-        console.log('🔄 CookieConsent: Updating existing settings with ID:', settings.id);
         result = await retryApiCall(() => CookieConsentSettings.update(settings.id, backendSettings));
       } else {
-        console.log('🔄 CookieConsent: Creating new settings');
         // If settings.id is null, it's a new setting. The store_id should already be populated from loadData's defaultSettings.
         result = await retryApiCall(() => CookieConsentSettings.create(backendSettings));
       }
-      
-      console.log('✅ CookieConsent: Save result:', JSON.stringify(result, null, 2));
-      
+
       // Handle array response from API client
       const normalizedResult = Array.isArray(result) ? result[0] : result;
 

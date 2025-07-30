@@ -93,15 +93,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
           status: 'active',
           store_id: formData.store_id 
         });
-        
-        console.log('🔍 CustomOptionRuleForm: Loaded products with filters:', {
-          is_custom_option: true,
-          status: 'active',
-          store_id: formData.store_id
-        });
-        console.log('📊 CustomOptionRuleForm: API returned products:', products);
-        console.log('📋 CustomOptionRuleForm: Product statuses:', products?.map(p => ({ name: p.name, status: p.status, id: p.id })));
-        
+
         setCustomOptionProducts(Array.isArray(products) ? products : []);
       } catch (error) {
         console.error("Error loading custom option products:", error);

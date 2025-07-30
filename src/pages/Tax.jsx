@@ -103,14 +103,6 @@ export default function TaxPage() {
       return;
     }
 
-    console.log(`🔧 Updating tax setting: ${key} = ${value}`);
-    console.log('📊 Current store settings (full):', JSON.stringify(selectedStore.settings, null, 2));
-    console.log('📊 Current tax settings:', {
-      default_tax_included_in_prices: selectedStore.settings?.default_tax_included_in_prices,
-      display_tax_inclusive_prices: selectedStore.settings?.display_tax_inclusive_prices,
-      calculate_tax_after_discount: selectedStore.settings?.calculate_tax_after_discount
-    });
-
     // Create a deep copy of the settings object to avoid mutation issues
     // and ensure `settings` object exists if it's null/undefined
     const newSettings = { ...(selectedStore.settings || {}) };
@@ -118,28 +110,12 @@ export default function TaxPage() {
     // Update the specific setting
     newSettings[key] = value;
 
-    console.log('📊 New settings to save (full):', JSON.stringify(newSettings, null, 2));
-    console.log('📊 New tax settings:', {
-      default_tax_included_in_prices: newSettings.default_tax_included_in_prices,
-      display_tax_inclusive_prices: newSettings.display_tax_inclusive_prices,
-      calculate_tax_after_discount: newSettings.calculate_tax_after_discount
-    });
-
     try {
       // Update the entire settings object in the store using admin API
       const { Store } = await import('@/api/entities');
       const updateResult = await Store.update(selectedStore.id, { settings: newSettings });
-      
-      console.log('✅ Store settings updated successfully:', updateResult);
-      console.log('✅ Backend returned settings:', updateResult?.[0]?.settings);
-      console.log('✅ Backend returned tax settings:', {
-        default_tax_included_in_prices: updateResult?.[0]?.settings?.default_tax_included_in_prices,
-        display_tax_inclusive_prices: updateResult?.[0]?.settings?.display_tax_inclusive_prices,
-        calculate_tax_after_discount: updateResult?.[0]?.settings?.calculate_tax_after_discount
-      });
 
       // Clear storefront cache to ensure tax setting changes are reflected immediately
-      console.log('🧹 Clearing storefront cache after tax settings update');
       if (typeof window !== 'undefined') {
         // Clear localStorage cache used by StoreProvider
         localStorage.removeItem('storeProviderCache');
@@ -167,8 +143,6 @@ export default function TaxPage() {
       }, 100);
       
     } catch (error) {
-      console.error("Failed to update tax settings:", error);
-      console.error("Error details:", error.response?.data || error);
       alert(`Failed to update tax settings: ${error.message}`);
     }
   };
@@ -277,7 +251,6 @@ export default function TaxPage() {
                 id="default_tax_included_in_prices"
                 checked={selectedStore?.settings?.default_tax_included_in_prices || false}
                 onCheckedChange={(checked) => {
-                  console.log('🔧 Toggling default_tax_included_in_prices:', { from: selectedStore?.settings?.default_tax_included_in_prices, to: checked });
                   handleSettingsChange('default_tax_included_in_prices', checked);
                 }}
                 disabled={!selectedStore}
@@ -293,7 +266,6 @@ export default function TaxPage() {
                 id="display_tax_inclusive_prices"
                 checked={selectedStore?.settings?.display_tax_inclusive_prices || false}
                 onCheckedChange={(checked) => {
-                  console.log('🔧 Toggling display_tax_inclusive_prices:', { from: selectedStore?.settings?.display_tax_inclusive_prices, to: checked });
                   handleSettingsChange('display_tax_inclusive_prices', checked);
                 }}
                 disabled={!selectedStore}

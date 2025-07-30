@@ -172,18 +172,11 @@ export default function ProductDetail() {
   const loadProductTabs = async () => {
     if (!store?.id) return;
     try {
-      console.log('🔍 ProductDetail: Loading product tabs for store:', store.id);
       const tabs = await cachedApiCall(
         `product-tabs-${store.id}`,
-        () => {
-          console.log('📞 ProductDetail: About to call StorefrontProductTab.filter');
-          return StorefrontProductTab.filter({ store_id: store.id, is_active: true });
-        }
+        () => StorefrontProductTab.filter({ store_id: store.id, is_active: true })
       );
-      console.log('🏷️ ProductDetail: Raw product tabs result:', tabs);
-      console.log('🏷️ ProductDetail: Product tabs array length:', Array.isArray(tabs) ? tabs.length : 'not an array');
       setProductTabs(tabs || []);
-      console.log('✅ ProductDetail: Product tabs set to state:', tabs || []);
     } catch (error) {
       console.error('❌ ProductDetail: Error loading product tabs:', error);
       setProductTabs([]);
@@ -199,12 +192,6 @@ export default function ProductDetail() {
         item.product_id === productId || item.product_id === parseInt(productId)
       );
       
-      console.log(`🔍 ProductDetail: Checking wishlist status for product ${productId}:`, {
-        wishlistItemsCount: wishlistItems?.length || 0,
-        wishlistItems: wishlistItems,
-        isProductInWishlist,
-        storeId: store?.id
-      });
       
       setIsInWishlist(isProductInWishlist);
     } catch (error) {
@@ -611,14 +598,6 @@ export default function ProductDetail() {
                   }
                   const priorityA = a.priority || 0;
                   const priorityB = b.priority || 0;
-                  console.log('🔍 Priority sorting debug (product detail):', {
-                    position: a.position,
-                    labelA: a.name,
-                    priorityA,
-                    labelB: b.name,
-                    priorityB,
-                    result: priorityB - priorityA
-                  });
                   return priorityB - priorityA; // DESC
                 });
                 return sortedLabels[0]; // Return highest priority label for this position

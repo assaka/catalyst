@@ -46,8 +46,6 @@ export default function Checkout() {
   const currencySymbol = settings?.currency_symbol || '$';
   
   // Debug allowed countries
-  console.log('🌍 Checkout: Store settings:', settings);
-  console.log('🌍 Checkout: Allowed countries:', settings?.allowed_countries);
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
   const [cartProducts, setCartProducts] = useState({});
@@ -141,7 +139,6 @@ export default function Checkout() {
   // Trigger tax recalculation when shipping address country changes
   useEffect(() => {
     // Tax will be recalculated automatically through getTotalAmount since it calls calculateTax
-    console.log('🏢 Shipping country changed, tax will be recalculated');
   }, [shippingAddress.country, selectedShippingAddress]);
 
   const loadCheckoutData = async () => {
@@ -189,7 +186,6 @@ export default function Checkout() {
 
       // Set default selections
       if (paymentData?.length > 0) {
-        console.log('🔄 Setting default payment method:', paymentData[0]);
         setSelectedPaymentMethod(paymentData[0].code);
         calculatePaymentFeeWithData(paymentData[0].code, paymentData);
       }
@@ -329,19 +325,15 @@ export default function Checkout() {
   };
 
   const calculatePaymentFeeWithData = (paymentMethodCode, paymentMethodsData) => {
-    console.log('🔍 Calculating payment fee:', { paymentMethodCode, paymentMethodsData: paymentMethodsData?.length });
-    
+
     if (!paymentMethodCode || !paymentMethodsData) {
-      console.log('❌ Missing payment method code or data, setting fee to 0');
       setPaymentFee(0);
       return;
     }
     
     const method = paymentMethodsData.find(m => m.code === paymentMethodCode);
-    console.log('🔍 Found payment method:', method);
-    
+
     if (!method || method.fee_type === 'none' || !method.fee_amount) {
-      console.log('❌ No method found or no fee configured, setting fee to 0');
       setPaymentFee(0);
       return;
     }
@@ -351,13 +343,10 @@ export default function Checkout() {
     
     if (method.fee_type === 'fixed') {
       fee = parseFloat(method.fee_amount) || 0;
-      console.log('💰 Fixed fee calculated:', fee);
     } else if (method.fee_type === 'percentage') {
       fee = subtotal * (parseFloat(method.fee_amount) / 100);
-      console.log('💰 Percentage fee calculated:', { subtotal, percentage: method.fee_amount, fee });
     }
     
-    console.log('✅ Setting payment fee to:', fee);
     setPaymentFee(fee);
   };
 
@@ -569,13 +558,6 @@ export default function Checkout() {
       subtotal,
       discount
     );
-
-    console.log('🧮 Tax calculation in checkout:', {
-      country: currentShippingCountry,
-      subtotal,
-      discount,
-      result: taxResult
-    });
     return taxResult.taxAmount || 0;
   };
 
@@ -720,23 +702,19 @@ export default function Checkout() {
         sessionId: localStorage.getItem('cart_session_id')
       };
 
-      console.log('Calling createStripeCheckout with:', checkoutData);
       const response = await createStripeCheckout(checkoutData);
-      console.log('Checkout response:', response);
-      
+
       if (!response) {
         throw new Error('No response from checkout API');
       }
       
       // Handle array response from API
       const responseData = Array.isArray(response) ? response[0] : response;
-      console.log('Response data:', responseData);
-      
+
       // Get checkout URL from response
       const checkoutUrl = responseData.checkout_url || responseData.url;
       
       if (checkoutUrl) {
-        console.log('Redirecting to:', checkoutUrl);
         window.location.href = checkoutUrl;
       } else {
         console.error('No checkout URL in response:', responseData);
