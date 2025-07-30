@@ -21,9 +21,9 @@ router.get('/public', async (req, res) => {
       });
     }
 
-    console.log('🔍 CMS Blocks API: Querying database with raw SQL...');
+    console.log('🔍 CMS Blocks API: Using working query from clean route...');
     
-    // Use raw SQL with explicit casting (copied from working simple test)
+    // Use exact same working query as the clean route
     const blocks = await sequelize.query(`
       SELECT 
         id::text as id,
@@ -42,14 +42,14 @@ router.get('/public', async (req, res) => {
       type: QueryTypes.SELECT
     });
 
-    console.log('🔍 CMS Blocks API: Found blocks:', blocks.length);
+    console.log('🔍 CMS Blocks API: Query successful, found blocks:', blocks.length);
     
     res.json({
       success: true,
       data: blocks
     });
   } catch (error) {
-    console.error('Get public CMS blocks error:', error);
+    console.error('🚨 CMS Blocks API error:', error);
     console.error('Error details:', {
       message: error.message,
       stack: error.stack,
