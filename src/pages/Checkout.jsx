@@ -631,7 +631,12 @@ export default function Checkout() {
   };
 
   const saveAddressToAccount = async (addressData, type) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log('❌ Cannot save address: No user ID');
+      return;
+    }
+    
+    console.log('💾 Attempting to save address:', { type, addressData, userId: user.id });
     
     try {
       const addressToSave = {
@@ -641,15 +646,20 @@ export default function Checkout() {
         is_default: userAddresses.length === 0 // Make first address default
       };
       
+      console.log('💾 Address data to save:', addressToSave);
+      
       const savedAddress = await Address.create(addressToSave);
+      console.log('✅ Address saved successfully:', savedAddress);
       
       // Reload addresses
       const updatedAddresses = await Address.filter({ user_id: user.id });
+      console.log('🔄 Updated addresses:', updatedAddresses);
       setUserAddresses(updatedAddresses || []);
       
       return savedAddress;
     } catch (error) {
-      console.error('Failed to save address:', error);
+      console.error('❌ Failed to save address:', error);
+      console.error('❌ Error details:', error.response?.data || error);
     }
   };
 
@@ -758,11 +768,22 @@ export default function Checkout() {
     setIsProcessing(true);
     try {
       // Save addresses if requested by user
+      console.log('🔍 Checkout address save check:', {
+        hasUser: !!user,
+        saveShippingAddress,
+        selectedShippingAddress,
+        saveBillingAddress,
+        selectedBillingAddress,
+        useShippingForBilling
+      });
+      
       if (user && saveShippingAddress && selectedShippingAddress === 'new') {
+        console.log('💾 Saving shipping address during checkout');
         await saveAddressToAccount(shippingAddress, 'shipping');
       }
       
       if (user && saveBillingAddress && selectedBillingAddress === 'new' && !useShippingForBilling) {
+        console.log('💾 Saving billing address during checkout');
         await saveAddressToAccount(billingAddress, 'billing');
       }
       
