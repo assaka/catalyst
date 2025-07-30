@@ -24,7 +24,8 @@ import {
   Store,
   Globe,
   Mail,
-  Phone
+  Phone,
+  ShoppingCart
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -364,6 +365,25 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, t
       }
   };
 
+  const handleAddToCart = async (product) => {
+      try {
+          // Add to cart and show success message
+          window.dispatchEvent(new CustomEvent('addToCart', { 
+              detail: { 
+                  product: product,
+                  quantity: 1 
+              } 
+          }));
+          
+          // Optional: Remove from wishlist after adding to cart
+          // await handleRemove(item.id);
+          
+          console.log('Added to cart:', product.name);
+      } catch (error) {
+          console.error("Failed to add to cart", error);
+      }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -377,12 +397,36 @@ const WishlistTab = ({ wishlistProducts, setWishlistProducts, store, settings, t
             {wishlistProducts.map(item => (
               <Card key={item.id}>
                 <CardContent className="p-4 flex flex-col items-center text-center">
-                  <img src={item.product.images?.[0]} alt={item.product.name} className="w-32 h-32 object-cover mb-2 rounded-lg" />
-                  <p className="font-semibold">{item.product.name}</p>
-                  <p className="text-sm text-gray-600">
+                  <img 
+                    src={item.product?.images?.[0] || 'https://placehold.co/128x128?text=No+Image'} 
+                    alt={item.product?.name || 'Product'} 
+                    className="w-32 h-32 object-cover mb-2 rounded-lg"
+                    onError={(e) => {
+                      e.target.src = 'https://placehold.co/128x128?text=No+Image';
+                    }}
+                  />
+                  <p className="font-semibold">{item.product?.name || 'Unknown Product'}</p>
+                  <p className="text-sm text-gray-600 mb-3">
                     {formatDisplayPrice(item.product?.price, settings?.currency_symbol || '$', store, taxes, selectedCountry)}
                   </p>
-                  <Button variant="destructive" size="sm" className="mt-2" onClick={() => handleRemove(item.id)}>Remove</Button>
+                  <div className="flex gap-2 w-full">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1" 
+                      onClick={() => handleAddToCart(item.product)}
+                    >
+                      <ShoppingCart className="w-4 h-4 mr-1" />
+                      Add to Cart
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={() => handleRemove(item.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             ))}
