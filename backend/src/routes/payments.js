@@ -455,7 +455,7 @@ router.post('/create-checkout', async (req, res) => {
               price_data: {
                 currency: storeCurrency.toLowerCase(),
                 product_data: {
-                  name: `${productName} - ${option.name}`,
+                  name: `${option.name}`,
                   description: `Custom option for ${productName}`,
                   metadata: {
                     product_id: item.product_id?.toString() || '',
@@ -483,10 +483,10 @@ router.post('/create-checkout', async (req, res) => {
     // Add payment fee as line item (no direct rate support like shipping)
     if (paymentFeeNum > 0) {
       console.log('💳 Adding payment fee line item:', paymentFeeNum, 'cents:', Math.round(paymentFeeNum * 100), 'method:', selected_payment_method, 'name:', selected_payment_method_name);
-      
+
       // Use the payment method name from frontend (e.g., "Bank Transfer", "Credit Card")
       let paymentMethodName = selected_payment_method_name || selected_payment_method || 'Payment Method';
-      
+
       line_items.push({
         price_data: {
           currency: storeCurrency.toLowerCase(),
