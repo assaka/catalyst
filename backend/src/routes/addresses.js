@@ -125,16 +125,30 @@ router.post('/', optionalAuth, async (req, res) => {
     }
 
     // Verify user exists before creating address
-    const { User } = require('../models');
-    const userExists = await User.findByPk(req.user.id);
+    const { User, Customer } = require('../models');
+    
+    // Check the correct table based on user role
+    const isCustomer = req.user.role === 'customer';
+    const ModelClass = isCustomer ? Customer : User;
+    const tableName = isCustomer ? 'customers' : 'users';
+    
+    console.log(`🔍 Checking ${tableName} table for user:`, req.user.id);
+    const userExists = await ModelClass.findByPk(req.user.id);
     
     if (!userExists) {
-      console.log('❌ User not found in database:', req.user.id);
+      console.log(`❌ User not found in ${tableName} table:`, req.user.id);
       return res.status(400).json({
         success: false,
-        message: 'User account not found. Please log in again.'
+        message: 'User account not found. Your session may have expired. Please log in again.',
+        debug: {
+          searchedUserId: req.user.id,
+          searchedTable: tableName,
+          userRole: req.user.role
+        }
       });
     }
+    
+    console.log(`✅ User verified in ${tableName} table:`, req.user.id);
 
     const addressData = {
       ...req.body,
