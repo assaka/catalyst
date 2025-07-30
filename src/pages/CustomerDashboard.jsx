@@ -4,9 +4,9 @@ import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { createPublicUrl } from "@/utils/urlUtils";
 import { useStore } from "@/components/storefront/StoreProvider";
-import { User, Auth } from "@/api/entities";
+import { User } from "@/api/entities";
 import { OrderItem } from "@/api/entities";
-import { CustomerWishlist, CustomerAddress, CustomerOrder } from "@/api/storefront-entities";
+import { CustomerWishlist, CustomerAddress, CustomerOrder, CustomerAuth } from "@/api/storefront-entities";
 import { Product } from "@/api/entities";
 import { Cart as CartEntity } from "@/api/entities";
 
@@ -1172,12 +1172,27 @@ export default function CustomerDashboard() {
 
   const handleLogout = async () => {
     try {
-      await Auth.logout();
+      await CustomerAuth.logout();
+      
+      // Clear any remaining customer session data
+      localStorage.removeItem('customer_auth_token');
+      localStorage.removeItem('customer_auth_store_code');
+      localStorage.removeItem('customer_user_data');
+      
+      // Set a flag to prevent auto-login
+      localStorage.setItem('user_logged_out', 'true');
+      
       // Redirect to the current store's storefront using the new URL structure
       const storefrontUrl = createPublicUrl(store?.slug || 'default', 'STOREFRONT');
       navigate(storefrontUrl);
     } catch (error) {
       console.error('❌ Customer logout error:', error);
+      // Still clear local data even if API call fails
+      localStorage.removeItem('customer_auth_token');
+      localStorage.removeItem('customer_auth_store_code');
+      localStorage.removeItem('customer_user_data');
+      localStorage.setItem('user_logged_out', 'true');
+      
       // Redirect to the current store's storefront using the new URL structure
       const storefrontUrl = createPublicUrl(store?.slug || 'default', 'STOREFRONT');
       navigate(storefrontUrl);

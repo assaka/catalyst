@@ -275,16 +275,16 @@ export default function CustomerAuth() {
   const getCustomerAccountUrl = async () => {
     // Use current store from URL
     if (storeCode) {
-      return createPublicUrl(storeCode, 'CUSTOMER_ACCOUNT');
+      return createPublicUrl(storeCode, 'CUSTOMER_DASHBOARD');
     }
     
     // Fallback to saved store code
     const savedStoreCode = localStorage.getItem('customer_auth_store_code');
     if (savedStoreCode) {
-      return createPublicUrl(savedStoreCode, 'CUSTOMER_ACCOUNT');
+      return createPublicUrl(savedStoreCode, 'CUSTOMER_DASHBOARD');
     }
     
-    return createPublicUrl('default', 'CUSTOMER_ACCOUNT');
+    return createPublicUrl('default', 'CUSTOMER_DASHBOARD');
   };
 
   const handleAuth = async (formData, isLogin) => {

@@ -237,6 +237,9 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                {/* Handle common typo /ad/auth -> /admin/auth */}
+                <Route path="/ad/auth" element={<Navigate to="/admin/auth" replace />} />
+                
                 <Route path="/admin/dashboard" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Dashboard />
@@ -536,6 +539,9 @@ function PagesContent() {
                         <Auth />
                     </RoleProtectedRoute>
                 } />
+                
+                {/* Handle common typo /ad/auth -> /admin/auth */}
+                <Route path="/ad/auth" element={<Navigate to="/admin/auth" replace />} />
                 
                 <Route path="/admin/dashboard" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
