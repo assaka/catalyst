@@ -70,8 +70,18 @@ export default function WishlistDropdown() {
         const productPromises = productIds.map(async (productId) => {
           try {
             await delay(200); // Small delay between requests
-            const product = await retryApiCall(() => StorefrontProduct.findById(productId));
-            console.log(`📦 WishlistDropdown: Loaded product ${productId}:`, product);
+            const response = await retryApiCall(() => StorefrontProduct.findById(productId));
+            console.log(`📦 WishlistDropdown: Raw product response for ${productId}:`, response);
+            
+            // Handle wrapped response structure
+            let product = null;
+            if (response && response.success && response.data) {
+              product = response.data;
+            } else if (response && !response.success) {
+              product = response; // Direct product object
+            }
+            
+            console.log(`📦 WishlistDropdown: Extracted product ${productId}:`, product);
             return product;
           } catch (error) {
             console.warn(`WishlistDropdown: Could not load product ${productId}:`, error.message);
