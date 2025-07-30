@@ -425,6 +425,7 @@ router.put('/:id', async (req, res) => {
 router.get('/customer', auth, async (req, res) => {
   try {
     console.log('🔍 Customer orders request from user:', req.user?.id, 'role:', req.user?.role);
+    console.log('🔍 Full user object:', JSON.stringify(req.user, null, 2));
     
     // Only allow customer role to access this endpoint
     if (req.user?.role !== 'customer') {
@@ -436,6 +437,18 @@ router.get('/customer', auth, async (req, res) => {
 
     const customerId = req.user.id;
     console.log('🔍 Loading orders for customer ID:', customerId);
+    console.log('🔍 Customer ID type:', typeof customerId);
+    console.log('🔍 Customer ID length:', customerId?.length);
+    
+    // Validate that customerId is a valid UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!customerId || !uuidRegex.test(customerId)) {
+      console.error('❌ Invalid customer ID format:', customerId);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid customer ID format'
+      });
+    }
 
     // Simple query without complex associations to avoid 500 errors
     const orders = await Order.findAll({
