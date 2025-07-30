@@ -262,6 +262,7 @@ router.post('/create-checkout', async (req, res) => {
       success_url, 
       cancel_url,
       customer_email,
+      customer_id, // Add customer_id
       shipping_address,
       shipping_method,
       selected_shipping_method,
@@ -513,6 +514,7 @@ router.post('/create-checkout', async (req, res) => {
       cancel_url: cancel_url || `${process.env.CORS_ORIGIN}/checkout`,
       metadata: {
         store_id: store_id.toString(),
+        customer_id: customer_id || '', // Add customer_id to metadata
         delivery_date: delivery_date || '',
         delivery_time_slot: delivery_time_slot || '',
         delivery_instructions: delivery_instructions || '',
@@ -815,6 +817,7 @@ router.post('/create-checkout', async (req, res) => {
         items,
         store_id,
         customer_email,
+        customer_id, // Pass customer_id
         shipping_address,
         billing_address: shipping_address, // Use shipping as billing if not provided separately
         shipping_method,
@@ -1075,6 +1078,7 @@ async function createPreliminaryOrder(session, orderData) {
       items,
       store_id,
       customer_email,
+      customer_id,
       shipping_address,
       billing_address,
       shipping_method,
@@ -1113,6 +1117,7 @@ async function createPreliminaryOrder(session, orderData) {
       payment_status: 'pending', // Will be updated to 'paid' in webhook
       fulfillment_status: 'pending',
       customer_email,
+      customer_id: customer_id || null, // Set customer_id if available
       billing_address: billing_address || shipping_address,
       shipping_address,
       subtotal: subtotal.toFixed(2),
@@ -1288,6 +1293,7 @@ async function createOrderFromCheckoutSession(session) {
       order_number: order_number,
       store_id: store_id, // Keep as UUID string
       customer_email: session.customer_email || session.customer_details?.email,
+      customer_id: session.metadata?.customer_id || null, // Get customer_id from metadata
       customer_phone: session.customer_details?.phone,
       billing_address: session.customer_details?.address || {},
       shipping_address: session.shipping_details?.address || session.customer_details?.address || {},

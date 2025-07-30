@@ -57,6 +57,7 @@ export const createStripeCheckout = async (checkoutData) => {
       success_url: `${window.location.origin}/public/${store.slug}/order-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${window.location.origin}/public/${store.slug}/checkout`,
       customer_email: email,
+      customer_id: userId, // Pass customer ID if available
       shipping_address: shippingAddress,
       shipping_method: shippingMethod,
       selected_shipping_method: selectedShippingMethod,
