@@ -1,4 +1,5 @@
 import apiClient from './client';
+import storefrontApiClient from './storefront-client';
 
 // Stripe payment functions
 export const createPaymentIntent = async (amount, currency = 'usd', metadata = {}) => {
@@ -66,10 +67,13 @@ export const createStripeCheckout = async (checkoutData) => {
       applied_coupon: appliedCoupon,
       delivery_date: deliveryDate,
       delivery_time_slot: deliveryTimeSlot,
-      delivery_instructions: deliveryComments
+      delivery_instructions: deliveryComments,
+      session_id: sessionId, // Include session_id for guest checkout
+      user_id: userId // Include user_id for authenticated checkout
     };
 
-    const response = await apiClient.post('payments/create-checkout', requestPayload);
+    // Use storefront API client instead of admin API client for guest/customer checkout
+    const response = await storefrontApiClient.postCustomer('payments/create-checkout', requestPayload);
 
     // Ensure we return the data
     const result = response.data || response;
