@@ -97,18 +97,30 @@ export default function CmsBlockRenderer({ position, page }) {
         const filteredBlocks = allBlocks.filter(block => {
           if (!block.is_active) return false;
           
-          const placement = block.placement || {};
-          const blockPosition = placement.position || 'before_content';
-          const blockPages = placement.pages || ['storefront_home'];
+          // Handle both string and object placement formats
+          let blockPosition, blockPages;
+          
+          if (typeof block.placement === 'string') {
+            // Simple string format: "content", "above_add_to_cart", etc.
+            blockPosition = block.placement === 'content' ? 'above_add_to_cart' : block.placement;
+            blockPages = ['all_pages']; // Default to all pages for string format
+          } else {
+            // Object format: { position: "above_add_to_cart", pages: ["storefront_product"] }
+            const placement = block.placement || {};
+            blockPosition = placement.position || 'before_content';
+            blockPages = placement.pages || ['storefront_home'];
+          }
+          
+          console.log(`🔍 CMS Block "${block.title}": position="${blockPosition}", pages="${blockPages.join(',')}", looking for position="${position}", page="${page}"`);
           
           return blockPosition === position && 
                  (blockPages.includes('all_pages') || blockPages.includes(page));
         });
 
-        // Sort by sort_order
+        // Sort by sort_order (use block.sort_order for simple string placements)
         filteredBlocks.sort((a, b) => {
-          const aOrder = a.placement?.sort_order || 0;
-          const bOrder = b.placement?.sort_order || 0;
+          const aOrder = (typeof a.placement === 'string') ? (a.sort_order || 0) : (a.placement?.sort_order || 0);
+          const bOrder = (typeof b.placement === 'string') ? (b.sort_order || 0) : (b.placement?.sort_order || 0);
           return aOrder - bOrder;
         });
 

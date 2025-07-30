@@ -67,6 +67,7 @@ const addCmsBlocksColumnsRoutes = require('./routes/add-cms-blocks-columns');
 const testCmsBlocksRoutes = require('./routes/test-cms-blocks');
 const simpleCmsTestRoutes = require('./routes/simple-cms-test');
 const publicCmsBlocksRoutes = require('./routes/public-cms-blocks');
+const updateUspsBlockPlacementRoutes = require('./routes/update-usps-block-placement');
 
 const app = express();
 
@@ -1429,6 +1430,7 @@ app.use('/api/add-cms-blocks-columns', addCmsBlocksColumnsRoutes);
 app.use('/api/test-cms-blocks', testCmsBlocksRoutes);
 app.use('/api/simple-cms-test', simpleCmsTestRoutes);
 app.use('/api/public-cms-blocks', publicCmsBlocksRoutes);
+app.use('/api/update-usps-block-placement', updateUspsBlockPlacementRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
