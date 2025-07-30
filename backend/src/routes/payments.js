@@ -594,10 +594,6 @@ router.post('/create-checkout', async (req, res) => {
 
       // Create the shipping rate first
       try {
-        const stripeOptions = {};
-        if (store.stripe_account_id) {
-          stripeOptions.stripeAccount = store.stripe_account_id;
-        }
 
         const shippingRate = await stripe.shippingRates.create(shippingRateData, stripeOptions);
         
@@ -765,8 +761,7 @@ router.post('/create-checkout', async (req, res) => {
     // Log shipping address collection status
     console.log('🚚 Shipping address collection enabled:', !!sessionConfig.shipping_address_collection);
 
-    // Use Connect account if available
-    const stripeOptions = {};
+    // Use Connect account if available (stripeOptions already defined above)
     if (store.stripe_account_id) {
       stripeOptions.stripeAccount = store.stripe_account_id;
       console.log('Creating checkout session WITH Connect account:', store.stripe_account_id);
@@ -1035,16 +1030,16 @@ async function createOrderFromCheckoutSession(session) {
     }
     
     // Prepare Stripe options for Connect account if needed
-    const stripeOptions = {};
+    const sessionStripeOptions = {};
     if (store.stripe_account_id) {
-      stripeOptions.stripeAccount = store.stripe_account_id;
+      sessionStripeOptions.stripeAccount = store.stripe_account_id;
       console.log('Using Connect account for session retrieval:', store.stripe_account_id);
     }
     
     // Get line items from the session with correct account context
     const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
       expand: ['data.price.product']
-    }, stripeOptions);
+    }, sessionStripeOptions);
     
     console.log('🛒 Line items retrieved:', JSON.stringify(lineItems, null, 2));
     console.log('📊 Number of line items:', lineItems.data.length);
