@@ -1340,7 +1340,7 @@ app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) 
         where: { order_id: order.id },
         include: [{ 
           model: Product, 
-          attributes: ['id', 'name', 'sku', 'image_url'],
+          attributes: ['id', 'name', 'sku'],
           required: false
         }]
       });
