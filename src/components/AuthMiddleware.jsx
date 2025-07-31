@@ -136,6 +136,79 @@ window.checkTokenData = () => {
   }
 };
 
+// Helper function to check store ownership and permissions
+window.checkStoreOwnership = async () => {
+  console.log('=== STORE OWNERSHIP CHECK ===');
+  const { Store, User } = await import('@/api/entities');
+  
+  try {
+    // Get current user
+    const user = await User.me();
+    console.log('\n👤 Current User:', {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      account_type: user.account_type
+    });
+    
+    // Get user's stores
+    const stores = await Store.getUserStores();
+    console.log('\n🏪 Your Stores:', stores.length);
+    
+    if (stores.length > 0) {
+      stores.forEach(store => {
+        console.log(`\nStore: ${store.name}`);
+        console.log(`  ID: ${store.id}`);
+        console.log(`  Owner ID: ${store.user_id || store.owner_id || 'Not specified'}`);
+        console.log(`  Created At: ${store.createdAt}`);
+        console.log(`  Is Owner Match: ${store.user_id === user.id || store.owner_id === user.id ? '✅ YES' : '❌ NO'}`);
+        
+        // Check all store properties
+        console.log('  All Store Properties:', Object.keys(store));
+      });
+      
+      // Check localStorage selected store
+      const selectedStoreId = localStorage.getItem('selectedStoreId');
+      console.log('\n📍 Selected Store ID:', selectedStoreId);
+      
+      if (selectedStoreId) {
+        const selectedStore = stores.find(s => s.id === selectedStoreId);
+        if (selectedStore) {
+          console.log('✅ Selected store found in your stores');
+        } else {
+          console.log('❌ Selected store NOT in your stores list!');
+        }
+      }
+    } else {
+      console.log('❌ No stores found for your user');
+    }
+    
+    // Test store creation
+    console.log('\n🧪 Testing Store Creation...');
+    try {
+      const testStore = {
+        name: 'Test Store ' + Date.now(),
+        description: 'Test store for permission check',
+        code: 'TEST' + Date.now()
+      };
+      
+      const newStore = await Store.create(testStore);
+      console.log('✅ Store creation successful:', newStore.id);
+      
+      // Clean up
+      if (newStore && newStore.id) {
+        await Store.delete(newStore.id);
+        console.log('✅ Test store deleted');
+      }
+    } catch (error) {
+      console.log('❌ Store creation failed:', error.message, error.status);
+    }
+    
+  } catch (error) {
+    console.error('Error in ownership check:', error);
+  }
+};
+
 // Helper function to check delivery settings ownership
 window.checkDeliveryOwnership = async () => {
   console.log('=== DELIVERY SETTINGS OWNERSHIP CHECK ===');
