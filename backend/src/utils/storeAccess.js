@@ -16,12 +16,14 @@ async function getUserAccessibleStores(userId, options = {}) {
   } = options;
 
   let whereClause = '';
-  const replacements = { user_id: userId };
+  let replacements = [userId];
+  let paramIndex = 2;
 
   // Add search filter if provided
   if (search) {
-    whereClause += ` AND (s.name ILIKE :search OR s.description ILIKE :search)`;
-    replacements.search = `%${search}%`;
+    whereClause += ` AND (s.name ILIKE $${paramIndex} OR s.description ILIKE $${paramIndex})`;
+    replacements.push(`%${search}%`);
+    paramIndex++;
   }
 
   // Add active filter if needed
@@ -32,12 +34,14 @@ async function getUserAccessibleStores(userId, options = {}) {
   // Build pagination
   let limitClause = '';
   if (limit) {
-    limitClause = `LIMIT :limit`;
-    replacements.limit = limit;
+    limitClause = `LIMIT $${paramIndex}`;
+    replacements.push(limit);
+    paramIndex++;
     
     if (offset) {
-      limitClause += ` OFFSET :offset`;
-      replacements.offset = offset;
+      limitClause += ` OFFSET $${paramIndex}`;
+      replacements.push(offset);
+      paramIndex++;
     }
   }
 
@@ -57,12 +61,12 @@ async function getUserAccessibleStores(userId, options = {}) {
         s.updated_at,
         -- Access type information
         CASE 
-            WHEN s.user_id = :user_id THEN 'owner'
+            WHEN s.user_id = $1 THEN 'owner'
             WHEN st.role IS NOT NULL THEN st.role
             ELSE NULL
         END as access_role,
         CASE 
-            WHEN s.user_id = :user_id THEN true
+            WHEN s.user_id = $1 THEN true
             ELSE false
         END as is_direct_owner,
         st.permissions as team_permissions,
@@ -70,20 +74,20 @@ async function getUserAccessibleStores(userId, options = {}) {
     FROM stores s
     LEFT JOIN store_teams st ON (
         s.id = st.store_id 
-        AND st.user_id = :user_id 
+        AND st.user_id = $1 
         AND st.status = 'active' 
         AND st.is_active = true
     )
     WHERE 
         -- User is direct owner
-        s.user_id = :user_id
+        s.user_id = $1
         OR 
         -- User is active team member
-        (st.user_id = :user_id AND st.status = 'active' AND st.is_active = true)
+        (st.user_id = $1 AND st.status = 'active' AND st.is_active = true)
         ${whereClause}
     ORDER BY 
         -- Direct ownership first, then by store name
-        CASE WHEN s.user_id = :user_id THEN 0 ELSE 1 END,
+        CASE WHEN s.user_id = $1 THEN 0 ELSE 1 END,
         s.name ASC
     ${limitClause}
   `;
@@ -111,7 +115,7 @@ async function getUserAccessibleStores(userId, options = {}) {
             null as team_permissions,
             null as team_status
         FROM stores s
-        WHERE s.user_id = :user_id ${whereClause}
+        WHERE s.user_id = $1 ${whereClause}
         ORDER BY s.name ASC ${limitClause}
       `;
       
@@ -138,12 +142,14 @@ async function getUserAccessibleStoresCount(userId, options = {}) {
   } = options;
 
   let whereClause = '';
-  const replacements = { user_id: userId };
+  let replacements = [userId];
+  let paramIndex = 2;
 
   // Add search filter if provided
   if (search) {
-    whereClause += ` AND (s.name ILIKE :search OR s.description ILIKE :search)`;
-    replacements.search = `%${search}%`;
+    whereClause += ` AND (s.name ILIKE $${paramIndex} OR s.description ILIKE $${paramIndex})`;
+    replacements.push(`%${search}%`);
+    paramIndex++;
   }
 
   // Add active filter if needed
@@ -156,16 +162,16 @@ async function getUserAccessibleStoresCount(userId, options = {}) {
     FROM stores s
     LEFT JOIN store_teams st ON (
         s.id = st.store_id 
-        AND st.user_id = :user_id 
+        AND st.user_id = $1 
         AND st.status = 'active' 
         AND st.is_active = true
     )
     WHERE 
         -- User is direct owner
-        s.user_id = :user_id
+        s.user_id = $1
         OR 
         -- User is active team member
-        (st.user_id = :user_id AND st.status = 'active' AND st.is_active = true)
+        (st.user_id = $1 AND st.status = 'active' AND st.is_active = true)
         ${whereClause}
   `;
 
@@ -185,7 +191,7 @@ async function getUserAccessibleStoresCount(userId, options = {}) {
       const fallbackQuery = `
         SELECT COUNT(DISTINCT s.id) as count
         FROM stores s
-        WHERE s.user_id = :user_id ${whereClause}
+        WHERE s.user_id = $1 ${whereClause}
       `;
       
       const result = await sequelize.query(fallbackQuery, {
@@ -207,7 +213,7 @@ async function getUserAccessibleStoresCount(userId, options = {}) {
  * @returns {Promise<object|null>} Store access info or null if no access
  */
 async function checkUserStoreAccess(userId, storeId) {
-  const replacements = { user_id: userId, store_id: storeId };
+  const replacements = [userId, storeId];
 
   const query = `
     SELECT DISTINCT
@@ -216,12 +222,12 @@ async function checkUserStoreAccess(userId, storeId) {
         s.user_id as owner_id,
         -- Access type information
         CASE 
-            WHEN s.user_id = :user_id THEN 'owner'
+            WHEN s.user_id = $1 THEN 'owner'
             WHEN st.role IS NOT NULL THEN st.role
             ELSE NULL
         END as access_role,
         CASE 
-            WHEN s.user_id = :user_id THEN true
+            WHEN s.user_id = $1 THEN true
             ELSE false
         END as is_direct_owner,
         st.permissions as team_permissions,
@@ -229,18 +235,18 @@ async function checkUserStoreAccess(userId, storeId) {
     FROM stores s
     LEFT JOIN store_teams st ON (
         s.id = st.store_id 
-        AND st.user_id = :user_id 
+        AND st.user_id = $1 
         AND st.status = 'active' 
         AND st.is_active = true
     )
     WHERE 
-        s.id = :store_id
+        s.id = $2
         AND (
             -- User is direct owner
-            s.user_id = :user_id
+            s.user_id = $1
             OR 
             -- User is active team member
-            (st.user_id = :user_id AND st.status = 'active' AND st.is_active = true)
+            (st.user_id = $1 AND st.status = 'active' AND st.is_active = true)
         )
   `;
 
@@ -265,7 +271,7 @@ async function checkUserStoreAccess(userId, storeId) {
             null as team_permissions,
             null as team_status
         FROM stores s
-        WHERE s.id = :store_id AND s.user_id = :user_id
+        WHERE s.id = $2 AND s.user_id = $1
       `;
       
       const result = await sequelize.query(fallbackQuery, {
