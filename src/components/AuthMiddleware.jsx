@@ -94,6 +94,48 @@ window.checkUserData = () => {
   }
 };
 
+// Helper function to decode JWT token and compare with localStorage data
+window.checkTokenData = () => {
+  console.log('=== TOKEN DATA CHECK ===');
+  const token = localStorage.getItem('store_owner_auth_token');
+  const userData = localStorage.getItem('store_owner_user_data');
+  
+  if (token) {
+    try {
+      // Decode JWT payload (basic decode, not verification)
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      
+      const tokenData = JSON.parse(jsonPayload);
+      console.log('Token payload:', tokenData);
+      
+      if (userData) {
+        const userDataParsed = JSON.parse(userData);
+        console.log('localStorage userData:', userDataParsed);
+        
+        console.log('Data comparison:', {
+          tokenId: tokenData.id,
+          userDataId: userDataParsed.id,
+          tokenRole: tokenData.role,
+          userDataRole: userDataParsed.role,
+          tokenAccountType: tokenData.account_type,
+          userDataAccountType: userDataParsed.account_type,
+          idsMatch: tokenData.id === userDataParsed.id,
+          rolesMatch: tokenData.role === userDataParsed.role,
+          accountTypesMatch: tokenData.account_type === userDataParsed.account_type
+        });
+      }
+    } catch (e) {
+      console.error('Error decoding token:', e);
+    }
+  } else {
+    console.log('No token found');
+  }
+};
+
 // Helper function to manually fetch and store user data for current session
 window.fixUserData = async () => {
   console.log('🔧 Manually fetching and storing user data...');
