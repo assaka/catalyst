@@ -28,8 +28,19 @@ window.debugAuth = () => {
 // Helper function to clear logout state and retry authentication
 window.clearLogoutState = () => {
   console.log('🔧 Clearing logout state...');
+  console.log('Before:', {
+    isLoggedOut: apiClient.isLoggedOut,
+    logoutFlag: localStorage.getItem('user_logged_out')
+  });
+  
   localStorage.removeItem('user_logged_out');
   apiClient.isLoggedOut = false;
+  
+  console.log('After:', {
+    isLoggedOut: apiClient.isLoggedOut,
+    logoutFlag: localStorage.getItem('user_logged_out')
+  });
+  
   console.log('✅ Logout state cleared. Reload the page to retry authentication.');
   window.location.reload();
 };
@@ -51,6 +62,95 @@ window.simulateStoreOwnerLogin = (email = 'test@example.com') => {
   localStorage.removeItem('user_logged_out');
   
   console.log('✅ Mock store owner login created. Reload the page.');
+  window.location.reload();
+};
+
+// Helper function to test navigation
+window.testNavigation = () => {
+  console.log('🔧 Testing navigation to dashboard...');
+  try {
+    const dashboardUrl = '/admin/dashboard';
+    console.log('Dashboard URL:', dashboardUrl);
+    console.log('Current location:', window.location.href);
+    console.log('Attempting navigation...');
+    window.location.href = dashboardUrl;
+  } catch (error) {
+    console.error('Navigation error:', error);
+  }
+};
+
+// Helper function to manually test the auth flow
+window.testAuthFlow = async () => {
+  console.log('🔧 Testing complete auth flow...');
+  
+  // Clear any existing state
+  localStorage.removeItem('user_logged_out');
+  apiClient.isLoggedOut = false;
+  
+  // Create mock token and user
+  const mockToken = 'test_token_' + Date.now();
+  const mockUser = {
+    id: 1,
+    email: 'test@example.com',
+    role: 'store_owner',
+    first_name: 'Test',
+    last_name: 'Owner'
+  };
+  
+  localStorage.setItem('store_owner_auth_token', mockToken);
+  localStorage.setItem('store_owner_user_data', JSON.stringify(mockUser));
+  apiClient.setToken(mockToken);
+  
+  console.log('✅ Auth data set');
+  console.log('Token in apiClient:', apiClient.getToken() ? 'Set' : 'Not set');
+  console.log('User data:', mockUser);
+  
+  // Test the createAdminUrl function
+  try {
+    const { createAdminUrl } = await import('../utils/urlUtils.js');
+    const dashboardUrl = createAdminUrl("DASHBOARD");
+    console.log('Dashboard URL from createAdminUrl:', dashboardUrl);
+    
+    // Try navigation
+    console.log('Navigating to dashboard...');
+    window.location.href = dashboardUrl;
+  } catch (error) {
+    console.error('Error in testAuthFlow:', error);
+  }
+};
+
+// Helper function to create a complete authenticated session
+window.createAuthSession = () => {
+  console.log('🔧 Creating authenticated session...');
+  
+  // Clear logout state completely
+  localStorage.removeItem('user_logged_out');
+  apiClient.isLoggedOut = false;
+  
+  // Create realistic auth data
+  const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InRlc3RAYXV0aGVudGljYXRlZC5jb20iLCJyb2xlIjoic3RvcmVfb3duZXIifQ.test_signature';
+  const userData = {
+    id: 1,
+    email: 'test@authenticated.com',
+    role: 'store_owner',
+    account_type: 'agency',
+    first_name: 'Store',
+    last_name: 'Owner',
+    is_active: true,
+    email_verified: true
+  };
+  
+  // Set both in localStorage and apiClient
+  localStorage.setItem('store_owner_auth_token', token);
+  localStorage.setItem('store_owner_user_data', JSON.stringify(userData));
+  apiClient.setToken(token);
+  
+  console.log('✅ Authenticated session created');
+  console.log('Token set:', apiClient.getToken() ? 'Yes' : 'No');
+  console.log('localStorage updated:', Object.keys(localStorage));
+  
+  // Reload to trigger auth check
+  console.log('🔄 Reloading page to trigger authentication check...');
   window.location.reload();
 };
 
@@ -128,8 +228,11 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         return;
       }
       
+      console.log('🔍 Calling User.me() with token:', apiClient.getToken() ? 'Token present' : 'No token');
       const user = await User.me();
       console.log('🔍 User.me() result:', user);
+      console.log('🔍 User.me() type:', typeof user);
+      console.log('🔍 User.me() keys:', user ? Object.keys(user) : 'null');
       
       if (!user) {
         console.log('🔍 No user data returned, staying on auth page');
