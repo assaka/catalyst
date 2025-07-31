@@ -97,6 +97,30 @@ async function getUserAccessibleStores(userId, options = {}) {
     return stores;
   } catch (error) {
     console.error('❌ Error fetching accessible stores:', error);
+    
+    // If store_teams table doesn't exist yet, fall back to owner-only query
+    if (error.message.includes('does not exist') || error.message.includes('store_teams')) {
+      console.log('⚠️ store_teams table not found, falling back to owner-only access');
+      const fallbackQuery = `
+        SELECT DISTINCT
+            s.id, s.name, s.slug, s.description, s.logo_url,
+            s.banner_url, s.theme_color, s.currency, s.timezone,
+            s.is_active, s.created_at, s.updated_at,
+            'owner' as access_role,
+            true as is_direct_owner,
+            null as team_permissions,
+            null as team_status
+        FROM stores s
+        WHERE s.user_id = :user_id ${whereClause}
+        ORDER BY s.name ASC ${limitClause}
+      `;
+      
+      return await sequelize.query(fallbackQuery, {
+        replacements,
+        type: QueryTypes.SELECT
+      });
+    }
+    
     throw error;
   }
 }
@@ -154,6 +178,24 @@ async function getUserAccessibleStoresCount(userId, options = {}) {
     return parseInt(result[0].count);
   } catch (error) {
     console.error('❌ Error counting accessible stores:', error);
+    
+    // If store_teams table doesn't exist yet, fall back to owner-only count
+    if (error.message.includes('does not exist') || error.message.includes('store_teams')) {
+      console.log('⚠️ store_teams table not found, falling back to owner-only count');
+      const fallbackQuery = `
+        SELECT COUNT(DISTINCT s.id) as count
+        FROM stores s
+        WHERE s.user_id = :user_id ${whereClause}
+      `;
+      
+      const result = await sequelize.query(fallbackQuery, {
+        replacements,
+        type: QueryTypes.SELECT
+      });
+      
+      return parseInt(result[0].count);
+    }
+    
     throw error;
   }
 }
@@ -211,6 +253,29 @@ async function checkUserStoreAccess(userId, storeId) {
     return result.length > 0 ? result[0] : null;
   } catch (error) {
     console.error('❌ Error checking store access:', error);
+    
+    // If store_teams table doesn't exist yet, fall back to owner-only check
+    if (error.message.includes('does not exist') || error.message.includes('store_teams')) {
+      console.log('⚠️ store_teams table not found, falling back to owner-only check');
+      const fallbackQuery = `
+        SELECT 
+            s.id, s.name, s.user_id as owner_id,
+            'owner' as access_role,
+            true as is_direct_owner,
+            null as team_permissions,
+            null as team_status
+        FROM stores s
+        WHERE s.id = :store_id AND s.user_id = :user_id
+      `;
+      
+      const result = await sequelize.query(fallbackQuery, {
+        replacements,
+        type: QueryTypes.SELECT
+      });
+      
+      return result.length > 0 ? result[0] : null;
+    }
+    
     throw error;
   }
 }
@@ -268,6 +333,26 @@ async function getUserStoresForDropdown(userId) {
     return stores;
   } catch (error) {
     console.error('❌ Error fetching stores for dropdown:', error);
+    
+    // If store_teams table doesn't exist yet, fall back to owner-only dropdown
+    if (error.message.includes('does not exist') || error.message.includes('store_teams')) {
+      console.log('⚠️ store_teams table not found, falling back to owner-only dropdown');
+      const fallbackQuery = `
+        SELECT DISTINCT
+            s.id, s.name, s.logo_url,
+            'owner' as access_role,
+            true as is_direct_owner
+        FROM stores s
+        WHERE s.is_active = true AND s.user_id = :user_id
+        ORDER BY s.name ASC
+      `;
+      
+      return await sequelize.query(fallbackQuery, {
+        replacements,
+        type: QueryTypes.SELECT
+      });
+    }
+    
     throw error;
   }
 }
