@@ -66,6 +66,34 @@ window.simulateStoreOwnerLogin = (email = 'test@example.com') => {
   window.location.reload();
 };
 
+// Helper function to check localStorage user data
+window.checkUserData = () => {
+  console.log('=== USER DATA CHECK ===');
+  const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
+  const customerUserData = localStorage.getItem('customer_user_data'); 
+  
+  console.log('Raw store owner data:', storeOwnerUserData);
+  console.log('Raw customer data:', customerUserData);
+  
+  if (storeOwnerUserData) {
+    try {
+      const parsed = JSON.parse(storeOwnerUserData);
+      console.log('Parsed store owner data:', parsed);
+    } catch (e) {
+      console.error('Error parsing store owner data:', e);
+    }
+  }
+  
+  if (customerUserData) {
+    try {
+      const parsed = JSON.parse(customerUserData);
+      console.log('Parsed customer data:', parsed);
+    } catch (e) {
+      console.error('Error parsing customer data:', e);
+    }
+  }
+};
+
 // Helper function to manually fetch and store user data for current session
 window.fixUserData = async () => {
   console.log('🔧 Manually fetching and storing user data...');
