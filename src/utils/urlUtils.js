@@ -89,10 +89,24 @@ export const URL_CONFIG = {
  * Create admin URL with proper prefix
  */
 export function createAdminUrl(pageName, params = {}) {
-  const slug = URL_CONFIG.PAGES[pageName.toUpperCase()] || pageName.toLowerCase();
+  // Handle query parameters in pageName (e.g., "SEO_TOOLS?tab=settings")
+  let actualPageName = pageName;
+  let queryString = '';
+  
+  if (pageName.includes('?')) {
+    [actualPageName, queryString] = pageName.split('?', 2);
+  }
+  
+  const slug = URL_CONFIG.PAGES[actualPageName.toUpperCase()] || actualPageName.toLowerCase();
   
   // All admin URLs now use the /admin prefix consistently
-  const baseUrl = `${URL_CONFIG.ADMIN_PREFIX}/${slug}`;
+  let baseUrl = `${URL_CONFIG.ADMIN_PREFIX}/${slug}`;
+  
+  // Add query string if it exists
+  if (queryString) {
+    baseUrl += `?${queryString}`;
+  }
+  
   return addUrlParams(baseUrl, params);
 }
 
