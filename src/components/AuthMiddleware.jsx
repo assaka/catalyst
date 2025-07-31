@@ -220,9 +220,34 @@ window.testGoogleAuth = async () => {
   } catch (error) {
     console.error('🔍 Error testing Google auth endpoint:', error);
     console.log('🔍 This might be normal for CORS-protected endpoints');
+    
+    if (error.message && error.message.includes('notsameorigin')) {
+      console.log('ℹ️ CORS error is expected for OAuth endpoints - this means the endpoint exists!');
+    }
   }
   
   console.log('🔍 If you want to test the actual redirect, click the Google login button');
+};
+
+// Helper function to directly navigate to Google OAuth (bypasses CORS)
+window.testDirectGoogleAuth = () => {
+  console.log('🔧 Testing direct navigation to Google OAuth...');
+  
+  const googleAuthUrl = `${apiClient.baseURL}/api/auth/google`;
+  console.log('🔍 Navigating directly to:', googleAuthUrl);
+  console.log('🔍 This will either:');
+  console.log('   - Redirect to Google login (OAuth configured)');
+  console.log('   - Show error page (OAuth not configured)');
+  console.log('   - Show 404 (endpoint does not exist)');
+  
+  // Open in new tab so we don't lose our current debug session
+  const newWindow = window.open(googleAuthUrl, '_blank');
+  
+  if (newWindow) {
+    console.log('✅ New tab opened - check what happens there');
+  } else {
+    console.log('❌ Popup blocked - allow popups and try again');
+  }
 };
 
 export default function AuthMiddleware({ role = 'store_owner' }) {

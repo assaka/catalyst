@@ -40,8 +40,8 @@ export const URL_CONFIG = {
     ORDER_CANCEL: 'order-cancel',
     COOKIE_CONSENT: 'cookie-consent',
     
-    // Admin pages
-    ADMIN_AUTH: 'login',
+    // Admin pages  
+    ADMIN_AUTH: 'auth',
     DASHBOARD: 'dashboard',
     PRODUCTS: 'products',
     CATEGORIES: 'categories',
@@ -90,8 +90,14 @@ export const URL_CONFIG = {
  */
 export function createAdminUrl(pageName, params = {}) {
   const slug = URL_CONFIG.PAGES[pageName.toUpperCase()] || pageName.toLowerCase();
-  const baseUrl = `${URL_CONFIG.ADMIN_PREFIX}/${slug}`;
   
+  // Special handling for auth and dashboard - use root paths instead of /admin/ prefix
+  if (pageName.toUpperCase() === 'ADMIN_AUTH' || pageName.toUpperCase() === 'DASHBOARD') {
+    const baseUrl = `/${slug}`;
+    return addUrlParams(baseUrl, params);
+  }
+  
+  const baseUrl = `${URL_CONFIG.ADMIN_PREFIX}/${slug}`;
   return addUrlParams(baseUrl, params);
 }
 

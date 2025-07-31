@@ -536,21 +536,21 @@ router.get('/google/callback', (req, res, next) => {
       
       // Handle database connection errors specifically
       if (err.message && err.message.includes('ENETUNREACH')) {
-        return res.redirect(`${corsOrigin}/admin/auth?error=database_connection_failed`);
+        return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
       }
       
       if (err.message && err.message.includes('Database connection failed')) {
-        return res.redirect(`${corsOrigin}/admin/auth?error=database_connection_failed`);
+        return res.redirect(`${corsOrigin}/auth?error=database_connection_failed`);
       }
       
       // Pass along more specific error info
       const errorParam = err.message ? err.message.replace(/\s+/g, '_').toLowerCase() : 'oauth_failed';
-      return res.redirect(`${corsOrigin}/admin/auth?error=${errorParam}`);
+      return res.redirect(`${corsOrigin}/auth?error=${errorParam}`);
     }
     
     if (!user) {
       console.error('OAuth failed: No user returned');
-      return res.redirect(`${corsOrigin}/admin/auth?error=oauth_failed`);
+      return res.redirect(`${corsOrigin}/auth?error=oauth_failed`);
     }
     
     try {
@@ -574,12 +574,12 @@ router.get('/google/callback', (req, res, next) => {
       const token = generateToken(user);
       
       // Always redirect to store owner auth page for Google OAuth
-      console.log('✅ Token generated successfully, redirecting to:', `${corsOrigin}/admin/auth?token=${token}&oauth=success`);
-      res.redirect(`${corsOrigin}/admin/auth?token=${token}&oauth=success`);
+      console.log('✅ Token generated successfully, redirecting to:', `${corsOrigin}/auth?token=${token}&oauth=success`);
+      res.redirect(`${corsOrigin}/auth?token=${token}&oauth=success`);
     } catch (tokenError) {
       console.error('Token generation error:', tokenError);
       console.error('User object:', user);
-      res.redirect(`${corsOrigin}/admin/auth?error=token_generation_failed`);
+      res.redirect(`${corsOrigin}/auth?error=token_generation_failed`);
     }
   })(req, res, next);
 });
