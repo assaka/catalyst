@@ -62,14 +62,26 @@ class ApiClient {
     const customerToken = localStorage.getItem('customer_auth_token');
     
     // Debug logging for API authentication
-    if (currentPath.includes('admin') || currentPath.includes('shipping')) {
+    if (currentPath.includes('admin') || currentPath.includes('shipping') || currentPath.includes('delivery')) {
+      const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
+      let userData = null;
+      try {
+        userData = storeOwnerUserData ? JSON.parse(storeOwnerUserData) : null;
+      } catch (e) {
+        console.warn('Failed to parse user data:', e);
+      }
+      
       console.log('🔍 API Client Debug:', {
         currentPath,
         isAdminContext,
         isCustomerContext,
         hasStoreOwnerToken: !!storeOwnerToken,
         hasCustomerToken: !!customerToken,
-        loggedOut: this.isLoggedOut
+        loggedOut: this.isLoggedOut,
+        tokenPreview: storeOwnerToken ? storeOwnerToken.substring(0, 20) + '...' : 'None',
+        userRole: userData?.role,
+        userAccountType: userData?.account_type,
+        userId: userData?.id
       });
     }
     
@@ -194,6 +206,17 @@ class ApiClient {
     const url = this.buildUrl(endpoint);
     const headers = this.getHeaders(customHeaders);
 
+    // Debug logging for API requests that might fail
+    if (endpoint.includes('delivery') || endpoint.includes('shipping') || endpoint.includes('payment')) {
+      console.log('🔍 API Request Debug:', {
+        method,
+        endpoint,
+        url,
+        hasAuth: !!headers.Authorization,
+        authPreview: headers.Authorization ? headers.Authorization.substring(0, 20) + '...' : 'None'
+      });
+    }
+
     const config = {
       method,
       headers,
@@ -203,7 +226,6 @@ class ApiClient {
     if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
       config.body = JSON.stringify(data);
     }
-
 
     try {
       const response = await fetch(url, config);
@@ -218,6 +240,16 @@ class ApiClient {
 
 
       if (!response.ok) {
+        // Debug logging for API errors
+        if (endpoint.includes('delivery') || endpoint.includes('shipping') || endpoint.includes('payment')) {
+          console.log('🔍 API Error Debug:', {
+            status: response.status,
+            endpoint,
+            result,
+            headers: Object.fromEntries(response.headers.entries())
+          });
+        }
+        
         // Handle API errors
         const error = new Error(result.message || `HTTP error! status: ${response.status}`);
         error.status = response.status;
