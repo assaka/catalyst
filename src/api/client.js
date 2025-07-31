@@ -81,8 +81,18 @@ class ApiClient {
         tokenPreview: storeOwnerToken ? storeOwnerToken.substring(0, 20) + '...' : 'None',
         userRole: userData?.role,
         userAccountType: userData?.account_type,
-        userId: userData?.id
+        userId: userData?.id,
+        // Additional debugging for missing user data
+        rawUserData: storeOwnerUserData,
+        userDataLength: storeOwnerUserData ? storeOwnerUserData.length : 0,
+        userDataExists: !!storeOwnerUserData
       });
+      
+      // Alert if we have token but no user data
+      if (storeOwnerToken && !userData) {
+        console.warn('⚠️ AUTHENTICATION ISSUE: Have token but missing user data. This will cause 403 errors.');
+        console.warn('💡 SOLUTION: Need to re-login to refresh both token and user data.');
+      }
     }
     
     if (isAdminContext && storeOwnerToken) {
