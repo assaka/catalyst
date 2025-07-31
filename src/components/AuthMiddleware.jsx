@@ -195,58 +195,123 @@ window.checkDeliveryOwnership = async () => {
 
 // Helper function to test different API endpoints and methods
 window.testApiMethods = async () => {
-  console.log('=== API METHOD TEST ===');
-  const { User, Store, Product } = await import('@/api/entities');
+  console.log('=== COMPREHENSIVE API METHOD TEST ===');
+  const entities = await import('@/api/entities');
   
   const tests = [
     {
       name: 'User Profile Update (PUT)',
       test: async () => {
         try {
-          const user = await User.me();
+          const user = await entities.User.me();
           if (user) {
-            const result = await User.updateProfile({ first_name: user.first_name });
-            return { success: true, result };
+            const result = await entities.User.updateProfile({ first_name: user.first_name });
+            return { success: true, method: 'PUT', endpoint: 'users', result };
           }
           return { success: false, error: 'No user data' };
         } catch (error) {
-          return { success: false, error: error.message };
+          return { success: false, method: 'PUT', endpoint: 'users', error: error.message, status: error.status };
         }
       }
     },
     {
-      name: 'Store List (GET)',
+      name: 'Product Create (POST)',
       test: async () => {
         try {
-          const stores = await Store.getUserStores();
-          return { success: true, count: stores.length };
+          const stores = await entities.Store.getUserStores();
+          if (stores.length === 0) return { success: false, error: 'No stores' };
+          
+          const testProduct = {
+            name: 'Test Product ' + Date.now(),
+            description: 'Test description',
+            price: 10,
+            stock_quantity: 1,
+            store_id: stores[0].id,
+            sku: 'TEST-' + Date.now()
+          };
+          
+          const result = await entities.Product.create(testProduct);
+          // Clean up - delete the test product
+          if (result && result.id) {
+            await entities.Product.delete(result.id);
+          }
+          return { success: true, method: 'POST', endpoint: 'products', result: 'Created and deleted test product' };
         } catch (error) {
-          return { success: false, error: error.message };
+          return { success: false, method: 'POST', endpoint: 'products', error: error.message, status: error.status };
         }
       }
     },
     {
-      name: 'Product List (GET)',
+      name: 'Category Create (POST)',
       test: async () => {
         try {
-          const products = await Product.filter({ limit: 1 });
-          return { success: true, count: products.length };
+          const stores = await entities.Store.getUserStores();
+          if (stores.length === 0) return { success: false, error: 'No stores' };
+          
+          const testCategory = {
+            name: 'Test Category ' + Date.now(),
+            description: 'Test description',
+            store_id: stores[0].id
+          };
+          
+          const result = await entities.Category.create(testCategory);
+          // Clean up
+          if (result && result.id) {
+            await entities.Category.delete(result.id);
+          }
+          return { success: true, method: 'POST', endpoint: 'categories', result: 'Created and deleted test category' };
         } catch (error) {
-          return { success: false, error: error.message };
+          return { success: false, method: 'POST', endpoint: 'categories', error: error.message, status: error.status };
+        }
+      }
+    },
+    {
+      name: 'Settings Update (PUT)',
+      test: async () => {
+        try {
+          const stores = await entities.Store.getUserStores();
+          if (stores.length === 0) return { success: false, error: 'No stores' };
+          
+          const settings = await entities.Settings.findByStoreId(stores[0].id);
+          if (settings && settings.length > 0) {
+            const result = await entities.Settings.update(settings[0].id, { 
+              store_name: settings[0].store_name || stores[0].name 
+            });
+            return { success: true, method: 'PUT', endpoint: 'settings', result: 'Updated settings' };
+          }
+          return { success: false, error: 'No settings found' };
+        } catch (error) {
+          return { success: false, method: 'PUT', endpoint: 'settings', error: error.message, status: error.status };
         }
       }
     }
   ];
   
+  const results = [];
   for (const test of tests) {
-    console.log(`Testing: ${test.name}`);
+    console.log(`\nTesting: ${test.name}`);
     const result = await test.test();
+    results.push({ name: test.name, ...result });
     console.log(`Result:`, result);
   }
   
   console.log('\n=== SUMMARY ===');
-  console.log('If User Profile Update fails with 403, it\'s a general PUT/POST issue');
-  console.log('If only delivery endpoints fail, it\'s delivery-specific permissions');
+  const putTests = results.filter(r => r.method === 'PUT');
+  const postTests = results.filter(r => r.method === 'POST');
+  
+  console.log('PUT Results:', putTests.map(t => `${t.name}: ${t.success ? '✅' : '❌'}`));
+  console.log('POST Results:', postTests.map(t => `${t.name}: ${t.success ? '✅' : '❌'}`));
+  
+  const allPutFail = putTests.every(t => !t.success);
+  const allPostFail = postTests.every(t => !t.success);
+  
+  if (allPutFail && allPostFail) {
+    console.log('\n🚨 ALL PUT/POST requests are failing - Backend authorization issue!');
+  } else {
+    console.log('\n🔍 Mixed results - Issue may be endpoint-specific');
+  }
+  
+  return results;
 };
 
 // Helper function to manually fetch and store user data for current session
