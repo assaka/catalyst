@@ -134,6 +134,21 @@ class AuthService {
       console.log('🔧 CRITICAL FIX: Storing user data (root level) for role:', result.role);
       setRoleBasedAuthData(result, token);
       console.log('✅ User data stored successfully in login (root level)');
+    } else if (token) {
+      // If we have token but no user data, fetch it immediately
+      console.log('🔧 EMERGENCY FIX: Token exists but no user data, fetching from /auth/me...');
+      try {
+        const userResponse = await apiClient.get('auth/me');
+        const userData = userResponse.data || userResponse;
+        if (userData && userData.id) {
+          setRoleBasedAuthData(userData, token);
+          console.log('✅ User data fetched and stored successfully');
+          // Update result to include user data
+          result.user = userData;
+        }
+      } catch (fetchError) {
+        console.error('❌ Failed to fetch user data after login:', fetchError.message);
+      }
     }
     
     return result;
