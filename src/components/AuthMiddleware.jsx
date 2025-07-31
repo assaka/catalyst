@@ -333,7 +333,7 @@ window.testDashboardAccess = async () => {
   }
 };
 
-export default function AuthMiddleware({ role = 'store_owner' }) {
+export default function AuthMiddleware({ role = 'store_owner', skipRedirectIfAuthenticated = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -443,9 +443,13 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
           console.log('🔍 Customer on store owner auth page, redirecting to customer auth');
           navigate(createPublicUrl(currentStoreSlug, "CUSTOMER_AUTH"));
         } else if (user.role === 'store_owner' || user.role === 'admin') {
-          const dashboardUrl = createAdminUrl("DASHBOARD");
-          console.log('🔍 Store owner/admin authenticated, redirecting to dashboard:', dashboardUrl);
-          navigate(dashboardUrl);
+          if (!skipRedirectIfAuthenticated) {
+            const dashboardUrl = createAdminUrl("DASHBOARD");
+            console.log('🔍 Store owner/admin authenticated, redirecting to dashboard:', dashboardUrl);
+            navigate(dashboardUrl);
+          } else {
+            console.log('🔍 Store owner/admin authenticated, but skipRedirectIfAuthenticated is true, staying on auth page');
+          }
         }
       }
     } catch (error) {
