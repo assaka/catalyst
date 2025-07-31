@@ -64,6 +64,11 @@ export const StoreSelectionProvider = ({ children }) => {
           setSelectedStore(storesArray[0]);
           localStorage.setItem('selectedStoreId', storesArray[0].id);
         }
+      } else {
+        // No stores available - clear any saved selection
+        console.warn('StoreSelection: No stores available for user');
+        setSelectedStore(null);
+        localStorage.removeItem('selectedStoreId');
       }
     } catch (error) {
       console.error('StoreSelection: Error loading stores:', error);
