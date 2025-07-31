@@ -27,6 +27,8 @@ const CookieConsentSettings = require('./CookieConsentSettings');
 const ConsentLog = require('./ConsentLog');
 const Address = require('./Address');
 const ProductTab = require('./ProductTab');
+const StoreTeam = require('./StoreTeam');
+const StoreInvitation = require('./StoreInvitation');
 
 // Define associations
 const defineAssociations = () => {
@@ -158,6 +160,20 @@ const defineAssociations = () => {
   // ProductTab associations
   ProductTab.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(ProductTab, { foreignKey: 'store_id' });
+
+  // StoreTeam associations
+  StoreTeam.belongsTo(Store, { foreignKey: 'store_id' });
+  StoreTeam.belongsTo(User, { foreignKey: 'user_id' });
+  StoreTeam.belongsTo(User, { as: 'inviter', foreignKey: 'invited_by' });
+  Store.hasMany(StoreTeam, { foreignKey: 'store_id' });
+  User.hasMany(StoreTeam, { foreignKey: 'user_id' });
+
+  // StoreInvitation associations
+  StoreInvitation.belongsTo(Store, { foreignKey: 'store_id' });
+  StoreInvitation.belongsTo(User, { as: 'inviter', foreignKey: 'invited_by' });
+  StoreInvitation.belongsTo(User, { as: 'accepter', foreignKey: 'accepted_by' });
+  Store.hasMany(StoreInvitation, { foreignKey: 'store_id' });
+  User.hasMany(StoreInvitation, { as: 'sentInvitations', foreignKey: 'invited_by' });
 };
 
 // Initialize associations
@@ -192,5 +208,7 @@ module.exports = {
   CookieConsentSettings,
   ConsentLog,
   Address,
-  ProductTab
+  ProductTab,
+  StoreTeam,
+  StoreInvitation
 };

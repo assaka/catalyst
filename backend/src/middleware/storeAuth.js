@@ -1,8 +1,70 @@
-const { Store } = require('../models');
+const { Store, StoreTeam } = require('../models');
+
+/**
+ * Helper function to check if user is a team member with specific permissions
+ */
+const checkTeamMembership = async (userId, storeId, requiredPermissions = []) => {
+  try {
+    const teamMember = await StoreTeam.findOne({
+      where: {
+        user_id: userId,
+        store_id: storeId,
+        status: 'active',
+        is_active: true
+      }
+    });
+
+    if (!teamMember) {
+      return { hasAccess: false, role: null, permissions: {} };
+    }
+
+    // Role-based permissions
+    const rolePermissions = {
+      owner: { all: true }, // Owner has all permissions
+      admin: { 
+        all: true, // Admin has all permissions except ownership transfer
+        canManageTeam: true,
+        canManageStore: true,
+        canManageContent: true,
+        canViewReports: true
+      },
+      editor: {
+        canManageContent: true,
+        canViewReports: true,
+        canManageProducts: true,
+        canManageOrders: true,
+        canManageCategories: true
+      },
+      viewer: {
+        canViewReports: true,
+        canViewProducts: true,
+        canViewOrders: true
+      }
+    };
+
+    const basePermissions = rolePermissions[teamMember.role] || {};
+    const customPermissions = teamMember.permissions || {};
+    const finalPermissions = { ...basePermissions, ...customPermissions };
+
+    // Check if user has required permissions
+    const hasRequiredPermissions = requiredPermissions.length === 0 || 
+      requiredPermissions.every(perm => finalPermissions[perm] || finalPermissions.all);
+
+    return {
+      hasAccess: hasRequiredPermissions,
+      role: teamMember.role,
+      permissions: finalPermissions,
+      teamMember
+    };
+  } catch (error) {
+    console.error('❌ Team membership check error:', error);
+    return { hasAccess: false, role: null, permissions: {} };
+  }
+};
 
 /**
  * Middleware to check if the authenticated user owns or has access to the store
- * Uses user_id-based ownership model only
+ * Supports both direct ownership and team membership
  */
 const checkStoreOwnership = async (req, res, next) => {
   try {
@@ -33,18 +95,23 @@ const checkStoreOwnership = async (req, res, next) => {
       });
     }
 
-    // Check ownership using user_id only
-    const isOwnerByUserId = store.user_id && store.user_id === req.user.id;
+    // Check direct ownership first
+    const isDirectOwner = store.user_id && store.user_id === req.user.id;
     
-    // Future: Add workspace/team member check here
-    // const isTeamMember = await checkTeamMembership(req.user.id, storeId);
+    // Check team membership if not direct owner
+    let teamAccess = { hasAccess: false, role: null, permissions: {} };
+    if (!isDirectOwner) {
+      teamAccess = await checkTeamMembership(req.user.id, storeId);
+    }
     
-    const hasAccess = isOwnerByUserId; // || isTeamMember;
+    const hasAccess = isDirectOwner || teamAccess.hasAccess;
 
     console.log('🔍 Ownership check result:', {
       storeId: store.id,
       storeUserId: store.user_id,
-      userIdMatch: isOwnerByUserId,
+      isDirectOwner,
+      teamRole: teamAccess.role,
+      teamPermissions: teamAccess.permissions,
       hasAccess
     });
 
@@ -56,8 +123,15 @@ const checkStoreOwnership = async (req, res, next) => {
       });
     }
 
-    // Attach store to request for downstream use
+    // Attach store and access info to request for downstream use
     req.store = store;
+    req.storeAccess = {
+      isDirectOwner,
+      teamRole: teamAccess.role,
+      permissions: teamAccess.permissions,
+      teamMember: teamAccess.teamMember
+    };
+    
     next();
   } catch (error) {
     console.error('❌ Store ownership check error:', error);
@@ -96,18 +170,33 @@ const checkResourceOwnership = (modelName) => {
         });
       }
 
-      // Check if user owns the store that owns this resource
+      // Check if user owns the store that owns this resource or is a team member
       const store = resource.Store;
       if (store) {
-        const isOwnerByUserId = store.user_id && store.user_id === req.user.id;
+        const isDirectOwner = store.user_id && store.user_id === req.user.id;
         
-        if (!isOwnerByUserId) {
-          console.log(`❌ User does not own the store for this ${modelName}`);
+        // Check team membership if not direct owner
+        let teamAccess = { hasAccess: false };
+        if (!isDirectOwner) {
+          teamAccess = await checkTeamMembership(req.user.id, store.id);
+        }
+        
+        const hasAccess = isDirectOwner || teamAccess.hasAccess;
+        
+        if (!hasAccess) {
+          console.log(`❌ User does not have access to the store for this ${modelName}`);
           return res.status(403).json({
             success: false,
             message: 'Access denied'
           });
         }
+        
+        // Attach access info to request
+        req.storeAccess = {
+          isDirectOwner,
+          teamRole: teamAccess.role,
+          permissions: teamAccess.permissions
+        };
       }
 
       req.resource = resource;
@@ -124,5 +213,6 @@ const checkResourceOwnership = (modelName) => {
 
 module.exports = {
   checkStoreOwnership,
-  checkResourceOwnership
+  checkResourceOwnership,
+  checkTeamMembership
 };
