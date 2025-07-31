@@ -150,42 +150,38 @@ export default function Layout({ children, currentPageName }) {
 
   const loadUserAndHandleCredits = async () => {
     try {
-      console.log('🔍 Layout.jsx: Loading user data');
+      console.log('🔍 Layout.jsx: Loading user data via token-only validation');
       console.log('🔍 Layout.jsx: Current page:', currentPageName);
       console.log('🔍 Layout.jsx: Current token:', !!apiClient.getToken());
-      console.log('🔍 Layout.jsx: Session role:', localStorage.getItem('session_role'));
       console.log('🔍 Layout.jsx: Both roles logged in:', hasBothRolesLoggedIn());
       console.log('🔍 Layout.jsx: Customer token exists:', !!localStorage.getItem('customer_auth_token'));
       console.log('🔍 Layout.jsx: Store owner token exists:', !!localStorage.getItem('store_owner_auth_token'));
       
-      let userData = await retryApiCall(() => User.me());
+      // Use token-only validation like RoleProtectedRoute to avoid User.me() calls
+      const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
+      const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
       
-      console.log('🔍 Layout.jsx: User data received:', {
-        id: userData?.id,
-        role: userData?.role,
-        account_type: userData?.account_type,
-        email: userData?.email
-      });
-      
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const lastDeduction = userData.last_credit_deduction_date ? new Date(userData.last_credit_deduction_date) : null;
-      
-      if (!lastDeduction || lastDeduction < today) {
-        if ((userData.credits || 0) > 0) {
-          const newCredits = userData.credits - 1;
-          await User.updateMyUserData({ 
-            credits: newCredits,
-            last_credit_deduction_date: new Date().toISOString()
+      if (hasStoreOwnerToken && storeOwnerUserData) {
+        try {
+          const userData = JSON.parse(storeOwnerUserData);
+          console.log('🔍 Layout.jsx: User data from localStorage:', {
+            id: userData?.id,
+            role: userData?.role,
+            account_type: userData?.account_type,
+            email: userData?.email
           });
-          userData.credits = newCredits; 
-          userData.last_credit_deduction_date = new Date().toISOString();
+          
+          setUser(userData);
+        } catch (parseError) {
+          console.log('🔍 Layout.jsx: Error parsing user data:', parseError);
+          setUser(null);
         }
+      } else {
+        console.log('🔍 Layout.jsx: No valid store owner token or user data found');
+        setUser(null);
       }
-      
-      setUser(userData);
     } catch (error) {
-      console.log('🔍 Layout.jsx: Error loading user:', error);
+      console.log('🔍 Layout.jsx: Error in token validation:', error);
       setUser(null);
     } finally {
       setIsLoading(false);
