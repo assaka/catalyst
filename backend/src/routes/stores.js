@@ -4,6 +4,8 @@ const { Store, User } = require('../models');
 const UserModel = require('../models/User'); // Direct import
 const { authorize } = require('../middleware/auth');
 const { sequelize, supabase } = require('../database/connection');
+const { getUserAccessibleStores, getUserAccessibleStoresCount, getUserStoresForDropdown } = require('../utils/storeAccess');
+const { Op } = require('sequelize');
 const router = express.Router();
 
 // Initialize stores table on module load with retry logic
@@ -346,33 +348,61 @@ router.get('/', async (req, res) => {
 // Private store access function
 async function privateStoreAccess(req, res) {
   try {
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, search } = req.query;
     const offset = (page - 1) * limit;
 
-    const where = {};
-    
-    // Admin can see all stores, others see only their own
-    if (req.user.role !== 'admin') {
-      where.user_id = req.user.id;
-    }
-
-    const { count, rows } = await Store.findAndCountAll({
-      where,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      order: [['created_at', 'DESC']]
-    });
-
-    res.json({
-      success: true,
-      data: rows,
-      pagination: {
-        total: count,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages: Math.ceil(count / limit)
+    if (req.user.role === 'admin') {
+      // Admin can see all stores (existing logic)
+      const where = {};
+      if (search) {
+        where[Op.or] = [
+          { name: { [Op.iLike]: `%${search}%` } },
+          { description: { [Op.iLike]: `%${search}%` } }
+        ];
       }
-    });
+
+      const { count, rows } = await Store.findAndCountAll({
+        where,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['created_at', 'DESC']]
+      });
+
+      res.json({
+        success: true,
+        data: rows,
+        pagination: {
+          total: count,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(count / limit)
+        }
+      });
+    } else {
+      // Regular users see only stores they own or are team members of
+      const stores = await getUserAccessibleStores(req.user.id, {
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        search,
+        includeInactive: false
+      });
+
+      const totalCount = await getUserAccessibleStoresCount(req.user.id, {
+        search,
+        includeInactive: false
+      });
+
+      res.json({
+        success: true,
+        data: stores,
+        pagination: {
+          total: totalCount,
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalPages: Math.ceil(totalCount / limit)
+        }
+      });
+    }
   } catch (error) {
     console.error('Get user stores error:', error);
     res.status(500).json({
@@ -382,6 +412,45 @@ async function privateStoreAccess(req, res) {
   }
 }
 
+
+// @route   GET /api/stores/dropdown
+// @desc    Get stores for dropdown/selection (minimal data)
+// @access  Private
+router.get('/dropdown', authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    if (req.user.role === 'admin') {
+      // Admin can see all active stores
+      const stores = await Store.findAll({
+        where: { is_active: true },
+        attributes: ['id', 'name', 'logo_url'],
+        order: [['name', 'ASC']]
+      }).then(stores => stores.map(store => ({
+        ...store.toJSON(),
+        access_role: 'admin',
+        is_direct_owner: false
+      })));
+
+      res.json({
+        success: true,
+        data: stores
+      });
+    } else {
+      // Regular users see only accessible stores
+      const stores = await getUserStoresForDropdown(req.user.id);
+
+      res.json({
+        success: true,
+        data: stores
+      });
+    }
+  } catch (error) {
+    console.error('Get stores dropdown error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
 
 // @route   GET /api/stores/:id
 // @desc    Get store by ID
@@ -397,12 +466,24 @@ router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check ownership or team access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+      
+      // Add access info to response
+      store.dataValues.access_info = {
+        access_role: access.access_role,
+        is_direct_owner: access.is_direct_owner,
+        team_permissions: access.team_permissions
+      };
     }
 
     res.json({

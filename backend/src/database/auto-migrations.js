@@ -189,6 +189,70 @@ const migrations = [
         return false;
       }
     }
+  },
+  {
+    name: 'add-test-team-member',
+    up: async () => {
+      console.log('🔄 Running migration: add-test-team-member');
+      
+      try {
+        // Find the Hamid store and info@itomoti.com user
+        const [hamidStore] = await sequelize.query(`
+          SELECT id FROM stores WHERE name = 'Hamid' LIMIT 1
+        `);
+        
+        const [user] = await sequelize.query(`
+          SELECT id FROM users WHERE email = 'info@itomoti.com' LIMIT 1
+        `);
+        
+        if (!hamidStore.length || !user.length) {
+          console.log('⚠️ Hamid store or info@itomoti.com user not found, skipping team member addition');
+          return true;
+        }
+        
+        const storeId = hamidStore[0].id;
+        const userId = user[0].id;
+        
+        // Check if already a team member
+        const [existingMember] = await sequelize.query(`
+          SELECT id FROM store_teams 
+          WHERE store_id = :store_id AND user_id = :user_id
+        `, {
+          replacements: { store_id: storeId, user_id: userId }
+        });
+        
+        if (existingMember.length > 0) {
+          console.log('✅ User is already a team member of Hamid store');
+          
+          // Update to admin role if not already
+          await sequelize.query(`
+            UPDATE store_teams 
+            SET role = 'admin', status = 'active', accepted_at = CURRENT_TIMESTAMP
+            WHERE store_id = :store_id AND user_id = :user_id
+          `, {
+            replacements: { store_id: storeId, user_id: userId }
+          });
+          
+          console.log('✅ Updated user role to admin in Hamid store');
+        } else {
+          // Add as team member
+          await sequelize.query(`
+            INSERT INTO store_teams (store_id, user_id, role, status, accepted_at, permissions)
+            VALUES (:store_id, :user_id, 'admin', 'active', CURRENT_TIMESTAMP, '{"canManageContent": true, "canManageProducts": true, "canManageOrders": true, "canViewReports": true}')
+          `, {
+            replacements: { store_id: storeId, user_id: userId }
+          });
+          
+          console.log('✅ Added info@itomoti.com as admin to Hamid store');
+        }
+        
+        console.log('🎉 You can now access the Hamid store!');
+        return true;
+      } catch (error) {
+        console.error('❌ Migration failed:', error.message);
+        return false;
+      }
+    }
   }
 ];
 
