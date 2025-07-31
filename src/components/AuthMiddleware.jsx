@@ -584,9 +584,13 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               return;
             }
             
-            // For store owners, let checkAuthStatus handle the redirect
-            console.log('✅ Store owner login successful, calling checkAuthStatus for redirect...');
-            checkAuthStatus();
+            // For store owners, redirect directly to dashboard
+            console.log('✅ Store owner login successful, redirecting to dashboard...');
+            setTimeout(() => {
+              const dashboardUrl = createAdminUrl("DASHBOARD");
+              console.log('🔍 Redirecting to dashboard:', dashboardUrl);
+              navigate(dashboardUrl);
+            }, 100); // Small delay to ensure token is set
           }
         }
       } else {
