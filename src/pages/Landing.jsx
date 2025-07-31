@@ -187,7 +187,7 @@ export default function Landing() {
                   </DropdownMenu>
               ) : (
                 <>
-                  <Link to={createPageUrl("Auth")}>
+                  <Link to="/admin/auth">
                     <Button variant="ghost" className="material-ripple">
                       Sign In
                     </Button>

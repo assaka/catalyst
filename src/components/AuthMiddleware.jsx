@@ -296,9 +296,28 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       return;
     }
     
+    console.log('🔍 Google auth initiated');
+    console.log('🔍 API Base URL:', apiClient.baseURL);
+    console.log('🔍 Full Google auth URL:', `${apiClient.baseURL}/api/auth/google`);
+    
     setLoading(true);
     setError("");
-    window.location.href = `${apiClient.baseURL}/api/auth/google`;
+    
+    const googleAuthUrl = `${apiClient.baseURL}/api/auth/google`;
+    console.log('🔍 Redirecting to:', googleAuthUrl);
+    
+    // Add a timeout to check if redirect fails
+    const redirectTimeout = setTimeout(() => {
+      setError("Google authentication is not configured. Please use email/password login or contact the administrator.");
+      setLoading(false);
+    }, 5000);
+    
+    // Clear timeout if page unloads (successful redirect)
+    window.addEventListener('beforeunload', () => {
+      clearTimeout(redirectTimeout);
+    });
+    
+    window.location.href = googleAuthUrl;
   };
 
   // Render appropriate layout based on role
