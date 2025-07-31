@@ -216,9 +216,9 @@ const migrations = [
         // Check if already a team member
         const [existingMember] = await sequelize.query(`
           SELECT id FROM store_teams 
-          WHERE store_id = :store_id AND user_id = :user_id
+          WHERE store_id = $1 AND user_id = $2
         `, {
-          replacements: { store_id: storeId, user_id: userId }
+          bind: [storeId, userId]
         });
         
         if (existingMember.length > 0) {
@@ -228,9 +228,9 @@ const migrations = [
           await sequelize.query(`
             UPDATE store_teams 
             SET role = 'admin', status = 'active', accepted_at = CURRENT_TIMESTAMP
-            WHERE store_id = :store_id AND user_id = :user_id
+            WHERE store_id = $1 AND user_id = $2
           `, {
-            replacements: { store_id: storeId, user_id: userId }
+            bind: [storeId, userId]
           });
           
           console.log('✅ Updated user role to admin in Hamid store');
@@ -238,9 +238,9 @@ const migrations = [
           // Add as team member
           await sequelize.query(`
             INSERT INTO store_teams (store_id, user_id, role, status, accepted_at, permissions)
-            VALUES (:store_id, :user_id, 'admin', 'active', CURRENT_TIMESTAMP, '{"canManageContent": true, "canManageProducts": true, "canManageOrders": true, "canViewReports": true}')
+            VALUES ($1, $2, 'admin', 'active', CURRENT_TIMESTAMP, '{"canManageContent": true, "canManageProducts": true, "canManageOrders": true, "canViewReports": true}')
           `, {
-            replacements: { store_id: storeId, user_id: userId }
+            bind: [storeId, userId]
           });
           
           console.log('✅ Added info@itomoti.com as admin to Hamid store');
