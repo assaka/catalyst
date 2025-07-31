@@ -10,7 +10,7 @@ async function getUserStoresForDropdown(userId) {
   try {
     console.log(`🔍 Getting owned stores for user ID: ${userId}`);
     
-    // ONLY owned stores - simplest possible query
+    // ONLY owned stores - using Sequelize named replacements
     const query = `
       SELECT 
           s.id,
@@ -20,12 +20,12 @@ async function getUserStoresForDropdown(userId) {
           true as is_direct_owner
       FROM stores s
       WHERE s.is_active = true 
-        AND s.user_id = $1
+        AND s.user_id = :userId
       ORDER BY s.name ASC
     `;
 
     const stores = await sequelize.query(query, {
-      replacements: [userId],
+      replacements: { userId: userId },
       type: QueryTypes.SELECT
     });
 
@@ -63,11 +63,11 @@ async function checkUserStoreAccess(userId, storeId) {
         'owner' as access_role,
         true as is_direct_owner
       FROM stores s
-      WHERE s.id = $1 AND s.user_id = $2 AND s.is_active = true
+      WHERE s.id = :storeId AND s.user_id = :userId AND s.is_active = true
     `;
     
     const result = await sequelize.query(query, {
-      replacements: [storeId, userId],
+      replacements: { storeId: storeId, userId: userId },
       type: QueryTypes.SELECT
     });
 
