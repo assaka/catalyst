@@ -584,37 +584,9 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
               return;
             }
             
-            // For store owners, verify role before navigating
-            try {
-              console.log('🔍 Verifying user role before redirect...');
-              const user = await User.me();
-              console.log('🔍 User verification result:', user);
-              
-              if (user && user.role === 'customer') {
-                console.log('❌ Customer tried to login as store owner');
-                setError("Invalid credentials. Customers should use the customer login page.");
-                await AuthService.logout();
-                localStorage.removeItem(tokenKey);
-                return;
-              }
-              
-              if (user && (user.role === 'store_owner' || user.role === 'admin')) {
-                console.log('✅ User role verified, navigating to dashboard...');
-                const dashboardUrl = createAdminUrl("DASHBOARD");
-                console.log('🔍 Dashboard URL:', dashboardUrl);
-                navigate(dashboardUrl);
-              } else {
-                console.log('⚠️ Unexpected user role or no user data');
-                setError("Authentication successful but user role verification failed.");
-              }
-            } catch (error) {
-              // If verification fails, still navigate to dashboard
-              console.error('Role verification failed:', error);
-              console.log('🔍 Attempting navigation despite verification failure...');
-              const dashboardUrl = createAdminUrl("DASHBOARD");
-              console.log('🔍 Fallback dashboard URL:', dashboardUrl);
-              navigate(dashboardUrl);
-            }
+            // For store owners, let checkAuthStatus handle the redirect
+            console.log('✅ Store owner login successful, calling checkAuthStatus for redirect...');
+            checkAuthStatus();
           }
         }
       } else {
