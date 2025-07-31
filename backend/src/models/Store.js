@@ -22,7 +22,7 @@ const Store = sequelize.define('Store', {
   },
   user_id: {
     type: DataTypes.UUID,
-    allowNull: true, // Will be required after migration
+    allowNull: false, // Required for all stores
     references: {
       model: 'users',
       key: 'id'
@@ -30,7 +30,7 @@ const Store = sequelize.define('Store', {
   },
   owner_email: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true, // Made optional - deprecated field
     validate: {
       isEmail: true
     }

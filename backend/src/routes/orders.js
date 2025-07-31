@@ -248,7 +248,7 @@ router.get('/customer-orders', auth, async (req, res) => {
       include: [
         {
           model: Store,
-          attributes: ['id', 'name', 'logo_url', 'owner_email']
+          attributes: ['id', 'name', 'logo_url', 'user_id']
         },
         {
           model: OrderItem,
@@ -503,7 +503,7 @@ router.get('/', async (req, res) => {
     // Filter by store ownership
     if (req.user.role !== 'admin') {
       const userStores = await Store.findAll({
-        where: { owner_email: req.user.email },
+        where: { user_id: req.user.id },
         attributes: ['id']
       });
       const storeIds = userStores.map(store => store.id);
@@ -560,7 +560,7 @@ router.get('/:id', async (req, res) => {
       include: [
         {
           model: Store,
-          attributes: ['id', 'name', 'owner_email']
+          attributes: ['id', 'name', 'user_id']
         },
         {
           model: OrderItem,
@@ -577,7 +577,7 @@ router.get('/:id', async (req, res) => {
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && order.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && order.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -628,7 +628,7 @@ router.post('/', [
       });
     }
 
-    if (req.user.role !== 'admin' && store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -681,7 +681,7 @@ router.put('/:id', async (req, res) => {
     const order = await Order.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -693,7 +693,7 @@ router.put('/:id', async (req, res) => {
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && order.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && order.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'

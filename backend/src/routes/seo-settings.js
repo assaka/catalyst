@@ -32,7 +32,7 @@ router.get('/', async (req, res) => {
       
       if (req.user.role !== 'admin') {
         const store = await Store.findByPk(store_id);
-        if (!store || store.owner_email !== req.user.email) {
+        if (!store || store.user_id !== req.user.id) {
           return res.status(403).json({
             success: false,
             message: 'Access denied'
@@ -95,7 +95,7 @@ router.post('/', auth, async (req, res) => {
     // Check store ownership
     if (req.user.role !== 'admin') {
       const store = await Store.findByPk(store_id);
-      if (!store || store.owner_email !== req.user.email) {
+      if (!store || store.user_id !== req.user.id) {
         return res.status(403).json({
           success: false,
           message: 'Access denied'
@@ -146,7 +146,7 @@ router.put('/:id', auth, async (req, res) => {
     });
 
     const seoSettings = await SeoSettings.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'owner_email'] }]
+      include: [{ model: Store, attributes: ['id', 'user_id'] }]
     });
 
     if (!seoSettings) {
@@ -157,7 +157,7 @@ router.put('/:id', auth, async (req, res) => {
     }
 
     // Check store ownership
-    if (req.user.role !== 'admin' && seoSettings.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && seoSettings.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'

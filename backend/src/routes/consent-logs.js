@@ -19,7 +19,7 @@ const checkStoreOwnership = async (storeId, userEmail, userRole) => {
   if (userRole === 'admin') return true;
   
   const store = await Store.findByPk(storeId);
-  return store && store.owner_email === userEmail;
+  return store && store.user_id === userEmail;
 };
 
 // @route   POST /api/consent-logs
@@ -108,7 +108,7 @@ router.get('/', async (req, res) => {
     // Filter by store ownership
     if (req.user.role !== 'admin') {
       const userStores = await Store.findAll({
-        where: { owner_email: req.user.email },
+        where: { user_id: req.user.id },
         attributes: ['id']
       });
       const storeIds = userStores.map(store => store.id);

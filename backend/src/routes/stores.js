@@ -353,7 +353,7 @@ async function privateStoreAccess(req, res) {
     
     // Admin can see all stores, others see only their own
     if (req.user.role !== 'admin') {
-      where.owner_email = req.user.email;
+      where.user_id = req.user.id;
     }
 
     const { count, rows } = await Store.findAndCountAll({
@@ -398,7 +398,7 @@ router.get('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -430,7 +430,7 @@ router.post('/', authorize(['admin', 'store_owner']), [
     console.log('Store creation request received:', req.body);
     console.log('User info from JWT:', { 
       id: req.user.id,
-      email: req.user.email, 
+      email: req.user.id, 
       role: req.user.role,
       fullUserObject: req.user
     });
@@ -459,8 +459,7 @@ router.post('/', authorize(['admin', 'store_owner']), [
 
     const storeData = {
       ...req.body,
-      user_id: req.user.id,  // Set the user_id for proper ownership
-      owner_email: req.user.email  // Keep for backward compatibility
+      user_id: req.user.id  // Set the user_id for proper ownership
     };
 
     // Generate slug if not provided
@@ -469,9 +468,9 @@ router.post('/', authorize(['admin', 'store_owner']), [
     }
 
     console.log('Final store data to create:', storeData);
-    console.log('User email from JWT:', req.user.email);
-    console.log('User email type:', typeof req.user.email);
-    console.log('User email length:', req.user.email?.length);
+    console.log('User email from JWT:', req.user.id);
+    console.log('User email type:', typeof req.user.id);
+    console.log('User email length:', req.user.id?.length);
     
     // Verify the user exists in the database before creating store
     console.log('🔍 Verifying user exists before store creation...');
@@ -494,14 +493,14 @@ router.post('/', authorize(['admin', 'store_owner']), [
       
       // Try Sequelize User.findOne first
       console.log('🔍 Trying UserModel.findOne...');
-      const existingUser = await UserModel.findOne({ where: { email: req.user.email } });
+      const existingUser = await UserModel.findOne({ where: { email: req.user.id } });
       
       if (!existingUser) {
         console.error('❌ User not found via Sequelize User.findOne');
         
         // Try direct SQL query as fallback with detailed debugging
         console.log('🔍 Trying direct SQL query...');
-        console.log('Query email parameter:', JSON.stringify(req.user.email));
+        console.log('Query email parameter:', JSON.stringify(req.user.id));
         
         // First, let's check if we can connect and see what tables exist
         console.log('🔍 Testing database connection...');
@@ -537,7 +536,7 @@ router.post('/', authorize(['admin', 'store_owner']), [
           console.log('All users in database:');
           allUsers.forEach((user, index) => {
             console.log(`${index + 1}. "${user.email}" (length: ${user.email_length})`);
-            console.log(`   Match check: "${user.email}" === "${req.user.email}" = ${user.email === req.user.email}`);
+            console.log(`   Match check: "${user.email}" === "${req.user.id}" = ${user.email === req.user.id}`);
           });
         } catch (listError) {
           console.error('❌ List users query failed:', listError.message);
@@ -547,7 +546,7 @@ router.post('/', authorize(['admin', 'store_owner']), [
         const directResults = await sequelize.query(
           'SELECT id, email, role FROM users WHERE email = :email',
           { 
-            replacements: { email: req.user.email },
+            replacements: { email: req.user.id },
             type: sequelize.QueryTypes.SELECT
           }
         );
@@ -559,14 +558,14 @@ router.post('/', authorize(['admin', 'store_owner']), [
           console.log('✅ User found via direct SQL:', directResults[0]);
           // Continue with store creation since user exists
         } else {
-          console.error('❌ User not found in database with email:', req.user.email);
+          console.error('❌ User not found in database with email:', req.user.id);
           
           // Try case-insensitive search as last resort
           console.log('🔍 Trying case-insensitive search...');
           const caseInsensitiveResults = await sequelize.query(
             'SELECT id, email, role FROM users WHERE LOWER(email) = LOWER(:email)',
             { 
-              replacements: { email: req.user.email },
+              replacements: { email: req.user.id },
               type: sequelize.QueryTypes.SELECT
             }
           );
@@ -579,8 +578,8 @@ router.post('/', authorize(['admin', 'store_owner']), [
               success: false,
               message: 'User not found. Please log in again.',
               debug: {
-                userEmail: req.user.email,
-                userEmailType: typeof req.user.email,
+                userEmail: req.user.id,
+                userEmailType: typeof req.user.id,
                 sequelizeResult: 'not found',
                 directSqlResult: 'not found',
                 caseInsensitiveResult: 'not found',
@@ -593,7 +592,7 @@ router.post('/', authorize(['admin', 'store_owner']), [
         console.log('✅ User found in database via Sequelize:', {
           id: existingUser.id,
           email: existingUser.email,
-          emailMatch: existingUser.email === req.user.email
+          emailMatch: existingUser.email === req.user.id
         });
       }
     } catch (userCheckError) {
@@ -697,8 +696,8 @@ router.put('/:id', authorize(['admin', 'store_owner']), [
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && store.owner_email !== req.user.email) {
-      console.log('❌ Access denied. Store owner:', store.owner_email, 'User:', req.user.email);
+    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
+      console.log('❌ Access denied. Store owner:', store.user_id, 'User:', req.user.id);
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -804,7 +803,7 @@ router.delete('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'

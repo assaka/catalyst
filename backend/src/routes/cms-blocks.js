@@ -88,7 +88,7 @@ const checkStoreOwnership = async (storeId, userEmail, userRole) => {
   if (userRole === 'admin') return true;
   
   const store = await Store.findByPk(storeId);
-  return store && store.owner_email === userEmail;
+  return store && store.user_id === userEmail;
 };
 
 // @route   GET /api/cms-blocks
@@ -104,7 +104,7 @@ router.get('/', async (req, res) => {
     // Filter by store ownership
     if (req.user.role !== 'admin') {
       const userStores = await Store.findAll({
-        where: { owner_email: req.user.email },
+        where: { user_id: req.user.id },
         attributes: ['id']
       });
       const storeIds = userStores.map(store => store.id);
@@ -160,7 +160,7 @@ router.get('/:id', async (req, res) => {
     const block = await CmsBlock.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -172,7 +172,7 @@ router.get('/:id', async (req, res) => {
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && block.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && block.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -211,7 +211,7 @@ router.post('/', [
     const { store_id } = req.body;
 
     // Check store ownership
-    const hasAccess = await checkStoreOwnership(store_id, req.user.email, req.user.role);
+    const hasAccess = await checkStoreOwnership(store_id, req.user.id, req.user.role);
     if (!hasAccess) {
       return res.status(403).json({
         success: false,
@@ -253,7 +253,7 @@ router.put('/:id', [
     const block = await CmsBlock.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -265,7 +265,7 @@ router.put('/:id', [
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && block.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && block.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -296,7 +296,7 @@ router.delete('/:id', async (req, res) => {
     const block = await CmsBlock.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -308,7 +308,7 @@ router.delete('/:id', async (req, res) => {
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && block.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && block.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'

@@ -108,7 +108,7 @@ router.post('/', auth, [
       });
     }
 
-    if (req.user.role !== 'admin' && store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -178,7 +178,7 @@ router.put('/:id', auth, [
     }
 
     const productTab = await ProductTab.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['owner_email'] }]
+      include: [{ model: Store, attributes: ['user_id'] }]
     });
     
     if (!productTab) {
@@ -189,7 +189,7 @@ router.put('/:id', auth, [
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && productTab.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && productTab.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -218,7 +218,7 @@ router.put('/:id', auth, [
 router.delete('/:id', auth, async (req, res) => {
   try {
     const productTab = await ProductTab.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['owner_email'] }]
+      include: [{ model: Store, attributes: ['user_id'] }]
     });
     
     if (!productTab) {
@@ -229,7 +229,7 @@ router.delete('/:id', auth, async (req, res) => {
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && productTab.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && productTab.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'

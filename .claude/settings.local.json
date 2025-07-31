@@ -44,7 +44,8 @@
       "Bash(npm run db:query:*)",
       "Bash(npx sequelize-cli:*)",
       "Bash(taskkill:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(do echo \"Updating $file...\")"
     ],
     "deny": []
   }

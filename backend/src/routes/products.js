@@ -26,7 +26,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
     // Filter by store ownership
     if (req.user.role !== 'admin') {
       const userStores = await Store.findAll({
-        where: { owner_email: req.user.email },
+        where: { user_id: req.user.id },
         attributes: ['id']
       });
       const userStoreIds = userStores.map(store => store.id);
@@ -124,7 +124,7 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     const product = await Product.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -136,7 +136,7 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && product.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && product.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -224,7 +224,7 @@ router.put('/:id',
     const product = await Product.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -236,7 +236,7 @@ router.put('/:id',
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && product.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && product.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -267,7 +267,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     const product = await Product.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -279,7 +279,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && product.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && product.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'

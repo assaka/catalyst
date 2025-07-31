@@ -13,12 +13,7 @@ router.get('/', async (req, res) => {
     const where = {};
     if (req.user.role !== 'admin') {
       const userStores = await Store.findAll({
-        where: {
-          [Op.or]: [
-            { user_id: req.user.id },
-            { owner_email: req.user.email }
-          ]
-        },
+        where: { user_id: req.user.id },
         attributes: ['id']
       });
       const storeIds = userStores.map(store => store.id);
@@ -44,11 +39,11 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const deliverySettings = await DeliverySettings.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'owner_email'] }]
+      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
     });
     
     if (!deliverySettings) return res.status(404).json({ success: false, message: 'Delivery settings not found' });
-    if (req.user.role !== 'admin' && deliverySettings.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && deliverySettings.Store.user_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
@@ -93,11 +88,11 @@ router.put('/:id', checkResourceOwnership('DeliverySettings'), async (req, res) 
 router.delete('/:id', async (req, res) => {
   try {
     const deliverySettings = await DeliverySettings.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'owner_email'] }]
+      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
     });
     
     if (!deliverySettings) return res.status(404).json({ success: false, message: 'Delivery settings not found' });
-    if (req.user.role !== 'admin' && deliverySettings.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && deliverySettings.Store.user_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 

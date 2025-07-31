@@ -65,6 +65,44 @@ const migrations = [
         return false;
       }
     }
+  },
+  {
+    name: 'make-user-id-required-and-owner-email-optional',
+    up: async () => {
+      console.log('🔄 Running migration: make-user-id-required-and-owner-email-optional');
+      
+      try {
+        // Check if all stores have user_id populated
+        const [storesWithoutUserId] = await sequelize.query(`
+          SELECT COUNT(*) as count 
+          FROM stores 
+          WHERE user_id IS NULL
+        `);
+        
+        if (storesWithoutUserId[0].count > 0) {
+          console.log(`⚠️ Found ${storesWithoutUserId[0].count} stores without user_id - cannot make it required yet`);
+          return false;
+        }
+        
+        // Make user_id NOT NULL
+        await sequelize.query(`
+          ALTER TABLE stores 
+          ALTER COLUMN user_id SET NOT NULL
+        `);
+        
+        // Make owner_email nullable (since we no longer rely on it)
+        await sequelize.query(`
+          ALTER TABLE stores 
+          ALTER COLUMN owner_email DROP NOT NULL
+        `);
+        
+        console.log('✅ Made user_id required and owner_email optional');
+        return true;
+      } catch (error) {
+        console.error('❌ Migration failed:', error.message);
+        return false;
+      }
+    }
   }
 ];
 

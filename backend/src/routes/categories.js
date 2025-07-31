@@ -5,11 +5,11 @@ const { Op } = require('sequelize');
 const router = express.Router();
 
 // Helper function to check store ownership
-const checkStoreOwnership = async (storeId, userEmail, userRole) => {
+const checkStoreOwnership = async (storeId, userId, userRole) => {
   if (userRole === 'admin') return true;
   
   const store = await Store.findByPk(storeId);
-  return store && store.owner_email === userEmail;
+  return store && store.user_id === userId;
 };
 
 // @route   GET /api/categories
@@ -28,7 +28,7 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
     // Filter by store ownership
     if (req.user.role !== 'admin') {
       const userStores = await Store.findAll({
-        where: { owner_email: req.user.email },
+        where: { user_id: req.user.id },
         attributes: ['id']
       });
       const storeIds = userStores.map(store => store.id);
@@ -84,7 +84,7 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     const category = await Category.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -96,7 +96,7 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && category.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && category.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -135,7 +135,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
     const { store_id } = req.body;
 
     // Check store ownership
-    const hasAccess = await checkStoreOwnership(store_id, req.user.email, req.user.role);
+    const hasAccess = await checkStoreOwnership(store_id, req.user.id, req.user.role);
     if (!hasAccess) {
       return res.status(403).json({
         success: false,
@@ -177,7 +177,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
     const category = await Category.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -189,7 +189,7 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && category.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && category.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'
@@ -220,7 +220,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     const category = await Category.findByPk(req.params.id, {
       include: [{
         model: Store,
-        attributes: ['id', 'name', 'owner_email']
+        attributes: ['id', 'name', 'user_id']
       }]
     });
     
@@ -232,7 +232,7 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
     }
 
     // Check ownership
-    if (req.user.role !== 'admin' && category.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && category.Store.user_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied'

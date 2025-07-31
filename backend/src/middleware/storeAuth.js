@@ -2,13 +2,12 @@ const { Store } = require('../models');
 
 /**
  * Middleware to check if the authenticated user owns or has access to the store
- * Supports both user_id (preferred) and owner_email (legacy) ownership models
+ * Uses user_id-based ownership model only
  */
 const checkStoreOwnership = async (req, res, next) => {
   try {
     console.log('🔍 Store ownership check:', {
       user: req.user?.id,
-      email: req.user?.email,
       storeId: req.params.store_id || req.body?.store_id || req.query?.store_id
     });
 
@@ -34,21 +33,18 @@ const checkStoreOwnership = async (req, res, next) => {
       });
     }
 
-    // Check ownership using multiple methods
+    // Check ownership using user_id only
     const isOwnerByUserId = store.user_id && store.user_id === req.user.id;
-    const isOwnerByEmail = store.owner_email === req.user.email;
     
     // Future: Add workspace/team member check here
     // const isTeamMember = await checkTeamMembership(req.user.id, storeId);
     
-    const hasAccess = isOwnerByUserId || isOwnerByEmail; // || isTeamMember;
+    const hasAccess = isOwnerByUserId; // || isTeamMember;
 
     console.log('🔍 Ownership check result:', {
       storeId: store.id,
       storeUserId: store.user_id,
-      storeOwnerEmail: store.owner_email,
       userIdMatch: isOwnerByUserId,
-      emailMatch: isOwnerByEmail,
       hasAccess
     });
 
@@ -89,7 +85,7 @@ const checkResourceOwnership = (modelName) => {
       const resource = await Model.findByPk(resourceId, {
         include: [{
           model: Store,
-          attributes: ['id', 'user_id', 'owner_email']
+          attributes: ['id', 'user_id']
         }]
       });
 
@@ -104,9 +100,8 @@ const checkResourceOwnership = (modelName) => {
       const store = resource.Store;
       if (store) {
         const isOwnerByUserId = store.user_id && store.user_id === req.user.id;
-        const isOwnerByEmail = store.owner_email === req.user.email;
         
-        if (!isOwnerByUserId && !isOwnerByEmail) {
+        if (!isOwnerByUserId) {
           console.log(`❌ User does not own the store for this ${modelName}`);
           return res.status(403).json({
             success: false,

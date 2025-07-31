@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
     const where = {};
     if (req.user.role !== 'admin') {
       const userStores = await Store.findAll({
-        where: { owner_email: req.user.email },
+        where: { user_id: req.user.id },
         attributes: ['id']
       });
       const storeIds = userStores.map(store => store.id);
@@ -38,11 +38,11 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const shippingMethod = await ShippingMethod.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'owner_email'] }]
+      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
     });
     
     if (!shippingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
-    if (req.user.role !== 'admin' && shippingMethod.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && shippingMethod.Store.user_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
@@ -58,7 +58,7 @@ router.post('/', async (req, res) => {
     const store = await Store.findByPk(store_id);
     
     if (!store) return res.status(404).json({ success: false, message: 'Store not found' });
-    if (req.user.role !== 'admin' && store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
@@ -72,11 +72,11 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const shippingMethod = await ShippingMethod.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'owner_email'] }]
+      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
     });
     
     if (!shippingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
-    if (req.user.role !== 'admin' && shippingMethod.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && shippingMethod.Store.user_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
@@ -90,11 +90,11 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const shippingMethod = await ShippingMethod.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'owner_email'] }]
+      include: [{ model: Store, attributes: ['id', 'name', 'user_id'] }]
     });
     
     if (!shippingMethod) return res.status(404).json({ success: false, message: 'Shipping method not found' });
-    if (req.user.role !== 'admin' && shippingMethod.Store.owner_email !== req.user.email) {
+    if (req.user.role !== 'admin' && shippingMethod.Store.user_id !== req.user.id) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
