@@ -93,6 +93,7 @@ class ApiClient {
         console.warn('⚠️ AUTHENTICATION ISSUE: Have token but missing user data. This will cause 403 errors.');
         console.warn('💡 SOLUTION: Need to re-login to refresh both token and user data.');
       }
+      
     }
     
     if (isAdminContext && storeOwnerToken) {
@@ -225,6 +226,29 @@ class ApiClient {
         hasAuth: !!headers.Authorization,
         authPreview: headers.Authorization ? headers.Authorization.substring(0, 20) + '...' : 'None'
       });
+      
+      // Additional role check for sensitive endpoints
+      const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
+      let userData = null;
+      try {
+        userData = storeOwnerUserData ? JSON.parse(storeOwnerUserData) : null;
+      } catch (e) {
+        console.warn('Failed to parse user data for role check:', e);
+      }
+      
+      if (userData) {
+        console.log('🔐 User Role Check:', {
+          userRole: userData?.role,
+          accountType: userData?.account_type,
+          userId: userData?.id,
+          userName: userData?.name || userData?.email,
+          hasStoreOwnerRole: userData?.role === 'store_owner',
+          hasAgencyAccount: userData?.account_type === 'agency',
+          shouldHaveAccess: userData?.role === 'store_owner' || userData?.account_type === 'agency'
+        });
+      } else {
+        console.warn('🚨 No user data found for role validation on sensitive endpoint');
+      }
     }
 
     const config = {
