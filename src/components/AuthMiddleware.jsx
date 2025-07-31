@@ -119,9 +119,10 @@ window.testAuthFlow = async () => {
   }
 };
 
-// Helper function to create a complete authenticated session
+// Helper function to create a complete authenticated session (NOTE: Creates mock token - backend will reject)
 window.createAuthSession = () => {
   console.log('🔧 Creating authenticated session...');
+  console.log('⚠️ WARNING: This creates a MOCK token that the backend will reject!');
   
   // Clear logout state completely
   localStorage.removeItem('user_logged_out');
@@ -151,6 +152,32 @@ window.createAuthSession = () => {
   
   // Reload to trigger auth check
   console.log('🔄 Reloading page to trigger authentication check...');
+  window.location.reload();
+};
+
+// Helper function to clear all authentication data
+window.clearAllAuth = () => {
+  console.log('🔧 Clearing all authentication data...');
+  
+  // Clear all possible auth-related keys
+  const authKeys = [
+    'user_logged_out',
+    'store_owner_auth_token',
+    'store_owner_user_data', 
+    'customer_auth_token',
+    'customer_user_data',
+    'guest_session_id'
+  ];
+  
+  authKeys.forEach(key => {
+    localStorage.removeItem(key);
+  });
+  
+  apiClient.setToken(null);
+  apiClient.isLoggedOut = false;
+  
+  console.log('✅ All authentication data cleared');
+  console.log('Remaining localStorage keys:', Object.keys(localStorage));
   window.location.reload();
 };
 
@@ -271,6 +298,23 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       }
     } catch (error) {
       console.log('🔍 Auth check error:', error);
+      console.log('🔍 Error message:', error.message);
+      
+      // If token is invalid, clear it automatically
+      if (error.message && (error.message.includes('Invalid token') || error.message.includes('Unauthorized'))) {
+        console.log('🔧 Invalid token detected, clearing authentication data...');
+        
+        // Clear tokens for the current role
+        const tokenKey = role === 'customer' ? 'customer_auth_token' : 'store_owner_auth_token';
+        const userDataKey = role === 'customer' ? 'customer_user_data' : 'store_owner_user_data';
+        
+        localStorage.removeItem(tokenKey);
+        localStorage.removeItem(userDataKey);
+        apiClient.setToken(null);
+        
+        console.log('✅ Invalid authentication data cleared');
+      }
+      
       console.log('🔍 User not authenticated, staying on auth page');
     }
   };
