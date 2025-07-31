@@ -10,7 +10,7 @@ async function getUserStoresForDropdown(userId) {
   try {
     console.log(`🔍 Getting accessible stores for user ID: ${userId}`);
     
-    // Get owned stores + team stores where user has editor+ permissions
+    // BULLETPROOF: Simple query with clear logic
     const query = `
       SELECT DISTINCT
           s.id,
@@ -18,20 +18,34 @@ async function getUserStoresForDropdown(userId) {
           s.logo_url,
           CASE 
             WHEN s.user_id = :userId THEN 'owner'
-            WHEN st.role IS NOT NULL THEN st.role
-            ELSE 'viewer'
+            ELSE (
+              SELECT st.role 
+              FROM store_teams st 
+              WHERE st.store_id = s.id 
+                AND st.user_id = :userId 
+                AND st.status = 'active' 
+                AND st.is_active = true 
+                AND st.role IN ('admin', 'editor')
+              LIMIT 1
+            )
           END as access_role,
           (s.user_id = :userId) as is_direct_owner
       FROM stores s
-      LEFT JOIN store_teams st ON s.id = st.store_id 
-          AND st.user_id = :userId 
-          AND st.status = 'active' 
-          AND st.is_active = true
-          AND st.role IN ('admin', 'editor')
       WHERE s.is_active = true 
         AND (
-          s.user_id = :userId 
-          OR (st.user_id = :userId AND st.role IN ('admin', 'editor'))
+          -- Case 1: User owns the store
+          s.user_id = :userId
+          OR
+          -- Case 2: User is editor/admin team member
+          EXISTS (
+            SELECT 1 
+            FROM store_teams st 
+            WHERE st.store_id = s.id 
+              AND st.user_id = :userId 
+              AND st.status = 'active' 
+              AND st.is_active = true
+              AND st.role IN ('admin', 'editor')
+          )
         )
       ORDER BY s.name ASC
     `;
