@@ -195,6 +195,32 @@ function _getCurrentPage(url) {
         urlLastPart = urlLastPart.split('?')[0];
     }
 
+    // Handle new admin URL structure (/admin/product-tabs -> ProductTabs)
+    const urlToPageMapping = {
+        'product-tabs': 'ProductTabs',
+        'product-labels': 'ProductLabels', 
+        'custom-option-rules': 'CustomOptionRules',
+        'shipping-methods': 'ShippingMethods',
+        'payment-methods': 'PaymentMethods',
+        'delivery-settings': 'DeliverySettings',
+        'cms-blocks': 'CmsBlocks',
+        'cms-pages': 'CmsPages',
+        'cookie-consent': 'CookieConsent',
+        'customer-activity': 'CustomerActivity',
+        'marketplace-export': 'MarketplaceExport',
+        'seo-tools': 'SeoTools',
+        'theme-layout': 'ThemeLayout',
+        'image-manager': 'ImageManager',
+        'stock-settings': 'StockSettings',
+        'google-tag-manager': 'GoogleTagManager'
+    };
+
+    // First try direct mapping for admin URLs
+    if (urlToPageMapping[urlLastPart]) {
+        return urlToPageMapping[urlLastPart];
+    }
+
+    // Then try original logic for backward compatibility
     const pageName = Object.keys(PAGES).find(page => page.toLowerCase() === urlLastPart.toLowerCase());
     return pageName || Object.keys(PAGES)[0];
 }
