@@ -34,22 +34,41 @@ export const StoreSelectionProvider = ({ children }) => {
       loadStores();
     };
 
+    const handleUserDataReady = () => {
+      // User data is now available, reload stores
+      console.log('StoreSelection: User data ready, reloading stores...');
+      loadStores();
+    };
+
     window.addEventListener('userLoggedOut', handleLogout);
     window.addEventListener('storeSelectionChanged', handleStoreSelectionChanged);
+    window.addEventListener('userDataReady', handleUserDataReady);
     
     return () => {
       window.removeEventListener('userLoggedOut', handleLogout);
       window.removeEventListener('storeSelectionChanged', handleStoreSelectionChanged);
+      window.removeEventListener('userDataReady', handleUserDataReady);
     };
   }, []);
 
   const loadStores = async () => {
     try {
       setLoading(true);
+      
+      // Ensure user data is available before loading stores
+      const userToken = localStorage.getItem('store_owner_auth_token');
+      const userData = localStorage.getItem('store_owner_user_data');
+      
+      if (!userToken || !userData) {
+        console.log('StoreSelection: Waiting for user authentication...');
+        // Short delay to allow login process to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      
       const stores = await Store.findAll();
       const storesArray = Array.isArray(stores) ? stores : [];
       
-      
+      console.log(`StoreSelection: Loaded ${storesArray.length} stores for user`);
       setAvailableStores(storesArray);
       
       // Auto-select first store if only one exists, or load from localStorage

@@ -151,6 +151,13 @@ class AuthService {
       }
     }
     
+    // Notify components that user data is ready
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('userDataReady', { 
+        detail: { timestamp: Date.now() } 
+      }));
+    }, 100);
+    
     return result;
   }
 
