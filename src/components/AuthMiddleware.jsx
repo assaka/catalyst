@@ -22,6 +22,36 @@ window.debugAuth = () => {
   });
   console.log('Logout flag:', localStorage.getItem('user_logged_out'));
   console.log('Current URL:', window.location.href);
+  console.log('All localStorage keys:', Object.keys(localStorage));
+};
+
+// Helper function to clear logout state and retry authentication
+window.clearLogoutState = () => {
+  console.log('🔧 Clearing logout state...');
+  localStorage.removeItem('user_logged_out');
+  apiClient.isLoggedOut = false;
+  console.log('✅ Logout state cleared. Reload the page to retry authentication.');
+  window.location.reload();
+};
+
+// Helper function to simulate a login (for testing)
+window.simulateStoreOwnerLogin = (email = 'test@example.com') => {
+  console.log('🔧 Simulating store owner login...');
+  const mockToken = 'mock_store_owner_token_' + Date.now();
+  const mockUser = {
+    id: 1,
+    email: email,
+    role: 'store_owner',
+    first_name: 'Test',
+    last_name: 'Owner'
+  };
+  
+  localStorage.setItem('store_owner_auth_token', mockToken);
+  localStorage.setItem('store_owner_user_data', JSON.stringify(mockUser));
+  localStorage.removeItem('user_logged_out');
+  
+  console.log('✅ Mock store owner login created. Reload the page.');
+  window.location.reload();
 };
 
 export default function AuthMiddleware({ role = 'store_owner' }) {
