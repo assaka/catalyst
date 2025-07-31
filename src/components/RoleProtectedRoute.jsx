@@ -118,8 +118,18 @@ const RoleProtectedRoute = ({
 
       // Verify with backend that user still exists and is active
       try {
+        console.log('🔍 RoleProtectedRoute: Verifying user with backend...');
+        console.log('🔍 RoleProtectedRoute: Current user data:', currentUser);
+        console.log('🔍 RoleProtectedRoute: Available tokens:', {
+          storeOwner: !!localStorage.getItem('store_owner_auth_token'),
+          customer: !!localStorage.getItem('customer_auth_token')
+        });
+        
         const user = await User.me();
+        console.log('🔍 RoleProtectedRoute: Backend user verification result:', user);
+        
         if (!user) {
+          console.log('❌ RoleProtectedRoute: Backend returned null user, redirecting to auth');
           redirectToAuth(currentUser.role);
           return;
         }
@@ -134,9 +144,31 @@ const RoleProtectedRoute = ({
           }
         }
 
+        console.log('✅ RoleProtectedRoute: User verified successfully, granting access');
         setIsAuthorized(true);
       } catch (error) {
-        console.error('Error verifying user:', error);
+        console.error('❌ RoleProtectedRoute: Error verifying user:', error);
+        console.log('🔍 RoleProtectedRoute: Error details:', {
+          message: error.message,
+          status: error.status,
+          name: error.name
+        });
+        
+        // Check if it's an invalid token error
+        if (error.message && (error.message.includes('Invalid token') || error.message.includes('Unauthorized'))) {
+          console.log('🔧 RoleProtectedRoute: Invalid token detected, clearing auth data');
+          
+          // Clear the invalid token
+          if (currentUser?.role === 'customer') {
+            localStorage.removeItem('customer_auth_token');
+            localStorage.removeItem('customer_user_data');
+          } else {
+            localStorage.removeItem('store_owner_auth_token');
+            localStorage.removeItem('store_owner_user_data');
+          }
+        }
+        
+        console.log('🔄 RoleProtectedRoute: Redirecting to auth due to verification error');
         redirectToAuth(currentUser.role);
         return;
       }

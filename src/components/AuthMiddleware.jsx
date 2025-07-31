@@ -302,6 +302,37 @@ window.testLogin = async (email, password) => {
   }
 };
 
+// Helper function to test dashboard access after login
+window.testDashboardAccess = async () => {
+  console.log('🔧 Testing dashboard access...');
+  
+  console.log('🔍 Current auth state:');
+  debugAuth();
+  
+  console.log('🔍 Testing User.me() API call...');
+  try {
+    const { User } = await import('../api/entities.js');
+    const user = await User.me();
+    console.log('✅ User.me() successful:', user);
+    
+    if (user && (user.role === 'store_owner' || user.role === 'admin')) {
+      console.log('✅ User has correct role for dashboard access');
+      console.log('🔍 Attempting navigation to dashboard...');
+      window.location.href = '/dashboard';
+    } else {
+      console.log('❌ User role incorrect for dashboard:', user?.role);
+    }
+    
+  } catch (error) {
+    console.error('❌ User.me() failed:', error);
+    console.log('🔍 This is likely why dashboard is redirecting to auth');
+    
+    if (error.message && error.message.includes('Invalid token')) {
+      console.log('🔧 Invalid token - run clearAllAuth() and login again');
+    }
+  }
+};
+
 export default function AuthMiddleware({ role = 'store_owner' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
