@@ -1,5 +1,6 @@
 import apiClient from './client';
 import { shouldUsePublicAPI, hasAccessToEndpoint } from './endpointAccess';
+import { setRoleBasedAuthData } from '../utils/auth';
 
 // Base Entity class for common CRUD operations
 class BaseEntity {
@@ -111,14 +112,29 @@ class AuthService {
     const response = await apiClient.post(endpoint, { email, password, rememberMe, role });
     console.log("🔧 Auth.login - Raw response:", response);
     
+    let token = null;
     if (response.data && response.data.token) {
-      apiClient.setToken(response.data.token);
+      token = response.data.token;
+      apiClient.setToken(token);
     } else if (response.token) {
-      apiClient.setToken(response.token);
+      token = response.token;
+      apiClient.setToken(token);
     }
     
     const result = response.data || response;
     console.log("🔧 Auth.login - Processed result:", result);
+    
+    // CRITICAL FIX: Store user data if we have both token and user info
+    if (token && result.user) {
+      console.log('🔧 CRITICAL FIX: Storing user data immediately after login for role:', result.user.role);
+      setRoleBasedAuthData(result.user, token);
+      console.log('✅ User data stored successfully in login');
+    } else if (token && result.id) {
+      // Handle case where user data is at root level
+      console.log('🔧 CRITICAL FIX: Storing user data (root level) for role:', result.role);
+      setRoleBasedAuthData(result, token);
+      console.log('✅ User data stored successfully in login (root level)');
+    }
     
     return result;
   }
@@ -133,15 +149,30 @@ class AuthService {
     const response = await apiClient.post(endpoint, userData);
     console.log("🔧 Auth.register - Raw response:", response);
     
+    let token = null;
     if (response.data && response.data.token) {
-      apiClient.setToken(response.data.token);
+      token = response.data.token;
+      apiClient.setToken(token);
     } else if (response.token) {
-      apiClient.setToken(response.token);
+      token = response.token;
+      apiClient.setToken(token);
     }
     
     // Return the full response to maintain compatibility
     const result = response.data || response;
     console.log("🔧 Auth.register - Processed result:", result);
+    
+    // CRITICAL FIX: Store user data if we have both token and user info
+    if (token && result.user) {
+      console.log('🔧 CRITICAL FIX: Storing user data after registration for role:', result.user.role);
+      setRoleBasedAuthData(result.user, token);
+      console.log('✅ User data stored successfully in registration');
+    } else if (token && result.id) {
+      // Handle case where user data is at root level
+      console.log('🔧 CRITICAL FIX: Storing user data (root level) after registration for role:', result.role);
+      setRoleBasedAuthData(result, token);
+      console.log('✅ User data stored successfully in registration (root level)');
+    }
     
     return result;
   }

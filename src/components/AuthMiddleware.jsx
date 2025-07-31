@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { createPageUrl, createStoreUrl, getStoreSlugFromUrl } from "@/utils";
 import { createAdminUrl, createPublicUrl, getStoreSlugFromPublicUrl } from "@/utils/urlUtils";
+import { setRoleBasedAuthData } from "@/utils/auth";
 import { Auth as AuthService, User } from "@/api/entities";
 import apiClient from "@/api/client";
 import StoreOwnerAuthLayout from "./StoreOwnerAuthLayout";
@@ -416,6 +417,14 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
       if (!user) {
         console.log('🔍 No user data returned, staying on auth page');
         return;
+      }
+      
+      // CRITICAL FIX: Store user data in localStorage
+      const currentToken = apiClient.getToken();
+      if (currentToken && user) {
+        console.log('🔧 CRITICAL FIX: Storing user data in localStorage for role:', user.role);
+        setRoleBasedAuthData(user, currentToken);
+        console.log('✅ User data stored successfully');
       }
       
       console.log('🔍 User role:', user.role, 'Expected role:', role);
