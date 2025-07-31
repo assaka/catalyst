@@ -52,35 +52,13 @@ async function getUserStoresForDropdown(userId) {
 
   } catch (error) {
     console.error('❌ Error fetching stores for dropdown:', error);
+    console.error('❌ MAIN QUERY FAILED - this should not happen!');
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error stack:', error.stack);
     
-    // Fallback to owned stores only if team query fails
-    try {
-      console.log('🔄 Falling back to owned stores only...');
-      const fallbackQuery = `
-        SELECT 
-            s.id,
-            s.name,
-            s.logo_url,
-            'owner' as access_role,
-            true as is_direct_owner
-        FROM stores s
-        WHERE s.is_active = true 
-          AND s.user_id = :userId
-        ORDER BY s.name ASC
-      `;
-
-      const ownedStores = await sequelize.query(fallbackQuery, {
-        replacements: { userId: userId },
-        type: QueryTypes.SELECT
-      });
-
-      console.log(`✅ Fallback: Returning ${ownedStores.length} owned stores for user ${userId}`);
-      return ownedStores;
-
-    } catch (fallbackError) {
-      console.error('❌ Fallback query also failed:', fallbackError);
-      return [];
-    }
+    // DO NOT use fallback - return empty to identify the issue
+    console.log('🚨 RETURNING EMPTY ARRAY TO IDENTIFY MAIN QUERY ISSUE');
+    return [];
   }
 }
 
