@@ -223,6 +223,41 @@ window.checkStoreOwnership = async () => {
   }
 };
 
+// Helper function to switch to a store you actually own
+window.switchToOwnedStore = async () => {
+  console.log('=== SWITCHING TO OWNED STORE ===');
+  const { Store, User } = await import('@/api/entities');
+  
+  try {
+    const user = await User.me();
+    const stores = await Store.getUserStores();
+    
+    // Find stores where owner_email matches
+    const ownedStores = stores.filter(s => s.owner_email === user.email);
+    
+    console.log(`Found ${ownedStores.length} stores you own:`);
+    ownedStores.forEach(s => {
+      console.log(`- ${s.name} (${s.id})`);
+    });
+    
+    if (ownedStores.length > 0) {
+      const firstOwned = ownedStores[0];
+      console.log(`\nSwitching to: ${firstOwned.name}`);
+      
+      // Update localStorage
+      localStorage.setItem('selectedStoreId', firstOwned.id);
+      console.log('✅ Store switched successfully!');
+      console.log('🔄 Please reload the page to apply changes');
+      
+      return firstOwned;
+    } else {
+      console.log('❌ No stores found with your email as owner');
+    }
+  } catch (error) {
+    console.error('Error switching store:', error);
+  }
+};
+
 // Helper function to fix store ownership
 window.fixStoreOwnership = async () => {
   console.log('=== FIXING STORE OWNERSHIP ===');
@@ -242,18 +277,24 @@ window.fixStoreOwnership = async () => {
     console.log(`Store ID: ${store.id}`);
     console.log(`Your User ID: ${user.id}`);
     
-    // Try to update the store with user_id
+    // Try to update the store's owner_email
     try {
+      console.log(`Current owner_email: ${store.owner_email}`);
+      console.log(`Your email: ${user.email}`);
+      
+      if (store.owner_email === user.email) {
+        console.log('✅ Already owns this store!');
+        return;
+      }
+      
       const updateData = {
-        user_id: user.id,
-        owner_id: user.id,
         owner_email: user.email
       };
       
-      console.log('Attempting update with:', updateData);
+      console.log('Attempting to claim ownership by updating owner_email...');
       
       const updated = await Store.update(store.id, updateData);
-      console.log('✅ Store update successful:', updated);
+      console.log('✅ Store ownership claimed successfully:', updated);
       
       // Verify the update
       const verifyStores = await Store.getUserStores();
