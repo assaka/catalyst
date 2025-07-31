@@ -430,7 +430,7 @@ router.post('/', authorize(['admin', 'store_owner']), [
     console.log('Store creation request received:', req.body);
     console.log('User info from JWT:', { 
       id: req.user.id,
-      email: req.user.id, 
+      email: req.user.email, 
       role: req.user.role,
       fullUserObject: req.user
     });
@@ -468,9 +468,9 @@ router.post('/', authorize(['admin', 'store_owner']), [
     }
 
     console.log('Final store data to create:', storeData);
-    console.log('User email from JWT:', req.user.id);
-    console.log('User email type:', typeof req.user.id);
-    console.log('User email length:', req.user.id?.length);
+    console.log('User ID from JWT:', req.user.id);
+    console.log('User email from JWT:', req.user.email);
+    console.log('User ID type:', typeof req.user.id);
     
     // Verify the user exists in the database before creating store
     console.log('🔍 Verifying user exists before store creation...');
@@ -493,14 +493,14 @@ router.post('/', authorize(['admin', 'store_owner']), [
       
       // Try Sequelize User.findOne first
       console.log('🔍 Trying UserModel.findOne...');
-      const existingUser = await UserModel.findOne({ where: { email: req.user.id } });
+      const existingUser = await UserModel.findOne({ where: { id: req.user.id } });
       
       if (!existingUser) {
         console.error('❌ User not found via Sequelize User.findOne');
         
         // Try direct SQL query as fallback with detailed debugging
         console.log('🔍 Trying direct SQL query...');
-        console.log('Query email parameter:', JSON.stringify(req.user.id));
+        console.log('Query user ID parameter:', JSON.stringify(req.user.id));
         
         // First, let's check if we can connect and see what tables exist
         console.log('🔍 Testing database connection...');
@@ -530,13 +530,13 @@ router.post('/', authorize(['admin', 'store_owner']), [
         console.log('🔍 Listing all users for comparison...');
         try {
           const allUsers = await sequelize.query(
-            'SELECT email, LENGTH(email) as email_length FROM users ORDER BY created_at DESC LIMIT 5',
+            'SELECT id, email FROM users ORDER BY created_at DESC LIMIT 5',
             { type: sequelize.QueryTypes.SELECT }
           );
           console.log('All users in database:');
           allUsers.forEach((user, index) => {
-            console.log(`${index + 1}. "${user.email}" (length: ${user.email_length})`);
-            console.log(`   Match check: "${user.email}" === "${req.user.id}" = ${user.email === req.user.id}`);
+            console.log(`${index + 1}. ID: "${user.id}", Email: "${user.email}"`);
+            console.log(`   ID Match check: "${user.id}" === "${req.user.id}" = ${user.id === req.user.id}`);
           });
         } catch (listError) {
           console.error('❌ List users query failed:', listError.message);
@@ -544,9 +544,9 @@ router.post('/', authorize(['admin', 'store_owner']), [
         
         // Now try the specific query with detailed logging
         const directResults = await sequelize.query(
-          'SELECT id, email, role FROM users WHERE email = :email',
+          'SELECT id, email, role FROM users WHERE id = :id',
           { 
-            replacements: { email: req.user.id },
+            replacements: { id: req.user.id },
             type: sequelize.QueryTypes.SELECT
           }
         );
@@ -558,41 +558,23 @@ router.post('/', authorize(['admin', 'store_owner']), [
           console.log('✅ User found via direct SQL:', directResults[0]);
           // Continue with store creation since user exists
         } else {
-          console.error('❌ User not found in database with email:', req.user.id);
-          
-          // Try case-insensitive search as last resort
-          console.log('🔍 Trying case-insensitive search...');
-          const caseInsensitiveResults = await sequelize.query(
-            'SELECT id, email, role FROM users WHERE LOWER(email) = LOWER(:email)',
-            { 
-              replacements: { email: req.user.id },
-              type: sequelize.QueryTypes.SELECT
+          console.error('❌ User not found in database with ID:', req.user.id);
+          return res.status(400).json({
+            success: false,
+            message: 'User not found. Please log in again.',
+            debug: {
+              userId: req.user.id,
+              userIdType: typeof req.user.id,
+              sequelizeResult: 'not found',
+              directSqlResult: 'not found'
             }
-          );
-          
-          if (caseInsensitiveResults.length > 0) {
-            console.log('✅ User found via case-insensitive search:', caseInsensitiveResults[0]);
-            // Continue with store creation
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: 'User not found. Please log in again.',
-              debug: {
-                userEmail: req.user.id,
-                userEmailType: typeof req.user.id,
-                sequelizeResult: 'not found',
-                directSqlResult: 'not found',
-                caseInsensitiveResult: 'not found',
-                totalUsersInDb: 'check logs'
-              }
-            });
-          }
+          });
         }
       } else {
         console.log('✅ User found in database via Sequelize:', {
           id: existingUser.id,
           email: existingUser.email,
-          emailMatch: existingUser.email === req.user.id
+          idMatch: existingUser.id === req.user.id
         });
       }
     } catch (userCheckError) {
