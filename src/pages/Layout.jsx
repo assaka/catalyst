@@ -255,16 +255,12 @@ export default function Layout({ children, currentPageName }) {
         hasProperAdminRole: user && (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner')
       });
       
-      if (!isLoading && (!user || (user.account_type !== 'agency' && user.role !== 'admin' && user.role !== 'store_owner'))) {
-          // Determine redirect destination based on user role
-          if (user && user.role === 'customer') {
-            console.log(`🔄 Layout.jsx: Customer user redirecting to customer dashboard`);
-            navigate(createPageUrl("CustomerDashboard"));
-          } else {
-            // For unauthenticated users or non-admin users, redirect to admin auth
-            console.log(`🔄 Layout.jsx: User lacks admin access, redirecting ${user?.role || 'no-user'} to admin auth`);
-            navigate(createAdminUrl('ADMIN_AUTH'));
-          }
+      // Use token-only validation for admin access like RoleProtectedRoute
+      const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
+      
+      if (!isLoading && !hasStoreOwnerToken) {
+          console.log(`🔄 Layout.jsx: No store owner token found, redirecting to admin auth`);
+          navigate(createAdminUrl('ADMIN_AUTH'));
           return (
               <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
                   <p className="text-lg text-gray-700 mb-4">Redirecting...</p>
