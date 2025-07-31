@@ -62,8 +62,7 @@ INSERT INTO store_teams (
     permissions, 
     is_active, 
     created_at, 
-    updated_at,
-    invited_by_user_id
+    updated_at
 )
 SELECT 
     s.id as store_id,
@@ -82,8 +81,7 @@ SELECT
     ) as permissions,
     true as is_active,
     NOW() as created_at,
-    NOW() as updated_at,
-    (SELECT id FROM users WHERE email = 'info@itomoti.com') as invited_by_user_id
+    NOW() as updated_at
 FROM stores s, users u
 WHERE s.name = 'Hamid' 
   AND u.email = 'playamin998@gmail.com';

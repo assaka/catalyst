@@ -6,7 +6,14 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: true
+    allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'https://catalyst-backend-fzhu.onrender.com',
+        changeOrigin: true,
+        secure: true
+      }
+    }
   },
   resolve: {
     alias: {

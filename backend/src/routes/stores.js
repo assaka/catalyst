@@ -418,31 +418,21 @@ async function privateStoreAccess(req, res) {
 // @access  Private
 router.get('/dropdown', authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    if (req.user.role === 'admin') {
-      // Admin can see all active stores
-      const stores = await Store.findAll({
-        where: { is_active: true },
-        attributes: ['id', 'name', 'logo_url'],
-        order: [['name', 'ASC']]
-      }).then(stores => stores.map(store => ({
-        ...store.toJSON(),
-        access_role: 'admin',
-        is_direct_owner: false
-      })));
+    console.log(`🔍 Dropdown request from user: ${req.user.email} (role: ${req.user.role})`);
+    
+    // ALL USERS (including admins) should only see stores they have access to
+    // This prevents unauthorized access to stores
+    const stores = await getUserStoresForDropdown(req.user.id);
+    
+    console.log(`📊 Returning ${stores.length} stores for user ${req.user.email}`);
+    stores.forEach(store => {
+      console.log(`   - ${store.name} (${store.access_role})`);
+    });
 
-      res.json({
-        success: true,
-        data: stores
-      });
-    } else {
-      // Regular users see only accessible stores
-      const stores = await getUserStoresForDropdown(req.user.id);
-
-      res.json({
-        success: true,
-        data: stores
-      });
-    }
+    res.json({
+      success: true,
+      data: stores
+    });
   } catch (error) {
     console.error('Get stores dropdown error:', error);
     res.status(500).json({

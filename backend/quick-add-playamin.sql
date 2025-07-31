@@ -1,0 +1,2 @@
+-- One-line command to add playamin998@gmail.com as EDITOR to Hamid store only
+INSERT INTO store_teams (store_id, user_id, role, status, permissions) SELECT s.id, u.id, 'editor', 'active', '{"canManageProducts": true, "canManageOrders": true, "canManageCategories": true, "canViewReports": true, "canManageContent": true, "canManageTeam": false}'::jsonb FROM stores s, users u WHERE s.name = 'Hamid' AND u.email = 'playamin998@gmail.com' ON CONFLICT (store_id, user_id) DO UPDATE SET role = 'editor', status = 'active';
