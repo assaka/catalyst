@@ -136,6 +136,63 @@ window.checkTokenData = () => {
   }
 };
 
+// Helper function to check delivery settings ownership
+window.checkDeliveryOwnership = async () => {
+  console.log('=== DELIVERY SETTINGS OWNERSHIP CHECK ===');
+  const { DeliverySettings, Store } = await import('@/api/entities');
+  
+  try {
+    // Get current user's stores
+    const stores = await Store.getUserStores();
+    console.log('Your stores:', stores.map(s => ({ id: s.id, name: s.name })));
+    
+    if (stores.length === 0) {
+      console.log('❌ You have no stores');
+      return;
+    }
+    
+    // Check delivery settings for each store
+    for (const store of stores) {
+      console.log(`\nChecking delivery settings for store: ${store.name} (${store.id})`);
+      
+      try {
+        const settings = await DeliverySettings.filter({ store_id: store.id });
+        
+        if (settings && settings.length > 0) {
+          console.log(`✅ Found ${settings.length} delivery settings:`);
+          settings.forEach(s => {
+            console.log(`  - ID: ${s.id}`);
+            console.log(`    Store ID: ${s.store_id}`);
+            console.log(`    Matches your store: ${s.store_id === store.id ? 'YES ✅' : 'NO ❌'}`);
+          });
+        } else {
+          console.log('⚠️ No delivery settings found for this store');
+          console.log('💡 You need to create new delivery settings');
+        }
+      } catch (error) {
+        console.log(`❌ Error fetching settings: ${error.message}`);
+      }
+    }
+    
+    // Check the specific problematic ID
+    console.log('\n=== CHECKING PROBLEMATIC DELIVERY SETTINGS ===');
+    console.log('ID: dc0d4518-cbd1-4cb7-9238-10ac381f5fac');
+    
+    try {
+      const problematicSettings = await DeliverySettings.findById('dc0d4518-cbd1-4cb7-9238-10ac381f5fac');
+      console.log('Settings found:', problematicSettings);
+      console.log('Store ID in settings:', problematicSettings?.store_id);
+      console.log('Your store IDs:', stores.map(s => s.id));
+      console.log('Do you own this?', stores.some(s => s.id === problematicSettings?.store_id) ? 'YES ✅' : 'NO ❌');
+    } catch (error) {
+      console.log('Error fetching problematic settings:', error.message);
+    }
+    
+  } catch (error) {
+    console.error('Error in ownership check:', error);
+  }
+};
+
 // Helper function to test different API endpoints and methods
 window.testApiMethods = async () => {
   console.log('=== API METHOD TEST ===');
