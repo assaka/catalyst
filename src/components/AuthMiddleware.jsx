@@ -160,8 +160,22 @@ window.checkStoreOwnership = async () => {
         console.log(`\nStore: ${store.name}`);
         console.log(`  ID: ${store.id}`);
         console.log(`  Owner ID: ${store.user_id || store.owner_id || 'Not specified'}`);
+        console.log(`  Owner Email: ${store.owner_email || 'Not specified'}`);
         console.log(`  Created At: ${store.createdAt}`);
+        
+        // Check all possible owner fields
+        const ownerFields = {
+          user_id: store.user_id,
+          owner_id: store.owner_id,
+          owner_email: store.owner_email,
+          created_by: store.created_by,
+          userId: store.userId,
+          ownerId: store.ownerId
+        };
+        
+        console.log('  Owner Fields:', ownerFields);
         console.log(`  Is Owner Match: ${store.user_id === user.id || store.owner_id === user.id ? '✅ YES' : '❌ NO'}`);
+        console.log(`  Email Match: ${store.owner_email === user.email ? '✅ YES' : '❌ NO'}`);
         
         // Check all store properties
         console.log('  All Store Properties:', Object.keys(store));
@@ -206,6 +220,64 @@ window.checkStoreOwnership = async () => {
     
   } catch (error) {
     console.error('Error in ownership check:', error);
+  }
+};
+
+// Helper function to fix store ownership
+window.fixStoreOwnership = async () => {
+  console.log('=== FIXING STORE OWNERSHIP ===');
+  const { Store, User } = await import('@/api/entities');
+  
+  try {
+    const user = await User.me();
+    const stores = await Store.getUserStores();
+    
+    if (stores.length === 0) {
+      console.log('❌ No stores found');
+      return;
+    }
+    
+    const store = stores[0];
+    console.log(`\n🏪 Attempting to fix ownership for store: ${store.name}`);
+    console.log(`Store ID: ${store.id}`);
+    console.log(`Your User ID: ${user.id}`);
+    
+    // Try to update the store with user_id
+    try {
+      const updateData = {
+        user_id: user.id,
+        owner_id: user.id,
+        owner_email: user.email
+      };
+      
+      console.log('Attempting update with:', updateData);
+      
+      const updated = await Store.update(store.id, updateData);
+      console.log('✅ Store update successful:', updated);
+      
+      // Verify the update
+      const verifyStores = await Store.getUserStores();
+      const verifyStore = verifyStores.find(s => s.id === store.id);
+      console.log('\nVerification:', {
+        user_id: verifyStore?.user_id,
+        owner_id: verifyStore?.owner_id,
+        owner_email: verifyStore?.owner_email
+      });
+      
+    } catch (error) {
+      console.log('❌ Store update failed:', error.message, error.status);
+      
+      if (error.status === 403) {
+        console.log('\n💡 IMPORTANT: The backend is preventing store ownership updates.');
+        console.log('This needs to be fixed in the backend by:');
+        console.log('1. Adding user_id/owner_id field to stores table');
+        console.log('2. Updating the authorization logic to check ownership');
+        console.log('3. Or manually updating the database to link your user to the store');
+      }
+    }
+    
+  } catch (error) {
+    console.error('Error fixing ownership:', error);
   }
 };
 
