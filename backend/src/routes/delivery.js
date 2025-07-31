@@ -2,6 +2,7 @@ const express = require('express');
 const { DeliverySettings, Store } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
+const { checkStoreOwnership, checkResourceOwnership } = require('../middleware/storeAuth');
 
 // Basic CRUD operations for delivery settings
 router.get('/', async (req, res) => {
@@ -12,7 +13,12 @@ router.get('/', async (req, res) => {
     const where = {};
     if (req.user.role !== 'admin') {
       const userStores = await Store.findAll({
-        where: { owner_email: req.user.email },
+        where: {
+          [Op.or]: [
+            { user_id: req.user.id },
+            { owner_email: req.user.email }
+          ]
+        },
         attributes: ['id']
       });
       const storeIds = userStores.map(store => store.id);
@@ -52,15 +58,10 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', checkStoreOwnership, async (req, res) => {
   try {
     const { store_id } = req.body;
-    const store = await Store.findByPk(store_id);
-    
-    if (!store) return res.status(404).json({ success: false, message: 'Store not found' });
-    if (req.user.role !== 'admin' && store.owner_email !== req.user.email) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
-    }
+    // Store ownership already verified by middleware
 
     console.log('🔄 Creating delivery settings:', req.body);
     const deliverySettings = await DeliverySettings.create(req.body);
@@ -73,16 +74,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', checkResourceOwnership('DeliverySettings'), async (req, res) => {
   try {
-    const deliverySettings = await DeliverySettings.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'name', 'owner_email'] }]
-    });
-    
-    if (!deliverySettings) return res.status(404).json({ success: false, message: 'Delivery settings not found' });
-    if (req.user.role !== 'admin' && deliverySettings.Store.owner_email !== req.user.email) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
-    }
+    const deliverySettings = req.resource; // Resource is attached by middleware
 
     console.log('🔄 Updating delivery settings:', req.params.id, req.body);
     await deliverySettings.update(req.body);

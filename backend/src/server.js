@@ -19,6 +19,10 @@ const authMiddleware = require('./middleware/auth');
 const models = require('./models');
 console.log('🔧 Models loaded with associations initialized');
 
+// Import and start automatic migrations
+require('./database/auto-migrations');
+console.log('🔄 Automatic migrations scheduled');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
