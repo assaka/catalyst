@@ -181,6 +181,50 @@ window.clearAllAuth = () => {
   window.location.reload();
 };
 
+// Helper function to test Google OAuth endpoint directly
+window.testGoogleAuth = async () => {
+  console.log('🔧 Testing Google OAuth endpoint...');
+  
+  const googleAuthUrl = `${apiClient.baseURL}/api/auth/google`;
+  console.log('🔍 Testing URL:', googleAuthUrl);
+  
+  try {
+    // Test with a simple fetch to see what happens
+    const response = await fetch(googleAuthUrl, {
+      method: 'GET',
+      credentials: 'include',
+      redirect: 'manual' // Don't follow redirects automatically
+    });
+    
+    console.log('🔍 Response status:', response.status);
+    console.log('🔍 Response type:', response.type);
+    console.log('🔍 Response headers:', [...response.headers.entries()]);
+    
+    if (response.status === 0) {
+      console.log('⚠️ Status 0 - possible CORS or redirect');
+    } else if (response.status >= 200 && response.status < 400) {
+      console.log('✅ Endpoint appears to be working');
+    } else {
+      console.log('❌ Endpoint returned error status');
+    }
+    
+    // If there's a location header, it means we got a redirect
+    const location = response.headers.get('location');
+    if (location) {
+      console.log('🔍 Redirect location:', location);
+      if (location.includes('accounts.google.com')) {
+        console.log('✅ Google OAuth redirect detected - authentication is configured!');
+      }
+    }
+    
+  } catch (error) {
+    console.error('🔍 Error testing Google auth endpoint:', error);
+    console.log('🔍 This might be normal for CORS-protected endpoints');
+  }
+  
+  console.log('🔍 If you want to test the actual redirect, click the Google login button');
+};
+
 export default function AuthMiddleware({ role = 'store_owner' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -527,6 +571,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
     console.log('🔍 Google auth initiated');
     console.log('🔍 API Base URL:', apiClient.baseURL);
     console.log('🔍 Full Google auth URL:', `${apiClient.baseURL}/api/auth/google`);
+    console.log('🔍 Current URL before redirect:', window.location.href);
     
     setLoading(true);
     setError("");
@@ -534,18 +579,37 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
     const googleAuthUrl = `${apiClient.baseURL}/api/auth/google`;
     console.log('🔍 Redirecting to:', googleAuthUrl);
     
+    // Test if the URL is accessible
+    fetch(googleAuthUrl, { method: 'HEAD', mode: 'no-cors' })
+      .then(() => {
+        console.log('🔍 Google auth endpoint appears accessible');
+      })
+      .catch(error => {
+        console.log('🔍 Google auth endpoint test failed:', error);
+      });
+    
     // Add a timeout to check if redirect fails
     const redirectTimeout = setTimeout(() => {
-      setError("Google authentication is not configured. Please use email/password login or contact the administrator.");
+      console.log('🔍 Google auth redirect timeout - checking what happened');
+      console.log('🔍 Current URL after timeout:', window.location.href);
+      setError("Google authentication redirect failed. The service may not be configured properly.");
       setLoading(false);
     }, 5000);
     
     // Clear timeout if page unloads (successful redirect)
     window.addEventListener('beforeunload', () => {
+      console.log('🔍 Page unloading - Google auth redirect started');
       clearTimeout(redirectTimeout);
     });
     
-    window.location.href = googleAuthUrl;
+    try {
+      console.log('🔍 Attempting redirect to Google auth...');
+      window.location.href = googleAuthUrl;
+    } catch (error) {
+      console.error('🔍 Error during redirect:', error);
+      setError("Failed to redirect to Google authentication.");
+      setLoading(false);
+    }
   };
 
   // Render appropriate layout based on role
