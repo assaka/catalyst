@@ -282,81 +282,110 @@ async function checkUserStoreAccess(userId, storeId) {
 
 /**
  * Get stores for dropdown/selection (simplified data)
- * Only shows stores where user has Editor+ permissions (owner, admin, editor)
+ * Shows owner stores + team stores with Editor+ permissions (admin, editor)
  * @param {string} userId - User ID to check access for
  * @returns {Promise<Array>} Array of stores with minimal data for dropdowns
  */
 async function getUserStoresForDropdown(userId) {
-  const replacements = { user_id: userId };
-
-  const query = `
-    SELECT DISTINCT
-        s.id,
-        s.name,
-        s.logo_url,
-        CASE 
-            WHEN s.user_id = :user_id THEN 'owner'
-            WHEN st.role IS NOT NULL THEN st.role
-            ELSE NULL
-        END as access_role,
-        CASE 
-            WHEN s.user_id = :user_id THEN true
-            ELSE false
-        END as is_direct_owner
-    FROM stores s
-    LEFT JOIN store_teams st ON (
-        s.id = st.store_id 
-        AND st.user_id = :user_id 
-        AND st.status = 'active' 
-        AND st.is_active = true
-    )
-    WHERE 
-        s.is_active = true
-        AND (
-            -- User is direct owner
-            s.user_id = :user_id
-            OR 
-            -- User is active team member with Editor+ permissions (admin, editor)
-            -- Exclude 'viewer' role from dropdown
-            (st.user_id = :user_id AND st.status = 'active' AND st.is_active = true 
-             AND st.role IN ('admin', 'editor'))
-        )
-    ORDER BY 
-        -- Direct ownership first, then by store name
-        CASE WHEN s.user_id = :user_id THEN 0 ELSE 1 END,
-        s.name ASC
-  `;
-
   try {
-    const stores = await sequelize.query(query, {
-      replacements,
+    // First, get owned stores (always included)
+    const ownedStoresQuery = `
+      SELECT DISTINCT
+          s.id,
+          s.name,
+          s.logo_url,
+          'owner' as access_role,
+          true as is_direct_owner
+      FROM stores s
+      WHERE s.is_active = true AND s.user_id = $1
+      ORDER BY s.name ASC
+    `;
+
+    const ownedStores = await sequelize.query(ownedStoresQuery, {
+      replacements: [userId],
       type: QueryTypes.SELECT
     });
 
-    return stores;
+    console.log(`📊 Found ${ownedStores.length} owned stores for user ${userId}`);
+
+    // Try to get team stores with Editor+ permissions
+    let teamStores = [];
+    try {
+      const teamStoresQuery = `
+        SELECT DISTINCT
+            s.id,
+            s.name,
+            s.logo_url,
+            st.role as access_role,
+            false as is_direct_owner
+        FROM stores s
+        INNER JOIN store_teams st ON (
+            s.id = st.store_id 
+            AND st.user_id = $1 
+            AND st.status = 'active' 
+            AND st.is_active = true
+            AND st.role IN ('admin', 'editor')
+        )
+        WHERE s.is_active = true
+        ORDER BY s.name ASC
+      `;
+
+      teamStores = await sequelize.query(teamStoresQuery, {
+        replacements: [userId],
+        type: QueryTypes.SELECT
+      });
+
+      console.log(`👥 Found ${teamStores.length} team stores for user ${userId}`);
+    } catch (teamError) {
+      console.log('⚠️ Could not fetch team stores (table may not exist):', teamError.message);
+    }
+
+    // Combine and deduplicate stores
+    const allStores = [...ownedStores];
+    
+    // Add team stores that aren't already owned
+    teamStores.forEach(teamStore => {
+      if (!ownedStores.some(owned => owned.id === teamStore.id)) {
+        allStores.push(teamStore);
+      }
+    });
+
+    // Sort: owned stores first, then team stores, then by name
+    allStores.sort((a, b) => {
+      if (a.is_direct_owner && !b.is_direct_owner) return -1;
+      if (!a.is_direct_owner && b.is_direct_owner) return 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    console.log(`✅ Returning ${allStores.length} total accessible stores for dropdown`);
+    return allStores;
+
   } catch (error) {
     console.error('❌ Error fetching stores for dropdown:', error);
     
-    // If store_teams table doesn't exist yet, fall back to owner-only dropdown
-    if (error.message.includes('does not exist') || error.message.includes('store_teams')) {
-      console.log('⚠️ store_teams table not found, falling back to owner-only dropdown');
+    // Ultimate fallback - just return owned stores
+    try {
       const fallbackQuery = `
         SELECT DISTINCT
             s.id, s.name, s.logo_url,
             'owner' as access_role,
             true as is_direct_owner
         FROM stores s
-        WHERE s.is_active = true AND s.user_id = :user_id
+        WHERE s.is_active = true AND s.user_id = $1
         ORDER BY s.name ASC
       `;
       
-      return await sequelize.query(fallbackQuery, {
-        replacements,
+      const fallbackStores = await sequelize.query(fallbackQuery, {
+        replacements: [userId],
         type: QueryTypes.SELECT
       });
+      
+      console.log(`🔄 Fallback: returning ${fallbackStores.length} owned stores only`);
+      return fallbackStores;
+    } catch (fallbackError) {
+      console.error('❌ Even fallback failed:', fallbackError);
+      return [];
     }
-    
-    throw error;
   }
 }
 
