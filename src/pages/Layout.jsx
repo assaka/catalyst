@@ -347,65 +347,65 @@ export default function Layout({ children, currentPageName }) {
     {
       name: "Catalog",
       items: [
-        { name: "Categories", path: "Categories", icon: Tag },
-        { name: "Products", path: "Products", icon: Package },
-        { name: "Image Manager", path: "ImageManager", icon: Camera },
-        { name: "Attributes", path: "Attributes", icon: SettingsIcon },
-        { name: "Custom Options", path: "CustomOptionRules", icon: Plus },
-        { name: "Product Tabs", path: "ProductTabs", icon: Package },
-        { name: "Product Labels", path: "ProductLabels", icon: Tag },
-        { name: "Stock Settings", path: "StockSettings", icon: BarChart3 },
+        { name: "Categories", path: "CATEGORIES", icon: Tag },
+        { name: "Products", path: "PRODUCTS", icon: Package },
+        { name: "Image Manager", path: "IMAGE_MANAGER", icon: Camera },
+        { name: "Attributes", path: "ATTRIBUTES", icon: SettingsIcon },
+        { name: "Custom Options", path: "CUSTOM_OPTION_RULES", icon: Plus },
+        { name: "Product Tabs", path: "PRODUCT_TABS", icon: Package },
+        { name: "Product Labels", path: "PRODUCT_LABELS", icon: Tag },
+        { name: "Stock Settings", path: "STOCK_SETTINGS", icon: BarChart3 },
       ]
     },
     {
       name: "Sales",
       items: [
-        { name: "Orders", path: "Orders", icon: Receipt },
-        { name: "Customers", path: "Customers", icon: Users },
-        { name: "Tax", path: "Tax", icon: Receipt },
-        { name: "Shipping Methods", path: "ShippingMethods", icon: Truck },
-        { name: "Payment Methods", path: "PaymentMethods", icon: CreditCard },
-        { name: "Coupons", path: "Coupons", icon: Tag },
-        { name: "Delivery Settings", path: "DeliverySettings", icon: Calendar },
+        { name: "Orders", path: "ORDERS", icon: Receipt },
+        { name: "Customers", path: "CUSTOMERS", icon: Users },
+        { name: "Tax", path: "TAX", icon: Receipt },
+        { name: "Shipping Methods", path: "SHIPPING_METHODS", icon: Truck },
+        { name: "Payment Methods", path: "PAYMENT_METHODS", icon: CreditCard },
+        { name: "Coupons", path: "COUPONS", icon: Tag },
+        { name: "Delivery Settings", path: "DELIVERY_SETTINGS", icon: Calendar },
       ]
     },
     {
       name: "Content",
       items: [
-        { name: "CMS Blocks", path: "CmsBlocks", icon: FileText },
-        { name: "CMS Pages", path: "CmsPages", icon: FileText },
+        { name: "CMS Blocks", path: "CMS_BLOCKS", icon: FileText },
+        { name: "CMS Pages", path: "CMS_PAGES", icon: FileText },
       ]
     },
     {
       name: "Marketing",
       items: [
-        { name: "Cookie Consent", path: "CookieConsent", icon: Shield },
-        { name: "Analytics", path: "AnalyticsSettings", icon: BarChart3 },
-        { name: "Marketplace Export", path: "MarketplaceExport", icon: Upload },
-        { name: "Customer Activity", path: "CustomerActivity", icon: BarChart3 },
+        { name: "Cookie Consent", path: "COOKIE_CONSENT", icon: Shield },
+        { name: "Analytics", path: "ANALYTICS", icon: BarChart3 },
+        { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
+        { name: "Customer Activity", path: "CUSTOMER_ACTIVITY", icon: BarChart3 },
       ]
     },
     {
       name: "SEO",
       items: [
-        { name: "Settings", path: "SeoTools?tab=settings", icon: SettingsIcon },
-        { name: "Templates", path: "SeoTools?tab=templates", icon: FileText },
-        { name: "Redirects", path: "SeoTools?tab=redirects", icon: RefreshCw },
-        { name: "Canonical", path: "SeoTools?tab=canonical", icon: LinkIcon },
-        { name: "Hreflang", path: "SeoTools?tab=hreflang", icon: Globe },
-        { name: "Robots", path: "SeoTools?tab=robots", icon: Bot },
-        { name: "Social & Schema", path: "SeoTools?tab=social", icon: Share2 },
-        { name: "Report", path: "SeoTools?tab=report", icon: BarChart3 },
+        { name: "Settings", path: "SEO_TOOLS?tab=settings", icon: SettingsIcon },
+        { name: "Templates", path: "SEO_TOOLS?tab=templates", icon: FileText },
+        { name: "Redirects", path: "SEO_TOOLS?tab=redirects", icon: RefreshCw },
+        { name: "Canonical", path: "SEO_TOOLS?tab=canonical", icon: LinkIcon },
+        { name: "Hreflang", path: "SEO_TOOLS?tab=hreflang", icon: Globe },
+        { name: "Robots", path: "SEO_TOOLS?tab=robots", icon: Bot },
+        { name: "Social & Schema", path: "SEO_TOOLS?tab=social", icon: Share2 },
+        { name: "Report", path: "SEO_TOOLS?tab=report", icon: BarChart3 },
       ]
     },
     {
       name: "Store",
       items: [
-        { name: "Settings", path: "Settings", icon: SettingsIcon },
-        { name: "Theme & Layout", path: "ThemeLayout", icon: Palette },
-        { name: "Plugins", path: "Plugins", icon: Puzzle },
+        { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
+        { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
+        { name: "Plugins", path: "PLUGINS", icon: Puzzle },
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
-          { name: "Stores", path: "Stores", icon: Building2 },
+          { name: "Stores", path: "STORES", icon: Building2 },
         ] : []),
       ]
     }

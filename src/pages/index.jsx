@@ -491,6 +491,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/cookie-consent" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CookieConsent />
+                    </RoleProtectedRoute>
+                } />
+                
                 {/* =========================== */}
                 {/* PUBLIC CONTENT ROUTES */}
                 {/* =========================== */}
@@ -710,6 +716,12 @@ function PagesContent() {
                 <Route path="/admin/customer-activity" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <CustomerActivity />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/cookie-consent" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CookieConsent />
                     </RoleProtectedRoute>
                 } />
                 
