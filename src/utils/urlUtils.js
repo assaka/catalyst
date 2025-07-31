@@ -91,12 +91,7 @@ export const URL_CONFIG = {
 export function createAdminUrl(pageName, params = {}) {
   const slug = URL_CONFIG.PAGES[pageName.toUpperCase()] || pageName.toLowerCase();
   
-  // Special handling for auth and dashboard - use root paths instead of /admin/ prefix
-  if (pageName.toUpperCase() === 'ADMIN_AUTH' || pageName.toUpperCase() === 'DASHBOARD') {
-    const baseUrl = `/${slug}`;
-    return addUrlParams(baseUrl, params);
-  }
-  
+  // All admin URLs now use the /admin prefix consistently
   const baseUrl = `${URL_CONFIG.ADMIN_PREFIX}/${slug}`;
   return addUrlParams(baseUrl, params);
 }

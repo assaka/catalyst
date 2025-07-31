@@ -231,16 +231,18 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/auth" element={
+                <Route path="/admin/auth" element={
                     <RoleProtectedRoute requiresAuth={false}>
                         <Auth />
                     </RoleProtectedRoute>
                 } />
                 
-                {/* Handle common typo /ad/auth -> /auth */}
-                <Route path="/ad/auth" element={<Navigate to="/auth" replace />} />
+                {/* Handle legacy URLs - redirect to new admin URLs */}
+                <Route path="/auth" element={<Navigate to="/admin/auth" replace />} />
+                <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="/ad/auth" element={<Navigate to="/admin/auth" replace />} />
                 
-                <Route path="/dashboard" element={
+                <Route path="/admin/dashboard" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Dashboard />
                     </RoleProtectedRoute>
@@ -534,16 +536,18 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/auth" element={
+                <Route path="/admin/auth" element={
                     <RoleProtectedRoute requiresAuth={false}>
                         <Auth />
                     </RoleProtectedRoute>
                 } />
                 
-                {/* Handle common typo /ad/auth -> /auth */}
-                <Route path="/ad/auth" element={<Navigate to="/auth" replace />} />
+                {/* Handle legacy URLs - redirect to new admin URLs */}
+                <Route path="/auth" element={<Navigate to="/admin/auth" replace />} />
+                <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
+                <Route path="/ad/auth" element={<Navigate to="/admin/auth" replace />} />
                 
-                <Route path="/dashboard" element={
+                <Route path="/admin/dashboard" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Dashboard />
                     </RoleProtectedRoute>

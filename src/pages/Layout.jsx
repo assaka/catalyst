@@ -581,11 +581,11 @@ export default function Layout({ children, currentPageName }) {
                         await Auth.logout();
                         // Add a small delay to ensure all cleanup is complete
                         setTimeout(() => {
-                            window.location.href = '/auth';
+                            window.location.href = '/admin/auth';
                         }, 100);
                     } catch (error) {
                         console.error('❌ Mobile logout error:', error);
-                        window.location.href = '/auth';
+                        window.location.href = '/admin/auth';
                     }
                 }}>
                     <LogOut className="mr-2 h-4 w-4" />
@@ -746,7 +746,7 @@ export default function Layout({ children, currentPageName }) {
                         
                         
                         setTimeout(() => {
-                          window.location.href = '/auth';
+                          window.location.href = '/admin/auth';
                         }, 2000);
                         
                       } catch (error) {

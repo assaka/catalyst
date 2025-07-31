@@ -70,7 +70,7 @@ export const handleLogoutWithNavigate = async (navigate) => {
       window.location.reload();
     } else {
       // For admin users, navigate to new admin login URL
-      navigate('/admin/login');
+      navigate('/admin/auth');
     }
     
   } catch (error) {
@@ -85,7 +85,7 @@ export const handleLogoutWithNavigate = async (navigate) => {
       window.location.reload();
     } else {
       // For admin users, navigate to new admin login URL
-      navigate('/admin/login');
+      navigate('/admin/auth');
     }
   }
 };

@@ -2,7 +2,9 @@
 
 
 export function createPageUrl(pageName: string) {
-    return '/' + pageName.toLowerCase().replace(/ /g, '-');
+    // Use /admin prefix for admin pages
+    const page = pageName.toLowerCase().replace(/ /g, '-');
+    return `/admin/${page}`;
 }
 
 // Create store-aware URLs for storefront pages

@@ -319,7 +319,7 @@ export default function ClientDashboard() {
             try {
               await Auth.logout();
               setTimeout(() => {
-                window.location.href = '/auth';
+                window.location.href = '/admin/auth';
               }, 100);
             } catch (error) {
               window.location.href = '/auth';
