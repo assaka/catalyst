@@ -27,14 +27,14 @@ export const useRoleProtection = (shouldApply = true) => {
         const isStorefrontContext = storefrontPages.some(page => currentPath.startsWith(page)) || storeSlugPattern;
         
         const dashboardPages = [
-          '/dashboard', '/products', '/categories', '/settings', '/attributes', 
-          '/plugins', '/cmsblocks', '/tax', '/orders', '/coupons', '/cmspages', 
-          '/producttabs', '/productlabels', '/customoptionrules', '/shippingmethods', 
-          '/googletagmanager', '/deliverysettings', '/themelayout', '/marketplaceexport', 
-          '/imagemanager', '/htmlsitemap', '/customers', '/stocksettings', 
-          '/analyticssettings', '/paymentmethods', '/seotools', '/xmlsitemap', 
-          '/robotstxt', '/onboarding', '/billing', '/clientdashboard', '/stores', 
-          '/ordercancel', '/customeractivity', '/cookieconsent'
+          '/admin/dashboard', '/admin/products', '/admin/categories', '/admin/settings', '/admin/attributes', 
+          '/admin/plugins', '/admin/cms-blocks', '/admin/tax', '/admin/orders', '/admin/coupons', '/admin/cms-pages', 
+          '/admin/product-tabs', '/admin/product-labels', '/admin/custom-option-rules', '/admin/shipping-methods', 
+          '/admin/google-tag-manager', '/admin/delivery-settings', '/admin/theme-layout', '/admin/marketplace-export', 
+          '/admin/image-manager', '/admin/customers', '/admin/stock-settings', 
+          '/admin/analytics', '/admin/payment-methods', '/admin/seo-tools', 
+          '/onboarding', '/billing', '/client-dashboard', '/admin/stores', 
+          '/admin/customer-activity', '/admin/cookie-consent'
         ];
         
         const isDashboardContext = dashboardPages.some(page => currentPath.startsWith(page));
@@ -76,14 +76,14 @@ export const useRoleProtection = (shouldApply = true) => {
         // Determine context for error handling too
         const currentPath = location.pathname.toLowerCase();
         const dashboardPages = [
-          '/dashboard', '/products', '/categories', '/settings', '/attributes', 
-          '/plugins', '/cmsblocks', '/tax', '/orders', '/coupons', '/cmspages', 
-          '/producttabs', '/productlabels', '/customoptionrules', '/shippingmethods', 
-          '/googletagmanager', '/deliverysettings', '/themelayout', '/marketplaceexport', 
-          '/imagemanager', '/htmlsitemap', '/customers', '/stocksettings', 
-          '/analyticssettings', '/paymentmethods', '/seotools', '/xmlsitemap', 
-          '/robotstxt', '/onboarding', '/billing', '/clientdashboard', '/stores', 
-          '/ordercancel', '/customeractivity', '/cookieconsent'
+          '/admin/dashboard', '/admin/products', '/admin/categories', '/admin/settings', '/admin/attributes', 
+          '/admin/plugins', '/admin/cms-blocks', '/admin/tax', '/admin/orders', '/admin/coupons', '/admin/cms-pages', 
+          '/admin/product-tabs', '/admin/product-labels', '/admin/custom-option-rules', '/admin/shipping-methods', 
+          '/admin/google-tag-manager', '/admin/delivery-settings', '/admin/theme-layout', '/admin/marketplace-export', 
+          '/admin/image-manager', '/admin/customers', '/admin/stock-settings', 
+          '/admin/analytics', '/admin/payment-methods', '/admin/seo-tools', 
+          '/onboarding', '/billing', '/client-dashboard', '/admin/stores', 
+          '/admin/customer-activity', '/admin/cookie-consent'
         ];
         const isDashboardContext = dashboardPages.some(page => currentPath.startsWith(page));
         
