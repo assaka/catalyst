@@ -3,7 +3,8 @@
 
 export function createPageUrl(pageName: string) {
     // Use /admin prefix for admin pages
-    const page = pageName.toLowerCase().replace(/ /g, '-');
+    // Convert to lowercase and replace both spaces and underscores with dashes
+    const page = pageName.toLowerCase().replace(/[ _]/g, '-');
     return `/admin/${page}`;
 }
 

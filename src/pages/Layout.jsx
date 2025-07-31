@@ -664,7 +664,7 @@ export default function Layout({ children, currentPageName }) {
                     return (
                       <Link
                         key={item.name}
-                        to={createPageUrl(item.path)}
+                        to={createAdminUrl(item.path)}
                         className={itemClass}
                         onClick={() => setSidebarOpen(false)}
                       >
