@@ -250,6 +250,58 @@ window.testDirectGoogleAuth = () => {
   }
 };
 
+// Helper function to test the login flow with actual credentials
+window.testLogin = async (email, password) => {
+  console.log('🔧 Testing login flow...');
+  console.log('🔍 Email:', email);
+  console.log('🔍 Role: store_owner');
+  
+  try {
+    // Clear any existing invalid tokens first
+    clearAllAuth();
+    
+    // Wait a moment for cleanup
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Test the login API directly
+    const response = await fetch(`${apiClient.baseURL}/api/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        password: password,
+        role: 'store_owner',
+        rememberMe: false
+      })
+    });
+    
+    const data = await response.json();
+    console.log('🔍 Login API response:', data);
+    console.log('🔍 Response status:', response.status);
+    
+    if (response.ok && (data.token || data.data?.token)) {
+      const token = data.token || data.data.token;
+      console.log('✅ Login successful, token received');
+      
+      // Store the token
+      localStorage.setItem('store_owner_auth_token', token);
+      if (data.user || data.data?.user) {
+        localStorage.setItem('store_owner_user_data', JSON.stringify(data.user || data.data.user));
+      }
+      
+      console.log('🔍 Reloading page to test authentication flow...');
+      window.location.reload();
+    } else {
+      console.error('❌ Login failed:', data);
+    }
+    
+  } catch (error) {
+    console.error('❌ Login test error:', error);
+  }
+};
+
 export default function AuthMiddleware({ role = 'store_owner' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -425,6 +477,8 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
 
     try {
       if (isLogin) {
+        console.log('🔍 Starting login process...', { email: formData.email, role });
+        
         const response = await AuthService.login(
           formData.email, 
           formData.password, 
@@ -501,20 +555,34 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             
             // For store owners, verify role before navigating
             try {
+              console.log('🔍 Verifying user role before redirect...');
               const user = await User.me();
+              console.log('🔍 User verification result:', user);
               
               if (user && user.role === 'customer') {
+                console.log('❌ Customer tried to login as store owner');
                 setError("Invalid credentials. Customers should use the customer login page.");
                 await AuthService.logout();
                 localStorage.removeItem(tokenKey);
                 return;
               }
               
-              navigate(createAdminUrl("DASHBOARD"));
+              if (user && (user.role === 'store_owner' || user.role === 'admin')) {
+                console.log('✅ User role verified, navigating to dashboard...');
+                const dashboardUrl = createAdminUrl("DASHBOARD");
+                console.log('🔍 Dashboard URL:', dashboardUrl);
+                navigate(dashboardUrl);
+              } else {
+                console.log('⚠️ Unexpected user role or no user data');
+                setError("Authentication successful but user role verification failed.");
+              }
             } catch (error) {
               // If verification fails, still navigate to dashboard
               console.error('Role verification failed:', error);
-              navigate(createAdminUrl("DASHBOARD"));
+              console.log('🔍 Attempting navigation despite verification failure...');
+              const dashboardUrl = createAdminUrl("DASHBOARD");
+              console.log('🔍 Fallback dashboard URL:', dashboardUrl);
+              navigate(dashboardUrl);
             }
           }
         }
