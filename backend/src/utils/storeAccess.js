@@ -2,25 +2,37 @@ const { sequelize } = require('../database/connection');
 const { QueryTypes } = require('sequelize');
 
 /**
- * SIMPLE dropdown stores - only owned stores for now
+ * Get stores for dropdown - owned stores + team stores where user is editor+
  * @param {string} userId - User ID to check access for
  * @returns {Promise<Array>} Array of stores with minimal data for dropdowns
  */
 async function getUserStoresForDropdown(userId) {
   try {
-    console.log(`🔍 Getting owned stores for user ID: ${userId}`);
+    console.log(`🔍 Getting accessible stores for user ID: ${userId}`);
     
-    // ONLY owned stores - using Sequelize named replacements
+    // Get owned stores + team stores where user has editor+ permissions
     const query = `
-      SELECT 
+      SELECT DISTINCT
           s.id,
           s.name,
           s.logo_url,
-          'owner' as access_role,
-          true as is_direct_owner
+          CASE 
+            WHEN s.user_id = :userId THEN 'owner'
+            WHEN st.role IS NOT NULL THEN st.role
+            ELSE 'viewer'
+          END as access_role,
+          (s.user_id = :userId) as is_direct_owner
       FROM stores s
+      LEFT JOIN store_teams st ON s.id = st.store_id 
+          AND st.user_id = :userId 
+          AND st.status = 'active' 
+          AND st.is_active = true
+          AND st.role IN ('admin', 'editor')
       WHERE s.is_active = true 
-        AND s.user_id = :userId
+        AND (
+          s.user_id = :userId 
+          OR (st.user_id = :userId AND st.role IN ('admin', 'editor'))
+        )
       ORDER BY s.name ASC
     `;
 
@@ -29,24 +41,51 @@ async function getUserStoresForDropdown(userId) {
       type: QueryTypes.SELECT
     });
 
-    console.log(`✅ Returning ${stores.length} owned stores for user ${userId}`);
+    console.log(`✅ Returning ${stores.length} accessible stores for user ${userId}`);
     
     // Log each store for debugging
     stores.forEach(store => {
-      console.log(`   - ${store.name} (${store.access_role})`);
+      console.log(`   - ${store.name} (${store.access_role}, owner: ${store.is_direct_owner})`);
     });
 
     return stores;
 
   } catch (error) {
     console.error('❌ Error fetching stores for dropdown:', error);
-    console.error('Error details:', error);
-    return [];
+    
+    // Fallback to owned stores only if team query fails
+    try {
+      console.log('🔄 Falling back to owned stores only...');
+      const fallbackQuery = `
+        SELECT 
+            s.id,
+            s.name,
+            s.logo_url,
+            'owner' as access_role,
+            true as is_direct_owner
+        FROM stores s
+        WHERE s.is_active = true 
+          AND s.user_id = :userId
+        ORDER BY s.name ASC
+      `;
+
+      const ownedStores = await sequelize.query(fallbackQuery, {
+        replacements: { userId: userId },
+        type: QueryTypes.SELECT
+      });
+
+      console.log(`✅ Fallback: Returning ${ownedStores.length} owned stores for user ${userId}`);
+      return ownedStores;
+
+    } catch (fallbackError) {
+      console.error('❌ Fallback query also failed:', fallbackError);
+      return [];
+    }
   }
 }
 
 /**
- * SIMPLE store access check - only ownership
+ * Check store access - ownership OR team membership with editor+ permissions
  * @param {string} userId - User ID to check access for
  * @param {string} storeId - Store ID to check access to
  * @returns {Promise<object|null>} Store access info or null if no access
@@ -60,10 +99,25 @@ async function checkUserStoreAccess(userId, storeId) {
         s.id,
         s.name,
         s.user_id as owner_id,
-        'owner' as access_role,
-        true as is_direct_owner
+        CASE 
+          WHEN s.user_id = :userId THEN 'owner'
+          WHEN st.role IS NOT NULL THEN st.role
+          ELSE NULL
+        END as access_role,
+        (s.user_id = :userId) as is_direct_owner,
+        st.role as team_role,
+        st.status as team_status
       FROM stores s
-      WHERE s.id = :storeId AND s.user_id = :userId AND s.is_active = true
+      LEFT JOIN store_teams st ON s.id = st.store_id 
+          AND st.user_id = :userId 
+          AND st.status = 'active' 
+          AND st.is_active = true
+      WHERE s.id = :storeId 
+        AND s.is_active = true
+        AND (
+          s.user_id = :userId 
+          OR (st.user_id = :userId AND st.role IN ('admin', 'editor'))
+        )
     `;
     
     const result = await sequelize.query(query, {
@@ -73,6 +127,10 @@ async function checkUserStoreAccess(userId, storeId) {
 
     const hasAccess = result.length > 0;
     console.log(`✅ Access check result: ${hasAccess ? 'GRANTED' : 'DENIED'}`);
+    
+    if (hasAccess && result[0]) {
+      console.log(`   Role: ${result[0].access_role}, Owner: ${result[0].is_direct_owner}`);
+    }
     
     return hasAccess ? result[0] : null;
   } catch (error) {
