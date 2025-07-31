@@ -408,15 +408,20 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         loggedOut: localStorage.getItem('user_logged_out') 
       });
       
-      if (existingToken && localStorage.getItem('user_logged_out') !== 'true') {
+      if (existingToken) {
+        // Always clear logout flag when we have a token - important for post-login flow
+        if (localStorage.getItem('user_logged_out') === 'true') {
+          console.log('🔧 CRITICAL FIX: Clearing logout flag for existing token');
+          localStorage.removeItem('user_logged_out');
+          apiClient.isLoggedOut = false;
+        }
+        
         console.log('🔍 Found valid existing token, setting up...');
-        // Clear any logout flag and set token
-        localStorage.removeItem('user_logged_out');
         apiClient.setToken(existingToken);
         console.log('🔍 Token set in apiClient, calling checkAuthStatus...');
         checkAuthStatus();
       } else {
-        console.log('🔍 No valid existing token found or user is logged out');
+        console.log('🔍 No valid existing token found');
       }
     }
   }, [searchParams, role]);
@@ -612,6 +617,16 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
             
             apiClient.setToken(token);
             console.log('🔍 Set token in apiClient, isLoggedOut:', apiClient.isLoggedOut);
+            
+            // CRITICAL FIX: Store user data from login response
+            const userData = actualResponse.data?.user || actualResponse.user || actualResponse;
+            if (userData && userData.id) {
+              console.log('🔧 CRITICAL FIX: Storing user data from login response');
+              setRoleBasedAuthData(userData, token);
+              console.log('✅ User data stored from login response:', userData.role);
+            } else {
+              console.warn('⚠️ No user data found in login response, will fetch via User.me()');
+            }
             
             // For customers, navigate immediately without verification
             if (role === 'customer') {
