@@ -136,6 +136,62 @@ window.checkTokenData = () => {
   }
 };
 
+// Helper function to test different API endpoints and methods
+window.testApiMethods = async () => {
+  console.log('=== API METHOD TEST ===');
+  const { User, Store, Product } = await import('@/api/entities');
+  
+  const tests = [
+    {
+      name: 'User Profile Update (PUT)',
+      test: async () => {
+        try {
+          const user = await User.me();
+          if (user) {
+            const result = await User.updateProfile({ first_name: user.first_name });
+            return { success: true, result };
+          }
+          return { success: false, error: 'No user data' };
+        } catch (error) {
+          return { success: false, error: error.message };
+        }
+      }
+    },
+    {
+      name: 'Store List (GET)',
+      test: async () => {
+        try {
+          const stores = await Store.getUserStores();
+          return { success: true, count: stores.length };
+        } catch (error) {
+          return { success: false, error: error.message };
+        }
+      }
+    },
+    {
+      name: 'Product List (GET)',
+      test: async () => {
+        try {
+          const products = await Product.filter({ limit: 1 });
+          return { success: true, count: products.length };
+        } catch (error) {
+          return { success: false, error: error.message };
+        }
+      }
+    }
+  ];
+  
+  for (const test of tests) {
+    console.log(`Testing: ${test.name}`);
+    const result = await test.test();
+    console.log(`Result:`, result);
+  }
+  
+  console.log('\n=== SUMMARY ===');
+  console.log('If User Profile Update fails with 403, it\'s a general PUT/POST issue');
+  console.log('If only delivery endpoints fail, it\'s delivery-specific permissions');
+};
+
 // Helper function to manually fetch and store user data for current session
 window.fixUserData = async () => {
   console.log('🔧 Manually fetching and storing user data...');
