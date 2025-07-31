@@ -279,10 +279,16 @@ class StoreService extends BaseEntity {
     super('stores');
   }
 
-  // Get user's stores (authenticated)
+  // Get user's stores for dropdown/selection (authenticated) - only Editor+ permissions
   async getUserStores() {
-    const result = await this.findAll();
-    return Array.isArray(result) ? result : [];
+    try {
+      const response = await apiClient.get('stores/dropdown');
+      const result = Array.isArray(response) ? response : [];
+      return result;
+    } catch (error) {
+      console.error(`❌ StoreService.getUserStores() error:`, error.message);
+      return [];
+    }
   }
 
   // Public store access (no authentication required)
@@ -307,18 +313,26 @@ class StoreService extends BaseEntity {
     }
   }
 
-  // Public findAll (no authentication required)
+  // Get stores - uses dropdown endpoint for authenticated users (Editor+ only), public endpoint for others
   async findAll(params = {}) {
     try {
-      const queryString = new URLSearchParams(params).toString();
-      const url = queryString ? `stores?${queryString}` : 'stores';
+      const hasToken = apiClient.getToken();
       
-      const response = await apiClient.publicRequest('GET', url);
-      
-      // Ensure response is always an array
-      const result = Array.isArray(response) ? response : [];
-      
-      return result;
+      if (hasToken) {
+        // Authenticated users get dropdown with Editor+ permissions only
+        return this.getUserStores();
+      } else {
+        // Public users get all active stores
+        const queryString = new URLSearchParams(params).toString();
+        const url = queryString ? `stores?${queryString}` : 'stores';
+        
+        const response = await apiClient.publicRequest('GET', url);
+        
+        // Ensure response is always an array
+        const result = Array.isArray(response) ? response : [];
+        
+        return result;
+      }
     } catch (error) {
       console.error(`StoreService.findAll() error:`, error.message);
       return [];
@@ -549,6 +563,59 @@ class StorePluginEntity extends BaseEntity {
 }
 
 export const StorePlugin = new StorePluginEntity();
+
+// Team Management Service
+class StoreTeamService extends BaseEntity {
+  constructor() {
+    super('store-teams');
+  }
+
+  // Get team members for a store
+  async getTeamMembers(storeId) {
+    try {
+      const response = await apiClient.get(`${this.endpoint}/${storeId}`);
+      return response?.data || response || [];
+    } catch (error) {
+      console.error(`StoreTeamService.getTeamMembers() error:`, error.message);
+      return [];
+    }
+  }
+
+  // Invite a team member
+  async inviteMember(storeId, inviteData) {
+    try {
+      const response = await apiClient.post(`${this.endpoint}/${storeId}/invite`, inviteData);
+      return response;
+    } catch (error) {
+      console.error(`StoreTeamService.inviteMember() error:`, error.message);
+      throw error;
+    }
+  }
+
+  // Update team member
+  async updateMember(storeId, memberId, updateData) {
+    try {
+      const response = await apiClient.put(`${this.endpoint}/${storeId}/members/${memberId}`, updateData);
+      return response;
+    } catch (error) {
+      console.error(`StoreTeamService.updateMember() error:`, error.message);
+      throw error;
+    }
+  }
+
+  // Remove team member
+  async removeMember(storeId, memberId) {
+    try {
+      const response = await apiClient.delete(`${this.endpoint}/${storeId}/members/${memberId}`);
+      return response;
+    } catch (error) {
+      console.error(`StoreTeamService.removeMember() error:`, error.message);
+      throw error;
+    }
+  }
+}
+
+export const StoreTeam = new StoreTeamService();
 export const Language = new BaseEntity('languages');
 export const SeoTemplate = new BaseEntity('seo-templates');
 export const SeoSetting = new BaseEntity('seo-settings');

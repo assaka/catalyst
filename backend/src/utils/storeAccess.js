@@ -282,6 +282,7 @@ async function checkUserStoreAccess(userId, storeId) {
 
 /**
  * Get stores for dropdown/selection (simplified data)
+ * Only shows stores where user has Editor+ permissions (owner, admin, editor)
  * @param {string} userId - User ID to check access for
  * @returns {Promise<Array>} Array of stores with minimal data for dropdowns
  */
@@ -315,8 +316,10 @@ async function getUserStoresForDropdown(userId) {
             -- User is direct owner
             s.user_id = :user_id
             OR 
-            -- User is active team member
-            (st.user_id = :user_id AND st.status = 'active' AND st.is_active = true)
+            -- User is active team member with Editor+ permissions (admin, editor)
+            -- Exclude 'viewer' role from dropdown
+            (st.user_id = :user_id AND st.status = 'active' AND st.is_active = true 
+             AND st.role IN ('admin', 'editor'))
         )
     ORDER BY 
         -- Direct ownership first, then by store name
