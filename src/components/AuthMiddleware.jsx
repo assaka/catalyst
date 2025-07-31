@@ -66,6 +66,44 @@ window.simulateStoreOwnerLogin = (email = 'test@example.com') => {
   window.location.reload();
 };
 
+// Helper function to manually fetch and store user data for current session
+window.fixUserData = async () => {
+  console.log('🔧 Manually fetching and storing user data...');
+  
+  try {
+    const token = localStorage.getItem('store_owner_auth_token');
+    if (!token) {
+      console.error('❌ No store owner token found. Please login first.');
+      return;
+    }
+    
+    console.log('🔍 Found token, setting in API client...');
+    apiClient.setToken(token);
+    
+    console.log('🔍 Calling User.me()...');
+    const { User } = await import('@/api/entities');
+    const user = await User.me();
+    console.log('🔍 User.me() response:', user);
+    
+    if (user && user.id) {
+      console.log('🔧 Storing user data in localStorage...');
+      localStorage.setItem('store_owner_user_data', JSON.stringify(user));
+      console.log('✅ User data stored successfully:', user);
+      console.log('🔄 Reload the page to apply changes.');
+      window.location.reload();
+    } else {
+      console.error('❌ No valid user data returned from User.me()');
+      console.log('🔍 This might indicate an authentication issue');
+    }
+  } catch (error) {
+    console.error('❌ Error fetching user data:', error);
+    if (error.status === 401 || error.status === 403) {
+      console.log('🔍 Authentication error - token might be invalid');
+      console.log('💡 Try logging out and logging back in');
+    }
+  }
+};
+
 // Helper function to test navigation
 window.testNavigation = () => {
   console.log('🔧 Testing navigation to dashboard...');
