@@ -7,6 +7,23 @@ import apiClient from "@/api/client";
 import StoreOwnerAuthLayout from "./StoreOwnerAuthLayout";
 import CustomerAuthLayout from "./CustomerAuthLayout";
 
+// Helper function for debugging authentication status
+window.debugAuth = () => {
+  console.log('=== AUTH DEBUG INFO ===');
+  console.log('API Client isLoggedOut:', apiClient.isLoggedOut);
+  console.log('API Client token:', apiClient.getToken() ? 'Token exists' : 'No token');
+  console.log('Stored tokens:', {
+    storeOwner: localStorage.getItem('store_owner_auth_token') ? 'Exists' : 'Missing',
+    customer: localStorage.getItem('customer_auth_token') ? 'Exists' : 'Missing'
+  });
+  console.log('User data:', {
+    storeOwner: localStorage.getItem('store_owner_user_data') ? JSON.parse(localStorage.getItem('store_owner_user_data')) : null,
+    customer: localStorage.getItem('customer_user_data') ? JSON.parse(localStorage.getItem('customer_user_data')) : null
+  });
+  console.log('Logout flag:', localStorage.getItem('user_logged_out'));
+  console.log('Current URL:', window.location.href);
+};
+
 export default function AuthMiddleware({ role = 'store_owner' }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -15,14 +32,20 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
   const [success, setSuccess] = useState("");
 
   useEffect(() => {
+    console.log('🔍 AuthMiddleware useEffect triggered');
+    console.log('🔍 Current URL:', window.location.href);
+    console.log('🔍 Search params:', Object.fromEntries(searchParams.entries()));
+    
     const token = searchParams.get('token');
     const oauth = searchParams.get('oauth');
     const errorParam = searchParams.get('error');
 
     if (token && oauth === 'success') {
+      console.log('🔍 OAuth success with token, setting up...');
       apiClient.setToken(token);
       checkAuthStatus();
     } else if (errorParam) {
+      console.log('🔍 OAuth error detected:', errorParam);
       setError(getErrorMessage(errorParam));
     } else {
       // Check if user is already logged in based on role
@@ -33,6 +56,7 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         role, 
         tokenKey, 
         hasToken: !!existingToken, 
+        tokenLength: existingToken ? existingToken.length : 0,
         loggedOut: localStorage.getItem('user_logged_out') 
       });
       
@@ -41,9 +65,10 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         // Clear any logout flag and set token
         localStorage.removeItem('user_logged_out');
         apiClient.setToken(existingToken);
+        console.log('🔍 Token set in apiClient, calling checkAuthStatus...');
         checkAuthStatus();
       } else {
-        console.log('🔍 No valid existing token found');
+        console.log('🔍 No valid existing token found or user is logged out');
       }
     }
   }, [searchParams, role]);
@@ -59,21 +84,43 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
 
   const checkAuthStatus = async () => {
     try {
-      if (apiClient.isLoggedOut) return;
+      console.log('🔍 Checking auth status...');
+      console.log('🔍 API client isLoggedOut:', apiClient.isLoggedOut);
+      console.log('🔍 Expected role:', role);
+      console.log('🔍 Current token:', apiClient.getToken() ? 'Token exists' : 'No token');
+      console.log('🔍 Stored tokens:', {
+        storeOwner: localStorage.getItem('store_owner_auth_token') ? 'Exists' : 'Missing',
+        customer: localStorage.getItem('customer_auth_token') ? 'Exists' : 'Missing'
+      });
+      
+      if (apiClient.isLoggedOut) {
+        console.log('🔍 User is marked as logged out, staying on auth page');
+        return;
+      }
       
       const user = await User.me();
-      if (!user) return;
+      console.log('🔍 User.me() result:', user);
+      
+      if (!user) {
+        console.log('🔍 No user data returned, staying on auth page');
+        return;
+      }
+      
+      console.log('🔍 User role:', user.role, 'Expected role:', role);
       
       // Redirect based on user role and expected role
       if (role === 'customer') {
         if (user.role === 'store_owner' || user.role === 'admin') {
+          console.log('🔍 Store owner/admin on customer auth page, redirecting to admin auth');
           navigate(createAdminUrl("ADMIN_AUTH"));
         } else if (user.role === 'customer') {
           const returnTo = searchParams.get('returnTo');
           if (returnTo) {
+            console.log('🔍 Customer has returnTo, redirecting to:', returnTo);
             navigate(returnTo);
           } else {
             const storefrontUrl = await getStorefrontUrl();
+            console.log('🔍 Customer redirecting to storefront:', storefrontUrl);
             navigate(storefrontUrl);
           }
         }
@@ -81,13 +128,17 @@ export default function AuthMiddleware({ role = 'store_owner' }) {
         if (user.role === 'customer') {
           // Get store slug from current URL or use default
           const currentStoreSlug = getStoreSlugFromPublicUrl(window.location.pathname) || 'default';
+          console.log('🔍 Customer on store owner auth page, redirecting to customer auth');
           navigate(createPublicUrl(currentStoreSlug, "CUSTOMER_AUTH"));
         } else if (user.role === 'store_owner' || user.role === 'admin') {
-          navigate(createAdminUrl("DASHBOARD"));
+          const dashboardUrl = createAdminUrl("DASHBOARD");
+          console.log('🔍 Store owner/admin authenticated, redirecting to dashboard:', dashboardUrl);
+          navigate(dashboardUrl);
         }
       }
     } catch (error) {
-      // User not authenticated, stay on auth page
+      console.log('🔍 Auth check error:', error);
+      console.log('🔍 User not authenticated, staying on auth page');
     }
   };
 
