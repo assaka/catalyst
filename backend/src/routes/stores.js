@@ -459,7 +459,8 @@ router.post('/', authorize(['admin', 'store_owner']), [
 
     const storeData = {
       ...req.body,
-      owner_email: req.user.email
+      user_id: req.user.id,  // Set the user_id for proper ownership
+      owner_email: req.user.email  // Keep for backward compatibility
     };
 
     // Generate slug if not provided

@@ -4,13 +4,8 @@ const { Product, Store } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
-// Helper function to check store ownership
-const checkStoreOwnership = async (storeId, userEmail, userRole) => {
-  if (userRole === 'admin') return true;
-  
-  const store = await Store.findByPk(storeId);
-  return store && store.owner_email === userEmail;
-};
+// Import the new store auth middleware
+const { checkStoreOwnership: storeAuthMiddleware, checkResourceOwnership } = require('../middleware/storeAuth');
 
 // @route   GET /api/products
 // @desc    Get products (authenticated users only)
@@ -164,12 +159,17 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
 // @route   POST /api/products
 // @desc    Create new product
 // @access  Private
-router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
-  body('name').notEmpty().withMessage('Product name is required'),
-  body('sku').notEmpty().withMessage('SKU is required'),
-  body('price').isDecimal().withMessage('Price must be a valid decimal'),
-  body('store_id').isUUID().withMessage('Store ID must be a valid UUID')
-], async (req, res) => {
+router.post('/', 
+  authMiddleware, 
+  authorize(['admin', 'store_owner']), 
+  storeAuthMiddleware, // Check store ownership
+  [
+    body('name').notEmpty().withMessage('Product name is required'),
+    body('sku').notEmpty().withMessage('SKU is required'),
+    body('price').isDecimal().withMessage('Price must be a valid decimal'),
+    body('store_id').isUUID().withMessage('Store ID must be a valid UUID')
+  ], 
+  async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -181,14 +181,7 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 
     const { store_id } = req.body;
 
-    // Check store ownership
-    const hasAccess = await checkStoreOwnership(store_id, req.user.email, req.user.role);
-    if (!hasAccess) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
-    }
+    // Store ownership check is now handled by middleware
 
     const product = await Product.create(req.body);
 
@@ -209,11 +202,16 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 // @route   PUT /api/products/:id
 // @desc    Update product
 // @access  Private
-router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
-  body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
-  body('sku').optional().notEmpty().withMessage('SKU cannot be empty'),
-  body('price').optional().isDecimal().withMessage('Price must be a valid decimal')
-], async (req, res) => {
+router.put('/:id', 
+  authMiddleware, 
+  authorize(['admin', 'store_owner']),
+  checkResourceOwnership('Product'), // Check if user owns the product's store
+  [
+    body('name').optional().notEmpty().withMessage('Product name cannot be empty'),
+    body('sku').optional().notEmpty().withMessage('SKU cannot be empty'),
+    body('price').optional().isDecimal().withMessage('Price must be a valid decimal')
+  ], 
+  async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {

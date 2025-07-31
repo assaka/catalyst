@@ -31,10 +31,16 @@ const ProductTab = require('./ProductTab');
 // Define associations
 const defineAssociations = () => {
   // User associations
-  User.hasMany(Store, { foreignKey: 'owner_email', sourceKey: 'email' });
+  User.hasMany(Store, { foreignKey: 'user_id', as: 'ownedStores' });
+  
+  // Legacy email-based association (for backward compatibility during migration)
+  User.hasMany(Store, { foreignKey: 'owner_email', sourceKey: 'email', as: 'emailStores' });
 
   // Store associations
-  Store.belongsTo(User, { foreignKey: 'owner_email', targetKey: 'email' });
+  Store.belongsTo(User, { foreignKey: 'user_id', as: 'owner' });
+  
+  // Legacy email-based association (for backward compatibility during migration)
+  Store.belongsTo(User, { foreignKey: 'owner_email', targetKey: 'email', as: 'emailOwner' });
   Store.hasMany(Product, { foreignKey: 'store_id' });
   Store.hasMany(Category, { foreignKey: 'store_id' });
   Store.hasMany(Attribute, { foreignKey: 'store_id' });

@@ -20,6 +20,14 @@ const Store = sequelize.define('Store', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  user_id: {
+    type: DataTypes.UUID,
+    allowNull: true, // Will be required after migration
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
   owner_email: {
     type: DataTypes.STRING,
     allowNull: false,
