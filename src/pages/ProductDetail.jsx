@@ -632,7 +632,10 @@ export default function ProductDetail() {
         {/* Product Info */}
         <div className="space-y-6">
           <div>
+            <CmsBlockRenderer position="product_above_title" />
             <h1 className="text-3xl font-bold mb-2">{product?.name}</h1>
+            <CmsBlockRenderer position="product_below_title" />
+            <CmsBlockRenderer position="product_above_price" />
             <div className="flex items-center space-x-4 mb-4">
               <div className="flex items-baseline space-x-2">
                 {/* Inverted price logic to always show lowest price first */}
@@ -670,6 +673,7 @@ export default function ProductDetail() {
                 )}
               </div>
             </div>
+            <CmsBlockRenderer position="product_below_price" />
             {/* Stock status badge, updated to reflect track_stock setting */}
             {getStockLabel(product) && (
               <Badge variant={getStockVariant(product)} className="mb-2">
@@ -695,7 +699,7 @@ export default function ProductDetail() {
           />
 
           {/* CMS Block Renderer for "above add to cart" position */}
-          <CmsBlockRenderer position="above_add_to_cart" page="storefront_product" storeId={store?.id} />
+          <CmsBlockRenderer position="product_above_cart_button" />
 
           {/* Total Price - positioned above Add to Cart button */}
           {(getTotalPrice() > parseFloat(product.price) * quantity || selectedOptions.length > 0) && (
@@ -772,7 +776,7 @@ export default function ProductDetail() {
           </div>
 
           {/* CMS Block Renderer for "below add to cart" position */}
-          <CmsBlockRenderer position="below_add_to_cart" page="storefront_product" storeId={store?.id} />
+          <CmsBlockRenderer position="product_below_cart_button" />
         </div>
       </div>
 
@@ -807,7 +811,11 @@ export default function ProductDetail() {
                 
                 {/* Description tab */}
                 {productTabs[activeTab].tab_type === 'description' && product?.description && (
-                  <div dangerouslySetInnerHTML={{ __html: product.description }} />
+                  <>
+                    <CmsBlockRenderer position="product_above_description" />
+                    <div dangerouslySetInnerHTML={{ __html: product.description }} />
+                    <CmsBlockRenderer position="product_below_description" />
+                  </>
                 )}
                 
                 {/* Attributes tab */}

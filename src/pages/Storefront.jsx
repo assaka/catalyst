@@ -9,6 +9,7 @@ import ProductCard from "@/components/storefront/ProductCard";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
 import LayeredNavigation from "@/components/storefront/LayeredNavigation";
 import Breadcrumb from "@/components/storefront/Breadcrumb";
+import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import {
   Package,
 } from "lucide-react";
@@ -238,6 +239,8 @@ export default function Storefront() {
       
       {isHomepage ? (
         <div className="max-w-7xl mx-auto">
+          <CmsBlockRenderer position="homepage_above_hero" />
+          
           <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20 mb-12 rounded-lg">
             <div className="text-center">
               <h1 className="text-4xl md:text-6xl font-bold mb-4">{store?.name || "Welcome"}</h1>
@@ -251,6 +254,8 @@ export default function Storefront() {
               )}
             </div>
           </section>
+          
+          <CmsBlockRenderer position="homepage_below_hero" />
 
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -267,6 +272,8 @@ export default function Storefront() {
             </div>
           ) : (
             <>
+              <CmsBlockRenderer position="homepage_above_featured" />
+              
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-3xl font-bold">Featured Products</h2>
                 {categories.length > 0 && (
@@ -294,6 +301,14 @@ export default function Storefront() {
                   <p className="text-gray-600">Mark some products as featured to display them here.</p>
                 </div>
               )}
+              
+              <CmsBlockRenderer position="homepage_below_featured" />
+              
+              <CmsBlockRenderer position="homepage_above_content" />
+              
+              {/* Additional homepage content can go here */}
+              
+              <CmsBlockRenderer position="homepage_below_content" />
             </>
           )}
         </div>
@@ -311,15 +326,18 @@ export default function Storefront() {
           <div className={`grid ${(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
             {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) && (
               <div className="lg:col-span-1">
+                <CmsBlockRenderer position="category_above_filters" />
                 <LayeredNavigation
                   products={products}
                   attributes={filterableAttributes}
                   onFilterChange={setActiveFilters}
                 />
+                <CmsBlockRenderer position="category_below_filters" />
               </div>
             )}
             {/* FIXED: Maintain grid structure even when no products found */}
             <div className={(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? "lg:col-span-3" : "lg:col-span-1"}>
+              <CmsBlockRenderer position="category_above_products" />
               {loading ? (
                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-8 min-h-[400px]">
                     {[...Array(6)].map((_, i) => (
@@ -359,6 +377,7 @@ export default function Storefront() {
                   )}
                 </div>
               )}
+              <CmsBlockRenderer position="category_below_products" />
             </div>
           </div>
         </>

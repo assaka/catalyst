@@ -570,11 +570,19 @@ export default function StorefrontLayout({ children }) {
 
             <CmsBlockRenderer position="header" page={getCurrentPage()} />
 
-            <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8">
-                <CmsBlockRenderer position="before_content" page={getCurrentPage()} />
-                {children}
-                <CmsBlockRenderer position="after_content" page={getCurrentPage()} />
-            </main>
+            <div className="flex-1 flex">
+                {/* Sidebar */}
+                <aside className="hidden lg:block w-64 px-4 py-8">
+                    <CmsBlockRenderer position="sidebar" page={getCurrentPage()} />
+                </aside>
+                
+                {/* Main Content */}
+                <main className="flex-1 px-4 sm:px-6 lg:px-8 py-8">
+                    <CmsBlockRenderer position="before_content" page={getCurrentPage()} />
+                    {children}
+                    <CmsBlockRenderer position="after_content" page={getCurrentPage()} />
+                </main>
+            </div>
 
             <CmsBlockRenderer position="footer" page={getCurrentPage()} />
 

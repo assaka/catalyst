@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/accordion";
 import { Tag, CalendarIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { Auth as AuthService } from "@/api/entities";
+import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import apiClient from "@/api/client";
 
 export default function Checkout() {
@@ -851,6 +852,7 @@ export default function Checkout() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+      <CmsBlockRenderer position="checkout_above_form" />
 
       <div className="grid lg:grid-cols-2 gap-8">
         {/* Order Summary - Right Side */}
@@ -862,6 +864,7 @@ export default function Checkout() {
                 <CardTitle>Payment Method</CardTitle>
               </CardHeader>
               <CardContent>
+                <CmsBlockRenderer position="checkout_above_payment" />
                 <div className="space-y-3">
                   {eligiblePaymentMethods.map((method) => (
                     <div key={method.id} className="flex items-center space-x-2">
@@ -899,6 +902,7 @@ export default function Checkout() {
                     </div>
                   ))}
                 </div>
+                <CmsBlockRenderer position="checkout_below_payment" />
               </CardContent>
             </Card>
           )}
@@ -1555,6 +1559,7 @@ export default function Checkout() {
           </Card>
         </div>
       </div>
+      <CmsBlockRenderer position="checkout_below_form" />
     </div>
   );
 }

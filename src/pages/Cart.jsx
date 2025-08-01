@@ -14,6 +14,7 @@ import taxService from '@/services/taxService';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
+import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 
 import { Button } from '@/components/ui/button';
@@ -599,6 +600,7 @@ export default function Cart() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
                 <h1 className="text-3xl font-bold text-gray-900 mb-8">Your Cart</h1>
+                <CmsBlockRenderer position="cart_above_items" />
                 {cartItems.length === 0 ? (
                     <Card>
                         <CardContent className="text-center py-12">
@@ -694,6 +696,7 @@ export default function Cart() {
                                     })}
                                 </CardContent>
                             </Card>
+                            <CmsBlockRenderer position="cart_below_items" />
                         </div>
                         <div className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
                             <Card>
@@ -745,10 +748,12 @@ export default function Cart() {
                                         <div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span></div>
                                     )}
                                     <div className="flex justify-between"><span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span></div>
+                                    <CmsBlockRenderer position="cart_above_total" />
                                     <div className="flex justify-between text-lg font-semibold border-t pt-4">
                                         <span>Total</span>
                                         <span>{currencySymbol}{safeToFixed(total)}</span>
                                     </div>
+                                    <CmsBlockRenderer position="cart_below_total" />
                                     <div className="border-t mt-6 pt-6">
                                         <Link to={createPublicUrl(store.slug, 'CHECKOUT')}>
                                             <Button 

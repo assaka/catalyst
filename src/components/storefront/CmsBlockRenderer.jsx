@@ -97,28 +97,31 @@ export default function CmsBlockRenderer({ position, page }) {
         const filteredBlocks = allBlocks.filter(block => {
           if (!block.is_active) return false;
           
-          // Handle both string and object placement formats
-          let blockPosition, blockPages;
+          // Handle new array-based placement format
+          let placements = [];
           
-          if (typeof block.placement === 'string') {
-            // Simple string format: only use exact matches, no automatic mapping
-            blockPosition = block.placement;
-            blockPages = ['all_pages']; // Default to all pages for string format
+          if (Array.isArray(block.placement)) {
+            // New array format: ["header", "product_above_title", ...]
+            placements = block.placement;
+          } else if (typeof block.placement === 'string') {
+            // Legacy string format: "header"
+            placements = [block.placement];
+          } else if (typeof block.placement === 'object' && block.placement.position) {
+            // Legacy object format: { position: "above_add_to_cart", pages: ["storefront_product"] }
+            placements = [block.placement.position];
           } else {
-            // Object format: { position: "above_add_to_cart", pages: ["storefront_product"] }
-            const placement = block.placement || {};
-            blockPosition = placement.position || 'before_content';
-            blockPages = placement.pages || ['storefront_home'];
+            // Fallback
+            placements = ['content'];
           }
 
-          return blockPosition === position && 
-                 (blockPages.includes('all_pages') || blockPages.includes(page));
+          // Check if the requested position is in the block's placements
+          return placements.includes(position);
         });
 
-        // Sort by sort_order (use block.sort_order for simple string placements)
+        // Sort by sort_order field from the block model
         filteredBlocks.sort((a, b) => {
-          const aOrder = (typeof a.placement === 'string') ? (a.sort_order || 0) : (a.placement?.sort_order || 0);
-          const bOrder = (typeof b.placement === 'string') ? (b.sort_order || 0) : (b.placement?.sort_order || 0);
+          const aOrder = a.sort_order || 0;
+          const bOrder = b.sort_order || 0;
           return aOrder - bOrder;
         });
 
