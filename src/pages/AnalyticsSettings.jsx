@@ -118,28 +118,20 @@ export default function AnalyticsSettings() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header CMS Blocks */}
-            <CmsBlockRenderer position="header" />
-            
-            <div className="flex-1 flex">
-                {/* Sidebar */}
-                <aside className="hidden lg:block w-64 px-4 py-8">
-                    <CmsBlockRenderer position="sidebar" />
-                </aside>
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 
-                {/* Main Content */}
-                <main className="flex-1 p-8">
-                    <div className="max-w-4xl mx-auto">
-                        <div className="mb-8">
-                            <h1 className="text-3xl font-bold text-gray-900">Analytics & Tracking</h1>
-                            <p className="text-gray-600 mt-1">Configure your store's analytics and tracking integrations.</p>
-                        </div>
-                        
-                        {flashMessage && (
-                            <div className={`mb-4 p-4 rounded-lg text-white ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
-                                {flashMessage.message}
-                            </div>
-                        )}
+                {flashMessage && (
+                    <div 
+                        className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 transition-opacity duration-300 ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}
+                    >
+                        {flashMessage.message}
+                    </div>
+                )}
+
+                <div className="mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900">Analytics & Tracking</h1>
+                    <p className="text-gray-600 mt-1">Configure your store's analytics and tracking integrations.</p>
+                </div>
 
                         <div className="space-y-8">
                             <Card className="material-elevation-1 border-0">
@@ -221,14 +213,12 @@ export default function AnalyticsSettings() {
                             </Card>
                         </div>
 
-                        <div className="flex justify-end mt-8">
-                            <Button onClick={handleSave} disabled={saving}>
-                                <Save className="w-4 h-4 mr-2" />
-                                {saving ? 'Saving...' : 'Save Settings'}
-                            </Button>
-                        </div>
-                    </div>
-                </main>
+                <div className="flex justify-end mt-8">
+                    <Button onClick={handleSave} disabled={saving}>
+                        <Save className="w-4 h-4 mr-2" />
+                        {saving ? 'Saving...' : 'Save Settings'}
+                    </Button>
+                </div>
             </div>
         </div>
     );
