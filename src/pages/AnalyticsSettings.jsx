@@ -111,9 +111,8 @@ export default function AnalyticsSettings() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <CmsBlockRenderer position="analytics_header" />
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <CmsBlockRenderer position="analytics_header" />
                 
                 {flashMessage && (
                     <div 
@@ -222,6 +221,5 @@ export default function AnalyticsSettings() {
                     </Button>
                 </div>
             </div>
-        </div>
     );
 }

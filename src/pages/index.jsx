@@ -209,6 +209,7 @@ function _getCurrentPage(url) {
         'customer-activity': 'CustomerActivity',
         'marketplace-export': 'MarketplaceExport',
         'seo-tools': 'SeoTools',
+        'analytics': 'AnalyticsSettings',
         'theme-layout': 'ThemeLayout',
         'image-manager': 'ImageManager',
         'stock-settings': 'StockSettings',
