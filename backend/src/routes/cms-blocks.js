@@ -223,19 +223,71 @@ router.post('/', [
 
     // Process placement field - ensure it's an array
     const blockData = { ...req.body };
+    console.log('🔍 Raw placement data received (CREATE):', typeof blockData.placement, blockData.placement);
+    
     if (blockData.placement) {
-      if (typeof blockData.placement === 'string') {
-        // Convert string to array
-        blockData.placement = [blockData.placement];
-      } else if (typeof blockData.placement === 'object' && blockData.placement.position) {
-        // Handle complex object format from original form
-        blockData.placement = Array.isArray(blockData.placement.position) 
-          ? blockData.placement.position 
-          : [blockData.placement.position];
-      } else if (!Array.isArray(blockData.placement)) {
-        // Default fallback
-        blockData.placement = ['content'];
+      // Handle over-serialized JSON strings
+      let placement = blockData.placement;
+      
+      // If it's a string, try to parse it multiple times to handle over-serialization
+      if (typeof placement === 'string') {
+        try {
+          // Keep parsing until we get a proper array or can't parse anymore
+          while (typeof placement === 'string' && (placement.startsWith('[') || placement.startsWith('"'))) {
+            placement = JSON.parse(placement);
+          }
+          // If after parsing we still have a string, convert to array
+          if (typeof placement === 'string') {
+            placement = [placement];
+          }
+        } catch (e) {
+          console.error('Failed to parse placement string:', e);
+          placement = [blockData.placement]; // Use original string as single item
+        }
       }
+      
+      // Handle arrays that contain nested serialized strings
+      if (Array.isArray(placement)) {
+        const cleanedPlacement = [];
+        for (const item of placement) {
+          if (typeof item === 'string' && (item.startsWith('[') || item.startsWith('"'))) {
+            try {
+              // Try to parse nested serialized arrays
+              let parsed = item;
+              while (typeof parsed === 'string' && (parsed.startsWith('[') || parsed.startsWith('"'))) {
+                parsed = JSON.parse(parsed);
+              }
+              // If we got an array, spread it; if string, add it
+              if (Array.isArray(parsed)) {
+                cleanedPlacement.push(...parsed);
+              } else if (typeof parsed === 'string') {
+                cleanedPlacement.push(parsed);
+              }
+            } catch (e) {
+              // If parsing fails, use the original item
+              cleanedPlacement.push(item);
+            }
+          } else {
+            cleanedPlacement.push(item);
+          }
+        }
+        placement = cleanedPlacement;
+      }
+      
+      // Handle complex object format from original form
+      if (typeof placement === 'object' && placement.position) {
+        placement = Array.isArray(placement.position) 
+          ? placement.position 
+          : [placement.position];
+      }
+      
+      // Ensure we have an array
+      if (!Array.isArray(placement)) {
+        placement = ['content']; // Default fallback
+      }
+      
+      blockData.placement = placement;
+      console.log('✅ Processed placement data (CREATE):', blockData.placement);
     } else {
       blockData.placement = ['content']; // Default fallback
     }
@@ -298,19 +350,71 @@ router.put('/:id', [
 
     // Process placement field - ensure it's an array
     const updateData = { ...req.body };
+    console.log('🔍 Raw placement data received:', typeof updateData.placement, updateData.placement);
+    
     if (updateData.placement) {
-      if (typeof updateData.placement === 'string') {
-        // Convert string to array
-        updateData.placement = [updateData.placement];
-      } else if (typeof updateData.placement === 'object' && updateData.placement.position) {
-        // Handle complex object format from original form
-        updateData.placement = Array.isArray(updateData.placement.position) 
-          ? updateData.placement.position 
-          : [updateData.placement.position];
-      } else if (!Array.isArray(updateData.placement)) {
-        // Default fallback
-        updateData.placement = ['content'];
+      // Handle over-serialized JSON strings
+      let placement = updateData.placement;
+      
+      // If it's a string, try to parse it multiple times to handle over-serialization
+      if (typeof placement === 'string') {
+        try {
+          // Keep parsing until we get a proper array or can't parse anymore
+          while (typeof placement === 'string' && (placement.startsWith('[') || placement.startsWith('"'))) {
+            placement = JSON.parse(placement);
+          }
+          // If after parsing we still have a string, convert to array
+          if (typeof placement === 'string') {
+            placement = [placement];
+          }
+        } catch (e) {
+          console.error('Failed to parse placement string:', e);
+          placement = [updateData.placement]; // Use original string as single item
+        }
       }
+      
+      // Handle arrays that contain nested serialized strings
+      if (Array.isArray(placement)) {
+        const cleanedPlacement = [];
+        for (const item of placement) {
+          if (typeof item === 'string' && (item.startsWith('[') || item.startsWith('"'))) {
+            try {
+              // Try to parse nested serialized arrays
+              let parsed = item;
+              while (typeof parsed === 'string' && (parsed.startsWith('[') || parsed.startsWith('"'))) {
+                parsed = JSON.parse(parsed);
+              }
+              // If we got an array, spread it; if string, add it
+              if (Array.isArray(parsed)) {
+                cleanedPlacement.push(...parsed);
+              } else if (typeof parsed === 'string') {
+                cleanedPlacement.push(parsed);
+              }
+            } catch (e) {
+              // If parsing fails, use the original item
+              cleanedPlacement.push(item);
+            }
+          } else {
+            cleanedPlacement.push(item);
+          }
+        }
+        placement = cleanedPlacement;
+      }
+      
+      // Handle complex object format from original form
+      if (typeof placement === 'object' && placement.position) {
+        placement = Array.isArray(placement.position) 
+          ? placement.position 
+          : [placement.position];
+      }
+      
+      // Ensure we have an array
+      if (!Array.isArray(placement)) {
+        placement = ['content']; // Default fallback
+      }
+      
+      updateData.placement = placement;
+      console.log('✅ Processed placement data:', updateData.placement);
     }
 
     await block.update(updateData);
