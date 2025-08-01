@@ -47,7 +47,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         // Fallback to basic defaults if SEO settings don't provide them
         const basicDefaultTitle = store?.name ? `${pageTitle} | ${store.name}` : pageTitle;
-        const basicDefaultDescription = pageDescription || store?.description || '';
+        const basicDefaultDescription = pageDescription || store?.description || `Welcome to ${store?.name || 'our store'}. Discover quality products and excellent service.`;
 
         // Final values with priority: page data > SEO templates > SEO defaults > basic defaults
         const title = pageData?.meta_title || 
@@ -62,15 +62,45 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                            
         const keywords = pageData?.meta_keywords || 
                         pageData?.seo?.meta_keywords || 
-                        processedDefaultKeywords;
+                        processedDefaultKeywords || 
+                        `${store?.name}, products, quality, shopping`;
 
         // Default description for structured data
         const defaultDescription = description || store?.description || 'Quality products and services';
 
-        // Determine the robots tag
-        const robotsTag = pageData?.meta_robots_tag || 
-                          pageData?.seo?.meta_robots_tag || 
-                          'index, follow';
+        // Debug logging (remove in production)
+        console.log('🔍 SEO Debug:', {
+            pageTitle,
+            pageDescription,
+            store: store?.name,
+            seoSettings: seoSettings ? 'loaded' : 'not loaded',
+            seoSettingsData: seoSettings,
+            enableRichSnippets: seoSettings?.enable_rich_snippets,
+            enableOpenGraph: seoSettings?.enable_open_graph,
+            enableTwitterCards: seoSettings?.enable_twitter_cards,
+            seoDefaultTitle,
+            seoDefaultDescription,
+            seoDefaultKeywords,
+            finalTitle: title,
+            finalDescription: description,
+            finalKeywords: keywords
+        });
+
+        // Determine the robots tag - check SEO settings for global override
+        let robotsTag = pageData?.meta_robots_tag || 
+                       pageData?.seo?.meta_robots_tag;
+        
+        // If no page-specific robots tag, check SEO settings for global default
+        if (!robotsTag) {
+            // Check if robots.txt has specific directives that should affect meta robots
+            const robotsContent = seoSettings?.robots_txt_content || '';
+            if (robotsContent.includes('Disallow: /')) {
+                // If robots.txt has broad disallow rules, be more restrictive
+                robotsTag = seoSettings?.default_meta_robots || 'index, follow';
+            } else {
+                robotsTag = seoSettings?.default_meta_robots || 'index, follow';
+            }
+        }
 
         const ogImage = imageUrl || 
                        pageData?.images?.[0] || 
@@ -82,8 +112,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         document.title = title;
 
         // Function to update or create meta tag
-        const updateMetaTag = (name, content, property = false) => {
-            if (!content) {
+        const updateMetaTag = (name, content, property = false, allowEmpty = false) => {
+            // Allow empty content for certain critical tags
+            if (!content && !allowEmpty) {
                 return;
             }
             
@@ -100,7 +131,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 document.head.appendChild(metaTag);
             }
             
-            metaTag.setAttribute('content', content);
+            metaTag.setAttribute('content', content || '');
         };
 
         // Update basic meta tags

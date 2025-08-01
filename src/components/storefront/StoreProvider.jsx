@@ -300,10 +300,15 @@ export const StoreProvider = ({ children }) => {
       // Load SEO settings separately and with priority
       try {
         const { StorefrontSeoSetting } = await import('@/api/storefront-entities');
-        const seoSettingsData = await cachedApiCall(`seo-settings-${selectedStore.id}`, async () => {
+        console.log('🔍 Loading SEO settings for store:', selectedStore.id);
+        
+        // Force fresh SEO settings (no caching for now to test)
+        const seoSettingsData = await (async () => {
+          console.log('🔄 Fetching fresh SEO settings from API...');
           const result = await StorefrontSeoSetting.filter({ store_id: selectedStore.id });
+          console.log('📊 SEO settings API response:', result);
           return Array.isArray(result) ? result : [];
-        });
+        })();
         
         if (seoSettingsData && seoSettingsData.length > 0) {
           const loadedSeoSettings = seoSettingsData[0];
