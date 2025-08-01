@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { createCategoryUrl, createPublicUrl } from "@/utils/urlUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { CmsBlock } from "@/api/entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
@@ -32,10 +33,10 @@ export default function Storefront() {
   const [activeFilters, setActiveFilters] = useState({});
   const [isHomepage, setIsHomepage] = useState(true);
   
-  const { slug, categorySlug: routeCategorySlug } = useParams();
+  const { storeCode, categorySlug: routeCategorySlug } = useParams();
   const [searchParams] = useSearchParams();
   
-  const categorySlug = searchParams.get('category') || routeCategorySlug || slug;
+  const categorySlug = searchParams.get('category') || routeCategorySlug;
   
 
   const categories = useMemo(() => storeCategories || [], [storeCategories]);
@@ -224,7 +225,7 @@ export default function Storefront() {
     // Convert to breadcrumb items
     return categoryChain.map((cat, index) => ({
       name: cat.name,
-      url: createPageUrl(`Storefront?category=${cat.slug}`)
+      url: createCategoryUrl(storeCode, cat.slug)
     }));
   };
 
@@ -246,7 +247,7 @@ export default function Storefront() {
               <h1 className="text-4xl md:text-6xl font-bold mb-4">{store?.name || "Welcome"}</h1>
               <p className="text-xl mb-8">{store?.description || "Discover amazing products"}</p>
               {categories.length > 0 && (
-                <Link to={createPageUrl('Storefront') + `?category=${categories[0]?.slug}`}>
+                <Link to={createCategoryUrl(storeCode, categories[0]?.slug)}>
                   <Button size="lg" className="btn-primary text-white">
                     Shop Now
                   </Button>
@@ -277,7 +278,7 @@ export default function Storefront() {
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-3xl font-bold">Featured Products</h2>
                 {categories.length > 0 && (
-                  <Link to={createPageUrl('Storefront') + `?category=${categories[0]?.slug}`}>
+                  <Link to={createCategoryUrl(storeCode, categories[0]?.slug)}>
                     <Button variant="outline">View All Products</Button>
                   </Link>
                 )}

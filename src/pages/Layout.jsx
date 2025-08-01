@@ -577,9 +577,25 @@ export default function Layout({ children, currentPageName }) {
             <DropdownMenuContent className="w-56">
                 <DropdownMenuLabel>{user?.first_name || user?.name || user?.email} ({user?.role})</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                    const baseUrl = getStoreBaseUrl(selectedStore);
-                    window.open(getExternalStoreUrl(selectedStore?.slug, '', baseUrl), '_blank');
+                <DropdownMenuItem onClick={async () => {
+                    try {
+                        if (!selectedStore?.id) return;
+                        
+                        // Fetch complete store data to ensure we have the slug
+                        const fullStoreData = await Store.findById(selectedStore.id);
+                        const fullStore = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
+                        
+                        const baseUrl = getStoreBaseUrl(fullStore);
+                        const storeSlug = fullStore?.slug || selectedStore?.slug;
+                        
+                        if (storeSlug) {
+                            window.open(getExternalStoreUrl(storeSlug, '', baseUrl), '_blank');
+                        } else {
+                            console.warn('Store slug not found for store:', selectedStore);
+                        }
+                    } catch (error) {
+                        console.error('Error loading store data for View Storefront:', error);
+                    }
                 }}>
                     <ShoppingBag className="mr-2 h-4 w-4" />
                     <span>View Storefront</span>
@@ -740,9 +756,25 @@ export default function Layout({ children, currentPageName }) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                  const baseUrl = getStoreBaseUrl(selectedStore);
-                  window.open(getExternalStoreUrl(selectedStore?.slug, '', baseUrl), '_blank');
+                <DropdownMenuItem onClick={async () => {
+                  try {
+                    if (!selectedStore?.id) return;
+                    
+                    // Fetch complete store data to ensure we have the slug
+                    const fullStoreData = await Store.findById(selectedStore.id);
+                    const fullStore = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
+                    
+                    const baseUrl = getStoreBaseUrl(fullStore);
+                    const storeSlug = fullStore?.slug || selectedStore?.slug;
+                    
+                    if (storeSlug) {
+                      window.open(getExternalStoreUrl(storeSlug, '', baseUrl), '_blank');
+                    } else {
+                      console.warn('Store slug not found for store:', selectedStore);
+                    }
+                  } catch (error) {
+                    console.error('Error loading store data for View Storefront:', error);
+                  }
                 }}>
                   <ShoppingBag className="mr-2 h-4 w-4" />
                   <span>View Storefront</span>
