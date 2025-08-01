@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Save, BarChart3, Bot, Shield, Upload } from 'lucide-react';
+import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import {
   Accordion,
   AccordionContent,
@@ -112,57 +113,70 @@ export default function AnalyticsSettings() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
-            <div className="max-w-4xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Analytics & Tracking</h1>
-                    <p className="text-gray-600 mt-1">Configure your store's analytics and tracking integrations.</p>
-                </div>
+        <div className="min-h-screen bg-gray-50">
+            {/* Header CMS Blocks */}
+            <CmsBlockRenderer position="header" />
+            
+            <div className="flex-1 flex">
+                {/* Sidebar */}
+                <aside className="hidden lg:block w-64 px-4 py-8">
+                    <CmsBlockRenderer position="sidebar" />
+                </aside>
                 
-                {flashMessage && (
-                    <div className={`mb-4 p-4 rounded-lg text-white ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
-                        {flashMessage.message}
-                    </div>
-                )}
-
-                <div className="space-y-8">
-                    <Card className="material-elevation-1 border-0">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><BarChart3 className="w-5 h-5" /> Google Integrations</CardTitle>
-                            <CardDescription>Connect Google services to your store.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <Label htmlFor="enable_gtm">Enable Google Tag Manager</Label>
-                                </div>
-                                <Switch id="enable_gtm" checked={!!store.settings.analytics_settings.enable_google_tag_manager} onCheckedChange={(c) => handleAnalyticsChange('enable_google_tag_manager', c)} />
+                {/* Main Content */}
+                <main className="flex-1 p-8">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="mb-8">
+                            <h1 className="text-3xl font-bold text-gray-900">Analytics & Tracking</h1>
+                            <p className="text-gray-600 mt-1">Configure your store's analytics and tracking integrations.</p>
+                        </div>
+                        
+                        {flashMessage && (
+                            <div className={`mb-4 p-4 rounded-lg text-white ${flashMessage.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}>
+                                {flashMessage.message}
                             </div>
-                            
-                            {store.settings.analytics_settings.enable_google_tag_manager && (
-                                <div className="pl-6 border-l-2 border-blue-200 space-y-4">
-                                    <div>
-                                        <Label htmlFor="gtm_id">Google Tag Manager ID</Label>
-                                        <Input id="gtm_id" value={store.settings.analytics_settings.gtm_id} onChange={(e) => handleAnalyticsChange('gtm_id', e.target.value)} placeholder="GTM-XXXXXX" />
+                        )}
+
+                        <div className="space-y-8">
+                            <Card className="material-elevation-1 border-0">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2"><BarChart3 className="w-5 h-5" /> Google Integrations</CardTitle>
+                                    <CardDescription>Connect Google services to your store.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <Label htmlFor="enable_gtm">Enable Google Tag Manager</Label>
+                                        </div>
+                                        <Switch id="enable_gtm" checked={!!store.settings.analytics_settings.enable_google_tag_manager} onCheckedChange={(c) => handleAnalyticsChange('enable_google_tag_manager', c)} />
                                     </div>
-                                </div>
-                            )}
+                                    
+                                    {store.settings.analytics_settings.enable_google_tag_manager && (
+                                        <div className="pl-6 border-l-2 border-blue-200 space-y-4">
+                                            <div>
+                                                <Label htmlFor="gtm_id">Google Tag Manager ID</Label>
+                                                <Input id="gtm_id" value={store.settings.analytics_settings.gtm_id} onChange={(e) => handleAnalyticsChange('gtm_id', e.target.value)} placeholder="GTM-XXXXXX" />
+                                            </div>
+                                        </div>
+                                    )}
 
-                            <div>
-                                <Label htmlFor="google_ads_id">Google Ads ID</Label>
-                                <Input id="google_ads_id" value={store.settings.analytics_settings.google_ads_id} onChange={(e) => handleAnalyticsChange('google_ads_id', e.target.value)} placeholder="AW-XXXXXXXXX" />
-                                <p className="text-sm text-gray-500 mt-1">For conversion tracking and remarketing.</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
+                                    <div>
+                                        <Label htmlFor="google_ads_id">Google Ads ID</Label>
+                                        <Input id="google_ads_id" value={store.settings.analytics_settings.google_ads_id} onChange={(e) => handleAnalyticsChange('google_ads_id', e.target.value)} placeholder="AW-XXXXXXXXX" />
+                                        <p className="text-sm text-gray-500 mt-1">For conversion tracking and remarketing.</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
-                <div className="flex justify-end mt-8">
-                    <Button onClick={handleSave} disabled={saving}>
-                        <Save className="w-4 h-4 mr-2" />
-                        {saving ? 'Saving...' : 'Save Settings'}
-                    </Button>
-                </div>
+                        <div className="flex justify-end mt-8">
+                            <Button onClick={handleSave} disabled={saving}>
+                                <Save className="w-4 h-4 mr-2" />
+                                {saving ? 'Saving...' : 'Save Settings'}
+                            </Button>
+                        </div>
+                    </div>
+                </main>
             </div>
         </div>
     );
