@@ -9,9 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye } from 'lucide-react';
+import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 
 export default function Stores() {
   const [stores, setStores] = useState([]);
@@ -272,9 +273,22 @@ export default function Stores() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{store.name}</CardTitle>
-                  <Badge className={store.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                    {store.status}
-                  </Badge>
+                  <div className="flex gap-2">
+                    {store.owner_email === user?.email ? (
+                      <Badge className="bg-purple-100 text-purple-800 border-purple-200" variant="outline">
+                        <Crown className="w-3 h-3 mr-1" />
+                        Owner
+                      </Badge>
+                    ) : (
+                      <Badge className="bg-blue-100 text-blue-800 border-blue-200" variant="outline">
+                        <UserPlus className="w-3 h-3 mr-1" />
+                        Invited
+                      </Badge>
+                    )}
+                    <Badge className={store.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                      {store.status}
+                    </Badge>
+                  </div>
                 </div>
                 {store.description && (
                   <p className="text-sm text-gray-600">{store.description}</p>
@@ -283,12 +297,17 @@ export default function Stores() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="flex space-x-2">
-                    <Link to={createPageUrl('Storefront')}>
-                      <Button size="sm" variant="outline">
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                      </Button>
-                    </Link>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        const baseUrl = getStoreBaseUrl(store);
+                        window.open(getExternalStoreUrl(store.slug, '', baseUrl), '_blank');
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View
+                    </Button>
                     <Link to={createPageUrl('Settings')}>
                       <Button size="sm">
                         <Settings className="w-4 h-4 mr-1" />
@@ -308,6 +327,9 @@ export default function Stores() {
 
                 <div className="mt-4 text-sm text-gray-500">
                   <p>Created: {new Date(store.created_date).toLocaleDateString()}</p>
+                  {store.owner_email && store.owner_email !== user?.email && (
+                    <p>Owner: {store.owner_email}</p>
+                  )}
                   {store.agency_id && (
                     <p>Agency Managed</p>
                   )}

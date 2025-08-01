@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, CreditCard, Banknote } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Banknote, CheckCircle, AlertCircle } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { CountrySelect } from "@/components/ui/country-select";
 
@@ -294,6 +294,18 @@ export default function PaymentMethods() {
                         <Badge variant={method.is_active ? 'default' : 'secondary'}>
                           {method.is_active ? 'Active' : 'Inactive'}
                         </Badge>
+                        {method.type === 'stripe' && (
+                          <Badge 
+                            variant={store?.stripe_connect_onboarding_complete ? "default" : "outline"}
+                            className={store?.stripe_connect_onboarding_complete ? "bg-green-100 text-green-700 border-green-200" : "bg-yellow-100 text-yellow-700 border-yellow-200"}
+                          >
+                            {store?.stripe_connect_onboarding_complete ? (
+                              <><CheckCircle className="w-3 h-3 mr-1" /> Connected</>
+                            ) : (
+                              <><AlertCircle className="w-3 h-3 mr-1" /> Not Connected</>
+                            )}
+                          </Badge>
+                        )}
                         {method.fee_type && method.fee_type !== 'none' && (
                           <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
                             {method.fee_type === 'fixed' 

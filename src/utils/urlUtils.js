@@ -282,6 +282,45 @@ export function getCurrentUrlType() {
 }
 
 /**
+ * Generate external public store URL
+ * @param {string} storeSlug - The store slug/code
+ * @param {string} path - Optional path after the store slug (e.g., 'product/item-slug')
+ * @param {string} customBaseUrl - Optional custom base URL (falls back to env var or default)
+ * @returns {string} - The complete external URL
+ */
+export function getExternalStoreUrl(storeSlug, path = '', customBaseUrl = null) {
+  // Priority: customBaseUrl > environment variable > default
+  const baseUrl = customBaseUrl || 
+                  import.meta.env.VITE_PUBLIC_STORE_BASE_URL || 
+                  'https://catalyst-pearl.vercel.app';
+  
+  const publicPath = `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug || 'store'}`;
+  const fullPath = path ? `${publicPath}/${path}` : `${publicPath}/`;
+  return `${baseUrl}${fullPath}`;
+}
+
+/**
+ * Get base URL for public stores from store settings or environment
+ * @param {object} store - Store object with settings
+ * @returns {string} - The base URL for public stores
+ */
+export function getStoreBaseUrl(store = null) {
+  // Check if store has a custom domain configured
+  if (store?.custom_domain && store?.domain_status === 'active') {
+    // If store has active custom domain, use it
+    return `https://${store.custom_domain}`;
+  }
+  
+  // Check store settings for configured base URL
+  if (store?.settings?.public_base_url) {
+    return store.settings.public_base_url;
+  }
+  
+  // Fall back to environment variable or default
+  return import.meta.env.VITE_PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+}
+
+/**
  * Extract store slug from public URL
  */
 export function getStoreSlugFromPublicUrl(pathname) {

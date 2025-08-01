@@ -95,7 +95,24 @@ export default function ThemeLayout() {
         if (!store) return;
         setSaving(true);
         try {
-            const result = await retryApiCall(() => Store.update(store.id, { settings: store.settings }));
+            // Get the current store data to preserve all fields
+            const currentStore = await retryApiCall(() => Store.findById(store.id));
+            
+            // Merge the updated settings with the existing store data
+            const updatedStore = {
+                ...currentStore,
+                settings: {
+                    ...(currentStore.settings || {}),
+                    ...store.settings,
+                    theme: {
+                        ...(currentStore.settings?.theme || {}),
+                        ...store.settings.theme
+                    }
+                }
+            };
+            
+            // Update only the settings field
+            const result = await retryApiCall(() => Store.update(store.id, { settings: updatedStore.settings }));
             
             // Clear ALL StoreProvider cache to force reload of settings
             try {

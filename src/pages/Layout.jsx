@@ -3,11 +3,11 @@
 import React, { useState, useEffect, Fragment } from "react";
 import { NavLink, useLocation, useNavigate, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { createAdminUrl } from "@/utils/urlUtils";
+import { createAdminUrl, getExternalStoreUrl, getStoreBaseUrl } from "@/utils/urlUtils";
 import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
-import { hasBothRolesLoggedIn } from "@/utils/auth";
+import { hasBothRolesLoggedIn, performLogout } from "@/utils/auth";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
@@ -79,6 +79,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { StoreProvider } from "@/components/storefront/StoreProvider";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useStoreSelection } from "@/contexts/StoreSelectionContext";
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -106,6 +107,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { selectedStore } = useStoreSelection();
   
   const [user, setUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -410,7 +412,6 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
-        { name: "Team", path: "SETTINGS?tab=team", icon: Users },
         { name: "Plugins", path: "PLUGINS", icon: Puzzle },
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "STORES", icon: Building2 },
@@ -576,7 +577,10 @@ export default function Layout({ children, currentPageName }) {
             <DropdownMenuContent className="w-56">
                 <DropdownMenuLabel>{user?.first_name || user?.name || user?.email} ({user?.role})</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => window.open(createPageUrl("Storefront"), '_blank')}>
+                <DropdownMenuItem onClick={() => {
+                    const baseUrl = getStoreBaseUrl(selectedStore);
+                    window.open(getExternalStoreUrl(selectedStore?.slug, '', baseUrl), '_blank');
+                }}>
                     <ShoppingBag className="mr-2 h-4 w-4" />
                     <span>View Storefront</span>
                 </DropdownMenuItem>
@@ -584,13 +588,13 @@ export default function Layout({ children, currentPageName }) {
                     <Wallet className="mr-2 h-4 w-4" />
                     <span>Billing</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(createAdminUrl("SETTINGS?tab=team"))}>
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>Team</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => {
                     try {
-                        await Auth.logout();
-                        // Add a small delay to ensure all cleanup is complete
-                        setTimeout(() => {
-                            window.location.href = '/admin/auth';
-                        }, 100);
+                        await performLogout();
                     } catch (error) {
                         console.error('❌ Mobile logout error:', error);
                         window.location.href = '/admin/auth';
@@ -731,13 +735,20 @@ export default function Layout({ children, currentPageName }) {
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => window.open(createPageUrl("Storefront"), '_blank')}>
+                <DropdownMenuItem onClick={() => {
+                  const baseUrl = getStoreBaseUrl(selectedStore);
+                  window.open(getExternalStoreUrl(selectedStore?.slug, '', baseUrl), '_blank');
+                }}>
                   <ShoppingBag className="mr-2 h-4 w-4" />
                   <span>View Storefront</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate(createPageUrl("Billing"))}>
                   <Wallet className="mr-2 h-4 w-4" />
                   <span>Billing</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(createAdminUrl("SETTINGS?tab=team"))}>
+                  <Users className="mr-2 h-4 w-4" />
+                  <span>Team</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
@@ -749,17 +760,11 @@ export default function Layout({ children, currentPageName }) {
                       e.stopPropagation();
                       
                       try {
-                        
-                        await Auth.logout();
-                        
-                        
-                        setTimeout(() => {
-                          window.location.href = '/admin/auth';
-                        }, 2000);
-                        
+                        await performLogout();
                       } catch (error) {
                         console.error('❌ Desktop logout error:', error);
                         console.error('❌ Error stack:', error.stack);
+                        window.location.href = '/admin/auth';
                       }
                     }}
                   >

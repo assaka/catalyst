@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CustomerWishlist, StorefrontProduct, CustomerAuth } from '@/api/storefront-entities';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider'; // FIXED: Corrected import path
 import { formatDisplayPrice } from '@/utils/priceUtils';
 
@@ -161,9 +162,9 @@ export default function WishlistDropdown() {
                     className="w-12 h-12 object-cover rounded"
                   />
                   <div className="flex-1 min-w-0">
-                    <Link to={createPageUrl(`ProductDetail?slug=${item.product?.slug || item.product_id}`)}>
+                    <a href={getExternalStoreUrl(store?.slug, `product/${item.product?.slug || item.product_id}`, getStoreBaseUrl(store))}>
                       <p className="text-sm font-medium truncate hover:underline">{item.product?.name}</p>
-                    </Link>
+                    </a>
                     <p className="text-sm text-gray-500">
                       {formatDisplayPrice(item.product?.price, currencySymbol, store, taxes, selectedCountry)}
                     </p>

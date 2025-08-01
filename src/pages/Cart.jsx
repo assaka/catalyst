@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { createPublicUrl } from '@/utils/urlUtils';
+import { createPublicUrl, getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { StorefrontProduct } from '@/api/storefront-entities';
 import { Coupon } from '@/api/entities';
@@ -607,9 +607,12 @@ export default function Cart() {
                             <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                             <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
                             <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
-                            <Link to={createPageUrl('Storefront')}>
-                                <Button>Continue Shopping</Button>
-                            </Link>
+                            <Button onClick={() => {
+                                const baseUrl = getStoreBaseUrl(store);
+                                window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+                            }}>
+                                Continue Shopping
+                            </Button>
                         </CardContent>
                     </Card>
                 ) : (
