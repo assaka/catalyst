@@ -410,6 +410,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
+        { name: "Team", path: "SETTINGS?tab=team", icon: Users },
         { name: "Plugins", path: "PLUGINS", icon: Puzzle },
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "STORES", icon: Building2 },
