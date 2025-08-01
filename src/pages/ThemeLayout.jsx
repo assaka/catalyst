@@ -38,33 +38,21 @@ export default function ThemeLayout() {
     const loadStore = async () => {
         try {
             const storeId = getSelectedStoreId();
-            console.log('=== THEME LOAD DEBUG ===');
-            console.log('getSelectedStoreId():', storeId);
-            console.log('typeof storeId:', typeof storeId);
-            console.log('Selected store:', selectedStore);
-            console.log('Selected store ID:', selectedStore?.id);
-            console.log('Selected store settings:', selectedStore.settings);
             
             // Use selectedStore.id as fallback if getSelectedStoreId() fails
             const actualStoreId = (storeId && storeId !== 'undefined') ? storeId : selectedStore?.id;
-            console.log('Final store ID to use:', actualStoreId);
             
             if (!actualStoreId || actualStoreId === 'undefined') {
-                console.warn("No valid store selected, actualStoreId:", actualStoreId);
+                console.warn("No valid store selected");
                 setLoading(false);
                 return;
             }
             
             // The selectedStore from context doesn't have settings, so we need to fetch the full store data
-            console.log('Fetching full store data with settings...');
             const fullStoreResponse = await Store.findById(actualStoreId);
-            console.log('Full store response:', fullStoreResponse);
             
             // Store.findById returns an array, so we need to get the first item
             const fullStore = Array.isArray(fullStoreResponse) ? fullStoreResponse[0] : fullStoreResponse;
-            console.log('Full store data:', fullStore);
-            console.log('Full store settings:', fullStore?.settings);
-            console.log('Full store theme:', fullStore?.settings?.theme);
 
             // Ensure settings object and its nested properties exist with defaults
             const settings = {
@@ -80,9 +68,6 @@ export default function ThemeLayout() {
                     ...((fullStore?.settings || {}).theme || {})
                 },
             };
-            
-            console.log('Final settings object:', settings);
-            console.log('=== LOAD COMPLETE ===');
             
             // Use the full store data instead of selectedStore, but ensure we have the ID
             setStore({ 
@@ -126,23 +111,11 @@ export default function ThemeLayout() {
         if (!store) return;
         setSaving(true);
         try {
-            console.log('=== THEME SAVE DEBUG ===');
-            console.log('Store ID:', store.id);
-            console.log('Current store settings:', JSON.stringify(store.settings, null, 2));
-            console.log('Theme colors:', store.settings.theme);
-            
-            // Try using admin API client directly like other settings pages
-            const updatePayload = { settings: store.settings };
-            console.log('Update payload:', JSON.stringify(updatePayload, null, 2));
-            
             // Use the same approach as Tax.jsx and ShippingMethods.jsx
             const result = await retryApiCall(async () => {
                 const { Store } = await import('@/api/entities');
-                return await Store.update(store.id, updatePayload);
+                return await Store.update(store.id, { settings: store.settings });
             });
-            
-            console.log('Save result:', result);
-            console.log('=== SAVE COMPLETE ===');
             
             // Clear only specific StoreProvider cache to force reload of settings
             try {
@@ -165,12 +138,7 @@ export default function ThemeLayout() {
                 console.warn('Failed to clear cache from storage:', e);
             }
             
-            setFlashMessage({ type: 'success', message: 'Settings saved successfully! Changes will be applied on next page load.' });
-            
-            // Optional: reload after a delay to show the success message
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+            setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
             
         } catch (error) {
             console.error("Failed to save settings:", error);
