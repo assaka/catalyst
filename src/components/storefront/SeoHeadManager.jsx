@@ -86,20 +86,38 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             finalKeywords: keywords
         });
 
-        // Determine the robots tag - check SEO settings for global override
+        // Determine the robots tag - check SEO settings and robots.txt rules
         let robotsTag = pageData?.meta_robots_tag || 
                        pageData?.seo?.meta_robots_tag;
         
-        // If no page-specific robots tag, check SEO settings for global default
+        // If no page-specific robots tag, check robots.txt content for current page
         if (!robotsTag) {
-            // Check if robots.txt has specific directives that should affect meta robots
             const robotsContent = seoSettings?.robots_txt_content || '';
-            if (robotsContent.includes('Disallow: /')) {
-                // If robots.txt has broad disallow rules, be more restrictive
-                robotsTag = seoSettings?.default_meta_robots || 'index, follow';
-            } else {
-                robotsTag = seoSettings?.default_meta_robots || 'index, follow';
+            const currentPath = window.location.pathname;
+            
+            console.log('🔍 Robots check:', {
+                currentPath,
+                robotsContent,
+                'contains /category/': robotsContent.includes('Disallow: /category/'),
+                'path includes category': currentPath.includes('/category')
+            });
+            
+            // Check if current path matches any Disallow rules
+            let shouldDisallow = false;
+            if (robotsContent) {
+                const disallowRules = robotsContent.match(/Disallow:\s*([^\n\r]*)/g) || [];
+                for (const rule of disallowRules) {
+                    const path = rule.replace('Disallow:', '').trim();
+                    if (path && currentPath.startsWith(path)) {
+                        shouldDisallow = true;
+                        console.log('🚫 Found matching Disallow rule:', path);
+                        break;
+                    }
+                }
             }
+            
+            robotsTag = shouldDisallow ? 'noindex, nofollow' : (seoSettings?.default_meta_robots || 'index, follow');
+            console.log('🔍 Final robots tag:', robotsTag);
         }
 
         const ogImage = imageUrl || 
@@ -141,9 +159,15 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         // Canonical URL
         const canonicalUrl = pageData?.canonical_url || 
-                            (seoSettings?.canonical_base_url ? 
+                            (seoSettings?.canonical_base_url && seoSettings.canonical_base_url.trim() ? 
                                 `${seoSettings.canonical_base_url}${window.location.pathname}` : 
                                 window.location.href);
+        
+        console.log('🔍 Canonical URL check:', {
+            'seoSettings?.canonical_base_url': seoSettings?.canonical_base_url,
+            'window.location.pathname': window.location.pathname,
+            'finalCanonicalUrl': canonicalUrl
+        });
         
         // Update or create canonical link
         let canonicalLink = document.querySelector('link[rel="canonical"]');
@@ -155,6 +179,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         canonicalLink.setAttribute('href', canonicalUrl);
 
         // Hreflang tags
+        console.log('🔍 Hreflang check:', {
+            'seoSettings?.hreflang_settings': seoSettings?.hreflang_settings,
+            'isArray': Array.isArray(seoSettings?.hreflang_settings),
+            'length': seoSettings?.hreflang_settings?.length
+        });
+        
         if (seoSettings?.hreflang_settings && Array.isArray(seoSettings.hreflang_settings) && seoSettings.hreflang_settings.length > 0) {
             // Remove existing hreflang tags
             const existingHreflangs = document.querySelectorAll('link[rel="alternate"][hreflang]');

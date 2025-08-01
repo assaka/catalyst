@@ -330,7 +330,17 @@ export const StoreProvider = ({ children }) => {
               card_type: 'summary_large_image',
               site_username: ''
             },
-            hreflang_settings: Array.isArray(loadedSeoSettings.hreflang_settings) ? loadedSeoSettings.hreflang_settings : []
+            hreflang_settings: (() => {
+              try {
+                if (typeof loadedSeoSettings.hreflang_settings === 'string') {
+                  return JSON.parse(loadedSeoSettings.hreflang_settings);
+                }
+                return Array.isArray(loadedSeoSettings.hreflang_settings) ? loadedSeoSettings.hreflang_settings : [];
+              } catch (e) {
+                console.warn('Failed to parse hreflang_settings:', e);
+                return [];
+              }
+            })()
           });
         } else {
           setSeoSettings({
