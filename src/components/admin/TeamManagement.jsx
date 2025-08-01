@@ -113,17 +113,21 @@ export default function TeamManagement({ storeId }) {
 
   const loadTeamMembers = async () => {
     try {
+      console.log('🔍 TeamManagement: Loading team members for store:', storeId);
       setLoading(true);
       const response = await StoreTeam.getTeamMembers(storeId);
-      console.log('🔍 Team API response:', response);
+      console.log('🔍 TeamManagement: Full API response:', JSON.stringify(response, null, 2));
       
       // Handle nested response structure: response.data.team_members
       const teamMembers = response?.data?.team_members || response?.team_members || [];
-      console.log('🔍 Extracted team members:', teamMembers);
+      console.log('🔍 TeamManagement: Extracted team members count:', teamMembers.length);
+      console.log('🔍 TeamManagement: Team members:', teamMembers);
       
       setTeamMembers(teamMembers);
+      console.log('🔍 TeamManagement: State updated, teamMembers length:', teamMembers.length);
     } catch (error) {
-      console.error('Error loading team members:', error);
+      console.error('❌ TeamManagement: Error loading team members:', error);
+      console.error('❌ TeamManagement: Error details:', error.message);
       toast.error('Failed to load team members');
     } finally {
       setLoading(false);
