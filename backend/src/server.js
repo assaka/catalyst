@@ -1509,14 +1509,23 @@ const startServer = async () => {
           console.log('📊 Database schema validated (production mode).');
         }
         
-        // Run SEO schema migration automatically
-        console.log('🔄 Running SEO schema migration...');
+        // Run all pending database migrations automatically
+        console.log('🔄 Running database migrations...');
         try {
-          const runSeoSchemaMigration = require('./database/migrations/run-seo-schema-migration');
-          await runSeoSchemaMigration();
-          console.log('✅ SEO schema migration completed successfully.');
+          const { runPendingMigrations } = require('./database/migrations/migration-tracker');
+          const migrationResult = await runPendingMigrations();
+          
+          if (migrationResult.success) {
+            if (migrationResult.migrationsRun > 0) {
+              console.log(`✅ Database migrations completed successfully: ${migrationResult.migrationsRun} migrations executed.`);
+            } else {
+              console.log('✅ Database schema is up to date.');
+            }
+          } else {
+            console.warn('⚠️ Some database migrations failed:', migrationResult.error);
+          }
         } catch (migrationError) {
-          console.warn('⚠️ SEO schema migration warning (this might be normal if already migrated):', migrationError.message);
+          console.warn('⚠️ Database migration warning:', migrationError.message);
         }
         
       } catch (dbError) {
