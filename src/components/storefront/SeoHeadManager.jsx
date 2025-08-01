@@ -64,6 +64,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                         pageData?.seo?.meta_keywords || 
                         processedDefaultKeywords;
 
+        // Default description for structured data
+        const defaultDescription = description || store?.description || 'Quality products and services';
+
         // Determine the robots tag
         const robotsTag = pageData?.meta_robots_tag || 
                           pageData?.seo?.meta_robots_tag || 
