@@ -605,7 +605,7 @@ export default function Layout({ children, currentPageName }) {
                     <Wallet className="mr-2 h-4 w-4" />
                     <span>Billing</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate(createAdminUrl("SETTINGS?tab=team"))}>
+                <DropdownMenuItem onClick={() => navigate("/admin/team")}>
                     <Users className="mr-2 h-4 w-4" />
                     <span>Team</span>
                 </DropdownMenuItem>
