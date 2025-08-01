@@ -177,8 +177,16 @@ export default function Dashboard() {
       const allOrders = await retryApiCall(() => Order.filter({ store_id: storeId }), 3, 1000);
       const customers = await retryApiCall(() => Customer.filter({ store_id: storeId }), 3, 1000);
 
+      console.log('Dashboard orders:', allOrders?.slice(0, 3)); // Debug first 3 orders
+      
       const totalOrders = Array.isArray(allOrders) ? allOrders.length : 0;
-      const totalRevenue = Array.isArray(allOrders) ? allOrders.reduce((sum, order) => sum + (order?.total_amount || 0), 0) : 0;
+      const totalRevenue = Array.isArray(allOrders) ? allOrders.reduce((sum, order) => {
+        const amount = parseFloat(order?.total_amount || 0);
+        if (order?.total_amount && isNaN(amount)) {
+          console.warn('Invalid total_amount in order:', order.id, order.total_amount);
+        }
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0) : 0;
       const totalProductsCount = Array.isArray(productsData) ? productsData.length : 0;
       const totalCustomers = Array.isArray(customers) ? customers.length : 0;
 
@@ -350,7 +358,7 @@ export default function Dashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                  <p className="text-3xl font-bold text-gray-900">${Math.round(stats.totalRevenue).toLocaleString()}</p>
+                  <p className="text-3xl font-bold text-gray-900">${Math.round(stats.totalRevenue || 0).toLocaleString()}</p>
                 </div>
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
                   <DollarSign className="w-6 h-6 text-orange-600" />
