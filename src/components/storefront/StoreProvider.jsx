@@ -311,9 +311,10 @@ export const StoreProvider = ({ children }) => {
         
         if (seoSettingsData && seoSettingsData.length > 0) {
           const loadedSeoSettings = seoSettingsData[0];
+          console.log('🔍 Raw SEO settings from API:', loadedSeoSettings);
           setSeoSettings({
             ...loadedSeoSettings,
-            // Ensure nested objects exist with defaults
+            // Ensure nested objects exist with defaults, but preserve boolean flags
             schema_settings: loadedSeoSettings.schema_settings || {
               enable_product_schema: true,
               enable_organization_schema: true,
