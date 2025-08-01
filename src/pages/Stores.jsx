@@ -307,9 +307,6 @@ export default function Stores() {
                     </Badge>
                   </div>
                 </div>
-                {store.description && (
-                  <p className="text-sm text-gray-600">{store.description}</p>
-                )}
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-between">
