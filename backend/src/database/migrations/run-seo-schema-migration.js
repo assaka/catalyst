@@ -78,10 +78,19 @@ async function runSeoSchemaMigration() {
       console.error('⚠️  Model test error (this might be normal):', modelError.message);
     }
     
-    process.exit(0);
+    // Only exit if called directly from command line
+    if (require.main === module) {
+      process.exit(0);
+    }
   } catch (error) {
     console.error('❌ SEO schema migration failed:', error);
-    process.exit(1);
+    // Only exit if called directly from command line
+    if (require.main === module) {
+      process.exit(1);
+    } else {
+      // Re-throw the error when called programmatically so server can handle it
+      throw error;
+    }
   }
 }
 

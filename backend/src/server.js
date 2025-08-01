@@ -1509,6 +1509,16 @@ const startServer = async () => {
           console.log('📊 Database schema validated (production mode).');
         }
         
+        // Run SEO schema migration automatically
+        console.log('🔄 Running SEO schema migration...');
+        try {
+          const runSeoSchemaMigration = require('./database/migrations/run-seo-schema-migration');
+          await runSeoSchemaMigration();
+          console.log('✅ SEO schema migration completed successfully.');
+        } catch (migrationError) {
+          console.warn('⚠️ SEO schema migration warning (this might be normal if already migrated):', migrationError.message);
+        }
+        
       } catch (dbError) {
         retries--;
         console.error(`❌ Database connection failed (${3 - retries}/3):`, dbError.message);
