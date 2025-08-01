@@ -52,13 +52,6 @@ export default function Stores() {
             // findById returns array, get first item
             const fullStore = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
             console.log(`Full store data for ${store.name}:`, fullStore);
-            console.log(`Available date fields:`, {
-              created_at: fullStore?.created_at,
-              createdAt: fullStore?.createdAt,
-              created_date: fullStore?.created_date,
-              updatedAt: fullStore?.updatedAt,
-              updated_at: fullStore?.updated_at
-            });
             return { ...store, ...fullStore }; // Merge to ensure we have all fields
           } catch (error) {
             console.warn(`Failed to load full data for store ${store.id}:`, error);
@@ -360,9 +353,10 @@ export default function Stores() {
                 </div>
 
                 <div className="mt-4 text-sm text-gray-500">
-                  {(store.created_at || store.createdAt || store.created_date) && (
-                    <p>Created: {new Date(store.created_at || store.createdAt || store.created_date).toLocaleDateString()}</p>
-                  )}
+                  <p>Created: {store.created_at ? 
+                    new Date(store.created_at).toLocaleDateString() : 
+                    'Unknown'
+                  }</p>
                   {/* Show owner email if different from current user */}
                   {store.owner_email && store.owner_email !== user?.email && (
                     <p>Owner: {store.owner_email}</p>
