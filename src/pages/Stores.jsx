@@ -353,8 +353,8 @@ export default function Stores() {
                 </div>
 
                 <div className="mt-4 text-sm text-gray-500">
-                  <p>Created: {store.created_date || store.created_at || store.createdAt ? 
-                    new Date(store.created_date || store.created_at || store.createdAt).toLocaleDateString() : 
+                  <p>Created: {store.created_at ? 
+                    new Date(store.created_at).toLocaleDateString() : 
                     'Unknown'
                   }</p>
                   {/* Show owner email if different from current user */}
