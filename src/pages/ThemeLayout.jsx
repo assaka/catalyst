@@ -50,14 +50,18 @@ export default function ThemeLayout() {
             
             // The selectedStore from context doesn't have settings, so we need to fetch the full store data
             console.log('Fetching full store data with settings...');
-            const fullStore = await Store.findById(storeId);
+            const fullStoreResponse = await Store.findById(storeId);
+            console.log('Full store response:', fullStoreResponse);
+            
+            // Store.findById returns an array, so we need to get the first item
+            const fullStore = Array.isArray(fullStoreResponse) ? fullStoreResponse[0] : fullStoreResponse;
             console.log('Full store data:', fullStore);
-            console.log('Full store settings:', fullStore.settings);
-            console.log('Full store theme:', fullStore.settings?.theme);
+            console.log('Full store settings:', fullStore?.settings);
+            console.log('Full store theme:', fullStore?.settings?.theme);
 
             // Ensure settings object and its nested properties exist with defaults
             const settings = {
-                ...(fullStore.settings || {}),
+                ...(fullStore?.settings || {}),
                 theme: {
                     primary_button_color: '#007bff',
                     secondary_button_color: '#6c757d',
@@ -66,15 +70,19 @@ export default function ThemeLayout() {
                     checkout_button_color: '#007bff',
                     place_order_button_color: '#28a745',
                     font_family: 'Inter',
-                    ...((fullStore.settings || {}).theme || {})
+                    ...((fullStore?.settings || {}).theme || {})
                 },
             };
             
             console.log('Final settings object:', settings);
             console.log('=== LOAD COMPLETE ===');
             
-            // Use the full store data instead of selectedStore
-            setStore({ ...fullStore, settings });
+            // Use the full store data instead of selectedStore, but ensure we have the ID
+            setStore({ 
+                ...fullStore, 
+                id: fullStore?.id || storeId, // Ensure we have the store ID
+                settings 
+            });
         } catch (error) {
             console.error("Failed to load store:", error);
             setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
