@@ -4,10 +4,53 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// @route   GET /api/seo-settings
-// @desc    Get SEO settings for a store
-// @access  Private (admin only)
-router.get('/', auth, async (req, res) => {
+// @route   GET /api/public/seo-settings (public access)
+// @desc    Get SEO settings for a store (public access for storefront)
+// @access  Public
+router.get('/', async (req, res) => {
+  // Check if this is a public request (no auth header)
+  const isPublicRequest = !req.headers.authorization;
+  
+  if (isPublicRequest) {
+    // Public access for storefront
+    try {
+      const { store_id } = req.query;
+
+      if (!store_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'store_id is required'
+        });
+      }
+
+      console.log('[SEO Settings] Public request for store:', store_id);
+
+      const seoSettings = await SeoSettings.findOne({
+        where: { store_id }
+      });
+
+      if (!seoSettings) {
+        console.log('[SEO Settings] No settings found, returning empty array');
+        return res.json([]);
+      }
+
+      console.log('[SEO Settings] Found settings:', !!seoSettings);
+      
+      // Return array format that the frontend expects
+      res.json([seoSettings]);
+    } catch (error) {
+      console.error('[SEO Settings] Public request error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Server error',
+        error: error.message
+      });
+    }
+    return;
+  }
+
+  // Private/authenticated request - continue with auth middleware
+  auth(req, res, async () => {
   try {
     const { store_id } = req.query;
 
@@ -59,7 +102,8 @@ router.get('/', auth, async (req, res) => {
       message: 'Server error'
     });
   }
-});
+  }); // Close auth middleware callback
+}); // Close router.get
 
 // @route   POST /api/seo-settings
 // @desc    Create or update SEO settings
