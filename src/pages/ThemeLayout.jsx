@@ -47,11 +47,17 @@ export default function ThemeLayout() {
             console.log('=== THEME LOAD DEBUG ===');
             console.log('Selected store:', selectedStore);
             console.log('Selected store settings:', selectedStore.settings);
-            console.log('Selected store theme:', selectedStore.settings?.theme);
+            
+            // The selectedStore from context doesn't have settings, so we need to fetch the full store data
+            console.log('Fetching full store data with settings...');
+            const fullStore = await Store.findById(storeId);
+            console.log('Full store data:', fullStore);
+            console.log('Full store settings:', fullStore.settings);
+            console.log('Full store theme:', fullStore.settings?.theme);
 
             // Ensure settings object and its nested properties exist with defaults
             const settings = {
-                ...(selectedStore.settings || {}),
+                ...(fullStore.settings || {}),
                 theme: {
                     primary_button_color: '#007bff',
                     secondary_button_color: '#6c757d',
@@ -60,14 +66,15 @@ export default function ThemeLayout() {
                     checkout_button_color: '#007bff',
                     place_order_button_color: '#28a745',
                     font_family: 'Inter',
-                    ...((selectedStore.settings || {}).theme || {})
+                    ...((fullStore.settings || {}).theme || {})
                 },
             };
             
             console.log('Final settings object:', settings);
             console.log('=== LOAD COMPLETE ===');
             
-            setStore({ ...selectedStore, settings });
+            // Use the full store data instead of selectedStore
+            setStore({ ...fullStore, settings });
         } catch (error) {
             console.error("Failed to load store:", error);
             setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
