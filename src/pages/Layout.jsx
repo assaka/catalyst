@@ -7,7 +7,7 @@ import { createAdminUrl, getExternalStoreUrl, getStoreBaseUrl } from "@/utils/ur
 import { User, Auth } from "@/api/entities";
 import apiClient from "@/api/client";
 import { Store } from "@/api/entities";
-import { hasBothRolesLoggedIn, performLogout } from "@/utils/auth";
+import { hasBothRolesLoggedIn, handleLogout } from "@/utils/auth";
 import StorefrontLayout from '@/components/storefront/StorefrontLayout';
 import StoreSelector from '@/components/admin/StoreSelector';
 import useRoleProtection from '@/hooks/useRoleProtection';
@@ -594,7 +594,7 @@ export default function Layout({ children, currentPageName }) {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={async () => {
                     try {
-                        await performLogout();
+                        await handleLogout();
                     } catch (error) {
                         console.error('❌ Mobile logout error:', error);
                         window.location.href = '/admin/auth';
@@ -760,7 +760,7 @@ export default function Layout({ children, currentPageName }) {
                       e.stopPropagation();
                       
                       try {
-                        await performLogout();
+                        await handleLogout();
                       } catch (error) {
                         console.error('❌ Desktop logout error:', error);
                         console.error('❌ Error stack:', error.stack);
