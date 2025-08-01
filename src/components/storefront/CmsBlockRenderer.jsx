@@ -77,7 +77,7 @@ const loadCmsBlocksWithCache = async (storeId) => {
   return requestPromise;
 };
 
-export default function CmsBlockRenderer({ position, page }) {
+export default function CmsBlockRenderer({ position, page, storeId }) {
   const [blocks, setBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const { selectedStore } = useStoreSelection();
@@ -85,14 +85,15 @@ export default function CmsBlockRenderer({ position, page }) {
   useEffect(() => {
     const loadBlocks = async () => {
       try {
-        if (!selectedStore?.id) {
+        const currentStoreId = storeId || selectedStore?.id;
+        if (!currentStoreId) {
           console.log('❌ No store selected, cannot load CMS blocks');
           setBlocks([]);
           setLoading(false);
           return;
         }
 
-        const allBlocks = await loadCmsBlocksWithCache(selectedStore.id);
+        const allBlocks = await loadCmsBlocksWithCache(currentStoreId);
         
         const filteredBlocks = allBlocks.filter(block => {
           if (!block.is_active) return false;
@@ -135,7 +136,7 @@ export default function CmsBlockRenderer({ position, page }) {
     };
 
     loadBlocks();
-  }, [position, page, selectedStore?.id]);
+  }, [position, page, selectedStore?.id, storeId]);
 
   if (loading) {
     return null; // Don't show loading spinner for CMS blocks
