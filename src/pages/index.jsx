@@ -90,6 +90,8 @@ import CustomerActivity from "./CustomerActivity";
 
 import CookieConsent from "./CookieConsent";
 
+import TeamPage from "./TeamPage";
+
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
 const PAGES = {
@@ -184,6 +186,8 @@ const PAGES = {
     
     CookieConsent: CookieConsent,
     
+    TeamPage: TeamPage,
+    
 }
 
 function _getCurrentPage(url) {
@@ -217,6 +221,7 @@ function _getCurrentPage(url) {
         'seo-tools': 'SeoTools',
         'analytics': 'AnalyticsSettings',
         'theme-layout': 'ThemeLayout',
+        'team': 'TeamPage',
         'image-manager': 'ImageManager',
         'stock-settings': 'StockSettings',
         'google-tag-manager': 'GoogleTagManager'
@@ -566,6 +571,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/team" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <TeamPage />
+                    </RoleProtectedRoute>
+                } />
+                
                 <Route path="/admin/customer-activity" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <CustomerActivity />
@@ -839,6 +850,12 @@ function PagesContent() {
                 <Route path="/admin/stores" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Stores />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/team" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <TeamPage />
                     </RoleProtectedRoute>
                 } />
                 

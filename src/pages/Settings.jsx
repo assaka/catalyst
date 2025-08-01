@@ -17,7 +17,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import TeamManagement from '@/components/admin/TeamManagement';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -526,13 +525,12 @@ export default function Settings() {
           params.set('tab', value);
           setSearchParams(params);
         }} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="domain">Domain</TabsTrigger>
             <TabsTrigger value="brevo">Brevo</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="mt-6">
@@ -878,10 +876,6 @@ export default function Settings() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="team" className="mt-6">
-            <TeamManagement storeId={store?.id} />
           </TabsContent>
 
           <TabsContent value="advanced" className="mt-6">
