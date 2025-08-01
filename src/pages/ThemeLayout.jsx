@@ -38,19 +38,26 @@ export default function ThemeLayout() {
     const loadStore = async () => {
         try {
             const storeId = getSelectedStoreId();
-            if (!storeId) {
-                console.warn("No store selected");
+            console.log('=== THEME LOAD DEBUG ===');
+            console.log('getSelectedStoreId():', storeId);
+            console.log('typeof storeId:', typeof storeId);
+            console.log('Selected store:', selectedStore);
+            console.log('Selected store ID:', selectedStore?.id);
+            console.log('Selected store settings:', selectedStore.settings);
+            
+            // Use selectedStore.id as fallback if getSelectedStoreId() fails
+            const actualStoreId = (storeId && storeId !== 'undefined') ? storeId : selectedStore?.id;
+            console.log('Final store ID to use:', actualStoreId);
+            
+            if (!actualStoreId || actualStoreId === 'undefined') {
+                console.warn("No valid store selected, actualStoreId:", actualStoreId);
                 setLoading(false);
                 return;
             }
-
-            console.log('=== THEME LOAD DEBUG ===');
-            console.log('Selected store:', selectedStore);
-            console.log('Selected store settings:', selectedStore.settings);
             
             // The selectedStore from context doesn't have settings, so we need to fetch the full store data
             console.log('Fetching full store data with settings...');
-            const fullStoreResponse = await Store.findById(storeId);
+            const fullStoreResponse = await Store.findById(actualStoreId);
             console.log('Full store response:', fullStoreResponse);
             
             // Store.findById returns an array, so we need to get the first item
@@ -80,7 +87,7 @@ export default function ThemeLayout() {
             // Use the full store data instead of selectedStore, but ensure we have the ID
             setStore({ 
                 ...fullStore, 
-                id: fullStore?.id || storeId, // Ensure we have the store ID
+                id: fullStore?.id || actualStoreId, // Ensure we have the store ID
                 settings 
             });
         } catch (error) {
