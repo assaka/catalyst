@@ -257,6 +257,12 @@ export default function SeoTools() {
   const handleSaveSettings = async () => {
     const storeId = getSelectedStoreId();
     
+    console.log('🔍 Save Settings Debug:', {
+      storeId,
+      seoSettings,
+      selectedStore
+    });
+    
     if (!storeId) {
       setFlashMessage({ type: 'error', message: 'No store found. Please refresh the page.' });
       return;
@@ -264,7 +270,9 @@ export default function SeoTools() {
 
     setSaving(true);
     try {
+      console.log('🔍 Fetching existing settings for store:', storeId);
       const existingSettings = await SeoSetting.filter({ store_id: storeId });
+      console.log('🔍 Existing settings:', existingSettings);
 
       const payload = {
         default_meta_title: seoSettings.default_meta_title || '',
@@ -287,27 +295,39 @@ export default function SeoTools() {
         store_id: storeId
       };
 
+      console.log('🔍 Payload to save:', payload);
+
 
       let result;
       if (existingSettings && existingSettings.length > 0) {
+        console.log('🔍 Updating existing settings with ID:', existingSettings[0].id);
         result = await SeoSetting.update(existingSettings[0].id, payload);
+        console.log('🔍 Update result:', result);
       } else {
+        console.log('🔍 Creating new settings');
         result = await SeoSetting.create(payload);
+        console.log('🔍 Create result:', result);
       }
 
-      setFlashMessage({ type: 'success', message: 'Settings saved! The page will now reload to apply changes.' });
-
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
+      setSaving(false);
 
     } catch (error) {
       console.error("Detailed save error:", error);
       console.error("Error response:", error.response);
       console.error("Error message:", error.message);
+      console.error("Error data:", error.response?.data);
+      
+      let errorMessage = 'Unknown error';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setFlashMessage({
         type: 'error',
-        message: `Failed to save settings: ${error.message || 'Unknown error'}`
+        message: `Failed to save settings: ${errorMessage}`
       });
       setSaving(false);
     }
