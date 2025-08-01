@@ -219,7 +219,26 @@ router.post('/', [
       });
     }
 
-    const block = await CmsBlock.create(req.body);
+    // Process placement field - ensure it's an array
+    const blockData = { ...req.body };
+    if (blockData.placement) {
+      if (typeof blockData.placement === 'string') {
+        // Convert string to array
+        blockData.placement = [blockData.placement];
+      } else if (typeof blockData.placement === 'object' && blockData.placement.position) {
+        // Handle complex object format from original form
+        blockData.placement = Array.isArray(blockData.placement.position) 
+          ? blockData.placement.position 
+          : [blockData.placement.position];
+      } else if (!Array.isArray(blockData.placement)) {
+        // Default fallback
+        blockData.placement = ['content'];
+      }
+    } else {
+      blockData.placement = ['content']; // Default fallback
+    }
+
+    const block = await CmsBlock.create(blockData);
 
     res.status(201).json({
       success: true,
@@ -272,7 +291,24 @@ router.put('/:id', [
       });
     }
 
-    await block.update(req.body);
+    // Process placement field - ensure it's an array
+    const updateData = { ...req.body };
+    if (updateData.placement) {
+      if (typeof updateData.placement === 'string') {
+        // Convert string to array
+        updateData.placement = [updateData.placement];
+      } else if (typeof updateData.placement === 'object' && updateData.placement.position) {
+        // Handle complex object format from original form
+        updateData.placement = Array.isArray(updateData.placement.position) 
+          ? updateData.placement.position 
+          : [updateData.placement.position];
+      } else if (!Array.isArray(updateData.placement)) {
+        // Default fallback
+        updateData.placement = ['content'];
+      }
+    }
+
+    await block.update(updateData);
 
     res.json({
       success: true,

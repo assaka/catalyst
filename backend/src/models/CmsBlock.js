@@ -28,9 +28,9 @@ const CmsBlock = sequelize.define('CmsBlock', {
     defaultValue: 0
   },
   placement: {
-    type: DataTypes.STRING,
+    type: DataTypes.JSON,
     allowNull: true,
-    defaultValue: 'content'  // Default placement location
+    defaultValue: ['content']  // Default placement locations as array
   },
   // SEO fields
   meta_title: {

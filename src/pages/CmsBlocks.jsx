@@ -221,8 +221,7 @@ export default function CmsBlocks() {
               <DialogTitle>{editingBlock ? 'Edit CMS Block' : 'Add New CMS Block'}</DialogTitle> {/* Changed from 'selectedBlock' */}
             </DialogHeader>
             <CmsBlockForm
-              block={editingBlock} // Changed from 'selectedBlock'
-              stores={selectedStore ? [selectedStore] : []}
+              block={editingBlock}
               onSubmit={handleFormSubmit}
               onCancel={closeForm}
             />
