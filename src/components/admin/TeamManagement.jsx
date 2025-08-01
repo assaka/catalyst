@@ -113,10 +113,8 @@ export default function TeamManagement({ storeId }) {
 
   const loadTeamMembers = async () => {
     try {
-      console.log('🔍 TeamManagement: Loading team members for store:', storeId);
       setLoading(true);
       const response = await StoreTeam.getTeamMembers(storeId);
-      console.log('🔍 TeamManagement: Full API response:', JSON.stringify(response, null, 2));
       
       // Handle response structure: API returns direct array or nested structure
       let teamMembers = [];
@@ -131,11 +129,7 @@ export default function TeamManagement({ storeId }) {
         teamMembers = response.team_members;
       }
       
-      console.log('🔍 TeamManagement: Extracted team members count:', teamMembers.length);
-      console.log('🔍 TeamManagement: Team members:', teamMembers);
-      
       setTeamMembers(teamMembers);
-      console.log('🔍 TeamManagement: State updated, teamMembers length:', teamMembers.length);
     } catch (error) {
       console.error('❌ TeamManagement: Error loading team members:', error);
       console.error('❌ TeamManagement: Error details:', error.message);

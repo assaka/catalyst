@@ -136,7 +136,6 @@ export default function Layout({ children, currentPageName }) {
     
     // Listen for user data ready event
     const handleUserDataReady = () => {
-      console.log('🔍 Layout: Received userDataReady event, reloading user...');
       loadUserAndHandleCredits();
     };
     
@@ -180,7 +179,6 @@ export default function Layout({ children, currentPageName }) {
           });
           
           setUser(userData);
-          console.log('🔍 Layout: User state set to:', userData);
         } catch (parseError) {
           console.log('🔍 Layout.jsx: Error parsing user data:', parseError);
           setUser(null);
