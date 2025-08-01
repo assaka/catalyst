@@ -6,6 +6,8 @@ import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// Simple collapsible components if not available in UI library
+import { ChevronDown, ChevronRight, MapPin, Home, ShoppingCart, Package, CreditCard, Layout } from 'lucide-react';
 
 export default function CmsBlockForm({ block, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -14,6 +16,15 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
     content: '',
     is_active: true,
     placement: ['content'], // Array of placement locations
+  });
+
+  const [openSections, setOpenSections] = useState({
+    global: true,
+    homepage: false,
+    product: false,
+    category: false,
+    cart: false,
+    generic: false
   });
 
   useEffect(() => {
@@ -42,56 +53,101 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
     }));
   };
 
-  const placementOptions = [
-    // Global positions
-    { value: 'header', label: 'Header' },
-    { value: 'footer', label: 'Footer' },
-    { value: 'sidebar', label: 'Sidebar' },
-    
-    // Homepage specific
-    { value: 'homepage_above_hero', label: 'Homepage - Above Hero' },
-    { value: 'homepage_below_hero', label: 'Homepage - Below Hero' },
-    { value: 'homepage_above_featured', label: 'Homepage - Above Featured Products' },
-    { value: 'homepage_below_featured', label: 'Homepage - Below Featured Products' },
-    { value: 'homepage_above_content', label: 'Homepage - Above Content' },
-    { value: 'homepage_below_content', label: 'Homepage - Below Content' },
-    
-    // Product page specific
-    { value: 'product_above_title', label: 'Product - Above Title' },
-    { value: 'product_below_title', label: 'Product - Below Title' },
-    { value: 'product_above_price', label: 'Product - Above Price' },
-    { value: 'product_below_price', label: 'Product - Below Price' },
-    { value: 'product_above_cart_button', label: 'Product - Above Add to Cart' },
-    { value: 'product_below_cart_button', label: 'Product - Below Add to Cart' },
-    { value: 'product_above_description', label: 'Product - Above Description' },
-    { value: 'product_below_description', label: 'Product - Below Description' },
-    
-    // Category page specific
-    { value: 'category_above_products', label: 'Category - Above Products' },
-    { value: 'category_below_products', label: 'Category - Below Products' },
-    { value: 'category_above_filters', label: 'Category - Above Filters' },
-    { value: 'category_below_filters', label: 'Category - Below Filters' },
-    
-    // Cart page specific
-    { value: 'cart_above_items', label: 'Cart - Above Items' },
-    { value: 'cart_below_items', label: 'Cart - Below Items' },
-    { value: 'cart_above_total', label: 'Cart - Above Total' },
-    { value: 'cart_below_total', label: 'Cart - Below Total' },
-    
-    // Checkout page specific
-    { value: 'checkout_above_form', label: 'Checkout - Above Form' },
-    { value: 'checkout_below_form', label: 'Checkout - Below Form' },
-    { value: 'checkout_above_payment', label: 'Checkout - Above Payment' },
-    { value: 'checkout_below_payment', label: 'Checkout - Below Payment' },
-    
-    // Generic content positions
-    { value: 'before_content', label: 'Before Main Content' },
-    { value: 'content', label: 'Content Area' },
-    { value: 'after_content', label: 'After Main Content' }
-  ];
+  const toggleSection = (section) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const placementSections = {
+    global: {
+      title: 'Global Positions',
+      icon: Layout,
+      description: 'Show on every page',
+      options: [
+        { value: 'header', label: 'Site Header', description: 'Top of every page' },
+        { value: 'footer', label: 'Site Footer', description: 'Bottom of every page' },
+        { value: 'sidebar', label: 'Sidebar', description: 'Side navigation area' }
+      ]
+    },
+    homepage: {
+      title: 'Homepage',
+      icon: Home,
+      description: 'Homepage-specific locations',
+      options: [
+        { value: 'homepage_above_hero', label: 'Above Hero Section', description: 'Top banner area' },
+        { value: 'homepage_below_hero', label: 'Below Hero Section', description: 'After main banner' },
+        { value: 'homepage_above_featured', label: 'Above Featured Products', description: 'Before product showcase' },
+        { value: 'homepage_below_featured', label: 'Below Featured Products', description: 'After product showcase' },
+        { value: 'homepage_above_content', label: 'Above Main Content', description: 'Before homepage content' },
+        { value: 'homepage_below_content', label: 'Below Main Content', description: 'After homepage content' }
+      ]
+    },
+    product: {
+      title: 'Product Pages',
+      icon: Package,
+      description: 'Individual product page locations',
+      options: [
+        { value: 'product_above_title', label: 'Above Product Title', description: 'Top of product info' },
+        { value: 'product_below_title', label: 'Below Product Title', description: 'After product name' },
+        { value: 'product_above_price', label: 'Above Price', description: 'Before pricing info' },
+        { value: 'product_below_price', label: 'Below Price', description: 'After pricing info' },
+        { value: 'product_above_cart_button', label: 'Above Add to Cart', description: 'Before purchase button' },
+        { value: 'product_below_cart_button', label: 'Below Add to Cart', description: 'After purchase button' },
+        { value: 'product_above_description', label: 'Above Description', description: 'Before product details' },
+        { value: 'product_below_description', label: 'Below Description', description: 'After product details' }
+      ]
+    },
+    category: {
+      title: 'Category Pages',
+      icon: MapPin,
+      description: 'Product listing page locations',
+      options: [
+        { value: 'category_above_products', label: 'Above Product Grid', description: 'Before product listings' },
+        { value: 'category_below_products', label: 'Below Product Grid', description: 'After product listings' },
+        { value: 'category_above_filters', label: 'Above Filters', description: 'Before filter options' },
+        { value: 'category_below_filters', label: 'Below Filters', description: 'After filter options' }
+      ]
+    },
+    cart: {
+      title: 'Cart & Checkout',
+      icon: ShoppingCart,
+      description: 'Shopping and payment pages',
+      options: [
+        { value: 'cart_above_items', label: 'Cart: Above Items', description: 'Before cart contents' },
+        { value: 'cart_below_items', label: 'Cart: Below Items', description: 'After cart contents' },
+        { value: 'cart_above_total', label: 'Cart: Above Total', description: 'Before cart summary' },
+        { value: 'cart_below_total', label: 'Cart: Below Total', description: 'After cart summary' },
+        { value: 'checkout_above_form', label: 'Checkout: Above Form', description: 'Before checkout form' },
+        { value: 'checkout_below_form', label: 'Checkout: Below Form', description: 'After checkout form' },
+        { value: 'checkout_above_payment', label: 'Checkout: Above Payment', description: 'Before payment section' },
+        { value: 'checkout_below_payment', label: 'Checkout: Below Payment', description: 'After payment section' }
+      ]
+    },
+    generic: {
+      title: 'Generic Content',
+      icon: CreditCard,
+      description: 'General purpose locations',
+      options: [
+        { value: 'before_content', label: 'Before Main Content', description: 'Above page content' },
+        { value: 'content', label: 'Content Area', description: 'Within page content' },
+        { value: 'after_content', label: 'After Main Content', description: 'Below page content' }
+      ]
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Validate that at least one placement is selected
+    if (formData.placement.length === 0) {
+      alert('Please select at least one placement location for this block.');
+      return;
+    }
+    
+    console.log('CmsBlockForm: Submitting form data:', formData);
+    console.log('CmsBlockForm: Placement array:', formData.placement);
     onSubmit(formData);
   };
 
@@ -139,121 +195,93 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
 
           <div>
             <Label>Placement Locations</Label>
-            <p className="text-sm text-gray-500 mb-4">Select where this block should appear</p>
+            <p className="text-sm text-gray-500 mb-4">Select where this block should appear on your store</p>
             
-            {/* Global Positions */}
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Global Positions</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {placementOptions.slice(0, 3).map(option => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`placement-${option.value}`}
-                      checked={formData.placement.includes(option.value)}
-                      onCheckedChange={(checked) => handlePlacementChange(option.value, checked)}
-                    />
-                    <Label htmlFor={`placement-${option.value}`} className="text-xs font-normal">
-                      {option.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <div className="space-y-3">
+              {Object.entries(placementSections).map(([sectionKey, section]) => {
+                const Icon = section.icon;
+                const isOpen = openSections[sectionKey];
+                const selectedCount = section.options.filter(option => 
+                  formData.placement.includes(option.value)
+                ).length;
 
-            {/* Homepage Positions */}
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Homepage</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {placementOptions.slice(3, 9).map(option => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`placement-${option.value}`}
-                      checked={formData.placement.includes(option.value)}
-                      onCheckedChange={(checked) => handlePlacementChange(option.value, checked)}
-                    />
-                    <Label htmlFor={`placement-${option.value}`} className="text-xs font-normal">
-                      {option.label}
-                    </Label>
+                return (
+                  <div key={sectionKey} className="border border-gray-200 rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection(sectionKey)}
+                      className="flex items-center justify-between w-full p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Icon className="w-5 h-5 text-gray-600" />
+                        <div className="text-left">
+                          <div className="font-medium text-gray-900">{section.title}</div>
+                          <div className="text-sm text-gray-500">{section.description}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        {selectedCount > 0 && (
+                          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                            {selectedCount} selected
+                          </span>
+                        )}
+                        {isOpen ? (
+                          <ChevronDown className="w-4 h-4 text-gray-500" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-500" />
+                        )}
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div className="px-3 pb-3">
+                        <div className="grid grid-cols-1 gap-3 mt-3">
+                          {section.options.map(option => (
+                            <div key={option.value} className="flex items-start space-x-3 p-2 hover:bg-gray-50 rounded">
+                              <Checkbox
+                                id={`placement-${option.value}`}
+                                checked={formData.placement.includes(option.value)}
+                                onCheckedChange={(checked) => handlePlacementChange(option.value, checked)}
+                                className="mt-1"
+                              />
+                              <div className="flex-1">
+                                <Label htmlFor={`placement-${option.value}`} className="text-sm font-medium cursor-pointer">
+                                  {option.label}
+                                </Label>
+                                <p className="text-xs text-gray-500 mt-1">{option.description}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-
-            {/* Product Page Positions */}
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Product Pages</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {placementOptions.slice(9, 17).map(option => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`placement-${option.value}`}
-                      checked={formData.placement.includes(option.value)}
-                      onCheckedChange={(checked) => handlePlacementChange(option.value, checked)}
-                    />
-                    <Label htmlFor={`placement-${option.value}`} className="text-xs font-normal">
-                      {option.label}
-                    </Label>
-                  </div>
-                ))}
+            
+            {formData.placement.length > 0 ? (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-900 mb-2">Selected Locations ({formData.placement.length})</h4>
+                <div className="flex flex-wrap gap-2">
+                  {formData.placement.map(placement => {
+                    const option = Object.values(placementSections)
+                      .flatMap(section => section.options)
+                      .find(opt => opt.value === placement);
+                    return (
+                      <span key={placement} className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                        {option?.label || placement}
+                      </span>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-
-            {/* Category Page Positions */}
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Category Pages</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {placementOptions.slice(17, 21).map(option => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`placement-${option.value}`}
-                      checked={formData.placement.includes(option.value)}
-                      onCheckedChange={(checked) => handlePlacementChange(option.value, checked)}
-                    />
-                    <Label htmlFor={`placement-${option.value}`} className="text-xs font-normal">
-                      {option.label}
-                    </Label>
-                  </div>
-                ))}
+            ) : (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ Please select at least one placement location where this block should appear.
+                </p>
               </div>
-            </div>
-
-            {/* Cart & Checkout Positions */}
-            <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Cart & Checkout</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {placementOptions.slice(21, 29).map(option => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`placement-${option.value}`}
-                      checked={formData.placement.includes(option.value)}
-                      onCheckedChange={(checked) => handlePlacementChange(option.value, checked)}
-                    />
-                    <Label htmlFor={`placement-${option.value}`} className="text-xs font-normal">
-                      {option.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Generic Content Positions */}
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Generic Content</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {placementOptions.slice(29).map(option => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`placement-${option.value}`}
-                      checked={formData.placement.includes(option.value)}
-                      onCheckedChange={(checked) => handlePlacementChange(option.value, checked)}
-                    />
-                    <Label htmlFor={`placement-${option.value}`} className="text-xs font-normal">
-                      {option.label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
