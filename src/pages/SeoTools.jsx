@@ -134,12 +134,17 @@ export default function SeoTools() {
   }, [selectedStore]);
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const tab = params.get('tab') || 'settings';
-    if (tab !== activeTab) {
-      setActiveTab(tab);
+    // Extract tab from URL path: /admin/seo-tools/settings -> 'settings'
+    const pathParts = location.pathname.split('/');
+    const tab = pathParts[pathParts.length - 1] || 'settings';
+    
+    // If we're at the base /admin/seo-tools URL, default to 'settings'
+    const actualTab = pathParts[pathParts.length - 1] === 'seo-tools' ? 'settings' : tab;
+    
+    if (actualTab !== activeTab) {
+      setActiveTab(actualTab);
     }
-  }, [location.search, activeTab]);
+  }, [location.pathname, activeTab]);
 
   const loadData = async () => {
     try {

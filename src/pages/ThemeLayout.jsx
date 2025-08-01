@@ -95,46 +95,45 @@ export default function ThemeLayout() {
         if (!store) return;
         setSaving(true);
         try {
-            // Get the current store data to preserve all fields
-            const currentStore = await retryApiCall(() => Store.findById(store.id));
+            console.log('Saving theme settings:', store.settings);
             
-            // Merge the updated settings with the existing store data
-            const updatedStore = {
-                ...currentStore,
-                settings: {
-                    ...(currentStore.settings || {}),
-                    ...store.settings,
-                    theme: {
-                        ...(currentStore.settings?.theme || {}),
-                        ...store.settings.theme
-                    }
-                }
-            };
+            // Save the settings directly - let the backend handle the merging
+            const result = await retryApiCall(() => Store.update(store.id, { 
+                settings: store.settings 
+            }));
             
-            // Update only the settings field
-            const result = await retryApiCall(() => Store.update(store.id, { settings: updatedStore.settings }));
+            console.log('Save result:', result);
             
             // Clear ALL StoreProvider cache to force reload of settings
             try {
-                // Clear all cache from localStorage
                 localStorage.removeItem('storeProviderCache');
-                
-                // Also clear sessionStorage if any
                 sessionStorage.removeItem('storeProviderCache');
+                
+                // Also clear all cache keys that might contain store data
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('store') || key.includes('theme') || key.includes('settings'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
                 
             } catch (e) {
                 console.warn('Failed to clear cache from storage:', e);
             }
             
-            // Trigger a page reload to ensure theme changes are applied immediately
+            setFlashMessage({ type: 'success', message: 'Settings saved successfully! Changes will be applied on next page load.' });
+            
+            // Optional: reload after a delay to show the success message
             setTimeout(() => {
                 window.location.reload();
-            }, 1000);
+            }, 2000);
             
-            setFlashMessage({ type: 'success', message: 'Settings saved successfully! Page will refresh to apply changes...' });
         } catch (error) {
             console.error("Failed to save settings:", error);
-            setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
+            console.error("Error details:", error.response?.data || error.message);
+            setFlashMessage({ type: 'error', message: `Failed to save settings: ${error.response?.data?.message || error.message}` });
         } finally {
             setSaving(false);
         }

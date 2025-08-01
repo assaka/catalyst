@@ -97,6 +97,13 @@ export function createAdminUrl(pageName, params = {}) {
     [actualPageName, queryString] = pageName.split('?', 2);
   }
   
+  // Handle path-based URLs (e.g., "seo-tools/settings")
+  if (pageName.includes('/')) {
+    // For path-based URLs, use the path as-is
+    let baseUrl = `${URL_CONFIG.ADMIN_PREFIX}/${pageName}`;
+    return addUrlParams(baseUrl, params);
+  }
+  
   const slug = URL_CONFIG.PAGES[actualPageName.toUpperCase()] || actualPageName.toLowerCase();
   
   // All admin URLs now use the /admin prefix consistently

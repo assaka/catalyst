@@ -505,6 +505,54 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/seo-tools/settings" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/templates" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/redirects" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/canonical" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/hreflang" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/robots" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/social" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/report" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
                 <Route path="/admin/stores" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Stores />
@@ -728,6 +776,54 @@ function PagesContent() {
                 } />
                 
                 <Route path="/admin/seo-tools" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/settings" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/templates" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/redirects" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/canonical" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/hreflang" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/robots" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/social" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <SeoTools />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/seo-tools/report" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <SeoTools />
                     </RoleProtectedRoute>

@@ -397,14 +397,14 @@ export default function Layout({ children, currentPageName }) {
     {
       name: "SEO",
       items: [
-        { name: "Settings", path: "SEO_TOOLS?tab=settings", icon: SettingsIcon },
-        { name: "Templates", path: "SEO_TOOLS?tab=templates", icon: FileText },
-        { name: "Redirects", path: "SEO_TOOLS?tab=redirects", icon: RefreshCw },
-        { name: "Canonical", path: "SEO_TOOLS?tab=canonical", icon: LinkIcon },
-        { name: "Hreflang", path: "SEO_TOOLS?tab=hreflang", icon: Globe },
-        { name: "Robots", path: "SEO_TOOLS?tab=robots", icon: Bot },
-        { name: "Social & Schema", path: "SEO_TOOLS?tab=social", icon: Share2 },
-        { name: "Report", path: "SEO_TOOLS?tab=report", icon: BarChart3 },
+        { name: "Settings", path: "seo-tools/settings", icon: SettingsIcon },
+        { name: "Templates", path: "seo-tools/templates", icon: FileText },
+        { name: "Redirects", path: "seo-tools/redirects", icon: RefreshCw },
+        { name: "Canonical", path: "seo-tools/canonical", icon: LinkIcon },
+        { name: "Hreflang", path: "seo-tools/hreflang", icon: Globe },
+        { name: "Robots", path: "seo-tools/robots", icon: Bot },
+        { name: "Social & Schema", path: "seo-tools/social", icon: Share2 },
+        { name: "Report", path: "seo-tools/report", icon: BarChart3 },
       ]
     },
     {
@@ -650,6 +650,7 @@ export default function Layout({ children, currentPageName }) {
                   {group.items.map((item) => {
                     let isActive = false;
                     const itemHasTab = item.path.includes('?tab=');
+                    const isPathBased = item.path.includes('/') && !item.path.includes('?');
                     
                     if (itemHasTab) {
                         const [basePath, query] = item.path.split('?');
@@ -658,6 +659,10 @@ export default function Layout({ children, currentPageName }) {
                             const currentTab = new URLSearchParams(location.search).get('tab') || 'settings'; // Default tab is settings
                             isActive = itemTab === currentTab;
                         }
+                    } else if (isPathBased) {
+                        // For path-based items like seo-tools/settings, check if current path matches
+                        const currentPath = location.pathname.replace('/admin/', '');
+                        isActive = currentPath === item.path;
                     } else {
                         // For items without tabs, check if the current page name matches the item's path (ignoring any query params on item.path)
                         isActive = currentPageName === item.path.split('?')[0];
