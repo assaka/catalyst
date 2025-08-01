@@ -42,7 +42,6 @@ export default function Stores() {
       // Backend API automatically filters stores by user's email from JWT token
       // No need to pass filter parameters - the backend handles this
       const userStores = await Store.findAll();
-      console.log('Raw stores from API:', userStores);
       
       // The stores from findAll might not include all fields, let's fetch complete data for each
       const completeStores = await Promise.all(
@@ -51,7 +50,6 @@ export default function Stores() {
             const fullStoreData = await Store.findById(store.id);
             // findById returns array, get first item
             const fullStore = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
-            console.log(`Full store data for ${store.name}:`, fullStore);
             return { ...store, ...fullStore }; // Merge to ensure we have all fields
           } catch (error) {
             console.warn(`Failed to load full data for store ${store.id}:`, error);
@@ -60,7 +58,6 @@ export default function Stores() {
         })
       );
       
-      console.log('Complete stores with slug:', completeStores);
       setStores(completeStores);
     } catch (error) {
       console.error('Error loading stores:', error);
@@ -323,7 +320,6 @@ export default function Stores() {
                       onClick={() => {
                         const baseUrl = getStoreBaseUrl(store);
                         const storeCode = store.slug || store.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                        console.log('Using store code for View:', storeCode);
                         window.open(getExternalStoreUrl(storeCode, '', baseUrl), '_blank');
                       }}
                     >

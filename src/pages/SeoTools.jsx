@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Plus,
@@ -1463,6 +1464,8 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <CmsBlockRenderer position="seo_header" />
+        
         <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
 
         <div className="flex items-center justify-between mb-8">
@@ -1496,7 +1499,14 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
           </div>
         </div>
 
-        {renderTabContent()}
+        <div className="grid lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3">
+            {renderTabContent()}
+          </div>
+          <div className="lg:col-span-1">
+            <CmsBlockRenderer position="seo_sidebar" />
+          </div>
+        </div>
 
         {showTemplateForm && (
           <Dialog open={showTemplateForm} onOpenChange={(open) => {

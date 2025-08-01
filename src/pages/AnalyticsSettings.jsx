@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Save, BarChart3, Bot, Shield, Upload } from 'lucide-react';
+import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
 const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
     for (let i = 0; i < maxRetries; i++) {
@@ -112,6 +113,7 @@ export default function AnalyticsSettings() {
     return (
         <div className="min-h-screen bg-gray-50">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <CmsBlockRenderer position="analytics_header" />
                 
                 {flashMessage && (
                     <div 
@@ -126,7 +128,9 @@ export default function AnalyticsSettings() {
                     <p className="text-gray-600 mt-1">Configure your store's analytics and tracking integrations.</p>
                 </div>
 
-                <div className="space-y-8">
+                <div className="grid lg:grid-cols-4 gap-8">
+                    <div className="lg:col-span-3">
+                        <div className="space-y-8">
                     <Card className="material-elevation-1 border-0">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><BarChart3 className="w-5 h-5" /> Google Integrations</CardTitle>
@@ -204,6 +208,11 @@ export default function AnalyticsSettings() {
                             </div>
                         </CardContent>
                     </Card>
+                    </div>
+                    </div>
+                    <div className="lg:col-span-1">
+                        <CmsBlockRenderer position="analytics_sidebar" />
+                    </div>
                 </div>
 
                 <div className="flex justify-end mt-8">

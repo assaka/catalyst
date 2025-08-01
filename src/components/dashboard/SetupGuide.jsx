@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { CheckCircle, AlertCircle, CreditCard, RefreshCw } from 'lucide-react';
+import { CheckCircle, AlertCircle, CreditCard, RefreshCw, Settings, Unlink, Info } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus } from '@/api/functions';
 
@@ -15,7 +15,17 @@ export const SetupGuide = ({ store }) => {
     }
 
     const isDomainConnected = store.custom_domain && store.domain_status === 'active';
-    const isStripeConnected = store.stripe_connect_onboarding_complete === true;
+    const isStripeConnected = store.stripe_connect_onboarding_complete === true || !!store.stripe_account_id;
+
+    const handleChangeStripeAccount = async () => {
+        const confirmed = window.confirm(
+            "Are you sure you want to connect a different Stripe account? This will replace your current Stripe connection."
+        );
+        
+        if (confirmed) {
+            await handleConnectStripe();
+        }
+    };
 
     const handleConnectStripe = async () => {
         if (!store?.id) {
@@ -99,8 +109,65 @@ export const SetupGuide = ({ store }) => {
         }
     };
 
+    // Only hide the setup guide if both domain and Stripe are connected
+    // Keep showing if either is incomplete, allowing management of connected services
     if (isDomainConnected && isStripeConnected) {
-        return null;
+        // Show a condensed version when everything is set up
+        return (
+            <Card className="mb-8 bg-green-50 border-green-200 material-elevation-1">
+                <CardHeader>
+                    <CardTitle className="text-green-900 flex items-center gap-2">
+                        <CheckCircle className="w-5 h-5" />
+                        Store Setup Complete
+                    </CardTitle>
+                    <CardDescription className="text-green-700">Your store is ready to start selling!</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                <span className="text-sm text-gray-700">Domain Connected</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                <span className="text-sm text-gray-700">
+                                    Stripe Connected {store.stripe_account_id && `(${store.stripe_account_id.substring(0, 15)}...)`}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => navigate(createPageUrl('Settings'))}
+                            >
+                                <Settings className="w-4 h-4 mr-1" />
+                                Settings
+                            </Button>
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={handleChangeStripeAccount}
+                                disabled={connecting}
+                            >
+                                {connecting ? (
+                                    <>
+                                        <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                                        Connecting...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Unlink className="w-4 h-4 mr-1" />
+                                        Change Stripe
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        );
     }
 
     return (
@@ -139,34 +206,73 @@ export const SetupGuide = ({ store }) => {
                                 <AlertCircle className="w-5 h-5 text-amber-600 mr-3" />
                             )}
                             <div>
-                                <p className="font-semibold text-gray-800">Connect Stripe Account</p>
-                                <p className="text-sm text-gray-600">Securely connect Stripe to receive payments.</p>
+                                <p className="font-semibold text-gray-800">
+                                    {isStripeConnected ? 'Stripe Account Connected' : 'Connect Stripe Account'}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                    {isStripeConnected 
+                                        ? (store.stripe_account_id 
+                                            ? `Account ID: ${store.stripe_account_id.substring(0, 20)}...`
+                                            : 'Ready to accept payments')
+                                        : 'Securely connect Stripe to receive payments.'
+                                    }
+                                </p>
                             </div>
                         </div>
-                         <Button 
-                            variant={isStripeConnected ? "secondary" : "default"} 
-                            size="sm" 
-                            onClick={handleConnectStripe}
-                            disabled={connecting}
-                            className={!isStripeConnected ? "bg-orange-600 hover:bg-orange-700 text-white" : ""}
-                        >
-                            {connecting ? (
+                        <div className="flex gap-2">
+                            {isStripeConnected ? (
                                 <>
-                                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                                    Connecting...
-                                </>
-                            ) : isStripeConnected ? (
-                                <>
-                                    <CheckCircle className="w-4 h-4 mr-2" />
-                                    Connected
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={() => navigate(createPageUrl('PaymentMethods'))}
+                                        title="Manage payment settings"
+                                    >
+                                        <Settings className="w-4 h-4 mr-1" />
+                                        Manage
+                                    </Button>
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={handleChangeStripeAccount}
+                                        disabled={connecting}
+                                        title="Connect a different Stripe account"
+                                    >
+                                        {connecting ? (
+                                            <>
+                                                <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                                                Connecting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Unlink className="w-4 h-4 mr-1" />
+                                                Change
+                                            </>
+                                        )}
+                                    </Button>
                                 </>
                             ) : (
-                                <>
-                                    <CreditCard className="w-4 h-4 mr-2" />
-                                    Connect Stripe
-                                </>
+                                <Button 
+                                    variant="default"
+                                    size="sm" 
+                                    onClick={handleConnectStripe}
+                                    disabled={connecting}
+                                    className="bg-orange-600 hover:bg-orange-700 text-white"
+                                >
+                                    {connecting ? (
+                                        <>
+                                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                            Connecting...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CreditCard className="w-4 h-4 mr-2" />
+                                            Connect Stripe
+                                        </>
+                                    )}
+                                </Button>
                             )}
-                        </Button>
+                        </div>
                     </li>
                 </ul>
             </CardContent>
