@@ -44,6 +44,11 @@ export default function ThemeLayout() {
                 return;
             }
 
+            console.log('=== THEME LOAD DEBUG ===');
+            console.log('Selected store:', selectedStore);
+            console.log('Selected store settings:', selectedStore.settings);
+            console.log('Selected store theme:', selectedStore.settings?.theme);
+
             // Ensure settings object and its nested properties exist with defaults
             const settings = {
                 ...(selectedStore.settings || {}),
@@ -58,6 +63,10 @@ export default function ThemeLayout() {
                     ...((selectedStore.settings || {}).theme || {})
                 },
             };
+            
+            console.log('Final settings object:', settings);
+            console.log('=== LOAD COMPLETE ===');
+            
             setStore({ ...selectedStore, settings });
         } catch (error) {
             console.error("Failed to load store:", error);
@@ -95,14 +104,23 @@ export default function ThemeLayout() {
         if (!store) return;
         setSaving(true);
         try {
-            console.log('Saving theme settings:', store.settings);
+            console.log('=== THEME SAVE DEBUG ===');
+            console.log('Store ID:', store.id);
+            console.log('Current store settings:', JSON.stringify(store.settings, null, 2));
+            console.log('Theme colors:', store.settings.theme);
             
-            // Save the settings directly - let the backend handle the merging
-            const result = await retryApiCall(() => Store.update(store.id, { 
-                settings: store.settings 
-            }));
+            // Try using admin API client directly like other settings pages
+            const updatePayload = { settings: store.settings };
+            console.log('Update payload:', JSON.stringify(updatePayload, null, 2));
+            
+            // Use the same approach as Tax.jsx and ShippingMethods.jsx
+            const result = await retryApiCall(async () => {
+                const { Store } = await import('@/api/entities');
+                return await Store.update(store.id, updatePayload);
+            });
             
             console.log('Save result:', result);
+            console.log('=== SAVE COMPLETE ===');
             
             // Clear only specific StoreProvider cache to force reload of settings
             try {
