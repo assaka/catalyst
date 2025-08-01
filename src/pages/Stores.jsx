@@ -353,20 +353,6 @@ export default function Stores() {
                     new Date(store.created_at).toLocaleDateString() : 
                     'Unknown'
                   }</p>
-                  {/* Show owner email if different from current user */}
-                  {store.owner_email && store.owner_email !== user?.email && (
-                    <p>Owner: {store.owner_email}</p>
-                  )}
-                  {/* Debug info - remove later */}
-                  <p className="text-xs opacity-50">
-                    Access: {store.access_role || 'unknown'} | Direct: {store.is_direct_owner ? 'yes' : 'no'}
-                  </p>
-                  <p className="text-xs opacity-50">
-                    Slug: '{store.slug}' | Code: '{store.code}' | Name: '{store.name}'
-                  </p>
-                  {store.agency_id && (
-                    <p>Agency Managed</p>
-                  )}
                 </div>
               </CardContent>
             </Card>
