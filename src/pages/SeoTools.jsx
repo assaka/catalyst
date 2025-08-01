@@ -1497,16 +1497,7 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
             </Badge>
           </div>
         </div>
-
-        <div className="grid lg:grid-cols-4 gap-8">
-          <div className="lg:col-span-3">
-            {renderTabContent()}
-          </div>
-          <div className="lg:col-span-1">
-            <CmsBlockRenderer position="seo_sidebar" />
-          </div>
-        </div>
-
+        {renderTabContent()}
         {showTemplateForm && (
           <Dialog open={showTemplateForm} onOpenChange={(open) => {
             setShowTemplateForm(open);
