@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CmsBlock } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { useStore } from '@/components/storefront/StoreProvider';
 
 // Global cache and request queue to prevent duplicate requests
 const cmsBlockCache = new Map();
@@ -77,22 +78,55 @@ const loadCmsBlocksWithCache = async (storeId) => {
   return requestPromise;
 };
 
-export default function CmsBlockRenderer({ position, page }) {
+export default function CmsBlockRenderer({ position, page, storeId }) {
   const [blocks, setBlocks] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { selectedStore } = useStoreSelection();
+  
+  // Try to get store from different contexts
+  let adminStore = null;
+  let storefrontStore = null;
+  let storeIdToUse = storeId;
+  
+  // Try admin context first
+  try {
+    const { selectedStore } = useStoreSelection();
+    if (selectedStore?.id) {
+      adminStore = selectedStore;
+    }
+  } catch (e) {
+    // Not in admin context - this is expected on storefront pages
+  }
+  
+  // Try storefront context
+  try {
+    const storeContext = useStore();
+    if (storeContext?.store?.id) {
+      storefrontStore = storeContext.store;
+    }
+  } catch (e) {
+    // Not in storefront context - this is expected on admin pages
+  }
+  
+  // Determine which store ID to use
+  if (!storeIdToUse) {
+    if (storefrontStore?.id) {
+      storeIdToUse = storefrontStore.id;
+    } else if (adminStore?.id) {
+      storeIdToUse = adminStore.id;
+    }
+  }
 
   useEffect(() => {
     const loadBlocks = async () => {
       try {
-        if (!selectedStore?.id) {
+        if (!storeIdToUse) {
           console.log('❌ No store selected, cannot load CMS blocks');
           setBlocks([]);
           setLoading(false);
           return;
         }
 
-        const allBlocks = await loadCmsBlocksWithCache(selectedStore.id);
+        const allBlocks = await loadCmsBlocksWithCache(storeIdToUse);
         
         const filteredBlocks = allBlocks.filter(block => {
           if (!block.is_active) return false;
@@ -135,7 +169,7 @@ export default function CmsBlockRenderer({ position, page }) {
     };
 
     loadBlocks();
-  }, [position, page, selectedStore?.id]);
+  }, [position, page, storeIdToUse]);
 
   if (loading) {
     return null; // Don't show loading spinner for CMS blocks

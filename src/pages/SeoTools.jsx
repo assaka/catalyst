@@ -163,17 +163,18 @@ export default function SeoTools() {
         if (settingsData && settingsData.length > 0) {
           const loadedSettings = settingsData[0];
           
-          const newSettings = {
-            ...prev,
-            ...loadedSettings,
-            hreflang_settings: Array.isArray(loadedSettings.hreflang_settings) ? loadedSettings.hreflang_settings : [],
-            schema_settings: loadedSettings.schema_settings || prev.schema_settings,
-            open_graph_settings: loadedSettings.open_graph_settings || prev.open_graph_settings,
-            twitter_card_settings: loadedSettings.twitter_card_settings || prev.twitter_card_settings,
-            store_id: selectedStore.id
-          };
-          
-          setSeoSettings(newSettings);
+          setSeoSettings(prev => {
+            const newSettings = {
+              ...prev,
+              ...loadedSettings,
+              hreflang_settings: Array.isArray(loadedSettings.hreflang_settings) ? loadedSettings.hreflang_settings : [],
+              schema_settings: loadedSettings.schema_settings || prev.schema_settings,
+              open_graph_settings: loadedSettings.open_graph_settings || prev.open_graph_settings,
+              twitter_card_settings: loadedSettings.twitter_card_settings || prev.twitter_card_settings,
+              store_id: selectedStore.id
+            };
+            return newSettings;
+          });
         } else {
           setSeoSettings(prev => ({
             ...prev,
@@ -316,6 +317,13 @@ export default function SeoTools() {
     try {
       setSaving(true);
 
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        setFlashMessage({ type: 'error', message: 'No store found. Please refresh the page.' });
+        setSaving(false);
+        return;
+      }
+
       const payload = {
         name: templateForm.name,
         type: templateForm.type,
@@ -373,6 +381,13 @@ export default function SeoTools() {
   const handleSaveRedirect = async () => {
     try {
       setSaving(true);
+
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        setFlashMessage({ type: 'error', message: 'No store found. Please refresh the page.' });
+        setSaving(false);
+        return;
+      }
 
       const payload = {
         from_url: redirectForm.from_url,
