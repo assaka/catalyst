@@ -28,7 +28,9 @@ import {
   Activity, // Added Activity
   Globe, // Added Globe
   CheckCircle, // Added CheckCircle
-  AlertCircle // Added AlertCircle
+  AlertCircle, // Added AlertCircle
+  ExternalLink,
+  Unlink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"; // Added CardDescription
@@ -79,6 +81,7 @@ export default function Dashboard() {
   const [error, setError] = useState(null);
   const [stripeSuccessMessage, setStripeSuccessMessage] = useState('');
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false);
+  const [stripeConnecting, setStripeConnecting] = useState(false);
   const navigate = useNavigate();
 
 
@@ -190,6 +193,51 @@ export default function Dashboard() {
       setError("Failed to load dashboard data. Please try refreshing the page.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConnectStripe = async () => {
+    if (!selectedStore?.id) {
+      setError("Store ID is required");
+      return;
+    }
+
+    setStripeConnecting(true);
+    setError(null);
+    
+    try {
+      console.log("Starting Stripe Connect flow for store:", selectedStore.id);
+      
+      const currentUrl = window.location.origin + window.location.pathname;
+      const returnUrl = `${currentUrl}?stripe_return=true`;
+      const refreshUrl = `${currentUrl}?stripe_refresh=true`;
+      
+      const { data } = await createStripeConnectLink(returnUrl, refreshUrl, selectedStore.id);
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setError('Could not generate Stripe connection link. Please try again.');
+      }
+    } catch (error) {
+      console.error("Error setting up Stripe connect:", error);
+      setError('An error occurred while setting up Stripe. Please try again.');
+    } finally {
+      setStripeConnecting(false);
+    }
+  };
+
+  const handleChangeStripeAccount = async () => {
+    if (!selectedStore?.id) {
+      setError("Store ID is required");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Are you sure you want to connect a different Stripe account? This will replace your current Stripe connection."
+    );
+    
+    if (confirmed) {
+      await handleConnectStripe();
     }
   };
 
@@ -348,6 +396,104 @@ export default function Dashboard() {
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Users className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Stripe Connect Status */}
+        <div className="mb-8">
+          <Card className="material-elevation-1 border-0">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5" />
+                Payment Processing
+              </CardTitle>
+              <CardDescription>
+                Manage your Stripe Connect integration for accepting payments
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    {(store?.stripe_account_id || store?.stripe_connect_onboarding_complete) ? (
+                      <>
+                        <CheckCircle className="w-5 h-5 text-green-600" />
+                        <div>
+                          <p className="font-semibold text-gray-900">Stripe Connected</p>
+                          <p className="text-sm text-gray-600">
+                            {store?.stripe_account_id ? `Account ID: ${store.stripe_account_id.substring(0, 20)}...` : 'Ready to accept payments'}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="w-5 h-5 text-amber-600" />
+                        <div>
+                          <p className="font-semibold text-gray-900">Stripe Not Connected</p>
+                          <p className="text-sm text-gray-600">Connect your Stripe account to accept payments</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <Badge 
+                    className={
+                      (store?.stripe_account_id || store?.stripe_connect_onboarding_complete) 
+                        ? "bg-green-100 text-green-800 border-green-200" 
+                        : "bg-amber-100 text-amber-800 border-amber-200"
+                    }
+                    variant="outline"
+                  >
+                    {(store?.stripe_account_id || store?.stripe_connect_onboarding_complete) ? "Connected" : "Not Connected"}
+                  </Badge>
+                </div>
+                <div className="flex gap-2">
+                  {(store?.stripe_account_id || store?.stripe_connect_onboarding_complete) ? (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => navigate(createPageUrl('PaymentMethods'))}>
+                        <Settings className="w-4 h-4 mr-2" />
+                        Manage
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={handleChangeStripeAccount}
+                        disabled={stripeConnecting}
+                      >
+                        {stripeConnecting ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                            Connecting...
+                          </>
+                        ) : (
+                          <>
+                            <Unlink className="w-4 h-4 mr-2" />
+                            Change Account
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button 
+                      onClick={handleConnectStripe}
+                      disabled={stripeConnecting}
+                      className="bg-orange-600 hover:bg-orange-700 text-white"
+                    >
+                      {stripeConnecting ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4 mr-2" />
+                          Connect Stripe
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>

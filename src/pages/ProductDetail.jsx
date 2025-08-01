@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { createCategoryUrl } from "@/utils/urlUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
@@ -50,7 +51,7 @@ const ProductLabelComponent = ({ label }) => {
 };
 
 export default function ProductDetail() {
-  const { slug: paramSlug, productSlug: routeProductSlug } = useParams();
+  const { storeCode, productSlug: routeProductSlug, slug: paramSlug } = useParams();
   const [searchParams] = useSearchParams();
   const slug = searchParams.get('slug') || routeProductSlug || paramSlug;
   
@@ -478,7 +479,7 @@ export default function ProductDetail() {
         categoryChain.forEach(cat => {
           items.push({
             name: cat.name,
-            url: createPageUrl(`Storefront?category=${cat.slug}`)
+            url: createCategoryUrl(storeCode, cat.slug)
           });
         });
       }
