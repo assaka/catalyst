@@ -114,8 +114,14 @@ export default function TeamManagement({ storeId }) {
   const loadTeamMembers = async () => {
     try {
       setLoading(true);
-      const data = await StoreTeam.getTeamMembers(storeId);
-      setTeamMembers(data.team_members || []);
+      const response = await StoreTeam.getTeamMembers(storeId);
+      console.log('🔍 Team API response:', response);
+      
+      // Handle nested response structure: response.data.team_members
+      const teamMembers = response?.data?.team_members || response?.team_members || [];
+      console.log('🔍 Extracted team members:', teamMembers);
+      
+      setTeamMembers(teamMembers);
     } catch (error) {
       console.error('Error loading team members:', error);
       toast.error('Failed to load team members');

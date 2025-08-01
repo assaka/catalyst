@@ -12,6 +12,15 @@ export const StoreSelector = ({ className = "" }) => {
     hasMultipleStores 
   } = useStoreSelection();
 
+  // Temporary debug logging
+  console.log('🔍 StoreSelector render:', {
+    loading,
+    availableStoresCount: availableStores.length,
+    selectedStore: selectedStore?.name,
+    hasMultiple: hasMultipleStores(),
+    className
+  });
+
 
   // Show loading state, hide only if no stores available after loading
   if (loading) {
