@@ -6,13 +6,10 @@ const router = express.Router();
 
 // @route   GET /api/seo-settings
 // @desc    Get SEO settings for a store
-// @access  Public/Private
-router.get('/', async (req, res) => {
+// @access  Private (admin only)
+router.get('/', auth, async (req, res) => {
   try {
     const { store_id } = req.query;
-    
-    // Check if this is a public request
-    const isPublicRequest = req.originalUrl.includes('/api/public/seo-settings');
 
     if (!store_id) {
       return res.status(400).json({
@@ -21,32 +18,30 @@ router.get('/', async (req, res) => {
       });
     }
 
-    if (!isPublicRequest) {
-      // Authenticated access - check authentication and ownership
-      if (!req.user) {
-        return res.status(401).json({
-          error: 'Access denied',
-          message: 'Authentication required'
-        });
-      }
+    // Check authentication and ownership
+    if (!req.user) {
+      return res.status(401).json({
+        error: 'Access denied',
+        message: 'Authentication required'
+      });
+    }
       
-      if (req.user.role !== 'admin') {
-        const { checkUserStoreAccess } = require('../utils/storeAccess');
-        const access = await checkUserStoreAccess(req.user.id, store_id);
-        
-        if (!access) {
-          return res.status(403).json({
-            success: false,
-            message: 'Access denied'
-          });
-        }
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
       }
     }
 
     let seoSettings = await SeoSettings.findOne({ where: { store_id } });
 
-    if (!seoSettings && !isPublicRequest) {
-      // Create default SEO settings only for authenticated requests
+    if (!seoSettings) {
+      // Create default SEO settings
       seoSettings = await SeoSettings.create({
         store_id,
         enable_rich_snippets: true,
@@ -55,16 +50,8 @@ router.get('/', async (req, res) => {
       });
     }
 
-    if (isPublicRequest) {
-      // Return just the array/object for public requests (for compatibility)
-      res.json(seoSettings ? [seoSettings] : []);
-    } else {
-      // Return wrapped response for authenticated requests
-      res.json({
-        success: true,
-        data: seoSettings
-      });
-    }
+    // Return array format that the frontend expects
+    res.json([seoSettings]);
   } catch (error) {
     console.error('Get SEO settings error:', error);
     res.status(500).json({
@@ -79,10 +66,13 @@ router.get('/', async (req, res) => {
 // @access  Private
 router.post('/', auth, async (req, res) => {
   try {
+    console.log('🚀 POST /api/seo-settings INCOMING REQUEST');
     console.log('🐛 POST /api/seo-settings DEBUG:', {
       body: req.body,
       user: req.user?.email,
-      userRole: req.user?.role
+      userRole: req.user?.role,
+      bodyKeys: Object.keys(req.body || {}),
+      timestamp: new Date().toISOString()
     });
 
     const { store_id } = req.body;
@@ -121,10 +111,8 @@ router.post('/', auth, async (req, res) => {
 
     console.log('✅ SEO settings saved successfully:', seoSettings.id);
 
-    res.json({
-      success: true,
-      data: seoSettings
-    });
+    // Return array format that the frontend expects
+    res.json([seoSettings]);
   } catch (error) {
     console.error('Save SEO settings error:', error);
     console.error('Error details:', error.message);
@@ -142,16 +130,17 @@ router.post('/', auth, async (req, res) => {
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
   try {
+    console.log('🚀 PUT /api/seo-settings/:id INCOMING REQUEST');
     console.log('🐛 PUT /api/seo-settings/:id DEBUG:', {
       id: req.params.id,
       body: req.body,
       user: req.user?.email,
-      userRole: req.user?.role
+      userRole: req.user?.role,
+      bodyKeys: Object.keys(req.body || {}),
+      timestamp: new Date().toISOString()
     });
 
-    const seoSettings = await SeoSettings.findByPk(req.params.id, {
-      include: [{ model: Store, attributes: ['id', 'user_id'] }]
-    });
+    const seoSettings = await SeoSettings.findByPk(req.params.id);
 
     if (!seoSettings) {
       return res.status(404).json({
@@ -160,10 +149,10 @@ router.put('/:id', auth, async (req, res) => {
       });
     }
 
-    // Check store access
+    // Check store access using the store_id from the settings
     if (req.user.role !== 'admin') {
       const { checkUserStoreAccess } = require('../utils/storeAccess');
-      const access = await checkUserStoreAccess(req.user.id, seoSettings.Store.id);
+      const access = await checkUserStoreAccess(req.user.id, seoSettings.store_id);
       
       if (!access) {
         return res.status(403).json({
@@ -177,10 +166,8 @@ router.put('/:id', auth, async (req, res) => {
     await seoSettings.update(req.body);
     console.log('✅ SEO settings updated successfully');
 
-    res.json({
-      success: true,
-      data: seoSettings
-    });
+    // Return array format that the frontend expects
+    res.json([seoSettings]);
   } catch (error) {
     console.error('Update SEO settings error:', error);
     console.error('Error details:', error.message);

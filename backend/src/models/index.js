@@ -21,6 +21,7 @@ const CustomerActivity = require('./CustomerActivity');
 const StorePlugin = require('./StorePlugin');
 const SeoSettings = require('./SeoSettings');
 const SeoTemplate = require('./SeoTemplate');
+const Redirect = require('./Redirect');
 const ProductLabel = require('./ProductLabel');
 const PaymentMethod = require('./PaymentMethod');
 const CookieConsentSettings = require('./CookieConsentSettings');
@@ -134,6 +135,10 @@ const defineAssociations = () => {
   SeoTemplate.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(SeoTemplate, { foreignKey: 'store_id' });
 
+  // Redirect associations
+  Redirect.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(Redirect, { foreignKey: 'store_id' });
+
   // ProductLabel associations
   ProductLabel.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(ProductLabel, { foreignKey: 'store_id' });
@@ -203,6 +208,7 @@ module.exports = {
   StorePlugin,
   SeoSettings,
   SeoTemplate,
+  Redirect,
   ProductLabel,
   PaymentMethod,
   CookieConsentSettings,

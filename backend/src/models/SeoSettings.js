@@ -16,6 +16,24 @@ const SeoSettings = sequelize.define('SeoSettings', {
       key: 'id'
     }
   },
+  // Basic meta settings
+  default_meta_title: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  default_meta_description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  default_meta_keywords: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  canonical_base_url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  // Rich snippets and social
   enable_rich_snippets: {
     type: DataTypes.BOOLEAN,
     defaultValue: true
@@ -28,43 +46,59 @@ const SeoSettings = sequelize.define('SeoSettings', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
-  default_image_url: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  facebook_app_id: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  twitter_site_username: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  google_site_verification: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  bing_site_verification: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  robots_txt: {
+  // Robots and sitemap
+  robots_txt_content: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  sitemap_settings: {
+  enable_sitemap: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  sitemap_include_products: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  sitemap_include_categories: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  sitemap_include_pages: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  auto_canonical_filtered_pages: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
+  // Complex settings as JSON
+  hreflang_settings: {
     type: DataTypes.JSON,
-    defaultValue: {
-      include_products: true,
-      include_categories: true,
-      include_cms_pages: true,
-      change_frequency: 'weekly',
-      priority: 0.5
-    }
+    defaultValue: []
   },
   schema_settings: {
     type: DataTypes.JSON,
-    defaultValue: {}
+    defaultValue: {
+      enable_product_schema: true,
+      enable_organization_schema: true,
+      organization_name: '',
+      organization_logo_url: '',
+      social_profiles: []
+    }
+  },
+  open_graph_settings: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      default_image_url: '',
+      facebook_app_id: ''
+    }
+  },
+  twitter_card_settings: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      card_type: 'summary_large_image',
+      site_username: ''
+    }
   }
 }, {
   tableName: 'seo_settings'

@@ -158,7 +158,13 @@ export default function SeoTools() {
 
       setStore(selectedStore);
 
-        const settingsData = await SeoSetting.filter({ store_id: selectedStore.id });
+        let settingsData = [];
+        try {
+          settingsData = await SeoSetting.filter({ store_id: selectedStore.id });
+        } catch (fetchError) {
+          console.log('🔍 Failed to fetch settings during load (using defaults):', fetchError.message);
+          settingsData = [];
+        }
 
         if (settingsData && settingsData.length > 0) {
           const loadedSettings = settingsData[0];
@@ -271,8 +277,14 @@ export default function SeoTools() {
     setSaving(true);
     try {
       console.log('🔍 Fetching existing settings for store:', storeId);
-      const existingSettings = await SeoSetting.filter({ store_id: storeId });
-      console.log('🔍 Existing settings:', existingSettings);
+      let existingSettings = [];
+      try {
+        existingSettings = await SeoSetting.filter({ store_id: storeId });
+        console.log('🔍 Existing settings:', existingSettings);
+      } catch (fetchError) {
+        console.log('🔍 Failed to fetch existing settings (will create new):', fetchError.message);
+        existingSettings = [];
+      }
 
       const payload = {
         default_meta_title: seoSettings.default_meta_title || '',
@@ -301,10 +313,14 @@ export default function SeoTools() {
       let result;
       if (existingSettings && existingSettings.length > 0) {
         console.log('🔍 Updating existing settings with ID:', existingSettings[0].id);
+        console.log('🔍 Update URL will be:', `/api/seo-settings/${existingSettings[0].id}`);
+        console.log('🔍 Update method: PUT');
         result = await SeoSetting.update(existingSettings[0].id, payload);
         console.log('🔍 Update result:', result);
       } else {
         console.log('🔍 Creating new settings');
+        console.log('🔍 Create URL will be:', `/api/seo-settings`);
+        console.log('🔍 Create method: POST');
         result = await SeoSetting.create(payload);
         console.log('🔍 Create result:', result);
       }

@@ -1,15 +1,15 @@
 const express = require('express');
-const { SeoTemplate } = require('../models');
+const { Redirect } = require('../models');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// @route   GET /api/seo-templates
-// @desc    Get SEO templates for a store
+// @route   GET /api/redirects
+// @desc    Get redirects for a store
 // @access  Private (admin only)
 router.get('/', auth, async (req, res) => {
   try {
-    const { store_id, page_type } = req.query;
+    const { store_id } = req.query;
 
     if (!store_id) {
       return res.status(400).json({
@@ -38,18 +38,15 @@ router.get('/', auth, async (req, res) => {
       }
     }
 
-    const whereClause = { store_id };
-    if (page_type) whereClause.page_type = page_type;
-
-    const templates = await SeoTemplate.findAll({
-      where: whereClause,
-      order: [['page_type', 'ASC']]
+    const redirects = await Redirect.findAll({
+      where: { store_id },
+      order: [['from_url', 'ASC']]
     });
 
     // Return array format that the frontend expects
-    res.json(templates);
+    res.json(redirects);
   } catch (error) {
-    console.error('Get SEO templates error:', error);
+    console.error('Get redirects error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -57,24 +54,24 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-// @route   GET /api/seo-templates/:id
-// @desc    Get single SEO template
+// @route   GET /api/redirects/:id
+// @desc    Get single redirect
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
   try {
-    const template = await SeoTemplate.findByPk(req.params.id);
+    const redirect = await Redirect.findByPk(req.params.id);
 
-    if (!template) {
+    if (!redirect) {
       return res.status(404).json({
         success: false,
-        message: 'SEO template not found'
+        message: 'Redirect not found'
       });
     }
 
     // Return format that frontend expects
-    res.json(template);
+    res.json(redirect);
   } catch (error) {
-    console.error('Get SEO template error:', error);
+    console.error('Get redirect error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -82,16 +79,16 @@ router.get('/:id', auth, async (req, res) => {
   }
 });
 
-// @route   POST /api/seo-templates
-// @desc    Create a new SEO template
+// @route   POST /api/redirects
+// @desc    Create a new redirect
 // @access  Private
 router.post('/', auth, async (req, res) => {
   try {
-    const template = await SeoTemplate.create(req.body);
+    const redirect = await Redirect.create(req.body);
     // Return format that frontend expects
-    res.status(201).json(template);
+    res.status(201).json(redirect);
   } catch (error) {
-    console.error('Create SEO template error:', error);
+    console.error('Create redirect error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -99,25 +96,25 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// @route   PUT /api/seo-templates/:id
-// @desc    Update SEO template
+// @route   PUT /api/redirects/:id
+// @desc    Update redirect
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
   try {
-    const template = await SeoTemplate.findByPk(req.params.id);
+    const redirect = await Redirect.findByPk(req.params.id);
 
-    if (!template) {
+    if (!redirect) {
       return res.status(404).json({
         success: false,
-        message: 'SEO template not found'
+        message: 'Redirect not found'
       });
     }
 
-    await template.update(req.body);
+    await redirect.update(req.body);
     // Return format that frontend expects
-    res.json(template);
+    res.json(redirect);
   } catch (error) {
-    console.error('Update SEO template error:', error);
+    console.error('Update redirect error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'
@@ -125,27 +122,27 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// @route   DELETE /api/seo-templates/:id
-// @desc    Delete SEO template
+// @route   DELETE /api/redirects/:id
+// @desc    Delete redirect
 // @access  Private
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const template = await SeoTemplate.findByPk(req.params.id);
+    const redirect = await Redirect.findByPk(req.params.id);
 
-    if (!template) {
+    if (!redirect) {
       return res.status(404).json({
         success: false,
-        message: 'SEO template not found'
+        message: 'Redirect not found'
       });
     }
 
-    await template.destroy();
+    await redirect.destroy();
     res.json({
       success: true,
-      message: 'SEO template deleted successfully'
+      message: 'Redirect deleted successfully'
     });
   } catch (error) {
-    console.error('Delete SEO template error:', error);
+    console.error('Delete redirect error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error'

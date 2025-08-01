@@ -15,37 +15,44 @@ const SeoTemplate = sequelize.define('SeoTemplate', {
       key: 'id'
     }
   },
-  page_type: {
-    type: DataTypes.ENUM('home', 'product', 'category', 'cms', 'search', 'cart', 'checkout'),
+  name: {
+    type: DataTypes.STRING,
     allowNull: false
   },
-  title_template: {
+  type: {
+    type: DataTypes.ENUM('product', 'category'),
+    allowNull: false
+  },
+  meta_title: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  description_template: {
+  meta_description: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  keywords_template: {
+  meta_keywords: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  og_title_template: {
+  og_title: {
     type: DataTypes.STRING,
     allowNull: true
   },
-  og_description_template: {
+  og_description: {
     type: DataTypes.TEXT,
     allowNull: true
   },
-  twitter_title_template: {
-    type: DataTypes.STRING,
-    allowNull: true
+  sort_order: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
-  twitter_description_template: {
-    type: DataTypes.TEXT,
-    allowNull: true
+  conditions: {
+    type: DataTypes.JSON,
+    defaultValue: {
+      categories: [],
+      attribute_sets: []
+    }
   },
   is_active: {
     type: DataTypes.BOOLEAN,
@@ -56,7 +63,7 @@ const SeoTemplate = sequelize.define('SeoTemplate', {
   indexes: [
     {
       unique: true,
-      fields: ['store_id', 'page_type']
+      fields: ['store_id', 'name']
     }
   ]
 });
