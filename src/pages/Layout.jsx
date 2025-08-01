@@ -172,6 +172,7 @@ export default function Layout({ children, currentPageName }) {
           });
           
           setUser(userData);
+          console.log('🔍 Layout: User state set to:', userData);
         } catch (parseError) {
           console.log('🔍 Layout.jsx: Error parsing user data:', parseError);
           setUser(null);

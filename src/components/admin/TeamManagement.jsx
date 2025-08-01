@@ -118,8 +118,19 @@ export default function TeamManagement({ storeId }) {
       const response = await StoreTeam.getTeamMembers(storeId);
       console.log('🔍 TeamManagement: Full API response:', JSON.stringify(response, null, 2));
       
-      // Handle nested response structure: response.data.team_members
-      const teamMembers = response?.data?.team_members || response?.team_members || [];
+      // Handle response structure: API returns direct array or nested structure
+      let teamMembers = [];
+      if (Array.isArray(response)) {
+        // Direct array response
+        teamMembers = response;
+      } else if (response?.data?.team_members) {
+        // Nested structure: response.data.team_members
+        teamMembers = response.data.team_members;
+      } else if (response?.team_members) {
+        // Alternative nested: response.team_members
+        teamMembers = response.team_members;
+      }
+      
       console.log('🔍 TeamManagement: Extracted team members count:', teamMembers.length);
       console.log('🔍 TeamManagement: Team members:', teamMembers);
       
