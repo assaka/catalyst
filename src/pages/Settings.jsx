@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
@@ -45,7 +45,8 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function Settings() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const currentTab = searchParams.get('tab') || 'general';
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [store, setStore] = useState(null);
@@ -520,13 +521,18 @@ export default function Settings() {
           <p className="text-gray-600 mt-1">Configure your store's basic information and preferences</p>
         </div>
 
-        <Tabs value={currentTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs value={currentTab} onValueChange={(value) => {
+          const params = new URLSearchParams(searchParams);
+          params.set('tab', value);
+          setSearchParams(params);
+        }} className="w-full">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="domain">Domain</TabsTrigger>
             <TabsTrigger value="brevo">Brevo</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
+            <TabsTrigger value="team">Team</TabsTrigger>
           </TabsList>
 
           <TabsContent value="general" className="mt-6">
