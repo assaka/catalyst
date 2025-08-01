@@ -274,7 +274,8 @@ export default function Stores() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{store.name}</CardTitle>
                   <div className="flex gap-2">
-                    {store.owner_email === user?.email ? (
+                    {/* Check multiple ways to determine ownership */}
+                    {(store.owner_email === user?.email || store.is_direct_owner || store.access_role === 'owner') ? (
                       <Badge className="bg-purple-100 text-purple-800 border-purple-200" variant="outline">
                         <Crown className="w-3 h-3 mr-1" />
                         Owner
@@ -308,12 +309,17 @@ export default function Stores() {
                       <Eye className="w-4 h-4 mr-1" />
                       View
                     </Button>
-                    <Link to={createPageUrl('Settings')}>
-                      <Button size="sm">
-                        <Settings className="w-4 h-4 mr-1" />
-                        Manage
-                      </Button>
-                    </Link>
+                    <Button 
+                      size="sm"
+                      onClick={() => {
+                        // Set this store as selected and navigate to settings
+                        // This ensures the settings page loads with the correct store context
+                        window.location.href = `/admin/settings?store=${store.id}`;
+                      }}
+                    >
+                      <Settings className="w-4 h-4 mr-1" />
+                      Manage
+                    </Button>
                   </div>
                   <Button
                     size="sm"
@@ -326,10 +332,16 @@ export default function Stores() {
                 </div>
 
                 <div className="mt-4 text-sm text-gray-500">
-                  <p>Created: {new Date(store.created_date).toLocaleDateString()}</p>
+                  <p>Created: {store.created_date || store.created_at || store.createdAt ? 
+                    new Date(store.created_date || store.created_at || store.createdAt).toLocaleDateString() : 
+                    'Unknown'
+                  }</p>
+                  {/* Show owner email if different from current user */}
                   {store.owner_email && store.owner_email !== user?.email && (
                     <p>Owner: {store.owner_email}</p>
                   )}
+                  {/* Debug info - remove later */}
+                  <p className="text-xs opacity-50">Access: {store.access_role || 'unknown'} | Direct: {store.is_direct_owner ? 'yes' : 'no'}</p>
                   {store.agency_id && (
                     <p>Agency Managed</p>
                   )}
