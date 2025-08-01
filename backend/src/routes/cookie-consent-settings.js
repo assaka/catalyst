@@ -4,12 +4,13 @@ const { CookieConsentSettings, Store } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
-// Helper function to check store ownership
-const checkStoreOwnership = async (storeId, userEmail, userRole) => {
+// Helper function to check store access (ownership or team membership)
+const checkStoreAccess = async (storeId, userId, userRole) => {
   if (userRole === 'admin') return true;
   
-  const store = await Store.findByPk(storeId);
-  return store && store.user_id === userEmail;
+  const { checkUserStoreAccess } = require('../utils/storeAccess');
+  const access = await checkUserStoreAccess(userId, storeId);
+  return access !== null;
 };
 
 // @route   GET /api/cookie-consent-settings
@@ -35,13 +36,11 @@ router.get('/', async (req, res) => {
         });
       }
       
-      // Filter by store ownership
+      // Filter by store access (ownership + team membership)
       if (req.user.role !== 'admin') {
-        const userStores = await Store.findAll({
-          where: { user_id: req.user.id },
-          attributes: ['id']
-        });
-        const storeIds = userStores.map(store => store.id);
+        const { getUserStoresForDropdown } = require('../utils/storeAccess');
+        const accessibleStores = await getUserStoresForDropdown(req.user.id);
+        const storeIds = accessibleStores.map(store => store.id);
         where.store_id = { [Op.in]: storeIds };
       }
 
@@ -94,12 +93,17 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && settings.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, settings.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     res.json({
@@ -132,8 +136,8 @@ router.post('/', [
 
     const { store_id } = req.body;
 
-    // Check store ownership
-    const hasAccess = await checkStoreOwnership(store_id, req.user.id, req.user.role);
+    // Check store access
+    const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
     if (!hasAccess) {
       return res.status(403).json({
         success: false,
@@ -182,12 +186,17 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && settings.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, settings.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     await settings.update(req.body);
@@ -225,12 +234,17 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && settings.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, settings.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     await settings.destroy();

@@ -12,11 +12,9 @@ router.get('/', async (req, res) => {
 
     const where = {};
     if (req.user.role !== 'admin') {
-      const userStores = await Store.findAll({
-        where: { user_id: req.user.id },
-        attributes: ['id']
-      });
-      const storeIds = userStores.map(store => store.id);
+      const { getUserStoresForDropdown } = require('../utils/storeAccess');
+      const accessibleStores = await getUserStoresForDropdown(req.user.id);
+      const storeIds = accessibleStores.map(store => store.id);
       where.store_id = { [Op.in]: storeIds };
     }
 
@@ -43,8 +41,14 @@ router.get('/:id', async (req, res) => {
     });
     
     if (!deliverySettings) return res.status(404).json({ success: false, message: 'Delivery settings not found' });
-    if (req.user.role !== 'admin' && deliverySettings.Store.user_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
+    
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, deliverySettings.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
     }
 
     res.json({ success: true, data: deliverySettings });
@@ -92,8 +96,14 @@ router.delete('/:id', async (req, res) => {
     });
     
     if (!deliverySettings) return res.status(404).json({ success: false, message: 'Delivery settings not found' });
-    if (req.user.role !== 'admin' && deliverySettings.Store.user_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
+    
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, deliverySettings.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
     }
 
     await deliverySettings.destroy();

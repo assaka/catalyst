@@ -14,12 +14,13 @@ const getClientIP = (req) => {
          '127.0.0.1';
 };
 
-// Helper function to check store ownership
-const checkStoreOwnership = async (storeId, userEmail, userRole) => {
+// Helper function to check store access (ownership or team membership)
+const checkStoreAccess = async (storeId, userId, userRole) => {
   if (userRole === 'admin') return true;
   
-  const store = await Store.findByPk(storeId);
-  return store && store.user_id === userEmail;
+  const { checkUserStoreAccess } = require('../utils/storeAccess');
+  const access = await checkUserStoreAccess(userId, storeId);
+  return access !== null;
 };
 
 // @route   POST /api/consent-logs
@@ -105,13 +106,11 @@ router.get('/', async (req, res) => {
       });
     }
     
-    // Filter by store ownership
+    // Filter by store access (ownership + team membership)
     if (req.user.role !== 'admin') {
-      const userStores = await Store.findAll({
-        where: { user_id: req.user.id },
-        attributes: ['id']
-      });
-      const storeIds = userStores.map(store => store.id);
+      const { getUserStoresForDropdown } = require('../utils/storeAccess');
+      const accessibleStores = await getUserStoresForDropdown(req.user.id);
+      const storeIds = accessibleStores.map(store => store.id);
       where.store_id = { [Op.in]: storeIds };
     }
 

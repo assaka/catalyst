@@ -11,11 +11,9 @@ router.get('/', async (req, res) => {
 
     const where = {};
     if (req.user.role !== 'admin') {
-      const userStores = await Store.findAll({
-        where: { user_id: req.user.id },
-        attributes: ['id']
-      });
-      const storeIds = userStores.map(store => store.id);
+      const { getUserStoresForDropdown } = require('../utils/storeAccess');
+      const accessibleStores = await getUserStoresForDropdown(req.user.id);
+      const storeIds = accessibleStores.map(store => store.id);
       where.store_id = { [Op.in]: storeIds };
     }
 
@@ -42,8 +40,14 @@ router.get('/:id', async (req, res) => {
     });
     
     if (!coupon) return res.status(404).json({ success: false, message: 'Coupon not found' });
-    if (req.user.role !== 'admin' && coupon.Store.user_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
+    
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, coupon.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
     }
 
     res.json({ success: true, data: coupon });
@@ -64,8 +68,14 @@ router.post('/', async (req, res) => {
     const store = await Store.findByPk(store_id);
     
     if (!store) return res.status(404).json({ success: false, message: 'Store not found' });
-    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
+    
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store.id);
+      
+      if (!access) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
     }
 
     const coupon = await Coupon.create(req.body);
@@ -111,8 +121,14 @@ router.put('/:id', async (req, res) => {
     });
     
     if (!coupon) return res.status(404).json({ success: false, message: 'Coupon not found' });
-    if (req.user.role !== 'admin' && coupon.Store.user_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
+    
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, coupon.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
     }
 
     await coupon.update(req.body);
@@ -129,8 +145,14 @@ router.delete('/:id', async (req, res) => {
     });
     
     if (!coupon) return res.status(404).json({ success: false, message: 'Coupon not found' });
-    if (req.user.role !== 'admin' && coupon.Store.user_id !== req.user.id) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
+    
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, coupon.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({ success: false, message: 'Access denied' });
+      }
     }
 
     await coupon.destroy();

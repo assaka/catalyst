@@ -4,12 +4,13 @@ const { Category, Store } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
-// Helper function to check store ownership
-const checkStoreOwnership = async (storeId, userId, userRole) => {
+// Helper function to check store access (ownership or team membership)
+const checkStoreAccess = async (storeId, userId, userRole) => {
   if (userRole === 'admin') return true;
   
-  const store = await Store.findByPk(storeId);
-  return store && store.user_id === userId;
+  const { checkUserStoreAccess } = require('../utils/storeAccess');
+  const access = await checkUserStoreAccess(userId, storeId);
+  return access !== null;
 };
 
 // @route   GET /api/categories
@@ -25,13 +26,11 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 
     const where = {};
     
-    // Filter by store ownership
+    // Filter by store access (ownership + team membership)
     if (req.user.role !== 'admin') {
-      const userStores = await Store.findAll({
-        where: { user_id: req.user.id },
-        attributes: ['id']
-      });
-      const storeIds = userStores.map(store => store.id);
+      const { getUserStoresForDropdown } = require('../utils/storeAccess');
+      const accessibleStores = await getUserStoresForDropdown(req.user.id);
+      const storeIds = accessibleStores.map(store => store.id);
       where.store_id = { [Op.in]: storeIds };
     }
 
@@ -95,12 +94,17 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && category.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, category.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     res.json({
@@ -134,8 +138,8 @@ router.post('/', authMiddleware, authorize(['admin', 'store_owner']), [
 
     const { store_id } = req.body;
 
-    // Check store ownership
-    const hasAccess = await checkStoreOwnership(store_id, req.user.id, req.user.role);
+    // Check store access
+    const hasAccess = await checkStoreAccess(store_id, req.user.id, req.user.role);
     if (!hasAccess) {
       return res.status(403).json({
         success: false,
@@ -188,12 +192,17 @@ router.put('/:id', authMiddleware, authorize(['admin', 'store_owner']), [
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && category.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, category.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     await category.update(req.body);
@@ -231,12 +240,17 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && category.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, category.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     await category.destroy();

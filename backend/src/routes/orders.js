@@ -500,13 +500,11 @@ router.get('/', async (req, res) => {
 
     const where = {};
     
-    // Filter by store ownership
+    // Filter by store access (ownership + team membership)
     if (req.user.role !== 'admin') {
-      const userStores = await Store.findAll({
-        where: { user_id: req.user.id },
-        attributes: ['id']
-      });
-      const storeIds = userStores.map(store => store.id);
+      const { getUserStoresForDropdown } = require('../utils/storeAccess');
+      const accessibleStores = await getUserStoresForDropdown(req.user.id);
+      const storeIds = accessibleStores.map(store => store.id);
       where.store_id = { [Op.in]: storeIds };
     }
 
@@ -576,12 +574,17 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && order.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, order.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     res.json({
@@ -628,11 +631,16 @@ router.post('/', [
       });
     }
 
-    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     const order = await Order.create({ ...orderData, store_id });
@@ -692,12 +700,17 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && order.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, order.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     await order.update(req.body);

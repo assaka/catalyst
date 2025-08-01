@@ -31,8 +31,10 @@ router.get('/', async (req, res) => {
       }
       
       if (req.user.role !== 'admin') {
-        const store = await Store.findByPk(store_id);
-        if (!store || store.user_id !== req.user.id) {
+        const { checkUserStoreAccess } = require('../utils/storeAccess');
+        const access = await checkUserStoreAccess(req.user.id, store_id);
+        
+        if (!access) {
           return res.status(403).json({
             success: false,
             message: 'Access denied'
@@ -92,10 +94,12 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
-    // Check store ownership
+    // Check store access
     if (req.user.role !== 'admin') {
-      const store = await Store.findByPk(store_id);
-      if (!store || store.user_id !== req.user.id) {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store_id);
+      
+      if (!access) {
         return res.status(403).json({
           success: false,
           message: 'Access denied'
@@ -156,12 +160,17 @@ router.put('/:id', auth, async (req, res) => {
       });
     }
 
-    // Check store ownership
-    if (req.user.role !== 'admin' && seoSettings.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, seoSettings.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     console.log('🔄 Updating SEO settings with ID:', req.params.id);

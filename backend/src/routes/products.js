@@ -23,13 +23,11 @@ router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req,
 
     const where = {};
     
-    // Filter by store ownership
+    // Filter by store access (ownership + team membership)
     if (req.user.role !== 'admin') {
-      const userStores = await Store.findAll({
-        where: { user_id: req.user.id },
-        attributes: ['id']
-      });
-      const userStoreIds = userStores.map(store => store.id);
+      const { getUserStoresForDropdown } = require('../utils/storeAccess');
+      const accessibleStores = await getUserStoresForDropdown(req.user.id);
+      const userStoreIds = accessibleStores.map(store => store.id);
       
 
       // If a specific store_id is requested, check if user owns it
@@ -135,12 +133,17 @@ router.get('/:id', authMiddleware, authorize(['admin', 'store_owner']), async (r
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && product.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, product.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     res.json({
@@ -235,12 +238,17 @@ router.put('/:id',
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && product.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, product.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     await product.update(req.body);
@@ -278,12 +286,17 @@ router.delete('/:id', authMiddleware, authorize(['admin', 'store_owner']), async
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && product.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, product.Store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     await product.destroy();

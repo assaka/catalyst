@@ -108,11 +108,16 @@ router.post('/', auth, [
       });
     }
 
-    if (req.user.role !== 'admin' && store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     // Ensure name is properly trimmed and not empty
@@ -188,12 +193,17 @@ router.put('/:id', auth, [
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && productTab.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, productTab.store_id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     await productTab.update(req.body);
@@ -228,12 +238,17 @@ router.delete('/:id', auth, async (req, res) => {
       });
     }
 
-    // Check ownership
-    if (req.user.role !== 'admin' && productTab.Store.user_id !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied'
-      });
+    // Check store access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, productTab.store_id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
     }
 
     await productTab.destroy();
