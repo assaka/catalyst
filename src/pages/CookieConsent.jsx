@@ -92,8 +92,6 @@ const mapBackendToFrontend = (backendSettings) => {
       }
     ],
     gdpr_countries: backendSettings.gdpr_countries || ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"],
-    google_analytics_id: backendSettings.google_analytics_id || "",
-    google_tag_manager_id: backendSettings.google_tag_manager_id || "",
     custom_css: backendSettings.custom_css || "",
     // Theme settings
     theme: backendSettings.theme || "light",
@@ -136,9 +134,6 @@ const mapFrontendToBackend = (frontendSettings) => {
     functional_cookies: functionalCategory?.default_enabled || false,
     categories: frontendSettings.categories,
     gdpr_countries: frontendSettings.gdpr_countries,
-    // Integration settings
-    google_analytics_id: frontendSettings.google_analytics_id,
-    google_tag_manager_id: frontendSettings.google_tag_manager_id,
     custom_css: frontendSettings.custom_css,
     // Theme settings
     theme: frontendSettings.theme || "light",
@@ -379,10 +374,9 @@ export default function CookieConsent() {
         </div>
 
         <Tabs defaultValue="settings" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="settings">Settings</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="audit">Audit Logs</TabsTrigger>
           </TabsList>
 
@@ -524,6 +518,27 @@ export default function CookieConsent() {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card className="material-elevation-1 border-0">
+                <CardHeader>
+                  <CardTitle>Custom Styling</CardTitle>
+                  <CardDescription>Add custom CSS to style your consent banner</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div>
+                    <Label htmlFor="custom_css">Custom CSS</Label>
+                    <Textarea
+                      id="custom_css"
+                      value={settings.custom_css || ''}
+                      onChange={(e) => setSettings({ ...settings, custom_css: e.target.value })}
+                      rows={10}
+                      placeholder=".cookie-banner { background: #000; color: #fff; }"
+                      className="font-mono text-sm"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">Custom CSS styles for the cookie consent banner</p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
@@ -613,62 +628,6 @@ export default function CookieConsent() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="integrations" className="mt-6">
-            <div className="grid gap-6">
-              <Card className="material-elevation-1 border-0">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
-                    Analytics Integration
-                  </CardTitle>
-                  <CardDescription>Connect Google Analytics and Tag Manager with consent management</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="google_analytics_id">Google Analytics ID</Label>
-                    <Input
-                      id="google_analytics_id"
-                      value={settings.google_analytics_id || ''}
-                      onChange={(e) => setSettings({ ...settings, google_analytics_id: e.target.value })}
-                      placeholder="G-XXXXXXXXXX or UA-XXXXXXXXX-X"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">Analytics will only load after user consent</p>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="google_tag_manager_id">Google Tag Manager ID</Label>
-                    <Input
-                      id="google_tag_manager_id"
-                      value={settings.google_tag_manager_id || ''}
-                      onChange={(e) => setSettings({ ...settings, google_tag_manager_id: e.target.value })}
-                      placeholder="GTM-XXXXXXX"
-                    />
-                    <p className="text-sm text-gray-500 mt-1">GTM tags will be controlled by consent preferences</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="material-elevation-1 border-0">
-                <CardHeader>
-                  <CardTitle>Custom Styling</CardTitle>
-                  <CardDescription>Add custom CSS to style your consent banner</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div>
-                    <Label htmlFor="custom_css">Custom CSS</Label>
-                    <Textarea
-                      id="custom_css"
-                      value={settings.custom_css || ''}
-                      onChange={(e) => setSettings({ ...settings, custom_css: e.target.value })}
-                      rows={10}
-                      placeholder=".cookie-banner { background: #000; color: #fff; }"
-                      className="font-mono text-sm"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
 
           <TabsContent value="audit" className="mt-6">
             <Card className="material-elevation-1 border-0">
