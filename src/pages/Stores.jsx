@@ -303,7 +303,10 @@ export default function Stores() {
                       variant="outline"
                       onClick={() => {
                         const baseUrl = getStoreBaseUrl(store);
-                        window.open(getExternalStoreUrl(store.slug, '', baseUrl), '_blank');
+                        const storeCode = store.slug || store.code || store.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                        console.log('Store object:', store);
+                        console.log('Using store code:', storeCode);
+                        window.open(getExternalStoreUrl(storeCode, '', baseUrl), '_blank');
                       }}
                     >
                       <Eye className="w-4 h-4 mr-1" />
@@ -341,7 +344,12 @@ export default function Stores() {
                     <p>Owner: {store.owner_email}</p>
                   )}
                   {/* Debug info - remove later */}
-                  <p className="text-xs opacity-50">Access: {store.access_role || 'unknown'} | Direct: {store.is_direct_owner ? 'yes' : 'no'}</p>
+                  <p className="text-xs opacity-50">
+                    Access: {store.access_role || 'unknown'} | Direct: {store.is_direct_owner ? 'yes' : 'no'}
+                  </p>
+                  <p className="text-xs opacity-50">
+                    Slug: '{store.slug}' | Code: '{store.code}' | Name: '{store.name}'
+                  </p>
                   {store.agency_id && (
                     <p>Agency Managed</p>
                   )}
