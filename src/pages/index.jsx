@@ -190,6 +190,12 @@ function _getCurrentPage(url) {
     if (url.endsWith('/')) {
         url = url.slice(0, -1);
     }
+    
+    // Check for SEO tools sub-routes first
+    if (url.includes('/admin/seo-tools')) {
+        return 'SeoTools';
+    }
+    
     let urlLastPart = url.split('/').pop();
     if (urlLastPart.includes('?')) {
         urlLastPart = urlLastPart.split('?')[0];
