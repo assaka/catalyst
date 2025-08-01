@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { SeoSetting } from '@/api/entities';
 import { Product } from '@/api/entities';
 import { Category } from '@/api/entities';
@@ -115,10 +116,33 @@ export default function RobotsTxt() {
       return <div>Loading...</div>; // Or a blank screen
     }
 
-    // For serving the actual robots.txt file
+    // For serving the actual robots.txt file  
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('raw') === 'true') {
-        return <pre>{robotsTxt}</pre>;
+        // Set proper content type for robots.txt
+        useEffect(() => {
+            document.title = 'robots.txt';
+            // Remove any existing meta tags that might interfere
+            const existingMeta = document.querySelector('meta[name="robots"]');
+            if (existingMeta) {
+                existingMeta.remove();
+            }
+        }, []);
+        
+        return (
+            <div style={{ 
+                margin: 0, 
+                padding: 0, 
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                lineHeight: '1.2',
+                whiteSpace: 'pre-wrap',
+                backgroundColor: 'white',
+                color: 'black'
+            }}>
+                {robotsTxt || 'User-agent: *\nAllow: /'}
+            </div>
+        );
     }
 
     // For the admin editor view

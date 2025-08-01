@@ -79,6 +79,7 @@ const publicCmsBlocksRoutes = require('./routes/public-cms-blocks');
 const updateUspsBlockPlacementRoutes = require('./routes/update-usps-block-placement');
 const updateTestBlockPlacementRoutes = require('./routes/update-test-block-placement');
 const storeTeamRoutes = require('./routes/store-teams');
+const robotsRoutes = require('./routes/robots');
 
 const app = express();
 
@@ -1300,6 +1301,41 @@ app.use('/api/public/cookie-consent-settings', cookieConsentRoutes);
 app.use('/api/public/cms-blocks', cmsBlocksPublicOnlyRoutes);
 app.use('/api/public/product-tabs', productTabRoutes);
 app.use('/api/public/payment-methods', publicPaymentMethodRoutes);
+// Robots.txt serving route
+app.use('/api/robots', robotsRoutes);
+
+// Standard robots.txt route (for default store)
+app.get('/robots.txt', async (req, res) => {
+  try {
+    const { Store, SeoSettings } = require('./models');
+    
+    // Get the first active store as default
+    const defaultStore = await Store.findOne({
+      where: { is_active: true },
+      order: [['createdAt', 'ASC']]
+    });
+    
+    if (!defaultStore) {
+      return res.set({
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600'
+      }).send(`User-agent: *
+Allow: /
+Disallow: /admin/`);
+    }
+    
+    // Redirect to the store-specific robots.txt API endpoint
+    return res.redirect(301, `/api/robots/store/${defaultStore.slug}`);
+  } catch (error) {
+    console.error('[Robots] Error serving default robots.txt:', error);
+    res.set({
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600'
+    }).send(`User-agent: *
+Allow: /
+Disallow: /admin/`);
+  }
+});
 
 // Authenticated routes (keep existing for admin/authenticated users)
 app.use('/api/users', authMiddleware, userRoutes);

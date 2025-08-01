@@ -812,6 +812,63 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                 />
               </div>
 
+              {/* SEO Preview Section */}
+              {(seoSettings.default_meta_title || seoSettings.default_meta_description) && (
+                <div className="border-t pt-6">
+                  <h4 className="text-md font-medium text-gray-900 mb-4">Preview</h4>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">HTML Title Tag</p>
+                        <code className="text-sm bg-white px-2 py-1 rounded border">
+                          &lt;title&gt;{seoSettings.default_meta_title ? 
+                            seoSettings.default_meta_title
+                              .replace('{{store_name}}', selectedStore?.name || 'Your Store')
+                              .replace('{{page_title}}', 'Sample Page') 
+                            : 'Sample Page'}&lt;/title&gt;
+                        </code>
+                      </div>
+                      
+                      {seoSettings.default_meta_description && (
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Meta Description</p>
+                          <code className="text-sm bg-white px-2 py-1 rounded border block">
+                            &lt;meta name="description" content="{seoSettings.default_meta_description
+                              .replace('{{store_name}}', selectedStore?.name || 'Your Store')
+                              .replace('{{page_title}}', 'Sample Page')}" /&gt;
+                          </code>
+                        </div>
+                      )}
+                      
+                      {seoSettings.default_meta_keywords && (
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Meta Keywords</p>
+                          <code className="text-sm bg-white px-2 py-1 rounded border">
+                            &lt;meta name="keywords" content="{seoSettings.default_meta_keywords}" /&gt;
+                          </code>
+                        </div>
+                      )}
+                      
+                      {seoSettings.canonical_base_url && (
+                        <div>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Canonical URL</p>
+                          <code className="text-sm bg-white px-2 py-1 rounded border">
+                            &lt;link rel="canonical" href="{seoSettings.canonical_base_url}/sample-page" /&gt;
+                          </code>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <p className="text-xs text-gray-600">
+                        <strong>Note:</strong> This preview shows how your default settings will appear in the HTML head. 
+                        Page-specific meta tags will override these defaults when available.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end pt-4">
                 <Button onClick={handleSaveSettings} disabled={saving}>
                   {saving ? (

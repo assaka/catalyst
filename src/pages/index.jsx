@@ -75,6 +75,7 @@ import SeoTools from "./SeoTools";
 import XmlSitemap from "./XmlSitemap";
 
 import RobotsTxt from "./RobotsTxt";
+import RobotsPublic from "./RobotsPublic";
 
 import Onboarding from "./Onboarding";
 
@@ -599,7 +600,7 @@ function PagesContent() {
                 
                 <Route path="/public/:storeCode/sitemap.xml" element={<XmlSitemap />} />
                 
-                <Route path="/public/:storeCode/robots.txt" element={<RobotsTxt />} />
+                <Route path="/public/:storeCode/robots.txt" element={<RobotsPublic />} />
                 
                 <Route path="/public/:storeCode/order-cancel" element={<OrderCancel />} />
                 

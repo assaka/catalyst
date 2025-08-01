@@ -11,19 +11,63 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         }
 
         
-        // Default values
-        const defaultTitle = store?.name ? `${pageTitle} | ${store.name}` : pageTitle;
-        const defaultDescription = pageDescription || store?.description || '';
+        // Apply SEO settings defaults with template replacement
+        const applyTemplate = (template, data = {}) => {
+            if (!template) return '';
+            
+            let result = template;
+            
+            // Replace common placeholders
+            const replacements = {
+                '{{store_name}}': store?.name || '',
+                '{{page_title}}': pageTitle || '',
+                '{{product_name}}': data?.name || '',
+                '{{category_name}}': data?.name || '',
+                '{{product_description}}': data?.description || data?.short_description || '',
+                '{{category_description}}': data?.description || '',
+                '{{store_description}}': store?.description || ''
+            };
+            
+            Object.entries(replacements).forEach(([placeholder, value]) => {
+                result = result.replace(new RegExp(placeholder, 'g'), value);
+            });
+            
+            return result.trim();
+        };
+
+        // Get default SEO settings values
+        const seoDefaultTitle = seoSettings?.default_meta_title || '';
+        const seoDefaultDescription = seoSettings?.default_meta_description || '';
+        const seoDefaultKeywords = seoSettings?.default_meta_keywords || '';
+
+        // Apply templates to get processed defaults
+        const processedDefaultTitle = applyTemplate(seoDefaultTitle, pageData);
+        const processedDefaultDescription = applyTemplate(seoDefaultDescription, pageData);
+        const processedDefaultKeywords = applyTemplate(seoDefaultKeywords, pageData);
+
+        // Fallback to basic defaults if SEO settings don't provide them
+        const basicDefaultTitle = store?.name ? `${pageTitle} | ${store.name}` : pageTitle;
+        const basicDefaultDescription = pageDescription || store?.description || '';
+
+        // Final values with priority: page data > SEO templates > SEO defaults > basic defaults
+        const title = pageData?.meta_title || 
+                     pageData?.seo?.meta_title || 
+                     processedDefaultTitle || 
+                     basicDefaultTitle;
+                     
+        const description = pageData?.meta_description || 
+                           pageData?.seo?.meta_description || 
+                           processedDefaultDescription || 
+                           basicDefaultDescription;
+                           
+        const keywords = pageData?.meta_keywords || 
+                        pageData?.seo?.meta_keywords || 
+                        processedDefaultKeywords;
 
         // Determine the robots tag
         const robotsTag = pageData?.meta_robots_tag || 
                           pageData?.seo?.meta_robots_tag || 
                           'index, follow';
-
-        // Use page data or templates
-        const title = pageData?.meta_title || pageData?.seo?.meta_title || defaultTitle;
-        const description = pageData?.meta_description || pageData?.seo?.meta_description || defaultDescription;
-        const keywords = pageData?.meta_keywords || pageData?.seo?.meta_keywords || '';
 
         const ogImage = imageUrl || 
                        pageData?.images?.[0] || 
@@ -60,6 +104,51 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         updateMetaTag('description', description);
         if (keywords) updateMetaTag('keywords', keywords);
         updateMetaTag('robots', robotsTag);
+
+        // Canonical URL
+        const canonicalUrl = pageData?.canonical_url || 
+                            (seoSettings?.canonical_base_url ? 
+                                `${seoSettings.canonical_base_url}${window.location.pathname}` : 
+                                window.location.href);
+        
+        // Update or create canonical link
+        let canonicalLink = document.querySelector('link[rel="canonical"]');
+        if (!canonicalLink) {
+            canonicalLink = document.createElement('link');
+            canonicalLink.setAttribute('rel', 'canonical');
+            document.head.appendChild(canonicalLink);
+        }
+        canonicalLink.setAttribute('href', canonicalUrl);
+
+        // Hreflang tags
+        if (seoSettings?.hreflang_settings && Array.isArray(seoSettings.hreflang_settings) && seoSettings.hreflang_settings.length > 0) {
+            // Remove existing hreflang tags
+            const existingHreflangs = document.querySelectorAll('link[rel="alternate"][hreflang]');
+            existingHreflangs.forEach(link => link.remove());
+            
+            // Add new hreflang tags
+            seoSettings.hreflang_settings.forEach(hreflang => {
+                if (hreflang.is_active && hreflang.language_code && hreflang.url_pattern) {
+                    const hreflangUrl = applyTemplate(hreflang.url_pattern, { 
+                        current_url: window.location.href,
+                        current_path: window.location.pathname,
+                        ...pageData 
+                    });
+                    
+                    if (hreflangUrl) {
+                        const hreflangLink = document.createElement('link');
+                        hreflangLink.setAttribute('rel', 'alternate');
+                        hreflangLink.setAttribute('hreflang', 
+                            hreflang.country_code ? 
+                                `${hreflang.language_code}-${hreflang.country_code}` : 
+                                hreflang.language_code
+                        );
+                        hreflangLink.setAttribute('href', hreflangUrl);
+                        document.head.appendChild(hreflangLink);
+                    }
+                }
+            });
+        }
 
         // Open Graph Tags (check if enabled - default to true if seoSettings not loaded yet)
         const enableOpenGraph = seoSettings?.enable_open_graph !== false;
