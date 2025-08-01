@@ -104,20 +104,22 @@ export default function ThemeLayout() {
             
             console.log('Save result:', result);
             
-            // Clear ALL StoreProvider cache to force reload of settings
+            // Clear only specific StoreProvider cache to force reload of settings
             try {
                 localStorage.removeItem('storeProviderCache');
                 sessionStorage.removeItem('storeProviderCache');
                 
-                // Also clear all cache keys that might contain store data
-                const keysToRemove = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && (key.includes('store') || key.includes('theme') || key.includes('settings'))) {
-                        keysToRemove.push(key);
-                    }
-                }
-                keysToRemove.forEach(key => localStorage.removeItem(key));
+                // Clear only specific cache keys, avoiding auth tokens
+                const safeToClear = [
+                    'storeProviderCache',
+                    'store_theme_cache',
+                    'store_settings_cache'
+                ];
+                
+                safeToClear.forEach(key => {
+                    localStorage.removeItem(key);
+                    sessionStorage.removeItem(key);
+                });
                 
             } catch (e) {
                 console.warn('Failed to clear cache from storage:', e);
