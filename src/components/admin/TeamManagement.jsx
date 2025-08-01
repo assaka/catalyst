@@ -394,7 +394,7 @@ export default function TeamManagement({ storeId }) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {new Date(member.created_at).toLocaleDateString()}
+                      {new Date(member.createdAt || member.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>

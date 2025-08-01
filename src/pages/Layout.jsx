@@ -134,6 +134,12 @@ export default function Layout({ children, currentPageName }) {
     }
     loadData();
     
+    // Listen for user data ready event
+    const handleUserDataReady = () => {
+      console.log('🔍 Layout: Received userDataReady event, reloading user...');
+      loadUserAndHandleCredits();
+    };
+    
     // Add global click detector to debug logout issues
     const globalClickHandler = (e) => {
       if (e.target.textContent?.includes('Logout') || e.target.closest('[data-testid="logout"]')) {
@@ -142,9 +148,11 @@ export default function Layout({ children, currentPageName }) {
     };
     
     document.addEventListener('click', globalClickHandler, true);
+    window.addEventListener('userDataReady', handleUserDataReady);
     
     return () => {
       document.removeEventListener('click', globalClickHandler, true);
+      window.removeEventListener('userDataReady', handleUserDataReady);
     };
   }, []);
 
