@@ -184,8 +184,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             });
         }
 
-        // Open Graph Tags (check if enabled - default to true if seoSettings not loaded yet)
-        const enableOpenGraph = seoSettings?.enable_open_graph !== false;
+        // Open Graph Tags (check if enabled)
+        const enableOpenGraph = seoSettings?.enable_open_graph === true;
+        console.log('🔍 Open Graph check:', {
+            'seoSettings?.enable_open_graph': seoSettings?.enable_open_graph,
+            'enableOpenGraph': enableOpenGraph
+        });
         if (enableOpenGraph) {
             updateMetaTag('og:title', title, true);
             updateMetaTag('og:description', description, true);
@@ -203,8 +207,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
         }
 
-        // Twitter Card Tags (check if enabled - default to true if seoSettings not loaded yet)
-        const enableTwitterCards = seoSettings?.enable_twitter_cards !== false;
+        // Twitter Card Tags (check if enabled)
+        const enableTwitterCards = seoSettings?.enable_twitter_cards === true;
+        console.log('🔍 Twitter Cards check:', {
+            'seoSettings?.enable_twitter_cards': seoSettings?.enable_twitter_cards,
+            'enableTwitterCards': enableTwitterCards
+        });
         if (enableTwitterCards) {
             const cardType = seoSettings?.twitter_card_settings?.card_type || 'summary_large_image';
             updateMetaTag('twitter:card', cardType);
@@ -224,8 +232,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
         }
 
-        // Rich Snippets / Schema.org (check if enabled - default to true if seoSettings not loaded yet)
-        const enableRichSnippets = seoSettings?.enable_rich_snippets !== false;
+        // Rich Snippets / Schema.org (check if enabled)
+        const enableRichSnippets = seoSettings?.enable_rich_snippets === true;
+        console.log('🔍 Rich Snippets check:', {
+            'seoSettings?.enable_rich_snippets': seoSettings?.enable_rich_snippets,
+            'enableRichSnippets': enableRichSnippets
+        });
         
         // Product-specific Schema.org structured data
         if (enableRichSnippets && pageType === 'product' && pageData) {
