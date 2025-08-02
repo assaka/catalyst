@@ -269,115 +269,122 @@ export default function Categories() {
   const renderCategoryTree = (categoryNodes, depth = 0) => {
     return categoryNodes.map(category => (
       <div key={category.id} className="w-full">
-        <Card className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300 mb-2">
-          <CardHeader className="pb-3">
+        <Card className="border border-gray-200 hover:border-gray-300 transition-all duration-200 mb-1">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3" style={{ paddingLeft: `${depth * 20}px` }}>
+              <div className="flex items-center space-x-2" style={{ paddingLeft: `${depth * 16}px` }}>
                 {category.children && category.children.length > 0 && (
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => toggleCategoryExpansion(category.id)}
-                    className="p-1 h-6 w-6"
+                    className="p-0 h-5 w-5 hover:bg-gray-100"
                   >
-                    <ChevronRight className={`w-4 h-4 transition-transform ${
+                    <ChevronRight className={`w-3 h-3 transition-transform ${
                       expandedCategories.has(category.id) ? 'rotate-90' : 'rotate-0'
                     }`} />
                   </Button>
                 )}
                 {(!category.children || category.children.length === 0) && (
-                  <div className="w-6 h-6 flex items-center justify-center">
-                    {depth > 0 && <div className="w-2 h-2 bg-gray-300 rounded-full" />}
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    {depth > 0 && <div className="w-1.5 h-1.5 bg-gray-300 rounded-full" />}
                   </div>
                 )}
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
                   {category.hide_in_menu ? (
-                    <Folder className="w-6 h-6 text-white" />
+                    <Folder className="w-4 h-4 text-white" />
                   ) : (
-                    <FolderOpen className="w-6 h-6 text-white" />
+                    <FolderOpen className="w-4 h-4 text-white" />
                   )}
                 </div>
-                <div>
-                  <CardTitle className="text-lg">{category.name}</CardTitle>
-                  <p className="text-sm text-gray-500">/{category.slug}</p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-sm font-medium text-gray-900 truncate">{category.name}</h3>
+                    <span className="text-xs text-gray-500 font-mono">/{category.slug}</span>
+                  </div>
+                  {category.description && (
+                    <p className="text-xs text-gray-600 truncate mt-0.5">
+                      {category.description}
+                    </p>
+                  )}
                 </div>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm">
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setSelectedCategory(category);
-                      setShowCategoryForm(true);
-                    }}
+              
+              <div className="flex items-center space-x-2">
+                {/* Compact badges */}
+                <div className="flex items-center space-x-1">
+                  <Badge 
+                    variant={category.is_active ? "default" : "secondary"} 
+                    className="text-xs px-1.5 py-0.5 h-5"
                   >
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleToggleStatus(category)}
-                  >
-                    {category.is_active ? (
-                      <>
-                        <EyeOff className="w-4 h-4 mr-2" />
-                        Deactivate
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="w-4 h-4 mr-2" />
-                        Activate
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleToggleMenuVisibility(category)}
-                  >
-                    {category.hide_in_menu ? (
-                      <>
-                        <Eye className="w-4 h-4 mr-2" />
-                        Show in Menu
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="w-4 h-4 mr-2" />
-                        Hide from Menu
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleDeleteCategory(category.id)}
-                    className="text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-gray-600 text-sm mb-4">
-              {category.description || "No description"}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant={category.is_active ? "default" : "secondary"}>
-                {category.is_active ? "Active" : "Inactive"}
-              </Badge>
-              {category.hide_in_menu && (
-                <Badge variant="outline">Hidden from Menu</Badge>
-              )}
-              <Badge variant="outline">
-                Order: {category.sort_order || 0}
-              </Badge>
-              {category.children && category.children.length > 0 && (
-                <Badge variant="outline">
-                  {category.children.length} subcategory{category.children.length !== 1 ? 'ies' : 'y'}
-                </Badge>
-              )}
+                    {category.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                  {category.hide_in_menu && (
+                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5">Hidden</Badge>
+                  )}
+                  {category.children && category.children.length > 0 && (
+                    <Badge variant="outline" className="text-xs px-1.5 py-0.5 h-5">
+                      {category.children.length}
+                    </Badge>
+                  )}
+                </div>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <ChevronDown className="w-3 h-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setSelectedCategory(category);
+                        setShowCategoryForm(true);
+                      }}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleToggleStatus(category)}
+                    >
+                      {category.is_active ? (
+                        <>
+                          <EyeOff className="w-4 h-4 mr-2" />
+                          Deactivate
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-4 h-4 mr-2" />
+                          Activate
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleToggleMenuVisibility(category)}
+                    >
+                      {category.hide_in_menu ? (
+                        <>
+                          <Eye className="w-4 h-4 mr-2" />
+                          Show in Menu
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="w-4 h-4 mr-2" />
+                          Hide from Menu
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => handleDeleteCategory(category.id)}
+                      className="text-red-600"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -386,7 +393,7 @@ export default function Categories() {
         {category.children && 
          category.children.length > 0 && 
          expandedCategories.has(category.id) && (
-          <div className="ml-4">
+          <div className="ml-3">
             {renderCategoryTree(category.children, depth + 1)}
           </div>
         )}
@@ -600,7 +607,7 @@ export default function Categories() {
           
           {viewMode === 'hierarchical' ? (
             /* Hierarchical Tree View */
-            <div className="space-y-2 min-h-[400px]">
+            <div className="space-y-0.5 min-h-[400px]">
               {buildCategoryTree(categories).length > 0 ? (
                 renderCategoryTree(buildCategoryTree(categories))
               ) : (
