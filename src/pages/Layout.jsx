@@ -159,12 +159,6 @@ export default function Layout({ children, currentPageName }) {
 
   const loadUserAndHandleCredits = async () => {
     try {
-      console.log('🔍 Layout.jsx: Loading user data via token-only validation');
-      console.log('🔍 Layout.jsx: Current page:', currentPageName);
-      console.log('🔍 Layout.jsx: Current token:', !!apiClient.getToken());
-      console.log('🔍 Layout.jsx: Both roles logged in:', hasBothRolesLoggedIn());
-      console.log('🔍 Layout.jsx: Customer token exists:', !!localStorage.getItem('customer_auth_token'));
-      console.log('🔍 Layout.jsx: Store owner token exists:', !!localStorage.getItem('store_owner_auth_token'));
       
       // Use token-only validation like RoleProtectedRoute to avoid User.me() calls
       const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
@@ -173,24 +167,17 @@ export default function Layout({ children, currentPageName }) {
       if (hasStoreOwnerToken && storeOwnerUserData) {
         try {
           const userData = JSON.parse(storeOwnerUserData);
-          console.log('🔍 Layout.jsx: User data from localStorage:', {
-            id: userData?.id,
-            role: userData?.role,
-            account_type: userData?.account_type,
-            email: userData?.email
-          });
-          
           setUser(userData);
         } catch (parseError) {
-          console.log('🔍 Layout.jsx: Error parsing user data:', parseError);
+          console.error('🔍 Layout.jsx: Error parsing user data:', parseError);
           setUser(null);
         }
       } else {
-        console.log('🔍 Layout.jsx: No valid store owner token or user data found');
+        console.error('🔍 Layout.jsx: No valid store owner token or user data found');
         setUser(null);
       }
     } catch (error) {
-      console.log('🔍 Layout.jsx: Error in token validation:', error);
+      console.error('🔍 Layout.jsx: Error in token validation:', error);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -255,20 +242,11 @@ export default function Layout({ children, currentPageName }) {
 
   // Handle admin pages
   if (isAdminPage) {
-      console.log('🔍 Layout.jsx: Checking admin page access:', {
-        currentPageName,
-        user: user,
-        userRole: user?.role,
-        accountType: user?.account_type,
-        isLoading,
-        hasProperAdminRole: user && (user.account_type === 'agency' || user.role === 'admin' || user.role === 'store_owner')
-      });
       
       // Use token-only validation for admin access like RoleProtectedRoute
       const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
       
       if (!isLoading && !hasStoreOwnerToken) {
-          console.log(`🔄 Layout.jsx: No store owner token found, redirecting to admin auth`);
           navigate(createAdminUrl('ADMIN_AUTH'));
           return (
               <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
