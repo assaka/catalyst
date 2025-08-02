@@ -564,13 +564,13 @@ const clearCacheKeys = (keys) => {
       });
     }
     
-    // Update localStorage cache without the deleted keys
-    saveCacheToStorage();
+    // Also clear the entire localStorage cache for SEO-related changes
+    localStorage.removeItem('storeProviderCache');
     
-    // Set force refresh flag
-    localStorage.setItem('forceRefreshStore', 'true');
+    // Set force refresh flag with timestamp
+    localStorage.setItem('forceRefreshStore', Date.now().toString());
     
-    console.log('🧹 Cache keys cleared and force refresh set');
+    console.log('🧹 Cache keys cleared, localStorage cleared, and force refresh set');
   } catch (error) {
     console.warn('⚠️ Failed to clear specific cache keys:', error);
   }

@@ -354,7 +354,13 @@ export default function SeoTools() {
       // Clear SEO cache to ensure changes are reflected immediately
       clearSeoCache(storeId);
       
-      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Cache cleared.' });
+      // Open storefront in new tab automatically to show changes
+      setTimeout(() => {
+        const storefrontUrl = window.location.origin + '/public/' + (selectedStore?.slug || 'hamid2');
+        window.open(storefrontUrl, '_blank');
+      }, 1000);
+      
+      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Opening storefront in new tab to show changes.' });
       setSaving(false);
 
     } catch (error) {
