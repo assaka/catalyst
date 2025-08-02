@@ -1144,15 +1144,6 @@ const AkeneoIntegration = () => {
                   </Button>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="dry-run"
-                    checked={dryRun}
-                    onCheckedChange={handleDryRunChange}
-                    disabled={false}
-                  />
-                  <Label htmlFor="dry-run" className="cursor-pointer">Dry Run</Label>
-                </div>
               </div>
 
               {renderConnectionStatus()}
