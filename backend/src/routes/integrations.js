@@ -3,6 +3,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const AkeneoIntegration = require('../services/akeneo-integration');
 const IntegrationConfig = require('../models/IntegrationConfig');
+const auth = require('../middleware/auth');
 
 // Debug route to test if integrations router is working
 router.get('/test', (req, res) => {
@@ -112,13 +113,14 @@ const handleImportOperation = async (storeId, req, res, importFunction) => {
  * Test Akeneo connection
  * POST /api/integrations/akeneo/test-connection
  */
-router.post('/akeneo/test-connection', storeAuth, [
+router.post('/akeneo/test-connection', 
+  storeAuth,
   body('baseUrl').optional().isURL().withMessage('Valid base URL is required'),
   body('clientId').optional().notEmpty().withMessage('Client ID is required'),
   body('clientSecret').optional().notEmpty().withMessage('Client secret is required'),
   body('username').optional().notEmpty().withMessage('Username is required'),
-  body('password').optional().notEmpty().withMessage('Password is required')
-], async (req, res) => {
+  body('password').optional().notEmpty().withMessage('Password is required'),
+  async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -156,10 +158,11 @@ router.post('/akeneo/test-connection', storeAuth, [
  * Import categories from Akeneo
  * POST /api/integrations/akeneo/import-categories
  */
-router.post('/akeneo/import-categories', storeAuth, [
+router.post('/akeneo/import-categories', 
+  storeAuth,
   body('locale').optional().isString().withMessage('Locale must be a string'),
-  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean')
-], async (req, res) => {
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -179,11 +182,12 @@ router.post('/akeneo/import-categories', storeAuth, [
  * Import products from Akeneo
  * POST /api/integrations/akeneo/import-products
  */
-router.post('/akeneo/import-products', storeAuth, [
+router.post('/akeneo/import-products',
+  storeAuth,
   body('locale').optional().isString().withMessage('Locale must be a string'),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
-  body('batchSize').optional().isInt({ min: 1, max: 200 }).withMessage('Batch size must be between 1 and 200')
-], async (req, res) => {
+  body('batchSize').optional().isInt({ min: 1, max: 200 }).withMessage('Batch size must be between 1 and 200'),
+  async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -203,10 +207,11 @@ router.post('/akeneo/import-products', storeAuth, [
  * Import both categories and products from Akeneo
  * POST /api/integrations/akeneo/import-all
  */
-router.post('/akeneo/import-all', storeAuth, [
+router.post('/akeneo/import-all',
+  storeAuth,
   body('locale').optional().isString().withMessage('Locale must be a string'),
-  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean')
-], async (req, res) => {
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -322,13 +327,14 @@ router.get('/akeneo/locales', (req, res) => {
  * Save Akeneo configuration
  * POST /api/integrations/akeneo/save-config
  */
-router.post('/akeneo/save-config', storeAuth, [
+router.post('/akeneo/save-config',
+  storeAuth,
   body('baseUrl').isURL().withMessage('Valid base URL is required'),
   body('clientId').notEmpty().withMessage('Client ID is required'),
   body('clientSecret').notEmpty().withMessage('Client secret is required'),
   body('username').notEmpty().withMessage('Username is required'),
-  body('password').notEmpty().withMessage('Password is required')
-], async (req, res) => {
+  body('password').notEmpty().withMessage('Password is required'),
+  async (req, res) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
