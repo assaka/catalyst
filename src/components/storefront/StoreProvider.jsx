@@ -302,7 +302,6 @@ export const StoreProvider = ({ children }) => {
 
       // Load SEO settings separately and with priority
       try {
-        const { StorefrontSeoSetting } = await import('@/api/storefront-entities');
         console.log('🔍 Loading SEO settings for store:', selectedStore.id);
         
         // Check if we need to force fresh SEO data
@@ -310,25 +309,39 @@ export const StoreProvider = ({ children }) => {
         let seoSettingsData;
         
         if (forceRefresh) {
-          // Force fresh fetch, bypass cache entirely with cache-busting
-          console.log('🔄 Force fetching fresh SEO settings (bypassing ALL caches)...');
-          // Add cache-busting timestamp to force fresh API call
-          const cacheBuster = Date.now();
-          const result = await StorefrontSeoSetting.filter({ 
-            store_id: selectedStore.id,
-            _cache_bust: cacheBuster 
-          });
-          console.log('📊 Fresh SEO settings API response:', result);
-          seoSettingsData = Array.isArray(result) ? result : [];
+          // COMPLETELY BYPASS ALL CACHING - make direct API call
+          console.log('🚨 FORCE REFRESH DETECTED - Making direct API call bypassing ALL caching layers');
           
-          // Update cache with fresh data
-          apiCache.set(`seo-settings-${selectedStore.id}`, { 
-            data: seoSettingsData, 
-            timestamp: Date.now() 
-          });
-          saveCacheToStorage();
+          try {
+            // Import the API client directly to bypass all entity wrappers
+            const storefrontApiClient = (await import('@/api/storefront-client')).default;
+            
+            // Make direct API call with cache-busting timestamp
+            const cacheBuster = Date.now();
+            const directUrl = `seo-settings?store_id=${selectedStore.id}&_cb=${cacheBuster}`;
+            console.log('🔥 Direct API URL:', directUrl);
+            
+            const directResponse = await storefrontApiClient.getPublic(directUrl);
+            console.log('🔥 DIRECT API RESPONSE:', directResponse);
+            console.log('🔥 Response type:', typeof directResponse, 'Array?', Array.isArray(directResponse));
+            
+            seoSettingsData = Array.isArray(directResponse) ? directResponse : [];
+            console.log('🔥 Processed SEO settings data:', seoSettingsData);
+            
+            // Update cache with fresh data
+            apiCache.set(`seo-settings-${selectedStore.id}`, { 
+              data: seoSettingsData, 
+              timestamp: Date.now() 
+            });
+            saveCacheToStorage();
+            
+          } catch (directError) {
+            console.error('🚨 Direct API call failed:', directError);
+            seoSettingsData = [];
+          }
         } else {
           // Use normal cached call
+          const { StorefrontSeoSetting } = await import('@/api/storefront-entities');
           seoSettingsData = await cachedApiCall(`seo-settings-${selectedStore.id}`, async () => {
             console.log('🔄 Fetching SEO settings from API...');
             const result = await StorefrontSeoSetting.filter({ store_id: selectedStore.id });
