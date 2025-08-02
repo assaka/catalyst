@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { InvokeLLM } from "@/api/integrations";
-import { useStore, clearCache } from "@/components/storefront/StoreProvider";
+import { useStore, clearCache, clearCacheKeys } from "@/components/storefront/StoreProvider";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 
 export default function SeoTools() {
@@ -52,24 +52,25 @@ export default function SeoTools() {
   // Function to clear SEO-related cache
   const clearSeoCache = (storeId) => {
     try {
-      // Clear specific SEO cache keys
-      const cacheKeys = [
+      // Clear specific SEO-related cache keys
+      const keysToClear = [
         `seo-settings-${storeId}`,
-        `seo-templates-${storeId}`,
-        'storeProviderCache'
+        `seo-templates-${storeId}`
       ];
       
-      // Clear from memory cache (if accessible)
-      if (typeof window !== 'undefined' && window.clearCache) {
-        window.clearCache();
-      }
+      // Use the targeted cache clearing function
+      clearCacheKeys(keysToClear);
       
-      // Set flag to force refresh
-      localStorage.setItem('forceRefreshStore', 'true');
+      console.log('🧹 Cleared SEO cache keys for store:', storeId);
+      console.log('🔄 Changes should be visible on storefront immediately');
       
-      console.log('🧹 Cleared SEO cache for store:', storeId);
     } catch (error) {
       console.warn('⚠️ Failed to clear SEO cache:', error);
+      // Fallback to clearing all cache
+      if (typeof window !== 'undefined' && window.clearCache) {
+        window.clearCache();
+        localStorage.setItem('forceRefreshStore', 'true');
+      }
     }
   };
 

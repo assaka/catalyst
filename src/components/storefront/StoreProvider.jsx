@@ -552,10 +552,35 @@ const clearCache = () => {
   console.log('🗑️ Cache cleared');
 };
 
+// Clear specific cache keys
+const clearCacheKeys = (keys) => {
+  try {
+    if (Array.isArray(keys)) {
+      keys.forEach(key => {
+        if (apiCache.has(key)) {
+          apiCache.delete(key);
+          console.log('🗑️ Cleared cache key:', key);
+        }
+      });
+    }
+    
+    // Update localStorage cache without the deleted keys
+    saveCacheToStorage();
+    
+    // Set force refresh flag
+    localStorage.setItem('forceRefreshStore', 'true');
+    
+    console.log('🧹 Cache keys cleared and force refresh set');
+  } catch (error) {
+    console.warn('⚠️ Failed to clear specific cache keys:', error);
+  }
+};
+
 // Make clearCache available globally for debugging
 if (typeof window !== 'undefined') {
   window.clearCache = clearCache;
+  window.clearCacheKeys = clearCacheKeys;
 }
 
 // Export the caching function for use in other components
-export { cachedApiCall, clearCache };
+export { cachedApiCall, clearCache, clearCacheKeys };
