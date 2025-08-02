@@ -106,7 +106,10 @@ export default function AnalyticsSettings() {
             });
             
             console.log('⏱️ AnalyticsSettings: Starting API call...');
-            const result = await retryApiCall(() => Store.update(storeId, { settings: store.settings }));
+            
+            // Try direct API call first (without retry mechanism)
+            console.log('🔄 AnalyticsSettings: Making direct Store.update call...');
+            const result = await Store.update(storeId, { settings: store.settings });
             console.log('✅ AnalyticsSettings: Save result:', result);
             
             // Clear storefront cache for instant updates
