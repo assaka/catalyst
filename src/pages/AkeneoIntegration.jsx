@@ -75,11 +75,14 @@ const AkeneoIntegration = () => {
 
       console.log('📥 Stats API response:', response);
 
-      if (response.data?.success) {
-        console.log('✅ Stats loaded successfully:', response.data.stats);
-        setStats(response.data.stats);
+      // Check if response has data property or is the direct response
+      const responseData = response.data || response;
+      
+      if (responseData?.success) {
+        console.log('✅ Stats loaded successfully:', responseData.stats);
+        setStats(responseData.stats);
       } else {
-        console.log('❌ Stats API returned unsuccessful response:', response.data);
+        console.log('❌ Stats API returned unsuccessful response:', responseData);
       }
     } catch (error) {
       console.error('❌ Failed to load stats:', error);
