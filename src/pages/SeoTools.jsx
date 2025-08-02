@@ -863,19 +863,14 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                             if (!seoSettings.default_meta_title) return 'Sample Page';
                             
                             let preview = seoSettings.default_meta_title;
-                            // Replace all possible template variables
-                            const replacements = {
-                              '{{store_name}}': selectedStore?.name || 'Your Store',
-                              '{store_name}': selectedStore?.name || 'Your Store',
-                              '{{page_title}}': 'Sample Page',
-                              '{page_title}': 'Sample Page',
-                              '{{site_name}}': selectedStore?.name || 'Your Store',
-                              '{site_name}': selectedStore?.name || 'Your Store'
-                            };
                             
-                            Object.entries(replacements).forEach(([placeholder, value]) => {
-                              preview = preview.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
-                            });
+                            // Simple string replacement for all template variables
+                            preview = preview.replace(/\{\{store_name\}\}/g, selectedStore?.name || 'Your Store');
+                            preview = preview.replace(/\{store_name\}/g, selectedStore?.name || 'Your Store');
+                            preview = preview.replace(/\{\{page_title\}\}/g, 'Sample Page');
+                            preview = preview.replace(/\{page_title\}/g, 'Sample Page');
+                            preview = preview.replace(/\{\{site_name\}\}/g, selectedStore?.name || 'Your Store');
+                            preview = preview.replace(/\{site_name\}/g, selectedStore?.name || 'Your Store');
                             
                             return preview;
                           })()}&lt;/title&gt;
@@ -889,20 +884,16 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                           <code className="text-sm bg-white px-2 py-1 rounded border block overflow-x-auto">
                             &lt;meta name="description" content="{(() => {
                               let preview = seoSettings.default_meta_description;
-                              const replacements = {
-                                '{{store_name}}': selectedStore?.name || 'Your Store',
-                                '{store_name}': selectedStore?.name || 'Your Store',
-                                '{{page_title}}': 'Sample Page',
-                                '{page_title}': 'Sample Page',
-                                '{{site_name}}': selectedStore?.name || 'Your Store',
-                                '{site_name}': selectedStore?.name || 'Your Store',
-                                '{{store_description}}': selectedStore?.description || 'Store description',
-                                '{store_description}': selectedStore?.description || 'Store description'
-                              };
                               
-                              Object.entries(replacements).forEach(([placeholder, value]) => {
-                                preview = preview.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
-                              });
+                              // Simple string replacement for all template variables
+                              preview = preview.replace(/\{\{store_name\}\}/g, selectedStore?.name || 'Your Store');
+                              preview = preview.replace(/\{store_name\}/g, selectedStore?.name || 'Your Store');
+                              preview = preview.replace(/\{\{page_title\}\}/g, 'Sample Page');
+                              preview = preview.replace(/\{page_title\}/g, 'Sample Page');
+                              preview = preview.replace(/\{\{site_name\}\}/g, selectedStore?.name || 'Your Store');
+                              preview = preview.replace(/\{site_name\}/g, selectedStore?.name || 'Your Store');
+                              preview = preview.replace(/\{\{store_description\}\}/g, selectedStore?.description || 'Store description');
+                              preview = preview.replace(/\{store_description\}/g, selectedStore?.description || 'Store description');
                               
                               return preview;
                             })()}" /&gt;
