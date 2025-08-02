@@ -339,8 +339,31 @@ class AkeneoClient {
           console.log(`Test 4 failed: ${e4.message}`);
         }
         
+        // Test 5: Check other endpoints to understand permission scope
+        const permissionTests = [
+          { name: 'families', endpoint: '/api/rest/v1/families' },
+          { name: 'attributes', endpoint: '/api/rest/v1/attributes' },
+          { name: 'channels', endpoint: '/api/rest/v1/channels' },
+          { name: 'locales', endpoint: '/api/rest/v1/locales' }
+        ];
+        
+        const workingEndpoints = [];
+        for (const test of permissionTests) {
+          try {
+            await this.makeRequest('GET', test.endpoint, null, { limit: 1 });
+            workingEndpoints.push(test.name);
+            console.log(`✅ ${test.name} endpoint works`);
+          } catch (e) {
+            console.log(`❌ ${test.name} endpoint failed: ${e.message}`);
+          }
+        }
+        
         console.error('❌ All product endpoint tests failed');
-        return { success: true, message: `Connection successful (categories only). Product endpoints unavailable - check user permissions` };
+        const permissionMessage = workingEndpoints.length > 0 
+          ? `Working endpoints: ${workingEndpoints.join(', ')}. Check if your Akeneo user has 'Product' read permissions.`
+          : 'Very limited API access. Check if your user has proper API permissions in Akeneo.';
+          
+        return { success: true, message: `Connection successful (categories only). ${permissionMessage}` };
         
       } catch (productError) {
         console.error('❌ Product endpoint test failed:', productError.message);
