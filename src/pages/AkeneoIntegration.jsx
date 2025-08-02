@@ -42,26 +42,43 @@ const AkeneoIntegration = () => {
 
   // Load configuration and locales on component mount
   useEffect(() => {
-    loadConfigStatus();
-    loadLocales();
+    // Add a small delay to ensure localStorage is ready
+    const loadData = async () => {
+      // Wait a bit for localStorage to be ready
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await loadConfigStatus();
+      await loadLocales();
+    };
+    
+    loadData();
   }, []);
 
   const loadConfigStatus = async () => {
     try {
+      console.log('🔄 Loading Akeneo configuration status...');
+      
       // Get store_id from localStorage
       const storeId = localStorage.getItem('selectedStoreId');
+      console.log('🏪 Store ID:', storeId);
+      
       if (!storeId) {
-        console.warn('No store selected, skipping config status load');
+        console.warn('⚠️ No store selected, skipping config status load');
         return;
       }
 
+      setLoading(true);
       const response = await apiClient.get('/integrations/akeneo/config-status', {
         'x-store-id': storeId
       });
       
+      console.log('📥 Config status response:', response);
+      
       // Handle different response structures
       const responseData = response.data || response;
+      console.log('📋 Response data:', responseData);
+      
       if (responseData.success && responseData.config) {
+        console.log('✅ Config found, updating state with:', responseData.config);
         setConfig(prev => ({
           ...prev,
           ...responseData.config
@@ -72,14 +89,30 @@ const AkeneoIntegration = () => {
         if (loadedConfig.baseUrl && loadedConfig.clientId && loadedConfig.clientSecret && 
             loadedConfig.username && loadedConfig.password) {
           setConfigSaved(true);
+          console.log('✅ Configuration marked as saved');
+          
           // Auto-test connection if config is loaded and appears complete
           if (loadedConfig.clientSecret !== '' && loadedConfig.password !== '') {
-            console.log('Complete configuration loaded, you may want to test the connection');
+            console.log('💡 Complete configuration loaded, you may want to test the connection');
           }
+        } else {
+          console.log('⚠️ Incomplete configuration loaded');
         }
+      } else {
+        console.log('⚠️ No valid config found in response');
       }
     } catch (error) {
-      console.error('Failed to load config status:', error);
+      console.error('❌ Failed to load config status:', error);
+      // Check if it's a specific API error
+      if (error.status) {
+        console.error('📊 Error details:', {
+          status: error.status,
+          message: error.message,
+          data: error.data
+        });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -520,6 +553,21 @@ const AkeneoIntegration = () => {
 
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
+                  <Button 
+                    onClick={loadConfigStatus} 
+                    disabled={loading}
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    {loading ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                    {loading ? 'Loading...' : 'Reload Settings'}
+                  </Button>
+
                   <Button 
                     onClick={saveConfiguration} 
                     disabled={saving}
