@@ -309,9 +309,14 @@ export const StoreProvider = ({ children }) => {
         let seoSettingsData;
         
         if (forceRefresh) {
-          // Force fresh fetch, bypass cache entirely
-          console.log('🔄 Force fetching fresh SEO settings (bypassing cache)...');
-          const result = await StorefrontSeoSetting.filter({ store_id: selectedStore.id });
+          // Force fresh fetch, bypass cache entirely with cache-busting
+          console.log('🔄 Force fetching fresh SEO settings (bypassing ALL caches)...');
+          // Add cache-busting timestamp to force fresh API call
+          const cacheBuster = Date.now();
+          const result = await StorefrontSeoSetting.filter({ 
+            store_id: selectedStore.id,
+            _cache_bust: cacheBuster 
+          });
           console.log('📊 Fresh SEO settings API response:', result);
           seoSettingsData = Array.isArray(result) ? result : [];
           
@@ -590,7 +595,12 @@ const clearCacheKeys = (keys) => {
     // Set force refresh flag with timestamp
     localStorage.setItem('forceRefreshStore', Date.now().toString());
     
-    console.log('🧹 Cache keys cleared, localStorage cleared, and force refresh set');
+    // Trigger immediate page reload to apply changes
+    console.log('🧹 Cache keys cleared, localStorage cleared, force refresh set - reloading page');
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
+    
   } catch (error) {
     console.warn('⚠️ Failed to clear specific cache keys:', error);
   }
