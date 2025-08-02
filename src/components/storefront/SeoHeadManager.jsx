@@ -19,6 +19,18 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             
             let result = template;
             
+            // Extract relative path without store-specific prefix
+            const absolutePath = window.location.pathname || '';
+            let relativePath = absolutePath;
+            
+            // Remove store-specific prefix like /public/hamid2 to get the actual content path
+            if (store?.slug) {
+                const storePrefix = `/public/${store.slug}`;
+                if (absolutePath.startsWith(storePrefix)) {
+                    relativePath = absolutePath.substring(storePrefix.length) || '/';
+                }
+            }
+            
             // Replace common placeholders
             const replacements = {
                 '{{store_name}}': store?.name || '',
@@ -30,7 +42,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 '{{store_description}}': store?.description || '',
                 '{{base_url}}': window.location.origin || '',
                 '{{current_url}}': window.location.href || '',
-                '{{current_path}}': window.location.pathname || '',
+                '{{absolute_path}}': absolutePath,
+                '{{relative_path}}': relativePath,
+                '{{language_code}}': data?.language_code || '',
                 '{{site_name}}': store?.name || '',
                 '{{year}}': new Date().getFullYear().toString(),
                 '{{currency}}': store?.currency || 'USD'
@@ -208,6 +222,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     const hreflangUrl = applyTemplate(hreflang.url_pattern, { 
                         current_url: window.location.href,
                         current_path: window.location.pathname,
+                        language_code: hreflang.language_code,
                         ...pageData 
                     });
                     
