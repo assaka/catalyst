@@ -61,6 +61,40 @@ class AkeneoIntegration {
         akeneoCategories = akeneoCategories.filter(cat => filters.categoryIds.includes(cat.code));
       }
       
+      // Filter by root categories and their descendants
+      if (filters.rootCategories && filters.rootCategories.length > 0) {
+        console.log(`🌱 Filtering to root categories and their descendants: ${filters.rootCategories.join(', ')}`);
+        
+        // Find all categories that belong to the selected root category trees
+        const selectedCategoryTree = new Set();
+        
+        // First, add all selected root categories
+        filters.rootCategories.forEach(rootCode => {
+          const rootCategory = akeneoCategories.find(cat => cat.code === rootCode);
+          if (rootCategory) {
+            selectedCategoryTree.add(rootCode);
+          }
+        });
+        
+        // Then, recursively add all descendants
+        const addDescendants = (parentCode) => {
+          akeneoCategories.forEach(cat => {
+            if (cat.parent === parentCode && !selectedCategoryTree.has(cat.code)) {
+              selectedCategoryTree.add(cat.code);
+              addDescendants(cat.code); // Recursively add children
+            }
+          });
+        };
+        
+        filters.rootCategories.forEach(rootCode => {
+          addDescendants(rootCode);
+        });
+        
+        // Filter to only include categories in the selected trees
+        akeneoCategories = akeneoCategories.filter(cat => selectedCategoryTree.has(cat.code));
+        console.log(`📊 After root category filtering: ${akeneoCategories.length} categories selected`);
+      }
+      
       this.importStats.categories.total = akeneoCategories.length;
 
       console.log(`Found ${akeneoCategories.length} categories in Akeneo`);

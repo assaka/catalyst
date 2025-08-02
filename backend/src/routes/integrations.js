@@ -239,10 +239,66 @@ router.post('/akeneo/import-categories',
   console.log('🔍 Import categories request body:', req.body);
   
   await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
-    const { locale = 'en_US', dryRun = false } = body;
+    const { locale = 'en_US', dryRun = false, filters = {} } = body;
     console.log(`📦 Starting category import with dryRun: ${dryRun}, locale: ${locale}`);
-    return await integration.importCategories(storeId, { locale, dryRun });
+    console.log(`🎯 Category filters:`, filters);
+    return await integration.importCategories(storeId, { locale, dryRun, filters });
   });
+});
+
+/**
+ * Get categories from Akeneo
+ * GET /api/integrations/akeneo/categories
+ */
+router.get('/akeneo/categories', storeAuth, async (req, res) => {
+  const storeId = req.storeId;
+  
+  try {
+    console.log('📂 Getting categories from Akeneo for store:', storeId);
+    
+    // Get Akeneo configuration
+    const integrationConfig = await IntegrationConfig.findOne({
+      where: { 
+        store_id: storeId, 
+        platform: 'akeneo' 
+      }
+    });
+
+    if (!integrationConfig) {
+      return res.status(404).json({
+        success: false,
+        message: 'Akeneo integration not configured for this store'
+      });
+    }
+
+    const config = integrationConfig.config_data;
+    if (!config || !config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Incomplete Akeneo configuration'
+      });
+    }
+
+    // Create integration instance and get categories
+    const integration = new AkeneoIntegration(config);
+    const categories = await integration.client.getAllCategories();
+    
+    console.log(`📦 Found ${categories.length} categories from Akeneo`);
+    
+    res.json({
+      success: true,
+      categories: categories,
+      total: categories.length
+    });
+    
+  } catch (error) {
+    console.error('Error getting Akeneo categories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get categories from Akeneo',
+      error: error.message
+    });
+  }
 });
 
 /**

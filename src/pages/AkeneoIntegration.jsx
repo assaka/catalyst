@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Separator } from '../components/ui/separator';
-import { AlertCircle, CheckCircle, RefreshCw, Download, Settings, Database, Package, Clock, Plus, Trash2, Edit } from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCw, Download, Settings, Database, Package, Clock, Plus, Trash2, Edit, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreSlug } from '../hooks/useStoreSlug';
 import apiClient from '../api/client';
@@ -48,6 +48,9 @@ const AkeneoIntegration = () => {
   const [families, setFamilies] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [selectedRootCategories, setSelectedRootCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [scheduleForm, setScheduleForm] = useState({
     import_type: 'attributes',
@@ -167,6 +170,36 @@ const AkeneoIntegration = () => {
     }
   };
 
+  const loadAvailableCategories = async () => {
+    if (!connectionStatus?.success) return;
+    
+    setLoadingCategories(true);
+    try {
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (!storeId) return;
+
+      const response = await apiClient.get('/integrations/akeneo/categories', {
+        'x-store-id': storeId
+      });
+
+      if (response.data?.success || response.success) {
+        const responseData = response.data || response;
+        const categories = responseData.categories || [];
+        
+        // Filter to only root categories (no parent)
+        const rootCategories = categories.filter(cat => !cat.parent || cat.parent === null);
+        setAvailableCategories(rootCategories);
+        
+        console.log('📂 Loaded root categories:', rootCategories.length);
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      toast.error('Failed to load categories from Akeneo');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
   // Load families for filtering (using stats to get existing families)
   const loadFamiliesForFilter = async () => {
     try {
@@ -273,6 +306,7 @@ const AkeneoIntegration = () => {
       loadSchedules();
       loadChannels();
       loadFamiliesForFilter();
+      loadAvailableCategories();
     }
   }, [connectionStatus?.success]);
 
@@ -552,13 +586,26 @@ const AkeneoIntegration = () => {
       
       if (hasPlaceholders && configSaved) {
         // Use stored config for import
-        requestPayload = { dryRun };
+        requestPayload = { 
+          dryRun,
+          filters: {
+            rootCategories: selectedRootCategories.length > 0 ? selectedRootCategories : undefined
+          }
+        };
         console.log('🔒 Using stored configuration for import');
       } else {
         // Use provided config
-        requestPayload = { ...config, dryRun };
+        requestPayload = { 
+          ...config, 
+          dryRun,
+          filters: {
+            rootCategories: selectedRootCategories.length > 0 ? selectedRootCategories : undefined
+          }
+        };
         console.log('📋 Using provided configuration for import');
       }
+      
+      console.log('🎯 Selected root categories for import:', selectedRootCategories);
       
       const response = await apiClient.post('/integrations/akeneo/import-categories', requestPayload, {
         'x-store-id': storeId
@@ -1670,28 +1717,106 @@ const AkeneoIntegration = () => {
                 </AlertDescription>
               </Alert>
 
-              <div className="flex items-center space-x-2">
-                <Switch 
-                  id="categories-dry-run" 
-                  checked={dryRun} 
-                  onCheckedChange={handleDryRunChange}
-                />
-                <Label htmlFor="categories-dry-run">Dry Run (Preview only)</Label>
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="root-categories">Root Categories to Import (Optional)</Label>
+                  <div className="mt-2">
+                    {loadingCategories ? (
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Loading categories...
+                      </div>
+                    ) : availableCategories.length > 0 ? (
+                      <div className="space-y-2">
+                        <div className="border rounded-md p-3 min-h-[80px] max-h-[200px] overflow-y-auto">
+                          {availableCategories.map(category => (
+                            <div key={category.code} className="flex items-center space-x-2 mb-2">
+                              <input
+                                type="checkbox"
+                                id={`category-${category.code}`}
+                                checked={selectedRootCategories.includes(category.code)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedRootCategories(prev => [...prev, category.code]);
+                                  } else {
+                                    setSelectedRootCategories(prev => prev.filter(code => code !== category.code));
+                                  }
+                                }}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                              />
+                              <label 
+                                htmlFor={`category-${category.code}`}
+                                className="text-sm font-medium text-gray-700 cursor-pointer"
+                              >
+                                {category.labels?.en_US || category.labels?.en || category.code}
+                              </label>
+                              <Badge variant="secondary" className="text-xs">
+                                {category.code}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-gray-500">
+                            {selectedRootCategories.length === 0 
+                              ? 'All root categories will be imported' 
+                              : `${selectedRootCategories.length} categories selected`
+                            }
+                          </p>
+                          {selectedRootCategories.length > 0 && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => setSelectedRootCategories([])}
+                            >
+                              Clear Selection
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 p-3 border rounded-md">
+                        No root categories available. Test connection first to load categories from Akeneo.
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-              <div className="flex items-center gap-4">
-                <Button 
-                  onClick={importCategories} 
-                  disabled={importing || !connectionStatus?.success}
-                  className="flex items-center gap-2"
-                >
-                  {importing ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="categories-dry-run" 
+                    checked={dryRun} 
+                    onCheckedChange={handleDryRunChange}
+                  />
+                  <Label htmlFor="categories-dry-run">Dry Run (Preview only)</Label>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <Button 
+                    onClick={importCategories} 
+                    disabled={importing || !connectionStatus?.success}
+                    className="flex items-center gap-2"
+                  >
+                    {importing ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {importing ? 'Importing...' : 'Import Categories'}
+                  </Button>
+
+                  {availableCategories.length > 0 && !loadingCategories && (
+                    <Button 
+                      variant="outline"
+                      size="sm"
+                      onClick={loadAvailableCategories}
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                      Refresh Categories
+                    </Button>
                   )}
-                  {importing ? 'Importing...' : 'Import Categories'}
-                </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
