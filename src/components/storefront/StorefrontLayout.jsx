@@ -71,7 +71,7 @@ export default function StorefrontLayout({ children }) {
             await CustomerAuth.logout();
             window.location.reload();
         } catch (error) {
-            console.error('❌ Customer logout error:', error);
+            console.error('Customer logout error:', error);
             window.location.reload();
         }
     };
@@ -101,7 +101,7 @@ export default function StorefrontLayout({ children }) {
         const fetchData = async () => {
             if (loading || !store) return;
             
-            console.log('🔍 StorefrontLayout: Starting user fetch, current auth state:', {
+            console.log('StorefrontLayout: Starting user fetch, current auth state:', {
                 hasToken: !!apiClient.getToken(),
                 token: apiClient.getToken()?.substring(0, 20) + '...',
                 isLoggedOut: apiClient.isLoggedOut,
@@ -126,7 +126,7 @@ export default function StorefrontLayout({ children }) {
                     const userData = await retryApiCall(async () => {
                         return await CustomerAuth.me();
                     }, 5, 3000, null);
-                    console.log('🔍 StorefrontLayout: User data received:', userData);
+                    console.log('StorefrontLayout: User data received:', userData);
                     
                     // Only show user as logged in if they are a customer in storefront context
                     if (userData && userData.role === 'customer') {
@@ -136,7 +136,7 @@ export default function StorefrontLayout({ children }) {
                         setUser(null);
                     }
                 } catch (e) {
-                    console.log('🔍 StorefrontLayout: CustomerAuth.me() failed:', e.message);
+                    console.log('StorefrontLayout: CustomerAuth.me() failed:', e.message);
                     setUser(null);
                 } finally {
                     setUserLoading(false);

@@ -109,7 +109,6 @@ export default function RobotsTxt() {
               window.clearCache();
             }
             localStorage.setItem('forceRefreshStore', 'true');
-            console.log('🧹 Cleared SEO cache after robots.txt save');
             
             // Optionally, show a success message
         } catch (error) {
@@ -156,41 +155,94 @@ export default function RobotsTxt() {
 
     // For the admin editor view
     return (
-        <div className="max-w-4xl mx-auto p-8">
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-3">
-                        <Bot className="w-8 h-8 text-gray-700" />
-                        <div>
-                            <CardTitle>robots.txt Editor</CardTitle>
-                            <CardDescription>Manage search engine access to your site.</CardDescription>
+        <div className="min-h-screen bg-gray-50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+                <Card className="shadow-lg">
+                    <CardHeader className="border-b bg-white">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                            <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-gray-700 flex-shrink-0" />
+                            <div className="flex-1">
+                                <CardTitle className="text-xl sm:text-2xl">robots.txt Editor</CardTitle>
+                                <CardDescription className="text-sm sm:text-base mt-1">
+                                    Manage search engine access to your site
+                                </CardDescription>
+                            </div>
                         </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <Textarea
-                        value={robotsTxt}
-                        onChange={(e) => setRobotsTxt(e.target.value)}
-                        rows={20}
-                        className="font-mono text-sm"
-                        placeholder="User-agent: * ..."
-                    />
-                    <div className="flex justify-end gap-3 mt-4">
-                        <Button 
-                            variant="outline" 
-                            onClick={generateRobotsTxt} 
-                            disabled={generating || !selectedStore}
-                        >
-                            {generating ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCw className="w-4 h-4 mr-2" />}
-                            Update with Product Rules
-                        </Button>
-                        <Button onClick={handleSave} disabled={saving}>
-                            {saving ? <Save className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                            Save
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6">
+                        {/* Info section with basic format */}
+                        <div className="mb-4 p-3 sm:p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <h3 className="font-semibold text-sm sm:text-base text-blue-900 mb-2">Basic Format:</h3>
+                            <pre className="text-xs sm:text-sm text-blue-800 overflow-x-auto whitespace-pre-wrap">
+{`User-agent: *              # Applies to all search engines
+Allow: /                   # Allow crawling of all pages
+Disallow: /admin/          # Block admin pages
+Disallow: /private/        # Block private pages
+Disallow: /checkout/       # Block checkout process
+Disallow: /cart/           # Block cart pages
+Crawl-delay: 1            # Wait 1 second between requests
+Sitemap: /sitemap.xml     # Location of sitemap`}
+                            </pre>
+                        </div>
+                        
+                        {/* Editor */}
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Edit robots.txt content:
+                                </label>
+                                <Textarea
+                                    value={robotsTxt}
+                                    onChange={(e) => setRobotsTxt(e.target.value)}
+                                    rows={15}
+                                    className="font-mono text-xs sm:text-sm w-full resize-none"
+                                    placeholder="User-agent: *\nAllow: /\nDisallow: /admin/\n..."
+                                />
+                            </div>
+                            
+                            {/* Action buttons */}
+                            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
+                                <Button 
+                                    variant="outline" 
+                                    onClick={generateRobotsTxt} 
+                                    disabled={generating || !selectedStore}
+                                    className="w-full sm:w-auto"
+                                >
+                                    {generating ? (
+                                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <RefreshCw className="w-4 h-4 mr-2" />
+                                    )}
+                                    <span className="text-sm sm:text-base">Update with Product Rules</span>
+                                </Button>
+                                <Button 
+                                    onClick={handleSave} 
+                                    disabled={saving}
+                                    className="w-full sm:w-auto"
+                                >
+                                    {saving ? (
+                                        <Save className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : (
+                                        <Save className="w-4 h-4 mr-2" />
+                                    )}
+                                    <span className="text-sm sm:text-base">Save Changes</span>
+                                </Button>
+                            </div>
+                        </div>
+                        
+                        {/* Help text */}
+                        <div className="mt-6 text-xs sm:text-sm text-gray-600">
+                            <p className="mb-2">💡 Tips:</p>
+                            <ul className="list-disc list-inside space-y-1 ml-2">
+                                <li>Use "Disallow:" to block pages from search engines</li>
+                                <li>Use "Allow:" to explicitly allow pages</li>
+                                <li>"Crawl-delay" helps prevent server overload</li>
+                                <li>Always include your sitemap URL</li>
+                            </ul>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     );
 }

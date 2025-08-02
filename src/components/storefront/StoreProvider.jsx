@@ -106,7 +106,6 @@ const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION_LONG) => {
     
     // For critical product calls, don't return stale empty data
     if (isCriticalProductCall && Array.isArray(data) && data.length === 0) {
-      console.log(`🔄 StoreProvider: Forcing fresh call for critical API with empty cache: ${key}`);
       // Don't return cached empty data, force fresh call below
     } else {
       // Data is stale but exists - return it immediately and refresh in background
@@ -133,12 +132,12 @@ const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION_LONG) => {
     saveCacheToStorage();
     return result;
   } catch (error) {
-    console.error(`❌ StoreProvider: API call failed for ${key}:`, error);
-    console.error(`❌ StoreProvider: Full error details:`, error.message, error.stack);
+    console.error(`StoreProvider: API call failed for ${key}:`, error);
+    console.error(`StoreProvider: Full error details:`, error.message, error.stack);
     
     // Don't cache empty results for critical API calls like products
     if (key.includes('featured-products') || key.includes('products-category')) {
-      console.error(`🚨 StoreProvider: Not caching empty result for critical API: ${key}`);
+      console.error(`StoreProvider: Not caching empty result for critical API: ${key}`);
       throw error; // Let the component handle the error
     }
     
@@ -175,29 +174,19 @@ export const StoreProvider = ({ children }) => {
       setLoading(true);
       
       // EXTENSIVE DEBUG: Check localStorage state
-      console.log('🔍 DEBUGGING localStorage state:');
-      console.log('- forceRefreshStore:', localStorage.getItem('forceRefreshStore'));
-      console.log('- storeProviderCache exists:', !!localStorage.getItem('storeProviderCache'));
-      console.log('- All localStorage keys:', Object.keys(localStorage));
       
       // Check URL parameters for SEO refresh (bypasses localStorage isolation)
       const urlParams = new URLSearchParams(window.location.search);
       const seoRefreshParam = urlParams.get('_seo_refresh');
-      console.log('🔍 URL SEO refresh parameter:', seoRefreshParam);
       
       // Check if we need to force refresh the cache (localStorage OR URL parameter)
       const forceRefresh = localStorage.getItem('forceRefreshStore') || seoRefreshParam;
-      console.log('🔍 Force refresh flag value:', forceRefresh, 'Type:', typeof forceRefresh);
-      console.log('🔍 Force refresh source:', localStorage.getItem('forceRefreshStore') ? 'localStorage' : seoRefreshParam ? 'URL parameter' : 'none');
       
       if (forceRefresh) {
-        console.log('🚨 FORCE REFRESH FLAG DETECTED! Clearing all caches...');
         apiCache.clear();
         localStorage.removeItem('storeProviderCache');
         // DON'T remove forceRefreshStore flag yet - need it for SEO settings
-        console.log('🔄 Force refresh detected - clearing caches but preserving flag for SEO settings');
       } else {
-        console.log('ℹ️ No force refresh flag detected - using normal caching');
       }
       
       // Get store first with ultra-aggressive caching
@@ -236,7 +225,7 @@ export const StoreProvider = ({ children }) => {
             const result = await StorefrontStore.filter({ slug: storeIdentifier });
             return Array.isArray(result) ? result : [];
           } catch (error) {
-            console.error(`❌ StoreProvider: StorefrontStore.filter failed for slug:`, error);
+            console.error(`StoreProvider: StorefrontStore.filter failed for slug:`, error);
             return [];
           }
         } else {
@@ -244,7 +233,7 @@ export const StoreProvider = ({ children }) => {
             const result = await StorefrontStore.findAll({ limit: 1 });
             return Array.isArray(result) ? result : [];
           } catch (error) {
-            console.error(`❌ StoreProvider: StorefrontStore.findAll failed:`, error);
+            console.error(`StoreProvider: StorefrontStore.findAll failed:`, error);
             return [];
           }
         }
@@ -254,7 +243,7 @@ export const StoreProvider = ({ children }) => {
       const selectedStore = stores?.[0];
 
       if (!selectedStore) {
-        console.warn('⚠️ StoreProvider: No store found!');
+        console.warn('StoreProvider: No store found!');
         console.warn('Available stores:', stores);
         console.warn('Looking for slug:', storeIdentifier);
         console.warn('Cache key:', storeCacheKey);
@@ -504,7 +493,7 @@ export const StoreProvider = ({ children }) => {
 const clearCache = () => {
   apiCache.clear();
   localStorage.removeItem('storeProviderCache');
-  console.log('🗑️ Cache cleared');
+  console.log('Cache cleared');
 };
 
 // Clear specific cache keys
@@ -514,7 +503,7 @@ const clearCacheKeys = (keys) => {
       keys.forEach(key => {
         if (apiCache.has(key)) {
           apiCache.delete(key);
-          console.log('🗑️ Cleared cache key:', key);
+          console.log('Cleared cache key:', key);
         }
       });
     }
@@ -526,13 +515,13 @@ const clearCacheKeys = (keys) => {
     localStorage.setItem('forceRefreshStore', Date.now().toString());
     
     // Trigger immediate page reload to apply changes
-    console.log('🧹 Cache keys cleared, localStorage cleared, force refresh set - reloading page');
+    console.log('Cache keys cleared, localStorage cleared, force refresh set - reloading page');
     setTimeout(() => {
       window.location.reload();
     }, 100);
     
   } catch (error) {
-    console.warn('⚠️ Failed to clear specific cache keys:', error);
+    console.warn('Failed to clear specific cache keys:', error);
   }
 };
 
@@ -543,21 +532,21 @@ if (typeof window !== 'undefined') {
   
   // Debug function to manually test force refresh
   window.testForceRefresh = () => {
-    console.log('🧪 MANUAL TEST: Setting forceRefreshStore flag and reloading...');
+    console.log('MANUAL TEST: Setting forceRefreshStore flag and reloading...');
     localStorage.setItem('forceRefreshStore', Date.now().toString());
     window.location.reload();
   };
   
   // Debug function to manually set the flag as string (like admin does)
   window.testStringFlag = () => {
-    console.log('🧪 MANUAL TEST: Setting forceRefreshStore flag to "true" and reloading...');
+    console.log('MANUAL TEST: Setting forceRefreshStore flag to "true" and reloading...');
     localStorage.setItem('forceRefreshStore', 'true');
     window.location.reload();
   };
   
   // Debug function to check current localStorage state
   window.debugLocalStorage = () => {
-    console.log('🔍 Current localStorage state:');
+    console.log('Current localStorage state:');
     console.log('- forceRefreshStore:', localStorage.getItem('forceRefreshStore'));
     console.log('- storeProviderCache exists:', !!localStorage.getItem('storeProviderCache'));
     console.log('- All keys:', Object.keys(localStorage));

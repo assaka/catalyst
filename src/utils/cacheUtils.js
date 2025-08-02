@@ -1,8 +1,6 @@
 // Universal cache clearing utility for instant admin updates
 export const clearStorefrontCache = (storeId, dataTypes = []) => {
   try {
-    console.log('🧹 Clearing storefront cache for store:', storeId, 'types:', dataTypes);
-    
     // Clear localStorage cache
     localStorage.removeItem('storeProviderCache');
     
@@ -51,11 +49,8 @@ export const clearStorefrontCache = (storeId, dataTypes = []) => {
     } else if (typeof window !== 'undefined' && window.clearCache) {
       window.clearCache();
     }
-    
-    console.log('✅ Storefront cache cleared for types:', dataTypes);
-    
   } catch (error) {
-    console.error('❌ Failed to clear storefront cache:', error);
+    console.error('Failed to clear storefront cache:', error);
   }
 };
 
