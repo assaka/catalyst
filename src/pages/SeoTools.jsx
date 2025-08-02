@@ -385,7 +385,16 @@ export default function SeoTools() {
       // Clear SEO cache to ensure changes are reflected immediately
       clearSeoCache(storeId);
       
-      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Check your storefront - changes should be visible now.' });
+      // ADDITIONAL: Force reload storefront to bypass localStorage isolation issue
+      console.log('🔄 Opening fresh storefront window to bypass localStorage isolation...');
+      const storeSlug = selectedStore?.slug || 'hamid2';
+      const storefrontUrl = `${window.location.origin}/public/${storeSlug}?_seo_refresh=${Date.now()}`;
+      
+      setTimeout(() => {
+        window.open(storefrontUrl, '_blank');
+      }, 1000);
+      
+      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Fresh storefront window will open to show changes.' });
       setSaving(false);
 
     } catch (error) {

@@ -180,9 +180,15 @@ export const StoreProvider = ({ children }) => {
       console.log('- storeProviderCache exists:', !!localStorage.getItem('storeProviderCache'));
       console.log('- All localStorage keys:', Object.keys(localStorage));
       
-      // Check if we need to force refresh the cache (e.g., after admin settings changes)
-      const forceRefresh = localStorage.getItem('forceRefreshStore');
+      // Check URL parameters for SEO refresh (bypasses localStorage isolation)
+      const urlParams = new URLSearchParams(window.location.search);
+      const seoRefreshParam = urlParams.get('_seo_refresh');
+      console.log('🔍 URL SEO refresh parameter:', seoRefreshParam);
+      
+      // Check if we need to force refresh the cache (localStorage OR URL parameter)
+      const forceRefresh = localStorage.getItem('forceRefreshStore') || seoRefreshParam;
       console.log('🔍 Force refresh flag value:', forceRefresh, 'Type:', typeof forceRefresh);
+      console.log('🔍 Force refresh source:', localStorage.getItem('forceRefreshStore') ? 'localStorage' : seoRefreshParam ? 'URL parameter' : 'none');
       
       if (forceRefresh) {
         console.log('🚨 FORCE REFRESH FLAG DETECTED! Clearing all caches...');
@@ -315,13 +321,17 @@ export const StoreProvider = ({ children }) => {
       try {
         console.log('🔍 Loading SEO settings for store:', selectedStore.id);
         
-        // EXTENSIVE DEBUG: Check force refresh flag again
-        const forceRefresh = localStorage.getItem('forceRefreshStore');
+        // EXTENSIVE DEBUG: Check force refresh flag again (localStorage + URL)
+        const urlParams = new URLSearchParams(window.location.search);
+        const seoRefreshParam = urlParams.get('_seo_refresh');
+        const forceRefresh = localStorage.getItem('forceRefreshStore') || seoRefreshParam;
+        
         console.log('🔍 SEO LOADING - Force refresh flag check:');
-        console.log('- forceRefreshStore value:', forceRefresh);
+        console.log('- forceRefreshStore (localStorage):', localStorage.getItem('forceRefreshStore'));
+        console.log('- _seo_refresh (URL param):', seoRefreshParam);
+        console.log('- Combined forceRefresh value:', forceRefresh);
         console.log('- Flag exists:', !!forceRefresh);
-        console.log('- Is string "true":', forceRefresh === 'true');
-        console.log('- Is timestamp:', !isNaN(parseInt(forceRefresh || '')));
+        console.log('- Source:', localStorage.getItem('forceRefreshStore') ? 'localStorage' : seoRefreshParam ? 'URL parameter' : 'none');
         
         let seoSettingsData;
         

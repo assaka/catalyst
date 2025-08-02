@@ -137,20 +137,36 @@ const AkeneoIntegration = () => {
   };
 
   const testConnection = async () => {
+    console.log('🔌 Starting connection test...');
+    console.log('📋 Current config:', { 
+      baseUrl: config.baseUrl, 
+      clientId: config.clientId, 
+      username: config.username,
+      hasClientSecret: !!config.clientSecret,
+      hasPassword: !!config.password,
+      clientSecretPlaceholder: config.clientSecret === '••••••••',
+      passwordPlaceholder: config.password === '••••••••'
+    });
+
     // Check if we have placeholder values - if so, we need actual values
     if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
+      console.error('❌ Missing configuration fields');
       toast.error('Please fill in all configuration fields');
       return;
     }
 
     if (config.clientSecret === '••••••••' || config.password === '••••••••') {
+      console.error('❌ Placeholder values detected');
       toast.error('Please enter your actual Client Secret and Password to test the connection');
       return;
     }
 
     // Get store_id from localStorage
     const storeId = localStorage.getItem('selectedStoreId');
+    console.log('🏪 Using store ID:', storeId);
+    
     if (!storeId) {
+      console.error('❌ No store selected');
       toast.error('No store selected. Please select a store first.');
       return;
     }
@@ -159,27 +175,42 @@ const AkeneoIntegration = () => {
     setConnectionStatus(null);
 
     try {
+      console.log('📡 Making API call to test-connection...');
       const response = await apiClient.post('/integrations/akeneo/test-connection', config, {
         'x-store-id': storeId
       });
       
+      console.log('📥 Test connection response:', response);
+      
       // Handle different response structures
       const responseData = response.data || response;
+      console.log('📋 Response data:', responseData);
+      
       const success = responseData.success;
       const message = responseData.message || 'Connection test completed';
       
       if (success) {
+        console.log('✅ Connection successful');
         setConnectionStatus({ success: true, message });
         toast.success('Connection successful!');
       } else {
+        console.log('❌ Connection failed:', message);
         setConnectionStatus({ success: false, message });
         toast.error('Connection failed');
       }
     } catch (error) {
+      console.error('❌ Connection test error:', error);
+      console.error('📊 Error details:', {
+        status: error.status,
+        message: error.message,
+        response: error.response?.data
+      });
+      
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setConnectionStatus({ success: false, message });
       toast.error(`Connection failed: ${message}`);
     } finally {
+      console.log('🏁 Connection test completed');
       setTesting(false);
     }
   };
