@@ -37,14 +37,14 @@ const AkeneoIntegration = () => {
   const [configSaved, setConfigSaved] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [dryRun, setDryRun] = useState(true);
+  const [locales, setLocales] = useState([]);
+  const [activeTab, setActiveTab] = useState('configuration');
   
   // Debug dry run changes
   const handleDryRunChange = (checked) => {
     console.log('🔧 Dry run toggle changed:', checked);
     setDryRun(checked);
   };
-  const [locales, setLocales] = useState([]);
-  const [activeTab, setActiveTab] = useState('configuration');
 
   // Load configuration and locales on component mount
   useEffect(() => {
@@ -157,6 +157,7 @@ const AkeneoIntegration = () => {
   };
 
   const testConnection = async () => {
+    console.log('🔌 Test Connection button clicked!');
     console.log('🔌 Starting connection test...');
     console.log('📋 Current config:', { 
       baseUrl: config.baseUrl, 
@@ -262,6 +263,7 @@ const AkeneoIntegration = () => {
   };
 
   const saveConfiguration = async () => {
+    console.log('💾 Save Configuration button clicked!');
     if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
       toast.error('Please fill in all configuration fields');
       return;
