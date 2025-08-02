@@ -62,7 +62,8 @@
       "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -c \"SELECT COUNT(*) as total_attributes FROM attributes WHERE store_id = ''157d4590-49bf-4b0b-bd77-abe131909528'';\")",
       "Bash(git restore:*)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node run-akeneo-schedules-migration.js)",
-      "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -c \"\\d akeneo_schedules\")"
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -c \"\\d akeneo_schedules\")",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node verify-akeneo-schedules.js)"
     ],
     "deny": []
   }
