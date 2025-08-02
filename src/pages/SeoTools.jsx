@@ -37,7 +37,8 @@ import {
   Crown,
   Eye,
   Share2, // Added for social settings
-  Link2 // Added for social settings
+  Link2, // Added for social settings
+  Info as InfoIcon
 } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { InvokeLLM } from "@/api/integrations";
@@ -1175,16 +1176,56 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <Label>Robots.txt Content</Label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Label>Robots.txt Content</Label>
+                    <InfoIcon className="w-4 h-4 text-gray-400 hover:text-gray-600 cursor-help" title="Click to see format guide" />
+                  </div>
                   <Textarea
                     value={seoSettings.robots_txt_content}
                     onChange={(e) => setSeoSettings(prev => ({ ...prev, robots_txt_content: e.target.value }))}
                     rows={10}
                     className="font-mono text-sm"
+                    placeholder="User-agent: *&#10;Allow: /&#10;Disallow: /admin/"
                   />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Products and categories with "noindex" robots setting will automatically be added as Disallow rules.
-                  </p>
+                  <div className="mt-2 space-y-2">
+                    <p className="text-sm text-gray-600 font-medium">
+                      Robots.txt Format Guide:
+                    </p>
+                    <div className="text-sm text-gray-500 space-y-1 bg-gray-50 p-3 rounded-md">
+                      <p><strong>Basic Format:</strong></p>
+                      <pre className="font-mono text-xs bg-white p-2 rounded border">
+User-agent: *              # Applies to all search engines
+Allow: /                   # Allow crawling of all pages
+Disallow: /admin/          # Block admin pages
+Disallow: /private/        # Block private pages
+Disallow: /checkout/       # Block checkout process
+Disallow: /cart/           # Block cart pages
+Crawl-delay: 1            # Wait 1 second between requests
+Sitemap: /sitemap.xml     # Location of sitemap
+                      </pre>
+                      
+                      <p className="mt-2"><strong>Important Notes:</strong></p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li>Each directive must be on its own line</li>
+                        <li>Use <code className="bg-gray-200 px-1 rounded">User-agent: *</code> to apply rules to all bots</li>
+                        <li>Paths in Disallow rules affect the robots meta tag on those pages</li>
+                        <li>Pages matching Disallow rules will get "noindex, nofollow" meta tags</li>
+                        <li>Use <code className="bg-gray-200 px-1 rounded">#</code> for comments</li>
+                        <li>Paths are case-sensitive and relative to root</li>
+                      </ul>
+                      
+                      <p className="mt-2"><strong>Common Patterns:</strong></p>
+                      <ul className="list-disc list-inside space-y-1 ml-2">
+                        <li><code className="bg-gray-200 px-1 rounded">Disallow: /category/</code> - Block all category pages</li>
+                        <li><code className="bg-gray-200 px-1 rounded">Disallow: /*.pdf$</code> - Block all PDF files</li>
+                        <li><code className="bg-gray-200 px-1 rounded">Disallow: /*?</code> - Block all URLs with parameters</li>
+                        <li><code className="bg-gray-200 px-1 rounded">Allow: /public/</code> - Explicitly allow public directory</li>
+                      </ul>
+                    </div>
+                    <p className="text-sm text-gray-500 italic">
+                      Products and categories with "noindex" robots setting will automatically be added as Disallow rules.
+                    </p>
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <Button onClick={generateRobotsTxt}>

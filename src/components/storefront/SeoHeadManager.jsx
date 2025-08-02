@@ -25,13 +25,38 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 '{{category_name}}': data?.name || '',
                 '{{product_description}}': data?.description || data?.short_description || '',
                 '{{category_description}}': data?.description || '',
-                '{{store_description}}': store?.description || ''
+                '{{store_description}}': store?.description || '',
+                '{{base_url}}': window.location.origin || '',
+                '{{current_url}}': window.location.href || '',
+                '{{current_path}}': window.location.pathname || '',
+                '{{site_name}}': store?.name || '',
+                '{{year}}': new Date().getFullYear().toString(),
+                '{{currency}}': store?.currency || 'USD'
             };
             
-            Object.entries(replacements).forEach(([placeholder, value]) => {
-                result = result.replace(new RegExp(placeholder, 'g'), value);
+            console.log('🔍 Template replacement:', {
+                original: template,
+                store: store?.name,
+                pageData: data
             });
             
+            // Simple string replacement without regex complications
+            Object.entries(replacements).forEach(([placeholder, value]) => {
+                // Replace double curly braces version
+                while (result.includes(placeholder)) {
+                    result = result.replace(placeholder, value);
+                    console.log(`🔄 Replaced ${placeholder} with "${value}"`);
+                }
+                
+                // Also replace single curly braces version (e.g., {store_name})
+                const singleBracePlaceholder = placeholder.replace(/{{/g, '{').replace(/}}/g, '}');
+                while (result.includes(singleBracePlaceholder)) {
+                    result = result.replace(singleBracePlaceholder, value);
+                    console.log(`🔄 Replaced ${singleBracePlaceholder} with "${value}"`);
+                }
+            });
+            
+            console.log('🔍 Template result:', result);
             return result.trim();
         };
 
@@ -75,9 +100,12 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             store: store?.name,
             seoSettings: seoSettings ? 'loaded' : 'not loaded',
             seoSettingsData: seoSettings,
-            enableRichSnippets: seoSettings?.enable_rich_snippets,
-            enableOpenGraph: seoSettings?.enable_open_graph,
-            enableTwitterCards: seoSettings?.enable_twitter_cards,
+            'enable_rich_snippets type': typeof seoSettings?.enable_rich_snippets,
+            'enable_rich_snippets value': seoSettings?.enable_rich_snippets,
+            'enable_open_graph type': typeof seoSettings?.enable_open_graph,
+            'enable_open_graph value': seoSettings?.enable_open_graph,
+            'enable_twitter_cards type': typeof seoSettings?.enable_twitter_cards,
+            'enable_twitter_cards value': seoSettings?.enable_twitter_cards,
             seoDefaultTitle,
             seoDefaultDescription,
             seoDefaultKeywords,
@@ -97,27 +125,49 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             
             console.log('🔍 Robots check:', {
                 currentPath,
-                robotsContent,
-                'contains /category/': robotsContent.includes('Disallow: /category/'),
-                'path includes category': currentPath.includes('/category')
+                'robots content exists': !!robotsContent,
+                'robots content length': robotsContent?.length || 0,
+                'robots preview': robotsContent?.substring(0, 100) + (robotsContent?.length > 100 ? '...' : '')
             });
             
             // Check if current path matches any Disallow rules
             let shouldDisallow = false;
-            if (robotsContent) {
+            if (robotsContent && robotsContent.trim()) {
+                console.log('🔍 Processing robots.txt content:', robotsContent);
                 const disallowRules = robotsContent.match(/Disallow:\s*([^\n\r]*)/g) || [];
+                console.log('🔍 Found disallow rules:', disallowRules);
+                
                 for (const rule of disallowRules) {
                     const path = rule.replace('Disallow:', '').trim();
-                    if (path && currentPath.startsWith(path)) {
-                        shouldDisallow = true;
-                        console.log('🚫 Found matching Disallow rule:', path);
-                        break;
+                    console.log('🔍 Checking rule path:', `"${path}"`, 'against current path:', `"${currentPath}"`);
+                    
+                    if (path && path !== '/' && path !== '') {
+                        // More precise matching logic - check if the current path contains or matches the disallow pattern
+                        const pathMatches = currentPath === path || 
+                                          currentPath.startsWith(path) ||
+                                          currentPath.includes(path) ||
+                                          (path.endsWith('/') && (currentPath.startsWith(path) || currentPath.includes(path)));
+                        
+                        console.log('🔍 Path match result:', pathMatches, {
+                            'exact match': currentPath === path,
+                            'starts with': currentPath.startsWith(path),
+                            'includes': currentPath.includes(path)
+                        });
+                        
+                        if (pathMatches) {
+                            shouldDisallow = true;
+                            console.log('🚫 MATCH! Disallow rule:', `"${path}"`, 'matches current path:', `"${currentPath}"`);
+                            break;
+                        }
                     }
                 }
             }
             
+            console.log('🔍 shouldDisallow final result:', shouldDisallow);
+            console.log('🔍 seoSettings?.default_meta_robots:', seoSettings?.default_meta_robots);
+            
             robotsTag = shouldDisallow ? 'noindex, nofollow' : (seoSettings?.default_meta_robots || 'index, follow');
-            console.log('🔍 Final robots tag:', robotsTag);
+            console.log('🔍 Final robots tag result:', robotsTag);
         }
 
         const ogImage = imageUrl || 
@@ -157,14 +207,31 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         if (keywords) updateMetaTag('keywords', keywords);
         updateMetaTag('robots', robotsTag);
 
-        // Canonical URL
-        const canonicalUrl = pageData?.canonical_url || 
-                            (seoSettings?.canonical_base_url && seoSettings.canonical_base_url.trim() ? 
-                                `${seoSettings.canonical_base_url}${window.location.pathname}` : 
-                                window.location.href);
+        // Canonical URL with template replacement
+        let canonicalUrl = pageData?.canonical_url;
+        
+        if (!canonicalUrl) {
+            // Apply template replacement to canonical base URL
+            const canonicalBase = applyTemplate(seoSettings?.canonical_base_url || '', pageData);
+            
+            if (canonicalBase && canonicalBase.trim()) {
+                // Ensure the base URL doesn't end with / and pathname starts with /
+                const cleanBase = canonicalBase.replace(/\/$/, '');
+                const cleanPath = window.location.pathname.startsWith('/') 
+                    ? window.location.pathname 
+                    : '/' + window.location.pathname;
+                canonicalUrl = `${cleanBase}${cleanPath}`;
+            } else {
+                canonicalUrl = window.location.href;
+            }
+        }
+        
+        // Apply template replacement to the final canonical URL
+        canonicalUrl = applyTemplate(canonicalUrl, pageData);
         
         console.log('🔍 Canonical URL check:', {
             'seoSettings?.canonical_base_url': seoSettings?.canonical_base_url,
+            'processed canonical base': applyTemplate(seoSettings?.canonical_base_url || '', pageData),
             'window.location.pathname': window.location.pathname,
             'finalCanonicalUrl': canonicalUrl
         });
@@ -235,6 +302,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             if (seoSettings?.open_graph_settings?.facebook_app_id) {
                 updateMetaTag('fb:app_id', seoSettings.open_graph_settings.facebook_app_id, true);
             }
+            console.log('✅ Added Open Graph meta tags to page');
         }
 
         // Twitter Card Tags (check if enabled)
@@ -260,6 +328,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     : `@${seoSettings.twitter_card_settings.site_username}`;
                 updateMetaTag('twitter:site', username);
             }
+            console.log('✅ Added Twitter Card meta tags to page');
         }
 
         // Rich Snippets / Schema.org (check if enabled)
@@ -278,7 +347,11 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 existingSchema.remove();
             }
             
-            const enableProductSchema = seoSettings?.schema_settings?.enable_product_schema !== false;
+            const enableProductSchema = seoSettings?.schema_settings?.enable_product_schema === true;
+            console.log('🔍 Product Schema check:', {
+                'seoSettings?.schema_settings?.enable_product_schema': seoSettings?.schema_settings?.enable_product_schema,
+                'enableProductSchema': enableProductSchema
+            });
             if (enableProductSchema) {
                 const script = document.createElement('script');
                 script.type = 'application/ld+json';
@@ -307,6 +380,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
                 script.textContent = JSON.stringify(structuredData);
                 document.head.appendChild(script);
+                console.log('✅ Added Product Schema structured data to page');
             }
         }
 
@@ -319,7 +393,11 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 existingSchema.remove();
             }
             
-            const enableOrgSchema = seoSettings?.schema_settings?.enable_organization_schema !== false;
+            const enableOrgSchema = seoSettings?.schema_settings?.enable_organization_schema === true;
+            console.log('🔍 Organization Schema check:', {
+                'seoSettings?.schema_settings?.enable_organization_schema': seoSettings?.schema_settings?.enable_organization_schema,
+                'enableOrgSchema': enableOrgSchema
+            });
             if (enableOrgSchema) {
                 const script = document.createElement('script');
                 script.type = 'application/ld+json';
@@ -348,6 +426,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
                 script.textContent = JSON.stringify(structuredData);
                 document.head.appendChild(script);
+                console.log('✅ Added Organization Schema structured data to page');
             }
         }
 
@@ -374,6 +453,7 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
             script.textContent = JSON.stringify(structuredData);
             document.head.appendChild(script);
+            console.log('✅ Added Website Schema structured data to page');
         }
 
 

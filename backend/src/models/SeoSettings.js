@@ -29,6 +29,11 @@ const SeoSettings = sequelize.define('SeoSettings', {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  default_meta_robots: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: 'index, follow'
+  },
   canonical_base_url: {
     type: DataTypes.STRING,
     allowNull: true
