@@ -48,7 +48,8 @@
       "WebFetch(domain:localhost)",
       "Bash(do echo \"Updating $file...\")",
       "Bash(git deploy:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "WebFetch(domain:api.akeneo.com)"
     ],
     "deny": []
   }
