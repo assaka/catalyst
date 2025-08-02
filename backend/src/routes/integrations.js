@@ -14,7 +14,23 @@ router.get('/test', (req, res) => {
 });
 
 // Middleware to check if user is authenticated and has admin role
-const storeAuth = require('../middleware/storeAuth');
+const { checkStoreOwnership } = require('../middleware/storeAuth');
+
+// Wrapper middleware to extract storeId and add it to req
+const storeAuth = (req, res, next) => {
+  // Extract store_id from headers for integration routes
+  if (req.headers['x-store-id']) {
+    req.params.store_id = req.headers['x-store-id'];
+  }
+  
+  checkStoreOwnership(req, res, (err) => {
+    if (err) return next(err);
+    
+    // Add storeId to req for backward compatibility
+    req.storeId = req.store?.id;
+    next();
+  });
+};
 
 // Helper function to load Akeneo configuration
 const loadAkeneoConfig = async (storeId, reqBody = null) => {
