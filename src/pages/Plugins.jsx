@@ -216,7 +216,7 @@ export default function Plugins() {
         </div>
 
         <Tabs defaultValue="marketplace" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="marketplace" className="flex items-center gap-2">
               <ShoppingCart className="w-4 h-4" />
               Marketplace
@@ -224,6 +224,10 @@ export default function Plugins() {
             <TabsTrigger value="installed" className="flex items-center gap-2">
               <Download className="w-4 h-4" />
               Installed ({installedPlugins.length})
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Reports
             </TabsTrigger>
           </TabsList>
 
@@ -418,6 +422,38 @@ export default function Plugins() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Reports Tab */}
+          <TabsContent value="reports">
+            <Card className="material-elevation-1 border-0">
+              <CardContent className="text-center py-16">
+                <BarChart3 className="w-24 h-24 text-gray-400 mx-auto mb-6" />
+                <h3 className="text-2xl font-bold text-gray-900 mb-4">Plugin Analytics & Reports</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Get detailed insights into your plugin performance, usage statistics, and optimization recommendations.
+                </p>
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600 mb-1">📊</div>
+                      <div className="text-sm font-medium text-gray-700">Usage Analytics</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-purple-600 mb-1">⚡</div>
+                      <div className="text-sm font-medium text-gray-700">Performance Metrics</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600 mb-1">🎯</div>
+                      <div className="text-sm font-medium text-gray-700">Optimization Tips</div>
+                    </div>
+                  </div>
+                </div>
+                <Badge className="bg-yellow-100 text-yellow-800 px-4 py-2 text-sm font-medium">
+                  🚀 Coming Soon
+                </Badge>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
