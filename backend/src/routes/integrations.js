@@ -458,6 +458,151 @@ router.get('/akeneo/locales', (req, res) => {
 });
 
 /**
+ * Get available channels from Akeneo
+ * GET /api/integrations/akeneo/channels
+ */
+router.get('/akeneo/channels', storeAuth, async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    const config = await loadAkeneoConfig(storeId);
+
+    if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Akeneo configuration is incomplete. Please save your configuration first.'
+      });
+    }
+
+    const integration = new AkeneoIntegration(config);
+    const channels = await integration.client.getAllChannels();
+
+    res.json({
+      success: true,
+      channels: channels.map(channel => ({
+        code: channel.code,
+        label: channel.labels ? Object.values(channel.labels)[0] || channel.code : channel.code
+      }))
+    });
+  } catch (error) {
+    console.error('Error getting Akeneo channels:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to load channels',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Get schedule configurations
+ * GET /api/integrations/akeneo/schedules
+ */
+router.get('/akeneo/schedules', storeAuth, async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    const AkeneoSchedule = require('../models/AkeneoSchedule');
+    
+    const schedules = await AkeneoSchedule.findAll({
+      where: { store_id: storeId },
+      order: [['createdAt', 'DESC']]
+    });
+
+    res.json({
+      success: true,
+      schedules
+    });
+  } catch (error) {
+    console.error('Error getting schedules:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Create or update schedule
+ * POST /api/integrations/akeneo/schedules
+ */
+router.post('/akeneo/schedules', storeAuth, async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    const AkeneoSchedule = require('../models/AkeneoSchedule');
+    
+    const scheduleData = {
+      ...req.body,
+      store_id: storeId
+    };
+
+    if (req.body.id) {
+      // Update existing schedule
+      const schedule = await AkeneoSchedule.findByPk(req.body.id);
+      if (!schedule || schedule.store_id !== storeId) {
+        return res.status(404).json({
+          success: false,
+          message: 'Schedule not found'
+        });
+      }
+      
+      await schedule.update(scheduleData);
+      res.json({
+        success: true,
+        message: 'Schedule updated successfully',
+        schedule
+      });
+    } else {
+      // Create new schedule
+      const schedule = await AkeneoSchedule.create(scheduleData);
+      res.json({
+        success: true,
+        message: 'Schedule created successfully',
+        schedule
+      });
+    }
+  } catch (error) {
+    console.error('Error saving schedule:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Delete schedule
+ * DELETE /api/integrations/akeneo/schedules/:id
+ */
+router.delete('/akeneo/schedules/:id', storeAuth, async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    const AkeneoSchedule = require('../models/AkeneoSchedule');
+    
+    const schedule = await AkeneoSchedule.findByPk(req.params.id);
+    if (!schedule || schedule.store_id !== storeId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Schedule not found'
+      });
+    }
+
+    await schedule.destroy();
+    res.json({
+      success: true,
+      message: 'Schedule deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
  * Save Akeneo configuration
  * POST /api/integrations/akeneo/save-config
  */

@@ -166,6 +166,36 @@ class AkeneoClient {
   }
 
   /**
+   * Get channels from Akeneo
+   */
+  async getChannels(params = {}) {
+    return this.makeRequest('GET', '/api/rest/v1/channels', null, params);
+  }
+
+  /**
+   * Get all channels with pagination handling
+   */
+  async getAllChannels() {
+    const allChannels = [];
+    let nextUrl = null;
+
+    do {
+      const params = nextUrl ? {} : { limit: 100 };
+      const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/channels';
+      
+      const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+
+      if (response._embedded && response._embedded.items) {
+        allChannels.push(...response._embedded.items);
+      }
+
+      nextUrl = response._links && response._links.next ? response._links.next.href : null;
+    } while (nextUrl);
+
+    return allChannels;
+  }
+
+  /**
    * Get specific category by code
    */
   async getCategory(code) {

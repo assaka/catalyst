@@ -10,7 +10,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Separator } from '../components/ui/separator';
-import { AlertCircle, CheckCircle, RefreshCw, Download, Settings, Database, Package } from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCw, Download, Settings, Database, Package, Clock, Plus, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreSlug } from '../hooks/useStoreSlug';
 import apiClient from '../api/client';
@@ -41,6 +41,31 @@ const AkeneoIntegration = () => {
   const [activeTab, setActiveTab] = useState('configuration');
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [schedules, setSchedules] = useState([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(false);
+  const [channels, setChannels] = useState([]);
+  const [families, setFamilies] = useState([]);
+  const [attributes, setAttributes] = useState([]);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [editingSchedule, setEditingSchedule] = useState(null);
+  const [scheduleForm, setScheduleForm] = useState({
+    import_type: 'attributes',
+    schedule_type: 'once',
+    schedule_time: '',
+    schedule_date: '',
+    is_active: true,
+    filters: {
+      channels: [],
+      families: [],
+      categoryIds: [],
+      attributes: {}
+    },
+    options: {
+      locale: 'en_US',
+      dryRun: false,
+      batchSize: 50
+    }
+  });
   
   // Debug dry run changes
   const handleDryRunChange = (checked) => {
@@ -96,6 +121,124 @@ const AkeneoIntegration = () => {
     }
   };
 
+  // Load schedules
+  const loadSchedules = async () => {
+    if (!connectionStatus?.success) return;
+    
+    setLoadingSchedules(true);
+    try {
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (!storeId) return;
+
+      const response = await apiClient.get('/integrations/akeneo/schedules', {
+        'x-store-id': storeId
+      });
+
+      if (response.data?.success || response.success) {
+        const responseData = response.data || response;
+        setSchedules(responseData.schedules || []);
+      }
+    } catch (error) {
+      console.error('Failed to load schedules:', error);
+    } finally {
+      setLoadingSchedules(false);
+    }
+  };
+
+  // Load channels for filtering
+  const loadChannels = async () => {
+    if (!connectionStatus?.success) return;
+    
+    try {
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (!storeId) return;
+
+      const response = await apiClient.get('/integrations/akeneo/channels', {
+        'x-store-id': storeId
+      });
+
+      if (response.data?.success || response.success) {
+        const responseData = response.data || response;
+        setChannels(responseData.channels || []);
+      }
+    } catch (error) {
+      console.error('Failed to load channels:', error);
+    }
+  };
+
+  // Load families for filtering (using stats to get existing families)
+  const loadFamiliesForFilter = async () => {
+    try {
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (!storeId) return;
+
+      // For now, we'll load this from the database, but could be enhanced
+      // to load directly from Akeneo
+      const response = await apiClient.get('/attribute-sets', {
+        'x-store-id': storeId,
+        limit: 100
+      });
+
+      if (response.data?.success) {
+        const familyData = response.data.data.attributes || [];
+        setFamilies(familyData);
+      }
+    } catch (error) {
+      console.error('Failed to load families:', error);
+    }
+  };
+
+  // Save schedule
+  const saveSchedule = async () => {
+    try {
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (!storeId) return;
+
+      const response = await apiClient.post('/integrations/akeneo/schedules', scheduleForm, {
+        'x-store-id': storeId
+      });
+
+      if (response.data?.success || response.success) {
+        toast.success('Schedule saved successfully');
+        setShowScheduleForm(false);
+        setEditingSchedule(null);
+        setScheduleForm({
+          import_type: 'attributes',
+          schedule_type: 'once',
+          schedule_time: '',
+          schedule_date: '',
+          is_active: true,
+          filters: { channels: [], families: [], categoryIds: [], attributes: {} },
+          options: { locale: 'en_US', dryRun: false, batchSize: 50 }
+        });
+        await loadSchedules();
+      }
+    } catch (error) {
+      console.error('Failed to save schedule:', error);
+      toast.error('Failed to save schedule');
+    }
+  };
+
+  // Delete schedule
+  const deleteSchedule = async (scheduleId) => {
+    try {
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (!storeId) return;
+
+      const response = await apiClient.delete(`/integrations/akeneo/schedules/${scheduleId}`, {
+        'x-store-id': storeId
+      });
+
+      if (response.data?.success || response.success) {
+        toast.success('Schedule deleted successfully');
+        await loadSchedules();
+      }
+    } catch (error) {
+      console.error('Failed to delete schedule:', error);
+      toast.error('Failed to delete schedule');
+    }
+  };
+
   // Load configuration and locales on component mount
   useEffect(() => {
     // Add a small delay to ensure localStorage is ready
@@ -118,6 +261,13 @@ const AkeneoIntegration = () => {
       await loadConfigStatus();
       await loadLocales();
       await loadStats();
+      
+      // Load additional data if connection is available
+      if (connectionStatus?.success) {
+        await loadSchedules();
+        await loadChannels();
+        await loadFamiliesForFilter();
+      }
     };
     
     loadData();

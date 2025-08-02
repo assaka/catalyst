@@ -41,13 +41,26 @@ class AkeneoIntegration {
    * Import categories from Akeneo to Catalyst
    */
   async importCategories(storeId, options = {}) {
-    const { locale = 'en_US', dryRun = false } = options;
+    const { locale = 'en_US', dryRun = false, filters = {} } = options;
     
     try {
       console.log('Starting category import from Akeneo...');
       
       // Get all categories from Akeneo
-      const akeneoCategories = await this.client.getAllCategories();
+      let akeneoCategories = await this.client.getAllCategories();
+      
+      // Apply filters if specified
+      if (filters.channels && filters.channels.length > 0) {
+        console.log(`🔍 Filtering categories by channels: ${filters.channels.join(', ')}`);
+        // Note: Category filtering by channel would need additional Akeneo API calls
+        // For now, we'll log this for future implementation
+      }
+      
+      if (filters.categoryIds && filters.categoryIds.length > 0) {
+        console.log(`🔍 Filtering to specific categories: ${filters.categoryIds.join(', ')}`);
+        akeneoCategories = akeneoCategories.filter(cat => filters.categoryIds.includes(cat.code));
+      }
+      
       this.importStats.categories.total = akeneoCategories.length;
 
       console.log(`Found ${akeneoCategories.length} categories in Akeneo`);
@@ -183,7 +196,7 @@ class AkeneoIntegration {
    * Import products from Akeneo to Catalyst
    */
   async importProducts(storeId, options = {}) {
-    const { locale = 'en_US', dryRun = false, batchSize = 50 } = options;
+    const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {} } = options;
     
     try {
       console.log('Starting product import from Akeneo...');
