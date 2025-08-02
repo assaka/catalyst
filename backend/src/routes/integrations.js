@@ -109,6 +109,28 @@ const handleImportOperation = async (storeId, req, res, importFunction) => {
       // Update sync status based on result
       if (integrationConfig) {
         await integrationConfig.updateSyncStatus(result.success ? 'success' : 'error', result.error || null);
+        
+        // Track section-specific last import dates
+        if (result.success && req.path.includes('/import-')) {
+          const currentConfig = integrationConfig.config_data || {};
+          const lastImportDates = currentConfig.lastImportDates || {};
+          
+          // Determine section from the endpoint
+          let section = null;
+          if (req.path.includes('/import-attributes')) section = 'attributes';
+          else if (req.path.includes('/import-families')) section = 'families';
+          else if (req.path.includes('/import-categories')) section = 'categories';
+          else if (req.path.includes('/import-products')) section = 'products';
+          
+          if (section) {
+            lastImportDates[section] = new Date().toISOString();
+            integrationConfig.config_data = {
+              ...currentConfig,
+              lastImportDates
+            };
+            await integrationConfig.save();
+          }
+        }
       }
 
       res.json(result);
@@ -350,7 +372,8 @@ router.get('/akeneo/config-status', storeAuth, async (req, res) => {
         password: configData.password ? '••••••••' : '',
         locale: configData.locale || 'en_US',
         lastSync: integrationConfig.last_sync_at,
-        syncStatus: integrationConfig.sync_status
+        syncStatus: integrationConfig.sync_status,
+        lastImportDates: configData.lastImportDates || {}
       };
       hasConfig = !!(configData.baseUrl && configData.clientId && configData.clientSecret && configData.username && configData.password);
     } else {
@@ -364,7 +387,8 @@ router.get('/akeneo/config-status', storeAuth, async (req, res) => {
         password: process.env.AKENEO_PASSWORD ? '••••••••' : '',
         locale: 'en_US',
         lastSync: null,
-        syncStatus: 'idle'
+        syncStatus: 'idle',
+        lastImportDates: {}
       };
       hasConfig = !!(process.env.AKENEO_BASE_URL && process.env.AKENEO_CLIENT_ID && process.env.AKENEO_CLIENT_SECRET && process.env.AKENEO_USERNAME && process.env.AKENEO_PASSWORD);
     }

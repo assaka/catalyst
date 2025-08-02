@@ -27,6 +27,7 @@ const AkeneoIntegration = () => {
     password: '',
     locale: 'en_US'
   });
+  const [lastImportDates, setLastImportDates] = useState({});
 
   // UI state
   const [loading, setLoading] = useState(false);
@@ -261,17 +262,19 @@ const AkeneoIntegration = () => {
       await loadConfigStatus();
       await loadLocales();
       await loadStats();
-      
-      // Load additional data if connection is available
-      if (connectionStatus?.success) {
-        await loadSchedules();
-        await loadChannels();
-        await loadFamiliesForFilter();
-      }
     };
     
     loadData();
   }, []);
+
+  // Load additional data when connection becomes successful
+  useEffect(() => {
+    if (connectionStatus?.success) {
+      loadSchedules();
+      loadChannels();
+      loadFamiliesForFilter();
+    }
+  }, [connectionStatus?.success]);
 
   const loadConfigStatus = async () => {
     try {
@@ -303,6 +306,12 @@ const AkeneoIntegration = () => {
           ...prev,
           ...responseData.config
         }));
+        
+        // Set last import dates if available
+        if (responseData.config.lastImportDates) {
+          setLastImportDates(responseData.config.lastImportDates);
+          console.log('📅 Loaded last import dates:', responseData.config.lastImportDates);
+        }
         
         // If we have a complete configuration, set configSaved to true
         const loadedConfig = responseData.config;
@@ -564,8 +573,9 @@ const AkeneoIntegration = () => {
         console.log('✅ Categories import successful');
         const stats = responseData.stats;
         toast.success(`Categories import completed! ${stats?.imported || 0} categories imported`);
-        // Reload stats to reflect changes
+        // Reload stats and config to reflect changes
         await loadStats();
+        await loadConfigStatus();
       } else {
         console.log('❌ Categories import failed:', responseData.error);
         toast.error(`Categories import failed: ${responseData.error}`);
@@ -641,8 +651,9 @@ const AkeneoIntegration = () => {
         console.log('✅ Attributes import successful');
         const stats = responseData.stats;
         toast.success(`Attributes import completed! ${stats?.imported || 0} attributes imported`);
-        // Reload stats to reflect changes
+        // Reload stats and config to reflect changes
         await loadStats();
+        await loadConfigStatus();
       } else {
         console.log('❌ Attributes import failed:', responseData.error);
         toast.error(`Attributes import failed: ${responseData.error}`);
@@ -713,8 +724,9 @@ const AkeneoIntegration = () => {
         console.log('✅ Families import successful');
         const stats = responseData.stats;
         toast.success(`Families import completed! ${stats?.imported || 0} families imported`);
-        // Reload stats to reflect changes
+        // Reload stats and config to reflect changes
         await loadStats();
+        await loadConfigStatus();
       } else {
         console.log('❌ Families import failed:', responseData.error);
         toast.error(`Families import failed: ${responseData.error}`);
@@ -759,6 +771,9 @@ const AkeneoIntegration = () => {
       
       if (response.data.success) {
         toast.success(`Products import completed! ${response.data.stats.imported} products imported`);
+        // Reload stats and config to reflect changes
+        await loadStats();
+        await loadConfigStatus();
       } else {
         toast.error(`Products import failed: ${response.data.error}`);
       }
@@ -801,6 +816,9 @@ const AkeneoIntegration = () => {
         const categoryStats = response.data.results.categories.stats;
         const productStats = response.data.results.products.stats;
         toast.success(`Full import completed! ${categoryStats.imported} categories and ${productStats.imported} products imported`);
+        // Reload stats and config to reflect changes
+        await loadStats();
+        await loadConfigStatus();
       } else {
         toast.error(`Import failed: ${response.data.error}`);
       }
@@ -810,6 +828,25 @@ const AkeneoIntegration = () => {
       toast.error(`Import failed: ${message}`);
     } finally {
       setImporting(false);
+    }
+  };
+
+  const formatLastImportDate = (dateString) => {
+    if (!dateString) return 'Never';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = (now - date) / (1000 * 60 * 60);
+    
+    if (diffInHours < 1) {
+      const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+      return `${diffInMinutes} minute${diffInMinutes !== 1 ? 's' : ''} ago`;
+    } else if (diffInHours < 24) {
+      const hours = Math.floor(diffInHours);
+      return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+    } else if (diffInHours < 48) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
   };
 
@@ -1133,12 +1170,357 @@ const AkeneoIntegration = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Scheduler Configuration */}
+          {connectionStatus?.success && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Import Scheduler
+                </CardTitle>
+                <CardDescription>
+                  Configure automated imports for different data types with filtering options.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Scheduled Imports</h3>
+                  <Button 
+                    onClick={() => setShowScheduleForm(!showScheduleForm)}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Schedule
+                  </Button>
+                </div>
+
+                {/* Schedule Form */}
+                {showScheduleForm && (
+                  <Card className="border-2 border-dashed border-gray-200">
+                    <CardHeader>
+                      <CardTitle className="text-lg">
+                        {editingSchedule ? 'Edit Schedule' : 'Create New Schedule'}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Import Type</Label>
+                          <Select 
+                            value={scheduleForm.import_type} 
+                            onValueChange={(value) => setScheduleForm(prev => ({ ...prev, import_type: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select import type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="attributes">Attributes</SelectItem>
+                              <SelectItem value="families">Families</SelectItem>
+                              <SelectItem value="categories">Categories</SelectItem>
+                              <SelectItem value="products">Products</SelectItem>
+                              <SelectItem value="all">All</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Schedule Type</Label>
+                          <Select 
+                            value={scheduleForm.schedule_type} 
+                            onValueChange={(value) => setScheduleForm(prev => ({ ...prev, schedule_type: value }))}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select schedule type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="once">Once</SelectItem>
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {scheduleForm.schedule_type === 'once' && (
+                        <div className="space-y-2">
+                          <Label>Schedule Date & Time</Label>
+                          <Input
+                            type="datetime-local"
+                            value={scheduleForm.schedule_date}
+                            onChange={(e) => setScheduleForm(prev => ({ ...prev, schedule_date: e.target.value }))}
+                          />
+                        </div>
+                      )}
+
+                      {scheduleForm.schedule_type !== 'once' && (
+                        <div className="space-y-2">
+                          <Label>
+                            Time {scheduleForm.schedule_type === 'weekly' && '(e.g., MON-09:00)'}
+                            {scheduleForm.schedule_type === 'monthly' && '(e.g., 1-09:00 for 1st of month)'}
+                          </Label>
+                          <Input
+                            placeholder={
+                              scheduleForm.schedule_type === 'daily' ? 'HH:MM (e.g., 09:00)' :
+                              scheduleForm.schedule_type === 'weekly' ? 'DAY-HH:MM (e.g., MON-09:00)' :
+                              'DD-HH:MM (e.g., 1-09:00)'
+                            }
+                            value={scheduleForm.schedule_time}
+                            onChange={(e) => setScheduleForm(prev => ({ ...prev, schedule_time: e.target.value }))}
+                          />
+                        </div>
+                      )}
+
+                      {/* Filtering Options */}
+                      <div className="space-y-4">
+                        <Label className="text-base font-semibold">Filtering Options</Label>
+                        
+                        {/* Channels Filter */}
+                        {channels.length > 0 && (
+                          <div className="space-y-2">
+                            <Label>Channels (leave empty for all)</Label>
+                            <div className="flex flex-wrap gap-2">
+                              {channels.map((channel) => (
+                                <div key={channel.code} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`channel-${channel.code}`}
+                                    checked={scheduleForm.filters.channels.includes(channel.code)}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      setScheduleForm(prev => ({
+                                        ...prev,
+                                        filters: {
+                                          ...prev.filters,
+                                          channels: checked 
+                                            ? [...prev.filters.channels, channel.code]
+                                            : prev.filters.channels.filter(c => c !== channel.code)
+                                        }
+                                      }));
+                                    }}
+                                  />
+                                  <Label htmlFor={`channel-${channel.code}`} className="text-sm">
+                                    {channel.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Families Filter */}
+                        {families.length > 0 && (
+                          <div className="space-y-2">
+                            <Label>Families (leave empty for all)</Label>
+                            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+                              {families.map((family) => (
+                                <div key={family.id} className="flex items-center space-x-2">
+                                  <input
+                                    type="checkbox"
+                                    id={`family-${family.id}`}
+                                    checked={scheduleForm.filters.families.includes(family.name)}
+                                    onChange={(e) => {
+                                      const checked = e.target.checked;
+                                      setScheduleForm(prev => ({
+                                        ...prev,
+                                        filters: {
+                                          ...prev.filters,
+                                          families: checked 
+                                            ? [...prev.filters.families, family.name]
+                                            : prev.filters.families.filter(f => f !== family.name)
+                                        }
+                                      }));
+                                    }}
+                                  />
+                                  <Label htmlFor={`family-${family.id}`} className="text-sm">
+                                    {family.name}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Import Options */}
+                        <div className="space-y-4">
+                          <Label className="text-base font-semibold">Import Options</Label>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label>Locale</Label>
+                              <Select 
+                                value={scheduleForm.options.locale} 
+                                onValueChange={(value) => setScheduleForm(prev => ({ 
+                                  ...prev, 
+                                  options: { ...prev.options, locale: value }
+                                }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select locale" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {locales.map((locale) => (
+                                    <SelectItem key={locale.code} value={locale.code}>
+                                      {locale.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Batch Size</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="200"
+                                placeholder="50"
+                                value={scheduleForm.options.batchSize}
+                                onChange={(e) => setScheduleForm(prev => ({ 
+                                  ...prev, 
+                                  options: { ...prev.options, batchSize: parseInt(e.target.value) || 50 }
+                                }))}
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label className="flex items-center space-x-2">
+                                <Switch
+                                  checked={scheduleForm.options.dryRun}
+                                  onCheckedChange={(checked) => setScheduleForm(prev => ({ 
+                                    ...prev, 
+                                    options: { ...prev.options, dryRun: checked }
+                                  }))}
+                                />
+                                <span>Dry Run</span>
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-4">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => {
+                            setShowScheduleForm(false);
+                            setEditingSchedule(null);
+                            setScheduleForm({
+                              import_type: 'attributes',
+                              schedule_type: 'once',
+                              schedule_time: '',
+                              schedule_date: '',
+                              is_active: true,
+                              filters: { channels: [], families: [], categoryIds: [], attributes: {} },
+                              options: { locale: 'en_US', dryRun: false, batchSize: 50 }
+                            });
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button onClick={saveSchedule}>
+                          {editingSchedule ? 'Update Schedule' : 'Create Schedule'}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Schedules List */}
+                <div className="space-y-2">
+                  {loadingSchedules ? (
+                    <div className="text-center py-4">
+                      <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
+                      <span className="text-sm text-gray-500 ml-2">Loading schedules...</span>
+                    </div>
+                  ) : schedules.length > 0 ? (
+                    schedules.map((schedule) => (
+                      <Card key={schedule.id} className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={schedule.is_active ? "default" : "secondary"}>
+                                {schedule.import_type}
+                              </Badge>
+                              <span className="text-sm text-gray-600">
+                                {schedule.schedule_type === 'once' 
+                                  ? new Date(schedule.schedule_date).toLocaleString()
+                                  : `${schedule.schedule_type} at ${schedule.schedule_time}`
+                                }
+                              </span>
+                              {!schedule.is_active && (
+                                <Badge variant="outline">Paused</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              {schedule.filters?.channels?.length > 0 && (
+                                <span>Channels: {schedule.filters.channels.join(', ')} • </span>
+                              )}
+                              {schedule.filters?.families?.length > 0 && (
+                                <span>Families: {schedule.filters.families.length} selected • </span>
+                              )}
+                              <span>Locale: {schedule.options?.locale || 'en_US'}</span>
+                              {schedule.options?.dryRun && <span> • Dry Run</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setEditingSchedule(schedule);
+                                setScheduleForm({
+                                  id: schedule.id,
+                                  import_type: schedule.import_type,
+                                  schedule_type: schedule.schedule_type,
+                                  schedule_time: schedule.schedule_time || '',
+                                  schedule_date: schedule.schedule_date || '',
+                                  is_active: schedule.is_active,
+                                  filters: schedule.filters || { channels: [], families: [], categoryIds: [], attributes: {} },
+                                  options: schedule.options || { locale: 'en_US', dryRun: false, batchSize: 50 }
+                                });
+                                setShowScheduleForm(true);
+                              }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => deleteSchedule(schedule.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      <Clock className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No scheduled imports configured</p>
+                      <p className="text-sm">Click "Add Schedule" to create your first automated import</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="attributes" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Import Attributes</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>Import Attributes</span>
+                {lastImportDates.attributes && (
+                  <div className="flex items-center gap-2 text-sm font-normal text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    <span>Last import: {formatLastImportDate(lastImportDates.attributes)}</span>
+                  </div>
+                )}
+              </CardTitle>
               <CardDescription>
                 Import attribute definitions from Akeneo PIM. These define the properties and characteristics that can be assigned to products.
               </CardDescription>
@@ -1201,7 +1583,15 @@ const AkeneoIntegration = () => {
         <TabsContent value="families" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Import Families</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>Import Families</span>
+                {lastImportDates.families && (
+                  <div className="flex items-center gap-2 text-sm font-normal text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    <span>Last import: {formatLastImportDate(lastImportDates.families)}</span>
+                  </div>
+                )}
+              </CardTitle>
               <CardDescription>
                 Import product families (attribute sets) from Akeneo PIM. Families define which attributes are available for different product types.
               </CardDescription>
@@ -1271,7 +1661,15 @@ const AkeneoIntegration = () => {
         <TabsContent value="categories" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Import Categories</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>Import Categories</span>
+                {lastImportDates.categories && (
+                  <div className="flex items-center gap-2 text-sm font-normal text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    <span>Last import: {formatLastImportDate(lastImportDates.categories)}</span>
+                  </div>
+                )}
+              </CardTitle>
               <CardDescription>
                 Import category data from Akeneo PIM
               </CardDescription>
@@ -1309,7 +1707,15 @@ const AkeneoIntegration = () => {
         <TabsContent value="products" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Import Products</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>Import Products</span>
+                {lastImportDates.products && (
+                  <div className="flex items-center gap-2 text-sm font-normal text-gray-600">
+                    <Clock className="h-4 w-4" />
+                    <span>Last import: {formatLastImportDate(lastImportDates.products)}</span>
+                  </div>
+                )}
+              </CardTitle>
               <CardDescription>
                 Import product data from Akeneo PIM
               </CardDescription>

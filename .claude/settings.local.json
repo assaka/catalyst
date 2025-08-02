@@ -56,7 +56,11 @@
       "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -c \"\\d integration_configs\")",
       "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -f add-integration-columns.sql)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node migrate-integration-table.js)",
-      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node check-imported-categories.js)"
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node check-imported-categories.js)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node -e \"\nconst { sequelize } = require(''./backend/src/database/connection.js'');\n(async () => {\n  try {\n    const [results] = await sequelize.query(''SELECT COUNT(*) as total, store_id FROM attributes GROUP BY store_id;'');\n    console.log(''Attributes count by store:'');\n    results.forEach(row => console.log(\\`Store ${row.store_id}: ${row.total} attributes\\`));\n    \n    const [sample] = await sequelize.query(''SELECT name, code, type, store_id FROM attributes LIMIT 15;'');\n    console.log(''\\nSample attributes:'');\n    sample.forEach(attr => console.log(\\`- ${attr.name} (${attr.code}) - ${attr.type} - Store: ${attr.store_id}\\`));\n  } catch (error) {\n    console.error(''Error:'', error.message);\n  } finally {\n    await sequelize.close();\n  }\n})();\")",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node check-attributes.js)",
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -c \"SELECT COUNT(*) as total_attributes FROM attributes WHERE store_id = ''157d4590-49bf-4b0b-bd77-abe131909528'';\")",
+      "Bash(git restore:*)"
     ],
     "deny": []
   }
