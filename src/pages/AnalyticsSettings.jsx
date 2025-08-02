@@ -30,20 +30,28 @@ export default function AnalyticsSettings() {
                 }
                 
                 // Fetch complete store data with settings from API
+                console.log('🔍 AnalyticsSettings: Fetching store with ID:', selectedStore.id);
                 const fullStoreData = await Store.findById(selectedStore.id);
+                console.log('🔍 AnalyticsSettings: Received store data:', fullStoreData);
+                
+                // Handle the case where findById returns an array
+                const storeData = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
+                console.log('🔍 AnalyticsSettings: Processed store data:', storeData);
+                console.log('🔍 AnalyticsSettings: Store settings:', storeData?.settings);
+                console.log('🔍 AnalyticsSettings: Analytics settings:', storeData?.settings?.analytics_settings);
                 
                 setStore({
                     ...selectedStore,
-                    ...fullStoreData, // Include all data from API
+                    ...storeData, // Include all data from API
                     settings: {
-                        ...(fullStoreData.settings || {}),
+                        ...(storeData?.settings || {}),
                         analytics_settings: {
                             enable_google_tag_manager: false,
                             gtm_script_type: 'default', // 'default' or 'custom'
                             gtm_id: '',
                             google_ads_id: '',
                             custom_gtm_script: '',
-                            ...(fullStoreData.settings?.analytics_settings || {})
+                            ...(storeData?.settings?.analytics_settings || {})
                         }
                     }
                 });

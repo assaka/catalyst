@@ -378,23 +378,28 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         // Google Tag Manager Implementation
         const analyticsSettings = store?.settings?.analytics_settings;
+        
+        // Always clean up existing GTM scripts first
+        const cleanupGTM = () => {
+            // Remove all GTM-related scripts and elements
+            document.querySelectorAll('script[data-gtm]').forEach(el => el.remove());
+            document.querySelectorAll('noscript[data-gtm]').forEach(el => el.remove());
+            document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]').forEach(el => el.remove());
+        };
+        
+        cleanupGTM();
+        
         if (analyticsSettings?.enable_google_tag_manager) {
-            // Remove existing GTM scripts first
-            const existingGTMScript = document.querySelector('script[data-gtm="head"]');
-            const existingGTMNoscript = document.querySelector('noscript[data-gtm="body"]');
-            if (existingGTMScript) existingGTMScript.remove();
-            if (existingGTMNoscript) existingGTMNoscript.remove();
-
             if (analyticsSettings.gtm_script_type === 'custom' && analyticsSettings.custom_gtm_script) {
                 // Custom GTM Script (Server-Side Tagging)
                 const script = document.createElement('script');
-                script.setAttribute('data-gtm', 'head');
+                script.setAttribute('data-gtm', 'head-custom');
                 script.innerHTML = analyticsSettings.custom_gtm_script;
                 document.head.appendChild(script);
             } else if (analyticsSettings.gtm_script_type === 'default' && analyticsSettings.gtm_id) {
                 // Standard GTM Implementation
                 const script = document.createElement('script');
-                script.setAttribute('data-gtm', 'head');
+                script.setAttribute('data-gtm', 'head-default');
                 script.innerHTML = `
                     (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
                     new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -405,13 +410,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 document.head.appendChild(script);
 
                 // Add noscript fallback to body
-                let noscript = document.querySelector('noscript[data-gtm="body"]');
-                if (!noscript) {
-                    noscript = document.createElement('noscript');
-                    noscript.setAttribute('data-gtm', 'body');
-                    noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsSettings.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
-                    document.body.insertBefore(noscript, document.body.firstChild);
-                }
+                const noscript = document.createElement('noscript');
+                noscript.setAttribute('data-gtm', 'body-noscript');
+                noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsSettings.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
+                document.body.insertBefore(noscript, document.body.firstChild);
             }
         }
 
@@ -441,15 +443,11 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Cleanup function
         return () => {
             // Cleanup analytics scripts when component unmounts or store changes
-            const gtmScript = document.querySelector('script[data-gtm="head"]');
-            const gtmNoscript = document.querySelector('noscript[data-gtm="body"]');
-            const googleAdsScript = document.querySelector('script[data-google-ads="head"]');
-            const googleAdsConfig = document.querySelector('script[data-google-ads="config"]');
-            
-            if (gtmScript) gtmScript.remove();
-            if (gtmNoscript) gtmNoscript.remove();
-            if (googleAdsScript) googleAdsScript.remove();
-            if (googleAdsConfig) googleAdsConfig.remove();
+            document.querySelectorAll('script[data-gtm]').forEach(el => el.remove());
+            document.querySelectorAll('noscript[data-gtm]').forEach(el => el.remove());
+            document.querySelectorAll('script[data-google-ads]').forEach(el => el.remove());
+            document.querySelectorAll('script[src*="googletagmanager.com/gtm.js"]').forEach(el => el.remove());
+            document.querySelectorAll('script[src*="googletagmanager.com/gtag/js"]').forEach(el => el.remove());
         };
     }, [pageType, pageData, pageTitle, pageDescription, imageUrl, store, seoSettings, seoTemplates]);
 
