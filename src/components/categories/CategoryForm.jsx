@@ -224,9 +224,9 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                 placeholder="{{category_name}} - {{store_name}}"
               />
               <div className="mt-2 text-sm text-gray-600">
-                <p><strong>Category Variables:</strong> {{category_name}}, {{category_description}}</p>
-                <p className="mt-1"><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{base_url}}, {{year}}, {{currency}}</p>
-                <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+                <p><strong>Category Variables:</strong> {`{{category_name}}`}, {`{{category_description}}`}</p>
+                <p className="mt-1"><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{base_url}}`}, {`{{year}}`}, {`{{currency}}`}</p>
+                <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
               </div>
             </div>
             <div>
@@ -240,9 +240,9 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                 rows={3}
               />
               <div className="mt-2 text-sm text-gray-600">
-                <p><strong>Category Variables:</strong> {{category_name}}, {{category_description}}</p>
-                <p className="mt-1"><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{base_url}}, {{year}}, {{currency}}</p>
-                <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+                <p><strong>Category Variables:</strong> {`{{category_name}}`}, {`{{category_description}}`}</p>
+                <p className="mt-1"><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{base_url}}`}, {`{{year}}`}, {`{{currency}}`}</p>
+                <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
               </div>
             </div>
             <div>

@@ -841,10 +841,10 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                   rows={3}
                 />
                 <div className="mt-2 text-sm text-gray-600">
-                  <p><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{page_title}}, {{base_url}}, {{current_url}}, {{current_path}}, {{year}}, {{currency}}</p>
-                  <p className="mt-1"><strong>Product Pages:</strong> {{product_name}}, {{product_description}}</p>
-                  <p className="mt-1"><strong>Category Pages:</strong> {{category_name}}, {{category_description}}</p>
-                  <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+                  <p><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{page_title}}`}, {`{{base_url}}`}, {`{{current_url}}`}, {`{{current_path}}`}, {`{{year}}`}, {`{{currency}}`}</p>
+                  <p className="mt-1"><strong>Product Pages:</strong> {`{{product_name}}`}, {`{{product_description}}`}</p>
+                  <p className="mt-1"><strong>Category Pages:</strong> {`{{category_name}}`}, {`{{category_description}}`}</p>
+                  <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
                 </div>
               </div>
 

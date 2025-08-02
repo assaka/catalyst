@@ -760,9 +760,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   placeholder="{{product_name}} - {{store_name}}"
                 />
                 <div className="mt-2 text-sm text-gray-600">
-                  <p><strong>Product Variables:</strong> {{product_name}}, {{product_description}}</p>
-                  <p className="mt-1"><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{base_url}}, {{year}}, {{currency}}</p>
-                  <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+                  <p><strong>Product Variables:</strong> {`{{product_name}}`}, {`{{product_description}}`}</p>
+                  <p className="mt-1"><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{base_url}}`}, {`{{year}}`}, {`{{currency}}`}</p>
+                  <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
                 </div>
               </div>
               <div>
@@ -776,9 +776,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   placeholder="Shop {{product_name}} at {{store_name}}. {{product_description}}"
                 />
                 <div className="mt-2 text-sm text-gray-600">
-                  <p><strong>Product Variables:</strong> {{product_name}}, {{product_description}}</p>
-                  <p className="mt-1"><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{base_url}}, {{year}}, {{currency}}</p>
-                  <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+                  <p><strong>Product Variables:</strong> {`{{product_name}}`}, {`{{product_description}}`}</p>
+                  <p className="mt-1"><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{base_url}}`}, {`{{year}}`}, {`{{currency}}`}</p>
+                  <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
                 </div>
               </div>
               <div>
