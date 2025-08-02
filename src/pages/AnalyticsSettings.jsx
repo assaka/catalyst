@@ -28,6 +28,9 @@ export default function AnalyticsSettings() {
                     setLoading(false);
                     return;
                 }
+                console.log('🔍 AnalyticsSettings: selectedStore.settings:', selectedStore.settings);
+                console.log('🔍 AnalyticsSettings: existing analytics_settings:', selectedStore.settings?.analytics_settings);
+                
                 setStore({
                     ...selectedStore,
                     settings: {
