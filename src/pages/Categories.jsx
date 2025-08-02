@@ -43,6 +43,8 @@ export default function Categories() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(9); // 3x3 grid
 
   useEffect(() => {
     if (selectedStore) {
@@ -162,6 +164,16 @@ export default function Categories() {
     category?.description?.toLowerCase().includes(searchQuery.toLowerCase()) // Added optional chaining
   );
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedCategories = filteredCategories.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -222,8 +234,17 @@ export default function Categories() {
         </Card>
 
         {/* Categories Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCategories.map((category) => (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-700">
+              {filteredCategories.length > 0 && (
+                <>Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredCategories.length)} of {filteredCategories.length} categories</>
+              )}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
+            {paginatedCategories.map((category) => (
             <Card key={category.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
@@ -314,7 +335,40 @@ export default function Categories() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center space-x-2 mt-8">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Button>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                Next
+              </Button>
+            </div>
+          )}
         </div>
 
         {filteredCategories.length === 0 && (

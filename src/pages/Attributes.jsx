@@ -49,6 +49,9 @@ export default function Attributes() {
   const [showForm, setShowForm] = useState(false);
   const [editingSet, setEditingSet] = useState(null);
   const [showSetForm, setShowSetForm] = useState(false);
+  const [currentAttributePage, setCurrentAttributePage] = useState(1);
+  const [currentSetPage, setCurrentSetPage] = useState(1);
+  const [itemsPerPage] = useState(9); // 3x3 grid
 
   useEffect(() => {
     if (selectedStore) {
@@ -205,6 +208,22 @@ export default function Attributes() {
     attributeSet.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Pagination calculations for attributes
+  const totalAttributePages = Math.ceil(filteredAttributes.length / itemsPerPage);
+  const attributeStartIndex = (currentAttributePage - 1) * itemsPerPage;
+  const paginatedAttributes = filteredAttributes.slice(attributeStartIndex, attributeStartIndex + itemsPerPage);
+
+  // Pagination calculations for attribute sets
+  const totalSetPages = Math.ceil(filteredAttributeSets.length / itemsPerPage);
+  const setStartIndex = (currentSetPage - 1) * itemsPerPage;
+  const paginatedAttributeSets = filteredAttributeSets.slice(setStartIndex, setStartIndex + itemsPerPage);
+
+  // Reset to first page when search changes
+  useEffect(() => {
+    setCurrentAttributePage(1);
+    setCurrentSetPage(1);
+  }, [searchQuery]);
+
   const getAttributeTypeColor = (type) => {
     const colors = {
       text: "bg-blue-100 text-blue-700",
@@ -276,7 +295,14 @@ export default function Attributes() {
           {/* Attributes Tab */}
           <TabsContent value="attributes">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Attributes ({filteredAttributes.length})</h2>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Attributes ({filteredAttributes.length})</h2>
+                {filteredAttributes.length > 0 && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Showing {attributeStartIndex + 1} to {Math.min(attributeStartIndex + itemsPerPage, filteredAttributes.length)} of {filteredAttributes.length} attributes
+                  </p>
+                )}
+              </div>
               <Button
                 onClick={() => {
                   setEditingAttribute(null); // Reset for new creation
@@ -289,8 +315,8 @@ export default function Attributes() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredAttributes.map((attribute) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
+              {paginatedAttributes.map((attribute) => (
                 <Card key={attribute.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -388,12 +414,51 @@ export default function Attributes() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Attributes Pagination */}
+            {totalAttributePages > 1 && (
+              <div className="flex items-center justify-center space-x-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentAttributePage(currentAttributePage - 1)}
+                  disabled={currentAttributePage === 1}
+                >
+                  Previous
+                </Button>
+                {Array.from({ length: totalAttributePages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentAttributePage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentAttributePage(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentAttributePage(currentAttributePage + 1)}
+                  disabled={currentAttributePage === totalAttributePages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
           {/* Attribute Sets Tab */}
           <TabsContent value="sets">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Attribute Sets ({filteredAttributeSets.length})</h2>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Attribute Sets ({filteredAttributeSets.length})</h2>
+                {filteredAttributeSets.length > 0 && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    Showing {setStartIndex + 1} to {Math.min(setStartIndex + itemsPerPage, filteredAttributeSets.length)} of {filteredAttributeSets.length} attribute sets
+                  </p>
+                )}
+              </div>
               <Button
                 onClick={() => {
                   setEditingSet(null); // Reset for new creation
@@ -406,8 +471,8 @@ export default function Attributes() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filteredAttributeSets.map((attributeSet) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-[400px]">
+              {paginatedAttributeSets.map((attributeSet) => (
                 <Card key={attributeSet.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -501,6 +566,38 @@ export default function Attributes() {
                   </Button>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Attribute Sets Pagination */}
+            {totalSetPages > 1 && (
+              <div className="flex items-center justify-center space-x-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentSetPage(currentSetPage - 1)}
+                  disabled={currentSetPage === 1}
+                >
+                  Previous
+                </Button>
+                {Array.from({ length: totalSetPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentSetPage === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentSetPage(page)}
+                  >
+                    {page}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentSetPage(currentSetPage + 1)}
+                  disabled={currentSetPage === totalSetPages}
+                >
+                  Next
+                </Button>
+              </div>
             )}
           </TabsContent>
         </Tabs>
