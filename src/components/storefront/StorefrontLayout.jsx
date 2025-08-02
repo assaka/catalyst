@@ -484,16 +484,48 @@ export default function StorefrontLayout({ children }) {
                         {mobileMenuOpen && (
                             <div className="md:hidden border-t border-gray-200 bg-white">
                                 <div className="px-4 py-3 space-y-2">
-                                    {Array.isArray(categories) && store && categories.filter(c => !c.parent_id).map(category => (
-                                        <Link
-                                            key={category.id}
-                                            to={createCategoryUrl(store.slug, category.slug)}
-                                            onClick={() => setMobileMenuOpen(false)}
-                                            className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
-                                        >
-                                            {category.name}
-                                        </Link>
-                                    ))}
+                                    {Array.isArray(categories) && store && (() => {
+                                        // Build hierarchical tree for mobile menu
+                                        const buildMobileCategoryTree = (categories) => {
+                                            const categoryMap = new Map();
+                                            const rootCategories = [];
+                                            const visibleCategories = categories.filter(c => !c.hide_in_menu);
+
+                                            visibleCategories.forEach(category => {
+                                                categoryMap.set(category.id, { ...category, children: [] });
+                                            });
+
+                                            visibleCategories.forEach(category => {
+                                                const categoryNode = categoryMap.get(category.id);
+                                                if (category.parent_id && categoryMap.has(category.parent_id)) {
+                                                    const parent = categoryMap.get(category.parent_id);
+                                                    parent.children.push(categoryNode);
+                                                } else {
+                                                    rootCategories.push(categoryNode);
+                                                }
+                                            });
+
+                                            return rootCategories;
+                                        };
+
+                                        const renderMobileCategory = (category, depth = 0) => (
+                                            <div key={category.id}>
+                                                <Link
+                                                    to={createCategoryUrl(store.slug, category.slug)}
+                                                    onClick={() => setMobileMenuOpen(false)}
+                                                    className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
+                                                    style={{ paddingLeft: `${12 + depth * 16}px` }}
+                                                >
+                                                    {category.name}
+                                                </Link>
+                                                {category.children && category.children.length > 0 && 
+                                                    category.children.map(child => renderMobileCategory(child, depth + 1))
+                                                }
+                                            </div>
+                                        );
+
+                                        return buildMobileCategoryTree(categories).map(category => renderMobileCategory(category));
+                                    })()}
 
                                     {Array.isArray(languages) && languages.length > 1 && (
                                         <div className="pt-3 mt-3 border-t border-gray-200">
@@ -589,11 +621,15 @@ export default function StorefrontLayout({ children }) {
                         <div>
                             <h3 className="text-sm font-semibold tracking-wider uppercase">Shop</h3>
                             <ul className="mt-4 space-y-2">
-                                {Array.isArray(categories) && store && categories.filter(c => !c.parent_id).slice(0, 4).map(c => (
-                                    <li key={c.id}>
-                                        <Link to={createCategoryUrl(store.slug, c.slug)} className="text-base text-gray-300 hover:text-white">{c.name}</Link>
-                                    </li>
-                                ))}
+                                {Array.isArray(categories) && store && categories
+                                    .filter(c => !c.hide_in_menu && !c.parent_id) // Only root categories
+                                    .slice(0, 4)
+                                    .map(c => (
+                                        <li key={c.id}>
+                                            <Link to={createCategoryUrl(store.slug, c.slug)} className="text-base text-gray-300 hover:text-white">{c.name}</Link>
+                                        </li>
+                                    ))
+                                }
                             </ul>
                         </div>
                         <div>
