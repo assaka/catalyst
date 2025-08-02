@@ -1204,9 +1204,13 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                   <p className="font-medium mb-1">Available variables in URL patterns:</p>
                   <ul className="list-disc list-inside space-y-1">
                     <li><code>{'{{base_url}}'}</code> - Your canonical base URL</li>
-                    <li><code>{'{{current_url}}'}</code> - Current page path</li>
+                    <li><code>{'{{absolute_path}}'}</code> - Full current path including store prefix</li>
+                    <li><code>{'{{relative_path}}'}</code> - Clean content path without store prefix (recommended for custom domains)</li>
                     <li><code>{'{{language_code}}'}</code> - The language code (e.g., 'en', 'de')</li>
                   </ul>
+                  <p className="text-xs mt-2 bg-blue-100 p-2 rounded">
+                    💡 <strong>Tip:</strong> Use <code>{'{{base_url}}/{{language_code}}{{relative_path}}'}</code> for URLs that work with custom domains
+                  </p>
                 </div>
               </div>
 
@@ -1236,7 +1240,7 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                           <Input
                             value={hreflang.url_pattern}
                             onChange={(e) => updateHreflangSetting(index, 'url_pattern', e.target.value)}
-                            placeholder="{{base_url}}/{{language_code}}{{current_url}}"
+                            placeholder="{{base_url}}/{{language_code}}{{relative_path}}"
                           />
                         </div>
                         <div className="flex items-center gap-2">
@@ -1260,6 +1264,8 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                         Preview: {hreflang.url_pattern
                           .replace(/\{\{base_url\}\}/g, seoSettings.canonical_base_url || 'https://yourdomain.com')
                           .replace(/\{\{language_code\}\}/g, hreflang.language_code || 'lang')
+                          .replace(/\{\{absolute_path\}\}/g, '/public/storename/category/example')
+                          .replace(/\{\{relative_path\}\}/g, '/category/example')
                           .replace(/\{\{current_url\}\}/g, '/current-page')}
                       </div>
                     </div>
