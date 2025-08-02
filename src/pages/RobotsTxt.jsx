@@ -7,6 +7,7 @@ import { CmsPage } from '@/api/entities';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import { clearCache } from "@/components/storefront/StoreProvider";
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -102,6 +103,14 @@ export default function RobotsTxt() {
             } else if (storeId) {
                 await SeoSetting.create({ store_id: storeId, robots_txt_content: robotsTxt });
             }
+            
+            // Clear SEO cache to ensure changes are reflected immediately
+            if (typeof window !== 'undefined' && window.clearCache) {
+              window.clearCache();
+            }
+            localStorage.setItem('forceRefreshStore', 'true');
+            console.log('🧹 Cleared SEO cache after robots.txt save');
+            
             // Optionally, show a success message
         } catch (error) {
             console.error("Error saving robots.txt:", error);

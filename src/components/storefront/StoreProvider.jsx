@@ -18,6 +18,8 @@ export const useStore = () => useContext(StoreContext);
 
 // EXTREME caching - 2 hour cache with localStorage persistence
 const CACHE_DURATION = 7200000; // 2 hours
+// Temporary: reduce cache for SEO settings during development
+const SEO_CACHE_DURATION = 60000; // 1 minute for SEO settings
 const apiCache = new Map();
 
 // Load from localStorage on init

@@ -42,12 +42,36 @@ import {
 } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { InvokeLLM } from "@/api/integrations";
-import { useStore } from "@/components/storefront/StoreProvider";
+import { useStore, clearCache } from "@/components/storefront/StoreProvider";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 
 export default function SeoTools() {
   const location = useLocation();
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  
+  // Function to clear SEO-related cache
+  const clearSeoCache = (storeId) => {
+    try {
+      // Clear specific SEO cache keys
+      const cacheKeys = [
+        `seo-settings-${storeId}`,
+        `seo-templates-${storeId}`,
+        'storeProviderCache'
+      ];
+      
+      // Clear from memory cache (if accessible)
+      if (typeof window !== 'undefined' && window.clearCache) {
+        window.clearCache();
+      }
+      
+      // Set flag to force refresh
+      localStorage.setItem('forceRefreshStore', 'true');
+      
+      console.log('🧹 Cleared SEO cache for store:', storeId);
+    } catch (error) {
+      console.warn('⚠️ Failed to clear SEO cache:', error);
+    }
+  };
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -326,7 +350,10 @@ export default function SeoTools() {
         console.log('🔍 Create result:', result);
       }
 
-      setFlashMessage({ type: 'success', message: 'Settings saved successfully!' });
+      // Clear SEO cache to ensure changes are reflected immediately
+      clearSeoCache(storeId);
+      
+      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Cache cleared.' });
       setSaving(false);
 
     } catch (error) {
@@ -692,9 +719,13 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
       }
 
       setSeoSettings(updatedSettings);
+      
+      // Clear SEO cache to ensure changes are reflected immediately
+      clearSeoCache(storeId);
+      
       setFlashMessage({
         type: 'success',
-        message: `Robots.txt updated with ${specificDisallowRules.length} specific rules from your content.`
+        message: `Robots.txt updated with ${specificDisallowRules.length} specific rules from your content. Cache cleared.`
       });
 
     } catch (error) {
