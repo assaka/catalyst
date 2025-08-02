@@ -281,66 +281,105 @@ class AkeneoClient {
     const allProducts = [];
     
     try {
-      // Try multiple approaches for Akeneo v7 compatibility
-      console.log('🔍 Attempting to fetch products using different methods...');
+      console.log('🔍 Fetching ALL products with pagination...');
       
-      // Method 1: Try direct products-uuid endpoint
+      // Method 1: Try UUID-based endpoint with full pagination
       try {
-        console.log('📦 Method 1: Direct products-uuid endpoint');
-        const response = await this.getProducts({ 
-          limit: 10,
-          'with_count': false
-        });
+        console.log('📦 Method 1: UUID-based products endpoint with pagination');
+        let nextUrl = null;
+        let pageCount = 0;
+
+        do {
+          pageCount++;
+          const params = nextUrl ? {} : { limit: 100, 'with_count': false };
+          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products-uuid';
+          
+          console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
+          const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+
+          if (response._embedded && response._embedded.items) {
+            allProducts.push(...response._embedded.items);
+            console.log(`✅ Page ${pageCount}: ${response._embedded.items.length} products (total: ${allProducts.length})`);
+          }
+
+          nextUrl = response._links && response._links.next ? response._links.next.href : null;
+        } while (nextUrl);
         
-        if (response._embedded && response._embedded.items) {
-          allProducts.push(...response._embedded.items);
-          console.log(`✅ Method 1 successful: ${response._embedded.items.length} products`);
-          return allProducts;
-        }
+        console.log(`✅ Method 1 successful: ${allProducts.length} total products`);
+        return allProducts;
+        
       } catch (error1) {
         console.log(`❌ Method 1 failed: ${error1.message}`);
+        allProducts.length = 0; // Clear any partial data
       }
       
-      // Method 2: Try search endpoint with empty criteria
+      // Method 2: Try search endpoint with pagination
       try {
-        console.log('📦 Method 2: Search endpoint');
-        const searchCriteria = {};
-        const response = await this.searchProducts(searchCriteria, { 
-          limit: 10,
-          'with_count': false
-        });
-        
-        if (response._embedded && response._embedded.items) {
-          allProducts.push(...response._embedded.items);
-          console.log(`✅ Method 2 successful: ${response._embedded.items.length} products`);
-          return allProducts;
+        console.log('📦 Method 2: Search endpoint with pagination');
+        let page = 1;
+        let hasMorePages = true;
+
+        while (hasMorePages) {
+          console.log(`📄 Fetching page ${page} via search`);
+          const searchCriteria = {};
+          const response = await this.searchProducts(searchCriteria, { 
+            limit: 100,
+            page: page,
+            'with_count': false
+          });
+          
+          if (response._embedded && response._embedded.items) {
+            allProducts.push(...response._embedded.items);
+            console.log(`✅ Page ${page}: ${response._embedded.items.length} products (total: ${allProducts.length})`);
+            
+            // Check if there are more pages
+            hasMorePages = response._embedded.items.length === 100;
+            page++;
+          } else {
+            hasMorePages = false;
+          }
         }
+        
+        console.log(`✅ Method 2 successful: ${allProducts.length} total products`);
+        return allProducts;
+        
       } catch (error2) {
         console.log(`❌ Method 2 failed: ${error2.message}`);
+        allProducts.length = 0; // Clear any partial data
       }
       
-      // Method 3: Try old identifier-based endpoint as fallback
+      // Method 3: Try identifier-based endpoint with pagination
       try {
-        console.log('📦 Method 3: Fallback to identifier-based endpoint');
-        const response = await this.makeRequest('GET', '/api/rest/v1/products', null, { 
-          limit: 10,
-          'with_count': false
-        });
+        console.log('📦 Method 3: Identifier-based endpoint with pagination');
+        let nextUrl = null;
+        let pageCount = 0;
+
+        do {
+          pageCount++;
+          const params = nextUrl ? {} : { limit: 100, 'with_count': false };
+          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products';
+          
+          console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
+          const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+
+          if (response._embedded && response._embedded.items) {
+            allProducts.push(...response._embedded.items);
+            console.log(`✅ Page ${pageCount}: ${response._embedded.items.length} products (total: ${allProducts.length})`);
+          }
+
+          nextUrl = response._links && response._links.next ? response._links.next.href : null;
+        } while (nextUrl);
         
-        if (response._embedded && response._embedded.items) {
-          allProducts.push(...response._embedded.items);
-          console.log(`✅ Method 3 successful: ${response._embedded.items.length} products`);
-          return allProducts;
-        }
+        console.log(`✅ Method 3 successful: ${allProducts.length} total products`);
+        return allProducts;
+        
       } catch (error3) {
         console.log(`❌ Method 3 failed: ${error3.message}`);
         throw new Error(`All product fetch methods failed. Last error: ${error3.message}`);
       }
       
-      throw new Error('No products found using any method');
-      
     } catch (error) {
-      console.error('❌ Error fetching products:', error.message);
+      console.error('❌ Error fetching all products:', error.message);
       throw error;
     }
   }

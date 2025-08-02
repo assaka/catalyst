@@ -209,47 +209,59 @@ class AkeneoIntegration {
     const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {} } = options;
     
     try {
-      console.log('Starting product import from Akeneo...');
-      
-      // First, test which product endpoints are available
-      console.log('🔍 Testing product endpoint availability...');
-      const testResult = await this.testProductEndpoints();
-      console.log('📊 Product endpoint test results:', testResult);
-      
-      if (!testResult.hasWorkingEndpoint) {
-        return {
-          success: false,
-          error: `No working product endpoints found. Tested: ${testResult.testedEndpoints.join(', ')}. Last error: ${testResult.lastError}`,
-          stats: this.importStats.products
-        };
-      }
-      
-      console.log(`✅ Using working endpoint: ${testResult.workingEndpoint}`);
+      console.log('🚀 Starting product import from Akeneo...');
+      console.log(`📍 Store ID: ${storeId}`);
+      console.log(`🧪 Dry run mode: ${dryRun}`);
+      console.log(`📦 Batch size: ${batchSize}`);
       
       // Get category mapping for product category assignment
+      console.log('📂 Building category mapping...');
       const categoryMapping = await this.buildCategoryMapping(storeId);
+      console.log(`✅ Category mapping built: ${Object.keys(categoryMapping).length} categories`);
       
-      // Get all products from Akeneo using the working endpoint
-      const productResponse = await this.getProductsUsingWorkingEndpoint(testResult.workingEndpoint);
-      const akeneoProducts = productResponse._embedded?.items || [];
+      // Get all products from Akeneo using the robust client method
+      console.log('📡 Fetching all products from Akeneo...');
+      const akeneoProducts = await this.client.getAllProducts();
       this.importStats.products.total = akeneoProducts.length;
 
-      console.log(`Found ${akeneoProducts.length} products in Akeneo`);
+      console.log(`📦 Found ${akeneoProducts.length} products in Akeneo`);
+      
+      if (akeneoProducts.length === 0) {
+        console.log('⚠️ No products found in Akeneo');
+        return {
+          success: true,
+          stats: this.importStats.products,
+          message: 'No products found in Akeneo to import',
+          dryRun: dryRun
+        };
+      }
 
       // Process products in batches
+      console.log(`💾 Processing ${akeneoProducts.length} products in batches of ${batchSize}...`);
+      let processed = 0;
+      
       for (let i = 0; i < akeneoProducts.length; i += batchSize) {
         const batch = akeneoProducts.slice(i, i + batchSize);
+        console.log(`\n📦 Processing batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(akeneoProducts.length/batchSize)} (${batch.length} products)`);
         
         for (const akeneoProduct of batch) {
+          processed++;
           try {
+            // Log progress for every 10 products or if it's a small batch
+            if (processed % 10 === 0 || batch.length <= 10) {
+              console.log(`📊 Processing product ${processed}/${akeneoProducts.length}: ${akeneoProduct.identifier || akeneoProduct.uuid || 'Unknown'}`);
+            }
+            
             // Transform product to Catalyst format
             const catalystProduct = this.mapping.transformProduct(akeneoProduct, storeId, locale);
             
             // Map category IDs
-            catalystProduct.category_ids = this.mapping.mapCategoryIds(
-              akeneoProduct.categories || [], 
-              categoryMapping
-            );
+            const originalCategoryIds = akeneoProduct.categories || [];
+            catalystProduct.category_ids = this.mapping.mapCategoryIds(originalCategoryIds, categoryMapping);
+            
+            if (originalCategoryIds.length > 0 && catalystProduct.category_ids.length === 0) {
+              console.warn(`⚠️ Product ${catalystProduct.sku}: No valid category mappings found for ${originalCategoryIds.join(', ')}`);
+            }
 
             // Validate product
             const validationErrors = this.mapping.validateProduct(catalystProduct);
@@ -260,6 +272,7 @@ class AkeneoIntegration {
                 akeneo_identifier: catalystProduct.akeneo_identifier,
                 errors: validationErrors
               });
+              console.error(`❌ Validation failed for ${catalystProduct.sku}: ${validationErrors.join(', ')}`);
               continue;
             }
 
@@ -293,11 +306,19 @@ class AkeneoIntegration {
                   category_ids: catalystProduct.category_ids
                 });
                 
-                console.log(`Updated product: ${catalystProduct.name}`);
+                if (processed <= 5 || processed % 25 === 0) {
+                  console.log(`✅ Updated product: ${catalystProduct.name} (${catalystProduct.sku})`);
+                }
               } else {
                 // Create new product
                 await Product.create(catalystProduct);
-                console.log(`Created product: ${catalystProduct.name}`);
+                if (processed <= 5 || processed % 25 === 0) {
+                  console.log(`✅ Created product: ${catalystProduct.name} (${catalystProduct.sku})`);
+                }
+              }
+            } else {
+              if (processed <= 5) {
+                console.log(`🔍 Dry run - would process product: ${catalystProduct.name} (${catalystProduct.sku})`);
               }
             }
 
@@ -306,23 +327,40 @@ class AkeneoIntegration {
             this.importStats.products.failed++;
             this.importStats.errors.push({
               type: 'product',
-              akeneo_identifier: akeneoProduct.identifier,
+              akeneo_identifier: akeneoProduct.identifier || akeneoProduct.uuid || 'Unknown',
               error: error.message
             });
-            console.error(`Failed to import product ${akeneoProduct.identifier}:`, error.message);
+            console.error(`❌ Failed to import product ${akeneoProduct.identifier || akeneoProduct.uuid}: ${error.message}`);
           }
         }
 
-        // Log progress
-        console.log(`Processed ${Math.min(i + batchSize, akeneoProducts.length)} of ${akeneoProducts.length} products`);
+        // Log batch progress
+        const batchEnd = Math.min(i + batchSize, akeneoProducts.length);
+        console.log(`📊 Batch ${Math.floor(i/batchSize) + 1} completed: ${batchEnd}/${akeneoProducts.length} products processed`);
       }
 
-      console.log('Product import completed');
-      return {
+      console.log('🎉 Product import completed successfully!');
+      console.log(`📊 Final stats: ${this.importStats.products.imported} imported, ${this.importStats.products.failed} failed, ${this.importStats.products.total} total`);
+      
+      const response = {
         success: true,
         stats: this.importStats.products,
-        message: `Imported ${this.importStats.products.imported} products`
+        dryRun: dryRun,
+        details: {
+          processedCount: processed,
+          completedSuccessfully: true
+        }
       };
+      
+      if (dryRun) {
+        response.message = `Dry run completed. Would import ${this.importStats.products.imported} products`;
+        console.log(`🧪 Dry run result: Would import ${this.importStats.products.imported}/${this.importStats.products.total} products`);
+      } else {
+        response.message = `Successfully imported ${this.importStats.products.imported} products`;
+        console.log(`✅ Live import result: Imported ${this.importStats.products.imported}/${this.importStats.products.total} products to database`);
+      }
+      
+      return response;
 
     } catch (error) {
       console.error('Product import failed:', error);
@@ -700,68 +738,6 @@ class AkeneoIntegration {
     return this.importStats;
   }
 
-  /**
-   * Test which product endpoints are available
-   */
-  async testProductEndpoints() {
-    const results = {
-      hasWorkingEndpoint: false,
-      workingEndpoint: null,
-      testedEndpoints: [],
-      lastError: null
-    };
-    
-    const endpointsToTest = [
-      { name: 'products-uuid', endpoint: '/api/rest/v1/products-uuid' },
-      { name: 'products-uuid-search', endpoint: '/api/rest/v1/products-uuid/search', method: 'POST', data: {} },
-      { name: 'products', endpoint: '/api/rest/v1/products' },
-      { name: 'product-models', endpoint: '/api/rest/v1/product-models' }
-    ];
-    
-    for (const test of endpointsToTest) {
-      try {
-        console.log(`🧪 Testing ${test.name}: ${test.endpoint}`);
-        results.testedEndpoints.push(test.name);
-        
-        if (test.method === 'POST') {
-          await this.client.makeRequest('POST', test.endpoint, test.data, { limit: 1 });
-        } else {
-          await this.client.makeRequest('GET', test.endpoint, null, { limit: 1 });
-        }
-        
-        console.log(`✅ ${test.name} works!`);
-        results.hasWorkingEndpoint = true;
-        results.workingEndpoint = test.name;
-        break;
-        
-      } catch (error) {
-        console.log(`❌ ${test.name} failed: ${error.message}`);
-        results.lastError = error.message;
-      }
-    }
-    
-    return results;
-  }
-  
-  /**
-   * Get products using the working endpoint
-   */
-  async getProductsUsingWorkingEndpoint(endpointName) {
-    console.log(`📦 Fetching products using ${endpointName}`);
-    
-    switch (endpointName) {
-      case 'products-uuid':
-        return await this.client.makeRequest('GET', '/api/rest/v1/products-uuid', null, { limit: 10 });
-      case 'products-uuid-search':
-        return await this.client.makeRequest('POST', '/api/rest/v1/products-uuid/search', {}, { limit: 10 });
-      case 'products':
-        return await this.client.makeRequest('GET', '/api/rest/v1/products', null, { limit: 10 });
-      case 'product-models':
-        return await this.client.makeRequest('GET', '/api/rest/v1/product-models', null, { limit: 10 });
-      default:
-        throw new Error(`Unknown endpoint: ${endpointName}`);
-    }
-  }
 
   /**
    * Get configuration status
