@@ -6,7 +6,7 @@ const router = express.Router();
 // Basic CRUD operations for attributes
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id } = req.query;
+    const { page = 1, limit = 100, store_id } = req.query;
     const offset = (page - 1) * limit;
     
     // Check if this is a public request

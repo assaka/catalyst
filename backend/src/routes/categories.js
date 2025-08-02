@@ -21,7 +21,7 @@ const { authorize } = require('../middleware/auth');
 
 router.get('/', authMiddleware, authorize(['admin', 'store_owner']), async (req, res) => {
   try {
-    const { page = 1, limit = 10, store_id, parent_id, search } = req.query;
+    const { page = 1, limit = 100, store_id, parent_id, search } = req.query;
     const offset = (page - 1) * limit;
 
     const where = {};
