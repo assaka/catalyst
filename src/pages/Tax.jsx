@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Tax } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
+import { clearTaxesCache } from "@/utils/cacheUtils";
 import {
   Receipt,
   Plus,
@@ -157,6 +158,8 @@ export default function TaxPage() {
       await Tax.create({ ...taxData, store_id: storeId });
       await loadData();
       setShowTaxForm(false);
+      // Clear storefront cache for instant updates
+      clearTaxesCache(storeId);
     } catch (error) {
       console.error("Error creating tax rule:", error);
       throw error;
@@ -174,7 +177,9 @@ export default function TaxPage() {
       await loadData();
       setShowTaxForm(false);
       setSelectedTax(null);
-
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearTaxesCache(storeId);
     } catch (error) {
       console.error("Error updating tax rule:", error);
       await loadData();
@@ -187,6 +192,9 @@ export default function TaxPage() {
       try {
         await Tax.delete(taxId);
         await loadData();
+        // Clear storefront cache for instant updates
+        const storeId = getSelectedStoreId();
+        if (storeId) clearTaxesCache(storeId);
       } catch (error) {
         console.error("Error deleting tax rule:", error);
       }

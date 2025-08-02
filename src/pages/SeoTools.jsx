@@ -10,6 +10,7 @@ import { Product } from "@/api/entities";
 import { CmsPage } from "@/api/entities";
 import { AttributeSet } from "@/api/entities";
 import { User } from "@/api/entities";
+import { clearSeoTemplatesCache } from "@/utils/cacheUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -409,6 +410,8 @@ export default function SeoTools() {
       setEditingTemplate(null);
       resetTemplateForm();
       setFlashMessage({ type: 'success', message: 'Template saved successfully!' });
+      // Clear storefront cache for instant updates
+      if (storeId) clearSeoTemplatesCache(storeId);
     } catch (error) {
       setFlashMessage({ type: 'error', message: 'Failed to save template: ' + error.message });
     } finally {
@@ -422,6 +425,9 @@ export default function SeoTools() {
         await SeoTemplate.delete(templateId);
         await loadData();
         setFlashMessage({ type: 'success', message: 'Template deleted successfully!' });
+        // Clear storefront cache for instant updates
+        const storeId = selectedStore?.id;
+        if (storeId) clearSeoTemplatesCache(storeId);
       } catch (error) {
         setFlashMessage({ type: 'error', message: 'Failed to delete template: ' + error.message });
       }

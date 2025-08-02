@@ -4,6 +4,7 @@ import { Attribute } from "@/api/entities";
 import { AttributeSet } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
+import { clearAttributesCache } from "@/utils/cacheUtils";
 import {
   Settings,
   Plus,
@@ -105,6 +106,8 @@ export default function Attributes() {
       await Attribute.create({ ...attributeData, store_id: storeId });
       await loadData();
       setShowForm(false);
+      // Clear storefront cache for instant updates
+      clearAttributesCache(storeId);
     } catch (error) {
       console.error("Error creating attribute:", error);
     }
@@ -122,6 +125,8 @@ export default function Attributes() {
       await loadData();
       setShowForm(false);
       setEditingAttribute(null);
+      // Clear storefront cache for instant updates
+      clearAttributesCache(storeId);
     } catch (error) {
       console.error("Error updating attribute:", error);
     }
@@ -132,6 +137,9 @@ export default function Attributes() {
       try {
         await Attribute.delete(attributeId);
         await loadData();
+        // Clear storefront cache for instant updates
+        const storeId = getSelectedStoreId();
+        if (storeId) clearAttributesCache(storeId);
       } catch (error) {
         console.error("Error deleting attribute:", error);
       }
@@ -148,6 +156,8 @@ export default function Attributes() {
       await AttributeSet.create({ ...setData, store_id: storeId });
       await loadData();
       setShowSetForm(false);
+      // Clear storefront cache for instant updates
+      clearAttributesCache(storeId);
     } catch (error) {
       console.error("Error creating attribute set:", error);
     }
@@ -165,6 +175,8 @@ export default function Attributes() {
       await loadData();
       setShowSetForm(false);
       setEditingSet(null);
+      // Clear storefront cache for instant updates
+      clearAttributesCache(storeId);
     } catch (error) {
       console.error("Error updating attribute set:", error);
     }
@@ -175,6 +187,9 @@ export default function Attributes() {
       try {
         await AttributeSet.delete(attributeSetId);
         await loadData();
+        // Clear storefront cache for instant updates
+        const storeId = getSelectedStoreId();
+        if (storeId) clearAttributesCache(storeId);
       } catch (error) {
         console.error("Error deleting attribute set:", error);
       }

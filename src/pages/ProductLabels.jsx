@@ -4,6 +4,7 @@ import { ProductLabel } from '@/api/entities';
 import { Attribute } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import ProductLabelForm from '@/components/products/ProductLabelForm';
+import { clearLabelsCache } from '@/utils/cacheUtils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -91,16 +92,11 @@ export default function ProductLabels() {
         await ProductLabel.create(backendData);
       }
       
-      // Clear storefront cache for product labels to ensure new labels appear immediately
-      if (typeof window !== 'undefined' && window.clearCache) {
-        window.clearCache();
-      }
-      
-      // Also set a flag for manual cache clearing
-      localStorage.setItem('forceRefreshLabels', 'true');
-      
       closeForm();
       loadData();
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearLabelsCache(storeId);
     } catch (error) {
       console.error("Failed to save product label", error);
     }
@@ -116,6 +112,9 @@ export default function ProductLabels() {
       try {
         await ProductLabel.delete(labelId);
         loadData(); // Reload data after deletion
+        // Clear storefront cache for instant updates
+        const storeId = getSelectedStoreId();
+        if (storeId) clearLabelsCache(storeId);
       } catch (error) {
         console.error("Failed to delete product label", error);
       }
@@ -127,6 +126,9 @@ export default function ProductLabels() {
       // Toggle the is_active status of the label
       await ProductLabel.update(label.id, { ...label, is_active: !label.is_active });
       loadData(); // Reload data to reflect the status change
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearLabelsCache(storeId);
     } catch (error) {
       console.error("Failed to toggle label status", error);
     }

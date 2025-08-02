@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Category } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
+import { clearCategoriesCache } from "@/utils/cacheUtils";
 import { 
   Tag, 
   Plus, 
@@ -91,17 +92,22 @@ export default function Categories() {
       await Category.create({ ...categoryData, store_id: storeId });
       await loadCategories();
       setShowCategoryForm(false);
+      // Clear storefront cache for instant updates
+      clearCategoriesCache(storeId);
     } catch (error) {
       console.error("Error creating category:", error);
     }
   };
 
   const handleUpdateCategory = async (categoryData) => {
+    const storeId = getSelectedStoreId();
     try {
       await Category.update(selectedCategory.id, categoryData);
       await loadCategories(); // Updated function name
       setShowCategoryForm(false);
       setSelectedCategory(null);
+      // Clear storefront cache for instant updates
+      clearCategoriesCache(storeId);
     } catch (error) {
       console.error("Error updating category:", error);
     }
@@ -112,6 +118,9 @@ export default function Categories() {
       try {
         await Category.delete(categoryId);
         await loadCategories(); // Updated function name
+        // Clear storefront cache for instant updates
+        const storeId = getSelectedStoreId();
+        if (storeId) clearCategoriesCache(storeId);
       } catch (error) {
         console.error("Error deleting category:", error);
       }
@@ -125,6 +134,9 @@ export default function Categories() {
         is_active: !category.is_active 
       });
       await loadCategories(); // Updated function name
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearCategoriesCache(storeId);
     } catch (error) {
       console.error("Error updating category status:", error);
     }
@@ -137,6 +149,9 @@ export default function Categories() {
         hide_in_menu: !category.hide_in_menu 
       });
       await loadCategories(); // Updated function name
+      // Clear storefront cache for instant updates
+      const storeId = getSelectedStoreId();
+      if (storeId) clearCategoriesCache(storeId);
     } catch (error) {
       console.error("Error updating category visibility:", error);
     }
