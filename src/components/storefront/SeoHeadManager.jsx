@@ -396,6 +396,14 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 script.setAttribute('data-gtm', 'head-custom');
                 script.innerHTML = analyticsSettings.custom_gtm_script;
                 document.head.appendChild(script);
+
+                // Add noscript fallback to body for custom scripts
+                if (analyticsSettings.gtm_id) {
+                    const noscript = document.createElement('noscript');
+                    noscript.setAttribute('data-gtm', 'body-noscript-custom');
+                    noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsSettings.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
+                    document.body.insertBefore(noscript, document.body.firstChild);
+                }
             } else if (analyticsSettings.gtm_script_type === 'default' && analyticsSettings.gtm_id) {
                 // Standard GTM Implementation
                 const script = document.createElement('script');

@@ -214,32 +214,15 @@ export default function AnalyticsSettings() {
                                     Complete GTM script for server-side tagging. Replace the GTM endpoint with your server-side tagging URL for first-party data collection.
                                 </p>
                                 
-                                <div className="mt-3 p-3 bg-yellow-50 rounded-lg text-sm">
-                                    <p className="font-medium text-yellow-900 mb-2">⚠️ Important for Custom GTM Scripts:</p>
-                                    <ul className="space-y-1 text-yellow-800">
-                                        <li>• <strong>Only include the head script above</strong> - This will be placed in <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;head&gt;</code></li>
-                                        <li>• <strong>Noscript tags are not automatically added</strong> for custom scripts</li>
-                                        <li>• <strong>Copy the noscript code below</strong> and add it to your theme template after <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;body&gt;</code></li>
+                                <div className="mt-3 p-3 bg-green-50 rounded-lg text-sm">
+                                    <p className="font-medium text-green-900 mb-2">✅ Custom GTM Implementation:</p>
+                                    <ul className="space-y-1 text-green-800">
+                                        <li>• <strong>Head script:</strong> Your custom script above will be placed in <code className="px-1 py-0.5 bg-green-100 rounded">&lt;head&gt;</code></li>
+                                        <li>• <strong>Noscript tags:</strong> Automatically added to <code className="px-1 py-0.5 bg-green-100 rounded">&lt;body&gt;</code> when GTM ID is provided</li>
+                                        <li>• <strong>No manual placement needed:</strong> Both head and body implementations are handled automatically</li>
                                     </ul>
                                 </div>
                                 
-                                <div className="mt-4">
-                                    <Label htmlFor="noscript_reference">Noscript Tag (For Manual Theme Placement)</Label>
-                                    <Textarea
-                                        id="noscript_reference"
-                                        value={`<!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${store.settings.analytics_settings.gtm_id || 'GTM-XXXXXX'}"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->`}
-                                        readOnly
-                                        rows={4}
-                                        className="font-mono text-sm bg-gray-50"
-                                        onClick={(e) => e.target.select()}
-                                    />
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        Click to select all. Add this code immediately after the opening <code className="px-1 py-0.5 bg-gray-100 rounded">&lt;body&gt;</code> tag in your theme.
-                                    </p>
-                                </div>
                             </div>
                         )}
                     </div>
