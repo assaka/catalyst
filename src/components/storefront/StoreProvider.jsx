@@ -335,11 +335,16 @@ export const StoreProvider = ({ children }) => {
             
             // Make direct API call with cache-busting timestamp
             const cacheBuster = Date.now();
-            const directUrl = `seo-settings?store_id=${selectedStore.id}&_cb=${cacheBuster}`;
+            const directUrl = `seo-settings?store_id=${selectedStore.id}&_cb=${cacheBuster}&_force_fresh=true`;
             console.log('🔥 Direct API URL:', directUrl);
+            console.log('🔥 Full API URL:', `${storefrontApiClient.baseURL}/api/public/${directUrl}`);
             
             const directResponse = await storefrontApiClient.getPublic(directUrl);
             console.log('🔥 DIRECT API RESPONSE:', directResponse);
+            console.log('🔥 Response length:', Array.isArray(directResponse) ? directResponse.length : 'Not array');
+            if (Array.isArray(directResponse) && directResponse.length > 0) {
+              console.log('🔥 First item from response:', directResponse[0]);
+            }
             console.log('🔥 Response type:', typeof directResponse, 'Array?', Array.isArray(directResponse));
             
             seoSettingsData = Array.isArray(directResponse) ? directResponse : [];

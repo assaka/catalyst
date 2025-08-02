@@ -350,6 +350,23 @@ export default function SeoTools() {
         console.log('🔍 Create result:', result);
       }
 
+      // VERIFICATION: Immediately fetch back from database to confirm save worked
+      console.log('🔍 VERIFICATION: Fetching settings back from database to confirm save...');
+      try {
+        const verificationSettings = await SeoSetting.filter({ store_id: storeId });
+        console.log('🔍 VERIFICATION: Settings from database after save:', verificationSettings);
+        if (verificationSettings && verificationSettings.length > 0) {
+          const saved = verificationSettings[0];
+          console.log('🔍 VERIFICATION: Key values after save:');
+          console.log('- enable_rich_snippets:', saved.enable_rich_snippets);
+          console.log('- enable_open_graph:', saved.enable_open_graph); 
+          console.log('- enable_twitter_cards:', saved.enable_twitter_cards);
+          console.log('- default_meta_title:', saved.default_meta_title);
+        }
+      } catch (verifyError) {
+        console.error('🚨 VERIFICATION FAILED:', verifyError);
+      }
+
       // Clear SEO cache to ensure changes are reflected immediately
       clearSeoCache(storeId);
       
