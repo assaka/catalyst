@@ -155,10 +155,17 @@ const AkeneoIntegration = () => {
       return;
     }
 
-    if (config.clientSecret === '••••••••' || config.password === '••••••••') {
-      console.error('❌ Placeholder values detected');
+    // Check if we have placeholder values - we can still test if config is saved
+    const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
+    
+    if (hasPlaceholders && !configSaved) {
+      console.error('❌ Placeholder values detected but config not saved');
       toast.error('Please enter your actual Client Secret and Password to test the connection');
       return;
+    }
+    
+    if (hasPlaceholders && configSaved) {
+      console.log('ℹ️ Using saved configuration with placeholder values - will use stored credentials');
     }
 
     // Get store_id from localStorage
@@ -176,7 +183,20 @@ const AkeneoIntegration = () => {
 
     try {
       console.log('📡 Making API call to test-connection...');
-      const response = await apiClient.post('/integrations/akeneo/test-connection', config, {
+      
+      // Prepare the request payload
+      let requestPayload;
+      if (hasPlaceholders && configSaved) {
+        // Send empty body to trigger stored config usage
+        requestPayload = {};
+        console.log('🔒 Using stored configuration from database');
+      } else {
+        // Send full config
+        requestPayload = config;
+        console.log('📋 Using provided configuration for test');
+      }
+      
+      const response = await apiClient.post('/integrations/akeneo/test-connection', requestPayload, {
         'x-store-id': storeId
       });
       
@@ -287,10 +307,22 @@ const AkeneoIntegration = () => {
 
     try {
       console.log('📡 Making API call to import-categories...');
-      const response = await apiClient.post('/integrations/akeneo/import-categories', {
-        ...config,
-        dryRun
-      }, {
+      
+      // Prepare the request payload for import
+      const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
+      let requestPayload;
+      
+      if (hasPlaceholders && configSaved) {
+        // Use stored config for import
+        requestPayload = { dryRun };
+        console.log('🔒 Using stored configuration for import');
+      } else {
+        // Use provided config
+        requestPayload = { ...config, dryRun };
+        console.log('📋 Using provided configuration for import');
+      }
+      
+      const response = await apiClient.post('/integrations/akeneo/import-categories', requestPayload, {
         'x-store-id': storeId
       });
 
