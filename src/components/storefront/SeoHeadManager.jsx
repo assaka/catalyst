@@ -36,29 +36,21 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                 '{{currency}}': store?.currency || 'USD'
             };
             
-            console.log('Template replacement:', {
-                original: template,
-                store: store?.name,
-                pageData: data
-            });
             
             // Simple string replacement without regex complications
             Object.entries(replacements).forEach(([placeholder, value]) => {
                 // Replace double curly braces version
                 while (result.includes(placeholder)) {
                     result = result.replace(placeholder, value);
-                    console.log(`Replaced ${placeholder} with "${value}"`);                    
                 }
                 
                 // Also replace single curly braces version (e.g., {store_name})
                 const singleBracePlaceholder = placeholder.replace(/{{/g, '{').replace(/}}/g, '}');
                 while (result.includes(singleBracePlaceholder)) {
                     result = result.replace(singleBracePlaceholder, value);
-                    console.log(`Replaced ${singleBracePlaceholder} with "${value}"`);                    
                 }
             });
             
-            console.log('Template result:', result);
             return result.trim();
         };
 
@@ -95,26 +87,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Default description for structured data
         const defaultDescription = description || store?.description || 'Quality products and services';
 
-        // Debug logging (remove in production)
-        console.log('SEO Debug:', {
-            pageTitle,
-            pageDescription,
-            store: store?.name,
-            seoSettings: seoSettings ? 'loaded' : 'not loaded',
-            seoSettingsData: seoSettings,
-            'enable_rich_snippets type': typeof seoSettings?.enable_rich_snippets,
-            'enable_rich_snippets value': seoSettings?.enable_rich_snippets,
-            'enable_open_graph type': typeof seoSettings?.enable_open_graph,
-            'enable_open_graph value': seoSettings?.enable_open_graph,
-            'enable_twitter_cards type': typeof seoSettings?.enable_twitter_cards,
-            'enable_twitter_cards value': seoSettings?.enable_twitter_cards,
-            seoDefaultTitle,
-            seoDefaultDescription,
-            seoDefaultKeywords,
-            finalTitle: title,
-            finalDescription: description,
-            finalKeywords: keywords
-        });
 
         // Determine the robots tag - check SEO settings and robots.txt rules
         let robotsTag = pageData?.meta_robots_tag || 
@@ -125,23 +97,14 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             const robotsContent = seoSettings?.robots_txt_content || '';
             const currentPath = window.location.pathname;
             
-            console.log('Robots check:', {
-                currentPath,
-                'robots content exists': !!robotsContent,
-                'robots content length': robotsContent?.length || 0,
-                'robots preview': robotsContent?.substring(0, 100) + (robotsContent?.length > 100 ? '...' : '')
-            });
             
             // Check if current path matches any Disallow rules
             let shouldDisallow = false;
             if (robotsContent && robotsContent.trim()) {
-                console.log('Processing robots.txt content:', robotsContent);
                 const disallowRules = robotsContent.match(/Disallow:\s*([^\n\r]*)/g) || [];
-                console.log('Found disallow rules:', disallowRules);
                 
                 for (const rule of disallowRules) {
                     const path = rule.replace('Disallow:', '').trim();
-                    console.log('Checking rule path:', `"${path}"`, 'against current path:', `"${currentPath}"`);
                     
                     if (path && path !== '/' && path !== '') {
                         // More precise matching logic - check if the current path contains or matches the disallow pattern
@@ -150,26 +113,17 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                                           currentPath.includes(path) ||
                                           (path.endsWith('/') && (currentPath.startsWith(path) || currentPath.includes(path)));
                         
-                        console.log('Path match result:', pathMatches, {
-                            'exact match': currentPath === path,
-                            'starts with': currentPath.startsWith(path),
-                            'includes': currentPath.includes(path)
-                        });
                         
                         if (pathMatches) {
                             shouldDisallow = true;
-                            console.log('MATCH! Disallow rule:', `"${path}"`, 'matches current path:', `"${currentPath}"`);
                             break;
                         }
                     }
                 }
             }
             
-            console.log('shouldDisallow final result:', shouldDisallow);
-            console.log('seoSettings?.default_meta_robots:', seoSettings?.default_meta_robots);
             
             robotsTag = shouldDisallow ? 'noindex, nofollow' : (seoSettings?.default_meta_robots || 'index, follow');
-            console.log('Final robots tag result:', robotsTag);
         }
 
         const ogImage = imageUrl || 
@@ -231,12 +185,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Apply template replacement to the final canonical URL
         canonicalUrl = applyTemplate(canonicalUrl, pageData);
         
-        console.log('Canonical URL check:', {
-            'seoSettings?.canonical_base_url': seoSettings?.canonical_base_url,
-            'processed canonical base': applyTemplate(seoSettings?.canonical_base_url || '', pageData),
-            'window.location.pathname': window.location.pathname,
-            'finalCanonicalUrl': canonicalUrl
-        });
         
         // Update or create canonical link
         let canonicalLink = document.querySelector('link[rel="canonical"]');
@@ -248,11 +196,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         canonicalLink.setAttribute('href', canonicalUrl);
 
         // Hreflang tags
-        console.log('Hreflang check:', {
-            'seoSettings?.hreflang_settings': seoSettings?.hreflang_settings,
-            'isArray': Array.isArray(seoSettings?.hreflang_settings),
-            'length': seoSettings?.hreflang_settings?.length
-        });
         
         if (seoSettings?.hreflang_settings && Array.isArray(seoSettings.hreflang_settings) && seoSettings.hreflang_settings.length > 0) {
             // Remove existing hreflang tags
@@ -285,10 +228,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
         // Open Graph Tags (check if enabled)
         const enableOpenGraph = seoSettings?.enable_open_graph === true;
-        console.log('Open Graph check:', {
-            'seoSettings?.enable_open_graph': seoSettings?.enable_open_graph,
-            'enableOpenGraph': enableOpenGraph
-        });
         if (enableOpenGraph) {
             updateMetaTag('og:title', title, true);
             updateMetaTag('og:description', description, true);
@@ -304,15 +243,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             if (seoSettings?.open_graph_settings?.facebook_app_id) {
                 updateMetaTag('fb:app_id', seoSettings.open_graph_settings.facebook_app_id, true);
             }
-            console.log('Added Open Graph meta tags to page');
         }
 
         // Twitter Card Tags (check if enabled)
         const enableTwitterCards = seoSettings?.enable_twitter_cards === true;
-        console.log('Twitter Cards check:', {
-            'seoSettings?.enable_twitter_cards': seoSettings?.enable_twitter_cards,
-            'enableTwitterCards': enableTwitterCards
-        });
         if (enableTwitterCards) {
             const cardType = seoSettings?.twitter_card_settings?.card_type || 'summary_large_image';
             updateMetaTag('twitter:card', cardType);
@@ -330,15 +264,10 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     : `@${seoSettings.twitter_card_settings.site_username}`;
                 updateMetaTag('twitter:site', username);
             }
-            console.log('Added Twitter Card meta tags to page');
         }
 
         // Rich Snippets / Schema.org (check if enabled)
         const enableRichSnippets = seoSettings?.enable_rich_snippets === true;
-        console.log('Rich Snippets check:', {
-            'seoSettings?.enable_rich_snippets': seoSettings?.enable_rich_snippets,
-            'enableRichSnippets': enableRichSnippets
-        });
         
         // Product-specific Schema.org structured data
         if (enableRichSnippets && pageType === 'product' && pageData) {
@@ -350,10 +279,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
             
             const enableProductSchema = seoSettings?.schema_settings?.enable_product_schema === true;
-            console.log('Product Schema check:', {
-                'seoSettings?.schema_settings?.enable_product_schema': seoSettings?.schema_settings?.enable_product_schema,
-                'enableProductSchema': enableProductSchema
-            });
             if (enableProductSchema) {
                 const script = document.createElement('script');
                 script.type = 'application/ld+json';
@@ -382,7 +307,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
                 script.textContent = JSON.stringify(structuredData);
                 document.head.appendChild(script);
-                console.log('Added Product Schema structured data to page');
             }
         }
 
@@ -396,10 +320,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             }
             
             const enableOrgSchema = seoSettings?.schema_settings?.enable_organization_schema === true;
-            console.log('Organization Schema check:', {
-                'seoSettings?.schema_settings?.enable_organization_schema': seoSettings?.schema_settings?.enable_organization_schema,
-                'enableOrgSchema': enableOrgSchema
-            });
             if (enableOrgSchema) {
                 const script = document.createElement('script');
                 script.type = 'application/ld+json';
@@ -428,7 +348,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
                 script.textContent = JSON.stringify(structuredData);
                 document.head.appendChild(script);
-                console.log('Added Organization Schema structured data to page');
             }
         }
 
@@ -455,7 +374,6 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
 
             script.textContent = JSON.stringify(structuredData);
             document.head.appendChild(script);
-            console.log('Added Website Schema structured data to page');
         }
 
 
