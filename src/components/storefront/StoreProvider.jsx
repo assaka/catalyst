@@ -179,7 +179,8 @@ export const StoreProvider = ({ children }) => {
       if (forceRefresh) {
         apiCache.clear();
         localStorage.removeItem('storeProviderCache');
-        localStorage.removeItem('forceRefreshStore');
+        // DON'T remove forceRefreshStore flag yet - need it for SEO settings
+        console.log('🔄 Force refresh detected - clearing caches but preserving flag for SEO settings');
       }
       
       // Get store first with ultra-aggressive caching
@@ -538,6 +539,13 @@ export const StoreProvider = ({ children }) => {
       setSeoSettings(null);
     } finally {
       setLoading(false);
+      
+      // Clean up force refresh flag after all data is loaded
+      const forceRefresh = localStorage.getItem('forceRefreshStore');
+      if (forceRefresh) {
+        localStorage.removeItem('forceRefreshStore');
+        console.log('🧹 Force refresh flag cleared after all data loaded');
+      }
     }
   };
 

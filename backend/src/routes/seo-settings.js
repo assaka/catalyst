@@ -36,6 +36,13 @@ router.get('/', async (req, res) => {
 
       console.log('[SEO Settings] Found settings:', !!seoSettings);
       
+      // Add cache-busting headers to prevent caching
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
       // Return array format that the frontend expects
       res.json([seoSettings]);
     } catch (error) {
