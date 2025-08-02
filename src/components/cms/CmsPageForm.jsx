@@ -29,6 +29,8 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
   const [originalSlug, setOriginalSlug] = useState("");
   const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
   const [createRedirect, setCreateRedirect] = useState(true);
+  const [isEditingSlug, setIsEditingSlug] = useState(false);
+  const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -62,6 +64,9 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       
       // Set original slug for slug change detection
       setOriginalSlug(page.slug || "");
+      // If page has a slug, consider it manually set
+      setHasManuallyEditedSlug(!!(page.slug));
+      setIsEditingSlug(!!(page.slug));
     } else {
       // For new pages, ensure store_id is pre-selected if stores exist
       // Other fields will retain their initial useState defaults.
@@ -77,22 +82,25 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       const field = eOrField;
       const val = value;
 
-      // Special handling for title to update slug
+      // Special handling for title to update slug (only if not manually edited)
       if (field === 'title') {
-        const newSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-        
-        // Check if this is an edit and slug will change
-        if (page && originalSlug && newSlug !== originalSlug) {
-          setShowSlugChangeWarning(true);
+        if (!hasManuallyEditedSlug) {
+          const newSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          setFormData(prev => ({
+            ...prev,
+            title: val,
+            slug: newSlug,
+          }));
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            title: val,
+          }));
         }
-        
-        setFormData(prev => ({
-          ...prev,
-          title: val,
-          slug: newSlug,
-        }));
       } else if (field === 'slug') {
         // Direct slug edit
+        setHasManuallyEditedSlug(true);
+        
         if (page && originalSlug && val !== originalSlug) {
           setShowSlugChangeWarning(true);
         } else if (val === originalSlug) {
@@ -113,10 +121,14 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       const { name, value } = eOrField.target;
       
       // Check for slug changes in event handler
-      if (name === 'slug' && page && originalSlug && value !== originalSlug) {
-        setShowSlugChangeWarning(true);
-      } else if (name === 'slug' && value === originalSlug) {
-        setShowSlugChangeWarning(false);
+      if (name === 'slug') {
+        setHasManuallyEditedSlug(true);
+        
+        if (page && originalSlug && value !== originalSlug) {
+          setShowSlugChangeWarning(true);
+        } else if (value === originalSlug) {
+          setShowSlugChangeWarning(false);
+        }
       }
       
       setFormData(prev => ({ ...prev, [name]: value }));
@@ -193,18 +205,39 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
           />
         </div>
         <div>
-          <Label htmlFor="slug">Slug *</Label>
+          <div className="flex items-center justify-between mb-2">
+            <Label htmlFor="slug">Slug *</Label>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="edit-slug"
+                checked={isEditingSlug}
+                onCheckedChange={setIsEditingSlug}
+              />
+              <Label htmlFor="edit-slug" className="text-sm">
+                Enable editing
+              </Label>
+            </div>
+          </div>
           <Input
             id="slug"
-            name="slug" // Added name prop for consistency
+            name="slug"
             value={formData.slug}
-            onChange={(e) => handleInputChange(e)} // Use generic handler
+            onChange={(e) => handleInputChange(e)}
+            placeholder="Auto-generated from page title"
+            disabled={!isEditingSlug}
+            className={!isEditingSlug ? "bg-gray-50 text-gray-600" : ""}
             required
           />
+          <p className="text-xs text-gray-500 mt-1">
+            {!isEditingSlug 
+              ? "Auto-generated from page title. Enable editing to customize."
+              : "Custom URL slug for this page. Changes will affect the page's URL."
+            }
+          </p>
         </div>
       </div>
 
-      {showSlugChangeWarning && (
+      {showSlugChangeWarning && hasManuallyEditedSlug && (
         <Alert className="border-amber-200 bg-amber-50">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">

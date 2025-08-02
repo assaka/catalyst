@@ -42,6 +42,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [originalUrlKey, setOriginalUrlKey] = useState("");
   const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
   const [createRedirect, setCreateRedirect] = useState(true);
+  const [isEditingUrlKey, setIsEditingUrlKey] = useState(false);
+  const [hasManuallyEditedUrlKey, setHasManuallyEditedUrlKey] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -128,6 +130,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       
       // Set original URL key for slug change detection
       setOriginalUrlKey(product.seo?.url_key || "");
+      // If product has a URL key, consider it manually set
+      setHasManuallyEditedUrlKey(!!(product.seo?.url_key));
+      setIsEditingUrlKey(!!(product.seo?.url_key));
     } else {
         // Reset form for new product
         setFormData({
@@ -187,6 +192,14 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         current = current[parts[i]];
       }
       current[parts[parts.length - 1]] = value;
+      
+      // Auto-generate URL key from name if not manually edited
+      if (path === 'name' && !hasManuallyEditedUrlKey) {
+        const autoUrlKey = slugify(value);
+        if (!newFormData.seo) newFormData.seo = {};
+        newFormData.seo.url_key = autoUrlKey;
+      }
+      
       return newFormData;
     });
   };
@@ -194,11 +207,15 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const handleSeoChange = (e) => {
     const { name, value } = e.target;
     
-    // Check for URL key changes to show redirect warning
-    if (name === 'seo.url_key' && product && originalUrlKey && value !== originalUrlKey) {
-      setShowSlugChangeWarning(true);
-    } else if (name === 'seo.url_key' && value === originalUrlKey) {
-      setShowSlugChangeWarning(false);
+    // Check for URL key changes to show redirect warning (only if manually edited)
+    if (name === 'seo.url_key') {
+      setHasManuallyEditedUrlKey(true);
+      
+      if (product && originalUrlKey && value !== originalUrlKey) {
+        setShowSlugChangeWarning(true);
+      } else if (value === originalUrlKey) {
+        setShowSlugChangeWarning(false);
+      }
     }
     
     handleInputChange(name, value);
@@ -864,18 +881,37 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 </Select>
               </div>
               <div>
-                <Label htmlFor="url_key">URL Key</Label>
+                <div className="flex items-center justify-between mb-2">
+                  <Label htmlFor="url_key">URL Key</Label>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="edit-url-key"
+                      checked={isEditingUrlKey}
+                      onCheckedChange={setIsEditingUrlKey}
+                    />
+                    <Label htmlFor="edit-url-key" className="text-sm">
+                      Enable editing
+                    </Label>
+                  </div>
+                </div>
                 <Input
                   id="url_key"
                   name="seo.url_key"
                   value={formData.seo.url_key || ""}
                   onChange={handleSeoChange}
-                  placeholder="e.g., my-awesome-product"
+                  placeholder="Auto-generated from product name"
+                  disabled={!isEditingUrlKey}
+                  className={!isEditingUrlKey ? "bg-gray-50 text-gray-600" : ""}
                 />
-                <p className="text-xs text-gray-500 mt-1">Leave empty to auto-generate from product name</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {!isEditingUrlKey 
+                    ? "Auto-generated from product name. Enable editing to customize."
+                    : "Custom URL key for this product. Changes will affect the product's URL."
+                  }
+                </p>
               </div>
 
-              {showSlugChangeWarning && (
+              {showSlugChangeWarning && hasManuallyEditedUrlKey && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800">
