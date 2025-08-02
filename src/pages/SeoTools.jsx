@@ -869,17 +869,38 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                           &lt;title&gt;{(() => {
                             if (!seoSettings.default_meta_title) return 'Sample Page';
                             
-                            let preview = seoSettings.default_meta_title;
+                            // Use same template replacement as storefront
+                            const applyTemplate = (template) => {
+                              if (!template) return '';
+                              
+                              let result = template;
+                              
+                              const replacements = {
+                                '{{store_name}}': selectedStore?.name || 'Your Store',
+                                '{{page_title}}': 'Sample Page',
+                                '{{site_name}}': selectedStore?.name || 'Your Store',
+                                '{{store_description}}': selectedStore?.description || 'Store description',
+                                '{{year}}': new Date().getFullYear().toString(),
+                                '{{currency}}': selectedStore?.currency || 'USD'
+                              };
+                              
+                              Object.entries(replacements).forEach(([placeholder, value]) => {
+                                // Replace double curly braces version
+                                while (result.includes(placeholder)) {
+                                  result = result.replace(placeholder, value);
+                                }
+                                
+                                // Also replace single curly braces version
+                                const singleBracePlaceholder = placeholder.replace(/{{/g, '{').replace(/}}/g, '}');
+                                while (result.includes(singleBracePlaceholder)) {
+                                  result = result.replace(singleBracePlaceholder, value);
+                                }
+                              });
+                              
+                              return result.trim();
+                            };
                             
-                            // Simple string replacement for all template variables
-                            preview = preview.replace(/\{\{store_name\}\}/g, selectedStore?.name || 'Your Store');
-                            preview = preview.replace(/\{store_name\}/g, selectedStore?.name || 'Your Store');
-                            preview = preview.replace(/\{\{page_title\}\}/g, 'Sample Page');
-                            preview = preview.replace(/\{page_title\}/g, 'Sample Page');
-                            preview = preview.replace(/\{\{site_name\}\}/g, selectedStore?.name || 'Your Store');
-                            preview = preview.replace(/\{site_name\}/g, selectedStore?.name || 'Your Store');
-                            
-                            return preview;
+                            return applyTemplate(seoSettings.default_meta_title) || 'Sample Page';
                           })()}&lt;/title&gt;
                         </code>
                         <p className="text-xs text-gray-500 mt-1">Template: <span className="font-mono">{seoSettings.default_meta_title}</span></p>
@@ -890,19 +911,40 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                           <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Meta Description</p>
                           <code className="text-sm bg-white px-2 py-1 rounded border block overflow-x-auto">
                             &lt;meta name="description" content="{(() => {
-                              let preview = seoSettings.default_meta_description;
+                              if (!seoSettings.default_meta_description) return 'Sample description';
                               
-                              // Simple string replacement for all template variables
-                              preview = preview.replace(/\{\{store_name\}\}/g, selectedStore?.name || 'Your Store');
-                              preview = preview.replace(/\{store_name\}/g, selectedStore?.name || 'Your Store');
-                              preview = preview.replace(/\{\{page_title\}\}/g, 'Sample Page');
-                              preview = preview.replace(/\{page_title\}/g, 'Sample Page');
-                              preview = preview.replace(/\{\{site_name\}\}/g, selectedStore?.name || 'Your Store');
-                              preview = preview.replace(/\{site_name\}/g, selectedStore?.name || 'Your Store');
-                              preview = preview.replace(/\{\{store_description\}\}/g, selectedStore?.description || 'Store description');
-                              preview = preview.replace(/\{store_description\}/g, selectedStore?.description || 'Store description');
+                              // Use same template replacement as storefront
+                              const applyTemplate = (template) => {
+                                if (!template) return '';
+                                
+                                let result = template;
+                                
+                                const replacements = {
+                                  '{{store_name}}': selectedStore?.name || 'Your Store',
+                                  '{{page_title}}': 'Sample Page',
+                                  '{{site_name}}': selectedStore?.name || 'Your Store',
+                                  '{{store_description}}': selectedStore?.description || 'Store description',
+                                  '{{year}}': new Date().getFullYear().toString(),
+                                  '{{currency}}': selectedStore?.currency || 'USD'
+                                };
+                                
+                                Object.entries(replacements).forEach(([placeholder, value]) => {
+                                  // Replace double curly braces version
+                                  while (result.includes(placeholder)) {
+                                    result = result.replace(placeholder, value);
+                                  }
+                                  
+                                  // Also replace single curly braces version
+                                  const singleBracePlaceholder = placeholder.replace(/{{/g, '{').replace(/}}/g, '}');
+                                  while (result.includes(singleBracePlaceholder)) {
+                                    result = result.replace(singleBracePlaceholder, value);
+                                  }
+                                });
+                                
+                                return result.trim();
+                              };
                               
-                              return preview;
+                              return applyTemplate(seoSettings.default_meta_description) || 'Sample description';
                             })()}" /&gt;
                           </code>
                           <p className="text-xs text-gray-500 mt-1">Template: <span className="font-mono">{seoSettings.default_meta_description}</span></p>
