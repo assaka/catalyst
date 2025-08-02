@@ -61,7 +61,17 @@ export default function SeoTools() {
         window.clearCache();
       }
       
-      console.log('🧹 Cleared all cache, storefront will get fresh data');
+      console.log('🧹 SEO cache cleared, force refresh flag set - opening storefront to see changes');
+      
+      // Open storefront in new tab to immediately see changes
+      const storeSlug = selectedStore?.slug || 'hamid2';
+      const storefrontUrl = `${window.location.origin}/public/${storeSlug}`;
+      
+      // Show message for 2 seconds then open storefront
+      setTimeout(() => {
+        window.open(storefrontUrl, '_blank');
+      }, 2000);
+      
     } catch (error) {
       console.warn('⚠️ Failed to clear cache:', error);
     }
