@@ -28,20 +28,26 @@ export default function AnalyticsSettings() {
                     setLoading(false);
                     return;
                 }
-                console.log('🔍 AnalyticsSettings: selectedStore.settings:', selectedStore.settings);
-                console.log('🔍 AnalyticsSettings: existing analytics_settings:', selectedStore.settings?.analytics_settings);
+                
+                // Fetch complete store data with settings from API
+                console.log('🔍 AnalyticsSettings: Fetching complete store data...');
+                const fullStoreData = await Store.findById(selectedStore.id);
+                console.log('🔍 AnalyticsSettings: Full store data:', fullStoreData);
+                console.log('🔍 AnalyticsSettings: Full store settings:', fullStoreData.settings);
+                console.log('🔍 AnalyticsSettings: Existing analytics_settings:', fullStoreData.settings?.analytics_settings);
                 
                 setStore({
                     ...selectedStore,
+                    ...fullStoreData, // Include all data from API
                     settings: {
-                        ...(selectedStore.settings || {}),
+                        ...(fullStoreData.settings || {}),
                         analytics_settings: {
                             enable_google_tag_manager: false,
                             gtm_script_type: 'default', // 'default' or 'custom'
                             gtm_id: '',
                             google_ads_id: '',
                             custom_gtm_script: '',
-                            ...(selectedStore.settings?.analytics_settings || {})
+                            ...(fullStoreData.settings?.analytics_settings || {})
                         }
                     }
                 });
