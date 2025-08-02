@@ -35,6 +35,13 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from "@/components/ui/select";
 
 import AttributeForm from "../components/attributes/AttributeForm";
 import AttributeSetForm from "../components/attributes/AttributeSetForm";
@@ -254,6 +261,108 @@ export default function Attributes() {
     setCurrentSetPage(page);
   };
 
+  // Enhanced pagination component
+  const renderPagination = (currentPage, totalPages, onPageChange) => {
+    if (totalPages <= 1) return null;
+
+    const getVisiblePages = () => {
+      const pages = [];
+      
+      // Always show previous page if exists
+      if (currentPage > 1) {
+        pages.push(currentPage - 1);
+      }
+      
+      // Always show current page (non-clickable, highlighted)
+      pages.push(currentPage);
+      
+      // Show next 3 pages if they exist
+      for (let i = 1; i <= 3 && currentPage + i <= totalPages; i++) {
+        pages.push(currentPage + i);
+      }
+      
+      return pages;
+    };
+
+    const visiblePages = getVisiblePages();
+
+    return (
+      <div className="flex items-center justify-center space-x-2 mt-8">
+        {/* Previous Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          Previous
+        </Button>
+
+        {/* Page Numbers */}
+        {visiblePages.map((page) => (
+          <Button
+            key={page}
+            variant={currentPage === page ? "default" : "outline"}
+            size="sm"
+            onClick={currentPage === page ? undefined : () => onPageChange(page)}
+            disabled={currentPage === page}
+            className={currentPage === page ? "bg-blue-600 text-white cursor-default" : ""}
+          >
+            {page}
+          </Button>
+        ))}
+
+        {/* Show ellipsis and last page if there are more pages */}
+        {currentPage + 3 < totalPages && (
+          <>
+            <span className="px-2 text-gray-500">...</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(totalPages)}
+            >
+              {totalPages}
+            </Button>
+          </>
+        )}
+
+        {/* Next Button */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          Next
+        </Button>
+
+        {/* Page Dropdown */}
+        <div className="ml-4">
+          <Select
+            value={currentPage.toString()}
+            onValueChange={(value) => onPageChange(parseInt(value))}
+          >
+            <SelectTrigger className="w-20">
+              <SelectValue placeholder={currentPage} />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <SelectItem key={page} value={page.toString()}>
+                  {page}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Page Info */}
+        <span className="ml-4 text-sm text-gray-600">
+          of {totalPages} pages
+        </span>
+      </div>
+    );
+  };
+
   const getAttributeTypeColor = (type) => {
     const colors = {
       text: "bg-blue-100 text-blue-700",
@@ -445,37 +554,8 @@ export default function Attributes() {
               </Card>
             )}
 
-            {/* Attributes Pagination */}
-            {totalAttributePages > 1 && (
-              <div className="flex items-center justify-center space-x-2 mt-8">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAttributePageChange(currentAttributePage - 1)}
-                  disabled={currentAttributePage === 1}
-                >
-                  Previous
-                </Button>
-                {Array.from({ length: totalAttributePages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentAttributePage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleAttributePageChange(page)}
-                  >
-                    {page}
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAttributePageChange(currentAttributePage + 1)}
-                  disabled={currentAttributePage === totalAttributePages}
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+            {/* Enhanced Attributes Pagination */}
+            {renderPagination(currentAttributePage, totalAttributePages, handleAttributePageChange)}
           </TabsContent>
 
           {/* Attribute Sets Tab */}
@@ -598,37 +678,8 @@ export default function Attributes() {
               </Card>
             )}
 
-            {/* Attribute Sets Pagination */}
-            {totalSetPages > 1 && (
-              <div className="flex items-center justify-center space-x-2 mt-8">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSetPageChange(currentSetPage - 1)}
-                  disabled={currentSetPage === 1}
-                >
-                  Previous
-                </Button>
-                {Array.from({ length: totalSetPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentSetPage === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleSetPageChange(page)}
-                  >
-                    {page}
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleSetPageChange(currentSetPage + 1)}
-                  disabled={currentSetPage === totalSetPages}  
-                >
-                  Next
-                </Button>
-              </div>
-            )}
+            {/* Enhanced Attribute Sets Pagination */}
+            {renderPagination(currentSetPage, totalSetPages, handleSetPageChange)}
           </TabsContent>
         </Tabs>
 
