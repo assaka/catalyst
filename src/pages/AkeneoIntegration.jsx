@@ -66,6 +66,17 @@ const AkeneoIntegration = () => {
           ...prev,
           ...responseData.config
         }));
+        
+        // If we have a complete configuration, set configSaved to true
+        const loadedConfig = responseData.config;
+        if (loadedConfig.baseUrl && loadedConfig.clientId && loadedConfig.clientSecret && 
+            loadedConfig.username && loadedConfig.password) {
+          setConfigSaved(true);
+          // Auto-test connection if config is loaded and appears complete
+          if (loadedConfig.clientSecret !== '' && loadedConfig.password !== '') {
+            console.log('Complete configuration loaded, you may want to test the connection');
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load config status:', error);
@@ -93,8 +104,14 @@ const AkeneoIntegration = () => {
   };
 
   const testConnection = async () => {
+    // Check if we have placeholder values - if so, we need actual values
     if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
       toast.error('Please fill in all configuration fields');
+      return;
+    }
+
+    if (config.clientSecret === '••••••••' || config.password === '••••••••') {
+      toast.error('Please enter your actual Client Secret and Password to test the connection');
       return;
     }
 
@@ -137,6 +154,11 @@ const AkeneoIntegration = () => {
   const saveConfiguration = async () => {
     if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
       toast.error('Please fill in all configuration fields');
+      return;
+    }
+
+    if (config.clientSecret === '••••••••' || config.password === '••••••••') {
+      toast.error('Please enter your actual Client Secret and Password to save the configuration');
       return;
     }
 

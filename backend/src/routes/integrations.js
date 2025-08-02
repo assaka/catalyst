@@ -287,40 +287,38 @@ router.get('/akeneo/config-status', storeAuth, async (req, res) => {
       // Config found in database
       const configData = integrationConfig.config_data;
       config = {
-        baseUrl: configData.baseUrl || null,
-        clientId: configData.clientId || null,
-        username: configData.username || null,
-        // Don't expose sensitive data
-        hasClientSecret: !!(configData.clientSecret),
-        hasPassword: !!(configData.password),
+        baseUrl: configData.baseUrl || '',
+        clientId: configData.clientId || '',
+        username: configData.username || '',
+        // Provide placeholder values for sensitive fields if they exist
+        clientSecret: configData.clientSecret ? '••••••••' : '',
+        password: configData.password ? '••••••••' : '',
+        locale: configData.locale || 'en_US',
         lastSync: integrationConfig.last_sync_at,
         syncStatus: integrationConfig.sync_status
       };
-      hasConfig = config.baseUrl && config.clientId && config.hasClientSecret && config.username && config.hasPassword;
+      hasConfig = !!(configData.baseUrl && configData.clientId && configData.clientSecret && configData.username && configData.password);
     } else {
       // Fallback to environment variables for backward compatibility
       config = {
-        baseUrl: process.env.AKENEO_BASE_URL || null,
-        clientId: process.env.AKENEO_CLIENT_ID || null,
-        username: process.env.AKENEO_USERNAME || null,
-        hasClientSecret: !!(process.env.AKENEO_CLIENT_SECRET),
-        hasPassword: !!(process.env.AKENEO_PASSWORD),
+        baseUrl: process.env.AKENEO_BASE_URL || '',
+        clientId: process.env.AKENEO_CLIENT_ID || '',
+        username: process.env.AKENEO_USERNAME || '',
+        // Provide placeholder values for sensitive fields if they exist
+        clientSecret: process.env.AKENEO_CLIENT_SECRET ? '••••••••' : '',
+        password: process.env.AKENEO_PASSWORD ? '••••••••' : '',
+        locale: 'en_US',
         lastSync: null,
         syncStatus: 'idle'
       };
-      hasConfig = config.baseUrl && config.clientId && config.hasClientSecret && config.username && config.hasPassword;
+      hasConfig = !!(process.env.AKENEO_BASE_URL && process.env.AKENEO_CLIENT_ID && process.env.AKENEO_CLIENT_SECRET && process.env.AKENEO_USERNAME && process.env.AKENEO_PASSWORD);
     }
 
     res.json({
       success: true,
       hasConfig,
       source: integrationConfig ? 'database' : 'environment',
-      config: {
-        ...config,
-        // Remove sensitive flags for security
-        hasClientSecret: undefined,
-        hasPassword: undefined
-      }
+      config
     });
   } catch (error) {
     console.error('Error getting Akeneo config status:', error);
