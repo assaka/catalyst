@@ -31,8 +31,10 @@ const AkeneoIntegration = () => {
   // UI state
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
+  const [configSaved, setConfigSaved] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [dryRun, setDryRun] = useState(true);
   const [locales, setLocales] = useState([]);
@@ -74,6 +76,8 @@ const AkeneoIntegration = () => {
       ...prev,
       [field]: value
     }));
+    setConfigSaved(false); // Reset saved status when config changes
+    setConnectionStatus(null); // Reset connection status when config changes
   };
 
   const testConnection = async () => {
@@ -101,6 +105,32 @@ const AkeneoIntegration = () => {
       toast.error(`Connection failed: ${message}`);
     } finally {
       setTesting(false);
+    }
+  };
+
+  const saveConfiguration = async () => {
+    if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
+      toast.error('Please fill in all configuration fields');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const response = await apiClient.post('/integrations/akeneo/save-config', config);
+      
+      if (response.data.success) {
+        toast.success('Configuration saved successfully!');
+        setConfigSaved(true);
+        loadConfigStatus(); // Reload config status
+      } else {
+        toast.error(`Failed to save configuration: ${response.data.message}`);
+      }
+    } catch (error) {
+      const message = error.response?.data?.message || error.message;
+      toast.error(`Save failed: ${message}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -322,7 +352,7 @@ const AkeneoIntegration = () => {
             <CardHeader>
               <CardTitle>Akeneo Configuration</CardTitle>
               <CardDescription>
-                Configure your Akeneo PIM connection settings
+                Configure your Akeneo PIM connection settings. Save your configuration first, then test the connection before importing data.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -400,18 +430,34 @@ const AkeneoIntegration = () => {
               <Separator />
 
               <div className="flex items-center justify-between">
-                <Button 
-                  onClick={testConnection} 
-                  disabled={testing}
-                  className="flex items-center gap-2"
-                >
-                  {testing ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle className="h-4 w-4" />
-                  )}
-                  {testing ? 'Testing...' : 'Test Connection'}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Button 
+                    onClick={saveConfiguration} 
+                    disabled={saving}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    {saving ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Settings className="h-4 w-4" />
+                    )}
+                    {saving ? 'Saving...' : 'Save Configuration'}
+                  </Button>
+
+                  <Button 
+                    onClick={testConnection} 
+                    disabled={testing}
+                    className="flex items-center gap-2"
+                  >
+                    {testing ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                    {testing ? 'Testing...' : 'Test Connection'}
+                  </Button>
+                </div>
 
                 <div className="flex items-center space-x-2">
                   <Switch
@@ -424,6 +470,15 @@ const AkeneoIntegration = () => {
               </div>
 
               {renderConnectionStatus()}
+              
+              {configSaved && (
+                <Alert className="border-blue-200 bg-blue-50 mt-4">
+                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    Configuration has been saved successfully. You can now test the connection or proceed with imports.
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
