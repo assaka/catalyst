@@ -19,16 +19,36 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Wrapper middleware to extract storeId and add it to req
 const storeAuth = (req, res, next) => {
-  // Extract store_id from headers for integration routes
-  if (req.headers['x-store-id']) {
-    req.params.store_id = req.headers['x-store-id'];
+  // Extract store_id from multiple sources for integration routes
+  const storeId = req.headers['x-store-id'] || 
+                  req.body.store_id || 
+                  req.query.store_id ||
+                  req.params.store_id;
+  
+  if (storeId) {
+    req.params.store_id = storeId;
+  }
+  
+  if (!storeId) {
+    return res.status(400).json({
+      success: false,
+      message: 'Store ID is required. Please provide store_id in headers (x-store-id), body, or query parameters.'
+    });
   }
   
   checkStoreOwnership(req, res, (err) => {
     if (err) return next(err);
     
     // Add storeId to req for backward compatibility
-    req.storeId = req.store?.id;
+    req.storeId = req.store?.id || storeId;
+    
+    if (!req.storeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Unable to determine store ID from request'
+      });
+    }
+    
     next();
   });
 };
@@ -142,6 +162,28 @@ router.post('/akeneo/test-connection',
 
     const integration = new AkeneoIntegration(config);
     const result = await integration.testConnection();
+
+    if (!result.success) {
+      // Provide more specific error messages for authentication failures
+      let errorMessage = result.message;
+      
+      if (result.message.includes('401') || result.message.includes('Unauthorized')) {
+        errorMessage = 'Akeneo authentication failed. Please check your credentials (Client ID, Client Secret, Username, and Password).';
+      } else if (result.message.includes('403') || result.message.includes('Forbidden')) {
+        errorMessage = 'Akeneo access denied. Please check if your user has the required permissions.';
+      } else if (result.message.includes('404') || result.message.includes('Not Found')) {
+        errorMessage = 'Akeneo API endpoint not found. Please check your Base URL.';
+      } else if (result.message.includes('ENOTFOUND') || result.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Cannot connect to Akeneo server. Please check your Base URL and network connection.';
+      }
+      
+      return res.status(400).json({
+        success: false,
+        message: 'Akeneo connection test failed',
+        error: errorMessage,
+        details: result.message // Keep original error for debugging
+      });
+    }
 
     res.json(result);
   } catch (error) {
@@ -359,10 +401,24 @@ router.post('/akeneo/save-config',
     const testResult = await integration.testConnection();
     
     if (!testResult.success) {
+      // Provide more specific error messages for authentication failures
+      let errorMessage = testResult.message;
+      
+      if (testResult.message.includes('401') || testResult.message.includes('Unauthorized')) {
+        errorMessage = 'Akeneo authentication failed. Please check your credentials (Client ID, Client Secret, Username, and Password).';
+      } else if (testResult.message.includes('403') || testResult.message.includes('Forbidden')) {
+        errorMessage = 'Akeneo access denied. Please check if your user has the required permissions.';
+      } else if (testResult.message.includes('404') || testResult.message.includes('Not Found')) {
+        errorMessage = 'Akeneo API endpoint not found. Please check your Base URL.';
+      } else if (testResult.message.includes('ENOTFOUND') || testResult.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Cannot connect to Akeneo server. Please check your Base URL and network connection.';
+      }
+      
       return res.status(400).json({
         success: false,
-        message: 'Configuration test failed',
-        error: testResult.message
+        message: 'Akeneo connection test failed - configuration not saved',
+        error: errorMessage,
+        details: testResult.message // Keep original error for debugging
       });
     }
 
