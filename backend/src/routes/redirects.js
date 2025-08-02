@@ -150,4 +150,135 @@ router.delete('/:id', auth, async (req, res) => {
   }
 });
 
+// @route   POST /api/redirects/slug-change
+// @desc    Create redirect when slug changes
+// @access  Private
+router.post('/slug-change', auth, async (req, res) => {
+  try {
+    const {
+      store_id,
+      entity_type,
+      entity_id,
+      old_slug,
+      new_slug,
+      entity_path_prefix // e.g., '/category', '/product', '/page'
+    } = req.body;
+
+    if (!store_id || !entity_type || !entity_id || !old_slug || !new_slug) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'All fields are required for slug change redirect' 
+      });
+    }
+
+    if (old_slug === new_slug) {
+      return res.json({ 
+        success: true,
+        message: 'No redirect needed - slug unchanged' 
+      });
+    }
+
+    const from_url = `${entity_path_prefix}/${old_slug}`;
+    const to_url = `${entity_path_prefix}/${new_slug}`;
+
+    // Check if redirect already exists
+    const existingRedirect = await Redirect.findOne({
+      where: {
+        store_id,
+        from_url
+      }
+    });
+
+    if (existingRedirect) {
+      // Update existing redirect to point to new URL
+      await existingRedirect.update({
+        to_url,
+        notes: `Auto-updated redirect due to ${entity_type} slug change from "${old_slug}" to "${new_slug}"`
+      });
+      
+      res.json({ 
+        success: true,
+        message: 'Updated existing redirect',
+        redirect: existingRedirect 
+      });
+    } else {
+      // Create new redirect
+      const redirect = await Redirect.create({
+        store_id,
+        from_url,
+        to_url,
+        type: '301',
+        entity_type,
+        entity_id,
+        created_by: req.user.id,
+        notes: `Auto-created redirect due to ${entity_type} slug change from "${old_slug}" to "${new_slug}"`
+      });
+
+      res.status(201).json({ 
+        success: true,
+        message: 'Created new redirect',
+        redirect 
+      });
+    }
+  } catch (error) {
+    console.error('Error creating slug change redirect:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to create slug change redirect' 
+    });
+  }
+});
+
+// @route   GET /api/redirects/check
+// @desc    Check for redirect (for storefront use)
+// @access  Public
+router.get('/check', async (req, res) => {
+  try {
+    const { store_id, path } = req.query;
+    
+    if (!store_id || !path) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'store_id and path are required' 
+      });
+    }
+
+    const redirect = await Redirect.findOne({
+      where: {
+        store_id,
+        from_url: path,
+        is_active: true
+      }
+    });
+
+    if (redirect) {
+      // Update hit count and last used timestamp if fields exist
+      if (redirect.hit_count !== undefined) {
+        await redirect.increment('hit_count');
+      }
+      if (redirect.last_used_at !== undefined) {
+        await redirect.update({ last_used_at: new Date() });
+      }
+      
+      res.json({
+        success: true,
+        found: true,
+        to_url: redirect.to_url,
+        type: redirect.type
+      });
+    } else {
+      res.json({ 
+        success: true,
+        found: false 
+      });
+    }
+  } catch (error) {
+    console.error('Error checking redirect:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to check redirect' 
+    });
+  }
+});
+
 module.exports = router;

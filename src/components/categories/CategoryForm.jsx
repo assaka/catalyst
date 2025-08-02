@@ -12,15 +12,18 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Upload, Search } from "lucide-react";
+import { Upload, Search, AlertTriangle } from "lucide-react";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 
 export default function CategoryForm({ category, onSubmit, onCancel, parentCategories }) {
+  const { getSelectedStoreId } = useStoreSelection();
   const [formData, setFormData] = useState({
     name: "",
     slug: "",
@@ -37,10 +40,13 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     meta_robots_tag: "index, follow" // Default value
   });
   const [loading, setLoading] = useState(false);
+  const [originalSlug, setOriginalSlug] = useState("");
+  const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
+  const [createRedirect, setCreateRedirect] = useState(true);
 
   useEffect(() => {
     if (category) {
-      setFormData({
+      const categoryData = {
         name: category.name || "",
         slug: category.slug || "",
         description: category.description || "",
@@ -54,7 +60,9 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         meta_description: category.meta_description || "",
         meta_keywords: category.meta_keywords || "",
         meta_robots_tag: category.meta_robots_tag || "index, follow"
-      });
+      };
+      setFormData(categoryData);
+      setOriginalSlug(category.slug || "");
     }
   }, [category]);
 
@@ -73,9 +81,58 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/(^-|-$)/g, '');
         newState.slug = generatedSlug;
+        
+        // Check if this is an edit and slug will change
+        if (category && originalSlug && generatedSlug !== originalSlug) {
+          setShowSlugChangeWarning(true);
+        }
       }
+      
+      // Direct slug edit
+      if (name === "slug" && category && originalSlug && value !== originalSlug) {
+        setShowSlugChangeWarning(true);
+      } else if (name === "slug" && value === originalSlug) {
+        setShowSlugChangeWarning(false);
+      }
+      
       return newState;
     });
+  };
+
+  const createRedirectForSlugChange = async () => {
+    if (!category || !originalSlug || formData.slug === originalSlug) {
+      return;
+    }
+
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      const response = await fetch('/api/redirects/slug-change', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          store_id: storeId,
+          entity_type: 'category',
+          entity_id: category.id,
+          old_slug: originalSlug,
+          new_slug: formData.slug,
+          entity_path_prefix: '/category'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Redirect created:', result.message);
+      } else {
+        console.error('Failed to create redirect:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error creating redirect:', error);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -89,6 +146,11 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         // Convert empty string to null for UUID fields
         parent_id: formData.parent_id || null
       };
+
+      // Create redirect before updating if slug changed and user opted in
+      if (showSlugChangeWarning && createRedirect) {
+        await createRedirectForSlugChange();
+      }
 
       await onSubmit(submitData);
     } catch (error) {
@@ -125,6 +187,39 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
           />
         </div>
       </div>
+
+      {showSlugChangeWarning && (
+        <Alert className="border-amber-200 bg-amber-50">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            <div className="space-y-3">
+              <div>
+                <strong>URL Slug Change Detected</strong>
+                <p className="text-sm mt-1">
+                  Changing the URL slug from "<code className="bg-amber-100 px-1 rounded">{originalSlug}</code>" to 
+                  "<code className="bg-amber-100 px-1 rounded">{formData.slug}</code>" will change the category's URL.
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="create-redirect"
+                  checked={createRedirect}
+                  onCheckedChange={setCreateRedirect}
+                />
+                <Label htmlFor="create-redirect" className="text-sm font-medium">
+                  Create automatic redirect from old URL to new URL (Recommended)
+                </Label>
+              </div>
+              <p className="text-xs text-amber-700">
+                {createRedirect 
+                  ? "✅ A redirect will be created to prevent broken links and maintain SEO."
+                  : "⚠️ No redirect will be created. Visitors to the old URL will see a 404 error."
+                }
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div>
         <Label htmlFor="description">Description</Label>

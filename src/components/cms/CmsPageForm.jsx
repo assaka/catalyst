@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { X, Plus, Search } from "lucide-react"; // Added Search icon
+import { X, Plus, Search, AlertTriangle } from "lucide-react"; // Added Search icon
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion, // Added Accordion components
@@ -20,9 +20,16 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "@/components/ui/accordion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 
 // Ensure 'products' is part of the props as it's used in the component
 export default function CmsPageForm({ page, stores, products, onSubmit, onCancel }) {
+  const { getSelectedStoreId } = useStoreSelection();
+  const [originalSlug, setOriginalSlug] = useState("");
+  const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
+  const [createRedirect, setCreateRedirect] = useState(true);
+  
   const [formData, setFormData] = useState({
     title: "",
     slug: "",
@@ -52,6 +59,9 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         meta_keywords: page.meta_keywords || "",
         meta_robots_tag: page.meta_robots_tag || "index, follow"
       });
+      
+      // Set original slug for slug change detection
+      setOriginalSlug(page.slug || "");
     } else {
       // For new pages, ensure store_id is pre-selected if stores exist
       // Other fields will retain their initial useState defaults.
@@ -70,10 +80,28 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       // Special handling for title to update slug
       if (field === 'title') {
         const newSlug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        
+        // Check if this is an edit and slug will change
+        if (page && originalSlug && newSlug !== originalSlug) {
+          setShowSlugChangeWarning(true);
+        }
+        
         setFormData(prev => ({
           ...prev,
           title: val,
           slug: newSlug,
+        }));
+      } else if (field === 'slug') {
+        // Direct slug edit
+        if (page && originalSlug && val !== originalSlug) {
+          setShowSlugChangeWarning(true);
+        } else if (val === originalSlug) {
+          setShowSlugChangeWarning(false);
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          [field]: val,
         }));
       } else {
         setFormData(prev => ({
@@ -83,6 +111,14 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       }
     } else { // New signature: handleInputChange(e) for named inputs
       const { name, value } = eOrField.target;
+      
+      // Check for slug changes in event handler
+      if (name === 'slug' && page && originalSlug && value !== originalSlug) {
+        setShowSlugChangeWarning(true);
+      } else if (name === 'slug' && value === originalSlug) {
+        setShowSlugChangeWarning(false);
+      }
+      
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
@@ -96,8 +132,50 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
     });
   };
 
-  const handleSubmit = (e) => {
+  const createRedirectForSlugChange = async () => {
+    if (!page || !originalSlug || formData.slug === originalSlug) {
+      return;
+    }
+
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      const response = await fetch('/api/redirects/slug-change', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          store_id: storeId,
+          entity_type: 'cms_page',
+          entity_id: page.id,
+          old_slug: originalSlug,
+          new_slug: formData.slug,
+          entity_path_prefix: '/page'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Redirect created:', result.message);
+      } else {
+        console.error('Failed to create redirect:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error creating redirect:', error);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Create redirect before updating if slug changed and user opted in
+    if (showSlugChangeWarning && createRedirect) {
+      await createRedirectForSlugChange();
+    }
+    
     onSubmit(formData);
   };
 
@@ -125,6 +203,39 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
           />
         </div>
       </div>
+
+      {showSlugChangeWarning && (
+        <Alert className="border-amber-200 bg-amber-50">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            <div className="space-y-3">
+              <div>
+                <strong>URL Slug Change Detected</strong>
+                <p className="text-sm mt-1">
+                  Changing the URL slug from "<code className="bg-amber-100 px-1 rounded">{originalSlug}</code>" to 
+                  "<code className="bg-amber-100 px-1 rounded">{formData.slug}</code>" will change the page's URL.
+                </p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="create-redirect-cms"
+                  checked={createRedirect}
+                  onCheckedChange={setCreateRedirect}
+                />
+                <Label htmlFor="create-redirect-cms" className="text-sm font-medium">
+                  Create automatic redirect from old URL to new URL (Recommended)
+                </Label>
+              </div>
+              <p className="text-xs text-amber-700">
+                {createRedirect 
+                  ? "✅ A redirect will be created to prevent broken links and maintain SEO."
+                  : "⚠️ No redirect will be created. Visitors to the old URL will see a 404 error."
+                }
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <div>
         <Label htmlFor="content">Content (HTML)</Label>

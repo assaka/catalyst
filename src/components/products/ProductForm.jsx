@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { X, Upload, Search } from "lucide-react"; // Added Search icon
+import { X, Upload, Search, AlertTriangle } from "lucide-react"; // Added Search icon
 import { UploadFile } from "@/api/integrations";
 import FlashMessage from "../storefront/FlashMessage";
 import {
@@ -18,6 +18,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -36,8 +37,11 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 1000) => {
 };
 
 export default function ProductForm({ product, categories, stores, taxes, attributes: passedAttributes, attributeSets: passedAttributeSets, onSubmit, onCancel }) {
-  const { selectedStore } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [flashMessage, setFlashMessage] = useState(null);
+  const [originalUrlKey, setOriginalUrlKey] = useState("");
+  const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
+  const [createRedirect, setCreateRedirect] = useState(true);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -121,6 +125,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         tags: Array.isArray(product.tags) ? product.tags : [],
         featured: product.featured || false
       });
+      
+      // Set original URL key for slug change detection
+      setOriginalUrlKey(product.seo?.url_key || "");
     } else {
         // Reset form for new product
         setFormData({
@@ -186,6 +193,14 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
   const handleSeoChange = (e) => {
     const { name, value } = e.target;
+    
+    // Check for URL key changes to show redirect warning
+    if (name === 'seo.url_key' && product && originalUrlKey && value !== originalUrlKey) {
+      setShowSlugChangeWarning(true);
+    } else if (name === 'seo.url_key' && value === originalUrlKey) {
+      setShowSlugChangeWarning(false);
+    }
+    
     handleInputChange(name, value);
   };
 
@@ -257,6 +272,42 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
   };
 
+  const createRedirectForSlugChange = async () => {
+    if (!product || !originalUrlKey || formData.seo.url_key === originalUrlKey) {
+      return;
+    }
+
+    try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) return;
+
+      const response = await fetch('/api/redirects/slug-change', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          store_id: storeId,
+          entity_type: 'product',
+          entity_id: product.id,
+          old_slug: originalUrlKey,
+          new_slug: formData.seo.url_key,
+          entity_path_prefix: '/product'
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Redirect created:', result.message);
+      } else {
+        console.error('Failed to create redirect:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error creating redirect:', error);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -315,6 +366,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
       if (product) {
         payload.id = product.id;
+      }
+
+      // Create redirect before updating if URL key changed and user opted in
+      if (showSlugChangeWarning && createRedirect) {
+        await createRedirectForSlugChange();
       }
 
       await onSubmit(payload);
@@ -818,6 +874,39 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 />
                 <p className="text-xs text-gray-500 mt-1">Leave empty to auto-generate from product name</p>
               </div>
+
+              {showSlugChangeWarning && (
+                <Alert className="border-amber-200 bg-amber-50">
+                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                  <AlertDescription className="text-amber-800">
+                    <div className="space-y-3">
+                      <div>
+                        <strong>URL Key Change Detected</strong>
+                        <p className="text-sm mt-1">
+                          Changing the URL key from "<code className="bg-amber-100 px-1 rounded">{originalUrlKey}</code>" to 
+                          "<code className="bg-amber-100 px-1 rounded">{formData.seo.url_key}</code>" will change the product's URL.
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="create-redirect-product"
+                          checked={createRedirect}
+                          onCheckedChange={setCreateRedirect}
+                        />
+                        <Label htmlFor="create-redirect-product" className="text-sm font-medium">
+                          Create automatic redirect from old URL to new URL (Recommended)
+                        </Label>
+                      </div>
+                      <p className="text-xs text-amber-700">
+                        {createRedirect 
+                          ? "✅ A redirect will be created to prevent broken links and maintain SEO."
+                          : "⚠️ No redirect will be created. Visitors to the old URL will see a 404 error."
+                        }
+                      </p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
             </AccordionContent>
           </AccordionItem>
         </Accordion>
