@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
 import { User } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import { clearStorefrontCache } from '@/utils/cacheUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -82,6 +83,8 @@ export default function AnalyticsSettings() {
         setSaving(true);
         try {
             await retryApiCall(() => Store.update(storeId, { settings: store.settings }));
+            // Clear storefront cache for instant updates
+            clearStorefrontCache(storeId, ['stores']);
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
         } catch (error) {
             console.error("Failed to save settings:", error);
