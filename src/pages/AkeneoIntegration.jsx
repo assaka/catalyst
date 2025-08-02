@@ -1152,9 +1152,6 @@ const AkeneoIntegration = () => {
                     disabled={false}
                   />
                   <Label htmlFor="dry-run" className="cursor-pointer">Dry Run</Label>
-                  <span className="text-sm text-gray-500">
-                    ({dryRun ? 'Preview only' : 'Live import'})
-                  </span>
                 </div>
               </div>
 
@@ -1682,6 +1679,15 @@ const AkeneoIntegration = () => {
                 </AlertDescription>
               </Alert>
 
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="categories-dry-run" 
+                  checked={dryRun} 
+                  onCheckedChange={handleDryRunChange}
+                />
+                <Label htmlFor="categories-dry-run">Dry Run (Preview only)</Label>
+              </div>
+
               <div className="flex items-center gap-4">
                 <Button 
                   onClick={importCategories} 
@@ -1695,10 +1701,6 @@ const AkeneoIntegration = () => {
                   )}
                   {importing ? 'Importing...' : 'Import Categories'}
                 </Button>
-
-                {dryRun && (
-                  <Badge variant="outline">Dry Run Mode</Badge>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -1728,6 +1730,15 @@ const AkeneoIntegration = () => {
                 </AlertDescription>
               </Alert>
 
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="products-dry-run" 
+                  checked={dryRun} 
+                  onCheckedChange={handleDryRunChange}
+                />
+                <Label htmlFor="products-dry-run">Dry Run (Preview only)</Label>
+              </div>
+
               <div className="flex items-center gap-4">
                 <Button 
                   onClick={importProducts} 
@@ -1741,24 +1752,6 @@ const AkeneoIntegration = () => {
                   )}
                   {importing ? 'Importing...' : 'Import Products'}
                 </Button>
-
-                <Button 
-                  onClick={importAll} 
-                  disabled={importing || !connectionStatus?.success}
-                  variant="outline"
-                  className="flex items-center gap-2"
-                >
-                  {importing ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
-                  )}
-                  {importing ? 'Importing...' : 'Import All (Categories + Products)'}
-                </Button>
-
-                {dryRun && (
-                  <Badge variant="outline">Dry Run Mode</Badge>
-                )}
               </div>
             </CardContent>
           </Card>
