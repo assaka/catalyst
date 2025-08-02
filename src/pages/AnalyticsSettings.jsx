@@ -13,20 +13,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Save, BarChart3, Bot, Shield, Upload } from 'lucide-react';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
-const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
-    for (let i = 0; i < maxRetries; i++) {
-        try {
-            console.log(`🔄 AnalyticsSettings: API attempt ${i + 1}/${maxRetries}`);
-            const result = await apiCall();
-            console.log(`✅ AnalyticsSettings: API attempt ${i + 1} succeeded`);
-            return result;
-        } catch (error) {
-            console.log(`❌ AnalyticsSettings: API attempt ${i + 1} failed:`, error.message);
-            if (i === maxRetries - 1) throw error;
-            await new Promise(res => setTimeout(res, delay));
-        }
-    }
-};
 
 export default function AnalyticsSettings() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -42,13 +28,7 @@ export default function AnalyticsSettings() {
                     setLoading(false);
                     return;
                 }
-                console.log('🔍 AnalyticsSettings: Loading store data:', {
-                    selectedStore: selectedStore,
-                    existing_analytics_settings: selectedStore.settings?.analytics_settings,
-                    full_settings: selectedStore.settings
-                });
-                
-                const newStore = {
+                setStore({
                     ...selectedStore,
                     settings: {
                         ...(selectedStore.settings || {}),
@@ -61,14 +41,7 @@ export default function AnalyticsSettings() {
                             ...(selectedStore.settings?.analytics_settings || {})
                         }
                     }
-                };
-                
-                console.log('🔧 AnalyticsSettings: Final store state:', {
-                    analytics_settings: newStore.settings.analytics_settings,
-                    full_settings: newStore.settings
                 });
-                
-                setStore(newStore);
             } catch (error) {
                 console.error("Failed to load store:", error);
                 setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
@@ -99,30 +72,12 @@ export default function AnalyticsSettings() {
         if (!storeId || !store) return;
         setSaving(true);
         try {
-            console.log('🔍 AnalyticsSettings: Saving with payload:', {
-                storeId,
-                analytics_settings: store.settings.analytics_settings,
-                full_settings: store.settings
-            });
-            
-            console.log('⏱️ AnalyticsSettings: Starting API call...');
-            
-            // Try a minimal test first
-            console.log('🧪 AnalyticsSettings: Testing minimal store update...');
-            const testResult = await Store.update(storeId, { name: store.name });
-            console.log('✅ AnalyticsSettings: Test result:', testResult);
-            
-            // Now try the full settings save
-            console.log('🔄 AnalyticsSettings: Making direct Store.update call with settings...');
-            const result = await Store.update(storeId, { settings: store.settings });
-            console.log('✅ AnalyticsSettings: Save result:', result);
-            
+            await Store.update(storeId, { settings: store.settings });
             // Clear storefront cache for instant updates
             clearStorefrontCache(storeId, ['stores']);
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
         } catch (error) {
-            console.error("❌ AnalyticsSettings: Failed to save settings:", error);
-            console.error("❌ Error details:", error.response?.data || error.message);
+            console.error("Failed to save settings:", error);
             setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
         } finally {
             setSaving(false);
