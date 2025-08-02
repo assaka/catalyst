@@ -261,22 +261,32 @@ const AkeneoIntegration = () => {
   };
 
   const importCategories = async () => {
+    console.log('📦 Starting categories import...');
+    console.log('🔗 Connection status:', connectionStatus);
+    
     if (!connectionStatus?.success) {
+      console.error('❌ Connection not tested or failed');
       toast.error('Please test the connection first');
       return;
     }
 
     // Get store_id from localStorage
     const storeId = localStorage.getItem('selectedStoreId');
+    console.log('🏪 Using store ID:', storeId);
+    
     if (!storeId) {
+      console.error('❌ No store selected');
       toast.error('No store selected. Please select a store first.');
       return;
     }
+
+    console.log('🔧 Import settings:', { dryRun, config });
 
     setImporting(true);
     setImportResults(null);
 
     try {
+      console.log('📡 Making API call to import-categories...');
       const response = await apiClient.post('/integrations/akeneo/import-categories', {
         ...config,
         dryRun
@@ -284,18 +294,32 @@ const AkeneoIntegration = () => {
         'x-store-id': storeId
       });
 
-      setImportResults(response.data);
+      console.log('📥 Import categories response:', response);
       
-      if (response.data.success) {
-        toast.success(`Categories import completed! ${response.data.stats.imported} categories imported`);
+      const responseData = response.data || response;
+      setImportResults(responseData);
+      
+      if (responseData.success) {
+        console.log('✅ Categories import successful');
+        const stats = responseData.stats;
+        toast.success(`Categories import completed! ${stats?.imported || 0} categories imported`);
       } else {
-        toast.error(`Categories import failed: ${response.data.error}`);
+        console.log('❌ Categories import failed:', responseData.error);
+        toast.error(`Categories import failed: ${responseData.error}`);
       }
     } catch (error) {
+      console.error('❌ Categories import error:', error);
+      console.error('📊 Error details:', {
+        status: error.status,
+        message: error.message,
+        response: error.response?.data
+      });
+      
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setImportResults({ success: false, error: message });
       toast.error(`Import failed: ${message}`);
     } finally {
+      console.log('🏁 Categories import completed');
       setImporting(false);
     }
   };
