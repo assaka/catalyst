@@ -48,7 +48,16 @@ const AkeneoIntegration = () => {
 
   const loadConfigStatus = async () => {
     try {
-      const response = await apiClient.get('/integrations/akeneo/config-status');
+      // Get store_id from localStorage
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (!storeId) {
+        console.warn('No store selected, skipping config status load');
+        return;
+      }
+
+      const response = await apiClient.get('/integrations/akeneo/config-status', {
+        'x-store-id': storeId
+      });
       if (response.data.success && response.data.config) {
         setConfig(prev => ({
           ...prev,
@@ -86,11 +95,20 @@ const AkeneoIntegration = () => {
       return;
     }
 
+    // Get store_id from localStorage
+    const storeId = localStorage.getItem('selectedStoreId');
+    if (!storeId) {
+      toast.error('No store selected. Please select a store first.');
+      return;
+    }
+
     setTesting(true);
     setConnectionStatus(null);
 
     try {
-      const response = await apiClient.post('/integrations/akeneo/test-connection', config);
+      const response = await apiClient.post('/integrations/akeneo/test-connection', config, {
+        'x-store-id': storeId
+      });
       
       if (response.data.success) {
         setConnectionStatus({ success: true, message: response.data.message });
@@ -100,7 +118,7 @@ const AkeneoIntegration = () => {
         toast.error('Connection failed');
       }
     } catch (error) {
-      const message = error.response?.data?.message || error.message;
+      const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setConnectionStatus({ success: false, message });
       toast.error(`Connection failed: ${message}`);
     } finally {
@@ -114,10 +132,19 @@ const AkeneoIntegration = () => {
       return;
     }
 
+    // Get store_id from localStorage
+    const storeId = localStorage.getItem('selectedStoreId');
+    if (!storeId) {
+      toast.error('No store selected. Please select a store first.');
+      return;
+    }
+
     setSaving(true);
 
     try {
-      const response = await apiClient.post('/integrations/akeneo/save-config', config);
+      const response = await apiClient.post('/integrations/akeneo/save-config', config, {
+        'x-store-id': storeId
+      });
       
       if (response.data.success) {
         toast.success('Configuration saved successfully!');
@@ -127,7 +154,7 @@ const AkeneoIntegration = () => {
         toast.error(`Failed to save configuration: ${response.data.message}`);
       }
     } catch (error) {
-      const message = error.response?.data?.message || error.message;
+      const message = error.response?.data?.error || error.response?.data?.message || error.message;
       toast.error(`Save failed: ${message}`);
     } finally {
       setSaving(false);
@@ -140,6 +167,13 @@ const AkeneoIntegration = () => {
       return;
     }
 
+    // Get store_id from localStorage
+    const storeId = localStorage.getItem('selectedStoreId');
+    if (!storeId) {
+      toast.error('No store selected. Please select a store first.');
+      return;
+    }
+
     setImporting(true);
     setImportResults(null);
 
@@ -147,6 +181,8 @@ const AkeneoIntegration = () => {
       const response = await apiClient.post('/integrations/akeneo/import-categories', {
         ...config,
         dryRun
+      }, {
+        'x-store-id': storeId
       });
 
       setImportResults(response.data);
@@ -157,7 +193,7 @@ const AkeneoIntegration = () => {
         toast.error(`Categories import failed: ${response.data.error}`);
       }
     } catch (error) {
-      const message = error.response?.data?.message || error.message;
+      const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setImportResults({ success: false, error: message });
       toast.error(`Import failed: ${message}`);
     } finally {
@@ -171,6 +207,13 @@ const AkeneoIntegration = () => {
       return;
     }
 
+    // Get store_id from localStorage
+    const storeId = localStorage.getItem('selectedStoreId');
+    if (!storeId) {
+      toast.error('No store selected. Please select a store first.');
+      return;
+    }
+
     setImporting(true);
     setImportResults(null);
 
@@ -178,6 +221,8 @@ const AkeneoIntegration = () => {
       const response = await apiClient.post('/integrations/akeneo/import-products', {
         ...config,
         dryRun
+      }, {
+        'x-store-id': storeId
       });
 
       setImportResults(response.data);
@@ -188,7 +233,7 @@ const AkeneoIntegration = () => {
         toast.error(`Products import failed: ${response.data.error}`);
       }
     } catch (error) {
-      const message = error.response?.data?.message || error.message;
+      const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setImportResults({ success: false, error: message });
       toast.error(`Import failed: ${message}`);
     } finally {
@@ -202,6 +247,13 @@ const AkeneoIntegration = () => {
       return;
     }
 
+    // Get store_id from localStorage
+    const storeId = localStorage.getItem('selectedStoreId');
+    if (!storeId) {
+      toast.error('No store selected. Please select a store first.');
+      return;
+    }
+
     setImporting(true);
     setImportResults(null);
 
@@ -209,6 +261,8 @@ const AkeneoIntegration = () => {
       const response = await apiClient.post('/integrations/akeneo/import-all', {
         ...config,
         dryRun
+      }, {
+        'x-store-id': storeId
       });
 
       setImportResults(response.data);
@@ -221,7 +275,7 @@ const AkeneoIntegration = () => {
         toast.error(`Import failed: ${response.data.error}`);
       }
     } catch (error) {
-      const message = error.response?.data?.message || error.message;
+      const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setImportResults({ success: false, error: message });
       toast.error(`Import failed: ${message}`);
     } finally {
