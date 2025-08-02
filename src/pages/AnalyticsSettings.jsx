@@ -30,15 +30,10 @@ export default function AnalyticsSettings() {
                 }
                 
                 // Fetch complete store data with settings from API
-                console.log('🔍 AnalyticsSettings: Fetching store with ID:', selectedStore.id);
                 const fullStoreData = await Store.findById(selectedStore.id);
-                console.log('🔍 AnalyticsSettings: Received store data:', fullStoreData);
                 
                 // Handle the case where findById returns an array
                 const storeData = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
-                console.log('🔍 AnalyticsSettings: Processed store data:', storeData);
-                console.log('🔍 AnalyticsSettings: Store settings:', storeData?.settings);
-                console.log('🔍 AnalyticsSettings: Analytics settings:', storeData?.settings?.analytics_settings);
                 
                 setStore({
                     ...selectedStore,
@@ -183,10 +178,19 @@ export default function AnalyticsSettings() {
                                     placeholder="GTM-XXXXXX"
                                 />
                                 <p className="text-sm text-gray-500 mt-1">Your Google Tag Manager container ID</p>
+                                
+                                <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
+                                    <p className="font-medium text-blue-900 mb-2">📍 How GTM is implemented:</p>
+                                    <ul className="space-y-1 text-blue-800">
+                                        <li>• <strong>Head section:</strong> The main GTM JavaScript code is automatically added to <code className="px-1 py-0.5 bg-blue-100 rounded">&lt;head&gt;</code></li>
+                                        <li>• <strong>Body section:</strong> A <code className="px-1 py-0.5 bg-blue-100 rounded">&lt;noscript&gt;</code> fallback is automatically added after <code className="px-1 py-0.5 bg-blue-100 rounded">&lt;body&gt;</code> opening tag</li>
+                                        <li>• <strong>No manual placement needed:</strong> Just enter your GTM ID and everything is handled automatically</li>
+                                    </ul>
+                                </div>
                             </div>
                         ) : (
                             <div>
-                                <Label htmlFor="custom_gtm_script">Custom GTM Script</Label>
+                                <Label htmlFor="custom_gtm_script">Custom GTM Script (Head Section Only)</Label>
                                 <Textarea
                                     id="custom_gtm_script"
                                     value={store.settings.analytics_settings.custom_gtm_script || ''}
@@ -198,6 +202,15 @@ export default function AnalyticsSettings() {
                                 <p className="text-sm text-gray-500 mt-1">
                                     Complete GTM script for server-side tagging. Replace the GTM endpoint with your server-side tagging URL for first-party data collection.
                                 </p>
+                                
+                                <div className="mt-3 p-3 bg-yellow-50 rounded-lg text-sm">
+                                    <p className="font-medium text-yellow-900 mb-2">⚠️ Important for Custom GTM Scripts:</p>
+                                    <ul className="space-y-1 text-yellow-800">
+                                        <li>• <strong>Only include the head script here</strong> - This will be placed in <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;head&gt;</code></li>
+                                        <li>• <strong>Do NOT include the noscript tag</strong> - If needed, add it manually to your theme</li>
+                                        <li>• <strong>For body scripts:</strong> Add the <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;noscript&gt;</code> iframe directly in your storefront theme after the <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;body&gt;</code> tag</li>
+                                    </ul>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -207,6 +220,17 @@ export default function AnalyticsSettings() {
                     <Label htmlFor="google_ads_id">Google Ads ID</Label>
                     <Input id="google_ads_id" value={store.settings.analytics_settings.google_ads_id} onChange={(e) => handleAnalyticsChange('google_ads_id', e.target.value)} placeholder="AW-XXXXXXXXX" />
                     <p className="text-sm text-gray-500 mt-1">For conversion tracking and remarketing.</p>
+                    
+                    {store.settings.analytics_settings.google_ads_id && (
+                        <div className="mt-3 p-3 bg-green-50 rounded-lg text-sm">
+                            <p className="font-medium text-green-900 mb-2">✅ Google Ads Implementation:</p>
+                            <ul className="space-y-1 text-green-800">
+                                <li>• <strong>Head section:</strong> Both the gtag.js library and configuration scripts are added to <code className="px-1 py-0.5 bg-green-100 rounded">&lt;head&gt;</code></li>
+                                <li>• <strong>Automatic setup:</strong> No manual placement needed - just enter your Google Ads ID</li>
+                                <li>• <strong>Works with GTM:</strong> Can be used alongside Google Tag Manager without conflicts</li>
+                            </ul>
+                        </div>
+                    )}
                 </div>
             </CardContent>
         </Card>
