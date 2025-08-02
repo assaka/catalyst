@@ -633,27 +633,29 @@ export default function Layout({ children, currentPageName }) {
           </Button>
         </div>
 
-        <div className="p-6">
-          <div className="mb-6">
-            <div className="flex items-center space-x-3 mb-2">
-              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                <span className="text-sm font-medium text-gray-600">
-                  {user?.full_name?.charAt(0) || 'U'}
-                </span>
+        <div className="flex flex-col h-full">
+          <div className="p-6 flex-shrink-0">
+            <div className="mb-6">
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                  <span className="text-sm font-medium text-gray-600">
+                    {user?.full_name?.charAt(0) || 'U'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user?.first_name || user?.full_name || user?.name || user?.email} ({user?.role})
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {user?.first_name || user?.full_name || user?.name || user?.email} ({user?.role})
-                </p>
-                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+               <div className="text-sm text-gray-600 mt-2">
+                  Credits: <span className="font-bold text-gray-900">{user?.credits || 0}</span>
               </div>
-            </div>
-             <div className="text-sm text-gray-600 mt-2">
-                Credits: <span className="font-bold text-gray-900">{user?.credits || 0}</span>
             </div>
           </div>
 
-          <nav className="space-y-1">
+          <nav className="flex-1 overflow-y-auto px-6 pb-6 space-y-1">
             {navigationGroups.map((group) => (
               <Collapsible key={group.name} open={openGroups[group.name]} onOpenChange={() => toggleGroup(group.name)}>
                 <CollapsibleTrigger asChild>
