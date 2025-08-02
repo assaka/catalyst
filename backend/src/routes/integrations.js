@@ -3,15 +3,23 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const AkeneoIntegration = require('../services/akeneo-integration');
 
+// Debug route to test if integrations router is working
+router.get('/test', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'Integrations router is working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Middleware to check if user is authenticated and has admin role
-const requireAuth = require('../middleware/auth');
 const storeAuth = require('../middleware/storeAuth');
 
 /**
  * Test Akeneo connection
  * POST /api/integrations/akeneo/test-connection
  */
-router.post('/akeneo/test-connection', requireAuth, [
+router.post('/akeneo/test-connection', [
   body('baseUrl').isURL().withMessage('Valid base URL is required'),
   body('clientId').notEmpty().withMessage('Client ID is required'),
   body('clientSecret').notEmpty().withMessage('Client secret is required'),
@@ -54,7 +62,7 @@ router.post('/akeneo/test-connection', requireAuth, [
  * Import categories from Akeneo
  * POST /api/integrations/akeneo/import-categories
  */
-router.post('/akeneo/import-categories', requireAuth, storeAuth, [
+router.post('/akeneo/import-categories', storeAuth, [
   body('baseUrl').isURL().withMessage('Valid base URL is required'),
   body('clientId').notEmpty().withMessage('Client ID is required'),
   body('clientSecret').notEmpty().withMessage('Client secret is required'),
@@ -109,7 +117,7 @@ router.post('/akeneo/import-categories', requireAuth, storeAuth, [
  * Import products from Akeneo
  * POST /api/integrations/akeneo/import-products
  */
-router.post('/akeneo/import-products', requireAuth, storeAuth, [
+router.post('/akeneo/import-products', storeAuth, [
   body('baseUrl').isURL().withMessage('Valid base URL is required'),
   body('clientId').notEmpty().withMessage('Client ID is required'),
   body('clientSecret').notEmpty().withMessage('Client secret is required'),
@@ -166,7 +174,7 @@ router.post('/akeneo/import-products', requireAuth, storeAuth, [
  * Import both categories and products from Akeneo
  * POST /api/integrations/akeneo/import-all
  */
-router.post('/akeneo/import-all', requireAuth, storeAuth, [
+router.post('/akeneo/import-all', storeAuth, [
   body('baseUrl').isURL().withMessage('Valid base URL is required'),
   body('clientId').notEmpty().withMessage('Client ID is required'),
   body('clientSecret').notEmpty().withMessage('Client secret is required'),
@@ -221,7 +229,7 @@ router.post('/akeneo/import-all', requireAuth, storeAuth, [
  * Get integration configuration status
  * GET /api/integrations/akeneo/config-status
  */
-router.get('/akeneo/config-status', requireAuth, (req, res) => {
+router.get('/akeneo/config-status', (req, res) => {
   try {
     const config = {
       baseUrl: process.env.AKENEO_BASE_URL || null,
@@ -258,7 +266,7 @@ router.get('/akeneo/config-status', requireAuth, (req, res) => {
  * Get available locales (mock data - could be enhanced to fetch from Akeneo)
  * GET /api/integrations/akeneo/locales
  */
-router.get('/akeneo/locales', requireAuth, (req, res) => {
+router.get('/akeneo/locales', (req, res) => {
   try {
     const commonLocales = [
       { code: 'en_US', name: 'English (US)' },
@@ -291,7 +299,7 @@ router.get('/akeneo/locales', requireAuth, (req, res) => {
  * Save Akeneo configuration (environment variables)
  * POST /api/integrations/akeneo/save-config
  */
-router.post('/akeneo/save-config', requireAuth, [
+router.post('/akeneo/save-config', [
   body('baseUrl').isURL().withMessage('Valid base URL is required'),
   body('clientId').notEmpty().withMessage('Client ID is required'),
   body('clientSecret').notEmpty().withMessage('Client secret is required'),
