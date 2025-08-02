@@ -6,7 +6,7 @@ const router = express.Router();
 // Basic CRUD operations for attributes
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id } = req.query;
+    const { page = 1, limit = 100, store_id, search } = req.query;
     const offset = (page - 1) * limit;
     
     // Check if this is a public request
@@ -34,6 +34,14 @@ router.get('/', async (req, res) => {
       }
       
       if (store_id) where.store_id = store_id;
+    }
+
+    // Add search functionality
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { code: { [Op.iLike]: `%${search}%` } }
+      ];
     }
 
     const { count, rows } = await Attribute.findAndCountAll({

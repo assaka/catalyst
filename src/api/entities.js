@@ -150,9 +150,18 @@ class BaseEntity {
         
         // Check if response has pagination structure
         if (response && response.success && response.data) {
-          const entityKey = Object.keys(response.data).find(key => 
+          // Handle different entity key formats (attributes, attribute_sets, etc.)
+          const possibleKeys = ['attributes', 'attribute_sets', 'categories', 'products'];
+          let entityKey = Object.keys(response.data).find(key => 
             key !== 'pagination' && Array.isArray(response.data[key])
           );
+          
+          // If no key found, try the possible keys
+          if (!entityKey) {
+            entityKey = possibleKeys.find(key => 
+              response.data[key] && Array.isArray(response.data[key])
+            );
+          }
           
           if (entityKey && response.data[entityKey]) {
             return {

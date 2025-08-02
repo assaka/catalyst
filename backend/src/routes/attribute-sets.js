@@ -1,5 +1,6 @@
 const express = require('express');
 const { AttributeSet } = require('../models');
+const { Op } = require('sequelize');
 const auth = require('../middleware/auth');
 
 const router = express.Router();
@@ -16,7 +17,8 @@ const conditionalAuth = (req, res, next) => {
 
 router.get('/', conditionalAuth, async (req, res) => {
   try {
-    const { store_id } = req.query;
+    const { store_id, page = 1, limit = 100, search } = req.query;
+    const offset = (page - 1) * limit;
     
     // Check if this is a public request
     const isPublicRequest = req.originalUrl.includes('/api/public/attribute-sets');
@@ -28,19 +30,39 @@ router.get('/', conditionalAuth, async (req, res) => {
       });
     }
 
-    const attributeSets = await AttributeSet.findAll({
-      where: { store_id },
+    const where = { store_id };
+    
+    // Add search functionality
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { description: { [Op.iLike]: `%${search}%` } }
+      ];
+    }
+
+    const { count, rows } = await AttributeSet.findAndCountAll({
+      where,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
       order: [['name', 'ASC']]
     });
 
     if (isPublicRequest) {
       // Return just the array for public requests (for compatibility)
-      res.json(attributeSets);
+      res.json(rows);
     } else {
-      // Return wrapped response for authenticated requests
+      // Return wrapped response for authenticated requests with pagination
       res.json({
         success: true,
-        data: { attribute_sets: attributeSets }
+        data: { 
+          attribute_sets: rows,
+          pagination: {
+            current_page: parseInt(page),
+            per_page: parseInt(limit),
+            total: count,
+            total_pages: Math.ceil(count / limit)
+          }
+        }
       });
     }
   } catch (error) {
