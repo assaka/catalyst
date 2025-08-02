@@ -426,7 +426,6 @@ export const StoreProvider = ({ children }) => {
         }
         
         // Clean up force refresh flag ONLY after SEO settings are processed
-        const forceRefresh = localStorage.getItem('forceRefreshStore');
         if (forceRefresh) {
           localStorage.removeItem('forceRefreshStore');
           console.log('🧹 Force refresh flag cleared after SEO settings processed');
@@ -437,7 +436,6 @@ export const StoreProvider = ({ children }) => {
         setSeoSettings(null);
         
         // Clean up force refresh flag even if SEO loading failed
-        const forceRefresh = localStorage.getItem('forceRefreshStore');
         if (forceRefresh) {
           localStorage.removeItem('forceRefreshStore');
           console.log('🧹 Force refresh flag cleared after SEO settings error');  
