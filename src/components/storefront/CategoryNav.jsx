@@ -25,7 +25,31 @@ export default function CategoryNav({ categories }) {
         const rootCategories = [];
 
         // Filter out hidden categories first
-        const visibleCategories = categories.filter(c => !c.hide_in_menu);
+        let visibleCategories = categories.filter(c => !c.hide_in_menu);
+
+        // If store has a root category, filter to only show that category tree
+        if (store?.root_category_id) {
+            const filterCategoryTree = (categoryId, allCategories) => {
+                const children = allCategories.filter(c => c.parent_id === categoryId);
+                let result = children.slice(); // Copy array
+                
+                children.forEach(child => {
+                    result = result.concat(filterCategoryTree(child.id, allCategories));
+                });
+                
+                return result;
+            };
+            
+            // Include the root category itself and all its descendants
+            const rootCategory = visibleCategories.find(c => c.id === store.root_category_id);
+            if (rootCategory) {
+                const descendants = filterCategoryTree(store.root_category_id, visibleCategories);
+                visibleCategories = [rootCategory, ...descendants];
+            } else {
+                // If root category not found, show empty navigation
+                visibleCategories = [];
+            }
+        }
 
         // Create a map of all visible categories
         visibleCategories.forEach(category => {

@@ -489,7 +489,27 @@ export default function StorefrontLayout({ children }) {
                                         const buildMobileCategoryTree = (categories) => {
                                             const categoryMap = new Map();
                                             const rootCategories = [];
-                                            const visibleCategories = categories.filter(c => !c.hide_in_menu);
+                                            let visibleCategories = categories.filter(c => !c.hide_in_menu);
+
+                                            // If store has a root category, filter to only show that category tree
+                                            if (store?.root_category_id) {
+                                                const filterCategoryTree = (categoryId, allCategories) => {
+                                                    const children = allCategories.filter(c => c.parent_id === categoryId);
+                                                    let result = children.slice();
+                                                    children.forEach(child => {
+                                                        result = result.concat(filterCategoryTree(child.id, allCategories));
+                                                    });
+                                                    return result;
+                                                };
+                                                
+                                                const rootCategory = visibleCategories.find(c => c.id === store.root_category_id);
+                                                if (rootCategory) {
+                                                    const descendants = filterCategoryTree(store.root_category_id, visibleCategories);
+                                                    visibleCategories = [rootCategory, ...descendants];
+                                                } else {
+                                                    visibleCategories = [];
+                                                }
+                                            }
 
                                             visibleCategories.forEach(category => {
                                                 categoryMap.set(category.id, { ...category, children: [] });
@@ -621,15 +641,39 @@ export default function StorefrontLayout({ children }) {
                         <div>
                             <h3 className="text-sm font-semibold tracking-wider uppercase">Shop</h3>
                             <ul className="mt-4 space-y-2">
-                                {Array.isArray(categories) && store && categories
-                                    .filter(c => !c.hide_in_menu && !c.parent_id) // Only root categories
-                                    .slice(0, 4)
-                                    .map(c => (
-                                        <li key={c.id}>
-                                            <Link to={createCategoryUrl(store.slug, c.slug)} className="text-base text-gray-300 hover:text-white">{c.name}</Link>
-                                        </li>
-                                    ))
-                                }
+                                {Array.isArray(categories) && store && (() => {
+                                    let footerCategories = categories.filter(c => !c.hide_in_menu);
+                                    
+                                    // If store has a root category, filter to only show that category tree
+                                    if (store?.root_category_id) {
+                                        const filterCategoryTree = (categoryId, allCategories) => {
+                                            const children = allCategories.filter(c => c.parent_id === categoryId);
+                                            let result = children.slice();
+                                            children.forEach(child => {
+                                                result = result.concat(filterCategoryTree(child.id, allCategories));
+                                            });
+                                            return result;
+                                        };
+                                        
+                                        const rootCategory = footerCategories.find(c => c.id === store.root_category_id);
+                                        if (rootCategory) {
+                                            const descendants = filterCategoryTree(store.root_category_id, footerCategories);
+                                            footerCategories = [rootCategory, ...descendants];
+                                        } else {
+                                            footerCategories = [];
+                                        }
+                                    }
+                                    
+                                    // Only show root categories in footer (first level of visible categories)
+                                    return footerCategories
+                                        .filter(c => store?.root_category_id ? c.parent_id === store.root_category_id || c.id === store.root_category_id : !c.parent_id)
+                                        .slice(0, 4)
+                                        .map(c => (
+                                            <li key={c.id}>
+                                                <Link to={createCategoryUrl(store.slug, c.slug)} className="text-base text-gray-300 hover:text-white">{c.name}</Link>
+                                            </li>
+                                        ));
+                                })()}
                             </ul>
                         </div>
                         <div>

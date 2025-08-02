@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Store } from '@/api/entities';
+import { Store, Category } from '@/api/entities';
 import { User } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ export default function Settings() {
   const [flashMessage, setFlashMessage] = useState(null); // New state for flash messages
   const [connectingDomain, setConnectingDomain] = useState(false);
   const [savingStripe, setSavingStripe] = useState(false); // This state was in original, kept it.
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     if (selectedStore) {
@@ -93,6 +94,15 @@ export default function Settings() {
       // Use selectedStore data directly - no need for force refresh
       const storeData = selectedStore;
       
+      // Load categories for the root category selector
+      try {
+        const categoryData = await retryApiCall(() => Category.findAll({ store_id: storeData.id }));
+        setCategories(Array.isArray(categoryData) ? categoryData : []);
+      } catch (error) {
+        console.warn('Failed to load categories:', error);
+        setCategories([]);
+      }
+      
       // Use fresh store data
       
       // CRITICAL FIX: Use explicit checks instead of nullish coalescing with defaults
@@ -112,6 +122,7 @@ export default function Settings() {
         timezone: storeData.timezone || 'UTC',
         slug: storeData.slug || '',
         status: storeData.status || 'active', // Default status
+        root_category_id: storeData.root_category_id || null,
         contact_details: {
           email: storeData.contact_email || '', // Map from flat structure
           phone: storeData.contact_phone || '',
@@ -357,6 +368,7 @@ export default function Settings() {
         country: store.contact_details?.country || store.country,
         timezone: store.timezone,
         currency: store.currency,
+        root_category_id: store.root_category_id,
         settings: settingsPayload
       };
 
@@ -630,6 +642,32 @@ export default function Settings() {
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     This timezone will be used for order timestamps, scheduling, and reports
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="root_category_id">Root Category</Label>
+                  <Select 
+                    value={store?.root_category_id || ""} 
+                    onValueChange={(value) => setStore(prev => ({ ...prev, root_category_id: value || null }))}
+                  >
+                    <SelectTrigger id="root_category_id">
+                      <SelectValue placeholder="Select root category (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">No Root Category</SelectItem>
+                      {categories
+                        .filter(cat => !cat.parent_id) // Only show root categories
+                        .map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))
+                      }
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Select a root category to limit your store's navigation to its subcategories. Leave blank to show all categories.
                   </p>
                 </div>
               </CardContent>
