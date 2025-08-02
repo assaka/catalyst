@@ -273,17 +273,40 @@ router.get('/akeneo/categories', storeAuth, async (req, res) => {
 
     const config = integrationConfig.config_data;
     if (!config || !config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
+      console.error('❌ Incomplete configuration:', {
+        hasBaseUrl: !!config?.baseUrl,
+        hasClientId: !!config?.clientId,
+        hasClientSecret: !!config?.clientSecret,
+        hasUsername: !!config?.username,
+        hasPassword: !!config?.password
+      });
       return res.status(400).json({
         success: false,
         message: 'Incomplete Akeneo configuration'
       });
     }
 
+    console.log('🔧 Using Akeneo config:', {
+      baseUrl: config.baseUrl,
+      clientId: config.clientId,
+      username: config.username,
+      hasSecret: !!config.clientSecret,
+      hasPassword: !!config.password
+    });
+
     // Create integration instance and get categories
     const integration = new AkeneoIntegration(config);
     const categories = await integration.client.getAllCategories();
     
     console.log(`📦 Found ${categories.length} categories from Akeneo`);
+    
+    if (categories.length > 0) {
+      console.log('📊 Sample categories:', categories.slice(0, 3).map(cat => ({
+        code: cat.code,
+        parent: cat.parent,
+        labels: cat.labels
+      })));
+    }
     
     res.json({
       success: true,

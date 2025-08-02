@@ -171,30 +171,65 @@ const AkeneoIntegration = () => {
   };
 
   const loadAvailableCategories = async () => {
-    if (!connectionStatus?.success) return;
+    if (!connectionStatus?.success) {
+      console.log('⚠️ Connection not successful, skipping category load');
+      return;
+    }
     
     setLoadingCategories(true);
     try {
       const storeId = localStorage.getItem('selectedStoreId');
-      if (!storeId) return;
+      if (!storeId) {
+        console.error('❌ No store ID found');
+        return;
+      }
 
+      console.log('📡 Loading categories from Akeneo for store:', storeId);
+      console.log('🔧 Current connection status:', connectionStatus);
+      console.log('⚙️ Config saved:', configSaved);
+      
       const response = await apiClient.get('/integrations/akeneo/categories', {
         'x-store-id': storeId
       });
+
+      console.log('📥 Categories API response status:', response.status);
+      console.log('📥 Categories API response data:', response.data);
 
       if (response.data?.success || response.success) {
         const responseData = response.data || response;
         const categories = responseData.categories || [];
         
+        console.log('📦 Total categories received:', categories.length);
+        console.log('📊 Sample categories:', categories.slice(0, 3));
+        
         // Filter to only root categories (no parent)
-        const rootCategories = categories.filter(cat => !cat.parent || cat.parent === null);
+        const rootCategories = categories.filter(cat => {
+          const isRoot = !cat.parent || cat.parent === null || cat.parent === undefined || cat.parent === '';
+          console.log(`🔍 Category "${cat.code}" parent: "${cat.parent}" isRoot: ${isRoot}`);
+          return isRoot;
+        });
+        
         setAvailableCategories(rootCategories);
         
         console.log('📂 Loaded root categories:', rootCategories.length);
+        console.log('🌱 Root categories:', rootCategories.map(cat => ({ code: cat.code, name: cat.labels?.en_US || cat.code })));
+        
+        if (rootCategories.length === 0) {
+          console.warn('⚠️ No root categories found. All categories might have parents.');
+          toast.info('No root categories found in Akeneo. All categories appear to have parent categories.');
+        }
+      } else {
+        console.error('❌ API response indicates failure:', responseData);
+        toast.error('Failed to load categories from Akeneo API');
       }
     } catch (error) {
-      console.error('Failed to load categories:', error);
-      toast.error('Failed to load categories from Akeneo');
+      console.error('❌ Failed to load categories:', error);
+      console.error('Error details:', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      toast.error(`Failed to load categories: ${error.message}`);
     } finally {
       setLoadingCategories(false);
     }
@@ -1775,8 +1810,32 @@ const AkeneoIntegration = () => {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500 p-3 border rounded-md">
-                        No root categories available. Test connection first to load categories from Akeneo.
+                      <div className="text-sm text-gray-500 p-3 border rounded-md space-y-2">
+                        <p>No root categories available. Make sure:</p>
+                        <ul className="text-xs ml-4 list-disc space-y-1">
+                          <li>Connection has been tested successfully</li>
+                          <li>Akeneo configuration is saved</li>
+                          <li>Your Akeneo user has category read permissions</li>
+                        </ul>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={loadAvailableCategories}
+                          disabled={loadingCategories || !connectionStatus?.success}
+                          className="mt-2"
+                        >
+                          {loadingCategories ? (
+                            <>
+                              <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                              Loading...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                              Try Loading Categories
+                            </>
+                          )}
+                        </Button>
                       </div>
                     )}
                   </div>
