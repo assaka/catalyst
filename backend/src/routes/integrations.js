@@ -386,6 +386,45 @@ router.get('/akeneo/config-status', storeAuth, async (req, res) => {
 });
 
 /**
+ * Get import statistics
+ * GET /api/integrations/akeneo/stats
+ */
+router.get('/akeneo/stats', storeAuth, async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    
+    const Category = require('../models/Category');
+    const Attribute = require('../models/Attribute');
+    const AttributeSet = require('../models/AttributeSet');
+    const Product = require('../models/Product');
+    
+    const [categoriesCount, attributesCount, familiesCount, productsCount] = await Promise.all([
+      Category.count({ where: { store_id: storeId } }),
+      Attribute.count({ where: { store_id: storeId } }),
+      AttributeSet.count({ where: { store_id: storeId } }),
+      Product.count({ where: { store_id: storeId } })
+    ]);
+
+    res.json({
+      success: true,
+      stats: {
+        categories: categoriesCount,
+        attributes: attributesCount,
+        families: familiesCount,
+        products: productsCount
+      }
+    });
+  } catch (error) {
+    console.error('Error getting import stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
  * Get available locales (mock data - could be enhanced to fetch from Akeneo)
  * GET /api/integrations/akeneo/locales
  */

@@ -39,11 +39,36 @@ const AkeneoIntegration = () => {
   const [dryRun, setDryRun] = useState(true);
   const [locales, setLocales] = useState([]);
   const [activeTab, setActiveTab] = useState('configuration');
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
   
   // Debug dry run changes
   const handleDryRunChange = (checked) => {
     console.log('🔧 Dry run toggle changed:', checked);
     setDryRun(checked);
+  };
+
+  // Load import statistics
+  const loadStats = async () => {
+    if (!storeSlug) return;
+    
+    setLoadingStats(true);
+    try {
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (!storeId) return;
+
+      const response = await apiClient.get('/integrations/akeneo/stats', {
+        'x-store-id': storeId
+      });
+
+      if (response.data?.success) {
+        setStats(response.data.stats);
+      }
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
   // Load configuration and locales on component mount
@@ -67,6 +92,7 @@ const AkeneoIntegration = () => {
       
       await loadConfigStatus();
       await loadLocales();
+      await loadStats();
     };
     
     loadData();
@@ -363,6 +389,8 @@ const AkeneoIntegration = () => {
         console.log('✅ Categories import successful');
         const stats = responseData.stats;
         toast.success(`Categories import completed! ${stats?.imported || 0} categories imported`);
+        // Reload stats to reflect changes
+        await loadStats();
       } else {
         console.log('❌ Categories import failed:', responseData.error);
         toast.error(`Categories import failed: ${responseData.error}`);
@@ -438,6 +466,8 @@ const AkeneoIntegration = () => {
         console.log('✅ Attributes import successful');
         const stats = responseData.stats;
         toast.success(`Attributes import completed! ${stats?.imported || 0} attributes imported`);
+        // Reload stats to reflect changes
+        await loadStats();
       } else {
         console.log('❌ Attributes import failed:', responseData.error);
         toast.error(`Attributes import failed: ${responseData.error}`);
@@ -508,6 +538,8 @@ const AkeneoIntegration = () => {
         console.log('✅ Families import successful');
         const stats = responseData.stats;
         toast.success(`Families import completed! ${stats?.imported || 0} families imported`);
+        // Reload stats to reflect changes
+        await loadStats();
       } else {
         console.log('❌ Families import failed:', responseData.error);
         toast.error(`Families import failed: ${responseData.error}`);
@@ -707,6 +739,47 @@ const AkeneoIntegration = () => {
           Import categories and products from your Akeneo PIM system into Catalyst.
         </p>
       </div>
+
+      {/* Statistics Display */}
+      {stats && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Current Import Statistics
+            </CardTitle>
+            <CardDescription>
+              Current count of imported data in your store
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{stats.attributes}</div>
+                <div className="text-sm text-blue-600">Attributes</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600">{stats.families}</div>
+                <div className="text-sm text-green-600">Families</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600">{stats.categories}</div>
+                <div className="text-sm text-purple-600">Categories</div>
+              </div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <div className="text-2xl font-bold text-orange-600">{stats.products}</div>
+                <div className="text-sm text-orange-600">Products</div>
+              </div>
+            </div>
+            {loadingStats && (
+              <div className="mt-4 text-center">
+                <RefreshCw className="h-4 w-4 animate-spin mx-auto" />
+                <span className="text-sm text-gray-500 ml-2">Updating statistics...</span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">

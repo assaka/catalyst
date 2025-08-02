@@ -318,21 +318,40 @@ class AkeneoIntegration {
     const { dryRun = false } = options;
     
     try {
-      console.log('Starting attribute import from Akeneo...');
+      console.log('🚀 Starting attribute import from Akeneo...');
+      console.log(`📍 Store ID: ${storeId}`);
+      console.log(`🧪 Dry run mode: ${dryRun}`);
       
       // Get all attributes from Akeneo
+      console.log('📡 Fetching attributes from Akeneo API...');
       const akeneoAttributes = await this.client.getAllAttributes();
       this.importStats.attributes.total = akeneoAttributes.length;
 
-      console.log(`Found ${akeneoAttributes.length} attributes in Akeneo`);
+      console.log(`📦 Found ${akeneoAttributes.length} attributes in Akeneo`);
+      
+      // Log sample of attribute types
+      const attributeTypes = {};
+      akeneoAttributes.slice(0, 10).forEach(attr => {
+        attributeTypes[attr.type] = (attributeTypes[attr.type] || 0) + 1;
+      });
+      console.log('🏷️ Sample attribute types:', attributeTypes);
 
       // Transform attributes to Catalyst format
+      console.log('🔄 Transforming attributes to Catalyst format...');
       const catalystAttributes = akeneoAttributes.map(akeneoAttribute => 
         this.mapping.transformAttribute(akeneoAttribute, storeId)
       );
 
+      console.log(`✅ Transformed ${catalystAttributes.length} attributes`);
+
       // Import attributes
+      console.log('💾 Starting database import process...');
+      let processed = 0;
       for (const attribute of catalystAttributes) {
+        processed++;
+        if (processed % 50 === 0) {
+          console.log(`📊 Progress: ${processed}/${catalystAttributes.length} attributes processed`);
+        }
         try {
           // Validate attribute
           const validationErrors = this.mapping.validateAttribute(attribute);
@@ -380,10 +399,14 @@ class AkeneoIntegration {
               
               // Create new attribute
               const newAttribute = await Attribute.create(attributeData);
-              console.log(`✅ Created attribute: ${newAttribute.name} (${newAttribute.code})`);
+              if (processed <= 10 || processed % 100 === 0) {
+                console.log(`✅ Created attribute: ${newAttribute.name} (${newAttribute.code}) - Type: ${newAttribute.type}`);
+              }
             }
           } else {
-            console.log(`🔍 Dry run - would process attribute: ${attribute.name} (${attribute.code})`);
+            if (processed <= 5) {
+              console.log(`🔍 Dry run - would process attribute: ${attribute.name} (${attribute.code}) - Type: ${attribute.type}`);
+            }
           }
 
           this.importStats.attributes.imported++;
@@ -398,18 +421,25 @@ class AkeneoIntegration {
         }
       }
 
-      console.log('Attribute import completed');
+      console.log('🎉 Attribute import completed successfully!');
+      console.log(`📊 Final stats: ${this.importStats.attributes.imported} imported, ${this.importStats.attributes.failed} failed, ${this.importStats.attributes.total} total`);
       
       const response = {
         success: true,
         stats: this.importStats.attributes,
-        dryRun: dryRun
+        dryRun: dryRun,
+        details: {
+          processedCount: processed,
+          completedSuccessfully: true
+        }
       };
       
       if (dryRun) {
         response.message = `Dry run completed. Would import ${this.importStats.attributes.imported} attributes`;
+        console.log(`🧪 Dry run result: Would import ${this.importStats.attributes.imported}/${this.importStats.attributes.total} attributes`);
       } else {
-        response.message = `Imported ${this.importStats.attributes.imported} attributes`;
+        response.message = `Successfully imported ${this.importStats.attributes.imported} attributes`;
+        console.log(`✅ Live import result: Imported ${this.importStats.attributes.imported}/${this.importStats.attributes.total} attributes to database`);
       }
       
       return response;
