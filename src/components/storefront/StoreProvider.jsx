@@ -667,6 +667,13 @@ if (typeof window !== 'undefined') {
     window.location.reload();
   };
   
+  // Debug function to manually set the flag as string (like admin does)
+  window.testStringFlag = () => {
+    console.log('🧪 MANUAL TEST: Setting forceRefreshStore flag to "true" and reloading...');
+    localStorage.setItem('forceRefreshStore', 'true');
+    window.location.reload();
+  };
+  
   // Debug function to check current localStorage state
   window.debugLocalStorage = () => {
     console.log('🔍 Current localStorage state:');

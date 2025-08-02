@@ -52,24 +52,39 @@ export default function SeoTools() {
   // Function to clear SEO-related cache
   const clearSeoCache = (storeId) => {
     try {
+      console.log('🔍 clearSeoCache called with storeId:', storeId);
+      console.log('🔍 window available:', typeof window !== 'undefined');
+      
       // Clear storefront cache to ensure SEO setting changes are reflected immediately
       if (typeof window !== 'undefined') {
         // Clear localStorage cache used by StoreProvider
+        console.log('🔍 Removing storeProviderCache...');
         localStorage.removeItem('storeProviderCache');
         
         // Set force refresh flag (string like other working sections)
+        console.log('🔍 Setting forceRefreshStore flag to "true"...');
         localStorage.setItem('forceRefreshStore', 'true');
+        
+        // Verify the flag was set
+        const flagCheck = localStorage.getItem('forceRefreshStore');
+        console.log('🔍 Flag verification - forceRefreshStore is now:', flagCheck);
         
         // Trigger global cache clear if available
         if (window.clearCache) {
+          console.log('🔍 Calling window.clearCache()...');
           window.clearCache();
+        } else {
+          console.log('🔍 window.clearCache not available');
         }
+      } else {
+        console.warn('🔍 window is not available - cache clearing skipped');
       }
       
       console.log('🧹 SEO cache cleared using same method as other working sections');
       
     } catch (error) {
-      console.warn('⚠️ Failed to clear SEO cache:', error);
+      console.error('⚠️ Failed to clear SEO cache:', error);
+      console.error('⚠️ Error details:', error.message, error.stack);
     }
   };
 
