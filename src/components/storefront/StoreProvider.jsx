@@ -304,12 +304,32 @@ export const StoreProvider = ({ children }) => {
         const { StorefrontSeoSetting } = await import('@/api/storefront-entities');
         console.log('🔍 Loading SEO settings for store:', selectedStore.id);
         
-        const seoSettingsData = await cachedApiCall(`seo-settings-${selectedStore.id}`, async () => {
-          console.log('🔄 Fetching SEO settings from API...');
+        // Check if we need to force fresh SEO data
+        const forceRefresh = localStorage.getItem('forceRefreshStore');
+        let seoSettingsData;
+        
+        if (forceRefresh) {
+          // Force fresh fetch, bypass cache entirely
+          console.log('🔄 Force fetching fresh SEO settings (bypassing cache)...');
           const result = await StorefrontSeoSetting.filter({ store_id: selectedStore.id });
-          console.log('📊 SEO settings API response:', result);
-          return Array.isArray(result) ? result : [];
-        });
+          console.log('📊 Fresh SEO settings API response:', result);
+          seoSettingsData = Array.isArray(result) ? result : [];
+          
+          // Update cache with fresh data
+          apiCache.set(`seo-settings-${selectedStore.id}`, { 
+            data: seoSettingsData, 
+            timestamp: Date.now() 
+          });
+          saveCacheToStorage();
+        } else {
+          // Use normal cached call
+          seoSettingsData = await cachedApiCall(`seo-settings-${selectedStore.id}`, async () => {
+            console.log('🔄 Fetching SEO settings from API...');
+            const result = await StorefrontSeoSetting.filter({ store_id: selectedStore.id });
+            console.log('📊 SEO settings API response:', result);
+            return Array.isArray(result) ? result : [];
+          });
+        }
         
         if (seoSettingsData && seoSettingsData.length > 0) {
           const loadedSeoSettings = seoSettingsData[0];

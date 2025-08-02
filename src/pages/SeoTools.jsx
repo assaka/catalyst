@@ -52,16 +52,16 @@ export default function SeoTools() {
   // Function to clear SEO-related cache
   const clearSeoCache = (storeId) => {
     try {
-      // Just clear everything and reload the page
+      // Clear all cache
       localStorage.removeItem('storeProviderCache');
-      localStorage.setItem('forceRefreshStore', 'true');
+      localStorage.setItem('forceRefreshStore', Date.now().toString());
       
-      // Reload the storefront after a short delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      // Also clear window cache if available
+      if (typeof window !== 'undefined' && window.clearCache) {
+        window.clearCache();
+      }
       
-      console.log('🧹 Cleared all cache, page will reload');
+      console.log('🧹 Cleared all cache, storefront will get fresh data');
     } catch (error) {
       console.warn('⚠️ Failed to clear cache:', error);
     }
@@ -347,7 +347,7 @@ export default function SeoTools() {
       // Clear SEO cache to ensure changes are reflected immediately
       clearSeoCache(storeId);
       
-      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Page will reload to show changes.' });
+      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Check your storefront - changes should be visible now.' });
       setSaving(false);
 
     } catch (error) {

@@ -50,6 +50,7 @@
       "Bash(git deploy:*)",
       "Bash(npm run:*)",
       "WebFetch(domain:api.akeneo.com)",
+      "Bash(timeout 5 npm start)",
       "Bash(timeout 5 npm start)"
     ],
     "deny": []
