@@ -13,9 +13,11 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
+  ChevronRight,
   X,
   Folder,
-  FolderOpen
+  FolderOpen,
+  LayoutGrid
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,6 +56,8 @@ export default function Categories() {
   const [itemsPerPage] = useState(9); // 3x3 grid
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [viewMode, setViewMode] = useState('hierarchical'); // 'hierarchical' or 'grid'
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
 
   useEffect(() => {
     if (selectedStore) {
@@ -84,22 +88,42 @@ export default function Categories() {
     try {
       setLoading(true);
       
-      const filters = { 
-        store_id: storeId, 
-        order_by: "sort_order"
-      };
-      
-      // Add search filter if present
-      if (searchQuery.trim()) {
-        filters.search = searchQuery.trim();
+      // For hierarchical view, load all categories at once to build the tree
+      if (viewMode === 'hierarchical') {
+        const filters = { 
+          store_id: storeId, 
+          order_by: "sort_order"
+        };
+        
+        // Add search filter if present
+        if (searchQuery.trim()) {
+          filters.search = searchQuery.trim();
+        }
+        
+        const result = await Category.findAll(filters);
+        setCategories(Array.isArray(result) ? result : []);
+        setTotalItems(Array.isArray(result) ? result.length : 0);
+        setTotalPages(1);
+        setCurrentPage(1);
+      } else {
+        // For grid view, use pagination
+        const filters = { 
+          store_id: storeId, 
+          order_by: "sort_order"
+        };
+        
+        // Add search filter if present
+        if (searchQuery.trim()) {
+          filters.search = searchQuery.trim();
+        }
+        
+        const result = await Category.findPaginated(page, itemsPerPage, filters);
+        
+        setCategories(result.data || []);
+        setTotalItems(result.pagination.total);
+        setTotalPages(result.pagination.total_pages);
+        setCurrentPage(result.pagination.current_page);
       }
-      
-      const result = await Category.findPaginated(page, itemsPerPage, filters);
-      
-      setCategories(result.data || []);
-      setTotalItems(result.pagination.total);
-      setTotalPages(result.pagination.total_pages);
-      setCurrentPage(result.pagination.current_page);
     } catch (error) {
       console.error("Error loading categories:", error);
       setCategories([]);
@@ -195,6 +219,180 @@ export default function Categories() {
       loadCategories(1); // Always load first page when search changes
     }
   }, [searchQuery]);
+
+  // Reload when view mode changes
+  useEffect(() => {
+    if (selectedStore) {
+      loadCategories();
+    }
+  }, [viewMode]);
+
+  // Build hierarchical tree from flat category list
+  const buildCategoryTree = (categories) => {
+    const categoryMap = new Map();
+    const rootCategories = [];
+
+    // First, create a map of all categories
+    categories.forEach(category => {
+      categoryMap.set(category.id, { ...category, children: [] });
+    });
+
+    // Then, build the tree structure
+    categories.forEach(category => {
+      const categoryNode = categoryMap.get(category.id);
+      if (category.parent_id && categoryMap.has(category.parent_id)) {
+        // This category has a parent, add it to parent's children
+        const parent = categoryMap.get(category.parent_id);
+        parent.children.push(categoryNode);
+      } else {
+        // This is a root category
+        rootCategories.push(categoryNode);
+      }
+    });
+
+    return rootCategories;
+  };
+
+  const toggleCategoryExpansion = (categoryId) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
+  // Render hierarchical category tree
+  const renderCategoryTree = (categoryNodes, depth = 0) => {
+    return categoryNodes.map(category => (
+      <div key={category.id} className="w-full">
+        <Card className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300 mb-2">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3" style={{ paddingLeft: `${depth * 20}px` }}>
+                {category.children && category.children.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleCategoryExpansion(category.id)}
+                    className="p-1 h-6 w-6"
+                  >
+                    <ChevronRight className={`w-4 h-4 transition-transform ${
+                      expandedCategories.has(category.id) ? 'rotate-90' : 'rotate-0'
+                    }`} />
+                  </Button>
+                )}
+                {(!category.children || category.children.length === 0) && (
+                  <div className="w-6 h-6 flex items-center justify-center">
+                    {depth > 0 && <div className="w-2 h-2 bg-gray-300 rounded-full" />}
+                  </div>
+                )}
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  {category.hide_in_menu ? (
+                    <Folder className="w-6 h-6 text-white" />
+                  ) : (
+                    <FolderOpen className="w-6 h-6 text-white" />
+                  )}
+                </div>
+                <div>
+                  <CardTitle className="text-lg">{category.name}</CardTitle>
+                  <p className="text-sm text-gray-500">/{category.slug}</p>
+                </div>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm">
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setSelectedCategory(category);
+                      setShowCategoryForm(true);
+                    }}
+                  >
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleToggleStatus(category)}
+                  >
+                    {category.is_active ? (
+                      <>
+                        <EyeOff className="w-4 h-4 mr-2" />
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Activate
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleToggleMenuVisibility(category)}
+                  >
+                    {category.hide_in_menu ? (
+                      <>
+                        <Eye className="w-4 h-4 mr-2" />
+                        Show in Menu
+                      </>
+                    ) : (
+                      <>
+                        <EyeOff className="w-4 h-4 mr-2" />
+                        Hide from Menu
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleDeleteCategory(category.id)}
+                    className="text-red-600"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-gray-600 text-sm mb-4">
+              {category.description || "No description"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={category.is_active ? "default" : "secondary"}>
+                {category.is_active ? "Active" : "Inactive"}
+              </Badge>
+              {category.hide_in_menu && (
+                <Badge variant="outline">Hidden from Menu</Badge>
+              )}
+              <Badge variant="outline">
+                Order: {category.sort_order || 0}
+              </Badge>
+              {category.children && category.children.length > 0 && (
+                <Badge variant="outline">
+                  {category.children.length} subcategory{category.children.length !== 1 ? 'ies' : 'y'}
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Render children if expanded */}
+        {category.children && 
+         category.children.length > 0 && 
+         expandedCategories.has(category.id) && (
+          <div className="ml-4">
+            {renderCategoryTree(category.children, depth + 1)}
+          </div>
+        )}
+      </div>
+    ));
+  };
 
   // Handle page changes
   const handlePageChange = (page) => {
@@ -347,129 +545,178 @@ export default function Categories() {
           </Button>
         </div>
 
-        {/* Search */}
+        {/* Search and View Toggle */}
         <Card className="material-elevation-1 border-0 mb-6">
           <CardContent className="p-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <Input
-                placeholder="Search categories..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-                disabled={!canAddCategory && filteredCategories.length === 0} // Disable search if no store and no categories
-              />
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  placeholder="Search categories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                  disabled={!canAddCategory && categories.length === 0}
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant={viewMode === 'hierarchical' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('hierarchical')}
+                  className="flex items-center space-x-2"
+                >
+                  <Folder className="w-4 h-4" />
+                  <span>Tree View</span>
+                </Button>
+                <Button
+                  variant={viewMode === 'grid' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="flex items-center space-x-2"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span>Grid View</span>
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Categories Grid */}
+        {/* Categories Display */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-700">
               {totalItems > 0 && (
-                <>Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} categories</>
+                <>
+                  {viewMode === 'hierarchical' 
+                    ? `${totalItems} categories`
+                    : `Showing ${startIndex + 1} to ${Math.min(startIndex + itemsPerPage, totalItems)} of ${totalItems} categories`
+                  }
+                </>
               )}
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
-            {paginatedCategories.map((category) => (
-            <Card key={category.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      {category.hide_in_menu ? (
-                        <Folder className="w-6 h-6 text-white" />
-                      ) : (
-                        <FolderOpen className="w-6 h-6 text-white" />
+          {viewMode === 'hierarchical' ? (
+            /* Hierarchical Tree View */
+            <div className="space-y-2 min-h-[400px]">
+              {buildCategoryTree(categories).length > 0 ? (
+                renderCategoryTree(buildCategoryTree(categories))
+              ) : (
+                <div className="text-center py-12">
+                  <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
+                  <p className="text-gray-600 mb-6">
+                    {searchQuery 
+                      ? "Try adjusting your search terms"
+                      : "Start by creating your first product category"}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Grid View */
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
+                {paginatedCategories.map((category) => (
+                <Card key={category.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                          {category.hide_in_menu ? (
+                            <Folder className="w-6 h-6 text-white" />
+                          ) : (
+                            <FolderOpen className="w-6 h-6 text-white" />
+                          )}
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg">{category.name}</CardTitle>
+                          <p className="text-sm text-gray-500">/{category.slug}</p>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedCategory(category);
+                              setShowCategoryForm(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleToggleStatus(category)}
+                          >
+                            {category.is_active ? (
+                              <>
+                                <EyeOff className="w-4 h-4 mr-2" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-4 h-4 mr-2" />
+                                Activate
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleToggleMenuVisibility(category)}
+                          >
+                            {category.hide_in_menu ? (
+                              <>
+                                <Eye className="w-4 h-4 mr-2" />
+                                Show in Menu
+                              </>
+                            ) : (
+                              <>
+                                <EyeOff className="w-4 h-4 mr-2" />
+                                Hide from Menu
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteCategory(category.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 text-sm mb-4">
+                      {category.description || "No description"}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant={category.is_active ? "default" : "secondary"}>
+                        {category.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                      {category.hide_in_menu && (
+                        <Badge variant="outline">Hidden from Menu</Badge>
                       )}
+                      <Badge variant="outline">
+                        Order: {category.sort_order || 0}
+                      </Badge>
                     </div>
-                    <div>
-                      <CardTitle className="text-lg">{category.name}</CardTitle>
-                      <p className="text-sm text-gray-500">/{category.slug}</p>
-                    </div>
-                  </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <ChevronDown className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setSelectedCategory(category);
-                          setShowCategoryForm(true);
-                        }}
-                      >
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleToggleStatus(category)}
-                      >
-                        {category.is_active ? (
-                          <>
-                            <EyeOff className="w-4 h-4 mr-2" />
-                            Deactivate
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Activate
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleToggleMenuVisibility(category)}
-                      >
-                        {category.hide_in_menu ? (
-                          <>
-                            <Eye className="w-4 h-4 mr-2" />
-                            Show in Menu
-                          </>
-                        ) : (
-                          <>
-                            <EyeOff className="w-4 h-4 mr-2" />
-                            Hide from Menu
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteCategory(category.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600 text-sm mb-4">
-                  {category.description || "No description"}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant={category.is_active ? "default" : "secondary"}>
-                    {category.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                  {category.hide_in_menu && (
-                    <Badge variant="outline">Hidden from Menu</Badge>
-                  )}
-                  <Badge variant="outline">
-                    Order: {category.sort_order || 0}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+                ))}
+              </div>
 
-          {/* Enhanced Pagination */}
-          {renderPagination(currentPage, totalPages, handlePageChange)}
+              {/* Enhanced Pagination - only show in grid view */}
+              {viewMode === 'grid' && renderPagination(currentPage, totalPages, handlePageChange)}
+            </>
+          )}
         </div>
 
         {categories.length === 0 && !loading && (
@@ -508,6 +755,7 @@ export default function Categories() {
             <div className="overflow-y-auto flex-1 px-1">
               <CategoryForm
                 category={selectedCategory}
+                parentCategories={categories}
                 onSubmit={selectedCategory ? handleUpdateCategory : handleCreateCategory}
                 onCancel={() => {
                   setShowCategoryForm(false);

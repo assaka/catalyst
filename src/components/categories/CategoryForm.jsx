@@ -160,6 +160,29 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
       <div className="grid md:grid-cols-2 gap-4">
         <div>
+          <Label htmlFor="parent_id">Parent Category</Label>
+          <Select
+            value={formData.parent_id || ""}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, parent_id: value || null }))}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select parent category (optional)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">No Parent (Root Category)</SelectItem>
+              {parentCategories && parentCategories
+                .filter(cat => cat.id !== category?.id) // Don't allow selecting self as parent
+                .map((parentCat) => (
+                  <SelectItem key={parentCat.id} value={parentCat.id}>
+                    {parentCat.name}
+                  </SelectItem>
+                ))
+              }
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
           <Label htmlFor="sort_order">Sort Order</Label>
           <Input
             id="sort_order"
@@ -170,7 +193,6 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
             placeholder="0"
           />
         </div>
-
       </div>
 
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
