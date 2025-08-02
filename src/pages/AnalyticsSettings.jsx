@@ -16,8 +16,12 @@ import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 const retryApiCall = async (apiCall, maxRetries = 3, delay = 1000) => {
     for (let i = 0; i < maxRetries; i++) {
         try {
-            return await apiCall();
+            console.log(`🔄 AnalyticsSettings: API attempt ${i + 1}/${maxRetries}`);
+            const result = await apiCall();
+            console.log(`✅ AnalyticsSettings: API attempt ${i + 1} succeeded`);
+            return result;
         } catch (error) {
+            console.log(`❌ AnalyticsSettings: API attempt ${i + 1} failed:`, error.message);
             if (i === maxRetries - 1) throw error;
             await new Promise(res => setTimeout(res, delay));
         }
@@ -101,6 +105,7 @@ export default function AnalyticsSettings() {
                 full_settings: store.settings
             });
             
+            console.log('⏱️ AnalyticsSettings: Starting API call...');
             const result = await retryApiCall(() => Store.update(storeId, { settings: store.settings }));
             console.log('✅ AnalyticsSettings: Save result:', result);
             
