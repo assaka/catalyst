@@ -52,28 +52,24 @@ export default function SeoTools() {
   // Function to clear SEO-related cache
   const clearSeoCache = (storeId) => {
     try {
-      // Clear all cache
-      localStorage.removeItem('storeProviderCache');
-      localStorage.setItem('forceRefreshStore', Date.now().toString());
-      
-      // Also clear window cache if available
-      if (typeof window !== 'undefined' && window.clearCache) {
-        window.clearCache();
+      // Clear storefront cache to ensure SEO setting changes are reflected immediately
+      if (typeof window !== 'undefined') {
+        // Clear localStorage cache used by StoreProvider
+        localStorage.removeItem('storeProviderCache');
+        
+        // Set force refresh flag (string like other working sections)
+        localStorage.setItem('forceRefreshStore', 'true');
+        
+        // Trigger global cache clear if available
+        if (window.clearCache) {
+          window.clearCache();
+        }
       }
       
-      console.log('🧹 SEO cache cleared, force refresh flag set - opening storefront to see changes');
-      
-      // Open storefront in new tab to immediately see changes
-      const storeSlug = selectedStore?.slug || 'hamid2';
-      const storefrontUrl = `${window.location.origin}/public/${storeSlug}`;
-      
-      // Show message for 2 seconds then open storefront
-      setTimeout(() => {
-        window.open(storefrontUrl, '_blank');
-      }, 2000);
+      console.log('🧹 SEO cache cleared using same method as other working sections');
       
     } catch (error) {
-      console.warn('⚠️ Failed to clear cache:', error);
+      console.warn('⚠️ Failed to clear SEO cache:', error);
     }
   };
 

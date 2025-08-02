@@ -53,7 +53,9 @@
       "Bash(timeout 5 npm start)",
       "Bash(timeout 5 npm start)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node -e \"\nconst { sequelize } = require(''./src/database/connection'');\n(async () => {\n  try {\n    const [results] = await sequelize.query(''SELECT column_name, data_type FROM information_schema.columns WHERE table_name = \\''integration_configs\\'' ORDER BY ordinal_position;'');\n    console.log(''Current integration_configs table structure:'');\n    results.forEach(row => console.log(\\`- ${row.column_name}: ${row.data_type}\\`));\n  } catch (error) {\n    console.error(''Error:'', error.message);\n  } finally {\n    await sequelize.close();\n  }\n})();\")",
-      "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -c \"\\d integration_configs\")"
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -c \"\\d integration_configs\")",
+      "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -f add-integration-columns.sql)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node migrate-integration-table.js)"
     ],
     "deny": []
   }

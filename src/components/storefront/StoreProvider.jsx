@@ -320,7 +320,8 @@ export const StoreProvider = ({ children }) => {
         console.log('🔍 SEO LOADING - Force refresh flag check:');
         console.log('- forceRefreshStore value:', forceRefresh);
         console.log('- Flag exists:', !!forceRefresh);
-        console.log('- Timestamp if exists:', forceRefresh ? new Date(parseInt(forceRefresh)).toISOString() : 'N/A');
+        console.log('- Is string "true":', forceRefresh === 'true');
+        console.log('- Is timestamp:', !isNaN(parseInt(forceRefresh || '')));
         
         let seoSettingsData;
         
