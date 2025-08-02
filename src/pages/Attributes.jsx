@@ -412,7 +412,7 @@ export default function Attributes() {
               ))}
             </div>
 
-            {filteredAttributes.length === 0 && (
+            {attributes.length === 0 && !loading && (
               <Card className="material-elevation-1 border-0">
                 <CardContent className="text-center py-12">
                   <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -565,7 +565,7 @@ export default function Attributes() {
               ))}
             </div>
 
-            {filteredAttributeSets.length === 0 && (
+            {attributeSets.length === 0 && !loading && (
               <Card className="material-elevation-1 border-0">
                 <CardContent className="text-center py-12">
                   <List className="w-16 h-16 text-gray-400 mx-auto mb-4" />
