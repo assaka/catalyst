@@ -52,25 +52,18 @@ export default function SeoTools() {
   // Function to clear SEO-related cache
   const clearSeoCache = (storeId) => {
     try {
-      // Clear specific SEO-related cache keys
-      const keysToClear = [
-        `seo-settings-${storeId}`,
-        `seo-templates-${storeId}`
-      ];
+      // Just clear everything and reload the page
+      localStorage.removeItem('storeProviderCache');
+      localStorage.setItem('forceRefreshStore', 'true');
       
-      // Use the targeted cache clearing function
-      clearCacheKeys(keysToClear);
+      // Reload the storefront after a short delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
       
-      console.log('🧹 Cleared SEO cache keys for store:', storeId);
-      console.log('🔄 Changes should be visible on storefront immediately');
-      
+      console.log('🧹 Cleared all cache, page will reload');
     } catch (error) {
-      console.warn('⚠️ Failed to clear SEO cache:', error);
-      // Fallback to clearing all cache
-      if (typeof window !== 'undefined' && window.clearCache) {
-        window.clearCache();
-        localStorage.setItem('forceRefreshStore', 'true');
-      }
+      console.warn('⚠️ Failed to clear cache:', error);
     }
   };
 
@@ -354,13 +347,7 @@ export default function SeoTools() {
       // Clear SEO cache to ensure changes are reflected immediately
       clearSeoCache(storeId);
       
-      // Open storefront in new tab automatically to show changes
-      setTimeout(() => {
-        const storefrontUrl = window.location.origin + '/public/' + (selectedStore?.slug || 'hamid2');
-        window.open(storefrontUrl, '_blank');
-      }, 1000);
-      
-      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Opening storefront in new tab to show changes.' });
+      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Page will reload to show changes.' });
       setSaving(false);
 
     } catch (error) {
