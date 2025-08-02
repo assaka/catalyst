@@ -190,6 +190,17 @@ export default function AnalyticsSettings() {
                             </div>
                         ) : (
                             <div>
+                                <div className="mb-4">
+                                    <Label htmlFor="gtm_id_custom">Google Tag Manager ID (for noscript generation)</Label>
+                                    <Input
+                                        id="gtm_id_custom"
+                                        value={store.settings.analytics_settings.gtm_id || ''}
+                                        onChange={(e) => handleAnalyticsChange('gtm_id', e.target.value)}
+                                        placeholder="GTM-XXXXXX"
+                                    />
+                                    <p className="text-sm text-gray-500 mt-1">Enter your GTM ID to generate the correct noscript tag below</p>
+                                </div>
+                                
                                 <Label htmlFor="custom_gtm_script">Custom GTM Script (Head Section Only)</Label>
                                 <Textarea
                                     id="custom_gtm_script"
@@ -206,10 +217,28 @@ export default function AnalyticsSettings() {
                                 <div className="mt-3 p-3 bg-yellow-50 rounded-lg text-sm">
                                     <p className="font-medium text-yellow-900 mb-2">⚠️ Important for Custom GTM Scripts:</p>
                                     <ul className="space-y-1 text-yellow-800">
-                                        <li>• <strong>Only include the head script here</strong> - This will be placed in <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;head&gt;</code></li>
-                                        <li>• <strong>Do NOT include the noscript tag</strong> - If needed, add it manually to your theme</li>
-                                        <li>• <strong>For body scripts:</strong> Add the <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;noscript&gt;</code> iframe directly in your storefront theme after the <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;body&gt;</code> tag</li>
+                                        <li>• <strong>Only include the head script above</strong> - This will be placed in <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;head&gt;</code></li>
+                                        <li>• <strong>Noscript tags are not automatically added</strong> for custom scripts</li>
+                                        <li>• <strong>Copy the noscript code below</strong> and add it to your theme template after <code className="px-1 py-0.5 bg-yellow-100 rounded">&lt;body&gt;</code></li>
                                     </ul>
+                                </div>
+                                
+                                <div className="mt-4">
+                                    <Label htmlFor="noscript_reference">Noscript Tag (For Manual Theme Placement)</Label>
+                                    <Textarea
+                                        id="noscript_reference"
+                                        value={`<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=${store.settings.analytics_settings.gtm_id || 'GTM-XXXXXX'}"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->`}
+                                        readOnly
+                                        rows={4}
+                                        className="font-mono text-sm bg-gray-50"
+                                        onClick={(e) => e.target.select()}
+                                    />
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Click to select all. Add this code immediately after the opening <code className="px-1 py-0.5 bg-gray-100 rounded">&lt;body&gt;</code> tag in your theme.
+                                    </p>
                                 </div>
                             </div>
                         )}
