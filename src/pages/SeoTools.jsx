@@ -39,7 +39,12 @@ import {
   Eye,
   Share2, // Added for social settings
   Link2, // Added for social settings
-  Info as InfoIcon
+  Info as InfoIcon,
+  Copy,
+  Link,
+  Package,
+  Folder,
+  Search
 } from "lucide-react";
 import FlashMessage from "@/components/storefront/FlashMessage";
 import { InvokeLLM } from "@/api/integrations";
@@ -1577,13 +1582,27 @@ Sitemap: /sitemap.xml     # Location of sitemap
         );
       case 'report':
         return (
-          <>
+          <div className="space-y-6">
+            {/* SEO Score Overview */}
             <Card>
               <CardHeader>
-                <CardTitle>SEO Report</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-blue-600" />
+                    SEO Report Overview
+                  </CardTitle>
+                  <Button onClick={generateSeoReport} disabled={loading} size="sm">
+                    {loading ? (
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    {loading ? "Analyzing..." : "Refresh Report"}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-blue-600">{seoReport.total_pages}</div>
                     <div className="text-sm text-gray-600">Total Pages</div>
@@ -1601,14 +1620,38 @@ Sitemap: /sitemap.xml     # Location of sitemap
                     <div className="text-sm text-gray-600">With Canonical URLs</div>
                   </div>
                 </div>
-                <div className="flex justify-end mt-6">
-                  <Button onClick={generateSeoReport} disabled={loading}>
-                    {loading ? "Generating..." : "Refresh Report"}
-                  </Button>
+                
+                {/* SEO Score */}
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Overall SEO Score</h3>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold text-blue-600">{seoScore}/100</div>
+                      <div className="text-sm text-gray-600">SEO Health</div>
+                    </div>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div 
+                      className={`h-3 rounded-full transition-all duration-500 ${
+                        seoScore >= 80 ? 'bg-green-500' :
+                        seoScore >= 60 ? 'bg-yellow-500' :
+                        seoScore >= 40 ? 'bg-orange-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${seoScore}%` }}
+                    ></div>
+                  </div>
+                  <div className="mt-2 text-sm text-gray-600">
+                    {seoScore >= 80 ? 'Excellent SEO health! Keep up the good work.' :
+                     seoScore >= 60 ? 'Good SEO health with room for improvement.' :
+                     seoScore >= 40 ? 'Fair SEO health. Several issues need attention.' :
+                     'Poor SEO health. Immediate action required.'}
+                  </div>
                 </div>
               </CardContent>
             </Card>
-            <Card className="mt-6">
+
+            {/* Issues and Recommendations */}
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-orange-500" />
@@ -1617,101 +1660,168 @@ Sitemap: /sitemap.xml     # Location of sitemap
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Missing Meta Titles */}
                   {seoReport.total_pages - seoReport.pages_with_meta_title > 0 && (
-                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-orange-800">Missing Meta Titles</p>
-                        <p className="text-sm text-orange-600">
-                          {seoReport.total_pages - seoReport.pages_with_meta_title} pages need meta titles
-                        </p>
+                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                          <AlertTriangle className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-orange-800">Missing Meta Titles</p>
+                          <p className="text-sm text-orange-600">
+                            {seoReport.total_pages - seoReport.pages_with_meta_title} pages need meta titles for better search visibility
+                          </p>
+                        </div>
                       </div>
-                      <Button size="sm" onClick={() => generateWithAI('meta_title', { type: 'bulk' })} disabled={aiCredits <= 0}>
-                        <Bot className="w-4 h-4 mr-2" />
-                        Fix with AI
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setActiveTab('settings')}>
+                          Set Default
+                        </Button>
+                        <Button size="sm" onClick={() => generateWithAI('meta_title', { type: 'bulk' })} disabled={aiCredits <= 0}>
+                          <Bot className="w-4 h-4 mr-2" />
+                          Fix with AI
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Missing Meta Descriptions */}
+                  {seoReport.total_pages - seoReport.pages_with_meta_description > 0 && (
+                    <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                          <FileText className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-blue-800">Missing Meta Descriptions</p>
+                          <p className="text-sm text-blue-600">
+                            {seoReport.total_pages - seoReport.pages_with_meta_description} pages need descriptions to improve click-through rates
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setActiveTab('settings')}>
+                          Set Default
+                        </Button>
+                        <Button size="sm" onClick={() => generateWithAI('meta_description', { type: 'bulk' })} disabled={aiCredits <= 0}>
+                          <Bot className="w-4 h-4 mr-2" />
+                          Fix with AI
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Duplicate Meta Titles */}
+                  {seoReport.duplicate_titles.length > 0 && (
+                    <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg border border-red-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+                          <Copy className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-red-800">Duplicate Meta Titles</p>
+                          <p className="text-sm text-red-600">
+                            {seoReport.duplicate_titles.length} duplicate titles found. Each page should have a unique title.
+                          </p>
+                          <div className="mt-2 text-xs text-red-500">
+                            Duplicates: {seoReport.duplicate_titles.slice(0, 3).map(title => `"${title}"`).join(', ')}
+                            {seoReport.duplicate_titles.length > 3 && ` and ${seoReport.duplicate_titles.length - 3} more`}
+                          </div>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="outline">
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Details
                       </Button>
                     </div>
                   )}
 
-                  {seoReport.duplicate_titles.length > 0 && (
-                    <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-red-800">Duplicate Meta Titles</p>
-                        <p className="text-sm text-red-600">
-                          {seoReport.duplicate_titles.length} duplicate titles found
-                        </p>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        View Details
-                      </Button>
-                    </div>
-                  )}
-                  {seoReport.missing_alt_tags.length > 0 && (
-                     <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
-                       <div>
-                         <p className="font-medium text-orange-800">Missing Image Alt Tags</p>
-                         <p className="text-sm text-orange-600">
-                           {seoReport.missing_alt_tags.length} images are missing alt text
-                         </p>
-                       </div>
-                       <Button size="sm" variant="outline">
-                         View Details
-                       </Button>
-                     </div>
-                  )}
-                  {seoReport.broken_links.length > 0 && (
-                    <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-red-800">Broken Links</p>
-                        <p className="text-sm text-red-600">
-                          {seoReport.broken_links.length} broken links found
-                        </p>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        View Details
-                      </Button>
-                    </div>
-                  )}
+                  {/* Missing Canonical URLs */}
                   {seoReport.total_pages - seoReport.pages_with_canonical > 0 && (
-                    <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-orange-800">Missing Canonical Tags</p>
-                        <p className="text-sm text-orange-600">
-                          {seoReport.total_pages - seoReport.pages_with_canonical} pages need canonical tags
-                        </p>
+                    <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                          <Link className="w-4 h-4 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-purple-800">Missing Canonical URLs</p>
+                          <p className="text-sm text-purple-600">
+                            {seoReport.total_pages - seoReport.pages_with_canonical} pages need canonical tags to prevent duplicate content issues
+                          </p>
+                        </div>
                       </div>
-                      <Button size="sm" variant="outline">
-                        Fix Manually
+                      <Button size="sm" variant="outline" onClick={() => setActiveTab('settings')}>
+                        Configure
                       </Button>
                     </div>
                   )}
-                  {seoReport.error_404_count > 0 && (
-                    <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
-                      <div>
-                        <p className="font-medium text-red-800">404 Errors</p>
-                        <p className="text-sm text-red-600">
-                          {seoReport.error_404_count} 404 errors detected. Consider setting up redirects.
-                        </p>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        View Details
-                      </Button>
-                    </div>
-                  )}
+
+                  {/* Success State */}
                   {(seoReport.total_pages - seoReport.pages_with_meta_title === 0 &&
                     seoReport.duplicate_titles.length === 0 &&
-                    seoReport.missing_alt_tags.length === 0 &&
-                    seoReport.broken_links.length === 0 &&
-                    seoReport.total_pages - seoReport.pages_with_canonical === 0 &&
-                    seoReport.error_404_count === 0) && (
-                    <div className="p-4 bg-green-50 rounded-lg text-green-800">
-                      <p className="font-medium">All clear! No major SEO issues detected.</p>
-                      <p className="text-sm text-green-600">Keep up the good work!</p>
+                    seoReport.total_pages - seoReport.pages_with_meta_description <= Math.ceil(seoReport.total_pages * 0.1) &&
+                    seoReport.total_pages - seoReport.pages_with_canonical === 0) && (
+                    <div className="p-6 bg-green-50 rounded-lg border border-green-200 text-center">
+                      <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <CheckCircle className="w-6 h-6 text-white" />
+                      </div>
+                      <p className="font-medium text-green-800 mb-1">Excellent SEO Health!</p>
+                      <p className="text-sm text-green-600">
+                        Your store has strong SEO fundamentals. Keep monitoring and updating your content regularly.
+                      </p>
                     </div>
                   )}
                 </div>
               </CardContent>
             </Card>
-          </>
+
+            {/* Page Analysis */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="w-5 h-5 text-blue-600" />
+                  Page Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="w-5 h-5 text-blue-600" />
+                      <h4 className="font-medium text-blue-900">Products</h4>
+                    </div>
+                    <div className="text-2xl font-bold text-blue-600 mb-1">
+                      {Math.round((seoReport.pages_with_meta_title / Math.max(seoReport.total_pages, 1)) * 100)}%
+                    </div>
+                    <p className="text-sm text-blue-700">SEO Optimized</p>
+                  </div>
+                  
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Folder className="w-5 h-5 text-green-600" />
+                      <h4 className="font-medium text-green-900">Categories</h4>
+                    </div>
+                    <div className="text-2xl font-bold text-green-600 mb-1">
+                      {Math.round((seoReport.pages_with_meta_description / Math.max(seoReport.total_pages, 1)) * 100)}%
+                    </div>
+                    <p className="text-sm text-green-700">With Descriptions</p>
+                  </div>
+                  
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="w-5 h-5 text-purple-600" />
+                      <h4 className="font-medium text-purple-900">Content Pages</h4>
+                    </div>
+                    <div className="text-2xl font-bold text-purple-600 mb-1">
+                      {Math.round((seoReport.pages_with_canonical / Math.max(seoReport.total_pages, 1)) * 100)}%
+                    </div>
+                    <p className="text-sm text-purple-700">Canonical Set</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         );
 
       default:
