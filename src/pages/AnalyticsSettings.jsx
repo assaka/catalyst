@@ -38,7 +38,13 @@ export default function AnalyticsSettings() {
                     setLoading(false);
                     return;
                 }
-                setStore({
+                console.log('🔍 AnalyticsSettings: Loading store data:', {
+                    selectedStore: selectedStore,
+                    existing_analytics_settings: selectedStore.settings?.analytics_settings,
+                    full_settings: selectedStore.settings
+                });
+                
+                const newStore = {
                     ...selectedStore,
                     settings: {
                         ...(selectedStore.settings || {}),
@@ -51,7 +57,14 @@ export default function AnalyticsSettings() {
                             ...(selectedStore.settings?.analytics_settings || {})
                         }
                     }
+                };
+                
+                console.log('🔧 AnalyticsSettings: Final store state:', {
+                    analytics_settings: newStore.settings.analytics_settings,
+                    full_settings: newStore.settings
                 });
+                
+                setStore(newStore);
             } catch (error) {
                 console.error("Failed to load store:", error);
                 setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
@@ -82,12 +95,21 @@ export default function AnalyticsSettings() {
         if (!storeId || !store) return;
         setSaving(true);
         try {
-            await retryApiCall(() => Store.update(storeId, { settings: store.settings }));
+            console.log('🔍 AnalyticsSettings: Saving with payload:', {
+                storeId,
+                analytics_settings: store.settings.analytics_settings,
+                full_settings: store.settings
+            });
+            
+            const result = await retryApiCall(() => Store.update(storeId, { settings: store.settings }));
+            console.log('✅ AnalyticsSettings: Save result:', result);
+            
             // Clear storefront cache for instant updates
             clearStorefrontCache(storeId, ['stores']);
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
         } catch (error) {
-            console.error("Failed to save settings:", error);
+            console.error("❌ AnalyticsSettings: Failed to save settings:", error);
+            console.error("❌ Error details:", error.response?.data || error.message);
             setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
         } finally {
             setSaving(false);
