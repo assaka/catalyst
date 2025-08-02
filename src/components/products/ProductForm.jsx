@@ -750,6 +750,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
               </div>
             </AccordionTrigger>
             <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
+              <div className="mt-2 text-sm text-gray-600">
+                <p><strong>Product Variables:</strong> {`{{product_name}}`}, {`{{product_description}}`}</p>
+                <p className="mt-1"><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{base_url}}`}, {`{{year}}`}, {`{{currency}}`}</p>
+                <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
+              </div>
               <div>
                 <Label htmlFor="meta_title">Meta Title</Label>
                 <Input 
@@ -759,11 +764,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   onChange={handleSeoChange} 
                   placeholder="{{product_name}} - {{store_name}}"
                 />
-                <div className="mt-2 text-sm text-gray-600">
-                  <p><strong>Product Variables:</strong> {`{{product_name}}`}, {`{{product_description}}`}</p>
-                  <p className="mt-1"><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{base_url}}`}, {`{{year}}`}, {`{{currency}}`}</p>
-                  <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
-                </div>
               </div>
               <div>
                 <Label htmlFor="meta_description">Meta Description</Label>
@@ -775,11 +775,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   rows={3}
                   placeholder="Shop {{product_name}} at {{store_name}}. {{product_description}}"
                 />
-                <div className="mt-2 text-sm text-gray-600">
-                  <p><strong>Product Variables:</strong> {`{{product_name}}`}, {`{{product_description}}`}</p>
-                  <p className="mt-1"><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{base_url}}`}, {`{{year}}`}, {`{{currency}}`}</p>
-                  <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
-                </div>
               </div>
               <div>
                 <Label htmlFor="meta_keywords">Meta Keywords</Label>
