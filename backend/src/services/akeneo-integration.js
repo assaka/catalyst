@@ -184,11 +184,27 @@ class AkeneoIntegration {
     try {
       console.log('Starting product import from Akeneo...');
       
+      // First, test which product endpoints are available
+      console.log('🔍 Testing product endpoint availability...');
+      const testResult = await this.testProductEndpoints();
+      console.log('📊 Product endpoint test results:', testResult);
+      
+      if (!testResult.hasWorkingEndpoint) {
+        return {
+          success: false,
+          error: `No working product endpoints found. Tested: ${testResult.testedEndpoints.join(', ')}. Last error: ${testResult.lastError}`,
+          stats: this.importStats.products
+        };
+      }
+      
+      console.log(`✅ Using working endpoint: ${testResult.workingEndpoint}`);
+      
       // Get category mapping for product category assignment
       const categoryMapping = await this.buildCategoryMapping(storeId);
       
-      // Get all products from Akeneo
-      const akeneoProducts = await this.client.getAllProducts();
+      // Get all products from Akeneo using the working endpoint
+      const productResponse = await this.getProductsUsingWorkingEndpoint(testResult.workingEndpoint);
+      const akeneoProducts = productResponse._embedded?.items || [];
       this.importStats.products.total = akeneoProducts.length;
 
       console.log(`Found ${akeneoProducts.length} products in Akeneo`);
@@ -379,6 +395,69 @@ class AkeneoIntegration {
    */
   getStats() {
     return this.importStats;
+  }
+
+  /**
+   * Test which product endpoints are available
+   */
+  async testProductEndpoints() {
+    const results = {
+      hasWorkingEndpoint: false,
+      workingEndpoint: null,
+      testedEndpoints: [],
+      lastError: null
+    };
+    
+    const endpointsToTest = [
+      { name: 'products-uuid', endpoint: '/api/rest/v1/products-uuid' },
+      { name: 'products-uuid-search', endpoint: '/api/rest/v1/products-uuid/search', method: 'POST', data: {} },
+      { name: 'products', endpoint: '/api/rest/v1/products' },
+      { name: 'product-models', endpoint: '/api/rest/v1/product-models' }
+    ];
+    
+    for (const test of endpointsToTest) {
+      try {
+        console.log(`🧪 Testing ${test.name}: ${test.endpoint}`);
+        results.testedEndpoints.push(test.name);
+        
+        if (test.method === 'POST') {
+          await this.client.makeRequest('POST', test.endpoint, test.data, { limit: 1 });
+        } else {
+          await this.client.makeRequest('GET', test.endpoint, null, { limit: 1 });
+        }
+        
+        console.log(`✅ ${test.name} works!`);
+        results.hasWorkingEndpoint = true;
+        results.workingEndpoint = test.name;
+        break;
+        
+      } catch (error) {
+        console.log(`❌ ${test.name} failed: ${error.message}`);
+        results.lastError = error.message;
+      }
+    }
+    
+    return results;
+  }
+  
+  /**
+   * Get products using the working endpoint
+   */
+  async getProductsUsingWorkingEndpoint(endpointName) {
+    console.log(`📦 Fetching products using ${endpointName}`);
+    
+    switch (endpointName) {
+      case 'products-uuid':
+        return await this.client.makeRequest('GET', '/api/rest/v1/products-uuid', null, { limit: 10 });
+      case 'products-uuid-search':
+        return await this.client.makeRequest('POST', '/api/rest/v1/products-uuid/search', {}, { limit: 10 });
+      case 'products':
+        return await this.client.makeRequest('GET', '/api/rest/v1/products', null, { limit: 10 });
+      case 'product-models':
+        return await this.client.makeRequest('GET', '/api/rest/v1/product-models', null, { limit: 10 });
+      default:
+        throw new Error(`Unknown endpoint: ${endpointName}`);
+    }
   }
 
   /**
