@@ -214,8 +214,11 @@ router.post('/akeneo/import-categories',
   }
 
   const storeId = req.storeId;
+  console.log('🔍 Import categories request body:', req.body);
+  
   await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
     const { locale = 'en_US', dryRun = false } = body;
+    console.log(`📦 Starting category import with dryRun: ${dryRun}, locale: ${locale}`);
     return await integration.importCategories(storeId, { locale, dryRun });
   });
 });

@@ -125,11 +125,27 @@ class AkeneoIntegration {
       }
 
       console.log('Category import completed');
-      return {
+      
+      // Prepare response based on dry run mode
+      const response = {
         success: true,
         stats: this.importStats.categories,
-        message: `Imported ${this.importStats.categories.imported} categories`
+        dryRun: dryRun
       };
+      
+      if (dryRun) {
+        response.message = `Dry run completed. Would import ${this.importStats.categories.imported} categories`;
+        response.preview = {
+          totalFound: this.importStats.categories.total,
+          wouldImport: this.importStats.categories.imported,
+          wouldSkip: this.importStats.categories.skipped,
+          wouldFail: this.importStats.categories.failed
+        };
+      } else {
+        response.message = `Imported ${this.importStats.categories.imported} categories`;
+      }
+      
+      return response;
 
     } catch (error) {
       console.error('Category import failed:', error);
