@@ -260,7 +260,7 @@ router.get('/akeneo/categories', storeAuth, async (req, res) => {
     const integrationConfig = await IntegrationConfig.findOne({
       where: { 
         store_id: storeId, 
-        platform: 'akeneo' 
+        integration_type: 'akeneo' 
       }
     });
 
