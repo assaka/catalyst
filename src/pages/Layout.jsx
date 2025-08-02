@@ -413,6 +413,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
         { name: "Plugins", path: "PLUGINS", icon: Puzzle },
+        { name: "Akeneo Integration", path: "akeneo-integration", icon: RefreshCw },
         { name: "Team", path: "team", icon: Users },
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "STORES", icon: Building2 },

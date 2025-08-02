@@ -80,6 +80,7 @@ const updateUspsBlockPlacementRoutes = require('./routes/update-usps-block-place
 const updateTestBlockPlacementRoutes = require('./routes/update-test-block-placement');
 const storeTeamRoutes = require('./routes/store-teams');
 const robotsRoutes = require('./routes/robots');
+const integrationRoutes = require('./routes/integrations');
 
 const app = express();
 
@@ -1483,6 +1484,7 @@ app.use('/api/public-cms-blocks', publicCmsBlocksRoutes);
 app.use('/api/update-usps-block-placement', updateUspsBlockPlacementRoutes);
 app.use('/api/update-test-block-placement', updateTestBlockPlacementRoutes);
 app.use('/api/store-teams', authMiddleware, storeTeamRoutes);
+app.use('/api/integrations', authMiddleware, integrationRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

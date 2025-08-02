@@ -93,6 +93,8 @@ import CookieConsent from "./CookieConsent";
 
 import TeamPage from "./TeamPage";
 
+import AkeneoIntegration from "./AkeneoIntegration";
+
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
 const PAGES = {
@@ -189,6 +191,8 @@ const PAGES = {
     
     TeamPage: TeamPage,
     
+    AkeneoIntegration: AkeneoIntegration,
+    
 }
 
 function _getCurrentPage(url) {
@@ -225,7 +229,8 @@ function _getCurrentPage(url) {
         'team': 'TeamPage',
         'image-manager': 'ImageManager',
         'stock-settings': 'StockSettings',
-        'google-tag-manager': 'GoogleTagManager'
+        'google-tag-manager': 'GoogleTagManager',
+        'akeneo-integration': 'AkeneoIntegration'
     };
 
     // First try direct mapping for admin URLs
@@ -590,6 +595,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/akeneo-integration" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <AkeneoIntegration />
+                    </RoleProtectedRoute>
+                } />
+                
                 {/* =========================== */}
                 {/* PUBLIC CONTENT ROUTES */}
                 {/* =========================== */}
@@ -869,6 +880,12 @@ function PagesContent() {
                 <Route path="/admin/cookie-consent" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <CookieConsent />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/akeneo-integration" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <AkeneoIntegration />
                     </RoleProtectedRoute>
                 } />
                 

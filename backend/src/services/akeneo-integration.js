@@ -1,0 +1,363 @@
+const AkeneoClient = require('./akeneo-client');
+const AkeneoMapping = require('./akeneo-mapping');
+const Category = require('../models/Category');
+const Product = require('../models/Product');
+
+class AkeneoIntegration {
+  constructor(config) {
+    this.config = config;
+    this.client = new AkeneoClient(
+      config.baseUrl,
+      config.clientId,
+      config.clientSecret,
+      config.username,
+      config.password
+    );
+    this.mapping = new AkeneoMapping();
+    this.importStats = {
+      categories: { total: 0, imported: 0, skipped: 0, failed: 0 },
+      products: { total: 0, imported: 0, skipped: 0, failed: 0 },
+      errors: []
+    };
+  }
+
+  /**
+   * Test connection to Akeneo PIM
+   */
+  async testConnection() {
+    try {
+      return await this.client.testConnection();
+    } catch (error) {
+      return { success: false, message: error.message };
+    }
+  }
+
+  /**
+   * Import categories from Akeneo to Catalyst
+   */
+  async importCategories(storeId, options = {}) {
+    const { locale = 'en_US', dryRun = false } = options;
+    
+    try {
+      console.log('Starting category import from Akeneo...');
+      
+      // Get all categories from Akeneo
+      const akeneoCategories = await this.client.getAllCategories();
+      this.importStats.categories.total = akeneoCategories.length;
+
+      console.log(`Found ${akeneoCategories.length} categories in Akeneo`);
+
+      // Transform categories to Catalyst format
+      const catalystCategories = akeneoCategories.map(akeneoCategory => 
+        this.mapping.transformCategory(akeneoCategory, storeId, locale)
+      );
+
+      // Build category hierarchy
+      const hierarchicalCategories = this.mapping.buildCategoryHierarchy(
+        akeneoCategories, 
+        catalystCategories
+      );
+
+      // Import categories (respecting hierarchy - parents first)
+      const sortedCategories = hierarchicalCategories.sort((a, b) => a.level - b.level);
+      
+      for (const category of sortedCategories) {
+        try {
+          // Validate category
+          const validationErrors = this.mapping.validateCategory(category);
+          if (validationErrors.length > 0) {
+            this.importStats.categories.failed++;
+            this.importStats.errors.push({
+              type: 'category',
+              akeneo_code: category.akeneo_code,
+              errors: validationErrors
+            });
+            continue;
+          }
+
+          if (!dryRun) {
+            // Check if category already exists
+            const existingCategory = await Category.findOne({
+              where: { 
+                store_id: storeId,
+                $or: [
+                  { slug: category.slug },
+                  { name: category.name }
+                ]
+              }
+            });
+
+            if (existingCategory) {
+              // Update existing category
+              await existingCategory.update({
+                name: category.name,
+                description: category.description,
+                image_url: category.image_url,
+                sort_order: category.sort_order,
+                is_active: category.is_active,
+                hide_in_menu: category.hide_in_menu,
+                meta_title: category.meta_title,
+                meta_description: category.meta_description,
+                meta_keywords: category.meta_keywords,
+                parent_id: category.parent_id,
+                level: category.level,
+                path: category.path
+              });
+              
+              console.log(`Updated category: ${category.name}`);
+            } else {
+              // Create new category
+              await Category.create(category);
+              console.log(`Created category: ${category.name}`);
+            }
+          }
+
+          this.importStats.categories.imported++;
+        } catch (error) {
+          this.importStats.categories.failed++;
+          this.importStats.errors.push({
+            type: 'category',
+            akeneo_code: category.akeneo_code,
+            error: error.message
+          });
+          console.error(`Failed to import category ${category.name}:`, error.message);
+        }
+      }
+
+      console.log('Category import completed');
+      return {
+        success: true,
+        stats: this.importStats.categories,
+        message: `Imported ${this.importStats.categories.imported} categories`
+      };
+
+    } catch (error) {
+      console.error('Category import failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        stats: this.importStats.categories
+      };
+    }
+  }
+
+  /**
+   * Import products from Akeneo to Catalyst
+   */
+  async importProducts(storeId, options = {}) {
+    const { locale = 'en_US', dryRun = false, batchSize = 50 } = options;
+    
+    try {
+      console.log('Starting product import from Akeneo...');
+      
+      // Get category mapping for product category assignment
+      const categoryMapping = await this.buildCategoryMapping(storeId);
+      
+      // Get all products from Akeneo
+      const akeneoProducts = await this.client.getAllProducts();
+      this.importStats.products.total = akeneoProducts.length;
+
+      console.log(`Found ${akeneoProducts.length} products in Akeneo`);
+
+      // Process products in batches
+      for (let i = 0; i < akeneoProducts.length; i += batchSize) {
+        const batch = akeneoProducts.slice(i, i + batchSize);
+        
+        for (const akeneoProduct of batch) {
+          try {
+            // Transform product to Catalyst format
+            const catalystProduct = this.mapping.transformProduct(akeneoProduct, storeId, locale);
+            
+            // Map category IDs
+            catalystProduct.category_ids = this.mapping.mapCategoryIds(
+              akeneoProduct.categories || [], 
+              categoryMapping
+            );
+
+            // Validate product
+            const validationErrors = this.mapping.validateProduct(catalystProduct);
+            if (validationErrors.length > 0) {
+              this.importStats.products.failed++;
+              this.importStats.errors.push({
+                type: 'product',
+                akeneo_identifier: catalystProduct.akeneo_identifier,
+                errors: validationErrors
+              });
+              continue;
+            }
+
+            if (!dryRun) {
+              // Check if product already exists
+              const existingProduct = await Product.findOne({
+                where: { 
+                  store_id: storeId,
+                  sku: catalystProduct.sku
+                }
+              });
+
+              if (existingProduct) {
+                // Update existing product
+                await existingProduct.update({
+                  name: catalystProduct.name,
+                  description: catalystProduct.description,
+                  short_description: catalystProduct.short_description,
+                  price: catalystProduct.price,
+                  compare_price: catalystProduct.compare_price,
+                  cost_price: catalystProduct.cost_price,
+                  weight: catalystProduct.weight,
+                  dimensions: catalystProduct.dimensions,
+                  images: catalystProduct.images,
+                  status: catalystProduct.status,
+                  visibility: catalystProduct.visibility,
+                  featured: catalystProduct.featured,
+                  tags: catalystProduct.tags,
+                  attributes: catalystProduct.attributes,
+                  seo: catalystProduct.seo,
+                  category_ids: catalystProduct.category_ids
+                });
+                
+                console.log(`Updated product: ${catalystProduct.name}`);
+              } else {
+                // Create new product
+                await Product.create(catalystProduct);
+                console.log(`Created product: ${catalystProduct.name}`);
+              }
+            }
+
+            this.importStats.products.imported++;
+          } catch (error) {
+            this.importStats.products.failed++;
+            this.importStats.errors.push({
+              type: 'product',
+              akeneo_identifier: akeneoProduct.identifier,
+              error: error.message
+            });
+            console.error(`Failed to import product ${akeneoProduct.identifier}:`, error.message);
+          }
+        }
+
+        // Log progress
+        console.log(`Processed ${Math.min(i + batchSize, akeneoProducts.length)} of ${akeneoProducts.length} products`);
+      }
+
+      console.log('Product import completed');
+      return {
+        success: true,
+        stats: this.importStats.products,
+        message: `Imported ${this.importStats.products.imported} products`
+      };
+
+    } catch (error) {
+      console.error('Product import failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        stats: this.importStats.products
+      };
+    }
+  }
+
+  /**
+   * Import both categories and products
+   */
+  async importAll(storeId, options = {}) {
+    const { locale = 'en_US', dryRun = false } = options;
+
+    try {
+      console.log('Starting full import from Akeneo...');
+
+      // Reset stats
+      this.resetStats();
+
+      // Import categories first (needed for product category mapping)
+      const categoryResult = await this.importCategories(storeId, { locale, dryRun });
+      
+      if (!categoryResult.success) {
+        return {
+          success: false,
+          error: 'Category import failed',
+          results: { categories: categoryResult }
+        };
+      }
+
+      // Import products
+      const productResult = await this.importProducts(storeId, { locale, dryRun });
+
+      return {
+        success: true,
+        results: {
+          categories: categoryResult,
+          products: productResult
+        },
+        totalStats: {
+          categories: this.importStats.categories,
+          products: this.importStats.products,
+          errors: this.importStats.errors
+        }
+      };
+
+    } catch (error) {
+      console.error('Full import failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        totalStats: {
+          categories: this.importStats.categories,
+          products: this.importStats.products,
+          errors: this.importStats.errors
+        }
+      };
+    }
+  }
+
+  /**
+   * Build mapping from Akeneo category codes to Catalyst category IDs
+   */
+  async buildCategoryMapping(storeId) {
+    const categories = await Category.findAll({
+      where: { store_id: storeId },
+      attributes: ['id', 'name']
+    });
+
+    const mapping = {};
+    categories.forEach(category => {
+      // Create mapping based on category name (could be enhanced)
+      const akeneoCode = category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      mapping[akeneoCode] = category.id;
+    });
+
+    return mapping;
+  }
+
+  /**
+   * Reset import statistics
+   */
+  resetStats() {
+    this.importStats = {
+      categories: { total: 0, imported: 0, skipped: 0, failed: 0 },
+      products: { total: 0, imported: 0, skipped: 0, failed: 0 },
+      errors: []
+    };
+  }
+
+  /**
+   * Get import statistics
+   */
+  getStats() {
+    return this.importStats;
+  }
+
+  /**
+   * Get configuration status
+   */
+  getConfigStatus() {
+    return {
+      hasConfig: !!(this.config.baseUrl && this.config.clientId && this.config.clientSecret),
+      baseUrl: this.config.baseUrl || null,
+      clientId: this.config.clientId || null,
+      username: this.config.username || null
+    };
+  }
+}
+
+module.exports = AkeneoIntegration;
