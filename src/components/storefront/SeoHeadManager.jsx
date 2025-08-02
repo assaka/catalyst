@@ -418,11 +418,15 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         }
 
         // Google Ads Conversion Tracking
+        // Always clean up existing Google Ads scripts first
+        const cleanupGoogleAds = () => {
+            document.querySelectorAll('script[data-google-ads]').forEach(el => el.remove());
+            document.querySelectorAll('script[src*="googletagmanager.com/gtag/js"]').forEach(el => el.remove());
+        };
+        
+        cleanupGoogleAds();
+        
         if (analyticsSettings?.google_ads_id) {
-            // Remove existing Google Ads script
-            const existingGoogleAds = document.querySelector('script[data-google-ads="head"]');
-            if (existingGoogleAds) existingGoogleAds.remove();
-
             const script = document.createElement('script');
             script.setAttribute('data-google-ads', 'head');
             script.async = true;
