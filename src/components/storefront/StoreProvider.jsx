@@ -16,10 +16,10 @@ import {
 const StoreContext = createContext(null);
 export const useStore = () => useContext(StoreContext);
 
-// EXTREME caching - 2 hour cache with localStorage persistence
-const CACHE_DURATION = 7200000; // 2 hours
-// Temporary: reduce cache for SEO settings during development
-const SEO_CACHE_DURATION = 60000; // 1 minute for SEO settings
+// Balanced caching strategy
+const CACHE_DURATION_LONG = 3600000; // 1 hour - for data that rarely changes (stores, cookie consent)
+const CACHE_DURATION_MEDIUM = 300000; // 5 minutes - for semi-static data (categories, attributes)
+const CACHE_DURATION_SHORT = 60000; // 1 minute - for frequently updated data (taxes, labels, templates)
 const apiCache = new Map();
 
 // Load from localStorage on init
@@ -89,7 +89,7 @@ const getCurrencySymbol = (currencyCode) => {
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Ultra-aggressive caching - return stale data immediately, refresh in background
-const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION) => {
+const cachedApiCall = async (key, apiCall, ttl = CACHE_DURATION_LONG) => {
   const now = Date.now();
   
   // Force fresh calls for critical product APIs after database reset
@@ -324,7 +324,7 @@ export const StoreProvider = ({ children }) => {
         const cookieConsentData = await cachedApiCall(`cookie-consent-${selectedStore.id}`, async () => {
           const result = await StorefrontCookieConsentSettings.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
-        });
+        }, CACHE_DURATION_LONG);
         
         if (cookieConsentData && cookieConsentData.length > 0) {
           const cookieSettings = cookieConsentData[0];
@@ -386,16 +386,21 @@ export const StoreProvider = ({ children }) => {
         console.error('[StoreProvider] Error loading cookie consent settings:', error);
       }
 
-      // Load other data with extreme caching - all in parallel with staggered delays
+      // Load other data with balanced caching - all in parallel with appropriate cache durations
       const dataPromises = [
+        // SHORT cache (1 minute) - frequently updated by admin
         cachedApiCall(`taxes-${selectedStore.id}`, async () => {
           const result = await StorefrontTax.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
-        }),
+        }, CACHE_DURATION_SHORT),
+        
+        // MEDIUM cache (5 minutes) - semi-static data
         cachedApiCall(`categories-${selectedStore.id}`, async () => {
           const result = await StorefrontCategory.filter({ store_id: selectedStore.id, limit: 1000 });
           return Array.isArray(result) ? result : [];
-        }),
+        }, CACHE_DURATION_MEDIUM),
+        
+        // SHORT cache (1 minute) - frequently updated by admin
         cachedApiCall(`labels-${selectedStore.id}`, async () => {
           try {
             const result = await StorefrontProductLabel.filter({ store_id: selectedStore.id });
@@ -405,19 +410,25 @@ export const StoreProvider = ({ children }) => {
             console.error('Error fetching product labels:', error);
             return [];
           }
-        }),
+        }, CACHE_DURATION_SHORT),
+        
+        // MEDIUM cache (5 minutes) - semi-static data
         cachedApiCall(`attributes-${selectedStore.id}`, async () => {
           const result = await StorefrontAttribute.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
-        }),
+        }, CACHE_DURATION_MEDIUM),
+        
+        // MEDIUM cache (5 minutes) - semi-static data
         cachedApiCall(`attr-sets-${selectedStore.id}`, async () => {
           const result = await StorefrontAttributeSet.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
-        }),
+        }, CACHE_DURATION_MEDIUM),
+        
+        // SHORT cache (1 minute) - frequently updated by admin
         cachedApiCall(`seo-templates-${selectedStore.id}`, async () => {
           const result = await StorefrontSeoTemplate.filter({ store_id: selectedStore.id });
           return Array.isArray(result) ? result : [];
-        })
+        }, CACHE_DURATION_SHORT)
       ];
       
       // Process all results
