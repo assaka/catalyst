@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const AkeneoIntegration = require('../services/akeneo-integration');
+const IntegrationConfig = require('../models/IntegrationConfig');
 
 // Debug route to test if integrations router is working
 router.get('/test', (req, res) => {
@@ -15,16 +16,92 @@ router.get('/test', (req, res) => {
 // Middleware to check if user is authenticated and has admin role
 const storeAuth = require('../middleware/storeAuth');
 
+// Helper function to load Akeneo configuration
+const loadAkeneoConfig = async (storeId, reqBody = null) => {
+  // If configuration is provided in request body, use it
+  if (reqBody && reqBody.baseUrl) {
+    return {
+      baseUrl: reqBody.baseUrl,
+      clientId: reqBody.clientId,
+      clientSecret: reqBody.clientSecret,
+      username: reqBody.username,
+      password: reqBody.password
+    };
+  }
+
+  // Try to load from database
+  const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+  if (integrationConfig && integrationConfig.config_data) {
+    return integrationConfig.config_data;
+  }
+
+  // Fallback to environment variables
+  return {
+    baseUrl: process.env.AKENEO_BASE_URL,
+    clientId: process.env.AKENEO_CLIENT_ID,
+    clientSecret: process.env.AKENEO_CLIENT_SECRET,
+    username: process.env.AKENEO_USERNAME,
+    password: process.env.AKENEO_PASSWORD
+  };
+};
+
+// Helper function to handle import operations with proper status tracking
+const handleImportOperation = async (storeId, req, res, importFunction) => {
+  try {
+    // Load configuration from database or environment
+    const config = await loadAkeneoConfig(storeId, req.body);
+
+    if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Akeneo configuration is incomplete. Please save your configuration first.'
+      });
+    }
+
+    const integration = new AkeneoIntegration(config);
+    
+    // Update sync status
+    const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+    if (integrationConfig) {
+      await integrationConfig.updateSyncStatus('syncing');
+    }
+
+    try {
+      const result = await importFunction(integration, storeId, req.body);
+      
+      // Update sync status based on result
+      if (integrationConfig) {
+        await integrationConfig.updateSyncStatus(result.success ? 'success' : 'error', result.error || null);
+      }
+
+      res.json(result);
+    } catch (importError) {
+      // Update sync status on error
+      if (integrationConfig) {
+        await integrationConfig.updateSyncStatus('error', importError.message);
+      }
+      throw importError;
+    }
+  } catch (error) {
+    console.error('Error in import operation:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
 /**
  * Test Akeneo connection
  * POST /api/integrations/akeneo/test-connection
  */
-router.post('/akeneo/test-connection', [
-  body('baseUrl').isURL().withMessage('Valid base URL is required'),
-  body('clientId').notEmpty().withMessage('Client ID is required'),
-  body('clientSecret').notEmpty().withMessage('Client secret is required'),
-  body('username').notEmpty().withMessage('Username is required'),
-  body('password').notEmpty().withMessage('Password is required')
+router.post('/akeneo/test-connection', storeAuth, [
+  body('baseUrl').optional().isURL().withMessage('Valid base URL is required'),
+  body('clientId').optional().notEmpty().withMessage('Client ID is required'),
+  body('clientSecret').optional().notEmpty().withMessage('Client secret is required'),
+  body('username').optional().notEmpty().withMessage('Username is required'),
+  body('password').optional().notEmpty().withMessage('Password is required')
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -35,16 +112,17 @@ router.post('/akeneo/test-connection', [
       });
     }
 
-    const { baseUrl, clientId, clientSecret, username, password } = req.body;
+    const storeId = req.storeId;
+    const config = await loadAkeneoConfig(storeId, req.body);
 
-    const integration = new AkeneoIntegration({
-      baseUrl,
-      clientId,
-      clientSecret,
-      username,
-      password
-    });
+    if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Akeneo configuration is incomplete. Please save your configuration first or provide all required fields.'
+      });
+    }
 
+    const integration = new AkeneoIntegration(config);
     const result = await integration.testConnection();
 
     res.json(result);
@@ -63,54 +141,22 @@ router.post('/akeneo/test-connection', [
  * POST /api/integrations/akeneo/import-categories
  */
 router.post('/akeneo/import-categories', storeAuth, [
-  body('baseUrl').isURL().withMessage('Valid base URL is required'),
-  body('clientId').notEmpty().withMessage('Client ID is required'),
-  body('clientSecret').notEmpty().withMessage('Client secret is required'),
-  body('username').notEmpty().withMessage('Username is required'),
-  body('password').notEmpty().withMessage('Password is required'),
   body('locale').optional().isString().withMessage('Locale must be a string'),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean')
 ], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-
-    const { 
-      baseUrl, 
-      clientId, 
-      clientSecret, 
-      username, 
-      password,
-      locale = 'en_US',
-      dryRun = false
-    } = req.body;
-
-    const storeId = req.storeId;
-
-    const integration = new AkeneoIntegration({
-      baseUrl,
-      clientId,
-      clientSecret,
-      username,
-      password
-    });
-
-    const result = await integration.importCategories(storeId, { locale, dryRun });
-
-    res.json(result);
-  } catch (error) {
-    console.error('Error importing categories from Akeneo:', error);
-    res.status(500).json({
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
       success: false,
-      message: 'Internal server error',
-      error: error.message
+      errors: errors.array()
     });
   }
+
+  const storeId = req.storeId;
+  await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
+    const { locale = 'en_US', dryRun = false } = body;
+    return await integration.importCategories(storeId, { locale, dryRun });
+  });
 });
 
 /**
@@ -118,56 +164,23 @@ router.post('/akeneo/import-categories', storeAuth, [
  * POST /api/integrations/akeneo/import-products
  */
 router.post('/akeneo/import-products', storeAuth, [
-  body('baseUrl').isURL().withMessage('Valid base URL is required'),
-  body('clientId').notEmpty().withMessage('Client ID is required'),
-  body('clientSecret').notEmpty().withMessage('Client secret is required'),
-  body('username').notEmpty().withMessage('Username is required'),
-  body('password').notEmpty().withMessage('Password is required'),
   body('locale').optional().isString().withMessage('Locale must be a string'),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
   body('batchSize').optional().isInt({ min: 1, max: 200 }).withMessage('Batch size must be between 1 and 200')
 ], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-
-    const { 
-      baseUrl, 
-      clientId, 
-      clientSecret, 
-      username, 
-      password,
-      locale = 'en_US',
-      dryRun = false,
-      batchSize = 50
-    } = req.body;
-
-    const storeId = req.storeId;
-
-    const integration = new AkeneoIntegration({
-      baseUrl,
-      clientId,
-      clientSecret,
-      username,
-      password
-    });
-
-    const result = await integration.importProducts(storeId, { locale, dryRun, batchSize });
-
-    res.json(result);
-  } catch (error) {
-    console.error('Error importing products from Akeneo:', error);
-    res.status(500).json({
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
       success: false,
-      message: 'Internal server error',
-      error: error.message
+      errors: errors.array()
     });
   }
+
+  const storeId = req.storeId;
+  await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
+    const { locale = 'en_US', dryRun = false, batchSize = 50 } = body;
+    return await integration.importProducts(storeId, { locale, dryRun, batchSize });
+  });
 });
 
 /**
@@ -175,76 +188,70 @@ router.post('/akeneo/import-products', storeAuth, [
  * POST /api/integrations/akeneo/import-all
  */
 router.post('/akeneo/import-all', storeAuth, [
-  body('baseUrl').isURL().withMessage('Valid base URL is required'),
-  body('clientId').notEmpty().withMessage('Client ID is required'),
-  body('clientSecret').notEmpty().withMessage('Client secret is required'),
-  body('username').notEmpty().withMessage('Username is required'),
-  body('password').notEmpty().withMessage('Password is required'),
   body('locale').optional().isString().withMessage('Locale must be a string'),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean')
 ], async (req, res) => {
-  try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        errors: errors.array()
-      });
-    }
-
-    const { 
-      baseUrl, 
-      clientId, 
-      clientSecret, 
-      username, 
-      password,
-      locale = 'en_US',
-      dryRun = false
-    } = req.body;
-
-    const storeId = req.storeId;
-
-    const integration = new AkeneoIntegration({
-      baseUrl,
-      clientId,
-      clientSecret,
-      username,
-      password
-    });
-
-    const result = await integration.importAll(storeId, { locale, dryRun });
-
-    res.json(result);
-  } catch (error) {
-    console.error('Error importing data from Akeneo:', error);
-    res.status(500).json({
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
       success: false,
-      message: 'Internal server error',
-      error: error.message
+      errors: errors.array()
     });
   }
+
+  const storeId = req.storeId;
+  await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
+    const { locale = 'en_US', dryRun = false } = body;
+    return await integration.importAll(storeId, { locale, dryRun });
+  });
 });
 
 /**
  * Get integration configuration status
  * GET /api/integrations/akeneo/config-status
  */
-router.get('/akeneo/config-status', (req, res) => {
+router.get('/akeneo/config-status', storeAuth, async (req, res) => {
   try {
-    const config = {
-      baseUrl: process.env.AKENEO_BASE_URL || null,
-      clientId: process.env.AKENEO_CLIENT_ID || null,
-      username: process.env.AKENEO_USERNAME || null,
-      // Don't expose sensitive data
-      hasClientSecret: !!(process.env.AKENEO_CLIENT_SECRET),
-      hasPassword: !!(process.env.AKENEO_PASSWORD)
-    };
-
-    const hasConfig = config.baseUrl && config.clientId && config.hasClientSecret && config.username && config.hasPassword;
+    const storeId = req.storeId;
+    
+    // Try to get config from database first
+    const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+    
+    let config = {};
+    let hasConfig = false;
+    
+    if (integrationConfig && integrationConfig.config_data) {
+      // Config found in database
+      const configData = integrationConfig.config_data;
+      config = {
+        baseUrl: configData.baseUrl || null,
+        clientId: configData.clientId || null,
+        username: configData.username || null,
+        // Don't expose sensitive data
+        hasClientSecret: !!(configData.clientSecret),
+        hasPassword: !!(configData.password),
+        lastSync: integrationConfig.last_sync_at,
+        syncStatus: integrationConfig.sync_status
+      };
+      hasConfig = config.baseUrl && config.clientId && config.hasClientSecret && config.username && config.hasPassword;
+    } else {
+      // Fallback to environment variables for backward compatibility
+      config = {
+        baseUrl: process.env.AKENEO_BASE_URL || null,
+        clientId: process.env.AKENEO_CLIENT_ID || null,
+        username: process.env.AKENEO_USERNAME || null,
+        hasClientSecret: !!(process.env.AKENEO_CLIENT_SECRET),
+        hasPassword: !!(process.env.AKENEO_PASSWORD),
+        lastSync: null,
+        syncStatus: 'idle'
+      };
+      hasConfig = config.baseUrl && config.clientId && config.hasClientSecret && config.username && config.hasPassword;
+    }
 
     res.json({
       success: true,
       hasConfig,
+      source: integrationConfig ? 'database' : 'environment',
       config: {
         ...config,
         // Remove sensitive flags for security
@@ -296,10 +303,10 @@ router.get('/akeneo/locales', (req, res) => {
 });
 
 /**
- * Save Akeneo configuration (environment variables)
+ * Save Akeneo configuration
  * POST /api/integrations/akeneo/save-config
  */
-router.post('/akeneo/save-config', [
+router.post('/akeneo/save-config', storeAuth, [
   body('baseUrl').isURL().withMessage('Valid base URL is required'),
   body('clientId').notEmpty().withMessage('Client ID is required'),
   body('clientSecret').notEmpty().withMessage('Client secret is required'),
@@ -315,13 +322,10 @@ router.post('/akeneo/save-config', [
       });
     }
 
-    // Note: In a production environment, you would want to save these to a secure 
-    // configuration management system or encrypted database rather than setting 
-    // environment variables directly
     const { baseUrl, clientId, clientSecret, username, password } = req.body;
+    const storeId = req.storeId;
 
-    // For now, we'll just test the connection and return success
-    // In a real implementation, you would save these securely
+    // Test the connection first
     const integration = new AkeneoIntegration({
       baseUrl,
       clientId,
@@ -340,10 +344,21 @@ router.post('/akeneo/save-config', [
       });
     }
 
+    // Save configuration to database (will be encrypted automatically)
+    const configData = {
+      baseUrl,
+      clientId,
+      clientSecret,
+      username,
+      password
+    };
+
+    await IntegrationConfig.createOrUpdate(storeId, 'akeneo', configData);
+
     res.json({
       success: true,
-      message: 'Configuration validated successfully. Please set environment variables manually for production use.',
-      note: 'For security reasons, configuration is not persisted automatically. Please set the following environment variables: AKENEO_BASE_URL, AKENEO_CLIENT_ID, AKENEO_CLIENT_SECRET, AKENEO_USERNAME, AKENEO_PASSWORD'
+      message: 'Akeneo configuration saved successfully and connection verified!',
+      note: 'Configuration has been securely stored in the database with sensitive data encrypted.'
     });
   } catch (error) {
     console.error('Error saving Akeneo configuration:', error);

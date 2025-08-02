@@ -30,6 +30,7 @@ const Address = require('./Address');
 const ProductTab = require('./ProductTab');
 const StoreTeam = require('./StoreTeam');
 const StoreInvitation = require('./StoreInvitation');
+const IntegrationConfig = require('./IntegrationConfig');
 
 // Define associations
 const defineAssociations = () => {
@@ -179,6 +180,10 @@ const defineAssociations = () => {
   StoreInvitation.belongsTo(User, { as: 'accepter', foreignKey: 'accepted_by' });
   Store.hasMany(StoreInvitation, { foreignKey: 'store_id' });
   User.hasMany(StoreInvitation, { as: 'sentInvitations', foreignKey: 'invited_by' });
+
+  // IntegrationConfig associations
+  IntegrationConfig.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(IntegrationConfig, { foreignKey: 'store_id' });
 };
 
 // Initialize associations
@@ -216,5 +221,6 @@ module.exports = {
   Address,
   ProductTab,
   StoreTeam,
-  StoreInvitation
+  StoreInvitation,
+  IntegrationConfig
 };
