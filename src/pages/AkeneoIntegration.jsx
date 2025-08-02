@@ -384,6 +384,146 @@ const AkeneoIntegration = () => {
     }
   };
 
+  const importAttributes = async () => {
+    console.log('📦 Starting attributes import...');
+    
+    if (!connectionStatus?.success) {
+      console.error('❌ Connection not tested or failed');
+      toast.error('Please test the connection first');
+      return;
+    }
+
+    // Get store_id from localStorage
+    const storeId = localStorage.getItem('selectedStoreId');
+    console.log('🏪 Using store ID:', storeId);
+    
+    if (!storeId) {
+      console.error('❌ No store selected');
+      toast.error('No store selected. Please select a store first.');
+      return;
+    }
+
+    console.log('🔧 Import settings:', { dryRun });
+
+    setImporting(true);
+    setImportResults(null);
+
+    try {
+      console.log('📡 Making API call to import-attributes...');
+      
+      // Prepare the request payload for import
+      const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
+      let requestPayload;
+      
+      if (hasPlaceholders && configSaved) {
+        // Use stored config for import
+        requestPayload = { dryRun };
+        console.log('🔒 Using stored configuration for import');
+      } else {
+        // Use provided config
+        requestPayload = { ...config, dryRun };
+        console.log('📋 Using provided configuration for import');
+      }
+      
+      const response = await apiClient.post('/integrations/akeneo/import-attributes', requestPayload, {
+        'x-store-id': storeId
+      });
+
+      console.log('📥 Import attributes response:', response);
+      
+      const responseData = response.data || response;
+      setImportResults(responseData);
+      
+      if (responseData.success) {
+        console.log('✅ Attributes import successful');
+        const stats = responseData.stats;
+        toast.success(`Attributes import completed! ${stats?.imported || 0} attributes imported`);
+      } else {
+        console.log('❌ Attributes import failed:', responseData.error);
+        toast.error(`Attributes import failed: ${responseData.error}`);
+      }
+    } catch (error) {
+      console.error('❌ Attributes import error:', error);
+      
+      const message = error.response?.data?.error || error.response?.data?.message || error.message;
+      setImportResults({ success: false, error: message });
+      toast.error(`Import failed: ${message}`);
+    } finally {
+      console.log('🏁 Attributes import completed');
+      setImporting(false);
+    }
+  };
+
+  const importFamilies = async () => {
+    console.log('📦 Starting families import...');
+    
+    if (!connectionStatus?.success) {
+      console.error('❌ Connection not tested or failed');
+      toast.error('Please test the connection first');
+      return;
+    }
+
+    // Get store_id from localStorage
+    const storeId = localStorage.getItem('selectedStoreId');
+    console.log('🏪 Using store ID:', storeId);
+    
+    if (!storeId) {
+      console.error('❌ No store selected');
+      toast.error('No store selected. Please select a store first.');
+      return;
+    }
+
+    console.log('🔧 Import settings:', { dryRun });
+
+    setImporting(true);
+    setImportResults(null);
+
+    try {
+      console.log('📡 Making API call to import-families...');
+      
+      // Prepare the request payload for import
+      const hasPlaceholders = config.clientSecret === '••••••••' || config.password === '••••••••';
+      let requestPayload;
+      
+      if (hasPlaceholders && configSaved) {
+        // Use stored config for import
+        requestPayload = { dryRun };
+        console.log('🔒 Using stored configuration for import');
+      } else {
+        // Use provided config
+        requestPayload = { ...config, dryRun };
+        console.log('📋 Using provided configuration for import');
+      }
+      
+      const response = await apiClient.post('/integrations/akeneo/import-families', requestPayload, {
+        'x-store-id': storeId
+      });
+
+      console.log('📥 Import families response:', response);
+      
+      const responseData = response.data || response;
+      setImportResults(responseData);
+      
+      if (responseData.success) {
+        console.log('✅ Families import successful');
+        const stats = responseData.stats;
+        toast.success(`Families import completed! ${stats?.imported || 0} families imported`);
+      } else {
+        console.log('❌ Families import failed:', responseData.error);
+        toast.error(`Families import failed: ${responseData.error}`);
+      }
+    } catch (error) {
+      console.error('❌ Families import error:', error);
+      
+      const message = error.response?.data?.error || error.response?.data?.message || error.message;
+      setImportResults({ success: false, error: message });
+      toast.error(`Import failed: ${message}`);
+    } finally {
+      console.log('🏁 Families import completed');
+      setImporting(false);
+    }
+  };
+
   const importProducts = async () => {
     if (!connectionStatus?.success) {
       toast.error('Please test the connection first');
@@ -569,10 +709,18 @@ const AkeneoIntegration = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="configuration" className="flex items-center gap-2">
             <Settings className="h-4 w-4" />
             Configuration
+          </TabsTrigger>
+          <TabsTrigger value="attributes" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Attributes
+          </TabsTrigger>
+          <TabsTrigger value="families" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Families
           </TabsTrigger>
           <TabsTrigger value="categories" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
@@ -732,6 +880,139 @@ const AkeneoIntegration = () => {
                   <CheckCircle className="h-4 w-4 text-blue-600" />
                   <AlertDescription className="text-blue-800">
                     Configuration has been saved successfully. You can now test the connection or proceed with imports.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="attributes" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Import Attributes</CardTitle>
+              <CardDescription>
+                Import attribute definitions from Akeneo PIM. These define the properties and characteristics that can be assigned to products.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!connectionStatus?.success && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Please test your connection first before importing attributes.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="attributes-dry-run" 
+                  checked={dryRun} 
+                  onCheckedChange={handleDryRunChange}
+                />
+                <Label htmlFor="attributes-dry-run">Dry Run (Preview only)</Label>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Button 
+                  onClick={importAttributes} 
+                  disabled={importing || !connectionStatus?.success}
+                  className="flex items-center gap-2"
+                >
+                  {importing ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {importing ? 'Importing...' : 'Import Attributes'}
+                </Button>
+              </div>
+
+              {importResults && (
+                <Alert className={importResults.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                  {importResults.success ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                  )}
+                  <AlertDescription className={importResults.success ? 'text-green-800' : 'text-red-800'}>
+                    {importResults.message || importResults.error}
+                    {importResults.stats && (
+                      <div className="mt-2 text-sm">
+                        <p>Total: {importResults.stats.total}, Imported: {importResults.stats.imported}, Failed: {importResults.stats.failed}</p>
+                      </div>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="families" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Import Families</CardTitle>
+              <CardDescription>
+                Import product families (attribute sets) from Akeneo PIM. Families define which attributes are available for different product types.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!connectionStatus?.success && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Please test your connection first before importing families.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Make sure to import <strong>Attributes</strong> first, as families depend on attributes being available in the system.
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="families-dry-run" 
+                  checked={dryRun} 
+                  onCheckedChange={handleDryRunChange}
+                />
+                <Label htmlFor="families-dry-run">Dry Run (Preview only)</Label>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Button 
+                  onClick={importFamilies} 
+                  disabled={importing || !connectionStatus?.success}
+                  className="flex items-center gap-2"
+                >
+                  {importing ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  {importing ? 'Importing...' : 'Import Families'}
+                </Button>
+              </div>
+
+              {importResults && (
+                <Alert className={importResults.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                  {importResults.success ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : (
+                    <AlertCircle className="h-4 w-4 text-red-600" />
+                  )}
+                  <AlertDescription className={importResults.success ? 'text-green-800' : 'text-red-800'}>
+                    {importResults.message || importResults.error}
+                    {importResults.stats && (
+                      <div className="mt-2 text-sm">
+                        <p>Total: {importResults.stats.total}, Imported: {importResults.stats.imported}, Failed: {importResults.stats.failed}</p>
+                      </div>
+                    )}
                   </AlertDescription>
                 </Alert>
               )}
