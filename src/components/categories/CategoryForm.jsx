@@ -162,14 +162,14 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         <div>
           <Label htmlFor="parent_id">Parent Category</Label>
           <Select
-            value={formData.parent_id || ""}
-            onValueChange={(value) => setFormData(prev => ({ ...prev, parent_id: value || null }))}
+            value={formData.parent_id || "none"}
+            onValueChange={(value) => setFormData(prev => ({ ...prev, parent_id: value === "none" ? null : value }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select parent category (optional)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">No Parent (Root Category)</SelectItem>
+              <SelectItem value="none">No Parent (Root Category)</SelectItem>
               {parentCategories && parentCategories
                 .filter(cat => cat.id !== category?.id) // Don't allow selecting self as parent
                 .map((parentCat) => (

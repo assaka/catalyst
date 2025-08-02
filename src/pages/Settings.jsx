@@ -648,14 +648,14 @@ export default function Settings() {
                 <div>
                   <Label htmlFor="root_category_id">Root Category</Label>
                   <Select 
-                    value={store?.root_category_id || ""} 
-                    onValueChange={(value) => setStore(prev => ({ ...prev, root_category_id: value || null }))}
+                    value={store?.root_category_id || "none"} 
+                    onValueChange={(value) => setStore(prev => ({ ...prev, root_category_id: value === "none" ? null : value }))}
                   >
                     <SelectTrigger id="root_category_id">
                       <SelectValue placeholder="Select root category (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No Root Category</SelectItem>
+                      <SelectItem value="none">No Root Category</SelectItem>
                       {categories
                         .filter(cat => !cat.parent_id) // Only show root categories
                         .map((category) => (
