@@ -2,6 +2,7 @@ const AkeneoClient = require('./akeneo-client');
 const AkeneoMapping = require('./akeneo-mapping');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
+const { Op } = require('sequelize');
 
 class AkeneoIntegration {
   constructor(config) {
@@ -60,6 +61,7 @@ class AkeneoIntegration {
 
       // Import categories (respecting hierarchy - parents first)
       const sortedCategories = hierarchicalCategories.sort((a, b) => a.level - b.level);
+      const createdCategories = {}; // Map of akeneo_code to database ID
       
       for (const category of sortedCategories) {
         try {
@@ -76,11 +78,17 @@ class AkeneoIntegration {
           }
 
           if (!dryRun) {
-            // Check if category already exists
+            // Resolve parent_id if this category has a parent
+            let parentId = null;
+            if (category._temp_parent_akeneo_code && createdCategories[category._temp_parent_akeneo_code]) {
+              parentId = createdCategories[category._temp_parent_akeneo_code];
+            }
+            
+            // Check if category already exists by akeneo_code or slug
             const existingCategory = await Category.findOne({
               where: { 
                 store_id: storeId,
-                $or: [
+                [Op.or]: [
                   { slug: category.slug },
                   { name: category.name }
                 ]
@@ -99,17 +107,27 @@ class AkeneoIntegration {
                 meta_title: category.meta_title,
                 meta_description: category.meta_description,
                 meta_keywords: category.meta_keywords,
-                parent_id: category.parent_id,
+                parent_id: parentId,
                 level: category.level,
                 path: category.path
               });
               
-              console.log(`Updated category: ${category.name}`);
+              createdCategories[category.akeneo_code] = existingCategory.id;
+              console.log(`✅ Updated category: ${category.name} (ID: ${existingCategory.id})`);
             } else {
+              // Prepare category data with resolved parent_id
+              const categoryData = { ...category };
+              delete categoryData.id;
+              delete categoryData._temp_parent_akeneo_code;
+              categoryData.parent_id = parentId;
+              
               // Create new category
-              await Category.create(category);
-              console.log(`Created category: ${category.name}`);
+              const newCategory = await Category.create(categoryData);
+              createdCategories[category.akeneo_code] = newCategory.id;
+              console.log(`✅ Created category: ${newCategory.name} (ID: ${newCategory.id})`);
             }
+          } else {
+            console.log(`🔍 Dry run - would process category: ${category.name}`);
           }
 
           this.importStats.categories.imported++;

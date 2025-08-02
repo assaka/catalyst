@@ -25,7 +25,6 @@ class AkeneoMapping {
    */
   transformCategory(akeneoCategory, storeId, locale = 'en_US') {
     const catalystCategory = {
-      id: uuidv4(),
       store_id: storeId,
       name: this.extractLocalizedValue(akeneoCategory.labels, locale) || akeneoCategory.code,
       slug: this.generateSlug(this.extractLocalizedValue(akeneoCategory.labels, locale) || akeneoCategory.code),
@@ -57,7 +56,6 @@ class AkeneoMapping {
     const values = akeneoProduct.values || {};
     
     const catalystProduct = {
-      id: uuidv4(),
       store_id: storeId,
       name: this.extractProductValue(values, 'name', locale) || 
             this.extractProductValue(values, 'label', locale) || 
@@ -260,12 +258,14 @@ class AkeneoMapping {
     });
 
     // Set parent relationships and calculate levels
+    // Note: parent_id will be resolved after database insertion
     catalystCategories.forEach(category => {
       if (category.akeneo_parent) {
         const parentCategory = codeToCategory[category.akeneo_parent];
         if (parentCategory) {
-          category.parent_id = parentCategory.id;
-          category.level = parentCategory.level + 1;
+          // Mark for later parent resolution
+          category._temp_parent_akeneo_code = category.akeneo_parent;
+          category.level = (parentCategory.level || 0) + 1;
           category.path = parentCategory.path ? 
             `${parentCategory.path}/${category.akeneo_code}` : 
             category.akeneo_code;
