@@ -97,8 +97,17 @@ class AkeneoIntegration {
           if (!dryRun) {
             // Resolve parent_id if this category has a parent
             let parentId = null;
-            if (category._temp_parent_akeneo_code && createdCategories[category._temp_parent_akeneo_code]) {
+            if (category._temp_parent_akeneo_code && createdCategories[category._temp_parent_akeneo_code] && !category.isRoot) {
               parentId = createdCategories[category._temp_parent_akeneo_code];
+            }
+            
+            // Log category processing info
+            console.log(`🔍 Processing category: "${category.name}" (${category.akeneo_code})`);
+            console.log(`   - Level: ${category.level}, IsRoot: ${category.isRoot}, Parent: ${category._temp_parent_akeneo_code || 'none'}`);
+            console.log(`   - Resolved parent_id: ${parentId}`);
+            
+            if (category.isRoot) {
+              console.log(`   🌱 This is a ROOT category - parent_id will be set to null`);
             }
             
             // Check if category already exists by akeneo_code or slug
@@ -124,7 +133,7 @@ class AkeneoIntegration {
                 meta_title: category.meta_title,
                 meta_description: category.meta_description,
                 meta_keywords: category.meta_keywords,
-                parent_id: parentId,
+                parent_id: category.isRoot ? null : parentId,
                 level: category.level,
                 path: category.path
               });
@@ -136,7 +145,8 @@ class AkeneoIntegration {
               const categoryData = { ...category };
               delete categoryData.id;
               delete categoryData._temp_parent_akeneo_code;
-              categoryData.parent_id = parentId;
+              delete categoryData.isRoot; // Remove temporary flag
+              categoryData.parent_id = category.isRoot ? null : parentId;
               
               // Create new category
               const newCategory = await Category.create(categoryData);

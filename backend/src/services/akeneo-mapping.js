@@ -251,30 +251,64 @@ class AkeneoMapping {
    * Build category hierarchy from flat Akeneo categories
    */
   buildCategoryHierarchy(akeneoCategories, catalystCategories) {
+    // Create a map of Akeneo codes to original Akeneo categories to check hierarchy
+    const akeneoCodeToCategory = {};
+    akeneoCategories.forEach(akeneoCategory => {
+      akeneoCodeToCategory[akeneoCategory.code] = akeneoCategory;
+    });
+    
     // Create a map of Akeneo codes to Catalyst categories
     const codeToCategory = {};
     catalystCategories.forEach(category => {
       codeToCategory[category.akeneo_code] = category;
     });
 
-    // Set parent relationships and calculate levels
-    // Note: parent_id will be resolved after database insertion
+    // Set parent relationships and calculate levels based on Akeneo hierarchy
     catalystCategories.forEach(category => {
-      if (category.akeneo_parent) {
-        const parentCategory = codeToCategory[category.akeneo_parent];
+      const akeneoCategory = akeneoCodeToCategory[category.akeneo_code];
+      
+      if (!akeneoCategory) {
+        console.warn(`⚠️ Akeneo category not found for code: ${category.akeneo_code}`);
+        // Default to root if Akeneo category not found
+        category.level = 0;
+        category.path = category.akeneo_code;
+        category.isRoot = true;
+        category.parent_id = null;
+        return;
+      }
+
+      // Check if this category has a parent in Akeneo
+      if (akeneoCategory.parent && akeneoCategory.parent !== null) {
+        const parentCategory = codeToCategory[akeneoCategory.parent];
         if (parentCategory) {
-          // Mark for later parent resolution
-          category._temp_parent_akeneo_code = category.akeneo_parent;
+          // This category has a valid parent
+          category._temp_parent_akeneo_code = akeneoCategory.parent;
           category.level = (parentCategory.level || 0) + 1;
           category.path = parentCategory.path ? 
             `${parentCategory.path}/${category.akeneo_code}` : 
             category.akeneo_code;
+          category.isRoot = false;
+          console.log(`📎 "${category.name}" (${category.akeneo_code}) has parent: ${akeneoCategory.parent}`);
+        } else {
+          // Parent specified but not found in our import, make it root
+          console.log(`⚠️ Parent "${akeneoCategory.parent}" not found for "${category.name}", making it a root category`);
+          category.level = 0;
+          category.path = category.akeneo_code;
+          category.isRoot = true;
+          category.parent_id = null;
         }
       } else {
+        // No parent specified in Akeneo, this is a root category
+        console.log(`🌱 "${category.name}" (${category.akeneo_code}) is a root category (no parent in Akeneo)`);
         category.level = 0;
         category.path = category.akeneo_code;
+        category.isRoot = true;
+        category.parent_id = null;
       }
     });
+
+    // Sort by level to ensure parents are processed before children
+    catalystCategories.sort((a, b) => a.level - b.level);
 
     return catalystCategories;
   }
