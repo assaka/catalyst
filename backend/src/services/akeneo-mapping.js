@@ -99,6 +99,7 @@ class AkeneoMapping {
       view_count: 0,
       purchase_count: 0,
       // Keep original Akeneo data for reference
+      akeneo_uuid: akeneoProduct.uuid,
       akeneo_identifier: akeneoProduct.identifier,
       akeneo_family: akeneoProduct.family,
       akeneo_groups: akeneoProduct.groups || []

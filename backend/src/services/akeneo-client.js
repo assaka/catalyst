@@ -153,24 +153,24 @@ class AkeneoClient {
   }
 
   /**
-   * Get products from Akeneo (using identifier-based endpoint for compatibility)
+   * Get products from Akeneo v7 (UUID-based endpoint)
    */
   async getProducts(params = {}) {
-    return this.makeRequest('GET', '/api/rest/v1/products', null, params);
+    return this.makeRequest('GET', '/api/rest/v1/products-uuid', null, params);
   }
 
   /**
-   * Get specific product by identifier
+   * Get specific product by UUID
    */
-  async getProduct(identifier) {
-    return this.makeRequest('GET', `/api/rest/v1/products/${identifier}`);
+  async getProduct(uuid) {
+    return this.makeRequest('GET', `/api/rest/v1/products-uuid/${uuid}`);
   }
 
   /**
    * Search products with advanced criteria
    */
   async searchProducts(searchCriteria, params = {}) {
-    return this.makeRequest('POST', '/api/rest/v1/products/search', searchCriteria, params);
+    return this.makeRequest('POST', '/api/rest/v1/products-uuid/search', searchCriteria, params);
   }
 
   /**
@@ -203,20 +203,36 @@ class AkeneoClient {
     const allProducts = [];
     let nextUrl = null;
 
-    do {
-      const params = nextUrl ? {} : { limit: 100 };
-      const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products';
-      
-      const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+    try {
+      do {
+        const params = nextUrl ? {} : { 
+          limit: 10, // Start with smaller limit to test
+          'with_count': false // Akeneo v7 optimization
+        };
+        const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products-uuid';
+        
+        console.log(`🔍 Fetching products from: ${endpoint}`, params);
+        const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
 
-      if (response._embedded && response._embedded.items) {
-        allProducts.push(...response._embedded.items);
-      }
+        if (response._embedded && response._embedded.items) {
+          allProducts.push(...response._embedded.items);
+          console.log(`📦 Fetched ${response._embedded.items.length} products, total: ${allProducts.length}`);
+        }
 
-      nextUrl = response._links && response._links.next ? response._links.next.href : null;
-    } while (nextUrl);
+        nextUrl = response._links && response._links.next ? response._links.next.href : null;
+        
+        // Safety break for testing - remove in production
+        if (allProducts.length >= 50) {
+          console.log('🚫 Limiting to 50 products for testing');
+          break;
+        }
+      } while (nextUrl);
 
-    return allProducts;
+      return allProducts;
+    } catch (error) {
+      console.error('❌ Error fetching products:', error.message);
+      throw error;
+    }
   }
 
   /**
