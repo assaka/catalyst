@@ -295,12 +295,53 @@ class AkeneoClient {
       await this.authenticate();
       await this.getCategories({ limit: 1 });
       
-      // Test product endpoint as well
+      // Test product endpoint with different approaches
       try {
-        console.log('🔍 Testing product endpoint...');
-        await this.getProducts({ limit: 1, 'with_count': false });
-        console.log('✅ Product endpoint test successful');
-        return { success: true, message: 'Connection successful (categories and products)' };
+        console.log('🔍 Testing product endpoints...');
+        
+        // Test 1: Simple products-uuid request without parameters
+        try {
+          console.log('Test 1: Basic products-uuid');
+          await this.makeRequest('GET', '/api/rest/v1/products-uuid');
+          console.log('✅ Basic products-uuid works');
+          return { success: true, message: 'Connection successful (categories and products-uuid)' };
+        } catch (e1) {
+          console.log(`Test 1 failed: ${e1.message}`);
+        }
+        
+        // Test 2: Products-uuid with minimal params
+        try {
+          console.log('Test 2: Products-uuid with limit only');
+          await this.makeRequest('GET', '/api/rest/v1/products-uuid', null, { limit: 1 });
+          console.log('✅ Products-uuid with limit works');
+          return { success: true, message: 'Connection successful (categories and products-uuid with limit)' };
+        } catch (e2) {
+          console.log(`Test 2 failed: ${e2.message}`);
+        }
+        
+        // Test 3: Old products endpoint
+        try {
+          console.log('Test 3: Old products endpoint');
+          await this.makeRequest('GET', '/api/rest/v1/products', null, { limit: 1 });
+          console.log('✅ Old products endpoint works');
+          return { success: true, message: 'Connection successful (categories and old products)' };
+        } catch (e3) {
+          console.log(`Test 3 failed: ${e3.message}`);
+        }
+        
+        // Test 4: Check user permissions by trying to get product model
+        try {
+          console.log('Test 4: Product models endpoint');
+          await this.makeRequest('GET', '/api/rest/v1/product-models', null, { limit: 1 });
+          console.log('✅ Product models endpoint works');
+          return { success: true, message: 'Connection successful (categories and product-models)' };
+        } catch (e4) {
+          console.log(`Test 4 failed: ${e4.message}`);
+        }
+        
+        console.error('❌ All product endpoint tests failed');
+        return { success: true, message: `Connection successful (categories only). Product endpoints unavailable - check user permissions` };
+        
       } catch (productError) {
         console.error('❌ Product endpoint test failed:', productError.message);
         return { success: true, message: `Connection successful (categories only). Product endpoint error: ${productError.message}` };
