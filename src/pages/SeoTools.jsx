@@ -858,23 +858,56 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                     <div className="space-y-3">
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">HTML Title Tag</p>
-                        <code className="text-sm bg-white px-2 py-1 rounded border">
-                          &lt;title&gt;{seoSettings.default_meta_title ? 
-                            seoSettings.default_meta_title
-                              .replace('{{store_name}}', selectedStore?.name || 'Your Store')
-                              .replace('{{page_title}}', 'Sample Page') 
-                            : 'Sample Page'}&lt;/title&gt;
+                        <code className="text-sm bg-white px-2 py-1 rounded border block overflow-x-auto">
+                          &lt;title&gt;{(() => {
+                            if (!seoSettings.default_meta_title) return 'Sample Page';
+                            
+                            let preview = seoSettings.default_meta_title;
+                            // Replace all possible template variables
+                            const replacements = {
+                              '{{store_name}}': selectedStore?.name || 'Your Store',
+                              '{store_name}': selectedStore?.name || 'Your Store',
+                              '{{page_title}}': 'Sample Page',
+                              '{page_title}': 'Sample Page',
+                              '{{site_name}}': selectedStore?.name || 'Your Store',
+                              '{site_name}': selectedStore?.name || 'Your Store'
+                            };
+                            
+                            Object.entries(replacements).forEach(([placeholder, value]) => {
+                              preview = preview.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
+                            });
+                            
+                            return preview;
+                          })()}&lt;/title&gt;
                         </code>
+                        <p className="text-xs text-gray-500 mt-1">Template: <span className="font-mono">{seoSettings.default_meta_title}</span></p>
                       </div>
                       
                       {seoSettings.default_meta_description && (
                         <div>
                           <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Meta Description</p>
-                          <code className="text-sm bg-white px-2 py-1 rounded border block">
-                            &lt;meta name="description" content="{seoSettings.default_meta_description
-                              .replace('{{store_name}}', selectedStore?.name || 'Your Store')
-                              .replace('{{page_title}}', 'Sample Page')}" /&gt;
+                          <code className="text-sm bg-white px-2 py-1 rounded border block overflow-x-auto">
+                            &lt;meta name="description" content="{(() => {
+                              let preview = seoSettings.default_meta_description;
+                              const replacements = {
+                                '{{store_name}}': selectedStore?.name || 'Your Store',
+                                '{store_name}': selectedStore?.name || 'Your Store',
+                                '{{page_title}}': 'Sample Page',
+                                '{page_title}': 'Sample Page',
+                                '{{site_name}}': selectedStore?.name || 'Your Store',
+                                '{site_name}': selectedStore?.name || 'Your Store',
+                                '{{store_description}}': selectedStore?.description || 'Store description',
+                                '{store_description}': selectedStore?.description || 'Store description'
+                              };
+                              
+                              Object.entries(replacements).forEach(([placeholder, value]) => {
+                                preview = preview.replace(new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), value);
+                              });
+                              
+                              return preview;
+                            })()}" /&gt;
                           </code>
+                          <p className="text-xs text-gray-500 mt-1">Template: <span className="font-mono">{seoSettings.default_meta_description}</span></p>
                         </div>
                       )}
                       
