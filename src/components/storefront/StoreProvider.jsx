@@ -174,13 +174,24 @@ export const StoreProvider = ({ children }) => {
     try {
       setLoading(true);
       
+      // EXTENSIVE DEBUG: Check localStorage state
+      console.log('🔍 DEBUGGING localStorage state:');
+      console.log('- forceRefreshStore:', localStorage.getItem('forceRefreshStore'));
+      console.log('- storeProviderCache exists:', !!localStorage.getItem('storeProviderCache'));
+      console.log('- All localStorage keys:', Object.keys(localStorage));
+      
       // Check if we need to force refresh the cache (e.g., after admin settings changes)
       const forceRefresh = localStorage.getItem('forceRefreshStore');
+      console.log('🔍 Force refresh flag value:', forceRefresh, 'Type:', typeof forceRefresh);
+      
       if (forceRefresh) {
+        console.log('🚨 FORCE REFRESH FLAG DETECTED! Clearing all caches...');
         apiCache.clear();
         localStorage.removeItem('storeProviderCache');
         // DON'T remove forceRefreshStore flag yet - need it for SEO settings
         console.log('🔄 Force refresh detected - clearing caches but preserving flag for SEO settings');
+      } else {
+        console.log('ℹ️ No force refresh flag detected - using normal caching');
       }
       
       // Get store first with ultra-aggressive caching
@@ -304,8 +315,13 @@ export const StoreProvider = ({ children }) => {
       try {
         console.log('🔍 Loading SEO settings for store:', selectedStore.id);
         
-        // Check if we need to force fresh SEO data
+        // EXTENSIVE DEBUG: Check force refresh flag again
         const forceRefresh = localStorage.getItem('forceRefreshStore');
+        console.log('🔍 SEO LOADING - Force refresh flag check:');
+        console.log('- forceRefreshStore value:', forceRefresh);
+        console.log('- Flag exists:', !!forceRefresh);
+        console.log('- Timestamp if exists:', forceRefresh ? new Date(parseInt(forceRefresh)).toISOString() : 'N/A');
+        
         let seoSettingsData;
         
         if (forceRefresh) {
@@ -631,6 +647,21 @@ const clearCacheKeys = (keys) => {
 if (typeof window !== 'undefined') {
   window.clearCache = clearCache;
   window.clearCacheKeys = clearCacheKeys;
+  
+  // Debug function to manually test force refresh
+  window.testForceRefresh = () => {
+    console.log('🧪 MANUAL TEST: Setting forceRefreshStore flag and reloading...');
+    localStorage.setItem('forceRefreshStore', Date.now().toString());
+    window.location.reload();
+  };
+  
+  // Debug function to check current localStorage state
+  window.debugLocalStorage = () => {
+    console.log('🔍 Current localStorage state:');
+    console.log('- forceRefreshStore:', localStorage.getItem('forceRefreshStore'));
+    console.log('- storeProviderCache exists:', !!localStorage.getItem('storeProviderCache'));
+    console.log('- All keys:', Object.keys(localStorage));
+  };
 }
 
 // Export the caching function for use in other components
