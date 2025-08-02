@@ -107,8 +107,13 @@ export default function AnalyticsSettings() {
             
             console.log('⏱️ AnalyticsSettings: Starting API call...');
             
-            // Try direct API call first (without retry mechanism)
-            console.log('🔄 AnalyticsSettings: Making direct Store.update call...');
+            // Try a minimal test first
+            console.log('🧪 AnalyticsSettings: Testing minimal store update...');
+            const testResult = await Store.update(storeId, { name: store.name });
+            console.log('✅ AnalyticsSettings: Test result:', testResult);
+            
+            // Now try the full settings save
+            console.log('🔄 AnalyticsSettings: Making direct Store.update call with settings...');
             const result = await Store.update(storeId, { settings: store.settings });
             console.log('✅ AnalyticsSettings: Save result:', result);
             

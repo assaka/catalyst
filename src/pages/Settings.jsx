@@ -102,8 +102,26 @@ export default function Settings() {
           id: c.id, 
           name: c.name, 
           parent_id: c.parent_id,
+          parent_id_type: typeof c.parent_id,
+          parent_id_value: JSON.stringify(c.parent_id),
           isRoot: !c.parent_id || c.parent_id === null || c.parent_id === ''
         })));
+        
+        // Additional debugging for Welhof Root specifically
+        const welhofRoot = categoriesArray.find(c => c.name.includes('Welhof Root'));
+        if (welhofRoot) {
+          console.log('🔍 Welhof Root category details:', {
+            id: welhofRoot.id,
+            name: welhofRoot.name,
+            parent_id: welhofRoot.parent_id,
+            parent_id_type: typeof welhofRoot.parent_id,
+            parent_id_strict_null: welhofRoot.parent_id === null,
+            parent_id_undefined: welhofRoot.parent_id === undefined,
+            parent_id_empty_string: welhofRoot.parent_id === '',
+            parent_id_falsy: !welhofRoot.parent_id,
+            will_show_in_dropdown: !welhofRoot.parent_id || welhofRoot.parent_id === null || welhofRoot.parent_id === ''
+          });
+        }
         setCategories(categoriesArray);
       } catch (error) {
         console.warn('Failed to load categories:', error);
@@ -664,7 +682,18 @@ export default function Settings() {
                     <SelectContent>
                       <SelectItem value="none">No Root Category</SelectItem>
                       {(() => {
-                        const rootCategories = categories.filter(cat => !cat.parent_id || cat.parent_id === null || cat.parent_id === '');
+                        const rootCategories = categories.filter(cat => {
+                          // More comprehensive check for root categories
+                          const parentId = cat.parent_id;
+                          const isRoot = !parentId || 
+                                        parentId === null || 
+                                        parentId === undefined || 
+                                        parentId === '' || 
+                                        parentId === 'null' || 
+                                        parentId === 'undefined';
+                          console.log(`🔍 Category "${cat.name}" parent_id="${parentId}" (${typeof parentId}) isRoot=${isRoot}`);
+                          return isRoot;
+                        });
                         console.log('🌳 Root categories for dropdown:', rootCategories.map(c => ({ id: c.id, name: c.name, parent_id: c.parent_id })));
                         return rootCategories
                           .sort((a, b) => a.name.localeCompare(b.name))

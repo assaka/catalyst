@@ -52,6 +52,13 @@ export default function CategoryNav({ categories }) {
             }
         }
 
+        console.log('👀 Visible categories after filtering:', visibleCategories.map(c => ({
+            id: c.id,
+            name: c.name,
+            parent_id: c.parent_id,
+            hide_in_menu: c.hide_in_menu
+        })));
+
         // Create a map of all visible categories
         visibleCategories.forEach(category => {
             categoryMap.set(category.id, { ...category, children: [] });
@@ -64,9 +71,11 @@ export default function CategoryNav({ categories }) {
                 // This category has a parent, add it to parent's children
                 const parent = categoryMap.get(category.parent_id);
                 parent.children.push(categoryNode);
+                console.log(`📎 Added child "${category.name}" to parent "${parent.name}"`);
             } else {
                 // This is a root category
                 rootCategories.push(categoryNode);
+                console.log(`🌱 Added root category "${category.name}"`);
             }
         });
 
@@ -74,6 +83,20 @@ export default function CategoryNav({ categories }) {
     };
 
     const rootCategories = buildCategoryTree(categories);
+    
+    // Debug logging for navigation
+    console.log('🔧 CategoryNav debug:', {
+        totalCategories: categories.length,
+        rootCategoryId: store?.root_category_id,
+        rootCategoriesCount: rootCategories.length,
+        rootCategories: rootCategories.map(c => ({
+            id: c.id,
+            name: c.name,
+            childrenCount: c.children?.length || 0,
+            hasChildren: !!(c.children && c.children.length > 0),
+            children: c.children?.map(child => ({ id: child.id, name: child.name })) || []
+        }))
+    });
 
     // Render category with children as dropdown
     const renderCategoryWithChildren = (category) => {
