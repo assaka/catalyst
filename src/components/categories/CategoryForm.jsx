@@ -214,10 +214,17 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
             </div>
           </AccordionTrigger>
           <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
-            <div className="mt-2 text-sm text-gray-600">
-              <p><strong>Category Variables:</strong> {`{{category_name}}`}, {`{{category_description}}`}</p>
-              <p className="mt-1"><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{base_url}}`}, {`{{year}}`}, {`{{currency}}`}</p>
-              <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
+
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-medium text-blue-900 mb-2">Template Variables</h4>
+              <p className="text-sm text-blue-800 mb-2">
+                You can use these variables in your meta title and description templates:
+              </p>
+              <div className="grid grid-cols-2 gap-2 text-sm text-blue-700">
+                <div><code>{'{{store_name}}'}</code> - Your store name</div>
+                <div><code>{'{{page_title}}'}</code> - Current page title</div>
+                <div><code>{'{{category_name}}'}</code> - Category name</div>
+              </div>
             </div>
             <div>
               <Label htmlFor="meta_title">Meta Title</Label>

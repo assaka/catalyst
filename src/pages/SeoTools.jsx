@@ -820,6 +820,12 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                   <div><code>{'{{description}}'}</code> - Page/product description</div>
                   <div><code>{'{{price}}'}</code> - Product price (products only)</div>
                 </div>
+                <div className="mt-2 text-sm text-gray-600">
+                  <p><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{page_title}}`}, {`{{base_url}}`}, {`{{current_url}}`}, {`{{current_path}}`}, {`{{year}}`}, {`{{currency}}`}</p>
+                  <p className="mt-1"><strong>Product Pages:</strong> {`{{product_name}}`}, {`{{product_description}}`}</p>
+                  <p className="mt-1"><strong>Category Pages:</strong> {`{{category_name}}`}, {`{{category_description}}`}</p>
+                  <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
+                </div>
               </div>
 
               <div>
@@ -829,7 +835,6 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                   onChange={(e) => setSeoSettings(prev => ({ ...prev, default_meta_title: e.target.value }))}
                   placeholder="{{store_name}} - {{page_title}}"
                 />
-                <p className="text-sm text-gray-500 mt-1">Available variables: store_name, page_title</p>
               </div>
 
               <div>
@@ -840,12 +845,6 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                   placeholder="Shop quality products at {{store_name}}..."
                   rows={3}
                 />
-                <div className="mt-2 text-sm text-gray-600">
-                  <p><strong>Global Variables:</strong> {`{{store_name}}`}, {`{{site_name}}`}, {`{{store_description}}`}, {`{{page_title}}`}, {`{{base_url}}`}, {`{{current_url}}`}, {`{{current_path}}`}, {`{{year}}`}, {`{{currency}}`}</p>
-                  <p className="mt-1"><strong>Product Pages:</strong> {`{{product_name}}`}, {`{{product_description}}`}</p>
-                  <p className="mt-1"><strong>Category Pages:</strong> {`{{category_name}}`}, {`{{category_description}}`}</p>
-                  <p className="mt-1 text-xs text-blue-600">💡 Both {`{{variable}}`} and {`{variable}`} syntax supported</p>
-                </div>
               </div>
 
               <div>
