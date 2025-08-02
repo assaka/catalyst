@@ -376,9 +376,80 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
             document.head.appendChild(script);
         }
 
+        // Google Tag Manager Implementation
+        const analyticsSettings = store?.settings?.analytics_settings;
+        if (analyticsSettings?.enable_google_tag_manager) {
+            // Remove existing GTM scripts first
+            const existingGTMScript = document.querySelector('script[data-gtm="head"]');
+            const existingGTMNoscript = document.querySelector('noscript[data-gtm="body"]');
+            if (existingGTMScript) existingGTMScript.remove();
+            if (existingGTMNoscript) existingGTMNoscript.remove();
+
+            if (analyticsSettings.gtm_script_type === 'custom' && analyticsSettings.custom_gtm_script) {
+                // Custom GTM Script (Server-Side Tagging)
+                const script = document.createElement('script');
+                script.setAttribute('data-gtm', 'head');
+                script.innerHTML = analyticsSettings.custom_gtm_script;
+                document.head.appendChild(script);
+            } else if (analyticsSettings.gtm_script_type === 'default' && analyticsSettings.gtm_id) {
+                // Standard GTM Implementation
+                const script = document.createElement('script');
+                script.setAttribute('data-gtm', 'head');
+                script.innerHTML = `
+                    (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+                    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+                    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+                    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+                    })(window,document,'script','dataLayer','${analyticsSettings.gtm_id}');
+                `;
+                document.head.appendChild(script);
+
+                // Add noscript fallback to body
+                let noscript = document.querySelector('noscript[data-gtm="body"]');
+                if (!noscript) {
+                    noscript = document.createElement('noscript');
+                    noscript.setAttribute('data-gtm', 'body');
+                    noscript.innerHTML = `<iframe src="https://www.googletagmanager.com/ns.html?id=${analyticsSettings.gtm_id}" height="0" width="0" style="display:none;visibility:hidden"></iframe>`;
+                    document.body.insertBefore(noscript, document.body.firstChild);
+                }
+            }
+        }
+
+        // Google Ads Conversion Tracking
+        if (analyticsSettings?.google_ads_id) {
+            // Remove existing Google Ads script
+            const existingGoogleAds = document.querySelector('script[data-google-ads="head"]');
+            if (existingGoogleAds) existingGoogleAds.remove();
+
+            const script = document.createElement('script');
+            script.setAttribute('data-google-ads', 'head');
+            script.async = true;
+            script.src = `https://www.googletagmanager.com/gtag/js?id=${analyticsSettings.google_ads_id}`;
+            document.head.appendChild(script);
+
+            const configScript = document.createElement('script');
+            configScript.setAttribute('data-google-ads', 'config');
+            configScript.innerHTML = `
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${analyticsSettings.google_ads_id}');
+            `;
+            document.head.appendChild(configScript);
+        }
 
         // Cleanup function
         return () => {
+            // Cleanup analytics scripts when component unmounts or store changes
+            const gtmScript = document.querySelector('script[data-gtm="head"]');
+            const gtmNoscript = document.querySelector('noscript[data-gtm="body"]');
+            const googleAdsScript = document.querySelector('script[data-google-ads="head"]');
+            const googleAdsConfig = document.querySelector('script[data-google-ads="config"]');
+            
+            if (gtmScript) gtmScript.remove();
+            if (gtmNoscript) gtmNoscript.remove();
+            if (googleAdsScript) googleAdsScript.remove();
+            if (googleAdsConfig) googleAdsConfig.remove();
         };
     }, [pageType, pageData, pageTitle, pageDescription, imageUrl, store, seoSettings, seoTemplates]);
 

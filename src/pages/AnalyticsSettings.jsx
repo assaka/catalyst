@@ -30,11 +30,7 @@ export default function AnalyticsSettings() {
                 }
                 
                 // Fetch complete store data with settings from API
-                console.log('🔍 AnalyticsSettings: Fetching complete store data...');
                 const fullStoreData = await Store.findById(selectedStore.id);
-                console.log('🔍 AnalyticsSettings: Full store data:', fullStoreData);
-                console.log('🔍 AnalyticsSettings: Full store settings:', fullStoreData.settings);
-                console.log('🔍 AnalyticsSettings: Existing analytics_settings:', fullStoreData.settings?.analytics_settings);
                 
                 setStore({
                     ...selectedStore,
