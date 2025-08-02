@@ -28,7 +28,7 @@ export default function CategoryNav({ categories }) {
         let visibleCategories = categories.filter(c => !c.hide_in_menu);
 
         // If store has a root category, filter to only show that category tree
-        if (store?.root_category_id) {
+        if (store?.root_category_id && store.root_category_id !== 'none') {
             const filterCategoryTree = (categoryId, allCategories) => {
                 const children = allCategories.filter(c => c.parent_id === categoryId);
                 let result = children.slice(); // Copy array
@@ -47,6 +47,7 @@ export default function CategoryNav({ categories }) {
                 visibleCategories = [rootCategory, ...descendants];
             } else {
                 // If root category not found, show empty navigation
+                console.warn('Root category not found:', store.root_category_id);
                 visibleCategories = [];
             }
         }

@@ -97,7 +97,14 @@ export default function Settings() {
       // Load categories for the root category selector
       try {
         const categoryData = await retryApiCall(() => Category.findAll({ store_id: storeData.id }));
-        setCategories(Array.isArray(categoryData) ? categoryData : []);
+        const categoriesArray = Array.isArray(categoryData) ? categoryData : [];
+        console.log('📁 Loaded categories for settings:', categoriesArray.map(c => ({ 
+          id: c.id, 
+          name: c.name, 
+          parent_id: c.parent_id,
+          isRoot: !c.parent_id || c.parent_id === null || c.parent_id === ''
+        })));
+        setCategories(categoriesArray);
       } catch (error) {
         console.warn('Failed to load categories:', error);
         setCategories([]);
@@ -656,14 +663,17 @@ export default function Settings() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No Root Category</SelectItem>
-                      {categories
-                        .filter(cat => !cat.parent_id) // Only show root categories
-                        .map((category) => (
-                          <SelectItem key={category.id} value={category.id}>
-                            {category.name}
-                          </SelectItem>
-                        ))
-                      }
+                      {(() => {
+                        const rootCategories = categories.filter(cat => !cat.parent_id || cat.parent_id === null || cat.parent_id === '');
+                        console.log('🌳 Root categories for dropdown:', rootCategories.map(c => ({ id: c.id, name: c.name, parent_id: c.parent_id })));
+                        return rootCategories
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((category) => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.name}
+                            </SelectItem>
+                          ));
+                      })()}
                     </SelectContent>
                   </Select>
                   <p className="text-sm text-gray-500 mt-1">

@@ -492,7 +492,7 @@ export default function StorefrontLayout({ children }) {
                                             let visibleCategories = categories.filter(c => !c.hide_in_menu);
 
                                             // If store has a root category, filter to only show that category tree
-                                            if (store?.root_category_id) {
+                                            if (store?.root_category_id && store.root_category_id !== 'none') {
                                                 const filterCategoryTree = (categoryId, allCategories) => {
                                                     const children = allCategories.filter(c => c.parent_id === categoryId);
                                                     let result = children.slice();
@@ -645,7 +645,7 @@ export default function StorefrontLayout({ children }) {
                                     let footerCategories = categories.filter(c => !c.hide_in_menu);
                                     
                                     // If store has a root category, filter to only show that category tree
-                                    if (store?.root_category_id) {
+                                    if (store?.root_category_id && store.root_category_id !== 'none') {
                                         const filterCategoryTree = (categoryId, allCategories) => {
                                             const children = allCategories.filter(c => c.parent_id === categoryId);
                                             let result = children.slice();
@@ -666,7 +666,15 @@ export default function StorefrontLayout({ children }) {
                                     
                                     // Only show root categories in footer (first level of visible categories)
                                     return footerCategories
-                                        .filter(c => store?.root_category_id ? c.parent_id === store.root_category_id || c.id === store.root_category_id : !c.parent_id)
+                                        .filter(c => {
+                                            if (store?.root_category_id && store.root_category_id !== 'none') {
+                                                // Show the root category itself or direct children of root category
+                                                return c.parent_id === store.root_category_id || c.id === store.root_category_id;
+                                            } else {
+                                                // Show all root categories when no root category is set
+                                                return !c.parent_id;
+                                            }
+                                        })
                                         .slice(0, 4)
                                         .map(c => (
                                             <li key={c.id}>
