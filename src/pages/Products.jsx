@@ -71,6 +71,8 @@ export default function Products() {
   const [showProductForm, setShowProductForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
   const [filters, setFilters] = useState({
     status: "all",
     category: "all",
@@ -96,7 +98,7 @@ export default function Products() {
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
 
-  const loadData = async () => {
+  const loadData = async (page = currentPage) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
       console.warn("No store selected");
@@ -107,15 +109,41 @@ export default function Products() {
     try {
       setLoading(true);
 
-      const [productsData, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
-        retryApiCall(() => Product.filter({ store_id: storeId }, "-created_date")).catch(() => []),
-        retryApiCall(() => Category.filter({ store_id: storeId })).catch(() => []),
-        retryApiCall(() => Tax.filter({ store_id: storeId })).catch(() => []),
-        retryApiCall(() => Attribute.filter({ store_id: storeId })).catch(() => []),
-        retryApiCall(() => AttributeSet.filter({ store_id: storeId })).catch(() => [])
+      // Build filters for products API
+      const productFilters = { 
+        store_id: storeId, 
+        order_by: "-created_date"
+      };
+      
+      // Add search filter if present
+      if (searchQuery.trim()) {
+        productFilters.search = searchQuery.trim();
+      }
+      
+      // Add status filter
+      if (filters.status !== "all") {
+        productFilters.status = filters.status;
+      }
+      
+      // Add category filter
+      if (filters.category !== "all") {
+        productFilters.category_id = filters.category;
+      }
+
+      // Load products with pagination and other data without pagination (for form dropdowns)
+      const [productsResult, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
+        retryApiCall(() => Product.findPaginated(page, itemsPerPage, productFilters)).catch(() => ({ data: [], pagination: { total: 0, total_pages: 0, current_page: page } })),
+        retryApiCall(() => Category.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
+        retryApiCall(() => Tax.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
+        retryApiCall(() => Attribute.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
+        retryApiCall(() => AttributeSet.filter({ store_id: storeId, limit: 1000 })).catch(() => [])
       ]);
 
-      setProducts(Array.isArray(productsData) ? productsData : []);
+      setProducts(Array.isArray(productsResult.data) ? productsResult.data : []);
+      setTotalItems(productsResult.pagination.total);
+      setTotalPages(productsResult.pagination.total_pages);
+      setCurrentPage(productsResult.pagination.current_page);
+      
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       setTaxes(Array.isArray(taxesData) ? taxesData : []);
       setAttributes(Array.isArray(attributesData) ? attributesData : []);
@@ -128,6 +156,8 @@ export default function Products() {
       setTaxes([]);
       setAttributes([]);
       setAttributeSets([]);
+      setTotalItems(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
@@ -185,42 +215,22 @@ export default function Products() {
     }
   };
 
-  const filteredProducts = products.filter(product => {
-    if (!product) return false;
-    
-    const matchesSearch = !searchQuery || 
-      (product.name && product.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (product.sku && product.sku.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesStatus = filters.status === "all" || product.status === filters.status;
-    
-    const matchesCategory = filters.category === "all" || 
-      (product.category_ids && Array.isArray(product.category_ids) && product.category_ids.includes(filters.category));
-
-    let matchesPrice = true;
-    if (filters.priceRange !== "all" && product.price) {
-      const price = parseFloat(product.price) || 0;
-      switch (filters.priceRange) {
-        case "under50":
-          matchesPrice = price < 50;
-          break;
-        case "50-200":
-          matchesPrice = price >= 50 && price <= 200;
-          break;
-        case "over200":
-          matchesPrice = price > 200;
-          break;
-        default:
-          matchesPrice = true; // Should not happen with current filter options
-      }
-    }
-
-    return matchesSearch && matchesStatus && matchesCategory && matchesPrice;
-  });
-
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  // Server-side filtering, so use products directly
+  const paginatedProducts = products;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  // Handle page changes
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    loadData(page);
+  };
+
+  // Reset to first page and reload data when search or filters change
+  useEffect(() => {
+    if (selectedStore) {
+      loadData(1); // Always load first page when search/filters change
+    }
+  }, [searchQuery, filters]);
 
   const getCategoryName = (categoryIds) => {
     if (!categoryIds || !Array.isArray(categoryIds) || categoryIds.length === 0) {
@@ -294,7 +304,7 @@ export default function Products() {
         <Card className="material-elevation-1 border-0">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Products ({filteredProducts.length})</span>
+              <span>Products ({totalItems})</span>
               {(searchQuery || Object.values(filters).some(f => f !== "all")) && (
                 <Button
                   variant="ghost"
@@ -422,13 +432,13 @@ export default function Products() {
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between mt-6">
                     <p className="text-sm text-gray-700">
-                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+                      Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} products
                     </p>
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCurrentPage(currentPage - 1)}
+                        onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
                       >
                         Previous
@@ -438,7 +448,7 @@ export default function Products() {
                           key={page}
                           variant={currentPage === page ? "default" : "outline"}
                           size="sm"
-                          onClick={() => setCurrentPage(page)}
+                          onClick={() => handlePageChange(page)}
                         >
                           {page}
                         </Button>
@@ -446,7 +456,7 @@ export default function Products() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCurrentPage(currentPage + 1)}
+                        onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
                       >
                         Next

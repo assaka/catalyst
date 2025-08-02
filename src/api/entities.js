@@ -23,13 +23,31 @@ class BaseEntity {
       if (usePublicAPI) {
         // Use public endpoint for endpoints that support it
         response = await apiClient.publicRequest('GET', url);
+        
+        // Public API usually returns just an array
+        return Array.isArray(response) ? response : [];
       } else {
         // Use regular authenticated endpoint
         response = await apiClient.get(url);
+        
+        // Check if response has pagination structure
+        if (response && response.success && response.data) {
+          // Handle paginated response structure
+          const entityKey = Object.keys(response.data).find(key => 
+            key !== 'pagination' && Array.isArray(response.data[key])
+          );
+          
+          if (entityKey && response.data[entityKey]) {
+            // Return the entity array along with pagination info
+            const result = response.data[entityKey];
+            result.pagination = response.data.pagination;
+            return result;
+          }
+        }
+        
+        // Fallback to treating response as array
+        return Array.isArray(response) ? response : [];
       }
-      
-      // Ensure response is always an array
-      return Array.isArray(response) ? response : [];
     } catch (error) {
       // Use different log levels based on endpoint - CMS blocks failures are common due to backend issues
       if (this.endpoint === 'cms-blocks') {
@@ -90,6 +108,88 @@ class BaseEntity {
         console.error(`BaseEntity.filter() error for ${this.endpoint}:`, error.message);
       }
       return [];
+    }
+  }
+
+  // Get paginated records with full pagination metadata
+  async findPaginated(page = 1, limit = 10, filters = {}) {
+    try {
+      const params = {
+        page: page,
+        limit: limit,
+        ...filters
+      };
+      
+      const queryString = new URLSearchParams(params).toString();
+      const url = `${this.endpoint}?${queryString}`;
+      
+      // Check authentication status and determine which API to use
+      const hasToken = apiClient.getToken();
+      const userRole = apiClient.getCurrentUserRole();
+      const usePublicAPI = shouldUsePublicAPI(this.endpoint, hasToken, userRole);
+
+      let response;
+      if (usePublicAPI) {
+        // Use public endpoint for endpoints that support it
+        response = await apiClient.publicRequest('GET', url);
+        
+        // Public API usually returns just an array, simulate pagination
+        const data = Array.isArray(response) ? response : [];
+        return {
+          data: data,
+          pagination: {
+            current_page: page,
+            per_page: limit,
+            total: data.length,
+            total_pages: Math.ceil(data.length / limit)
+          }
+        };
+      } else {
+        // Use regular authenticated endpoint
+        response = await apiClient.get(url);
+        
+        // Check if response has pagination structure
+        if (response && response.success && response.data) {
+          const entityKey = Object.keys(response.data).find(key => 
+            key !== 'pagination' && Array.isArray(response.data[key])
+          );
+          
+          if (entityKey && response.data[entityKey]) {
+            return {
+              data: response.data[entityKey],
+              pagination: response.data.pagination || {
+                current_page: page,
+                per_page: limit,
+                total: response.data[entityKey].length,
+                total_pages: Math.ceil(response.data[entityKey].length / limit)
+              }
+            };
+          }
+        }
+        
+        // Fallback
+        const data = Array.isArray(response) ? response : [];
+        return {
+          data: data,
+          pagination: {
+            current_page: page,
+            per_page: limit,
+            total: data.length,
+            total_pages: Math.ceil(data.length / limit)
+          }
+        };
+      }
+    } catch (error) {
+      console.error(`BaseEntity.findPaginated() error for ${this.endpoint}:`, error.message);
+      return {
+        data: [],
+        pagination: {
+          current_page: page,
+          per_page: limit,
+          total: 0,
+          total_pages: 0
+        }
+      };
     }
   }
 

@@ -45,6 +45,8 @@ export default function Categories() {
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(9); // 3x3 grid
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     if (selectedStore) {
@@ -64,7 +66,7 @@ export default function Categories() {
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
 
-  const loadCategories = async () => {
+  const loadCategories = async (page = currentPage) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
       console.warn("No store selected");
@@ -74,11 +76,28 @@ export default function Categories() {
 
     try {
       setLoading(true);
-      const categoriesData = await Category.filter({ store_id: storeId }, "sort_order");
-      setCategories(categoriesData || []);
+      
+      const filters = { 
+        store_id: storeId, 
+        order_by: "sort_order"
+      };
+      
+      // Add search filter if present
+      if (searchQuery.trim()) {
+        filters.search = searchQuery.trim();
+      }
+      
+      const result = await Category.findPaginated(page, itemsPerPage, filters);
+      
+      setCategories(result.data || []);
+      setTotalItems(result.pagination.total);
+      setTotalPages(result.pagination.total_pages);
+      setCurrentPage(result.pagination.current_page);
     } catch (error) {
       console.error("Error loading categories:", error);
       setCategories([]);
+      setTotalItems(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
@@ -159,20 +178,22 @@ export default function Categories() {
     }
   };
 
-  const filteredCategories = categories.filter(category =>
-    category?.name?.toLowerCase().includes(searchQuery.toLowerCase()) || // Added optional chaining
-    category?.description?.toLowerCase().includes(searchQuery.toLowerCase()) // Added optional chaining
-  );
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
+  // Server-side filtering, so use categories directly
+  const paginatedCategories = categories;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCategories = filteredCategories.slice(startIndex, startIndex + itemsPerPage);
 
-  // Reset to first page when search changes
+  // Reset to first page and reload data when search changes
   useEffect(() => {
-    setCurrentPage(1);
+    if (selectedStore) {
+      loadCategories(1); // Always load first page when search changes
+    }
   }, [searchQuery]);
+
+  // Handle page changes
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    loadCategories(page);
+  };
 
   if (loading) {
     return (
@@ -237,8 +258,8 @@ export default function Categories() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-700">
-              {filteredCategories.length > 0 && (
-                <>Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredCategories.length)} of {filteredCategories.length} categories</>
+              {totalItems > 0 && (
+                <>Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} categories</>
               )}
             </p>
           </div>
@@ -344,7 +365,7 @@ export default function Categories() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
+                onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
               >
                 Previous
@@ -354,7 +375,7 @@ export default function Categories() {
                   key={page}
                   variant={currentPage === page ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setCurrentPage(page)}
+                  onClick={() => handlePageChange(page)}
                 >
                   {page}
                 </Button>
@@ -362,7 +383,7 @@ export default function Categories() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
+                onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
                 Next
@@ -371,7 +392,7 @@ export default function Categories() {
           )}
         </div>
 
-        {filteredCategories.length === 0 && (
+        {categories.length === 0 && !loading && (
           <Card className="material-elevation-1 border-0">
             <CardContent className="text-center py-12">
               <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />

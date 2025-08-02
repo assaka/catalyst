@@ -52,6 +52,10 @@ export default function Attributes() {
   const [currentAttributePage, setCurrentAttributePage] = useState(1);
   const [currentSetPage, setCurrentSetPage] = useState(1);
   const [itemsPerPage] = useState(9); // 3x3 grid
+  const [attributesTotalItems, setAttributesTotalItems] = useState(0);
+  const [attributesTotalPages, setAttributesTotalPages] = useState(0);
+  const [setsTotalItems, setSetsTotalItems] = useState(0);
+  const [setsTotalPages, setSetsTotalPages] = useState(0);
 
   useEffect(() => {
     if (selectedStore) {
@@ -71,7 +75,7 @@ export default function Attributes() {
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
 
-  const loadData = async () => {
+  const loadData = async (attributePage = currentAttributePage, setPage = currentSetPage) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
       console.warn("No store selected");
@@ -82,18 +86,36 @@ export default function Attributes() {
     try {
       setLoading(true);
 
-      // Filter attributes and attribute sets by selected store
-      const [attributesData, setsData] = await Promise.all([
-        Attribute.filter({ store_id: storeId }),
-        AttributeSet.filter({ store_id: storeId })
+      const filters = { store_id: storeId };
+      
+      // Add search filter if present
+      if (searchQuery.trim()) {
+        filters.search = searchQuery.trim();
+      }
+
+      // Load both attributes and attribute sets with pagination
+      const [attributesResult, setsResult] = await Promise.all([
+        Attribute.findPaginated(attributePage, itemsPerPage, filters),
+        AttributeSet.findPaginated(setPage, itemsPerPage, filters)
       ]);
 
-      setAttributes(attributesData || []);
-      setAttributeSets(setsData || []);
+      setAttributes(attributesResult.data || []);
+      setAttributesTotalItems(attributesResult.pagination.total);
+      setAttributesTotalPages(attributesResult.pagination.total_pages);
+      setCurrentAttributePage(attributesResult.pagination.current_page);
+
+      setAttributeSets(setsResult.data || []);
+      setSetsTotalItems(setsResult.pagination.total);
+      setSetsTotalPages(setsResult.pagination.total_pages);
+      setCurrentSetPage(setsResult.pagination.current_page);
     } catch (error) {
       console.error("Error loading data:", error);
       setAttributes([]);
       setAttributeSets([]);
+      setAttributesTotalItems(0);
+      setAttributesTotalPages(0);
+      setSetsTotalItems(0);
+      setSetsTotalPages(0);
     } finally {
       setLoading(false);
     }
@@ -199,30 +221,29 @@ export default function Attributes() {
     }
   };
 
-  const filteredAttributes = attributes.filter(attribute =>
-    attribute.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    attribute.code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredAttributeSets = attributeSets.filter(attributeSet =>
-    attributeSet.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Pagination calculations for attributes
-  const totalAttributePages = Math.ceil(filteredAttributes.length / itemsPerPage);
+  // Server-side filtering, so use data directly
+  const paginatedAttributes = attributes;
+  const paginatedAttributeSets = attributeSets;
   const attributeStartIndex = (currentAttributePage - 1) * itemsPerPage;
-  const paginatedAttributes = filteredAttributes.slice(attributeStartIndex, attributeStartIndex + itemsPerPage);
-
-  // Pagination calculations for attribute sets
-  const totalSetPages = Math.ceil(filteredAttributeSets.length / itemsPerPage);
   const setStartIndex = (currentSetPage - 1) * itemsPerPage;
-  const paginatedAttributeSets = filteredAttributeSets.slice(setStartIndex, setStartIndex + itemsPerPage);
 
-  // Reset to first page when search changes
+  // Reset to first page and reload data when search changes
   useEffect(() => {
-    setCurrentAttributePage(1);
-    setCurrentSetPage(1);
+    if (selectedStore) {
+      loadData(1, 1); // Always load first page for both tabs when search changes
+    }
   }, [searchQuery]);
+
+  // Handle page changes
+  const handleAttributePageChange = (page) => {
+    setCurrentAttributePage(page);
+    loadData(page, currentSetPage);
+  };
+
+  const handleSetPageChange = (page) => {
+    setCurrentSetPage(page);
+    loadData(currentAttributePage, page);
+  };
 
   const getAttributeTypeColor = (type) => {
     const colors = {
@@ -296,10 +317,10 @@ export default function Attributes() {
           <TabsContent value="attributes">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Attributes ({filteredAttributes.length})</h2>
-                {filteredAttributes.length > 0 && (
+                <h2 className="text-xl font-semibold text-gray-900">Attributes ({attributesTotalItems})</h2>
+                {attributesTotalItems > 0 && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Showing {attributeStartIndex + 1} to {Math.min(attributeStartIndex + itemsPerPage, filteredAttributes.length)} of {filteredAttributes.length} attributes
+                    Showing {attributeStartIndex + 1} to {Math.min(attributeStartIndex + itemsPerPage, attributesTotalItems)} of {attributesTotalItems} attributes
                   </p>
                 )}
               </div>
@@ -416,22 +437,22 @@ export default function Attributes() {
             )}
 
             {/* Attributes Pagination */}
-            {totalAttributePages > 1 && (
+            {attributesTotalPages > 1 && (
               <div className="flex items-center justify-center space-x-2 mt-8">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentAttributePage(currentAttributePage - 1)}
+                  onClick={() => handleAttributePageChange(currentAttributePage - 1)}
                   disabled={currentAttributePage === 1}
                 >
                   Previous
                 </Button>
-                {Array.from({ length: totalAttributePages }, (_, i) => i + 1).map((page) => (
+                {Array.from({ length: attributesTotalPages }, (_, i) => i + 1).map((page) => (
                   <Button
                     key={page}
                     variant={currentAttributePage === page ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setCurrentAttributePage(page)}
+                    onClick={() => handleAttributePageChange(page)}
                   >
                     {page}
                   </Button>
@@ -439,8 +460,8 @@ export default function Attributes() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentAttributePage(currentAttributePage + 1)}
-                  disabled={currentAttributePage === totalAttributePages}
+                  onClick={() => handleAttributePageChange(currentAttributePage + 1)}
+                  disabled={currentAttributePage === attributesTotalPages}
                 >
                   Next
                 </Button>
@@ -452,10 +473,10 @@ export default function Attributes() {
           <TabsContent value="sets">
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Attribute Sets ({filteredAttributeSets.length})</h2>
-                {filteredAttributeSets.length > 0 && (
+                <h2 className="text-xl font-semibold text-gray-900">Attribute Sets ({setsTotalItems})</h2>
+                {setsTotalItems > 0 && (
                   <p className="text-sm text-gray-600 mt-1">
-                    Showing {setStartIndex + 1} to {Math.min(setStartIndex + itemsPerPage, filteredAttributeSets.length)} of {filteredAttributeSets.length} attribute sets
+                    Showing {setStartIndex + 1} to {Math.min(setStartIndex + itemsPerPage, setsTotalItems)} of {setsTotalItems} attribute sets
                   </p>
                 )}
               </div>
@@ -569,22 +590,22 @@ export default function Attributes() {
             )}
 
             {/* Attribute Sets Pagination */}
-            {totalSetPages > 1 && (
+            {setsTotalPages > 1 && (
               <div className="flex items-center justify-center space-x-2 mt-8">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentSetPage(currentSetPage - 1)}
+                  onClick={() => handleSetPageChange(currentSetPage - 1)}
                   disabled={currentSetPage === 1}
                 >
                   Previous
                 </Button>
-                {Array.from({ length: totalSetPages }, (_, i) => i + 1).map((page) => (
+                {Array.from({ length: setsTotalPages }, (_, i) => i + 1).map((page) => (
                   <Button
                     key={page}
                     variant={currentSetPage === page ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setCurrentSetPage(page)}
+                    onClick={() => handleSetPageChange(page)}
                   >
                     {page}
                   </Button>
@@ -592,8 +613,8 @@ export default function Attributes() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setCurrentSetPage(currentSetPage + 1)}
-                  disabled={currentSetPage === totalSetPages}
+                  onClick={() => handleSetPageChange(currentSetPage + 1)}
+                  disabled={currentSetPage === setsTotalPages}
                 >
                   Next
                 </Button>
