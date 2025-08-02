@@ -423,9 +423,24 @@ export const StoreProvider = ({ children }) => {
             hreflang_settings: []
           });
         }
+        
+        // Clean up force refresh flag ONLY after SEO settings are processed
+        const forceRefresh = localStorage.getItem('forceRefreshStore');
+        if (forceRefresh) {
+          localStorage.removeItem('forceRefreshStore');
+          console.log('🧹 Force refresh flag cleared after SEO settings processed');
+        }
+        
       } catch (error) {
         console.error('[StoreProvider] Error loading SEO settings:', error);
         setSeoSettings(null);
+        
+        // Clean up force refresh flag even if SEO loading failed
+        const forceRefresh = localStorage.getItem('forceRefreshStore');
+        if (forceRefresh) {
+          localStorage.removeItem('forceRefreshStore');
+          console.log('🧹 Force refresh flag cleared after SEO settings error');  
+        }
       }
 
       // Load cookie consent settings and update store settings
@@ -568,13 +583,6 @@ export const StoreProvider = ({ children }) => {
       setSeoSettings(null);
     } finally {
       setLoading(false);
-      
-      // Clean up force refresh flag after all data is loaded
-      const forceRefresh = localStorage.getItem('forceRefreshStore');
-      if (forceRefresh) {
-        localStorage.removeItem('forceRefreshStore');
-        console.log('🧹 Force refresh flag cleared after all data loaded');
-      }
     }
   };
 
