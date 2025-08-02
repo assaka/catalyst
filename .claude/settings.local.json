@@ -49,7 +49,8 @@
       "Bash(do echo \"Updating $file...\")",
       "Bash(git deploy:*)",
       "Bash(npm run:*)",
-      "WebFetch(domain:api.akeneo.com)"
+      "WebFetch(domain:api.akeneo.com)",
+      "Bash(timeout 5 npm start)"
     ],
     "deny": []
   }
