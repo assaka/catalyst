@@ -130,10 +130,30 @@ class AkeneoClient {
         config.data = data;
       }
 
+      console.log(`🌐 Making ${method} request to ${endpoint}`, { params, hasData: !!data });
       const response = await this.axiosInstance.request(config);
       return response.data;
     } catch (error) {
-      console.error(`Failed to ${method} ${endpoint}:`, error.response?.data || error.message);
+      const errorDetails = {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: endpoint,
+        method,
+        params
+      };
+      
+      console.error(`❌ Failed to ${method} ${endpoint}:`, errorDetails);
+      
+      // More specific error message for 422
+      if (error.response?.status === 422) {
+        const validationErrors = error.response?.data?.errors || [];
+        const errorMessage = validationErrors.length > 0 
+          ? `Validation errors: ${validationErrors.map(e => e.message || e).join(', ')}`
+          : `Invalid request parameters for ${endpoint}`;
+        throw new Error(`422 Unprocessable Entity: ${errorMessage}`);
+      }
+      
       throw new Error(`API request failed: ${error.response?.data?.message || error.message}`);
     }
   }
@@ -242,7 +262,17 @@ class AkeneoClient {
     try {
       await this.authenticate();
       await this.getCategories({ limit: 1 });
-      return { success: true, message: 'Connection successful' };
+      
+      // Test product endpoint as well
+      try {
+        console.log('🔍 Testing product endpoint...');
+        await this.getProducts({ limit: 1, 'with_count': false });
+        console.log('✅ Product endpoint test successful');
+        return { success: true, message: 'Connection successful (categories and products)' };
+      } catch (productError) {
+        console.error('❌ Product endpoint test failed:', productError.message);
+        return { success: true, message: `Connection successful (categories only). Product endpoint error: ${productError.message}` };
+      }
     } catch (error) {
       return { success: false, message: error.message };
     }
