@@ -221,8 +221,13 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                 name="meta_title"
                 value={formData.meta_title || ''}
                 onChange={handleInputChange}
-                placeholder="SEO-friendly title for the category page"
+                placeholder="{{category_name}} - {{store_name}}"
               />
+              <div className="mt-2 text-sm text-gray-600">
+                <p><strong>Category Variables:</strong> {{category_name}}, {{category_description}}</p>
+                <p className="mt-1"><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{base_url}}, {{year}}, {{currency}}</p>
+                <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+              </div>
             </div>
             <div>
               <Label htmlFor="meta_description">Meta Description</Label>
@@ -231,9 +236,14 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
                 name="meta_description"
                 value={formData.meta_description || ''}
                 onChange={handleInputChange}
-                placeholder="Concise summary for search engines"
+                placeholder="Shop {{category_name}} at {{store_name}}. {{category_description}}"
                 rows={3}
               />
+              <div className="mt-2 text-sm text-gray-600">
+                <p><strong>Category Variables:</strong> {{category_name}}, {{category_description}}</p>
+                <p className="mt-1"><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{base_url}}, {{year}}, {{currency}}</p>
+                <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+              </div>
             </div>
             <div>
               <Label htmlFor="meta_keywords">Meta Keywords</Label>

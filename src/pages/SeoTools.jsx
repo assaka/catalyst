@@ -838,7 +838,14 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                   value={seoSettings.default_meta_description}
                   onChange={(e) => setSeoSettings(prev => ({ ...prev, default_meta_description: e.target.value }))}
                   placeholder="Shop quality products at {{store_name}}..."
+                  rows={3}
                 />
+                <div className="mt-2 text-sm text-gray-600">
+                  <p><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{page_title}}, {{base_url}}, {{current_url}}, {{current_path}}, {{year}}, {{currency}}</p>
+                  <p className="mt-1"><strong>Product Pages:</strong> {{product_name}}, {{product_description}}</p>
+                  <p className="mt-1"><strong>Category Pages:</strong> {{category_name}}, {{category_description}}</p>
+                  <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+                </div>
               </div>
 
               <div>
@@ -1812,9 +1819,15 @@ Sitemap: /sitemap.xml     # Location of sitemap
                   <Textarea
                     value={templateForm.meta_description}
                     onChange={(e) => setTemplateForm(prev => ({ ...prev, meta_description: e.target.value }))}
-                    placeholder="Shop high-quality {{product_name}} at {{store_name}}. {{description}} Starting at ${{price}}."
+                    placeholder="Shop high-quality {{product_name}} at {{store_name}}. {{product_description}}"
                     rows={3}
                   />
+                  <div className="mt-2 text-sm text-gray-600">
+                    <p><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{page_title}}, {{base_url}}, {{current_url}}, {{current_path}}, {{year}}, {{currency}}</p>
+                    <p className="mt-1"><strong>Product Pages:</strong> {{product_name}}, {{product_description}}</p>
+                    <p className="mt-1"><strong>Category Pages:</strong> {{category_name}}, {{category_description}}</p>
+                    <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+                  </div>
                 </div>
                 <div>
                   <Label>Meta Keywords Template</Label>

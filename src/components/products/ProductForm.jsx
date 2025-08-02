@@ -752,11 +752,34 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             <AccordionContent className="p-4 space-y-4 bg-gray-50 rounded-b-lg">
               <div>
                 <Label htmlFor="meta_title">Meta Title</Label>
-                <Input id="meta_title" name="seo.meta_title" value={formData.seo.meta_title || ''} onChange={handleSeoChange} />
+                <Input 
+                  id="meta_title" 
+                  name="seo.meta_title" 
+                  value={formData.seo.meta_title || ''} 
+                  onChange={handleSeoChange} 
+                  placeholder="{{product_name}} - {{store_name}}"
+                />
+                <div className="mt-2 text-sm text-gray-600">
+                  <p><strong>Product Variables:</strong> {{product_name}}, {{product_description}}</p>
+                  <p className="mt-1"><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{base_url}}, {{year}}, {{currency}}</p>
+                  <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+                </div>
               </div>
               <div>
                 <Label htmlFor="meta_description">Meta Description</Label>
-                <Textarea id="meta_description" name="seo.meta_description" value={formData.seo.meta_description || ''} onChange={handleSeoChange} rows={3} />
+                <Textarea 
+                  id="meta_description" 
+                  name="seo.meta_description" 
+                  value={formData.seo.meta_description || ''} 
+                  onChange={handleSeoChange} 
+                  rows={3}
+                  placeholder="Shop {{product_name}} at {{store_name}}. {{product_description}}"
+                />
+                <div className="mt-2 text-sm text-gray-600">
+                  <p><strong>Product Variables:</strong> {{product_name}}, {{product_description}}</p>
+                  <p className="mt-1"><strong>Global Variables:</strong> {{store_name}}, {{site_name}}, {{store_description}}, {{base_url}}, {{year}}, {{currency}}</p>
+                  <p className="mt-1 text-xs text-blue-600">💡 Both {{variable}} and {variable} syntax supported</p>
+                </div>
               </div>
               <div>
                 <Label htmlFor="meta_keywords">Meta Keywords</Label>
