@@ -153,24 +153,24 @@ class AkeneoClient {
   }
 
   /**
-   * Get products from Akeneo (UUID-based endpoint)
+   * Get products from Akeneo (using identifier-based endpoint for compatibility)
    */
   async getProducts(params = {}) {
-    return this.makeRequest('GET', '/api/rest/v1/products-uuid', null, params);
+    return this.makeRequest('GET', '/api/rest/v1/products', null, params);
   }
 
   /**
-   * Get specific product by UUID
+   * Get specific product by identifier
    */
-  async getProduct(uuid) {
-    return this.makeRequest('GET', `/api/rest/v1/products-uuid/${uuid}`);
+  async getProduct(identifier) {
+    return this.makeRequest('GET', `/api/rest/v1/products/${identifier}`);
   }
 
   /**
    * Search products with advanced criteria
    */
   async searchProducts(searchCriteria, params = {}) {
-    return this.makeRequest('POST', '/api/rest/v1/products-uuid/search', searchCriteria, params);
+    return this.makeRequest('POST', '/api/rest/v1/products/search', searchCriteria, params);
   }
 
   /**
@@ -178,22 +178,20 @@ class AkeneoClient {
    */
   async getAllCategories() {
     const allCategories = [];
-    let hasNextPage = true;
-    let currentPage = 1;
+    let nextUrl = null;
 
-    while (hasNextPage) {
-      const response = await this.getCategories({ 
-        limit: 100,
-        page: currentPage
-      });
+    do {
+      const params = nextUrl ? {} : { limit: 100 };
+      const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/categories';
+      
+      const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
 
       if (response._embedded && response._embedded.items) {
         allCategories.push(...response._embedded.items);
       }
 
-      hasNextPage = response._links && response._links.next;
-      currentPage++;
-    }
+      nextUrl = response._links && response._links.next ? response._links.next.href : null;
+    } while (nextUrl);
 
     return allCategories;
   }
@@ -203,22 +201,20 @@ class AkeneoClient {
    */
   async getAllProducts() {
     const allProducts = [];
-    let hasNextPage = true;
-    let currentPage = 1;
+    let nextUrl = null;
 
-    while (hasNextPage) {
-      const response = await this.getProducts({ 
-        limit: 100,
-        page: currentPage
-      });
+    do {
+      const params = nextUrl ? {} : { limit: 100 };
+      const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products';
+      
+      const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
 
       if (response._embedded && response._embedded.items) {
         allProducts.push(...response._embedded.items);
       }
 
-      hasNextPage = response._links && response._links.next;
-      currentPage++;
-    }
+      nextUrl = response._links && response._links.next ? response._links.next.href : null;
+    } while (nextUrl);
 
     return allProducts;
   }
