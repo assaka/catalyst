@@ -221,34 +221,66 @@ class AkeneoClient {
    */
   async getAllProducts() {
     const allProducts = [];
-    let nextUrl = null;
-
+    
     try {
-      do {
-        const params = nextUrl ? {} : { 
-          limit: 10, // Start with smaller limit to test
-          'with_count': false // Akeneo v7 optimization
-        };
-        const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products-uuid';
+      // Try multiple approaches for Akeneo v7 compatibility
+      console.log('🔍 Attempting to fetch products using different methods...');
+      
+      // Method 1: Try direct products-uuid endpoint
+      try {
+        console.log('📦 Method 1: Direct products-uuid endpoint');
+        const response = await this.getProducts({ 
+          limit: 10,
+          'with_count': false
+        });
         
-        console.log(`🔍 Fetching products from: ${endpoint}`, params);
-        const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
-
         if (response._embedded && response._embedded.items) {
           allProducts.push(...response._embedded.items);
-          console.log(`📦 Fetched ${response._embedded.items.length} products, total: ${allProducts.length}`);
+          console.log(`✅ Method 1 successful: ${response._embedded.items.length} products`);
+          return allProducts;
         }
-
-        nextUrl = response._links && response._links.next ? response._links.next.href : null;
+      } catch (error1) {
+        console.log(`❌ Method 1 failed: ${error1.message}`);
+      }
+      
+      // Method 2: Try search endpoint with empty criteria
+      try {
+        console.log('📦 Method 2: Search endpoint');
+        const searchCriteria = {};
+        const response = await this.searchProducts(searchCriteria, { 
+          limit: 10,
+          'with_count': false
+        });
         
-        // Safety break for testing - remove in production
-        if (allProducts.length >= 50) {
-          console.log('🚫 Limiting to 50 products for testing');
-          break;
+        if (response._embedded && response._embedded.items) {
+          allProducts.push(...response._embedded.items);
+          console.log(`✅ Method 2 successful: ${response._embedded.items.length} products`);
+          return allProducts;
         }
-      } while (nextUrl);
-
-      return allProducts;
+      } catch (error2) {
+        console.log(`❌ Method 2 failed: ${error2.message}`);
+      }
+      
+      // Method 3: Try old identifier-based endpoint as fallback
+      try {
+        console.log('📦 Method 3: Fallback to identifier-based endpoint');
+        const response = await this.makeRequest('GET', '/api/rest/v1/products', null, { 
+          limit: 10,
+          'with_count': false
+        });
+        
+        if (response._embedded && response._embedded.items) {
+          allProducts.push(...response._embedded.items);
+          console.log(`✅ Method 3 successful: ${response._embedded.items.length} products`);
+          return allProducts;
+        }
+      } catch (error3) {
+        console.log(`❌ Method 3 failed: ${error3.message}`);
+        throw new Error(`All product fetch methods failed. Last error: ${error3.message}`);
+      }
+      
+      throw new Error('No products found using any method');
+      
     } catch (error) {
       console.error('❌ Error fetching products:', error.message);
       throw error;
