@@ -2,6 +2,8 @@ const AkeneoClient = require('./akeneo-client');
 const AkeneoMapping = require('./akeneo-mapping');
 const Category = require('../models/Category');
 const Product = require('../models/Product');
+const Attribute = require('../models/Attribute');
+const AttributeSet = require('../models/AttributeSet');
 const { Op } = require('sequelize');
 
 class AkeneoIntegration {
@@ -18,6 +20,8 @@ class AkeneoIntegration {
     this.importStats = {
       categories: { total: 0, imported: 0, skipped: 0, failed: 0 },
       products: { total: 0, imported: 0, skipped: 0, failed: 0 },
+      families: { total: 0, imported: 0, skipped: 0, failed: 0 },
+      attributes: { total: 0, imported: 0, skipped: 0, failed: 0 },
       errors: []
     };
   }
@@ -308,6 +312,233 @@ class AkeneoIntegration {
   }
 
   /**
+   * Import attributes from Akeneo to Catalyst
+   */
+  async importAttributes(storeId, options = {}) {
+    const { dryRun = false } = options;
+    
+    try {
+      console.log('Starting attribute import from Akeneo...');
+      
+      // Get all attributes from Akeneo
+      const akeneoAttributes = await this.client.getAllAttributes();
+      this.importStats.attributes.total = akeneoAttributes.length;
+
+      console.log(`Found ${akeneoAttributes.length} attributes in Akeneo`);
+
+      // Transform attributes to Catalyst format
+      const catalystAttributes = akeneoAttributes.map(akeneoAttribute => 
+        this.mapping.transformAttribute(akeneoAttribute, storeId)
+      );
+
+      // Import attributes
+      for (const attribute of catalystAttributes) {
+        try {
+          // Validate attribute
+          const validationErrors = this.mapping.validateAttribute(attribute);
+          if (validationErrors.length > 0) {
+            this.importStats.attributes.failed++;
+            this.importStats.errors.push({
+              type: 'attribute',
+              akeneo_code: attribute.akeneo_code,
+              errors: validationErrors
+            });
+            continue;
+          }
+
+          if (!dryRun) {
+            // Check if attribute already exists
+            const existingAttribute = await Attribute.findOne({
+              where: { 
+                store_id: storeId,
+                code: attribute.code
+              }
+            });
+
+            if (existingAttribute) {
+              // Update existing attribute
+              await existingAttribute.update({
+                name: attribute.name,
+                type: attribute.type,
+                is_required: attribute.is_required,
+                is_filterable: attribute.is_filterable,
+                is_searchable: attribute.is_searchable,
+                is_usable_in_conditions: attribute.is_usable_in_conditions,
+                filter_type: attribute.filter_type,
+                options: attribute.options,
+                file_settings: attribute.file_settings,
+                sort_order: attribute.sort_order
+              });
+              
+              console.log(`✅ Updated attribute: ${attribute.name} (${attribute.code})`);
+            } else {
+              // Remove temporary fields
+              const attributeData = { ...attribute };
+              delete attributeData.akeneo_code;
+              delete attributeData.akeneo_type;
+              delete attributeData.akeneo_group;
+              
+              // Create new attribute
+              const newAttribute = await Attribute.create(attributeData);
+              console.log(`✅ Created attribute: ${newAttribute.name} (${newAttribute.code})`);
+            }
+          } else {
+            console.log(`🔍 Dry run - would process attribute: ${attribute.name} (${attribute.code})`);
+          }
+
+          this.importStats.attributes.imported++;
+        } catch (error) {
+          this.importStats.attributes.failed++;
+          this.importStats.errors.push({
+            type: 'attribute',
+            akeneo_code: attribute.akeneo_code,
+            error: error.message
+          });
+          console.error(`Failed to import attribute ${attribute.code}:`, error.message);
+        }
+      }
+
+      console.log('Attribute import completed');
+      
+      const response = {
+        success: true,
+        stats: this.importStats.attributes,
+        dryRun: dryRun
+      };
+      
+      if (dryRun) {
+        response.message = `Dry run completed. Would import ${this.importStats.attributes.imported} attributes`;
+      } else {
+        response.message = `Imported ${this.importStats.attributes.imported} attributes`;
+      }
+      
+      return response;
+
+    } catch (error) {
+      console.error('Attribute import failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        stats: this.importStats.attributes
+      };
+    }
+  }
+
+  /**
+   * Import families from Akeneo to Catalyst AttributeSets
+   */
+  async importFamilies(storeId, options = {}) {
+    const { dryRun = false } = options;
+    
+    try {
+      console.log('Starting family import from Akeneo...');
+      
+      // Get all families from Akeneo
+      const akeneoFamilies = await this.client.getAllFamilies();
+      this.importStats.families.total = akeneoFamilies.length;
+
+      console.log(`Found ${akeneoFamilies.length} families in Akeneo`);
+
+      // Transform families to Catalyst format
+      const catalystFamilies = akeneoFamilies.map(akeneoFamily => 
+        this.mapping.transformFamily(akeneoFamily, storeId)
+      );
+
+      // Build mapping of attribute codes to IDs for linking
+      const attributeMapping = await this.buildAttributeMapping(storeId);
+
+      // Import families
+      for (const family of catalystFamilies) {
+        try {
+          // Validate family
+          const validationErrors = this.mapping.validateFamily(family);
+          if (validationErrors.length > 0) {
+            this.importStats.families.failed++;
+            this.importStats.errors.push({
+              type: 'family',
+              akeneo_code: family.akeneo_code,
+              errors: validationErrors
+            });
+            continue;
+          }
+
+          if (!dryRun) {
+            // Map attribute codes to IDs
+            const attributeIds = family.akeneo_attribute_codes
+              .map(code => attributeMapping[code])
+              .filter(id => id); // Remove undefined mappings
+
+            // Check if family already exists
+            const existingFamily = await AttributeSet.findOne({
+              where: { 
+                store_id: storeId,
+                name: family.name
+              }
+            });
+
+            if (existingFamily) {
+              // Update existing family
+              await existingFamily.update({
+                name: family.name,
+                description: family.description,
+                attribute_ids: attributeIds
+              });
+              
+              console.log(`✅ Updated family: ${family.name} with ${attributeIds.length} attributes`);
+            } else {
+              // Remove temporary fields
+              const familyData = { ...family };
+              delete familyData.akeneo_code;
+              delete familyData.akeneo_attribute_codes;
+              familyData.attribute_ids = attributeIds;
+              
+              // Create new family
+              const newFamily = await AttributeSet.create(familyData);
+              console.log(`✅ Created family: ${newFamily.name} with ${attributeIds.length} attributes`);
+            }
+          } else {
+            console.log(`🔍 Dry run - would process family: ${family.name} with ${family.akeneo_attribute_codes.length} attributes`);
+          }
+
+          this.importStats.families.imported++;
+        } catch (error) {
+          this.importStats.families.failed++;
+          this.importStats.errors.push({
+            type: 'family',
+            akeneo_code: family.akeneo_code,
+            error: error.message
+          });
+          console.error(`Failed to import family ${family.name}:`, error.message);
+        }
+      }
+
+      console.log('Family import completed');
+      
+      const response = {
+        success: true,
+        stats: this.importStats.families,
+        dryRun: dryRun
+      };
+      
+      if (dryRun) {
+        response.message = `Dry run completed. Would import ${this.importStats.families.imported} families`;
+      } else {
+        response.message = `Imported ${this.importStats.families.imported} families`;
+      }
+      
+      return response;
+
+    } catch (error) {
+      console.error('Family import failed:', error);
+      return {
+        success: false,
+        error: error.message,
+        stats: this.importStats.families
+      };
+    }
+  }
+
+  /**
    * Import both categories and products
    */
   async importAll(storeId, options = {}) {
@@ -380,12 +611,31 @@ class AkeneoIntegration {
   }
 
   /**
+   * Build mapping from Akeneo attribute codes to Catalyst attribute IDs
+   */
+  async buildAttributeMapping(storeId) {
+    const attributes = await Attribute.findAll({
+      where: { store_id: storeId },
+      attributes: ['id', 'code']
+    });
+
+    const mapping = {};
+    attributes.forEach(attribute => {
+      mapping[attribute.code] = attribute.id;
+    });
+
+    return mapping;
+  }
+
+  /**
    * Reset import statistics
    */
   resetStats() {
     this.importStats = {
       categories: { total: 0, imported: 0, skipped: 0, failed: 0 },
       products: { total: 0, imported: 0, skipped: 0, failed: 0 },
+      families: { total: 0, imported: 0, skipped: 0, failed: 0 },
+      attributes: { total: 0, imported: 0, skipped: 0, failed: 0 },
       errors: []
     };
   }

@@ -306,6 +306,149 @@ class AkeneoMapping {
   }
 
   /**
+   * Transform Akeneo family to Catalyst AttributeSet format
+   */
+  transformFamily(akeneoFamily, storeId) {
+    const catalystAttributeSet = {
+      store_id: storeId,
+      name: akeneoFamily.code, // Use code as name, can be enhanced with labels
+      description: null,
+      attribute_ids: [], // Will be populated after attributes are imported
+      // Keep original Akeneo data for reference
+      akeneo_code: akeneoFamily.code,
+      akeneo_attribute_codes: akeneoFamily.attributes || []
+    };
+
+    return catalystAttributeSet;
+  }
+
+  /**
+   * Transform Akeneo attribute to Catalyst Attribute format
+   */
+  transformAttribute(akeneoAttribute, storeId) {
+    const catalystAttribute = {
+      store_id: storeId,
+      name: this.extractLocalizedValue(akeneoAttribute.labels) || akeneoAttribute.code,
+      code: akeneoAttribute.code,
+      type: this.mapAttributeType(akeneoAttribute.type),
+      is_required: akeneoAttribute.required || false,
+      is_filterable: akeneoAttribute.useable_as_grid_filter || false,
+      is_searchable: akeneoAttribute.searchable || false,
+      is_usable_in_conditions: akeneoAttribute.useable_as_grid_filter || false,
+      filter_type: this.mapFilterType(akeneoAttribute.type),
+      options: this.extractAttributeOptions(akeneoAttribute),
+      file_settings: this.extractFileSettings(akeneoAttribute),
+      sort_order: akeneoAttribute.sort_order || 0,
+      // Keep original Akeneo data for reference
+      akeneo_code: akeneoAttribute.code,
+      akeneo_type: akeneoAttribute.type,
+      akeneo_group: akeneoAttribute.group
+    };
+
+    return catalystAttribute;
+  }
+
+  /**
+   * Map Akeneo attribute type to Catalyst attribute type
+   */
+  mapAttributeType(akeneoType) {
+    const typeMapping = {
+      'pim_catalog_text': 'text',
+      'pim_catalog_textarea': 'text',
+      'pim_catalog_number': 'number',
+      'pim_catalog_price_collection': 'number',
+      'pim_catalog_simpleselect': 'select',
+      'pim_catalog_multiselect': 'multiselect',
+      'pim_catalog_boolean': 'boolean',
+      'pim_catalog_date': 'date',
+      'pim_catalog_file': 'file',
+      'pim_catalog_image': 'file',
+      'pim_catalog_identifier': 'text'
+    };
+
+    return typeMapping[akeneoType] || 'text';
+  }
+
+  /**
+   * Map Akeneo attribute type to filter type
+   */
+  mapFilterType(akeneoType) {
+    const filterMapping = {
+      'pim_catalog_simpleselect': 'select',
+      'pim_catalog_multiselect': 'multiselect',
+      'pim_catalog_number': 'slider',
+      'pim_catalog_price_collection': 'slider'
+    };
+
+    return filterMapping[akeneoType] || null;
+  }
+
+  /**
+   * Extract attribute options from Akeneo attribute
+   */
+  extractAttributeOptions(akeneoAttribute) {
+    if (!akeneoAttribute.options) return [];
+
+    return Object.keys(akeneoAttribute.options).map(optionCode => ({
+      code: optionCode,
+      label: this.extractLocalizedValue(akeneoAttribute.options[optionCode].labels) || optionCode,
+      sort_order: akeneoAttribute.options[optionCode].sort_order || 0
+    }));
+  }
+
+  /**
+   * Extract file settings from Akeneo attribute
+   */
+  extractFileSettings(akeneoAttribute) {
+    if (akeneoAttribute.type !== 'pim_catalog_file' && akeneoAttribute.type !== 'pim_catalog_image') {
+      return {};
+    }
+
+    return {
+      allowed_extensions: akeneoAttribute.allowed_extensions || [],
+      max_file_size: akeneoAttribute.max_file_size || null
+    };
+  }
+
+  /**
+   * Validate transformed family
+   */
+  validateFamily(family) {
+    const errors = [];
+    
+    if (!family.name || family.name.trim() === '') {
+      errors.push('Family name is required');
+    }
+    
+    if (!family.store_id) {
+      errors.push('Store ID is required');
+    }
+
+    return errors;
+  }
+
+  /**
+   * Validate transformed attribute
+   */
+  validateAttribute(attribute) {
+    const errors = [];
+    
+    if (!attribute.name || attribute.name.trim() === '') {
+      errors.push('Attribute name is required');
+    }
+    
+    if (!attribute.code || attribute.code.trim() === '') {
+      errors.push('Attribute code is required');
+    }
+    
+    if (!attribute.store_id) {
+      errors.push('Store ID is required');
+    }
+
+    return errors;
+  }
+
+  /**
    * Validate transformed product
    */
   validateProduct(product) {

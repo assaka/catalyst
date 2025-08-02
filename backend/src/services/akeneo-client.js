@@ -194,6 +194,34 @@ class AkeneoClient {
   }
 
   /**
+   * Get families from Akeneo
+   */
+  async getFamilies(params = {}) {
+    return this.makeRequest('GET', '/api/rest/v1/families', null, params);
+  }
+
+  /**
+   * Get specific family by code
+   */
+  async getFamily(code) {
+    return this.makeRequest('GET', `/api/rest/v1/families/${code}`);
+  }
+
+  /**
+   * Get attributes from Akeneo
+   */
+  async getAttributes(params = {}) {
+    return this.makeRequest('GET', '/api/rest/v1/attributes', null, params);
+  }
+
+  /**
+   * Get specific attribute by code
+   */
+  async getAttribute(code) {
+    return this.makeRequest('GET', `/api/rest/v1/attributes/${code}`);
+  }
+
+  /**
    * Get all categories with pagination handling
    */
   async getAllCategories() {
@@ -285,6 +313,52 @@ class AkeneoClient {
       console.error('❌ Error fetching products:', error.message);
       throw error;
     }
+  }
+
+  /**
+   * Get all families with pagination handling
+   */
+  async getAllFamilies() {
+    const allFamilies = [];
+    let nextUrl = null;
+
+    do {
+      const params = nextUrl ? {} : { limit: 100 };
+      const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/families';
+      
+      const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+
+      if (response._embedded && response._embedded.items) {
+        allFamilies.push(...response._embedded.items);
+      }
+
+      nextUrl = response._links && response._links.next ? response._links.next.href : null;
+    } while (nextUrl);
+
+    return allFamilies;
+  }
+
+  /**
+   * Get all attributes with pagination handling
+   */
+  async getAllAttributes() {
+    const allAttributes = [];
+    let nextUrl = null;
+
+    do {
+      const params = nextUrl ? {} : { limit: 100 };
+      const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/attributes';
+      
+      const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+
+      if (response._embedded && response._embedded.items) {
+        allAttributes.push(...response._embedded.items);
+      }
+
+      nextUrl = response._links && response._links.next ? response._links.next.href : null;
+    } while (nextUrl);
+
+    return allAttributes;
   }
 
   /**

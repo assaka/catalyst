@@ -249,6 +249,58 @@ router.post('/akeneo/import-products',
 });
 
 /**
+ * Import attributes from Akeneo
+ * POST /api/integrations/akeneo/import-attributes
+ */
+router.post('/akeneo/import-attributes', 
+  storeAuth,
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array()
+    });
+  }
+
+  const storeId = req.storeId;
+  console.log('🔍 Import attributes request body:', req.body);
+  
+  await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
+    const { dryRun = false } = body;
+    console.log(`📦 Starting attribute import with dryRun: ${dryRun}`);
+    return await integration.importAttributes(storeId, { dryRun });
+  });
+});
+
+/**
+ * Import families from Akeneo
+ * POST /api/integrations/akeneo/import-families
+ */
+router.post('/akeneo/import-families', 
+  storeAuth,
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      errors: errors.array()
+    });
+  }
+
+  const storeId = req.storeId;
+  console.log('🔍 Import families request body:', req.body);
+  
+  await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
+    const { dryRun = false } = body;
+    console.log(`📦 Starting family import with dryRun: ${dryRun}`);
+    return await integration.importFamilies(storeId, { dryRun });
+  });
+});
+
+/**
  * Import both categories and products from Akeneo
  * POST /api/integrations/akeneo/import-all
  */
