@@ -60,42 +60,7 @@ class ApiClient {
     // Check role-specific tokens
     const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
     const customerToken = localStorage.getItem('customer_auth_token');
-    
-    // Debug logging for API authentication
-    if (currentPath.includes('admin') || currentPath.includes('shipping') || currentPath.includes('delivery')) {
-      const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
-      let userData = null;
-      try {
-        userData = storeOwnerUserData ? JSON.parse(storeOwnerUserData) : null;
-      } catch (e) {
-        console.warn('Failed to parse user data:', e);
-      }
-      
-      console.log('🔍 API Client Debug:', {
-        currentPath,
-        isAdminContext,
-        isCustomerContext,
-        hasStoreOwnerToken: !!storeOwnerToken,
-        hasCustomerToken: !!customerToken,
-        loggedOut: this.isLoggedOut,
-        tokenPreview: storeOwnerToken ? storeOwnerToken.substring(0, 20) + '...' : 'None',
-        userRole: userData?.role,
-        userAccountType: userData?.account_type,
-        userId: userData?.id,
-        // Additional debugging for missing user data
-        rawUserData: storeOwnerUserData,
-        userDataLength: storeOwnerUserData ? storeOwnerUserData.length : 0,
-        userDataExists: !!storeOwnerUserData
-      });
-      
-      // Alert if we have token but no user data
-      if (storeOwnerToken && !userData) {
-        console.warn('⚠️ AUTHENTICATION ISSUE: Have token but missing user data. This will cause 403 errors.');
-        console.warn('💡 SOLUTION: Need to re-login to refresh both token and user data.');
-      }
-      
-    }
-    
+
     if (isAdminContext && storeOwnerToken) {
       return storeOwnerToken;
     } else if (isCustomerContext && customerToken) {
@@ -137,8 +102,6 @@ class ApiClient {
     // For public endpoints, use /api/public/ prefix
     const publicEndpoint = endpoint.startsWith('public/') ? endpoint : `public/${endpoint}`;
     const url = this.buildUrl(publicEndpoint);
-    
-    console.log('🔄 PublicRequest:', method, url);
     
     const headers = {
       'Content-Type': 'application/json',
@@ -216,40 +179,6 @@ class ApiClient {
     
     const url = this.buildUrl(endpoint);
     const headers = this.getHeaders(customHeaders);
-
-    // Debug logging for API requests that might fail
-    if (endpoint.includes('delivery') || endpoint.includes('shipping') || endpoint.includes('payment')) {
-      console.log('🔍 API Request Debug:', {
-        method,
-        endpoint,
-        url,
-        hasAuth: !!headers.Authorization,
-        authPreview: headers.Authorization ? headers.Authorization.substring(0, 20) + '...' : 'None'
-      });
-      
-      // Additional role check for sensitive endpoints
-      const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
-      let userData = null;
-      try {
-        userData = storeOwnerUserData ? JSON.parse(storeOwnerUserData) : null;
-      } catch (e) {
-        console.warn('Failed to parse user data for role check:', e);
-      }
-      
-      if (userData) {
-        console.log('🔐 User Role Check:', {
-          userRole: userData?.role,
-          accountType: userData?.account_type,
-          userId: userData?.id,
-          userName: userData?.name || userData?.email,
-          hasStoreOwnerRole: userData?.role === 'store_owner',
-          hasAgencyAccount: userData?.account_type === 'agency',
-          shouldHaveAccess: userData?.role === 'store_owner' || userData?.account_type === 'agency'
-        });
-      } else {
-        console.warn('🚨 No user data found for role validation on sensitive endpoint');
-      }
-    }
 
     const config = {
       method,
