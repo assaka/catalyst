@@ -58,10 +58,13 @@ const AkeneoIntegration = () => {
       const response = await apiClient.get('/integrations/akeneo/config-status', {
         'x-store-id': storeId
       });
-      if (response.data.success && response.data.config) {
+      
+      // Handle different response structures
+      const responseData = response.data || response;
+      if (responseData.success && responseData.config) {
         setConfig(prev => ({
           ...prev,
-          ...response.data.config
+          ...responseData.config
         }));
       }
     } catch (error) {
@@ -110,11 +113,16 @@ const AkeneoIntegration = () => {
         'x-store-id': storeId
       });
       
-      if (response.data.success) {
-        setConnectionStatus({ success: true, message: response.data.message });
+      // Handle different response structures
+      const responseData = response.data || response;
+      const success = responseData.success;
+      const message = responseData.message || 'Connection test completed';
+      
+      if (success) {
+        setConnectionStatus({ success: true, message });
         toast.success('Connection successful!');
       } else {
-        setConnectionStatus({ success: false, message: response.data.message });
+        setConnectionStatus({ success: false, message });
         toast.error('Connection failed');
       }
     } catch (error) {
@@ -146,12 +154,17 @@ const AkeneoIntegration = () => {
         'x-store-id': storeId
       });
       
-      if (response.data.success) {
+      // Handle different response structures
+      const responseData = response.data || response;
+      const success = responseData.success;
+      const message = responseData.message || 'Configuration operation completed';
+      
+      if (success) {
         toast.success('Configuration saved successfully!');
         setConfigSaved(true);
         loadConfigStatus(); // Reload config status
       } else {
-        toast.error(`Failed to save configuration: ${response.data.message}`);
+        toast.error(`Failed to save configuration: ${message}`);
       }
     } catch (error) {
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
