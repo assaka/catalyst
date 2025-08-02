@@ -1,8 +1,10 @@
 import React, { useEffect } from 'react';
 import { useStore } from './StoreProvider';
+import { useSeoSettings } from './SeoSettingsProvider';
 
 export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDescription, imageUrl }) {
-    const { store, seoSettings, seoTemplates } = useStore();
+    const { store, seoTemplates } = useStore();
+    const { seoSettings } = useSeoSettings();
 
     useEffect(() => {
         // Don't proceed if we don't have store data yet

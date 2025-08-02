@@ -159,7 +159,7 @@ export const StoreProvider = ({ children }) => {
   const [filterableAttributes, setFilterableAttributes] = useState([]);
   const [attributeSets, setAttributeSets] = useState([]);
   const [seoTemplates, setSeoTemplates] = useState([]);
-  const [seoSettings, setSeoSettings] = useState(null);
+  // Removed seoSettings from provider state - will be loaded independently like CMS blocks
   const [selectedCountry, setSelectedCountry] = useState(() => {
     // Load from localStorage or default to 'US'
     return localStorage.getItem('selectedCountry') || 'US';
@@ -317,145 +317,7 @@ export const StoreProvider = ({ children }) => {
         setSelectedCountry(currentSelectedCountry);
       }
 
-      // Load SEO settings separately and with priority
-      try {
-        console.log('🔍 Loading SEO settings for store:', selectedStore.id);
-        
-        // EXTENSIVE DEBUG: Check force refresh flag again (localStorage + URL)
-        const urlParams = new URLSearchParams(window.location.search);
-        const seoRefreshParam = urlParams.get('_seo_refresh');
-        const forceRefresh = localStorage.getItem('forceRefreshStore') || seoRefreshParam;
-        
-        console.log('🔍 SEO LOADING - Force refresh flag check:');
-        console.log('- forceRefreshStore (localStorage):', localStorage.getItem('forceRefreshStore'));
-        console.log('- _seo_refresh (URL param):', seoRefreshParam);
-        console.log('- Combined forceRefresh value:', forceRefresh);
-        console.log('- Flag exists:', !!forceRefresh);
-        console.log('- Source:', localStorage.getItem('forceRefreshStore') ? 'localStorage' : seoRefreshParam ? 'URL parameter' : 'none');
-        
-        let seoSettingsData;
-        
-        if (forceRefresh) {
-          // COMPLETELY BYPASS ALL CACHING - make direct API call
-          console.log('🚨 FORCE REFRESH DETECTED - Making direct API call bypassing ALL caching layers');
-          
-          try {
-            // Import the API client directly to bypass all entity wrappers
-            const storefrontApiClient = (await import('@/api/storefront-client')).default;
-            
-            // Make direct API call with cache-busting timestamp
-            const cacheBuster = Date.now();
-            const directUrl = `seo-settings?store_id=${selectedStore.id}&_cb=${cacheBuster}&_force_fresh=true`;
-            console.log('🔥 Direct API URL:', directUrl);
-            console.log('🔥 Full API URL:', `${storefrontApiClient.baseURL}/api/public/${directUrl}`);
-            
-            const directResponse = await storefrontApiClient.getPublic(directUrl);
-            console.log('🔥 DIRECT API RESPONSE:', directResponse);
-            console.log('🔥 Response length:', Array.isArray(directResponse) ? directResponse.length : 'Not array');
-            if (Array.isArray(directResponse) && directResponse.length > 0) {
-              console.log('🔥 First item from response:', directResponse[0]);
-            }
-            console.log('🔥 Response type:', typeof directResponse, 'Array?', Array.isArray(directResponse));
-            
-            seoSettingsData = Array.isArray(directResponse) ? directResponse : [];
-            console.log('🔥 Processed SEO settings data:', seoSettingsData);
-            
-            // Update cache with fresh data
-            apiCache.set(`seo-settings-${selectedStore.id}`, { 
-              data: seoSettingsData, 
-              timestamp: Date.now() 
-            });
-            saveCacheToStorage();
-            
-          } catch (directError) {
-            console.error('🚨 Direct API call failed:', directError);
-            seoSettingsData = [];
-          }
-        } else {
-          // Use normal cached call
-          const { StorefrontSeoSetting } = await import('@/api/storefront-entities');
-          seoSettingsData = await cachedApiCall(`seo-settings-${selectedStore.id}`, async () => {
-            console.log('🔄 Fetching SEO settings from API...');
-            const result = await StorefrontSeoSetting.filter({ store_id: selectedStore.id });
-            console.log('📊 SEO settings API response:', result);
-            return Array.isArray(result) ? result : [];
-          });
-        }
-        
-        if (seoSettingsData && seoSettingsData.length > 0) {
-          const loadedSeoSettings = seoSettingsData[0];
-          console.log('🔍 Raw SEO settings from API:', loadedSeoSettings);
-          setSeoSettings({
-            ...loadedSeoSettings,
-            // Ensure nested objects exist with defaults, but preserve boolean flags
-            schema_settings: loadedSeoSettings.schema_settings || {
-              enable_product_schema: true,
-              enable_organization_schema: true,
-              organization_name: '',
-              organization_logo_url: '',
-              social_profiles: []
-            },
-            open_graph_settings: loadedSeoSettings.open_graph_settings || {
-              default_image_url: '',
-              facebook_app_id: ''
-            },
-            twitter_card_settings: loadedSeoSettings.twitter_card_settings || {
-              card_type: 'summary_large_image',
-              site_username: ''
-            },
-            hreflang_settings: (() => {
-              try {
-                if (typeof loadedSeoSettings.hreflang_settings === 'string') {
-                  return JSON.parse(loadedSeoSettings.hreflang_settings);
-                }
-                return Array.isArray(loadedSeoSettings.hreflang_settings) ? loadedSeoSettings.hreflang_settings : [];
-              } catch (e) {
-                console.warn('Failed to parse hreflang_settings:', e);
-                return [];
-              }
-            })()
-          });
-        } else {
-          setSeoSettings({
-            store_id: selectedStore.id,
-            enable_rich_snippets: true,
-            enable_open_graph: true,
-            enable_twitter_cards: true,
-            schema_settings: {
-              enable_product_schema: true,
-              enable_organization_schema: true,
-              organization_name: selectedStore.name || '',
-              organization_logo_url: '',
-              social_profiles: []
-            },
-            open_graph_settings: {
-              default_image_url: '',
-              facebook_app_id: ''
-            },
-            twitter_card_settings: {
-              card_type: 'summary_large_image',
-              site_username: ''
-            },
-            hreflang_settings: []
-          });
-        }
-        
-        // Clean up force refresh flag ONLY after SEO settings are processed
-        if (forceRefresh) {
-          localStorage.removeItem('forceRefreshStore');
-          console.log('🧹 Force refresh flag cleared after SEO settings processed');
-        }
-        
-      } catch (error) {
-        console.error('[StoreProvider] Error loading SEO settings:', error);
-        setSeoSettings(null);
-        
-        // Clean up force refresh flag even if SEO loading failed
-        if (forceRefresh) {
-          localStorage.removeItem('forceRefreshStore');
-          console.log('🧹 Force refresh flag cleared after SEO settings error');  
-        }
-      }
+      // SEO settings removed from StoreProvider - will be loaded independently like CMS blocks
 
       // Load cookie consent settings and update store settings
       try {
@@ -594,7 +456,6 @@ export const StoreProvider = ({ children }) => {
       setFilterableAttributes([]);
       setAttributeSets([]);
       setSeoTemplates([]);
-      setSeoSettings(null);
     } finally {
       setLoading(false);
     }
@@ -617,7 +478,6 @@ export const StoreProvider = ({ children }) => {
     filterableAttributes,
     attributeSets,
     seoTemplates,
-    seoSettings,
     selectedCountry,
     setSelectedCountry: handleSetSelectedCountry,
   };

@@ -18,6 +18,7 @@ import CategoryNav from './CategoryNav';
 import HeaderSearch from './HeaderSearch';
 import CmsBlockRenderer from './CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
+import { SeoSettingsProvider } from '@/components/storefront/SeoSettingsProvider';
 import { CountrySelect } from "@/components/ui/country-select";
 import SeoHeadManager from './SeoHeadManager';
 import DataLayerManager from '@/components/storefront/DataLayerManager';
@@ -239,9 +240,10 @@ export default function StorefrontLayout({ children }) {
     const cookieConsentSettings = settings?.cookie_consent;
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
-            <RoleSwitcher />
-            <DataLayerManager />
+        <SeoSettingsProvider>
+            <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
+                <RoleSwitcher />
+                <DataLayerManager />
             {googleFontLink && (
               <link href={googleFontLink} rel="stylesheet" />
             )}
@@ -627,6 +629,7 @@ export default function StorefrontLayout({ children }) {
             {settings?.cookie_consent?.enabled && (
                 <CookieConsentBanner />
             )}
-        </div>
+            </div>
+        </SeoSettingsProvider>
     );
 }

@@ -49,43 +49,11 @@ export default function SeoTools() {
   const location = useLocation();
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   
-  // Function to clear SEO-related cache
+  // Function to clear SEO-related cache - simplified like CMS blocks
   const clearSeoCache = (storeId) => {
-    try {
-      console.log('🔍 clearSeoCache called with storeId:', storeId);
-      console.log('🔍 window available:', typeof window !== 'undefined');
-      
-      // Clear storefront cache to ensure SEO setting changes are reflected immediately
-      if (typeof window !== 'undefined') {
-        // Clear localStorage cache used by StoreProvider
-        console.log('🔍 Removing storeProviderCache...');
-        localStorage.removeItem('storeProviderCache');
-        
-        // Set force refresh flag (string like other working sections)
-        console.log('🔍 Setting forceRefreshStore flag to "true"...');
-        localStorage.setItem('forceRefreshStore', 'true');
-        
-        // Verify the flag was set
-        const flagCheck = localStorage.getItem('forceRefreshStore');
-        console.log('🔍 Flag verification - forceRefreshStore is now:', flagCheck);
-        
-        // Trigger global cache clear if available
-        if (window.clearCache) {
-          console.log('🔍 Calling window.clearCache()...');
-          window.clearCache();
-        } else {
-          console.log('🔍 window.clearCache not available');
-        }
-      } else {
-        console.warn('🔍 window is not available - cache clearing skipped');
-      }
-      
-      console.log('🧹 SEO cache cleared using same method as other working sections');
-      
-    } catch (error) {
-      console.error('⚠️ Failed to clear SEO cache:', error);
-      console.error('⚠️ Error details:', error.message, error.stack);
-    }
+    console.log('🧹 Clearing SEO cache (simplified approach like CMS blocks)');
+    // No complex localStorage manipulation - just signal storefront to refresh
+    // The SeoSettingsProvider will handle its own simple cache clearing
   };
 
   const [store, setStore] = useState(null);
@@ -385,16 +353,7 @@ export default function SeoTools() {
       // Clear SEO cache to ensure changes are reflected immediately
       clearSeoCache(storeId);
       
-      // ADDITIONAL: Force reload storefront to bypass localStorage isolation issue
-      console.log('🔄 Opening fresh storefront window to bypass localStorage isolation...');
-      const storeSlug = selectedStore?.slug || 'hamid2';
-      const storefrontUrl = `${window.location.origin}/public/${storeSlug}?_seo_refresh=${Date.now()}`;
-      
-      setTimeout(() => {
-        window.open(storefrontUrl, '_blank');
-      }, 1000);
-      
-      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Fresh storefront window will open to show changes.' });
+      setFlashMessage({ type: 'success', message: 'Settings saved successfully! Changes will be visible on storefront refresh.' });
       setSaving(false);
 
     } catch (error) {
