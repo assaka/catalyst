@@ -37,6 +37,12 @@ const AkeneoIntegration = () => {
   const [configSaved, setConfigSaved] = useState(false);
   const [importResults, setImportResults] = useState(null);
   const [dryRun, setDryRun] = useState(true);
+  
+  // Debug dry run changes
+  const handleDryRunChange = (checked) => {
+    console.log('🔧 Dry run toggle changed:', checked);
+    setDryRun(checked);
+  };
   const [locales, setLocales] = useState([]);
   const [activeTab, setActiveTab] = useState('configuration');
 
@@ -46,6 +52,19 @@ const AkeneoIntegration = () => {
     const loadData = async () => {
       // Wait a bit for localStorage to be ready
       await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Load saved connection status
+      const savedConnectionStatus = localStorage.getItem('akeneo_connection_status');
+      if (savedConnectionStatus) {
+        try {
+          const parsedStatus = JSON.parse(savedConnectionStatus);
+          setConnectionStatus(parsedStatus);
+          console.log('📥 Loaded saved connection status:', parsedStatus);
+        } catch (error) {
+          console.warn('⚠️ Failed to parse saved connection status:', error);
+        }
+      }
+      
       await loadConfigStatus();
       await loadLocales();
     };
@@ -134,6 +153,7 @@ const AkeneoIntegration = () => {
     }));
     setConfigSaved(false); // Reset saved status when config changes
     setConnectionStatus(null); // Reset connection status when config changes
+    localStorage.removeItem('akeneo_connection_status'); // Clear saved connection status
   };
 
   const testConnection = async () => {
@@ -211,11 +231,15 @@ const AkeneoIntegration = () => {
       
       if (success) {
         console.log('✅ Connection successful');
-        setConnectionStatus({ success: true, message });
+        const successStatus = { success: true, message };
+        setConnectionStatus(successStatus);
+        localStorage.setItem('akeneo_connection_status', JSON.stringify(successStatus));
         toast.success('Connection successful!');
       } else {
         console.log('❌ Connection failed:', message);
-        setConnectionStatus({ success: false, message });
+        const failureStatus = { success: false, message };
+        setConnectionStatus(failureStatus);
+        localStorage.setItem('akeneo_connection_status', JSON.stringify(failureStatus));
         toast.error('Connection failed');
       }
     } catch (error) {
@@ -227,7 +251,9 @@ const AkeneoIntegration = () => {
       });
       
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      setConnectionStatus({ success: false, message });
+      const errorStatus = { success: false, message };
+      setConnectionStatus(errorStatus);
+      localStorage.setItem('akeneo_connection_status', JSON.stringify(errorStatus));
       toast.error(`Connection failed: ${message}`);
     } finally {
       console.log('🏁 Connection test completed');
@@ -687,9 +713,13 @@ const AkeneoIntegration = () => {
                   <Switch
                     id="dry-run"
                     checked={dryRun}
-                    onCheckedChange={setDryRun}
+                    onCheckedChange={handleDryRunChange}
+                    disabled={false}
                   />
-                  <Label htmlFor="dry-run">Dry Run</Label>
+                  <Label htmlFor="dry-run" className="cursor-pointer">Dry Run</Label>
+                  <span className="text-sm text-gray-500">
+                    ({dryRun ? 'Preview only' : 'Live import'})
+                  </span>
                 </div>
               </div>
 
