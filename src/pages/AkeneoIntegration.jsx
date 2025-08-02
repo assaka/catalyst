@@ -50,22 +50,44 @@ const AkeneoIntegration = () => {
 
   // Load import statistics
   const loadStats = async () => {
-    if (!storeSlug) return;
+    console.log('🔍 Loading statistics...');
+    console.log('Store slug:', storeSlug);
+    
+    if (!storeSlug) {
+      console.log('❌ No store slug, skipping stats load');
+      return;
+    }
     
     setLoadingStats(true);
     try {
       const storeId = localStorage.getItem('selectedStoreId');
-      if (!storeId) return;
+      console.log('Store ID from localStorage:', storeId);
+      
+      if (!storeId) {
+        console.log('❌ No store ID found in localStorage');
+        return;
+      }
 
+      console.log('📡 Making API call to /integrations/akeneo/stats');
       const response = await apiClient.get('/integrations/akeneo/stats', {
         'x-store-id': storeId
       });
 
+      console.log('📥 Stats API response:', response);
+
       if (response.data?.success) {
+        console.log('✅ Stats loaded successfully:', response.data.stats);
         setStats(response.data.stats);
+      } else {
+        console.log('❌ Stats API returned unsuccessful response:', response.data);
       }
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      console.error('❌ Failed to load stats:', error);
+      console.error('Error details:', {
+        status: error.status,
+        message: error.message,
+        response: error.response?.data
+      });
     } finally {
       setLoadingStats(false);
     }
