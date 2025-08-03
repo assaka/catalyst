@@ -105,15 +105,39 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     }
 
     try {
+      console.log('🔍 Starting redirect creation process');
+      console.log('Current URL:', window.location.href);
+      console.log('Current page context:', {
+        isAdmin: window.location.pathname.includes('/admin'),
+        isCategory: window.location.pathname.includes('/categories'),
+        userAgent: navigator.userAgent.includes('Chrome') ? 'Chrome' : 'Other'
+      });
+
       const storeId = getSelectedStoreId();
       if (!storeId) {
         console.warn('No store ID available for redirect creation');
         return;
       }
 
-      const token = localStorage.getItem('token');
+      // Check all possible token storage locations
+      const token = localStorage.getItem('token') || 
+                   localStorage.getItem('authToken') || 
+                   sessionStorage.getItem('token') ||
+                   sessionStorage.getItem('authToken');
+      
+      console.log('🔑 Token check:', {
+        localStorage_token: !!localStorage.getItem('token'),
+        localStorage_authToken: !!localStorage.getItem('authToken'),
+        sessionStorage_token: !!sessionStorage.getItem('token'),
+        sessionStorage_authToken: !!sessionStorage.getItem('authToken'),
+        finalToken: !!token,
+        tokenStart: token?.substring(0, 20)
+      });
+      
       if (!token) {
-        console.error('No authentication token available for redirect creation');
+        console.error('❌ No authentication token available for redirect creation');
+        console.log('Available localStorage keys:', Object.keys(localStorage));
+        console.log('Available sessionStorage keys:', Object.keys(sessionStorage));
         return;
       }
 
