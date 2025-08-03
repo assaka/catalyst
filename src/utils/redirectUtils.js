@@ -59,3 +59,19 @@ export const getPossiblePaths = (type, slug) => {
       return [`/${slug}`];
   }
 };
+
+// Universal redirect check for any path - no type restrictions
+export const checkAnyPathForRedirect = async (path, storeId) => {
+  if (!storeId || !path) return null;
+  
+  try {
+    const response = await fetch(`/api/redirects/check?store_id=${storeId}&path=${encodeURIComponent(path)}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.found ? data.to_url : null;
+    }
+  } catch (error) {
+    console.warn('Error checking for redirect:', error);
+  }
+  return null;
+};

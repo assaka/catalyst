@@ -18,6 +18,7 @@ import CategoryNav from './CategoryNav';
 import HeaderSearch from './HeaderSearch';
 import CmsBlockRenderer from './CmsBlockRenderer';
 import { useStore } from '@/components/storefront/StoreProvider';
+import RedirectHandler from '@/components/RedirectHandler';
 import { SeoSettingsProvider } from '@/components/storefront/SeoSettingsProvider';
 import { CountrySelect } from "@/components/ui/country-select";
 import SeoHeadManager from './SeoHeadManager';
@@ -661,7 +662,9 @@ export default function StorefrontLayout({ children }) {
                 {/* Main Content - Full Width */}
                 <main className="w-full px-4 sm:px-6 lg:px-8 py-8">
                     <CmsBlockRenderer position="before_content" page={getCurrentPage()} />
-                    {children}
+                    <RedirectHandler storeId={store?.id}>
+                        {children}
+                    </RedirectHandler>
                     <CmsBlockRenderer position="after_content" page={getCurrentPage()} />
                 </main>
             </div>

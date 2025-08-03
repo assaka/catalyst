@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { createCategoryUrl, createPublicUrl } from "@/utils/urlUtils";
-import { checkMultiplePathsForRedirect, getPossiblePaths, extractSlugFromRedirectUrl } from "@/utils/redirectUtils";
+// Redirect handling moved to global RedirectHandler component
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { CmsBlock } from "@/api/entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
@@ -61,25 +61,7 @@ export default function Storefront() {
         return;
       }
 
-      // Check for redirects FIRST before any other processing
-      if (!isHome && categorySlug) {
-        const category = categories.find(c => c?.slug === categorySlug);
-        if (!category) {
-          // Category not found - check for redirect immediately using universal utility
-          console.warn(`Category with slug '${categorySlug}' not found. Checking for redirects...`);
-          
-          const possiblePaths = getPossiblePaths('category', categorySlug);
-          const redirectTo = await checkMultiplePathsForRedirect(possiblePaths, store.id);
-          
-          if (redirectTo) {
-            console.log(`🔀 Redirecting from category ${categorySlug} to ${redirectTo}`);
-            const newSlug = extractSlugFromRedirectUrl(redirectTo);
-            navigate(createCategoryUrl(storeCode, newSlug), { replace: true });
-            // Don't process anything else - just return
-            return;
-          }
-        }
-      }
+      // Redirect checking now handled by global RedirectHandler
 
       if (isHome) {
         setCurrentCategory(null);
@@ -103,8 +85,8 @@ export default function Storefront() {
         }
         
         if (!category) {
-          // Redirect check already happened earlier - just show 404
-          console.warn(`Category with slug '${categorySlug}' not found and no redirect available.`);
+          // Global redirect handler already checked - just show 404
+          console.warn(`Category with slug '${categorySlug}' not found.`);
           setProducts([]);
           setCurrentCategory(null);
           setLoading(false);
