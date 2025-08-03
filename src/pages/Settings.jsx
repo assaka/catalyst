@@ -291,6 +291,16 @@ export default function Settings() {
           excludeRootFromMenu: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false,
         }
       });
+      
+      // Debug the loaded settings values
+      console.log('🔍 Store settings loaded:', {
+        rootCategoryId: settings.rootCategoryId,
+        legacyRootCategoryId: storeData.root_category_id,
+        finalRootCategoryId: settings.rootCategoryId || storeData.root_category_id || null,
+        excludeRootFromMenu: settings.excludeRootFromMenu,
+        hasExcludeRootProperty: settings.hasOwnProperty('excludeRootFromMenu'),
+        finalExcludeRoot: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false
+      });
 
     } catch (error) {
       console.error('Failed to load store:', error);
@@ -744,9 +754,22 @@ export default function Settings() {
 
                 <div>
                   <Label htmlFor="root_category_id">Root Category</Label>
+                  {(() => {
+                    const currentValue = store?.settings?.rootCategoryId ? store.settings.rootCategoryId : "none";
+                    console.log('🎯 Root category form value:', {
+                      rootCategoryId: store?.settings?.rootCategoryId,
+                      currentValue,
+                      storeSettingsExists: !!store?.settings,
+                      storeExists: !!store
+                    });
+                    return null;
+                  })()}
                   <Select 
-                    value={store?.settings?.rootCategoryId || "none"} 
-                    onValueChange={(value) => handleSettingsChange('rootCategoryId', value === "none" ? null : value)}
+                    value={store?.settings?.rootCategoryId ? store.settings.rootCategoryId : "none"} 
+                    onValueChange={(value) => {
+                      console.log('🔄 Root category changed to:', value);
+                      handleSettingsChange('rootCategoryId', value === "none" ? null : value);
+                    }}
                   >
                     <SelectTrigger id="root_category_id">
                       <SelectValue placeholder="Select root category (optional)" />
@@ -816,10 +839,22 @@ export default function Settings() {
                       <Label htmlFor="exclude_root_from_menu" className="font-medium">Exclude Root Category from Navigation</Label>
                       <p className="text-sm text-gray-500">Hide the root category itself from navigation menus, showing only its children</p>
                     </div>
+                    {(() => {
+                      const isChecked = store?.settings?.excludeRootFromMenu || false;
+                      console.log('🎯 Exclude root checkbox value:', {
+                        excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
+                        isChecked,
+                        settingsObject: store?.settings
+                      });
+                      return null;
+                    })()}
                     <Switch 
                       id="exclude_root_from_menu" 
                       checked={store?.settings?.excludeRootFromMenu || false} 
-                      onCheckedChange={(checked) => handleSettingsChange('excludeRootFromMenu', checked)} 
+                      onCheckedChange={(checked) => {
+                        console.log('🔄 Exclude root changed to:', checked);
+                        handleSettingsChange('excludeRootFromMenu', checked);
+                      }} 
                     />
                   </div>
                 )}
