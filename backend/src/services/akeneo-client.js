@@ -15,7 +15,8 @@ class AkeneoClient {
       baseURL: this.baseUrl,
       timeout: 30000,
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/hal+json'
       }
     });
   }
