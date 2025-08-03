@@ -39,7 +39,9 @@ class AkeneoClient {
       clientIdLength: this.clientId?.length,
       clientSecretPresent: !!this.clientSecret,
       clientSecretType: typeof this.clientSecret,
+      clientSecretLength: this.clientSecret?.length,
       credentialsString: credentials.substring(0, 15) + '...',
+      credentialsLength: credentials.length,
       base64Length: Buffer.from(credentials).toString('base64').length
     });
     return Buffer.from(credentials).toString('base64');
@@ -153,10 +155,8 @@ class AkeneoClient {
         config.data = data;
       }
 
-      // Use application/hal+json for product endpoints, application/json for others
-      if (endpoint.includes('/products')) {
-        config.headers['Accept'] = 'application/hal+json';
-      }
+      // Use application/json for all endpoints (hal+json not supported by this Akeneo instance)
+      config.headers['Accept'] = 'application/json';
 
       console.log(`🌐 Making ${method} request to ${endpoint}`, { params, hasData: !!data, acceptHeader: config.headers['Accept'] || 'default' });
       const response = await this.axiosInstance.request(config);
