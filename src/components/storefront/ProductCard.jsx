@@ -134,6 +134,11 @@ const ProductCard = ({ product, settings, className = "" }) => {
       );
 
       if (result.success !== false) {
+        // Track add to cart event
+        if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
+          window.catalyst.trackAddToCart(product, 1);
+        }
+        
         // Dispatch cart updated event to refresh MiniCart
         window.dispatchEvent(new CustomEvent('cartUpdated'));
         console.log('Successfully added to cart:', product.name);

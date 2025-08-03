@@ -111,6 +111,11 @@ export default function OrderSuccess() {
           const orderData = result.data;
           setOrder(orderData);
 
+          // Track purchase event
+          if (typeof window !== 'undefined' && window.catalyst?.trackPurchase) {
+            window.catalyst.trackPurchase(orderData);
+          }
+
           // Try different possible keys for order items
           let items = orderData.OrderItems || orderData.items || orderData.orderItems || [];
           

@@ -195,6 +195,12 @@ export default function DataLayerManager() {
         trackEvent,
         trackActivity
       };
+      
+      console.log('🔧 DataLayerManager: Catalyst tracking functions initialized', {
+        store_name: store.name,
+        store_id: store.id,
+        functions: Object.keys(window.catalyst)
+      });
     }
 
     // Initialize GTM dataLayer with basic info

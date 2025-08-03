@@ -76,6 +76,11 @@ export default function HeaderSearch() {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      // Track search event
+      if (typeof window !== 'undefined' && window.catalyst?.trackSearch) {
+        window.catalyst.trackSearch(searchQuery.trim(), searchResults.length);
+      }
+      
       navigate(createPageUrl(`Storefront?search=${encodeURIComponent(searchQuery.trim())}`));
       setShowResults(false);
       setSearchQuery('');

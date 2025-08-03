@@ -137,6 +137,11 @@ export default function ProductDetail() {
         
         setProduct(foundProduct);
 
+        // Track product view with enhanced analytics
+        if (typeof window !== 'undefined' && window.catalyst?.trackProductView) {
+          window.catalyst.trackProductView(foundProduct);
+        }
+
         // Send Google Analytics 'view_item' event
         if (window.dataLayer) {
           window.dataLayer.push({
@@ -256,6 +261,11 @@ export default function ProductDetail() {
       );
       
       if (result.success) {
+        // Track add to cart with enhanced analytics
+        if (typeof window !== 'undefined' && window.catalyst?.trackAddToCart) {
+          window.catalyst.trackAddToCart(product, quantity);
+        }
+
         // Send Google Analytics 'add_to_cart' event
         if (window.dataLayer) {
           window.dataLayer.push({
