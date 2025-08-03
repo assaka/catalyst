@@ -12,6 +12,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Upload, Search, AlertTriangle } from "lucide-react";
 import {
   Accordion,
@@ -43,6 +44,8 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
   const [originalSlug, setOriginalSlug] = useState("");
   const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
   const [createRedirect, setCreateRedirect] = useState(true);
+  const [isEditingSlug, setIsEditingSlug] = useState(false);
+  const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
 
   useEffect(() => {
     if (category) {
@@ -75,8 +78,8 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         [name]: value
       };
 
-      // Auto-generate slug from name if 'name' field is being updated
-      if (name === "name") {
+      // Auto-generate slug from name if 'name' field is being updated and slug editing is disabled
+      if (name === "name" && !isEditingSlug) {
         const generatedSlug = value.toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/(^-|-$)/g, '');
@@ -88,11 +91,14 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         }
       }
       
-      // Direct slug edit
-      if (name === "slug" && category && originalSlug && value !== originalSlug) {
-        setShowSlugChangeWarning(true);
-      } else if (name === "slug" && value === originalSlug) {
-        setShowSlugChangeWarning(false);
+      // Direct slug edit - only when editing is enabled
+      if (name === "slug") {
+        setHasManuallyEditedSlug(true);
+        if (category && originalSlug && value !== originalSlug) {
+          setShowSlugChangeWarning(true);
+        } else if (value === originalSlug) {
+          setShowSlugChangeWarning(false);
+        }
       }
       
       return newState;
@@ -245,19 +251,39 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         </div>
 
         <div>
-          <Label htmlFor="slug">URL Slug *</Label>
+          <div className="flex items-center justify-between mb-2">
+            <Label htmlFor="slug">URL Slug *</Label>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="edit-slug"
+                checked={isEditingSlug}
+                onCheckedChange={setIsEditingSlug}
+              />
+              <Label htmlFor="edit-slug" className="text-sm">
+                Enable editing
+              </Label>
+            </div>
+          </div>
           <Input
             id="slug"
             name="slug"
             value={formData.slug || ''}
             onChange={handleInputChange}
-            placeholder="url-friendly-name"
+            placeholder="Auto-generated from category name"
+            disabled={!isEditingSlug}
+            className={!isEditingSlug ? "bg-gray-50 text-gray-600" : ""}
             required
           />
+          <p className="text-xs text-gray-500 mt-1">
+            {!isEditingSlug 
+              ? "Auto-generated from category name. Enable editing to customize."
+              : "Custom URL slug for this category. Changes will affect the category's URL."
+            }
+          </p>
         </div>
       </div>
 
-      {showSlugChangeWarning && (
+      {showSlugChangeWarning && hasManuallyEditedSlug && (
         <Alert className="border-amber-200 bg-amber-50">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
