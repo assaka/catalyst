@@ -68,7 +68,9 @@ export const URL_CONFIG = {
     PAYMENT_METHODS: 'payment-methods',
     SEO_TOOLS: 'seo-tools',
     STORES: 'stores',
-    CUSTOMER_ACTIVITY: 'customer-activity'
+    CUSTOMER_ACTIVITY: 'customer-activity',
+    HEATMAPS: 'heatmaps',
+    ABTESTING: 'ab-testing'
   },
   
   // Filter parameter mapping for SEO URLs
