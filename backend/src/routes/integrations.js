@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const AkeneoIntegration = require('../services/akeneo-integration');
+const AkeneoSyncService = require('../services/akeneo-sync-service');
 const IntegrationConfig = require('../models/IntegrationConfig');
 const auth = require('../middleware/auth');
 
@@ -227,7 +228,108 @@ router.post('/akeneo/test-connection',
 });
 
 /**
- * Import categories from Akeneo
+ * Unified Akeneo Sync - Single endpoint for all operations
+ * POST /api/integrations/akeneo/sync
+ */
+router.post('/akeneo/sync',
+  storeAuth,
+  body('operations').isArray().withMessage('Operations must be an array'),
+  body('operations.*').isIn(['categories', 'products', 'attributes', 'families']).withMessage('Invalid operation type'),
+  body('locale').optional().isString().withMessage('Locale must be a string'),
+  body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  body('batchSize').optional().isInt({ min: 1, max: 200 }).withMessage('Batch size must be between 1 and 200'),
+  async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        errors: errors.array()
+      });
+    }
+
+    const storeId = req.storeId;
+    const { operations = [], locale = 'en_US', dryRun = false, batchSize = 50 } = req.body;
+
+    if (operations.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one operation must be specified'
+      });
+    }
+
+    console.log(`🚀 Starting unified Akeneo sync for store: ${storeId}`);
+    console.log(`📋 Operations: ${operations.join(', ')}`);
+    console.log(`⚙️ Options: locale=${locale}, dryRun=${dryRun}, batchSize=${batchSize}`);
+
+    // Initialize sync service
+    const syncService = new AkeneoSyncService();
+    
+    try {
+      await syncService.initialize(storeId);
+      
+      // Execute sync operations
+      const result = await syncService.sync(operations, {
+        locale,
+        dryRun,
+        batchSize
+      });
+
+      res.json(result);
+      
+    } finally {
+      // Always cleanup
+      syncService.cleanup();
+    }
+
+  } catch (error) {
+    console.error('Error in unified Akeneo sync:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Get Akeneo sync status
+ * GET /api/integrations/akeneo/sync/status
+ */
+router.get('/akeneo/sync/status', storeAuth, async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    const syncService = new AkeneoSyncService();
+    
+    try {
+      await syncService.initialize(storeId);
+      const status = await syncService.getStatus();
+      res.json({
+        success: true,
+        ...status
+      });
+    } catch (initError) {
+      // If initialization fails, return basic status
+      res.json({
+        success: true,
+        status: 'not_configured',
+        message: initError.message
+      });
+    } finally {
+      syncService.cleanup();
+    }
+  } catch (error) {
+    console.error('Error getting sync status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Import categories from Akeneo (Legacy - Use /sync instead)
  * POST /api/integrations/akeneo/import-categories
  */
 router.post('/akeneo/import-categories', 
