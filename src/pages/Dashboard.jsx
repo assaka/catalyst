@@ -173,8 +173,6 @@ export default function Dashboard() {
 
       const allOrders = await retryApiCall(() => Order.filter({ store_id: storeId }), 3, 1000);
       const customers = await retryApiCall(() => Customer.filter({ store_id: storeId }), 3, 1000);
-
-      console.log('Dashboard orders:', allOrders?.slice(0, 3)); // Debug first 3 orders
       
       const totalOrders = Array.isArray(allOrders) ? allOrders.length : 0;
       const totalRevenue = Array.isArray(allOrders) ? allOrders.reduce((sum, order) => {

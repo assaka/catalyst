@@ -130,8 +130,6 @@ export default function Settings() {
       
       // Load categories for the root category selector
       try {
-        // Load ALL categories without pagination for the root category selector
-        console.log('🔄 Loading ALL categories for root category selector...');
         
         // First try to get all categories without limits
         let allCategories = [];
@@ -160,7 +158,6 @@ export default function Settings() {
               
               if (batch && batch.data && batch.data.length > 0) {
                 allCategories = allCategories.concat(batch.data);
-                console.log(`📦 Loaded batch ${currentPage}: ${batch.data.length} categories (total: ${allCategories.length})`);
                 
                 // Check if we have more pages
                 hasMore = currentPage < (batch.pagination?.total_pages || 1);
@@ -175,69 +172,11 @@ export default function Settings() {
           }
         }
         
-        console.log(`📁 Total categories loaded for settings: ${allCategories.length}`);
-        console.log('📁 First 10 categories:', allCategories.slice(0, 10).map(c => ({ 
-          id: c.id, 
-          name: c.name, 
-          parent_id: c.parent_id,
-          parent_id_type: typeof c.parent_id,
-          parent_id_value: JSON.stringify(c.parent_id),
-          isRoot: !c.parent_id || c.parent_id === null || c.parent_id === ''
-        })));
-        
-        // Search for Welhof categories specifically
-        const welhofCategories = allCategories.filter(c => c.name.toLowerCase().includes('welhof'));
-        console.log('🔍 All Welhof categories found:', welhofCategories.map(c => ({
-          id: c.id,
-          name: c.name,
-          parent_id: c.parent_id,
-          parent_id_type: typeof c.parent_id,
-          parent_id_strict_null: c.parent_id === null,
-          parent_id_undefined: c.parent_id === undefined,
-          parent_id_empty_string: c.parent_id === '',
-          parent_id_falsy: !c.parent_id,
-          will_show_in_dropdown: !c.parent_id || c.parent_id === null || c.parent_id === ''
-        })));
-        
-        // Additional debugging for Welhof Root specifically
-        const welhofRoot = allCategories.find(c => c.name.includes('Welhof Root'));
-        if (welhofRoot) {
-          console.log('🎯 Welhof Root category found:', {
-            id: welhofRoot.id,
-            name: welhofRoot.name,
-            parent_id: welhofRoot.parent_id,
-            parent_id_type: typeof welhofRoot.parent_id,
-            parent_id_strict_null: welhofRoot.parent_id === null,
-            parent_id_undefined: welhofRoot.parent_id === undefined,
-            parent_id_empty_string: welhofRoot.parent_id === '',
-            parent_id_falsy: !welhofRoot.parent_id,
-            will_show_in_dropdown: !welhofRoot.parent_id || welhofRoot.parent_id === null || welhofRoot.parent_id === ''
-          });
-        } else {
-          console.warn('❌ Welhof Root category NOT found in loaded categories');
-          console.log('📋 All category names containing "root":', allCategories
-            .filter(c => c.name.toLowerCase().includes('root'))
-            .map(c => c.name));
-        }
-        
         setCategories(allCategories);
       } catch (error) {
         console.warn('Failed to load categories:', error);
         setCategories([]);
       }
-      
-      // Use fresh store data
-      
-      // CRITICAL FIX: Use explicit checks instead of nullish coalescing with defaults
-      // This ensures that false values are preserved from the database
-      console.log('🔍 Raw store data structure:', {
-        storeDataKeys: Object.keys(storeData),
-        settingsField: storeData.settings,
-        settingsType: typeof storeData.settings,
-        settingsIsNull: storeData.settings === null,
-        settingsIsUndefined: storeData.settings === undefined,
-        rootCategoryIdField: storeData.root_category_id
-      });
       
       const settings = storeData.settings || {};
       
@@ -843,7 +782,6 @@ export default function Settings() {
                   <Select 
                     value={store?.settings?.rootCategoryId ? store.settings.rootCategoryId : "none"} 
                     onValueChange={(value) => {
-                      console.log('🔄 Root category changed to:', value);
                       handleSettingsChange('rootCategoryId', value === "none" ? null : value);
                     }}
                   >
@@ -864,27 +802,8 @@ export default function Settings() {
                           
                           const isRoot = isNullish || isEmptyString || isFalsy;
                           
-                          console.log(`🔍 Category "${cat.name}":`, {
-                            parent_id: parentId,
-                            parent_id_type: typeof parentId,
-                            parent_id_json: JSON.stringify(parentId),
-                            isNullish,
-                            isEmptyString,
-                            isFalsy,
-                            isRoot
-                          });
-                          
                           return isRoot;
                         });
-                        
-                        console.log('🌳 Total categories:', categories.length);
-                        console.log('🌳 Root categories found:', rootCategories.length);
-                        console.log('🌳 Root categories for dropdown:', rootCategories.map(c => ({ 
-                          id: c.id, 
-                          name: c.name, 
-                          parent_id: c.parent_id,
-                          parent_id_type: typeof c.parent_id 
-                        })));
                         
                         if (rootCategories.length === 0) {
                           console.warn('⚠️ No root categories found! All categories:', categories.map(c => ({
@@ -918,11 +837,6 @@ export default function Settings() {
                       </div>
                       {(() => {
                         const isChecked = store?.settings?.excludeRootFromMenu || false;
-                        console.log('🎯 Exclude root checkbox value:', {
-                          excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
-                          isChecked,
-                          settingsObject: store?.settings
-                        });
                         return null;
                       })()}
                       <Switch 

@@ -493,7 +493,6 @@ export const StoreProvider = ({ children }) => {
 const clearCache = () => {
   apiCache.clear();
   localStorage.removeItem('storeProviderCache');
-  console.log('Cache cleared');
 };
 
 // Clear specific cache keys
@@ -503,7 +502,6 @@ const clearCacheKeys = (keys) => {
       keys.forEach(key => {
         if (apiCache.has(key)) {
           apiCache.delete(key);
-          console.log('Cleared cache key:', key);
         }
       });
     }
@@ -515,7 +513,6 @@ const clearCacheKeys = (keys) => {
     localStorage.setItem('forceRefreshStore', Date.now().toString());
     
     // Trigger immediate page reload to apply changes
-    console.log('Cache keys cleared, localStorage cleared, force refresh set - reloading page');
     setTimeout(() => {
       window.location.reload();
     }, 100);
@@ -532,25 +529,16 @@ if (typeof window !== 'undefined') {
   
   // Debug function to manually test force refresh
   window.testForceRefresh = () => {
-    console.log('MANUAL TEST: Setting forceRefreshStore flag and reloading...');
     localStorage.setItem('forceRefreshStore', Date.now().toString());
     window.location.reload();
   };
   
   // Debug function to manually set the flag as string (like admin does)
   window.testStringFlag = () => {
-    console.log('MANUAL TEST: Setting forceRefreshStore flag to "true" and reloading...');
     localStorage.setItem('forceRefreshStore', 'true');
     window.location.reload();
   };
-  
-  // Debug function to check current localStorage state
-  window.debugLocalStorage = () => {
-    console.log('Current localStorage state:');
-    console.log('- forceRefreshStore:', localStorage.getItem('forceRefreshStore'));
-    console.log('- storeProviderCache exists:', !!localStorage.getItem('storeProviderCache'));
-    console.log('- All keys:', Object.keys(localStorage));
-  };
+
 }
 
 // Export the caching function for use in other components

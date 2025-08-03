@@ -363,8 +363,9 @@ export default function Categories() {
     }
   };
 
-  // Server-side filtering, so use categories directly
-  const paginatedCategories = categories;
+  // Apply client-side name filtering
+  const displayCategories = getDisplayCategories();
+  const paginatedCategories = displayCategories;
   const startIndex = (currentPage - 1) * itemsPerPage;
 
   // Reset to first page and reload data when filter changes
@@ -374,12 +375,6 @@ export default function Categories() {
     }
   }, [searchQuery]);
 
-  // Reset to first page and reload data when name filter changes
-  useEffect(() => {
-    if (selectedStore) {
-      loadCategories(1); // Always load first page when name filter changes
-    }
-  }, [nameFilter]);
 
   // Reload when view mode changes
   useEffect(() => {
@@ -395,31 +390,29 @@ export default function Categories() {
     }
   }, [selectedRootCategory]);
 
-  // Filter categories based on selected root category
-  const getFilteredCategories = () => {
-    if (!selectedRootCategory) {
-      return categories;
+  // Apply client-side filtering for name filter (no page reload)
+  const getDisplayCategories = () => {
+    let displayCategories = categories;
+    
+    // Apply name filter client-side (instant filtering, no reload)
+    if (nameFilter.trim()) {
+      const searchTerm = nameFilter.trim().toLowerCase();
+      displayCategories = displayCategories.filter(cat => 
+        cat.name.toLowerCase().includes(searchTerm) ||
+        cat.description?.toLowerCase().includes(searchTerm) ||
+        cat.slug?.toLowerCase().includes(searchTerm)
+      );
     }
     
-    // Find all categories that are descendants of the selected root
-    const findDescendants = (parentId, allCategories) => {
-      const descendants = [];
-      const children = allCategories.filter(cat => cat.parent_id === parentId);
-      
-      children.forEach(child => {
-        descendants.push(child);
-        descendants.push(...findDescendants(child.id, allCategories));
-      });
-      
-      return descendants;
-    };
-    
-    const rootCategory = categories.find(cat => cat.id === selectedRootCategory);
-    if (!rootCategory) return categories;
-    
-    const descendants = findDescendants(selectedRootCategory, categories);
-    return [rootCategory, ...descendants];
+    return displayCategories;
   };
+
+  // Reset page to 1 when name filter changes
+  useEffect(() => {
+    if (nameFilter.trim()) {
+      setCurrentPage(1);
+    }
+  }, [nameFilter]);
 
   // Build hierarchical tree from flat category list
   const buildCategoryTree = (categoriesToBuild) => {
@@ -850,14 +843,19 @@ export default function Categories() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-700">
-              {totalItems > 0 && (
-                <>
-                  {viewMode === 'hierarchical' 
-                    ? `${totalItems} categories`
-                    : `Showing ${startIndex + 1} to ${Math.min(startIndex + itemsPerPage, totalItems)} of ${totalItems} categories`
+              {(() => {
+                const filteredTotal = displayCategories.length;
+                if (filteredTotal > 0) {
+                  if (viewMode === 'hierarchical') {
+                    return `${filteredTotal} categories${nameFilter ? ` (filtered)` : ''}`;
+                  } else {
+                    const startIndex = (currentPage - 1) * itemsPerPage;
+                    const endIndex = Math.min(startIndex + itemsPerPage, filteredTotal);
+                    return `Showing ${startIndex + 1} to ${endIndex} of ${filteredTotal} categories${nameFilter ? ` (filtered)` : ''}`;
                   }
-                </>
-              )}
+                }
+                return '';
+              })()}
             </p>
           </div>
           
@@ -865,8 +863,7 @@ export default function Categories() {
             /* Hierarchical Tree View */
             <div className="space-y-0.5 min-h-[400px]">
               {(() => {
-                const filteredCategories = getFilteredCategories();
-                const categoryTree = buildCategoryTree(filteredCategories);
+                const categoryTree = buildCategoryTree(displayCategories);
                 return categoryTree.length > 0 ? (
                   renderCategoryTree(categoryTree)
                 ) : (
@@ -889,7 +886,13 @@ export default function Categories() {
             /* Grid View */
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[400px]">
-                {paginatedCategories.map((category) => (
+                {(() => {
+                  // Apply pagination to filtered categories for grid view
+                  const startIndex = (currentPage - 1) * itemsPerPage;
+                  const endIndex = startIndex + itemsPerPage;
+                  const paginatedItems = displayCategories.slice(startIndex, endIndex);
+                  
+                  return paginatedItems.map((category) => (
                 <Card key={category.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
@@ -980,11 +983,16 @@ export default function Categories() {
                     </div>
                   </CardContent>
                 </Card>
-                ))}
+                  ));
+                })()}
               </div>
 
               {/* Enhanced Pagination - only show in grid view */}
-              {viewMode === 'grid' && renderPagination(currentPage, totalPages, handlePageChange)}
+              {viewMode === 'grid' && (() => {
+                const filteredTotal = displayCategories.length;
+                const filteredPages = Math.ceil(filteredTotal / itemsPerPage);
+                return renderPagination(currentPage, filteredPages, handlePageChange);
+              })()}
             </>
           )}
         </div>

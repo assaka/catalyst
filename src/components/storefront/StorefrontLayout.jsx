@@ -100,13 +100,6 @@ export default function StorefrontLayout({ children }) {
     useEffect(() => {
         const fetchData = async () => {
             if (loading || !store) return;
-            
-            console.log('StorefrontLayout: Starting user fetch, current auth state:', {
-                hasToken: !!apiClient.getToken(),
-                token: apiClient.getToken()?.substring(0, 20) + '...',
-                isLoggedOut: apiClient.isLoggedOut,
-                sessionRole: localStorage.getItem('session_role')
-            });
 
             try {
                 // Languages feature temporarily disabled for storefront
@@ -126,7 +119,6 @@ export default function StorefrontLayout({ children }) {
                     const userData = await retryApiCall(async () => {
                         return await CustomerAuth.me();
                     }, 5, 3000, null);
-                    console.log('StorefrontLayout: User data received:', userData);
                     
                     // Only show user as logged in if they are a customer in storefront context
                     if (userData && userData.role === 'customer') {
@@ -136,7 +128,6 @@ export default function StorefrontLayout({ children }) {
                         setUser(null);
                     }
                 } catch (e) {
-                    console.log('StorefrontLayout: CustomerAuth.me() failed:', e.message);
                     setUser(null);
                 } finally {
                     setUserLoading(false);

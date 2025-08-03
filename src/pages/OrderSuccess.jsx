@@ -24,14 +24,11 @@ import {
 } from 'lucide-react';
 
 export default function OrderSuccess() {
-  console.log('🔍 HAMID DEBUG: OrderSuccess component loaded - Version: Simplified Layout 4.0');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
   // Get session ID from URL
   let sessionId = searchParams.get('session_id');
-  console.log('🔍 HAMID DEBUG: Initial sessionId from searchParams:', sessionId);
-  console.log('🔍 HAMID DEBUG: Current URL:', window.location.href);
   
   // Fallback methods to get session ID
   if (!sessionId) {
@@ -48,8 +45,6 @@ export default function OrderSuccess() {
       sessionId = localStorage.getItem('stripe_session_id');
     }
   }
-
-  console.log('🔍 HAMID DEBUG: Final sessionId after fallbacks:', sessionId);
 
   const [order, setOrder] = useState(null);
   const [orderItems, setOrderItems] = useState([]);
@@ -109,79 +104,39 @@ export default function OrderSuccess() {
       }
 
       try {
-        console.log('🔍 HAMID DEBUG: Loading order from session ID:', sessionId);
         const apiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
-        console.log('🔍 HAMID DEBUG: API URL:', apiUrl);
-        console.log('🔍 HAMID DEBUG: Full API endpoint:', `${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
-        const response = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
         const result = await response.json();
         
         if (response.ok && result.success && result.data) {
           const orderData = result.data;
-          console.log('Full order data loaded:', JSON.stringify(orderData, null, 2));
           setOrder(orderData);
-          
-          // Set order items from order data - check multiple possible keys
-          console.log('🔍 Order data structure debug:', {
-            hasOrderItems: !!orderData.OrderItems,
-            orderItemsType: typeof orderData.OrderItems,
-            orderItemsLength: orderData.OrderItems?.length,
-            hasOrderitemset: !!orderData.OrderItemSet,
-            hasItems: !!orderData.items,
-            availableKeys: Object.keys(orderData),
-            sampleOrderItem: orderData.OrderItems?.[0] || orderData.items?.[0],
-            // Add more detailed inspection
-            orderData_keys: Object.keys(orderData || {}),
-            orderData_dataValues_keys: Object.keys(orderData?.dataValues || {}),
-            rawOrderItems: orderData.OrderItems,
-            rawItems: orderData.items
-          });
-          
+
           // Try different possible keys for order items
           let items = orderData.OrderItems || orderData.items || orderData.orderItems || [];
           
-          // Additional debugging to see exact structure
-          console.log('🔍 DETAILED ORDER DATA STRUCTURE:');
-          console.log('- orderData type:', typeof orderData);
-          console.log('- orderData.OrderItems exists:', !!orderData.OrderItems);
-          console.log('- orderData.OrderItems type:', typeof orderData.OrderItems);
-          console.log('- orderData.OrderItems isArray:', Array.isArray(orderData.OrderItems));
-          console.log('- orderData.OrderItems length:', orderData.OrderItems?.length);
-          console.log('- Raw OrderItems data:', orderData.OrderItems);
-          
           if (items && Array.isArray(items) && items.length > 0) {
-            console.log('✅ Setting order items:', items.length, 'items found');
-            console.log('🔍 Sample order item structure:', JSON.stringify(items[0], null, 2));
             setOrderItems(items);
           } else {
-            console.log('❌ No order items found in any expected location');
-            console.log('🔍 Available keys in orderData:', Object.keys(orderData || {}));
-            console.log('🔍 OrderData.OrderItems specifically:', orderData.OrderItems);
             
             // If no items found, try to reload the data after a short delay
             // This handles the case where order items might still be being created
-            console.log('🔄 Attempting to reload order data in 2 seconds...');
             setTimeout(async () => {
               try {
-                console.log('🔄 Retrying order data fetch...');
                 const retryResponse = await fetch(`${apiUrl}/api/orders/by-payment-reference/${sessionId}`);
                 const retryResult = await retryResponse.json();
                 
                 if (retryResponse.ok && retryResult.success && retryResult.data) {
                   const retryOrderData = retryResult.data;
-                  console.log('🔄 Retry order data:', JSON.stringify(retryOrderData, null, 2));
                   
                   const retryItems = retryOrderData.OrderItems || retryOrderData.items || retryOrderData.orderItems || [];
                   if (retryItems && Array.isArray(retryItems) && retryItems.length > 0) {
-                    console.log('✅ Found items on retry:', retryItems.length, 'items');
                     setOrderItems(retryItems);
                     setOrder(retryOrderData); // Update order data too
                   } else {
-                    console.log('❌ Still no items found on retry');
                     setOrderItems([]);
                   }
                 } else {
-                  console.log('❌ Retry fetch failed');
+                  console.error('❌ Retry fetch failed');
                 }
               } catch (retryError) {
                 console.error('❌ Error during retry fetch:', retryError);
@@ -275,8 +230,7 @@ export default function OrderSuccess() {
           }
         }
       };
-      
-      console.log('Creating account with data:', registrationData);
+
       const response = await Auth.register(registrationData);
       
       setAccountCreationSuccess(true);

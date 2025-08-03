@@ -176,7 +176,6 @@ export default function SeoTools() {
         try {
           settingsData = await SeoSetting.filter({ store_id: selectedStore.id });
         } catch (fetchError) {
-          console.log('🔍 Failed to fetch settings during load (using defaults):', fetchError.message);
           settingsData = [];
         }
 
@@ -277,12 +276,6 @@ export default function SeoTools() {
   const handleSaveSettings = async () => {
     const storeId = getSelectedStoreId();
     
-    console.log('🔍 Save Settings Debug:', {
-      storeId,
-      seoSettings,
-      selectedStore
-    });
-    
     if (!storeId) {
       setFlashMessage({ type: 'error', message: 'No store found. Please refresh the page.' });
       return;
@@ -290,13 +283,10 @@ export default function SeoTools() {
 
     setSaving(true);
     try {
-      console.log('🔍 Fetching existing settings for store:', storeId);
       let existingSettings = [];
       try {
         existingSettings = await SeoSetting.filter({ store_id: storeId });
-        console.log('🔍 Existing settings:', existingSettings);
       } catch (fetchError) {
-        console.log('🔍 Failed to fetch existing settings (will create new):', fetchError.message);
         existingSettings = [];
       }
 

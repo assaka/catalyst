@@ -214,12 +214,9 @@ class BaseEntity {
 // Authentication service
 class AuthService {
   async login(email, password, rememberMe = false, role = 'store_owner') {
-    console.log('🔍 HAMID DEBUG: AuthService.login called with role:', role);
     // Use customer-specific endpoint for customer login
     const endpoint = role === 'customer' ? 'auth/customer/login' : 'auth/login';
-    console.log('🔍 HAMID DEBUG: Using endpoint:', endpoint);
     const response = await apiClient.post(endpoint, { email, password, rememberMe, role });
-    console.log("🔧 Auth.login - Raw response:", response);
     
     let token = null;
     if (response.data && response.data.token) {
@@ -231,27 +228,20 @@ class AuthService {
     }
     
     const result = response.data || response;
-    console.log("🔧 Auth.login - Processed result:", result);
     
     // CRITICAL FIX: Store user data if we have both token and user info
     if (token && result.user) {
-      console.log('🔧 CRITICAL FIX: Storing user data immediately after login for role:', result.user.role);
       setRoleBasedAuthData(result.user, token);
-      console.log('✅ User data stored successfully in login');
     } else if (token && result.id) {
       // Handle case where user data is at root level
-      console.log('🔧 CRITICAL FIX: Storing user data (root level) for role:', result.role);
       setRoleBasedAuthData(result, token);
-      console.log('✅ User data stored successfully in login (root level)');
     } else if (token) {
       // If we have token but no user data, fetch it immediately
-      console.log('🔧 EMERGENCY FIX: Token exists but no user data, fetching from /auth/me...');
       try {
         const userResponse = await apiClient.get('auth/me');
         const userData = userResponse.data || userResponse;
         if (userData && userData.id) {
           setRoleBasedAuthData(userData, token);
-          console.log('✅ User data fetched and stored successfully');
           // Update result to include user data
           result.user = userData;
         }
@@ -278,7 +268,6 @@ class AuthService {
     // Use customer-specific endpoint for customer registration
     const endpoint = userData.role === 'customer' ? 'auth/customer/register' : 'auth/register';
     const response = await apiClient.post(endpoint, userData);
-    console.log("🔧 Auth.register - Raw response:", response);
     
     let token = null;
     if (response.data && response.data.token) {
@@ -291,18 +280,13 @@ class AuthService {
     
     // Return the full response to maintain compatibility
     const result = response.data || response;
-    console.log("🔧 Auth.register - Processed result:", result);
     
     // CRITICAL FIX: Store user data if we have both token and user info
     if (token && result.user) {
-      console.log('🔧 CRITICAL FIX: Storing user data after registration for role:', result.user.role);
       setRoleBasedAuthData(result.user, token);
-      console.log('✅ User data stored successfully in registration');
     } else if (token && result.id) {
       // Handle case where user data is at root level
-      console.log('🔧 CRITICAL FIX: Storing user data (root level) after registration for role:', result.role);
       setRoleBasedAuthData(result, token);
-      console.log('✅ User data stored successfully in registration (root level)');
     }
     
     return result;
@@ -417,7 +401,6 @@ class StoreService extends BaseEntity {
       // Handle both direct array response and {success: true, data: []} format
       const stores = response?.data || response;
       const result = Array.isArray(stores) ? stores : [];
-      console.log(`📊 StoreService.getUserStores: Got ${result.length} stores`, result);
       return result;
     } catch (error) {
       console.error(`❌ StoreService.getUserStores() error:`, error.message);
@@ -430,14 +413,11 @@ class StoreService extends BaseEntity {
     try {
       const queryString = new URLSearchParams(params).toString();
       const url = queryString ? `stores?${queryString}` : 'stores';
-      
-      console.log(`🚀 StoreService.filter: Calling ${url} with params:`, params);
+
       const response = await apiClient.publicRequest('GET', url);
-      console.log(`📊 StoreService.filter: Response:`, response);
       
       // Ensure response is always an array
       const result = Array.isArray(response) ? response : [];
-      console.log(`✅ StoreService.filter: Final result (${result.length} stores):`, result);
       
       return result;
     } catch (error) {
@@ -483,7 +463,6 @@ class ProductService extends BaseEntity {
   // Public product access (no authentication required)
   async filter(params = {}) {
     try {
-      console.log('🔍 ProductService.filter() called with params:', params);
       
       // Safely serialize params, converting objects to strings
       const sanitizedParams = {};
@@ -500,7 +479,6 @@ class ProductService extends BaseEntity {
       
       const queryString = new URLSearchParams(sanitizedParams).toString();
       const url = queryString ? `products?${queryString}` : 'products';
-      console.log('📡 ProductService making request to URL:', url);
       
       // Use public request for product filtering (no authentication required)
       const response = await apiClient.publicRequest('GET', url);

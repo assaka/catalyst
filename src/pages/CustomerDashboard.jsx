@@ -875,17 +875,10 @@ export default function CustomerDashboard() {
       return;
     }
 
-    console.log('🔍 Loading addresses for user ID:', currentUserId);
-    console.log('🔍 Full user object when loading addresses:', user);
-
     try {
-      console.log('🔍 About to call CustomerAddress.findAll()');
-      console.log('🔍 Customer token exists:', !!localStorage.getItem('customer_token'));
-      console.log('🔍 Customer token (first 20 chars):', localStorage.getItem('customer_token')?.substring(0, 20));
       
       // Try without user_id first - let authentication handle it
       let addressData = await retryApiCall(() => CustomerAddress.findAll());
-      console.log('🔍 Address data received:', addressData);
       
       if (addressData && Array.isArray(addressData)) {
         setAddresses(addressData);
@@ -897,9 +890,7 @@ export default function CustomerDashboard() {
       
       // Fallback: try with customer_id if needed
       try {
-        console.log('🔍 Trying fallback with customer_id:', currentUserId);
         let fallbackData = await retryApiCall(() => CustomerAddress.findAll({ customer_id: currentUserId }));
-        console.log('🔍 Fallback address data:', fallbackData);
         
         if (fallbackData && Array.isArray(fallbackData)) {
           setAddresses(fallbackData);
@@ -956,34 +947,16 @@ export default function CustomerDashboard() {
         delete dataToSave[key];
       }
     });
-    
-    // Debug user information
-    console.log('🔍 Current user object:', user);
-    console.log('🔍 User ID:', user?.id);
-    console.log('🔍 User email:', user?.email);
-    console.log('🔍 User role:', user?.role);
-    console.log('🔍 All user fields:', Object.keys(user || {}));
-    
-    // Check if we should use customer_id instead of user_id
-    console.log('🔍 Checking for customer_id field:', user?.customer_id);
-    
+
     // Check authentication token
     const customerToken = localStorage.getItem('customer_auth_token');
-    console.log('🔍 Customer token exists:', !!customerToken);
-    console.log('🔍 Customer token (first 20 chars):', customerToken?.substring(0, 20) + '...');
     
     // Use customer_id instead of user_id for addresses
     delete dataToSave.user_id; // Remove user_id first
     
     if (user && user.id) {
       dataToSave.customer_id = user.id; // Use customer_id instead
-      console.log('🔍 Using customer_id instead of user_id:', user.id);
-    } else {
-      console.log('🔍 No customer ID available');
     }
-    
-    // Debug logging for address data
-    console.log('🔍 Creating address with data:', dataToSave);
 
     // Validation
     const requiredFields = ['full_name', 'street', 'city', 'postal_code', 'country'];
@@ -998,15 +971,11 @@ export default function CustomerDashboard() {
 
     try {
       if (editingAddress) {
-        console.log('🔍 Updating address with ID:', editingAddress.id, 'data:', dataToSave);
         const result = await retryApiCall(() => CustomerAddress.update(editingAddress.id, dataToSave));
-        console.log('✅ Address update result:', result);
         setFlashMessage({ type: 'success', message: 'Address updated successfully!' });
       } else {
-        console.log('🔍 Creating new address with data:', dataToSave);
         try {
           const result = await retryApiCall(() => CustomerAddress.create(dataToSave));
-          console.log('✅ Address create result:', result);
           setFlashMessage({ type: 'success', message: 'Address added successfully!' });
         } catch (customerAddressError) {
           console.error('🔍 CustomerAddress.create failed:', customerAddressError);
@@ -1024,22 +993,17 @@ export default function CustomerDashboard() {
           if (customerAddressError.message?.includes('constraint') || 
               customerAddressError.message?.includes('foreign key') ||
               customerAddressError.response?.data?.message?.includes('constraint')) {
-            
-            console.log('🔍 Trying fallback with regular Address entity');
+
             // Keep customer_id but remove user_id in fallback attempt
             const fallbackData = { ...dataToSave };
             delete fallbackData.user_id; // Ensure no user_id
-            console.log('🔍 Fallback data with customer_id:', fallbackData);
             
             try {
               const result = await retryApiCall(() => CustomerAddress.create(fallbackData));
-              console.log('✅ Fallback Address create result:', result);
               setFlashMessage({ type: 'success', message: 'Address added successfully!' });
             } catch (fallbackError) {
               console.error('🔍 Fallback also failed:', fallbackError);
-              
-              // Last resort: Don't save address if it requires a valid user_id
-              console.log('🔍 Cannot save address due to database constraint');
+
               setFlashMessage({ 
                 type: 'error', 
                 message: 'Unable to save address. This is a known issue with customer accounts. Please contact support.' 

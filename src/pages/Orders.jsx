@@ -80,9 +80,6 @@ export default function Orders() {
       
       // The API returns data in a wrapper object
       const ordersData = ordersResponse?.data?.orders || ordersResponse?.orders || ordersResponse || [];
-      console.log('🔍 Orders response (full):', ordersResponse);
-      console.log('🔍 Orders data (extracted):', ordersData);
-      console.log('🔍 First order structure:', ordersData[0]);
       
       setOrders(Array.isArray(ordersData) ? ordersData : []);
 
@@ -112,8 +109,7 @@ export default function Orders() {
             itemsMap[order.id] = order.OrderItems;
           }
         });
-        
-        console.log('Order items extracted:', itemsMap);
+
         setOrderItems(itemsMap);
       } else {
         setUsers({});
