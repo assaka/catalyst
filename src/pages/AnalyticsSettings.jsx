@@ -27,7 +27,8 @@ import {
   ExternalLink,
   AlertCircle,
   CheckCircle,
-  Activity
+  Activity,
+  RotateCcw
 } from 'lucide-react';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
@@ -48,6 +49,13 @@ export default function AnalyticsSettings() {
         auto_track_ecommerce: true,
         custom_events: []
     });
+    
+    // Auto-refresh state for live events
+    const [autoRefresh, setAutoRefresh] = useState(false);
+    const [refreshInterval, setRefreshInterval] = useState(5); // seconds
+    const [lastRefresh, setLastRefresh] = useState(new Date());
+    const [previousEventCount, setPreviousEventCount] = useState(0);
+    const [newEventsCount, setNewEventsCount] = useState(0);
     const [importData, setImportData] = useState('');
     const [exportFormat, setExportFormat] = useState('json');
 
@@ -105,6 +113,28 @@ export default function AnalyticsSettings() {
             loadStore();
         }
     }, [selectedStore]);
+
+    // Auto-refresh effect for live events
+    useEffect(() => {
+        let intervalId;
+        
+        if (autoRefresh && selectedStore) {
+            console.log(`🔄 Auto-refresh enabled: refreshing every ${refreshInterval} seconds`);
+            
+            intervalId = setInterval(() => {
+                console.log('🔄 Auto-refreshing analytics events...');
+                loadDataLayerEvents();
+                setLastRefresh(new Date());
+            }, refreshInterval * 1000);
+        }
+        
+        return () => {
+            if (intervalId) {
+                console.log('🛑 Clearing auto-refresh interval');
+                clearInterval(intervalId);
+            }
+        };
+    }, [autoRefresh, refreshInterval, selectedStore]);
 
     const handleAnalyticsChange = (key, value) => {
         setStore(prev => ({
@@ -224,6 +254,22 @@ export default function AnalyticsSettings() {
         
         // Sort all events by timestamp
         browserEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        
+        // Track new events if auto-refresh is enabled
+        if (autoRefresh && previousEventCount > 0) {
+            const newCount = browserEvents.length - previousEventCount;
+            if (newCount > 0) {
+                setNewEventsCount(prev => prev + newCount);
+                console.log(`🆕 ${newCount} new events detected!`);
+                
+                // Clear the new events counter after 3 seconds
+                setTimeout(() => {
+                    setNewEventsCount(0);
+                }, 3000);
+            }
+        }
+        
+        setPreviousEventCount(browserEvents.length);
         setDataLayerEvents(browserEvents);
         console.log('📊 Total combined events:', browserEvents.length);
     };
@@ -635,11 +681,53 @@ export default function AnalyticsSettings() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between">
-                                <span>All Analytics Events ({dataLayerEvents.length})</span>
-                                <Button variant="outline" size="sm" onClick={loadDataLayerEvents}>
-                                    Refresh
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <span>All Analytics Events ({dataLayerEvents.length})</span>
+                                    {newEventsCount > 0 && (
+                                        <Badge variant="secondary" className="bg-green-100 text-green-800 animate-pulse">
+                                            +{newEventsCount} new
+                                        </Badge>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <Switch
+                                            checked={autoRefresh}
+                                            onCheckedChange={setAutoRefresh}
+                                            id="auto-refresh"
+                                        />
+                                        <Label htmlFor="auto-refresh" className="text-sm whitespace-nowrap">
+                                            Auto-refresh
+                                        </Label>
+                                    </div>
+                                    {autoRefresh && (
+                                        <select
+                                            value={refreshInterval}
+                                            onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                                            className="text-xs border rounded px-2 py-1"
+                                        >
+                                            <option value={2}>2s</option>
+                                            <option value={5}>5s</option>
+                                            <option value={10}>10s</option>
+                                            <option value={30}>30s</option>
+                                        </select>
+                                    )}
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        onClick={loadDataLayerEvents}
+                                        disabled={autoRefresh}
+                                    >
+                                        {autoRefresh ? 'Auto-refreshing...' : 'Refresh'}
+                                    </Button>
+                                </div>
                             </CardTitle>
+                            {autoRefresh && (
+                                <CardDescription className="text-xs text-green-600 flex items-center gap-1">
+                                    <RotateCcw className="w-3 h-3 animate-spin" />
+                                    Live updates enabled • Last refresh: {lastRefresh.toLocaleTimeString()}
+                                </CardDescription>
+                            )}
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-3 max-h-96 overflow-y-auto">

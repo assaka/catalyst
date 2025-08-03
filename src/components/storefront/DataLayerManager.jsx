@@ -141,8 +141,7 @@ export const trackActivity = async (activityType, data = {}) => {
           console.error('🚨 Network connectivity issue detected!');
         }
         
-        // Log the error to ensure it's visible
-        alert('API Error: ' + apiError.message);
+        // Log the error for debugging (removed alert for production)
       }
     } else {
       console.warn('🚫 CRITICAL: Skipping activity tracking - no store_id available', {
