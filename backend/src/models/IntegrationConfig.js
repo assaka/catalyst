@@ -142,6 +142,21 @@ IntegrationConfig.decryptSensitiveData = (configData, integrationType) => {
         const decipher = crypto.createDecipher('aes-256-cbc', key);
         let decryptedValue = decipher.update(encryptedValue, 'hex', 'utf8');
         decryptedValue += decipher.final('utf8');
+        
+        // Handle double encryption (legacy issue)
+        if (decryptedValue.startsWith('encrypted:')) {
+          console.warn(`Field ${field} appears to be double-encrypted, fixing...`);
+          try {
+            const encryptedValue2 = decryptedValue.replace('encrypted:', '');
+            const decipher2 = crypto.createDecipher('aes-256-cbc', key);
+            let decryptedValue2 = decipher2.update(encryptedValue2, 'hex', 'utf8');
+            decryptedValue2 += decipher2.final('utf8');
+            decryptedValue = decryptedValue2;
+          } catch (doubleDecryptError) {
+            console.error(`Failed to decrypt double-encrypted field ${field}:`, doubleDecryptError.message);
+          }
+        }
+        
         decrypted[field] = decryptedValue;
       } catch (error) {
         console.error(`Failed to decrypt field ${field}:`, error.message);
