@@ -74,6 +74,29 @@ export default function Storefront() {
         return;
       }
 
+      // Check for redirects FIRST before any other processing
+      if (!isHome && categorySlug) {
+        const category = categories.find(c => c?.slug === categorySlug);
+        if (!category) {
+          // Category not found - check for redirect immediately
+          const currentPath = `/category/${categorySlug}`;
+          const shortPath = `/c/${categorySlug}`;
+          let redirectTo = await checkForRedirect(currentPath);
+          
+          if (!redirectTo) {
+            redirectTo = await checkForRedirect(shortPath);
+          }
+          
+          if (redirectTo) {
+            console.log(`🔀 Redirecting from ${currentPath} to ${redirectTo}`);
+            const newSlug = redirectTo.replace('/category/', '').replace('/c/', '');
+            navigate(createCategoryUrl(storeCode, newSlug), { replace: true });
+            // Don't process anything else - just return
+            return;
+          }
+        }
+      }
+
       if (isHome) {
         setCurrentCategory(null);
         const featuredCacheKey = `featured-products-${store.id}`;
@@ -96,28 +119,8 @@ export default function Storefront() {
         }
         
         if (!category) {
-          console.warn(`Category with slug '${categorySlug}' not found.`);
-          
-          // Check for redirect before showing 404
-          // Try both possible path formats
-          const currentPath = `/category/${categorySlug}`;
-          const shortPath = `/c/${categorySlug}`;
-          let redirectTo = await checkForRedirect(currentPath);
-          
-          // If no redirect found for /category/, try /c/ format
-          if (!redirectTo) {
-            redirectTo = await checkForRedirect(shortPath);
-          }
-          
-          if (redirectTo) {
-            console.log(`🔀 Redirecting from ${currentPath} to ${redirectTo}`);
-            // Extract the new slug from the redirect URL
-            const newSlug = redirectTo.replace('/category/', '');
-            // Navigate to the new category URL
-            navigate(createCategoryUrl(storeCode, newSlug), { replace: true });
-            return;
-          }
-          
+          // Redirect check already happened earlier - just show 404
+          console.warn(`Category with slug '${categorySlug}' not found and no redirect available.`);
           setProducts([]);
           setCurrentCategory(null);
           setLoading(false);
