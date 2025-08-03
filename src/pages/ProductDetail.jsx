@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 // Redirect handling moved to global RedirectHandler component
+import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
@@ -59,6 +60,7 @@ export default function ProductDetail() {
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
   const navigate = useNavigate();
+  const { showNotFound } = useNotFound();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -368,16 +370,10 @@ export default function ProductDetail() {
     );
   }
 
-  if (!product) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h1>
-        <p className="text-gray-600 mb-4">The product you're looking for doesn't exist.</p>
-        <Link to={createPageUrl(`Storefront?slug=${store?.slug}`)}>
-          <Button>Back to Store</Button>
-        </Link>
-      </div>
-    );
+  if (!product && !loading) {
+    // Trigger 404 page display
+    showNotFound(`Product "${slug}" not found`);
+    return null;
   }
 
   // Determine stock status based on product and store settings

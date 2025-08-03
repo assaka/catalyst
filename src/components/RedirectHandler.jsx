@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import NotFoundPage from './NotFoundPage';
 
 const RedirectHandler = ({ children, storeId }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isChecking, setIsChecking] = useState(false);
   const [hasChecked, setHasChecked] = useState(false);
+  const [show404, setShow404] = useState(false);
 
   useEffect(() => {
     // Only check once per location change and only if we have a store ID
@@ -52,7 +54,20 @@ const RedirectHandler = ({ children, storeId }) => {
   // Reset check status when location changes
   useEffect(() => {
     setHasChecked(false);
+    setShow404(false);
   }, [location.pathname]);
+
+  // Listen for 404 events from child components
+  useEffect(() => {
+    const handle404Event = (event) => {
+      // Child component is signaling that content was not found
+      console.log('404 event received:', event.detail);
+      setShow404(true);
+    };
+
+    window.addEventListener('show404Page', handle404Event);
+    return () => window.removeEventListener('show404Page', handle404Event);
+  }, []);
 
   // Show loading while checking for redirects
   if (isChecking) {
@@ -61,6 +76,11 @@ const RedirectHandler = ({ children, storeId }) => {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  // Show 404 page if child components have signaled content not found
+  if (show404) {
+    return <NotFoundPage />;
   }
 
   // Render children once redirect check is complete

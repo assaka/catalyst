@@ -4,6 +4,7 @@ import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom"
 import { createPageUrl } from "@/utils";
 import { createCategoryUrl, createPublicUrl } from "@/utils/urlUtils";
 // Redirect handling moved to global RedirectHandler component
+import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { CmsBlock } from "@/api/entities";
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
@@ -26,6 +27,7 @@ const ensureArray = (data) => {
 
 export default function Storefront() {
   const { store, settings, loading: storeLoading, productLabels, categories: storeCategories, filterableAttributes, taxes, selectedCountry } = useStore();
+  const { showNotFound } = useNotFound();
   
   const [products, setProducts] = useState([]);
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -85,11 +87,9 @@ export default function Storefront() {
         }
         
         if (!category) {
-          // Global redirect handler already checked - just show 404
+          // Global redirect handler already checked - trigger 404 page
           console.warn(`Category with slug '${categorySlug}' not found.`);
-          setProducts([]);
-          setCurrentCategory(null);
-          setLoading(false);
+          showNotFound(`Category "${categorySlug}" not found`);
           return;
         }
         

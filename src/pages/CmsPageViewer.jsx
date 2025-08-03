@@ -5,9 +5,11 @@ import { Product } from '@/api/entities';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 // Redirect handling moved to global RedirectHandler component
+import { useNotFound } from '@/utils/notFoundUtils';
 
 export default function CmsPageViewer() {
     const [searchParams] = useSearchParams();
+    const { showNotFound } = useNotFound();
     const [page, setPage] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -46,8 +48,10 @@ export default function CmsPageViewer() {
         return <div className="text-center p-8">Loading...</div>;
     }
 
-    if (!page) {
-        return <div className="text-center p-8">Page not found.</div>;
+    if (!page && !loading) {
+        // Trigger 404 page display
+        showNotFound(`CMS page "${slug}" not found`);
+        return null;
     }
 
     return (
