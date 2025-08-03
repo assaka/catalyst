@@ -7,6 +7,14 @@ class AkeneoClient {
     this.clientSecret = clientSecret;
     this.username = username;
     this.password = password;
+    
+    // Debug logging to verify credentials are passed correctly
+    console.log('🔧 AkeneoClient initialized with:');
+    console.log('  Base URL:', this.baseUrl);
+    console.log('  Username:', this.username);
+    console.log('  Client ID present:', !!this.clientId);
+    console.log('  Client Secret present:', !!this.clientSecret);
+    console.log('  Password present:', !!this.password);
     this.accessToken = null;
     this.refreshToken = null;
     this.tokenExpiresAt = null;
@@ -32,6 +40,9 @@ class AkeneoClient {
    * Authenticate with Akeneo PIM and get access token
    */
   async authenticate() {
+    console.log('🔑 Starting authentication...');
+    console.log('  Using credentials - ClientID exists:', !!this.clientId, 'Username:', this.username);
+    
     try {
       const response = await this.axiosInstance.post('/api/oauth/v1/token', {
         grant_type: 'password',
