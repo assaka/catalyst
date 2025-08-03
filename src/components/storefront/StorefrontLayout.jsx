@@ -62,8 +62,22 @@ export default function StorefrontLayout({ children }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
     const [gtmScript, setGtmScript] = useState(null);
+    const [expandedMobileCategories, setExpandedMobileCategories] = useState(new Set());
     // State to trigger MiniCart re-render
     const [cartUpdateTrigger, setCartUpdateTrigger] = useState(0);
+
+    // Toggle function for mobile category expansion
+    const toggleMobileCategory = (categoryId) => {
+        setExpandedMobileCategories(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(categoryId)) {
+                newSet.delete(categoryId);
+            } else {
+                newSet.add(categoryId);
+            }
+            return newSet;
+        });
+    };
 
     // Custom logout handler for storefront - just reload the page
     const handleCustomerLogout = async () => {
@@ -525,21 +539,42 @@ export default function StorefrontLayout({ children }) {
                                             return rootCategories;
                                         };
 
-                                        const renderMobileCategory = (category, depth = 0) => (
-                                            <div key={category.id}>
-                                                <Link
-                                                    to={createCategoryUrl(store.slug, category.slug)}
-                                                    onClick={() => setMobileMenuOpen(false)}
-                                                    className="block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md"
-                                                    style={{ paddingLeft: `${12 + depth * 16}px` }}
-                                                >
-                                                    {category.name}
-                                                </Link>
-                                                {category.children && category.children.length > 0 && 
-                                                    category.children.map(child => renderMobileCategory(child, depth + 1))
-                                                }
-                                            </div>
-                                        );
+                                        const renderMobileCategory = (category, depth = 0) => {
+                                            const hasChildren = category.children && category.children.length > 0;
+                                            const isExpanded = expandedMobileCategories.has(category.id);
+                                            const shouldShowAllSubcategories = store?.settings?.expandAllMenuItems;
+                                            
+                                            return (
+                                                <div key={category.id}>
+                                                    <div className="flex items-center">
+                                                        {hasChildren && !shouldShowAllSubcategories && (
+                                                            <button
+                                                                onClick={() => toggleMobileCategory(category.id)}
+                                                                className="p-1 mr-1 hover:bg-gray-200 rounded touch-manipulation"
+                                                                style={{ marginLeft: `${12 + depth * 16}px` }}
+                                                            >
+                                                                {isExpanded ? '▼' : '▶'}
+                                                            </button>
+                                                        )}
+                                                        <Link
+                                                            to={createCategoryUrl(store.slug, category.slug)}
+                                                            onClick={() => setMobileMenuOpen(false)}
+                                                            className="flex-1 block py-2 px-3 text-gray-700 hover:bg-gray-100 rounded-md touch-manipulation"
+                                                            style={{ 
+                                                                paddingLeft: hasChildren && !shouldShowAllSubcategories 
+                                                                    ? '8px' 
+                                                                    : `${12 + depth * 16}px` 
+                                                            }}
+                                                        >
+                                                            {category.name}
+                                                        </Link>
+                                                    </div>
+                                                    {hasChildren && (shouldShowAllSubcategories || isExpanded) && 
+                                                        category.children.map(child => renderMobileCategory(child, depth + 1))
+                                                    }
+                                                </div>
+                                            );
+                                        };
 
                                         // Always show categories in hamburger menu - this is the mobile navigation
                                         return buildMobileCategoryTree(categories).map(category => renderMobileCategory(category));
