@@ -91,8 +91,28 @@ export default function Settings() {
       
       const user = await retryApiCall(() => User.me());
       
-      // Use selectedStore data directly - no need for force refresh
-      const storeData = selectedStore;
+      // Get fresh store data from API instead of using cached selectedStore
+      console.log('🔍 Using selectedStore data (cached):', {
+        selectedStoreId: selectedStore?.id,
+        selectedStoreKeys: selectedStore ? Object.keys(selectedStore) : [],
+        selectedStoreSettings: selectedStore?.settings,
+        selectedStoreRootCategory: selectedStore?.root_category_id
+      });
+      
+      // Fetch fresh store data to ensure we have the latest settings
+      console.log('🔄 Fetching fresh store data from API...');
+      const freshStoreData = await retryApiCall(() => Store.findById(selectedStore.id));
+      
+      console.log('🔍 Fresh store data from API:', {
+        freshStoreId: freshStoreData?.id,
+        freshStoreKeys: freshStoreData ? Object.keys(freshStoreData) : [],
+        freshStoreSettings: freshStoreData?.settings,
+        freshStoreRootCategory: freshStoreData?.root_category_id,
+        settingsType: typeof freshStoreData?.settings,
+        settingsIsNull: freshStoreData?.settings === null
+      });
+      
+      const storeData = freshStoreData || selectedStore;
       
       // Load categories for the root category selector
       try {
@@ -196,6 +216,15 @@ export default function Settings() {
       
       // CRITICAL FIX: Use explicit checks instead of nullish coalescing with defaults
       // This ensures that false values are preserved from the database
+      console.log('🔍 Raw store data structure:', {
+        storeDataKeys: Object.keys(storeData),
+        settingsField: storeData.settings,
+        settingsType: typeof storeData.settings,
+        settingsIsNull: storeData.settings === null,
+        settingsIsUndefined: storeData.settings === undefined,
+        rootCategoryIdField: storeData.root_category_id
+      });
+      
       const settings = storeData.settings || {};
       
       setStore({
