@@ -10,7 +10,25 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Save, BarChart3, Bot, Shield, Upload } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { 
+  BarChart3, 
+  Bot, 
+  Shield, 
+  Upload,
+  Save,
+  Download, 
+  Settings, 
+  Eye,
+  TrendingUp,
+  Code,
+  ExternalLink,
+  AlertCircle,
+  CheckCircle,
+  Activity
+} from 'lucide-react';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 
 
@@ -20,6 +38,18 @@ export default function AnalyticsSettings() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [flashMessage, setFlashMessage] = useState(null);
+    
+    // New state for advanced analytics features
+    const [dataLayerEvents, setDataLayerEvents] = useState([]);
+    const [gtmSettings, setGtmSettings] = useState({
+        container_id: '',
+        enabled: false,
+        auto_track_page_views: true,
+        auto_track_ecommerce: true,
+        custom_events: []
+    });
+    const [importData, setImportData] = useState('');
+    const [exportFormat, setExportFormat] = useState('json');
 
     useEffect(() => {
         const loadStore = async () => {
@@ -50,6 +80,20 @@ export default function AnalyticsSettings() {
                         }
                     }
                 });
+                
+                // Load advanced GTM settings
+                const analytics = storeData?.settings?.analytics || {};
+                setGtmSettings({
+                    container_id: analytics.gtm_container_id || storeData?.settings?.analytics_settings?.gtm_id || '',
+                    enabled: analytics.gtm_enabled || storeData?.settings?.analytics_settings?.enable_google_tag_manager || false,
+                    auto_track_page_views: analytics.auto_track_page_views !== false,
+                    auto_track_ecommerce: analytics.auto_track_ecommerce !== false,
+                    custom_events: analytics.custom_events || []
+                });
+                
+                // Load dataLayer events
+                loadDataLayerEvents();
+                
             } catch (error) {
                 console.error("Failed to load store:", error);
                 setFlashMessage({ type: 'error', message: 'Could not load store settings.' });
@@ -80,7 +124,30 @@ export default function AnalyticsSettings() {
         if (!storeId || !store) return;
         setSaving(true);
         try {
-            await Store.update(storeId, { settings: store.settings });
+            // Merge both old and new analytics settings
+            const updatedSettings = {
+                ...store.settings,
+                analytics: {
+                    gtm_container_id: gtmSettings.container_id,
+                    gtm_enabled: gtmSettings.enabled,
+                    auto_track_page_views: gtmSettings.auto_track_page_views,
+                    auto_track_ecommerce: gtmSettings.auto_track_ecommerce,
+                    custom_events: gtmSettings.custom_events
+                },
+                analytics_settings: {
+                    ...store.settings.analytics_settings,
+                    gtm_id: gtmSettings.container_id,
+                    enable_google_tag_manager: gtmSettings.enabled
+                }
+            };
+            
+            await Store.update(storeId, { settings: updatedSettings });
+            
+            // Reload GTM if enabled
+            if (gtmSettings.enabled && gtmSettings.container_id) {
+                loadGTMScript();
+            }
+            
             // Clear storefront cache for instant updates
             clearStorefrontCache(storeId, ['stores']);
             setFlashMessage({ type: 'success', message: 'Analytics settings saved successfully!' });
@@ -89,6 +156,148 @@ export default function AnalyticsSettings() {
             setFlashMessage({ type: 'error', message: 'Failed to save settings.' });
         } finally {
             setSaving(false);
+        }
+    };
+    
+    // Advanced analytics functions
+    const loadDataLayerEvents = () => {
+        // Get recent dataLayer events from window.dataLayer
+        if (typeof window !== 'undefined' && window.dataLayer) {
+            const recentEvents = window.dataLayer.slice(-50); // Last 50 events
+            setDataLayerEvents(recentEvents);
+        }
+    };
+
+    const loadGTMScript = () => {
+        if (!gtmSettings.container_id) return;
+        
+        // Remove existing GTM script if any
+        const existingScript = document.querySelector('script[src*="googletagmanager.com/gtm.js"]');
+        if (existingScript) {
+            existingScript.remove();
+        }
+
+        // Add new GTM script
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtm.js?id=${gtmSettings.container_id}`;
+        document.head.appendChild(script);
+
+        // Initialize dataLayer if not exists
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({
+            'gtm.start': new Date().getTime(),
+            event: 'gtm.js'
+        });
+    };
+
+    const importDataLayer = () => {
+        try {
+            const data = JSON.parse(importData);
+            
+            if (Array.isArray(data)) {
+                // Import as dataLayer events
+                data.forEach(event => {
+                    if (typeof window !== 'undefined' && window.dataLayer) {
+                        window.dataLayer.push(event);
+                    }
+                });
+                setDataLayerEvents(prev => [...prev, ...data]);
+                setFlashMessage({ type: 'success', message: `Successfully imported ${data.length} dataLayer events` });
+            } else if (data.tags || data.triggers || data.variables) {
+                // GTM container export format
+                setFlashMessage({ type: 'success', message: 'GTM container format detected. Use this data to import into Google Tag Manager directly.' });
+            }
+            
+            setImportData('');
+        } catch (error) {
+            setFlashMessage({ type: 'error', message: 'Invalid JSON format. Please check your import data.' });
+        }
+    };
+
+    const exportDataLayer = () => {
+        const exportData = {
+            store_id: selectedStore?.id,
+            store_name: selectedStore?.name,
+            export_date: new Date().toISOString(),
+            gtm_settings: gtmSettings,
+            legacy_settings: store?.settings?.analytics_settings,
+            dataLayer_events: dataLayerEvents,
+            suggested_gtm_tags: [
+                {
+                    name: 'Page View - Enhanced',
+                    type: 'gtag',
+                    trigger: 'Page View',
+                    config: {
+                        page_title: '{{Page Title}}',
+                        page_location: '{{Page URL}}',
+                        store_name: selectedStore?.name
+                    }
+                },
+                {
+                    name: 'Add to Cart',
+                    type: 'gtag',
+                    trigger: 'Custom Event - cart_add',
+                    config: {
+                        event_category: 'ecommerce',
+                        event_label: '{{Product Name}}'
+                    }
+                },
+                {
+                    name: 'Purchase',
+                    type: 'gtag',
+                    trigger: 'Custom Event - purchase',
+                    config: {
+                        event_category: 'ecommerce',
+                        transaction_id: '{{Order ID}}',
+                        value: '{{Order Total}}'
+                    }
+                }
+            ]
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `catalyst-analytics-export-${selectedStore?.name || 'store'}-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const addCustomEvent = () => {
+        const eventName = prompt('Enter custom event name:');
+        if (eventName) {
+            setGtmSettings(prev => ({
+                ...prev,
+                custom_events: [...prev.custom_events, {
+                    name: eventName,
+                    description: '',
+                    parameters: {}
+                }]
+            }));
+        }
+    };
+
+    const removeCustomEvent = (index) => {
+        setGtmSettings(prev => ({
+            ...prev,
+            custom_events: prev.custom_events.filter((_, i) => i !== index)
+        }));
+    };
+
+    const testDataLayerPush = () => {
+        const testEvent = {
+            event: 'test_event',
+            timestamp: new Date().toISOString(),
+            test_data: 'This is a test event from Catalyst Analytics',
+            store_id: selectedStore?.id
+        };
+
+        if (typeof window !== 'undefined' && window.dataLayer) {
+            window.dataLayer.push(testEvent);
+            setDataLayerEvents(prev => [...prev, testEvent]);
+            setFlashMessage({ type: 'success', message: 'Test event pushed to dataLayer successfully!' });
         }
     };
     
@@ -124,16 +333,42 @@ export default function AnalyticsSettings() {
             )}
 
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Analytics & Tracking</h1>
-                <p className="text-gray-600 mt-1">Configure your store's analytics and tracking integrations.</p>
+                <h1 className="text-3xl font-bold text-gray-900">Analytics & Data Layer</h1>
+                <p className="text-gray-600 mt-1">Manage Google Tag Manager integration, track customer behavior, and export analytics data.</p>
             </div>
 
-            <Card className="material-elevation-1 border-0">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2"><BarChart3 className="w-5 h-5" /> Google Integrations</CardTitle>
-                <CardDescription>Connect Google services to your store.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            <Tabs defaultValue="basic" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-5">
+                    <TabsTrigger value="basic" className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4" />
+                        Basic Setup
+                    </TabsTrigger>
+                    <TabsTrigger value="advanced" className="flex items-center gap-2">
+                        <Code className="w-4 h-4" />
+                        Advanced GTM
+                    </TabsTrigger>
+                    <TabsTrigger value="datalayer" className="flex items-center gap-2">
+                        <Activity className="w-4 h-4" />
+                        DataLayer
+                    </TabsTrigger>
+                    <TabsTrigger value="import" className="flex items-center gap-2">
+                        <Upload className="w-4 h-4" />
+                        Import
+                    </TabsTrigger>
+                    <TabsTrigger value="export" className="flex items-center gap-2">
+                        <Download className="w-4 h-4" />
+                        Export
+                    </TabsTrigger>
+                </TabsList>
+
+                {/* Basic Google Integrations */}
+                <TabsContent value="basic" className="space-y-6">
+                    <Card className="material-elevation-1 border-0">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><BarChart3 className="w-5 h-5" /> Google Integrations</CardTitle>
+                            <CardDescription>Connect Google services to your store.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
                         <Label htmlFor="enable_gtm">Enable Google Tag Manager</Label>
@@ -243,15 +478,196 @@ export default function AnalyticsSettings() {
                             </ul>
                         </div>
                     )}
-                </div>
-            </CardContent>
-        </Card>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
 
+                {/* Advanced GTM Configuration */}
+                <TabsContent value="advanced" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Settings className="w-5 h-5" />
+                                Advanced Google Tag Manager Configuration
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center space-x-2">
+                                <Switch
+                                    id="gtm-enabled-advanced"
+                                    checked={gtmSettings.enabled}
+                                    onCheckedChange={(enabled) => setGtmSettings(prev => ({ ...prev, enabled }))}
+                                />
+                                <Label htmlFor="gtm-enabled-advanced">Enable Advanced GTM Features</Label>
+                            </div>
+
+                            <div>
+                                <Label htmlFor="container-id-advanced">GTM Container ID</Label>
+                                <Input
+                                    id="container-id-advanced"
+                                    placeholder="GTM-XXXXXXX"
+                                    value={gtmSettings.container_id}
+                                    onChange={(e) => setGtmSettings(prev => ({ ...prev, container_id: e.target.value }))}
+                                />
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Find your Container ID in Google Tag Manager dashboard
+                                </p>
+                            </div>
+
+                            <div className="space-y-3">
+                                <div className="flex items-center space-x-2">
+                                    <Switch
+                                        id="auto-page-views"
+                                        checked={gtmSettings.auto_track_page_views}
+                                        onCheckedChange={(auto_track_page_views) => setGtmSettings(prev => ({ ...prev, auto_track_page_views }))}
+                                    />
+                                    <Label htmlFor="auto-page-views">Auto-track Page Views</Label>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                    <Switch
+                                        id="auto-ecommerce"
+                                        checked={gtmSettings.auto_track_ecommerce}
+                                        onCheckedChange={(auto_track_ecommerce) => setGtmSettings(prev => ({ ...prev, auto_track_ecommerce }))}
+                                    />
+                                    <Label htmlFor="auto-ecommerce">Auto-track E-commerce Events</Label>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-end gap-2">
+                                <Button variant="outline" onClick={testDataLayerPush}>
+                                    Test DataLayer
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Custom Events */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Custom Events</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {gtmSettings.custom_events.map((event, index) => (
+                                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                                        <div>
+                                            <p className="font-medium">{event.name}</p>
+                                            <p className="text-sm text-gray-600">{event.description || 'No description'}</p>
+                                        </div>
+                                        <Button variant="outline" size="sm" onClick={() => removeCustomEvent(index)}>
+                                            Remove
+                                        </Button>
+                                    </div>
+                                ))}
+                                
+                                <Button variant="outline" onClick={addCustomEvent} className="w-full">
+                                    Add Custom Event
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* DataLayer Monitor */}
+                <TabsContent value="datalayer" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                                <span>DataLayer Events ({dataLayerEvents.length})</span>
+                                <Button variant="outline" size="sm" onClick={loadDataLayerEvents}>
+                                    Refresh
+                                </Button>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3 max-h-96 overflow-y-auto">
+                                {dataLayerEvents.length > 0 ? (
+                                    dataLayerEvents.slice().reverse().map((event, index) => (
+                                        <div key={index} className="p-3 border rounded-lg bg-gray-50">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <Badge variant="outline">{event.event || 'Unknown Event'}</Badge>
+                                                <span className="text-xs text-gray-500">{event.timestamp || 'No timestamp'}</span>
+                                            </div>
+                                            <pre className="text-xs bg-white p-2 rounded border overflow-x-auto">
+                                                {JSON.stringify(event, null, 2)}
+                                            </pre>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                                        <p className="text-gray-600">No dataLayer events recorded yet</p>
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Import */}
+                <TabsContent value="import" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Import DataLayer Events</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div>
+                                <Label htmlFor="import-data">JSON Data</Label>
+                                <Textarea
+                                    id="import-data"
+                                    placeholder="Paste your JSON data here..."
+                                    value={importData}
+                                    onChange={(e) => setImportData(e.target.value)}
+                                    rows={10}
+                                />
+                            </div>
+                            
+                            <Alert>
+                                <AlertCircle className="h-4 w-4" />
+                                <AlertDescription>
+                                    You can import dataLayer events as JSON array or GTM container export data.
+                                </AlertDescription>
+                            </Alert>
+
+                            <Button onClick={importDataLayer} disabled={!importData.trim()}>
+                                Import Data
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Export */}
+                <TabsContent value="export" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Export Analytics Data</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-gray-600">
+                                Export your current dataLayer events, GTM settings, and suggested tag configurations for use in Google Tag Manager.
+                            </p>
+
+                            <Alert>
+                                <CheckCircle className="h-4 w-4" />
+                                <AlertDescription>
+                                    The export includes ready-to-use GTM tag configurations for common e-commerce events.
+                                </AlertDescription>
+                            </Alert>
+
+                            <Button onClick={exportDataLayer} className="flex items-center gap-2">
+                                <Download className="w-4 h-4" />
+                                Export Analytics Data
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
 
             <div className="flex justify-end mt-8">
                 <Button onClick={handleSave} disabled={saving}>
                     <Save className="w-4 h-4 mr-2" />
-                    {saving ? 'Saving...' : 'Save Settings'}
+                    {saving ? 'Saving...' : 'Save All Settings'}
                 </Button>
             </div>
         </div>
