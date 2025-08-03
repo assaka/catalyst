@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +14,26 @@ import { Button } from '@/components/ui/button';
 
 export default function CategoryNav({ categories }) {
     const { store } = useStore();
-
+    const [expandedCategories, setExpandedCategories] = useState(new Set());
+    
     if (!categories || categories.length === 0 || !store) {
         return null;
     }
+
+    // Check if all menu items should be expanded by default
+    const expandAllMenuItems = store?.settings?.expandAllMenuItems || false;
+    
+    const toggleCategory = (categoryId) => {
+        setExpandedCategories(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(categoryId)) {
+                newSet.delete(categoryId);
+            } else {
+                newSet.add(categoryId);
+            }
+            return newSet;
+        });
+    };
 
     // Build hierarchical tree from flat category list
     const buildCategoryTree = (categories) => {
@@ -132,7 +148,51 @@ export default function CategoryNav({ categories }) {
         return items;
     };
 
-    // Render category with children as dropdown
+    // Render always-expanded category tree
+    const renderExpandedCategory = (category, depth = 0) => {
+        const hasChildren = category.children && category.children.length > 0;
+        const isExpanded = expandedCategories.has(category.id);
+        
+        return (
+            <div key={category.id} className="block">
+                <div className="flex items-center">
+                    {hasChildren && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleCategory(category.id)}
+                            onTouchEnd={(e) => {
+                                e.preventDefault();
+                                toggleCategory(category.id);
+                            }}
+                            className="p-1 h-auto mr-1 hover:bg-gray-100 touch-manipulation"
+                            aria-label={isExpanded ? `Collapse ${category.name}` : `Expand ${category.name}`}
+                        >
+                            {isExpanded ? (
+                                <ChevronDown className="w-3 h-3" />
+                            ) : (
+                                <ChevronRight className="w-3 h-3" />
+                            )}
+                        </Button>
+                    )}
+                    <Link 
+                        to={createCategoryUrl(store.slug, category.slug)}
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block touch-manipulation"
+                        style={{ marginLeft: `${depth * 16}px` }}
+                    >
+                        {category.name}
+                    </Link>
+                </div>
+                {hasChildren && isExpanded && (
+                    <div className="ml-4">
+                        {category.children.map(child => renderExpandedCategory(child, depth + 1))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // Render category with children as dropdown (collapsible mode)
     const renderCategoryWithChildren = (category) => {
         if (category.children && category.children.length > 0) {
             return (
@@ -173,12 +233,30 @@ export default function CategoryNav({ categories }) {
         }
     };
 
-    return (
-        <nav className="hidden md:flex items-center space-x-2">
-            <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md">
-                Home
-            </Link>
-            {rootCategories.map(category => renderCategoryWithChildren(category))}
-        </nav>
-    );
+    if (expandAllMenuItems) {
+        // Always-expanded mode: Show all subcategories in a vertical tree (mobile-friendly)
+        return (
+            <nav className="block space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm md:max-w-xs">
+                <Link 
+                    to={createPublicUrl(store.slug, 'STOREFRONT')} 
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation"
+                >
+                    Home
+                </Link>
+                <div className="space-y-1">
+                    {rootCategories.map(category => renderExpandedCategory(category))}
+                </div>
+            </nav>
+        );
+    } else {
+        // Collapsible mode: Hover/click to expand submenus (desktop only)
+        return (
+            <nav className="hidden md:flex items-center space-x-2">
+                <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md">
+                    Home
+                </Link>
+                {rootCategories.map(category => renderCategoryWithChildren(category))}
+            </nav>
+        );
+    }
 }

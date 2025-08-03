@@ -64,6 +64,7 @@ export default function Categories() {
   const [expandedCategories, setExpandedCategories] = useState(new Set());
   const [selectedRootCategory, setSelectedRootCategory] = useState('');
   const [excludeRootFromMenu, setExcludeRootFromMenu] = useState(false);
+  const [expandAllMenuItems, setExpandAllMenuItems] = useState(false);
   const [rootCategories, setRootCategories] = useState([]);
   const [storeSettings, setStoreSettings] = useState({});
 
@@ -102,6 +103,7 @@ export default function Categories() {
         setStoreSettings(data.settings || {});
         setSelectedRootCategory(data.settings?.rootCategoryId || '');
         setExcludeRootFromMenu(data.settings?.excludeRootFromMenu || false);
+        setExpandAllMenuItems(data.settings?.expandAllMenuItems || false);
       }
     } catch (error) {
       console.error('Error loading store settings:', error);
@@ -688,18 +690,37 @@ export default function Categories() {
                   </Select>
                 </div>
                 
-                <div className="flex items-center space-x-2 pt-6">
-                  <Checkbox
-                    id="exclude-root-from-menu"
-                    checked={excludeRootFromMenu}
-                    onCheckedChange={(checked) => {
-                      setExcludeRootFromMenu(checked);
-                      saveStoreSettings({ excludeRootFromMenu: checked });
-                    }}
-                  />
-                  <Label htmlFor="exclude-root-from-menu" className="text-sm">
-                    Hide root category from navigation menu
-                  </Label>
+                <div className="space-y-3 pt-6">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="exclude-root-from-menu"
+                      checked={excludeRootFromMenu}
+                      onCheckedChange={(checked) => {
+                        setExcludeRootFromMenu(checked);
+                        saveStoreSettings({ excludeRootFromMenu: checked });
+                      }}
+                    />
+                    <Label htmlFor="exclude-root-from-menu" className="text-sm">
+                      Hide root category from navigation menu
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="expand-all-menu-items"
+                      checked={expandAllMenuItems}
+                      onCheckedChange={(checked) => {
+                        setExpandAllMenuItems(checked);
+                        saveStoreSettings({ expandAllMenuItems: checked });
+                      }}
+                    />
+                    <Label htmlFor="expand-all-menu-items" className="text-sm">
+                      Always show all subcategories (no hover/click required)
+                    </Label>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-6">
+                    When enabled, all subcategories are always visible. When disabled, hover or click to see subcategories.
+                  </p>
                 </div>
               </div>
               
