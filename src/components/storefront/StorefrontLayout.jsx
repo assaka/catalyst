@@ -541,12 +541,8 @@ export default function StorefrontLayout({ children }) {
                                             </div>
                                         );
 
-                                        // Only show categories in mobile menu if expandAllMenuItems is enabled
-                                        if (store?.settings?.expandAllMenuItems) {
-                                            return buildMobileCategoryTree(categories).map(category => renderMobileCategory(category));
-                                        } else {
-                                            return null; // Hide categories in mobile menu when setting is disabled
-                                        }
+                                        // Always show categories in hamburger menu - this is the mobile navigation
+                                        return buildMobileCategoryTree(categories).map(category => renderMobileCategory(category));
                                     })()}
 
                                     {Array.isArray(languages) && languages.length > 1 && (
