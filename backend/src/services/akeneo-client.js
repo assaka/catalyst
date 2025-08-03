@@ -297,16 +297,16 @@ class AkeneoClient {
     try {
       console.log('🔍 Fetching ALL products with pagination...');
       
-      // Method 1: Try UUID-based endpoint with full pagination
+      // Method 1: Try standard products endpoint with full pagination
       try {
-        console.log('📦 Method 1: UUID-based products endpoint with pagination');
+        console.log('📦 Method 1: Standard products endpoint with pagination');
         let nextUrl = null;
         let pageCount = 0;
 
         do {
           pageCount++;
           const params = nextUrl ? {} : { limit: 100 };
-          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products-uuid';
+          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products';
           
           console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
           const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
@@ -361,16 +361,16 @@ class AkeneoClient {
         allProducts.length = 0; // Clear any partial data
       }
       
-      // Method 3: Try identifier-based endpoint with pagination
+      // Method 3: Try UUID-based endpoint with pagination
       try {
-        console.log('📦 Method 3: Identifier-based endpoint with pagination');
+        console.log('📦 Method 3: UUID-based endpoint with pagination');
         let nextUrl = null;
         let pageCount = 0;
 
         do {
           pageCount++;
           const params = nextUrl ? {} : { limit: 100 };
-          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products';
+          const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products-uuid';
           
           console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
           const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);

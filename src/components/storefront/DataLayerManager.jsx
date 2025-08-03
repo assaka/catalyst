@@ -76,6 +76,9 @@ export const trackActivity = async (activityType, data = {}) => {
     if (storeId) {
       console.log('📊 Tracking activity:', activityType, activityData);
       
+      // CRITICAL DEBUG: Add explicit check for execution path
+      console.log('🚀 ENTERING API CALL SECTION - storeId check passed:', storeId);
+      
       try {
         // Use direct fetch instead of CustomerActivity.create to avoid auth issues
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -125,7 +128,7 @@ export const trackActivity = async (activityType, data = {}) => {
         }
         
       } catch (apiError) {
-        console.error('❌ Complete API Error details:', {
+        console.error('❌ CRITICAL ERROR - API call failed:', {
           error: apiError,
           message: apiError.message,
           stack: apiError.stack,
@@ -137,9 +140,16 @@ export const trackActivity = async (activityType, data = {}) => {
         if (apiError.name === 'TypeError' && apiError.message.includes('fetch')) {
           console.error('🚨 Network connectivity issue detected!');
         }
+        
+        // Log the error to ensure it's visible
+        alert('API Error: ' + apiError.message);
       }
     } else {
-      console.warn('Skipping activity tracking - no store_id available');
+      console.warn('🚫 CRITICAL: Skipping activity tracking - no store_id available', {
+        storeId: storeId,
+        activityType: activityType,
+        activityData: activityData
+      });
     }
     
   } catch (error) {
