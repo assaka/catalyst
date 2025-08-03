@@ -60,7 +60,9 @@ import {
   Wallet,
   RefreshCw,
   Link2 as LinkIcon,
-  Share2
+  Share2,
+  Activity,
+  FlaskConical
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -368,6 +370,8 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Cookie Consent", path: "COOKIE_CONSENT", icon: Shield },
         { name: "Analytics", path: "ANALYTICS", icon: BarChart3 },
+        { name: "HeatMaps", path: "HEATMAPS", icon: Activity },
+        { name: "A/B Testing", path: "ABTESTING", icon: FlaskConical },
         { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
         { name: "Customer Activity", path: "CUSTOMER_ACTIVITY", icon: BarChart3 },
       ]

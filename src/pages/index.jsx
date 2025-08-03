@@ -96,6 +96,10 @@ import TeamPage from "./TeamPage";
 
 import AkeneoIntegration from "./AkeneoIntegration";
 
+import HeatMaps from "./HeatMaps";
+
+import ABTesting from "./ABTesting";
+
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
 const PAGES = {
@@ -195,6 +199,10 @@ const PAGES = {
     
     AkeneoIntegration: AkeneoIntegration,
     
+    HeatMaps: HeatMaps,
+    
+    ABTesting: ABTesting,
+    
 }
 
 function _getCurrentPage(url) {
@@ -232,7 +240,9 @@ function _getCurrentPage(url) {
         'image-manager': 'ImageManager',
         'stock-settings': 'StockSettings',
         'google-tag-manager': 'GoogleTagManager',
-        'akeneo-integration': 'AkeneoIntegration'
+        'akeneo-integration': 'AkeneoIntegration',
+        'heatmaps': 'HeatMaps',
+        'ab-testing': 'ABTesting'
     };
 
     // First try direct mapping for admin URLs
@@ -609,6 +619,18 @@ function PagesContent() {
                 <Route path="/admin/akeneo-integration" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <AkeneoIntegration />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/heatmaps" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <HeatMaps />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/ab-testing" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ABTesting />
                     </RoleProtectedRoute>
                 } />
                 

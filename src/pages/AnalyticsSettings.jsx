@@ -160,12 +160,52 @@ export default function AnalyticsSettings() {
     };
     
     // Advanced analytics functions
-    const loadDataLayerEvents = () => {
+    const loadDataLayerEvents = async () => {
+        console.log('🔄 Loading analytics data from both browser and database...');
+        
         // Get recent dataLayer events from window.dataLayer
+        const browserEvents = [];
         if (typeof window !== 'undefined' && window.dataLayer) {
             const recentEvents = window.dataLayer.slice(-50); // Last 50 events
-            setDataLayerEvents(recentEvents);
+            browserEvents.push(...recentEvents.map(event => ({
+                ...event,
+                source: 'browser',
+                timestamp: event.timestamp || new Date().toISOString()
+            })));
+            console.log('📊 Browser dataLayer events:', recentEvents.length);
         }
+        
+        // Get customer activities from database
+        try {
+            if (selectedStore?.id) {
+                const response = await fetch(`/api/customer-activity?store_id=${selectedStore.id}&limit=50`);
+                if (response.ok) {
+                    const databaseEvents = await response.json();
+                    const formattedDbEvents = databaseEvents.map(activity => ({
+                        event: activity.activity_type,
+                        source: 'database',
+                        timestamp: activity.created_at,
+                        store_id: activity.store_id,
+                        session_id: activity.session_id,
+                        user_id: activity.user_id,
+                        page_url: activity.page_url,
+                        metadata: activity.metadata,
+                        ...activity.metadata
+                    }));
+                    browserEvents.push(...formattedDbEvents);
+                    console.log('📊 Database customer activities:', databaseEvents.length);
+                } else {
+                    console.warn('Failed to fetch customer activities:', response.status);
+                }
+            }
+        } catch (error) {
+            console.warn('Could not load customer activities:', error);
+        }
+        
+        // Sort all events by timestamp
+        browserEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        setDataLayerEvents(browserEvents);
+        console.log('📊 Total combined events:', browserEvents.length);
     };
 
     const loadGTMScript = () => {
@@ -349,7 +389,7 @@ export default function AnalyticsSettings() {
                     </TabsTrigger>
                     <TabsTrigger value="datalayer" className="flex items-center gap-2">
                         <Activity className="w-4 h-4" />
-                        DataLayer
+                        Live Events
                     </TabsTrigger>
                     <TabsTrigger value="import" className="flex items-center gap-2">
                         <Upload className="w-4 h-4" />
@@ -575,7 +615,7 @@ export default function AnalyticsSettings() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center justify-between">
-                                <span>DataLayer Events ({dataLayerEvents.length})</span>
+                                <span>All Analytics Events ({dataLayerEvents.length})</span>
                                 <Button variant="outline" size="sm" onClick={loadDataLayerEvents}>
                                     Refresh
                                 </Button>
@@ -584,11 +624,21 @@ export default function AnalyticsSettings() {
                         <CardContent>
                             <div className="space-y-3 max-h-96 overflow-y-auto">
                                 {dataLayerEvents.length > 0 ? (
-                                    dataLayerEvents.slice().reverse().map((event, index) => (
+                                    dataLayerEvents.map((event, index) => (
                                         <div key={index} className="p-3 border rounded-lg bg-gray-50">
                                             <div className="flex items-center justify-between mb-2">
-                                                <Badge variant="outline">{event.event || 'Unknown Event'}</Badge>
-                                                <span className="text-xs text-gray-500">{event.timestamp || 'No timestamp'}</span>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant="outline">{event.event || 'Unknown Event'}</Badge>
+                                                    <Badge 
+                                                        variant={event.source === 'browser' ? 'default' : 'secondary'}
+                                                        className={event.source === 'browser' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}
+                                                    >
+                                                        {event.source === 'browser' ? '🌐 Browser' : '💾 Database'}
+                                                    </Badge>
+                                                </div>
+                                                <span className="text-xs text-gray-500">
+                                                    {event.timestamp ? new Date(event.timestamp).toLocaleString() : 'No timestamp'}
+                                                </span>
                                             </div>
                                             <pre className="text-xs bg-white p-2 rounded border overflow-x-auto">
                                                 {JSON.stringify(event, null, 2)}
@@ -598,7 +648,10 @@ export default function AnalyticsSettings() {
                                 ) : (
                                     <div className="text-center py-8">
                                         <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                                        <p className="text-gray-600">No dataLayer events recorded yet</p>
+                                        <p className="text-gray-600">No events recorded yet</p>
+                                        <p className="text-sm text-gray-500 mt-2">
+                                            Visit your storefront to generate tracking events
+                                        </p>
                                     </div>
                                 )}
                             </div>

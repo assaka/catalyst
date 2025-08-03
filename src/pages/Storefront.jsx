@@ -52,6 +52,28 @@ export default function Storefront() {
         const homepage = !categorySlug;
         setIsHomepage(homepage);
         loadData(homepage);
+        
+        // Track page view for category or homepage
+        if (typeof window !== 'undefined' && window.catalyst?.trackEvent) {
+          if (homepage) {
+            window.catalyst.trackEvent('page_view', {
+              page_type: 'homepage',
+              store_name: store.name,
+              store_id: store.id
+            });
+          } else {
+            const category = categories.find(c => c?.slug === categorySlug);
+            if (category) {
+              window.catalyst.trackEvent('page_view', {
+                page_type: 'category',
+                category_name: category.name,
+                category_id: category.id,
+                store_name: store.name,
+                store_id: store.id
+              });
+            }
+          }
+        }
     }
   }, [categorySlug, store?.id, storeLoading, categories]);
 

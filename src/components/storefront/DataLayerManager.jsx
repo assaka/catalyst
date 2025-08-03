@@ -115,7 +115,7 @@ export const trackAddToCart = (product, quantity = 1) => {
     }]
   });
   
-  trackActivity('cart_add', {
+  trackActivity('add_to_cart', {
     product_id: product.id,
     product_name: product.name,
     quantity: quantity,
@@ -136,7 +136,7 @@ export const trackRemoveFromCart = (product, quantity = 1) => {
     }]
   });
   
-  trackActivity('cart_remove', {
+  trackActivity('remove_from_cart', {
     product_id: product.id,
     product_name: product.name,
     quantity: quantity,
@@ -158,7 +158,7 @@ export const trackPurchase = (order) => {
     })) || []
   });
   
-  trackActivity('purchase', {
+  trackActivity('order_completed', {
     order_id: order.id,
     order_total: order.total,
     order_items_count: order.items?.length || 0
