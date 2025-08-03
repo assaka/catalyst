@@ -142,14 +142,20 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Redirect created successfully:', result.message);
+        console.log('✅ Redirect created successfully:', result);
       } else {
         const errorText = await response.text();
-        console.error('❌ Failed to create redirect:', response.status, errorText);
+        console.error('❌ Failed to create redirect:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          errorText
+        });
         
         // Still allow the form submission to continue
         if (response.status === 401) {
-          console.error('Authentication failed - token may be expired');
+          console.error('🔑 Authentication failed - token may be expired');
+          console.log('Current token (first 20 chars):', token?.substring(0, 20));
         }
       }
     } catch (error) {
@@ -171,8 +177,19 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       };
 
       // Always create redirect if slug changed (essential for SEO)
+      console.log('🔍 Checking redirect creation conditions:', {
+        hasCategory: !!category,
+        originalSlug,
+        currentSlug: formData.slug,
+        slugChanged: formData.slug !== originalSlug,
+        shouldCreateRedirect: category && originalSlug && formData.slug !== originalSlug
+      });
+      
       if (category && originalSlug && formData.slug !== originalSlug) {
+        console.log('🚀 Creating redirect for slug change');
         await createRedirectForSlugChange();
+      } else {
+        console.log('❌ Skipping redirect creation');
       }
 
       await onSubmit(submitData);
