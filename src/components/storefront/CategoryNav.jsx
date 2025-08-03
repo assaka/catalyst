@@ -185,10 +185,11 @@ export default function CategoryNav({ categories }) {
                     )}
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block touch-manipulation"
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md flex items-center justify-between touch-manipulation"
                         style={{ marginLeft: `${depth * 16}px` }}
                     >
-                        {category.name}
+                        <span>{category.name}</span>
+                        <ChevronRight className="w-3 h-3 opacity-50" />
                     </Link>
                 </div>
                 {hasChildren && isExpanded && (
@@ -208,10 +209,10 @@ export default function CategoryNav({ categories }) {
                     <DropdownMenuTrigger asChild>
                         <Button 
                             variant="ghost" 
-                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center space-x-1"
+                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center justify-between w-full"
                         >
                             <span>{category.name}</span>
-                            <ChevronDown className="w-3 h-3" />
+                            <ChevronDown className="w-4 h-4 ml-1" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto">
@@ -233,9 +234,10 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)} 
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md"
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md flex items-center justify-between"
                 >
-                    {category.name}
+                    <span>{category.name}</span>
+                    <ChevronRight className="w-3 h-3 ml-1 opacity-50" />
                 </Link>
             );
         }
@@ -247,9 +249,10 @@ export default function CategoryNav({ categories }) {
             <nav className="block space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm md:max-w-xs">
                 <Link 
                     to={createPublicUrl(store.slug, 'STOREFRONT')} 
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation"
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md flex items-center justify-between mb-2 touch-manipulation"
                 >
-                    Home
+                    <span>Home</span>
+                    <ChevronRight className="w-3 h-3 opacity-50" />
                 </Link>
                 <div className="space-y-1">
                     {rootCategories.map(category => renderExpandedCategory(category))}
@@ -260,8 +263,9 @@ export default function CategoryNav({ categories }) {
         // Collapsible mode: Hover/click to expand submenus (desktop only)
         return (
             <nav className="hidden md:flex items-center space-x-2">
-                <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md">
-                    Home
+                <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md flex items-center">
+                    <span>Home</span>
+                    <ChevronRight className="w-3 h-3 ml-1 opacity-50" />
                 </Link>
                 {rootCategories.map(category => renderCategoryWithChildren(category))}
             </nav>
