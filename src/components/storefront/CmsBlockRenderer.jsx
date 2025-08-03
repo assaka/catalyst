@@ -51,10 +51,8 @@ const loadCmsBlocksWithCache = async (storeId) => {
 
   // Create new request to load CMS blocks
   const requestPromise = retryApiCall(async () => {
-    console.log('🔄 Loading CMS blocks for store:', storeId);
     try {
       const blocks = await CmsBlock.findAll({ store_id: storeId });
-      console.log('✅ Loaded CMS blocks:', blocks?.length || 0);
       return blocks;
     } catch (error) {
       console.warn('⚠️ CmsBlockRenderer: Backend CMS blocks API failed, this is expected if backend is not properly configured:', error.message);

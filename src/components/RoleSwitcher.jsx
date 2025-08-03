@@ -23,7 +23,6 @@ const RoleSwitcher = () => {
     
     // Listen for role session changes
     const handleRoleChange = (event) => {
-      console.log('Role session changed:', event.detail);
       updateRoleData();
     };
     
@@ -42,13 +41,7 @@ const RoleSwitcher = () => {
     setCustomerData(customer);
     setStoreOwnerData(storeOwner);
     setHasBothRoles(bothRoles);
-    
-    console.log('RoleSwitcher updated:', {
-      currentRole,
-      hasCustomer: !!customer,
-      hasStoreOwner: !!storeOwner,
-      bothRoles
-    });
+
   };
 
   const switchToCustomer = () => {

@@ -81,7 +81,7 @@ export const trackActivity = async (activityType, data = {}) => {
     }
     
   } catch (error) {
-    console.error('Failed to track activity:', error);
+    console.warn('Failed to track activity:', error);
   }
 };
 

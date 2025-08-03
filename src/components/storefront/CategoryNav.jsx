@@ -82,13 +82,6 @@ export default function CategoryNav({ categories }) {
             }
         }
 
-        console.log('👀 Visible categories after filtering:', visibleCategories.map(c => ({
-            id: c.id,
-            name: c.name,
-            parent_id: c.parent_id,
-            hide_in_menu: c.hide_in_menu
-        })));
-
         // Create a map of all visible categories
         visibleCategories.forEach(category => {
             categoryMap.set(category.id, { ...category, children: [] });
@@ -111,21 +104,6 @@ export default function CategoryNav({ categories }) {
     };
 
     const rootCategories = buildCategoryTree(categories);
-    
-    // Debug logging for navigation
-    console.log('🔧 CategoryNav debug:', {
-        totalCategories: categories.length,
-        rootCategoryId: store?.settings?.rootCategoryId,
-        excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
-        rootCategoriesCount: rootCategories.length,
-        rootCategories: rootCategories.map(c => ({
-            id: c.id,
-            name: c.name,
-            childrenCount: c.children?.length || 0,
-            hasChildren: !!(c.children && c.children.length > 0),
-            children: c.children?.map(child => ({ id: child.id, name: child.name })) || []
-        }))
-    });
 
     // Render all descendants of a category with proper indentation
     const renderCategoryDescendants = (category, depth = 0, isDropdown = true) => {
