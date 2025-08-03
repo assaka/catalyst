@@ -346,7 +346,10 @@ export default function Settings() {
         finalRootCategoryId: settings.rootCategoryId || storeData.root_category_id || null,
         excludeRootFromMenu: settings.excludeRootFromMenu,
         hasExcludeRootProperty: settings.hasOwnProperty('excludeRootFromMenu'),
-        finalExcludeRoot: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false
+        finalExcludeRoot: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false,
+        expandAllMenuItems: settings.expandAllMenuItems,
+        hasExpandAllProperty: settings.hasOwnProperty('expandAllMenuItems'),
+        finalExpandAll: settings.hasOwnProperty('expandAllMenuItems') ? settings.expandAllMenuItems : false
       });
 
     } catch (error) {
@@ -533,7 +536,8 @@ export default function Settings() {
         storeId: store.id,
         rootCategorySettings: {
           rootCategoryId: payload.settings.rootCategoryId,
-          excludeRootFromMenu: payload.settings.excludeRootFromMenu
+          excludeRootFromMenu: payload.settings.excludeRootFromMenu,
+          expandAllMenuItems: payload.settings.expandAllMenuItems
         },
         fullSettingsPayload: payload.settings,
         fullPayload: payload
@@ -555,7 +559,8 @@ export default function Settings() {
         result,
         resultSettings: result?.settings,
         savedRootCategory: result?.settings?.rootCategoryId,
-        savedExcludeRoot: result?.settings?.excludeRootFromMenu
+        savedExcludeRoot: result?.settings?.excludeRootFromMenu,
+        savedExpandAll: result?.settings?.expandAllMenuItems
       });
       
       // Update our local store state with the response data
@@ -598,6 +603,10 @@ export default function Settings() {
             collect_phone_number_at_checkout: settings.hasOwnProperty('collect_phone_number_at_checkout') ? settings.collect_phone_number_at_checkout : false,
             allow_guest_checkout: settings.hasOwnProperty('allow_guest_checkout') ? settings.allow_guest_checkout : true,
             allowed_countries: settings.allowed_countries || ["US", "CA", "GB", "DE", "FR"],
+            // Root category navigation settings
+            rootCategoryId: settings.rootCategoryId || result?.root_category_id,
+            excludeRootFromMenu: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false,
+            expandAllMenuItems: settings.hasOwnProperty('expandAllMenuItems') ? settings.expandAllMenuItems : false,
             // Include all other settings...
             ...settings
           }
