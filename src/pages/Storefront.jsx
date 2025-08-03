@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { createCategoryUrl, createPublicUrl } from "@/utils/urlUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -35,11 +35,28 @@ export default function Storefront() {
   
   const { storeCode, categorySlug: routeCategorySlug } = useParams();
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   
   const categorySlug = searchParams.get('category') || routeCategorySlug;
   
 
   const categories = useMemo(() => storeCategories || [], [storeCategories]);
+
+  // Check for redirects when category is not found
+  const checkForRedirect = async (currentPath) => {
+    if (!store?.id) return null;
+    
+    try {
+      const response = await fetch(`/api/redirects/check?store_id=${store.id}&path=${encodeURIComponent(currentPath)}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.found ? data.to_url : null;
+      }
+    } catch (error) {
+      console.warn('Error checking for redirect:', error);
+    }
+    return null;
+  };
 
   useEffect(() => {
     if (!storeLoading && store?.id) {
@@ -80,6 +97,27 @@ export default function Storefront() {
         
         if (!category) {
           console.warn(`Category with slug '${categorySlug}' not found.`);
+          
+          // Check for redirect before showing 404
+          // Try both possible path formats
+          const currentPath = `/category/${categorySlug}`;
+          const shortPath = `/c/${categorySlug}`;
+          let redirectTo = await checkForRedirect(currentPath);
+          
+          // If no redirect found for /category/, try /c/ format
+          if (!redirectTo) {
+            redirectTo = await checkForRedirect(shortPath);
+          }
+          
+          if (redirectTo) {
+            console.log(`🔀 Redirecting from ${currentPath} to ${redirectTo}`);
+            // Extract the new slug from the redirect URL
+            const newSlug = redirectTo.replace('/category/', '');
+            // Navigate to the new category URL
+            navigate(createCategoryUrl(storeCode, newSlug), { replace: true });
+            return;
+          }
+          
           setProducts([]);
           setCurrentCategory(null);
           setLoading(false);
