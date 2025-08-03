@@ -289,6 +289,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
   };
 
+
   const createRedirectForSlugChange = async () => {
     if (!product || !originalUrlKey || formData.seo.url_key === originalUrlKey) {
       return;

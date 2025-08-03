@@ -2346,21 +2346,20 @@ Sitemap: /sitemap.xml     # Location of sitemap
           </div>
         </div>
         {renderTabContent()}
-        {showTemplateForm && (
-          <Dialog open={showTemplateForm} onOpenChange={(open) => {
+        <Dialog open={showTemplateForm} onOpenChange={(open) => {
             setShowTemplateForm(open);
             if (!open) {
               setEditingTemplate(null);
               resetTemplateForm();
             }
           }}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden">
               <DialogHeader>
                 <DialogTitle>
                   {editingTemplate ? 'Edit Template' : 'Add New Template'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-4">
+              <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-4">
                 <div>
                   <Label>Template Name</Label>
                   <Input
@@ -2483,7 +2482,6 @@ Sitemap: /sitemap.xml     # Location of sitemap
               </div>
             </DialogContent>
           </Dialog>
-        )}
 
         {showRedirectForm && (
           <Dialog open={showRedirectForm} onOpenChange={(open) => {
