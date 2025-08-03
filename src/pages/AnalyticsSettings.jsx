@@ -162,6 +162,7 @@ export default function AnalyticsSettings() {
     // Advanced analytics functions
     const loadDataLayerEvents = async () => {
         console.log('🔄 Loading analytics data from both browser and database...');
+        console.log('🏪 Selected store:', selectedStore?.id, selectedStore?.name);
         
         // Get recent dataLayer events from window.dataLayer
         const browserEvents = [];
@@ -173,14 +174,30 @@ export default function AnalyticsSettings() {
                 timestamp: event.timestamp || new Date().toISOString()
             })));
             console.log('📊 Browser dataLayer events:', recentEvents.length);
+        } else {
+            console.log('📊 No window.dataLayer found');
         }
         
         // Get customer activities from database
         try {
             if (selectedStore?.id) {
-                const response = await fetch(`/api/customer-activity?store_id=${selectedStore.id}&limit=50`);
+                const apiUrl = `/api/customer-activity?store_id=${selectedStore.id}&limit=50`;
+                console.log('🌐 Fetching customer activities from:', apiUrl);
+                
+                const response = await fetch(apiUrl);
+                console.log('📡 API Response status:', response.status, response.statusText);
+                
                 if (response.ok) {
-                    const databaseEvents = await response.json();
+                    const responseData = await response.json();
+                    console.log('📄 API Response data:', responseData);
+                    
+                    // Handle the API response structure
+                    const databaseEvents = responseData.success && responseData.data?.activities 
+                        ? responseData.data.activities 
+                        : (Array.isArray(responseData) ? responseData : []);
+                    
+                    console.log('🔍 Parsed database events:', databaseEvents.length, databaseEvents);
+                    
                     const formattedDbEvents = databaseEvents.map(activity => ({
                         event: activity.activity_type,
                         source: 'database',
@@ -195,8 +212,11 @@ export default function AnalyticsSettings() {
                     browserEvents.push(...formattedDbEvents);
                     console.log('📊 Database customer activities:', databaseEvents.length);
                 } else {
-                    console.warn('Failed to fetch customer activities:', response.status);
+                    const errorText = await response.text();
+                    console.warn('Failed to fetch customer activities:', response.status, response.statusText, errorText);
                 }
+            } else {
+                console.log('🚫 No selected store ID available');
             }
         } catch (error) {
             console.warn('Could not load customer activities:', error);
