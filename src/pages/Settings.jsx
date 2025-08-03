@@ -294,6 +294,9 @@ export default function Settings() {
       
       // Debug the loaded settings values
       console.log('🔍 Store settings loaded:', {
+        rawStoreData: storeData,
+        rawSettings: settings,
+        allSettingsKeys: Object.keys(settings),
         rootCategoryId: settings.rootCategoryId,
         legacyRootCategoryId: storeData.root_category_id,
         finalRootCategoryId: settings.rootCategoryId || storeData.root_category_id || null,
@@ -480,6 +483,17 @@ export default function Settings() {
       };
 
       
+      // Debug what we're about to save
+      console.log('💾 Saving store settings:', {
+        storeId: store.id,
+        rootCategorySettings: {
+          rootCategoryId: payload.settings.rootCategoryId,
+          excludeRootFromMenu: payload.settings.excludeRootFromMenu
+        },
+        fullSettingsPayload: payload.settings,
+        fullPayload: payload
+      });
+      
       // Ensure settings is a proper object
       if (typeof payload.settings === 'string') {
         console.warn('⚠️ Settings was a string, parsing to object');
@@ -490,6 +504,14 @@ export default function Settings() {
       
       // Handle array response from API client
       const result = Array.isArray(apiResult) ? apiResult[0] : apiResult;
+      
+      // Debug what came back from the save
+      console.log('💾 Save response:', {
+        result,
+        resultSettings: result?.settings,
+        savedRootCategory: result?.settings?.rootCategoryId,
+        savedExcludeRoot: result?.settings?.excludeRootFromMenu
+      });
       
       // Update our local store state with the response data
       if (result && result.settings) {
