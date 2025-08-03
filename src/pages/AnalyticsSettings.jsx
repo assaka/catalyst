@@ -201,9 +201,20 @@ export default function AnalyticsSettings() {
             browserEvents.push(...recentEvents.map(event => ({
                 ...event,
                 source: 'browser',
-                timestamp: event.timestamp || new Date().toISOString()
+                timestamp: event.timestamp || event['gtm.start'] || new Date().toISOString()
             })));
             console.log('📊 Browser dataLayer events:', recentEvents.length);
+            
+            // Debug browser event timestamps
+            if (recentEvents.length > 0) {
+                const sampledEvents = recentEvents.slice(-3).map(e => ({
+                    event: e.event || 'unknown',
+                    timestamp: e.timestamp,
+                    gtmStart: e['gtm.start'],
+                    formatted: (e.timestamp || e['gtm.start']) ? new Date(e.timestamp || e['gtm.start']).toLocaleString() : 'No timestamp'
+                }));
+                console.log('🕐 Sample browser event timestamps:', sampledEvents);
+            }
         } else {
             console.log('📊 No window.dataLayer found');
         }
@@ -231,16 +242,30 @@ export default function AnalyticsSettings() {
                     const formattedDbEvents = databaseEvents.map(activity => ({
                         event: activity.activity_type,
                         source: 'database',
-                        timestamp: activity.created_at,
+                        timestamp: activity.created_at || activity.createdAt || activity.updatedAt || new Date().toISOString(),
                         store_id: activity.store_id,
                         session_id: activity.session_id,
                         user_id: activity.user_id,
                         page_url: activity.page_url,
+                        product_id: activity.product_id,
+                        search_query: activity.search_query,
+                        user_agent: activity.user_agent,
+                        ip_address: activity.ip_address,
                         metadata: activity.metadata,
-                        ...activity.metadata
+                        // Include the full activity record for debugging
+                        _raw: activity
                     }));
                     browserEvents.push(...formattedDbEvents);
                     console.log('📊 Database customer activities:', databaseEvents.length);
+                    
+                    // Debug timestamp formats
+                    if (formattedDbEvents.length > 0) {
+                        console.log('🕐 Sample database event timestamps:', formattedDbEvents.slice(0, 3).map(e => ({
+                            event: e.event,
+                            timestamp: e.timestamp,
+                            formatted: e.timestamp ? new Date(e.timestamp).toLocaleString() : 'No timestamp'
+                        })));
+                    }
                 } else {
                     const errorText = await response.text();
                     console.warn('Failed to fetch customer activities:', response.status, response.statusText, errorText);
@@ -745,7 +770,22 @@ export default function AnalyticsSettings() {
                                                     </Badge>
                                                 </div>
                                                 <span className="text-xs text-gray-500">
-                                                    {event.timestamp ? new Date(event.timestamp).toLocaleString() : 'No timestamp'}
+                                                    {(() => {
+                                                        if (!event.timestamp) return 'No timestamp';
+                                                        try {
+                                                            const date = new Date(event.timestamp);
+                                                            if (isNaN(date.getTime())) return 'Invalid timestamp';
+                                                            return date.toLocaleString('en-US', {
+                                                                month: 'short',
+                                                                day: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                                second: '2-digit'
+                                                            });
+                                                        } catch (e) {
+                                                            return 'Invalid timestamp';
+                                                        }
+                                                    })()}
                                                 </span>
                                             </div>
                                             <pre className="text-xs bg-white p-2 rounded border overflow-x-auto">
