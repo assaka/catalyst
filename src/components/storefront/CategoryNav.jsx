@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
@@ -22,6 +22,14 @@ export default function CategoryNav({ categories }) {
 
     // Check if all menu items should be expanded by default
     const expandAllMenuItems = store?.settings?.expandAllMenuItems || false;
+    
+    // Reset expanded categories when expandAllMenuItems setting changes
+    useEffect(() => {
+        if (!expandAllMenuItems) {
+            // Clear all expanded categories when the setting is disabled
+            setExpandedCategories(new Set());
+        }
+    }, [expandAllMenuItems]);
     
     const toggleCategory = (categoryId) => {
         setExpandedCategories(prev => {
