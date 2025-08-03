@@ -255,7 +255,7 @@ export default function CategoryNav({ categories }) {
     };
 
     if (expandAllMenuItems) {
-        // Always-expanded mode: Keep horizontal layout for first level, expand subcategories
+        // Always-expanded mode: Keep horizontal layout for first level, show all subcategories on hover
         return (
             <>
                 {/* Mobile view - vertical layout */}
@@ -288,8 +288,8 @@ export default function CategoryNav({ categories }) {
                                         {category.name}
                                         <ChevronDown className="w-3 h-3 ml-1" />
                                     </Link>
-                                    {/* Always visible submenu */}
-                                    <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                                    {/* Submenu visible on hover */}
+                                    <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
                                         <div className="py-1">
                                             {category.children.map(child => (
                                                 <div key={child.id}>
