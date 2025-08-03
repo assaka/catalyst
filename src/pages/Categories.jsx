@@ -769,14 +769,14 @@ export default function Categories() {
                     Filter Categories
                   </Label>
                   <Select
-                    value={searchQuery}
-                    onValueChange={(value) => setSearchQuery(value)}
+                    value={searchQuery || "all"}
+                    onValueChange={(value) => setSearchQuery(value === "all" ? "" : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="All categories" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="all">All Categories</SelectItem>
                       <SelectItem value="active">Active Only</SelectItem>
                       <SelectItem value="inactive">Inactive Only</SelectItem>
                       <SelectItem value="hidden">Hidden from Menu</SelectItem>
