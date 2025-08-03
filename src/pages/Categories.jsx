@@ -363,6 +363,23 @@ export default function Categories() {
     }
   };
 
+  // Apply client-side filtering for name filter (no page reload)
+  const getDisplayCategories = () => {
+    let displayCategories = categories;
+    
+    // Apply name filter client-side (instant filtering, no reload)
+    if (nameFilter.trim()) {
+      const searchTerm = nameFilter.trim().toLowerCase();
+      displayCategories = displayCategories.filter(cat => 
+        cat.name.toLowerCase().includes(searchTerm) ||
+        cat.description?.toLowerCase().includes(searchTerm) ||
+        cat.slug?.toLowerCase().includes(searchTerm)
+      );
+    }
+    
+    return displayCategories;
+  };
+
   // Apply client-side name filtering
   const displayCategories = getDisplayCategories();
   const paginatedCategories = displayCategories;
@@ -389,23 +406,6 @@ export default function Categories() {
       loadCategories(1); // Reset to first page when filter changes
     }
   }, [selectedRootCategory]);
-
-  // Apply client-side filtering for name filter (no page reload)
-  const getDisplayCategories = () => {
-    let displayCategories = categories;
-    
-    // Apply name filter client-side (instant filtering, no reload)
-    if (nameFilter.trim()) {
-      const searchTerm = nameFilter.trim().toLowerCase();
-      displayCategories = displayCategories.filter(cat => 
-        cat.name.toLowerCase().includes(searchTerm) ||
-        cat.description?.toLowerCase().includes(searchTerm) ||
-        cat.slug?.toLowerCase().includes(searchTerm)
-      );
-    }
-    
-    return displayCategories;
-  };
 
   // Reset page to 1 when name filter changes
   useEffect(() => {
