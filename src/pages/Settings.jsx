@@ -285,6 +285,10 @@ export default function Settings() {
           allow_stacking_coupons: settings.hasOwnProperty('allow_stacking_coupons') ? settings.allow_stacking_coupons : false, // New
           hide_stock_quantity: settings.hasOwnProperty('hide_stock_quantity') ? settings.hide_stock_quantity : false, // New
           display_low_stock_threshold: settings.hasOwnProperty('display_low_stock_threshold') ? settings.display_low_stock_threshold : 0, // New
+          
+          // Root category settings
+          rootCategoryId: settings.rootCategoryId || storeData.root_category_id || null,
+          excludeRootFromMenu: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false,
         }
       });
 
@@ -416,6 +420,10 @@ export default function Settings() {
         allow_stacking_coupons: store.settings.allow_stacking_coupons,
         hide_stock_quantity: store.settings.hide_stock_quantity,
         display_low_stock_threshold: store.settings.display_low_stock_threshold,
+        
+        // Root category settings
+        rootCategoryId: store.settings.rootCategoryId || store.root_category_id,
+        excludeRootFromMenu: store.settings.excludeRootFromMenu || false,
         
         seo_settings: {
           meta_title_suffix: store.settings.seo_settings?.meta_title_suffix || '',
@@ -737,8 +745,8 @@ export default function Settings() {
                 <div>
                   <Label htmlFor="root_category_id">Root Category</Label>
                   <Select 
-                    value={store?.root_category_id || "none"} 
-                    onValueChange={(value) => setStore(prev => ({ ...prev, root_category_id: value === "none" ? null : value }))}
+                    value={store?.settings?.rootCategoryId || "none"} 
+                    onValueChange={(value) => handleSettingsChange('rootCategoryId', value === "none" ? null : value)}
                   >
                     <SelectTrigger id="root_category_id">
                       <SelectValue placeholder="Select root category (optional)" />
@@ -801,6 +809,20 @@ export default function Settings() {
                     Select a root category to limit your store's navigation to its subcategories. Leave blank to show all categories.
                   </p>
                 </div>
+
+                {store?.settings?.rootCategoryId && (
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <Label htmlFor="exclude_root_from_menu" className="font-medium">Exclude Root Category from Navigation</Label>
+                      <p className="text-sm text-gray-500">Hide the root category itself from navigation menus, showing only its children</p>
+                    </div>
+                    <Switch 
+                      id="exclude_root_from_menu" 
+                      checked={store?.settings?.excludeRootFromMenu || false} 
+                      onCheckedChange={(checked) => handleSettingsChange('excludeRootFromMenu', checked)} 
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
