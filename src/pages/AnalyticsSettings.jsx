@@ -211,7 +211,16 @@ export default function AnalyticsSettings() {
                     event: e.event || 'unknown',
                     timestamp: e.timestamp,
                     gtmStart: e['gtm.start'],
-                    formatted: (e.timestamp || e['gtm.start']) ? new Date(e.timestamp || e['gtm.start']).toLocaleString() : 'No timestamp'
+                    formatted: (() => {
+                        const ts = e.timestamp || e['gtm.start'];
+                        if (!ts) return 'No timestamp';
+                        try {
+                            const date = new Date(ts);
+                            return isNaN(date.getTime()) ? 'Invalid timestamp' : date.toLocaleString();
+                        } catch (error) {
+                            return 'Invalid timestamp';
+                        }
+                    })()
                 }));
                 console.log('🕐 Sample browser event timestamps:', sampledEvents);
             }
@@ -263,7 +272,15 @@ export default function AnalyticsSettings() {
                         console.log('🕐 Sample database event timestamps:', formattedDbEvents.slice(0, 3).map(e => ({
                             event: e.event,
                             timestamp: e.timestamp,
-                            formatted: e.timestamp ? new Date(e.timestamp).toLocaleString() : 'No timestamp'
+                            formatted: (() => {
+                                if (!e.timestamp) return 'No timestamp';
+                                try {
+                                    const date = new Date(e.timestamp);
+                                    return isNaN(date.getTime()) ? 'Invalid timestamp' : date.toLocaleString();
+                                } catch (error) {
+                                    return 'Invalid timestamp';
+                                }
+                            })()
                         })));
                     }
                 } else {
@@ -277,8 +294,17 @@ export default function AnalyticsSettings() {
             console.warn('Could not load customer activities:', error);
         }
         
-        // Sort all events by timestamp
-        browserEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        // Sort all events by timestamp (safely handle invalid dates)
+        browserEvents.sort((a, b) => {
+            const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+            const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+            
+            // Handle invalid dates by treating them as very old
+            const timeA = isNaN(dateA.getTime()) ? 0 : dateA.getTime();
+            const timeB = isNaN(dateB.getTime()) ? 0 : dateB.getTime();
+            
+            return timeB - timeA; // Sort newest first
+        });
         
         // Track new events if auto-refresh is enabled
         if (autoRefresh && previousEventCount > 0) {

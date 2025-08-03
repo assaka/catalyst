@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Eye, ShoppingCart, Search, Heart, CreditCard, Package } from "lucide-react";
+import { Eye, ShoppingCart, Search, Heart, CreditCard, Package, RefreshCw } from "lucide-react";
 
 export default function CustomerActivityPage() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -36,7 +36,7 @@ export default function CustomerActivityPage() {
       }
       
       setStore(selectedStore);
-      const activitiesData = await CustomerActivity.filter({ store_id: selectedStore.id }, '-created_date');
+      const activitiesData = await CustomerActivity.filter({ store_id: selectedStore.id, limit: 100 });
       setActivities(activitiesData || []);
     } catch (error) {
       console.error("Error loading customer activity:", error);
@@ -51,10 +51,10 @@ export default function CustomerActivityPage() {
     const icons = {
       page_view: Eye,
       product_view: Package,
-      cart_add: ShoppingCart,
-      cart_remove: ShoppingCart,
-      checkout_start: CreditCard,
-      purchase: CreditCard,
+      add_to_cart: ShoppingCart,
+      remove_from_cart: ShoppingCart,
+      checkout_started: CreditCard,
+      order_completed: CreditCard,
       search: Search,
       wishlist_add: Heart
     };
@@ -65,10 +65,10 @@ export default function CustomerActivityPage() {
     const colors = {
       page_view: "bg-blue-100 text-blue-800",
       product_view: "bg-green-100 text-green-800",
-      cart_add: "bg-purple-100 text-purple-800",
-      cart_remove: "bg-red-100 text-red-800",
-      checkout_start: "bg-yellow-100 text-yellow-800",
-      purchase: "bg-emerald-100 text-emerald-800",
+      add_to_cart: "bg-purple-100 text-purple-800",
+      remove_from_cart: "bg-red-100 text-red-800",
+      checkout_started: "bg-yellow-100 text-yellow-800",
+      order_completed: "bg-emerald-100 text-emerald-800",
       search: "bg-gray-100 text-gray-800",
       wishlist_add: "bg-pink-100 text-pink-800"
     };
@@ -97,9 +97,21 @@ export default function CustomerActivityPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Customer Activity</h1>
-          <p className="text-gray-600 mt-1">Track customer behavior and interactions</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Customer Activity</h1>
+            <p className="text-gray-600 mt-1">Track customer behavior and interactions</p>
+          </div>
+          <Button 
+            onClick={loadData} 
+            disabled={loading}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
 
         <Card className="mb-6">
@@ -120,12 +132,11 @@ export default function CustomerActivityPage() {
                   <SelectItem value="all">All Activities</SelectItem>
                   <SelectItem value="page_view">Page Views</SelectItem>
                   <SelectItem value="product_view">Product Views</SelectItem>
-                  <SelectItem value="cart_add">Cart Additions</SelectItem>
-                  <SelectItem value="cart_remove">Cart Removals</SelectItem>
-                  <SelectItem value="checkout_start">Checkout Started</SelectItem>
-                  <SelectItem value="purchase">Purchases</SelectItem>
+                  <SelectItem value="add_to_cart">Add to Cart</SelectItem>
+                  <SelectItem value="remove_from_cart">Remove from Cart</SelectItem>
+                  <SelectItem value="checkout_started">Checkout Started</SelectItem>
+                  <SelectItem value="order_completed">Orders Completed</SelectItem>
                   <SelectItem value="search">Searches</SelectItem>
-                  <SelectItem value="wishlist_add">Wishlist Additions</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -152,7 +163,23 @@ export default function CustomerActivityPage() {
                             {activity.activity_type.replace('_', ' ')}
                           </Badge>
                           <span className="text-sm text-gray-500">
-                            {new Date(activity.created_date).toLocaleString()}
+                            {(() => {
+                              const timestamp = activity.created_at || activity.createdAt || activity.updated_at || activity.updatedAt;
+                              if (!timestamp) return 'No timestamp';
+                              try {
+                                const date = new Date(timestamp);
+                                if (isNaN(date.getTime())) return 'Invalid timestamp';
+                                return date.toLocaleString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  second: '2-digit'
+                                });
+                              } catch (e) {
+                                return 'Invalid timestamp';
+                              }
+                            })()}
                           </span>
                         </div>
                         <p className="text-sm font-medium text-gray-900">
