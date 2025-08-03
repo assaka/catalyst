@@ -105,6 +105,33 @@ export default function CategoryNav({ categories }) {
         }))
     });
 
+    // Render all descendants of a category with proper indentation
+    const renderCategoryDescendants = (category, depth = 0) => {
+        const items = [];
+        
+        // Add the category itself
+        items.push(
+            <DropdownMenuItem key={category.id} asChild>
+                <Link 
+                    to={createCategoryUrl(store.slug, category.slug)}
+                    className="w-full text-gray-700"
+                    style={{ paddingLeft: `${depth * 16 + 12}px` }}
+                >
+                    {depth > 0 && '→ '}{category.name}
+                </Link>
+            </DropdownMenuItem>
+        );
+        
+        // Add all children recursively
+        if (category.children && category.children.length > 0) {
+            category.children.forEach(child => {
+                items.push(...renderCategoryDescendants(child, depth + 1));
+            });
+        }
+        
+        return items;
+    };
+
     // Render category with children as dropdown
     const renderCategoryWithChildren = (category) => {
         if (category.children && category.children.length > 0) {
@@ -119,26 +146,16 @@ export default function CategoryNav({ categories }) {
                             <ChevronDown className="w-3 h-3" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56">
+                    <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto">
                         <DropdownMenuItem asChild>
                             <Link 
                                 to={createCategoryUrl(store.slug, category.slug)}
-                                className="w-full font-medium text-gray-900"
+                                className="w-full font-medium text-gray-900 border-b border-gray-200 pb-2 mb-2"
                             >
                                 View All {category.name}
                             </Link>
                         </DropdownMenuItem>
-                        <div className="border-t border-gray-200 my-1" />
-                        {category.children.map(child => (
-                            <DropdownMenuItem key={child.id} asChild>
-                                <Link 
-                                    to={createCategoryUrl(store.slug, child.slug)}
-                                    className="w-full text-gray-700"
-                                >
-                                    {child.name}
-                                </Link>
-                            </DropdownMenuItem>
-                        ))}
+                        {category.children.map(child => renderCategoryDescendants(child, 0))}
                     </DropdownMenuContent>
                 </DropdownMenu>
             );
