@@ -101,11 +101,9 @@ export default function CategoryNav({ categories }) {
                 // This category has a parent, add it to parent's children
                 const parent = categoryMap.get(category.parent_id);
                 parent.children.push(categoryNode);
-                console.log(`📎 Added child "${category.name}" to parent "${parent.name}"`);
             } else {
                 // This is a root category
                 rootCategories.push(categoryNode);
-                console.log(`🌱 Added root category "${category.name}"`);
             }
         });
 
