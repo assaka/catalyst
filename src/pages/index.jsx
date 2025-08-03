@@ -923,6 +923,18 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/heatmaps" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <HeatMaps />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/ab-testing" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ABTesting />
+                    </RoleProtectedRoute>
+                } />
+                
                 {/* =========================== */}
                 {/* SPECIAL ROUTES */}
                 {/* =========================== */}

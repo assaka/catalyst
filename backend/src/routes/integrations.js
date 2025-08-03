@@ -69,6 +69,14 @@ const loadAkeneoConfig = async (storeId, reqBody = null) => {
   // Try to load from database
   const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
   if (integrationConfig && integrationConfig.config_data) {
+    console.log('🔧 Using Akeneo config:', {
+      baseUrl: integrationConfig.config_data.baseUrl,
+      clientId: integrationConfig.config_data.clientId,
+      username: integrationConfig.config_data.username,
+      hasSecret: !!integrationConfig.config_data.clientSecret,
+      secretLength: integrationConfig.config_data.clientSecret?.length,
+      hasPassword: !!integrationConfig.config_data.password
+    });
     return integrationConfig.config_data;
   }
 
