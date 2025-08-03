@@ -159,10 +159,17 @@ export default function Categories() {
         
         const result = await Category.findAll(filters);
         const allCategories = Array.isArray(result) ? result : [];
+        console.log('📦 All categories loaded:', allCategories.map(cat => ({ 
+          id: cat.id, 
+          name: cat.name, 
+          parent_id: cat.parent_id,
+          isRoot: !cat.parent_id || cat.parent_id === null 
+        })));
         setCategories(allCategories);
         
-        // Extract root categories for the selector
-        const roots = allCategories.filter(cat => !cat.parent_id);
+        // Extract root categories for the selector (categories with no parent)
+        const roots = allCategories.filter(cat => !cat.parent_id || cat.parent_id === null);
+        console.log('🌱 Found root categories:', roots.map(cat => ({ id: cat.id, name: cat.name, parent_id: cat.parent_id })));
         setRootCategories(roots);
         
         setTotalItems(allCategories.length);
@@ -186,6 +193,13 @@ export default function Categories() {
         setTotalItems(result.pagination.total);
         setTotalPages(result.pagination.total_pages);
         setCurrentPage(result.pagination.current_page);
+        
+        // Also load all categories to extract root categories for the selector
+        const allCategoriesResult = await Category.findAll({ store_id: storeId });
+        const allCategories = Array.isArray(allCategoriesResult) ? allCategoriesResult : [];
+        const roots = allCategories.filter(cat => !cat.parent_id || cat.parent_id === null);
+        console.log('🌱 Found root categories (grid view):', roots.map(cat => ({ id: cat.id, name: cat.name, parent_id: cat.parent_id })));
+        setRootCategories(roots);
       }
     } catch (error) {
       console.error("Error loading categories:", error);
