@@ -33,6 +33,15 @@ class AkeneoClient {
    */
   getEncodedCredentials() {
     const credentials = `${this.clientId}:${this.clientSecret}`;
+    console.log('🔍 Encoding credentials:', {
+      clientId: this.clientId,
+      clientIdType: typeof this.clientId,
+      clientIdLength: this.clientId?.length,
+      clientSecretPresent: !!this.clientSecret,
+      clientSecretType: typeof this.clientSecret,
+      credentialsString: credentials.substring(0, 15) + '...',
+      base64Length: Buffer.from(credentials).toString('base64').length
+    });
     return Buffer.from(credentials).toString('base64');
   }
 
