@@ -155,6 +155,12 @@ class AkeneoClient {
       
       // More specific error message for 422
       if (error.response?.status === 422) {
+        console.error('🔴 422 Validation Error Details:');
+        console.error('Full response data:', JSON.stringify(error.response.data, null, 2));
+        console.error('Request endpoint:', endpoint);
+        console.error('Request params:', params);
+        console.error('Request headers:', config.headers);
+        
         const validationErrors = error.response?.data?.errors || [];
         const errorMessage = validationErrors.length > 0 
           ? `Validation errors: ${validationErrors.map(e => e.message || e).join(', ')}`
@@ -457,6 +463,21 @@ class AkeneoClient {
           return { success: true, message: 'Connection successful (categories and products-uuid)' };
         } catch (e1) {
           console.log(`Test 1 failed: ${e1.message}`);
+          console.log('Trying simplified products-uuid request...');
+          
+          // Try even simpler request with manual headers
+          try {
+            const response = await this.axiosInstance.get('/api/rest/v1/products-uuid', {
+              headers: {
+                'Authorization': `Bearer ${this.accessToken}`,
+                'Accept': 'application/json'
+              }
+            });
+            console.log('✅ Simplified products-uuid with application/json works');
+            return { success: true, message: 'Connection successful (simplified products-uuid)' };
+          } catch (e1b) {
+            console.log(`Simplified products-uuid also failed: ${e1b.message}`);
+          }
         }
         
         // Test 2: Products-uuid with minimal params
