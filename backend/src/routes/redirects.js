@@ -4,6 +4,58 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// @route   GET /api/redirects/check
+// @desc    Check for redirect (for storefront use)
+// @access  Public (no auth required)
+router.get('/check', async (req, res) => {
+  try {
+    const { store_id, path } = req.query;
+    
+    if (!store_id || !path) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'store_id and path are required' 
+      });
+    }
+
+    const redirect = await Redirect.findOne({
+      where: {
+        store_id,
+        from_url: path,
+        is_active: true
+      }
+    });
+
+    if (redirect) {
+      // Update hit count and last used timestamp if fields exist
+      if (redirect.hit_count !== undefined) {
+        await redirect.increment('hit_count');
+      }
+      if (redirect.last_used_at !== undefined) {
+        await redirect.update({ last_used_at: new Date() });
+      }
+      
+      res.json({
+        success: true,
+        found: true,
+        to_url: redirect.to_url,
+        type: redirect.type
+      });
+    } else {
+      res.json({ 
+        success: true,
+        found: false 
+      });
+    }
+  } catch (error) {
+    console.error('Error checking redirect:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to check redirect' 
+    });
+  }
+});
+
 // @route   GET /api/redirects
 // @desc    Get redirects for a store
 // @access  Private (admin only)
@@ -225,58 +277,6 @@ router.post('/slug-change', auth, async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Failed to create slug change redirect' 
-    });
-  }
-});
-
-// @route   GET /api/redirects/check
-// @desc    Check for redirect (for storefront use)
-// @access  Public
-router.get('/check', async (req, res) => {
-  try {
-    const { store_id, path } = req.query;
-    
-    if (!store_id || !path) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'store_id and path are required' 
-      });
-    }
-
-    const redirect = await Redirect.findOne({
-      where: {
-        store_id,
-        from_url: path,
-        is_active: true
-      }
-    });
-
-    if (redirect) {
-      // Update hit count and last used timestamp if fields exist
-      if (redirect.hit_count !== undefined) {
-        await redirect.increment('hit_count');
-      }
-      if (redirect.last_used_at !== undefined) {
-        await redirect.update({ last_used_at: new Date() });
-      }
-      
-      res.json({
-        success: true,
-        found: true,
-        to_url: redirect.to_url,
-        type: redirect.type
-      });
-    } else {
-      res.json({ 
-        success: true,
-        found: false 
-      });
-    }
-  } catch (error) {
-    console.error('Error checking redirect:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Failed to check redirect' 
     });
   }
 });
