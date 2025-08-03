@@ -100,8 +100,22 @@ export default function Settings() {
       });
       
       // Fetch fresh store data to ensure we have the latest settings
-      console.log('🔄 Fetching fresh store data from API...');
-      const freshStoreData = await retryApiCall(() => Store.findById(selectedStore.id));
+      console.log('🔄 Fetching fresh store data from API...', selectedStore.id);
+      let freshStoreData = null;
+      try {
+        const storeResponse = await retryApiCall(() => Store.findById(selectedStore.id));
+        // Store.findById returns an array, so get the first item
+        freshStoreData = Array.isArray(storeResponse) ? storeResponse[0] : storeResponse;
+        console.log('✅ Fresh store data received:', {
+          rawResponse: storeResponse,
+          isArray: Array.isArray(storeResponse),
+          extractedStore: freshStoreData
+        });
+      } catch (error) {
+        console.error('❌ Failed to fetch fresh store data:', error);
+        console.log('📋 Falling back to selectedStore data');
+        freshStoreData = selectedStore;
+      }
       
       console.log('🔍 Fresh store data from API:', {
         freshStoreId: freshStoreData?.id,
