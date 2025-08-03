@@ -15,8 +15,7 @@ class AkeneoClient {
       baseURL: this.baseUrl,
       timeout: 30000,
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/hal+json'
+        'Content-Type': 'application/json'
       }
     });
   }
@@ -41,7 +40,8 @@ class AkeneoClient {
       }, {
         headers: {
           'Authorization': `Basic ${this.getEncodedCredentials()}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       });
 
@@ -77,7 +77,8 @@ class AkeneoClient {
       }, {
         headers: {
           'Authorization': `Basic ${this.getEncodedCredentials()}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       });
 
@@ -124,14 +125,20 @@ class AkeneoClient {
       const config = {
         method,
         url: endpoint,
-        params
+        params,
+        headers: {}
       };
 
       if (data) {
         config.data = data;
       }
 
-      console.log(`🌐 Making ${method} request to ${endpoint}`, { params, hasData: !!data });
+      // Use application/hal+json for product endpoints, application/json for others
+      if (endpoint.includes('/products')) {
+        config.headers['Accept'] = 'application/hal+json';
+      }
+
+      console.log(`🌐 Making ${method} request to ${endpoint}`, { params, hasData: !!data, acceptHeader: config.headers['Accept'] || 'default' });
       const response = await this.axiosInstance.request(config);
       return response.data;
     } catch (error) {
