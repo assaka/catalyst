@@ -609,7 +609,7 @@ export default function StorefrontLayout({ children }) {
                         )}
                     </header>
 
-                    <nav className="hidden md:block bg-gray-50 border-b border-gray-200">
+                    <nav className={`${store?.settings?.expandAllMenuItems ? 'block' : 'hidden md:block'} bg-gray-50 border-b border-gray-200`}>
                         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                             <div className="flex justify-center py-3">
                                 <CategoryNav categories={categories} />
