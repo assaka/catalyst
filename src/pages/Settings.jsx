@@ -685,16 +685,44 @@ export default function Settings() {
                         const rootCategories = categories.filter(cat => {
                           // More comprehensive check for root categories
                           const parentId = cat.parent_id;
-                          const isRoot = !parentId || 
-                                        parentId === null || 
-                                        parentId === undefined || 
-                                        parentId === '' || 
-                                        parentId === 'null' || 
-                                        parentId === 'undefined';
-                          console.log(`🔍 Category "${cat.name}" parent_id="${parentId}" (${typeof parentId}) isRoot=${isRoot}`);
+                          
+                          // Check for various representations of "no parent"
+                          const isNullish = parentId === null || parentId === undefined;
+                          const isEmptyString = parentId === '' || parentId === 'null' || parentId === 'undefined';
+                          const isFalsy = !parentId && parentId !== 0; // Exclude 0 as a valid parent ID
+                          
+                          const isRoot = isNullish || isEmptyString || isFalsy;
+                          
+                          console.log(`🔍 Category "${cat.name}":`, {
+                            parent_id: parentId,
+                            parent_id_type: typeof parentId,
+                            parent_id_json: JSON.stringify(parentId),
+                            isNullish,
+                            isEmptyString,
+                            isFalsy,
+                            isRoot
+                          });
+                          
                           return isRoot;
                         });
-                        console.log('🌳 Root categories for dropdown:', rootCategories.map(c => ({ id: c.id, name: c.name, parent_id: c.parent_id })));
+                        
+                        console.log('🌳 Total categories:', categories.length);
+                        console.log('🌳 Root categories found:', rootCategories.length);
+                        console.log('🌳 Root categories for dropdown:', rootCategories.map(c => ({ 
+                          id: c.id, 
+                          name: c.name, 
+                          parent_id: c.parent_id,
+                          parent_id_type: typeof c.parent_id 
+                        })));
+                        
+                        if (rootCategories.length === 0) {
+                          console.warn('⚠️ No root categories found! All categories:', categories.map(c => ({
+                            name: c.name,
+                            parent_id: c.parent_id,
+                            parent_id_type: typeof c.parent_id
+                          })));
+                        }
+                        
                         return rootCategories
                           .sort((a, b) => a.name.localeCompare(b.name))
                           .map((category) => (
