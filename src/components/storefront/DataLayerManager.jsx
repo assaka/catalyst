@@ -1,6 +1,7 @@
 
 import { useEffect } from 'react';
 import { useStore } from './StoreProvider';
+import { CustomerActivity } from '@/api/entities';
 
 // Initialize dataLayer
 if (typeof window !== 'undefined' && !window.dataLayer) {
@@ -26,12 +27,12 @@ export const trackEvent = (eventName, eventData = {}) => {
   pushToDataLayer(event);
 };
 
-// Customer Activity Tracking - temporarily disabled until backend supports it
+// Customer Activity Tracking - re-enabled with proper backend support
+let sessionId = localStorage.getItem('guest_session_id');
+let userId = localStorage.getItem('customer_user_id');
+
 export const trackActivity = async (activityType, data = {}) => {
   try {
-    // Activity tracking disabled until backend provides proper customer activity endpoints
-    console.debug('Activity tracking disabled:', activityType, data);
-    return;
     
     if (!sessionId) {
       sessionId = `guest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -73,6 +74,7 @@ export const trackActivity = async (activityType, data = {}) => {
     
     // Only track if we have store_id to prevent validation errors
     if (storeId) {
+      console.log('📊 Tracking activity:', activityType, activityData);
       await CustomerActivity.create(activityData);
     } else {
       console.warn('Skipping activity tracking - no store_id available');
@@ -83,6 +85,98 @@ export const trackActivity = async (activityType, data = {}) => {
   }
 };
 
+// Enhanced event tracking functions
+export const trackProductView = (product) => {
+  trackEvent('view_item', {
+    item_id: product.id,
+    item_name: product.name,
+    item_category: product.category_name,
+    price: product.price,
+    currency: 'USD'
+  });
+  
+  trackActivity('product_view', {
+    product_id: product.id,
+    product_name: product.name,
+    product_price: product.price
+  });
+};
+
+export const trackAddToCart = (product, quantity = 1) => {
+  trackEvent('add_to_cart', {
+    currency: 'USD',
+    value: product.price * quantity,
+    items: [{
+      item_id: product.id,
+      item_name: product.name,
+      item_category: product.category_name,
+      quantity: quantity,
+      price: product.price
+    }]
+  });
+  
+  trackActivity('cart_add', {
+    product_id: product.id,
+    product_name: product.name,
+    quantity: quantity,
+    value: product.price * quantity
+  });
+};
+
+export const trackRemoveFromCart = (product, quantity = 1) => {
+  trackEvent('remove_from_cart', {
+    currency: 'USD',
+    value: product.price * quantity,
+    items: [{
+      item_id: product.id,
+      item_name: product.name,
+      item_category: product.category_name,
+      quantity: quantity,
+      price: product.price
+    }]
+  });
+  
+  trackActivity('cart_remove', {
+    product_id: product.id,
+    product_name: product.name,
+    quantity: quantity,
+    value: product.price * quantity
+  });
+};
+
+export const trackPurchase = (order) => {
+  trackEvent('purchase', {
+    transaction_id: order.id,
+    value: order.total,
+    currency: 'USD',
+    items: order.items?.map(item => ({
+      item_id: item.product_id,
+      item_name: item.product_name,
+      item_category: item.category_name,
+      quantity: item.quantity,
+      price: item.price
+    })) || []
+  });
+  
+  trackActivity('purchase', {
+    order_id: order.id,
+    order_total: order.total,
+    order_items_count: order.items?.length || 0
+  });
+};
+
+export const trackSearch = (query, results_count = 0) => {
+  trackEvent('search', {
+    search_term: query,
+    results_count: results_count
+  });
+  
+  trackActivity('search', {
+    search_query: query,
+    results_count: results_count
+  });
+};
+
 export default function DataLayerManager() {
   const { store, settings } = useStore();
 
@@ -90,6 +184,17 @@ export default function DataLayerManager() {
     // Set global store context for activity tracking
     if (store) {
       window.__STORE_CONTEXT__ = { store, settings };
+      
+      // Make tracking functions globally available
+      window.catalyst = {
+        trackProductView,
+        trackAddToCart,
+        trackRemoveFromCart,
+        trackPurchase,
+        trackSearch,
+        trackEvent,
+        trackActivity
+      };
     }
 
     // Initialize GTM dataLayer with basic info
@@ -111,8 +216,9 @@ export default function DataLayerManager() {
       });
     }
 
-    // Add event listener for debugging
+    // Add enhanced event listener for debugging
     const handleDataLayerPush = (e) => {
+      console.log('📊 DataLayer Event:', e.detail);
     };
     
     window.addEventListener('dataLayerPush', handleDataLayerPush);

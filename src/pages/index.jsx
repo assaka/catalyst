@@ -89,6 +89,8 @@ import OrderCancel from "./OrderCancel";
 
 import CustomerActivity from "./CustomerActivity";
 
+import Analytics from "./Analytics";
+
 import CookieConsent from "./CookieConsent";
 
 import TeamPage from "./TeamPage";
@@ -187,6 +189,8 @@ const PAGES = {
     
     CustomerActivity: CustomerActivity,
     
+    Analytics: Analytics,
+    
     CookieConsent: CookieConsent,
     
     TeamPage: TeamPage,
@@ -222,6 +226,7 @@ function _getCurrentPage(url) {
         'cms-pages': 'CmsPages',
         'cookie-consent': 'CookieConsent',
         'customer-activity': 'CustomerActivity',
+        'analytics-dashboard': 'Analytics',
         'marketplace-export': 'MarketplaceExport',
         'seo-tools': 'SeoTools',
         'analytics': 'AnalyticsSettings',
@@ -589,6 +594,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/analytics-dashboard" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Analytics />
+                    </RoleProtectedRoute>
+                } />
+                
                 <Route path="/admin/cookie-consent" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <CookieConsent />
@@ -874,6 +885,12 @@ function PagesContent() {
                 <Route path="/admin/customer-activity" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <CustomerActivity />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/analytics-dashboard" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Analytics />
                     </RoleProtectedRoute>
                 } />
                 
