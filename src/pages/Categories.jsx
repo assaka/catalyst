@@ -7,7 +7,6 @@ import { clearCategoriesCache } from "@/utils/cacheUtils";
 import { 
   Tag, 
   Plus, 
-  Search, 
   Edit,
   Trash2,
   Eye,
@@ -44,7 +43,6 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 
 import CategoryForm from "../components/categories/CategoryForm";
@@ -64,7 +62,6 @@ export default function Categories() {
   const [expandedCategories, setExpandedCategories] = useState(new Set());
   const [selectedRootCategory, setSelectedRootCategory] = useState('');
   const [excludeRootFromMenu, setExcludeRootFromMenu] = useState(false);
-  const [expandAllMenuItems, setExpandAllMenuItems] = useState(false);
   const [rootCategories, setRootCategories] = useState([]);
   const [storeSettings, setStoreSettings] = useState({});
 
@@ -103,7 +100,6 @@ export default function Categories() {
         setStoreSettings(data.settings || {});
         setSelectedRootCategory(data.settings?.rootCategoryId || '');
         setExcludeRootFromMenu(data.settings?.excludeRootFromMenu || false);
-        setExpandAllMenuItems(data.settings?.expandAllMenuItems || false);
       }
     } catch (error) {
       console.error('Error loading store settings:', error);
@@ -231,13 +227,25 @@ export default function Categories() {
         }
       }
       
-      // Apply search filter if present
-      if (searchQuery.trim()) {
-        const searchTerm = searchQuery.trim().toLowerCase();
-        filteredCategories = filteredCategories.filter(cat => 
-          cat.name.toLowerCase().includes(searchTerm) ||
-          cat.description?.toLowerCase().includes(searchTerm)
-        );
+      // Apply status filter if present
+      if (searchQuery && searchQuery !== '') {
+        switch (searchQuery) {
+          case 'active':
+            filteredCategories = filteredCategories.filter(cat => cat.is_active);
+            break;
+          case 'inactive':
+            filteredCategories = filteredCategories.filter(cat => !cat.is_active);
+            break;
+          case 'hidden':
+            filteredCategories = filteredCategories.filter(cat => cat.hide_in_menu);
+            break;
+          case 'visible':
+            filteredCategories = filteredCategories.filter(cat => !cat.hide_in_menu);
+            break;
+          default:
+            // No additional filtering for empty string or unknown values
+            break;
+        }
       }
       
       console.log(`🔍 Filtered categories: ${filteredCategories.length} (from ${allCategories.length} total)`);
@@ -348,10 +356,10 @@ export default function Categories() {
   const paginatedCategories = categories;
   const startIndex = (currentPage - 1) * itemsPerPage;
 
-  // Reset to first page and reload data when search changes
+  // Reset to first page and reload data when filter changes
   useEffect(() => {
     if (selectedStore) {
-      loadCategories(1); // Always load first page when search changes
+      loadCategories(1); // Always load first page when filter changes
     }
   }, [searchQuery]);
 
@@ -752,38 +760,29 @@ export default function Categories() {
                     </SelectContent>
                   </Select>
                 </div>
-                
-                <div className="space-y-3 pt-6">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="expand-all-menu-items"
-                      checked={expandAllMenuItems}
-                      onCheckedChange={(checked) => {
-                        setExpandAllMenuItems(checked);
-                        saveStoreSettings({ expandAllMenuItems: checked });
-                      }}
-                    />
-                    <Label htmlFor="expand-all-menu-items" className="text-sm">
-                      Always show all subcategories (no hover/click required)
-                    </Label>
-                  </div>
-                  <p className="text-xs text-gray-500 ml-6">
-                    When enabled, all subcategories are always visible. When disabled, hover or click to see subcategories.
-                  </p>
-                </div>
               </div>
               
-              {/* Search and View Toggle */}
+              {/* Filter and View Toggle */}
               <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    placeholder="Search categories..."
+                <div className="flex-1 max-w-md">
+                  <Label htmlFor="category-filter" className="text-sm font-medium mb-2 block">
+                    Filter Categories
+                  </Label>
+                  <Select
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                    disabled={!canAddCategory && categories.length === 0}
-                  />
+                    onValueChange={(value) => setSearchQuery(value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Categories</SelectItem>
+                      <SelectItem value="active">Active Only</SelectItem>
+                      <SelectItem value="inactive">Inactive Only</SelectItem>
+                      <SelectItem value="hidden">Hidden from Menu</SelectItem>
+                      <SelectItem value="visible">Visible in Menu</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -839,7 +838,7 @@ export default function Categories() {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
                     <p className="text-gray-600 mb-6">
                       {searchQuery 
-                        ? "Try adjusting your search terms"
+                        ? "Try adjusting your filter selection"
                         : selectedRootCategory 
                         ? "No categories found under the selected root category"
                         : "Start by creating your first product category"}
@@ -960,7 +959,7 @@ export default function Categories() {
               <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
               <p className="text-gray-600 mb-6">
                 {searchQuery 
-                  ? "Try adjusting your search terms"
+                  ? "Try adjusting your filter selection"
                   : "Start by creating your first product category"}
               </p>
               <Button

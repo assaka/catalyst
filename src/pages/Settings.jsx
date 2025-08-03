@@ -332,6 +332,7 @@ export default function Settings() {
           // Root category settings
           rootCategoryId: settings.rootCategoryId || storeData.root_category_id || null,
           excludeRootFromMenu: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false,
+          expandAllMenuItems: settings.hasOwnProperty('expandAllMenuItems') ? settings.expandAllMenuItems : false,
         }
       });
       
@@ -480,6 +481,7 @@ export default function Settings() {
         // Root category settings
         rootCategoryId: store.settings.rootCategoryId || store.root_category_id,
         excludeRootFromMenu: store.settings.excludeRootFromMenu || false,
+        expandAllMenuItems: store.settings.expandAllMenuItems || false,
         
         seo_settings: {
           meta_title_suffix: store.settings.seo_settings?.meta_title_suffix || '',
@@ -899,28 +901,45 @@ export default function Settings() {
                 </div>
 
                 {store?.settings?.rootCategoryId && (
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <Label htmlFor="exclude_root_from_menu" className="font-medium">Exclude Root Category from Navigation</Label>
-                      <p className="text-sm text-gray-500">Hide the root category itself from navigation menus, showing only its children</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <Label htmlFor="exclude_root_from_menu" className="font-medium">Exclude Root Category from Navigation</Label>
+                        <p className="text-sm text-gray-500">Hide the root category itself from navigation menus, showing only its children</p>
+                      </div>
+                      {(() => {
+                        const isChecked = store?.settings?.excludeRootFromMenu || false;
+                        console.log('🎯 Exclude root checkbox value:', {
+                          excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
+                          isChecked,
+                          settingsObject: store?.settings
+                        });
+                        return null;
+                      })()}
+                      <Switch 
+                        id="exclude_root_from_menu" 
+                        checked={store?.settings?.excludeRootFromMenu || false} 
+                        onCheckedChange={(checked) => {
+                          console.log('🔄 Exclude root changed to:', checked);
+                          handleSettingsChange('excludeRootFromMenu', checked);
+                        }} 
+                      />
                     </div>
-                    {(() => {
-                      const isChecked = store?.settings?.excludeRootFromMenu || false;
-                      console.log('🎯 Exclude root checkbox value:', {
-                        excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
-                        isChecked,
-                        settingsObject: store?.settings
-                      });
-                      return null;
-                    })()}
-                    <Switch 
-                      id="exclude_root_from_menu" 
-                      checked={store?.settings?.excludeRootFromMenu || false} 
-                      onCheckedChange={(checked) => {
-                        console.log('🔄 Exclude root changed to:', checked);
-                        handleSettingsChange('excludeRootFromMenu', checked);
-                      }} 
-                    />
+
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <Label htmlFor="expand_all_menu_items" className="font-medium">Always Show All Subcategories</Label>
+                        <p className="text-sm text-gray-500">Display all subcategories without requiring hover or click to expand</p>
+                      </div>
+                      <Switch 
+                        id="expand_all_menu_items" 
+                        checked={store?.settings?.expandAllMenuItems || false} 
+                        onCheckedChange={(checked) => {
+                          console.log('🔄 Expand all menu items changed to:', checked);
+                          handleSettingsChange('expandAllMenuItems', checked);
+                        }} 
+                      />
+                    </div>
                   </div>
                 )}
               </CardContent>
