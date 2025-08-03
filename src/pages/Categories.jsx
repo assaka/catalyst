@@ -136,6 +136,58 @@ export default function Categories() {
     }
   };
 
+  const loadAllCategories = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) return [];
+
+    try {
+      // Load ALL categories without pagination
+      let allCategories = [];
+      try {
+        // First try with large limit
+        const result = await Category.findAll({ 
+          store_id: storeId,
+          limit: 10000,
+          order_by: "sort_order"
+        });
+        allCategories = Array.isArray(result) ? result : [];
+      } catch (error) {
+        console.warn('Failed to load all categories with limit, trying paginated approach:', error);
+        
+        // Fallback: Load all categories using pagination
+        let currentPage = 1;
+        let hasMore = true;
+        const batchSize = 100;
+        
+        while (hasMore) {
+          try {
+            const batch = await Category.findPaginated(currentPage, batchSize, { 
+              store_id: storeId,
+              order_by: "sort_order"
+            });
+            
+            if (batch && batch.data && batch.data.length > 0) {
+              allCategories = allCategories.concat(batch.data);
+              hasMore = currentPage < (batch.pagination?.total_pages || 1);
+              currentPage++;
+            } else {
+              hasMore = false;
+            }
+          } catch (batchError) {
+            console.error(`Error loading batch ${currentPage}:`, batchError);
+            hasMore = false;
+          }
+        }
+      }
+      
+      console.log(`📦 Total categories loaded: ${allCategories.length}`);
+      return allCategories;
+    } catch (error) {
+      console.error("Error loading all categories:", error);
+      return [];
+    }
+  };
+
   const loadCategories = async (page = currentPage) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
@@ -147,61 +199,65 @@ export default function Categories() {
     try {
       setLoading(true);
       
-      // For hierarchical view, load all categories at once to build the tree
-      if (viewMode === 'hierarchical') {
-        const filters = { 
-          store_id: storeId, 
-          order_by: "sort_order"
+      // Always load all categories first to extract root categories and apply filtering
+      const allCategories = await loadAllCategories();
+      
+      // Extract root categories for the selector (categories with no parent)
+      const roots = allCategories.filter(cat => !cat.parent_id || cat.parent_id === null);
+      console.log('🌱 Found root categories:', roots.map(cat => ({ id: cat.id, name: cat.name, parent_id: cat.parent_id })));
+      setRootCategories(roots);
+      
+      // Apply root category filter if selected
+      let filteredCategories = allCategories;
+      if (selectedRootCategory) {
+        const findDescendants = (parentId, categories) => {
+          const descendants = [];
+          const children = categories.filter(cat => cat.parent_id === parentId);
+          
+          children.forEach(child => {
+            descendants.push(child);
+            descendants.push(...findDescendants(child.id, categories));
+          });
+          
+          return descendants;
         };
         
-        // Add search filter if present
-        if (searchQuery.trim()) {
-          filters.search = searchQuery.trim();
+        const rootCategory = allCategories.find(cat => cat.id === selectedRootCategory);
+        if (rootCategory) {
+          const descendants = findDescendants(selectedRootCategory, allCategories);
+          filteredCategories = [rootCategory, ...descendants];
+        } else {
+          filteredCategories = [];
         }
-        
-        const result = await Category.findAll(filters);
-        const allCategories = Array.isArray(result) ? result : [];
-        console.log('📦 All categories loaded:', allCategories.map(cat => ({ 
-          id: cat.id, 
-          name: cat.name, 
-          parent_id: cat.parent_id,
-          isRoot: !cat.parent_id || cat.parent_id === null 
-        })));
-        setCategories(allCategories);
-        
-        // Extract root categories for the selector (categories with no parent)
-        const roots = allCategories.filter(cat => !cat.parent_id || cat.parent_id === null);
-        console.log('🌱 Found root categories:', roots.map(cat => ({ id: cat.id, name: cat.name, parent_id: cat.parent_id })));
-        setRootCategories(roots);
-        
-        setTotalItems(allCategories.length);
+      }
+      
+      // Apply search filter if present
+      if (searchQuery.trim()) {
+        const searchTerm = searchQuery.trim().toLowerCase();
+        filteredCategories = filteredCategories.filter(cat => 
+          cat.name.toLowerCase().includes(searchTerm) ||
+          cat.description?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
+      console.log(`🔍 Filtered categories: ${filteredCategories.length} (from ${allCategories.length} total)`);
+      
+      if (viewMode === 'hierarchical') {
+        // For hierarchical view, show all filtered categories
+        setCategories(filteredCategories);
+        setTotalItems(filteredCategories.length);
         setTotalPages(1);
         setCurrentPage(1);
       } else {
-        // For grid view, use pagination
-        const filters = { 
-          store_id: storeId, 
-          order_by: "sort_order"
-        };
+        // For grid view, apply pagination to filtered results
+        const startIndex = (page - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedCategories = filteredCategories.slice(startIndex, endIndex);
         
-        // Add search filter if present
-        if (searchQuery.trim()) {
-          filters.search = searchQuery.trim();
-        }
-        
-        const result = await Category.findPaginated(page, itemsPerPage, filters);
-        
-        setCategories(result.data || []);
-        setTotalItems(result.pagination.total);
-        setTotalPages(result.pagination.total_pages);
-        setCurrentPage(result.pagination.current_page);
-        
-        // Also load all categories to extract root categories for the selector
-        const allCategoriesResult = await Category.findAll({ store_id: storeId });
-        const allCategories = Array.isArray(allCategoriesResult) ? allCategoriesResult : [];
-        const roots = allCategories.filter(cat => !cat.parent_id || cat.parent_id === null);
-        console.log('🌱 Found root categories (grid view):', roots.map(cat => ({ id: cat.id, name: cat.name, parent_id: cat.parent_id })));
-        setRootCategories(roots);
+        setCategories(paginatedCategories);
+        setTotalItems(filteredCategories.length);
+        setTotalPages(Math.ceil(filteredCategories.length / itemsPerPage));
+        setCurrentPage(page);
       }
     } catch (error) {
       console.error("Error loading categories:", error);
@@ -305,6 +361,13 @@ export default function Categories() {
       loadCategories();
     }
   }, [viewMode]);
+
+  // Reload when root category selection changes
+  useEffect(() => {
+    if (selectedStore) {
+      loadCategories(1); // Reset to first page when filter changes
+    }
+  }, [selectedRootCategory]);
 
   // Filter categories based on selected root category
   const getFilteredCategories = () => {
@@ -691,20 +754,6 @@ export default function Categories() {
                 </div>
                 
                 <div className="space-y-3 pt-6">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="exclude-root-from-menu"
-                      checked={excludeRootFromMenu}
-                      onCheckedChange={(checked) => {
-                        setExcludeRootFromMenu(checked);
-                        saveStoreSettings({ excludeRootFromMenu: checked });
-                      }}
-                    />
-                    <Label htmlFor="exclude-root-from-menu" className="text-sm">
-                      Hide root category from navigation menu
-                    </Label>
-                  </div>
-                  
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="expand-all-menu-items"
