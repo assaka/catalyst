@@ -130,26 +130,39 @@ export default function CategoryNav({ categories }) {
     });
 
     // Render all descendants of a category with proper indentation
-    const renderCategoryDescendants = (category, depth = 0) => {
+    const renderCategoryDescendants = (category, depth = 0, isDropdown = true) => {
         const items = [];
         
         // Add the category itself
-        items.push(
-            <DropdownMenuItem key={category.id} asChild>
+        if (isDropdown) {
+            items.push(
+                <DropdownMenuItem key={category.id} asChild>
+                    <Link 
+                        to={createCategoryUrl(store.slug, category.slug)}
+                        className="w-full text-gray-700"
+                        style={{ paddingLeft: `${depth * 16 + 12}px` }}
+                    >
+                        {depth > 0 && '→ '}{category.name}
+                    </Link>
+                </DropdownMenuItem>
+            );
+        } else {
+            items.push(
                 <Link 
+                    key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="w-full text-gray-700"
+                    className="block w-full text-gray-700 hover:bg-gray-100 px-3 py-2 text-sm"
                     style={{ paddingLeft: `${depth * 16 + 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
                 </Link>
-            </DropdownMenuItem>
-        );
+            );
+        }
         
         // Add all children recursively
         if (category.children && category.children.length > 0) {
             category.children.forEach(child => {
-                items.push(...renderCategoryDescendants(child, depth + 1));
+                items.push(...renderCategoryDescendants(child, depth + 1, isDropdown));
             });
         }
         
@@ -277,10 +290,10 @@ export default function CategoryNav({ categories }) {
                                     </Link>
                                     {/* Always visible submenu */}
                                     <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                                        <div className="py-2">
+                                        <div className="py-1">
                                             {category.children.map(child => (
                                                 <div key={child.id}>
-                                                    {renderCategoryDescendants(child, 0)}
+                                                    {renderCategoryDescendants(child, 0, false)}
                                                 </div>
                                             ))}
                                         </div>
