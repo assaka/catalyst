@@ -28,7 +28,7 @@ export default function CategoryNav({ categories }) {
         let visibleCategories = categories.filter(c => !c.hide_in_menu);
 
         // If store has a root category, filter to only show that category tree
-        if (store?.root_category_id && store.root_category_id !== 'none') {
+        if (store?.settings?.rootCategoryId && store.settings.rootCategoryId !== 'none') {
             const filterCategoryTree = (categoryId, allCategories) => {
                 const children = allCategories.filter(c => c.parent_id === categoryId);
                 let result = children.slice(); // Copy array
@@ -41,13 +41,19 @@ export default function CategoryNav({ categories }) {
             };
             
             // Include the root category itself and all its descendants
-            const rootCategory = visibleCategories.find(c => c.id === store.root_category_id);
+            const rootCategory = visibleCategories.find(c => c.id === store.settings.rootCategoryId);
             if (rootCategory) {
-                const descendants = filterCategoryTree(store.root_category_id, visibleCategories);
-                visibleCategories = [rootCategory, ...descendants];
+                const descendants = filterCategoryTree(store.settings.rootCategoryId, visibleCategories);
+                
+                // Check if we should exclude root category from menu
+                if (store.settings.excludeRootFromMenu) {
+                    visibleCategories = descendants; // Only show descendants, not the root
+                } else {
+                    visibleCategories = [rootCategory, ...descendants]; // Include root and descendants
+                }
             } else {
                 // If root category not found, show empty navigation
-                console.warn('Root category not found:', store.root_category_id);
+                console.warn('Root category not found:', store.settings.rootCategoryId);
                 visibleCategories = [];
             }
         }
@@ -87,7 +93,8 @@ export default function CategoryNav({ categories }) {
     // Debug logging for navigation
     console.log('🔧 CategoryNav debug:', {
         totalCategories: categories.length,
-        rootCategoryId: store?.root_category_id,
+        rootCategoryId: store?.settings?.rootCategoryId,
+        excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
         rootCategoriesCount: rootCategories.length,
         rootCategories: rootCategories.map(c => ({
             id: c.id,

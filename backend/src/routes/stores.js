@@ -895,4 +895,94 @@ router.delete('/:id', authorize(['admin', 'store_owner']), async (req, res) => {
   }
 });
 
+// @route   GET /api/stores/:id/settings
+// @desc    Get store settings
+// @access  Private
+router.get('/:id/settings', authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const store = await Store.findByPk(req.params.id);
+    
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Check ownership or team access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      settings: store.settings || {}
+    });
+  } catch (error) {
+    console.error('Get store settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
+// @route   PUT /api/stores/:id/settings
+// @desc    Update store settings
+// @access  Private
+router.put('/:id/settings', authorize(['admin', 'store_owner']), async (req, res) => {
+  try {
+    const store = await Store.findByPk(req.params.id);
+    
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Check ownership or team access
+    if (req.user.role !== 'admin') {
+      const { checkUserStoreAccess } = require('../utils/storeAccess');
+      const access = await checkUserStoreAccess(req.user.id, store.id);
+      
+      if (!access) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied'
+        });
+      }
+    }
+
+    // Merge with existing settings
+    const currentSettings = store.settings || {};
+    const mergedSettings = {
+      ...currentSettings,
+      ...req.body.settings
+    };
+    
+    await store.update({ settings: mergedSettings });
+
+    res.json({
+      success: true,
+      message: 'Store settings updated successfully',
+      settings: mergedSettings
+    });
+  } catch (error) {
+    console.error('Update store settings error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 module.exports = router;

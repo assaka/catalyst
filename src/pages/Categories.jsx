@@ -17,7 +17,9 @@ import {
   X,
   Folder,
   FolderOpen,
-  LayoutGrid
+  LayoutGrid,
+  Settings,
+  TreePine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +44,8 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 import CategoryForm from "../components/categories/CategoryForm";
 
@@ -58,10 +62,15 @@ export default function Categories() {
   const [totalPages, setTotalPages] = useState(0);
   const [viewMode, setViewMode] = useState('hierarchical'); // 'hierarchical' or 'grid'
   const [expandedCategories, setExpandedCategories] = useState(new Set());
+  const [selectedRootCategory, setSelectedRootCategory] = useState('');
+  const [excludeRootFromMenu, setExcludeRootFromMenu] = useState(false);
+  const [rootCategories, setRootCategories] = useState([]);
+  const [storeSettings, setStoreSettings] = useState({});
 
   useEffect(() => {
     if (selectedStore) {
       loadCategories();
+      loadStoreSettings();
     }
   }, [selectedStore]);
 
@@ -76,6 +85,54 @@ export default function Categories() {
     window.addEventListener('storeSelectionChanged', handleStoreChange);
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
+
+  const loadStoreSettings = async () => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) return;
+
+    try {
+      const response = await fetch(`/api/stores/${storeId}/settings`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setStoreSettings(data.settings || {});
+        setSelectedRootCategory(data.settings?.rootCategoryId || '');
+        setExcludeRootFromMenu(data.settings?.excludeRootFromMenu || false);
+      }
+    } catch (error) {
+      console.error('Error loading store settings:', error);
+    }
+  };
+
+  const saveStoreSettings = async (newSettings) => {
+    const storeId = getSelectedStoreId();
+    if (!storeId) return;
+
+    try {
+      const response = await fetch(`/api/stores/${storeId}/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ settings: { ...storeSettings, ...newSettings } })
+      });
+      
+      if (response.ok) {
+        setStoreSettings(prev => ({ ...prev, ...newSettings }));
+        // Clear cache to update navigation menus
+        clearCategoriesCache(storeId);
+      } else {
+        console.error('Failed to save store settings');
+      }
+    } catch (error) {
+      console.error('Error saving store settings:', error);
+    }
+  };
 
   const loadCategories = async (page = currentPage) => {
     const storeId = getSelectedStoreId();
@@ -101,8 +158,14 @@ export default function Categories() {
         }
         
         const result = await Category.findAll(filters);
-        setCategories(Array.isArray(result) ? result : []);
-        setTotalItems(Array.isArray(result) ? result.length : 0);
+        const allCategories = Array.isArray(result) ? result : [];
+        setCategories(allCategories);
+        
+        // Extract root categories for the selector
+        const roots = allCategories.filter(cat => !cat.parent_id);
+        setRootCategories(roots);
+        
+        setTotalItems(allCategories.length);
         setTotalPages(1);
         setCurrentPage(1);
       } else {
@@ -227,18 +290,44 @@ export default function Categories() {
     }
   }, [viewMode]);
 
+  // Filter categories based on selected root category
+  const getFilteredCategories = () => {
+    if (!selectedRootCategory) {
+      return categories;
+    }
+    
+    // Find all categories that are descendants of the selected root
+    const findDescendants = (parentId, allCategories) => {
+      const descendants = [];
+      const children = allCategories.filter(cat => cat.parent_id === parentId);
+      
+      children.forEach(child => {
+        descendants.push(child);
+        descendants.push(...findDescendants(child.id, allCategories));
+      });
+      
+      return descendants;
+    };
+    
+    const rootCategory = categories.find(cat => cat.id === selectedRootCategory);
+    if (!rootCategory) return categories;
+    
+    const descendants = findDescendants(selectedRootCategory, categories);
+    return [rootCategory, ...descendants];
+  };
+
   // Build hierarchical tree from flat category list
-  const buildCategoryTree = (categories) => {
+  const buildCategoryTree = (categoriesToBuild) => {
     const categoryMap = new Map();
     const rootCategories = [];
 
     // First, create a map of all categories
-    categories.forEach(category => {
+    categoriesToBuild.forEach(category => {
       categoryMap.set(category.id, { ...category, children: [] });
     });
 
     // Then, build the tree structure
-    categories.forEach(category => {
+    categoriesToBuild.forEach(category => {
       const categoryNode = categoryMap.get(category.id);
       if (category.parent_id && categoryMap.has(category.parent_id)) {
         // This category has a parent, add it to parent's children
@@ -552,39 +641,85 @@ export default function Categories() {
           </Button>
         </div>
 
-        {/* Search and View Toggle */}
+        {/* Root Category Selector and Settings */}
         <Card className="material-elevation-1 border-0 mb-6">
           <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <Input
-                  placeholder="Search categories..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                  disabled={!canAddCategory && categories.length === 0}
-                />
+            <div className="space-y-4">
+              {/* Root Category Selection */}
+              <div className="flex flex-col md:flex-row gap-4 items-start">
+                <div className="flex-1">
+                  <Label htmlFor="root-category" className="text-sm font-medium mb-2 flex items-center gap-2">
+                    <TreePine className="w-4 h-4" />
+                    Root Category Filter
+                  </Label>
+                  <Select
+                    value={selectedRootCategory}
+                    onValueChange={(value) => {
+                      setSelectedRootCategory(value);
+                      saveStoreSettings({ rootCategoryId: value });
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select root category to filter" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Show All Categories</SelectItem>
+                      {rootCategories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2 pt-6">
+                  <Checkbox
+                    id="exclude-root-from-menu"
+                    checked={excludeRootFromMenu}
+                    onCheckedChange={(checked) => {
+                      setExcludeRootFromMenu(checked);
+                      saveStoreSettings({ excludeRootFromMenu: checked });
+                    }}
+                  />
+                  <Label htmlFor="exclude-root-from-menu" className="text-sm">
+                    Hide root category from navigation menu
+                  </Label>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant={viewMode === 'hierarchical' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('hierarchical')}
-                  className="flex items-center space-x-2"
-                >
-                  <Folder className="w-4 h-4" />
-                  <span>Tree View</span>
-                </Button>
-                <Button
-                  variant={viewMode === 'grid' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setViewMode('grid')}
-                  className="flex items-center space-x-2"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  <span>Grid View</span>
-                </Button>
+              
+              {/* Search and View Toggle */}
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <Input
+                    placeholder="Search categories..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                    disabled={!canAddCategory && categories.length === 0}
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant={viewMode === 'hierarchical' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('hierarchical')}
+                    className="flex items-center space-x-2"
+                  >
+                    <Folder className="w-4 h-4" />
+                    <span>Tree View</span>
+                  </Button>
+                  <Button
+                    variant={viewMode === 'grid' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setViewMode('grid')}
+                    className="flex items-center space-x-2"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span>Grid View</span>
+                  </Button>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -608,19 +743,26 @@ export default function Categories() {
           {viewMode === 'hierarchical' ? (
             /* Hierarchical Tree View */
             <div className="space-y-0.5 min-h-[400px]">
-              {buildCategoryTree(categories).length > 0 ? (
-                renderCategoryTree(buildCategoryTree(categories))
-              ) : (
-                <div className="text-center py-12">
-                  <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
-                  <p className="text-gray-600 mb-6">
-                    {searchQuery 
-                      ? "Try adjusting your search terms"
-                      : "Start by creating your first product category"}
-                  </p>
-                </div>
-              )}
+              {(() => {
+                const filteredCategories = getFilteredCategories();
+                const categoryTree = buildCategoryTree(filteredCategories);
+                return categoryTree.length > 0 ? (
+                  renderCategoryTree(categoryTree)
+                ) : (
+                  <div className="text-center py-12">
+                    <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
+                    <p className="text-gray-600 mb-6">
+                      {searchQuery 
+                        ? "Try adjusting your search terms"
+                        : selectedRootCategory 
+                        ? "No categories found under the selected root category"
+                        : "Start by creating your first product category"}
+                    </p>
+                  </div>
+                );
+              })()
+            }
             </div>
           ) : (
             /* Grid View */
