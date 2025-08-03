@@ -653,17 +653,18 @@ export default function Categories() {
                     Root Category Filter
                   </Label>
                   <Select
-                    value={selectedRootCategory}
+                    value={selectedRootCategory || "all"}
                     onValueChange={(value) => {
-                      setSelectedRootCategory(value);
-                      saveStoreSettings({ rootCategoryId: value });
+                      const newValue = value === "all" ? "" : value;
+                      setSelectedRootCategory(newValue);
+                      saveStoreSettings({ rootCategoryId: newValue });
                     }}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select root category to filter" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Show All Categories</SelectItem>
+                      <SelectItem value="all">Show All Categories</SelectItem>
                       {rootCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
