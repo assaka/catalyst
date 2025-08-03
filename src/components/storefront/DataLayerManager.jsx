@@ -75,13 +75,75 @@ export const trackActivity = async (activityType, data = {}) => {
     // Only track if we have store_id to prevent validation errors
     if (storeId) {
       console.log('📊 Tracking activity:', activityType, activityData);
-      await CustomerActivity.create(activityData);
+      
+      try {
+        // Use direct fetch instead of CustomerActivity.create to avoid auth issues
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+        const apiUrl = `${apiBaseUrl}/api/customer-activity`;
+        
+        console.log('🌐 Environment variables check:', {
+          VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+          apiBaseUrl: apiBaseUrl,
+          finalApiUrl: apiUrl
+        });
+        
+        console.log('🌐 Sending POST request to:', apiUrl);
+        console.log('📦 Request payload:', JSON.stringify(activityData, null, 2));
+        
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(activityData),
+          credentials: 'include'
+        });
+        
+        console.log('📡 Response status:', response.status, response.statusText);
+        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ API Error response:', errorText);
+          console.error('❌ Full response details:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+            body: errorText
+          });
+          throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
+        }
+        
+        const responseData = await response.json();
+        console.log('✅ Activity tracked successfully:', responseData);
+        
+        // Additional verification
+        if (responseData.success && responseData.data && responseData.data.id) {
+          console.log('🎯 Customer activity record created with ID:', responseData.data.id);
+        } else {
+          console.warn('⚠️ Unexpected response format:', responseData);
+        }
+        
+      } catch (apiError) {
+        console.error('❌ Complete API Error details:', {
+          error: apiError,
+          message: apiError.message,
+          stack: apiError.stack,
+          apiUrl: apiUrl,
+          activityData: activityData
+        });
+        
+        // Check if it's a network error
+        if (apiError.name === 'TypeError' && apiError.message.includes('fetch')) {
+          console.error('🚨 Network connectivity issue detected!');
+        }
+      }
     } else {
       console.warn('Skipping activity tracking - no store_id available');
     }
     
   } catch (error) {
-    console.warn('Failed to track activity:', error);
+    console.error('❌ Failed to track activity:', error);
   }
 };
 

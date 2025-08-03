@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customer Activity Tracking Test</title>
+</head>
+<body>
+    <h1>Customer Activity Tracking Test</h1>
+    <button onclick="testTracking()">Test Tracking</button>
+    <div id="results"></div>
+
+    <script>
+        async function testTracking() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Testing tracking...</p>';
+            
+            try {
+                const testData = {
+                    session_id: 'test_html_' + Date.now(),
+                    store_id: '157d4590-49bf-4b0b-bd77-abe131909528',
+                    activity_type: 'page_view',
+                    page_url: window.location.href,
+                    referrer: document.referrer,
+                    user_agent: navigator.userAgent,
+                    metadata: { test: true, source: 'html_test' }
+                };
+                
+                console.log('🧪 Testing tracking with data:', testData);
+                
+                const apiUrl = 'https://catalyst-backend-fzhu.onrender.com/api/customer-activity';
+                console.log('🌐 Sending POST to:', apiUrl);
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData),
+                    credentials: 'include'
+                });
+                
+                console.log('📡 Response status:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API Error response:', errorText);
+                    results.innerHTML = '<p style="color: red;">Error: ' + response.status + ' ' + response.statusText + '<br>' + errorText + '</p>';
+                    return;
+                }
+                
+                const responseData = await response.json();
+                console.log('✅ Success response:', responseData);
+                results.innerHTML = '<p style="color: green;">✅ Success! Activity logged with ID: ' + responseData.data.id + '</p>';
+                
+            } catch (error) {
+                console.error('❌ Test failed:', error);
+                results.innerHTML = '<p style="color: red;">❌ Network Error: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>
