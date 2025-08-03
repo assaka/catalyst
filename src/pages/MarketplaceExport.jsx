@@ -218,7 +218,7 @@ export default function MarketplaceExport() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="amazon" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
-            Amazon
+            Amazon (Coming Soon)
           </TabsTrigger>
           <TabsTrigger value="ebay" disabled>
             <ShoppingCart className="w-4 h-4" />
@@ -231,6 +231,23 @@ export default function MarketplaceExport() {
         </TabsList>
 
         <TabsContent value="amazon" className="space-y-6">
+          {/* Coming Soon Notice */}
+          <Alert className="border-blue-200 bg-blue-50">
+            <Package className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <div className="space-y-2">
+                <p className="font-medium">Amazon Marketplace Export - Coming Soon!</p>
+                <p className="text-sm">
+                  We're working on integrating with Amazon's Selling Partner API to allow seamless product exports from your Catalyst store to Amazon Marketplace. 
+                  This feature will include automated product listings, inventory sync, and order management capabilities.
+                </p>
+                <p className="text-sm">
+                  Stay tuned for updates as we finalize this powerful integration to help you expand your reach across multiple sales channels.
+                </p>
+              </div>
+            </AlertDescription>
+          </Alert>
+
           {/* Amazon Configuration */}
           <Card>
             <CardHeader>
@@ -249,6 +266,7 @@ export default function MarketplaceExport() {
                     value={amazonConfig.client_id}
                     onChange={(e) => setAmazonConfig(prev => ({ ...prev, client_id: e.target.value }))}
                     placeholder="Your Amazon Client ID"
+                    disabled
                   />
                 </div>
                 <div>
@@ -259,6 +277,7 @@ export default function MarketplaceExport() {
                     value={amazonConfig.client_secret}
                     onChange={(e) => setAmazonConfig(prev => ({ ...prev, client_secret: e.target.value }))}
                     placeholder="Your Amazon Client Secret"
+                    disabled
                   />
                 </div>
                 <div>
@@ -268,6 +287,7 @@ export default function MarketplaceExport() {
                     value={amazonConfig.seller_id}
                     onChange={(e) => setAmazonConfig(prev => ({ ...prev, seller_id: e.target.value }))}
                     placeholder="Your Amazon Seller ID"
+                    disabled
                   />
                 </div>
                 <div>
@@ -275,6 +295,7 @@ export default function MarketplaceExport() {
                   <Select 
                     value={amazonConfig.marketplace_id}
                     onValueChange={(value) => setAmazonConfig(prev => ({ ...prev, marketplace_id: value }))}
+                    disabled
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -304,7 +325,7 @@ export default function MarketplaceExport() {
               </Alert>
 
               <div className="flex justify-end">
-                <Button onClick={handleConfigSave}>
+                <Button onClick={handleConfigSave} disabled>
                   Save Configuration
                 </Button>
               </div>
@@ -335,6 +356,7 @@ export default function MarketplaceExport() {
                         setSelectedProducts(products.map(p => p.id));
                       }
                     }}
+                    disabled
                   >
                     {selectedProducts.length === products.length ? 'Deselect All' : 'Select All'}
                   </Button>
@@ -346,6 +368,7 @@ export default function MarketplaceExport() {
                       <Checkbox
                         checked={selectedProducts.includes(product.id)}
                         onCheckedChange={(checked) => handleProductSelect(product.id, checked)}
+                        disabled
                       />
                       <div className="flex-1 flex items-center space-x-3">
                         {product.images && product.images[0] && (
@@ -380,7 +403,7 @@ export default function MarketplaceExport() {
                 </div>
                 <Button
                   onClick={exportToAmazon}
-                  disabled={exporting || selectedProducts.length === 0}
+                  disabled={true}
                   className="flex items-center gap-2"
                 >
                   {exporting ? (
