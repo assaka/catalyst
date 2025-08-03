@@ -478,6 +478,7 @@ export default function AnalyticsSettings() {
                             </ul>
                         </div>
                     )}
+                </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
