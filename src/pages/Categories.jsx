@@ -7,6 +7,7 @@ import { clearCategoriesCache } from "@/utils/cacheUtils";
 import { 
   Tag, 
   Plus, 
+  Search,
   Edit,
   Trash2,
   Eye,
@@ -52,6 +53,7 @@ export default function Categories() {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [nameFilter, setNameFilter] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -248,6 +250,15 @@ export default function Categories() {
         }
       }
       
+      // Apply name filter if present
+      if (nameFilter.trim()) {
+        const searchTerm = nameFilter.trim().toLowerCase();
+        filteredCategories = filteredCategories.filter(cat => 
+          cat.name.toLowerCase().includes(searchTerm) ||
+          cat.description?.toLowerCase().includes(searchTerm)
+        );
+      }
+      
       console.log(`🔍 Filtered categories: ${filteredCategories.length} (from ${allCategories.length} total)`);
       
       if (viewMode === 'hierarchical') {
@@ -362,6 +373,13 @@ export default function Categories() {
       loadCategories(1); // Always load first page when filter changes
     }
   }, [searchQuery]);
+
+  // Reset to first page and reload data when name filter changes
+  useEffect(() => {
+    if (selectedStore) {
+      loadCategories(1); // Always load first page when name filter changes
+    }
+  }, [nameFilter]);
 
   // Reload when view mode changes
   useEffect(() => {
@@ -764,25 +782,44 @@ export default function Categories() {
               
               {/* Filter and View Toggle */}
               <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                <div className="flex-1 max-w-md">
-                  <Label htmlFor="category-filter" className="text-sm font-medium mb-2 block">
-                    Filter Categories
-                  </Label>
-                  <Select
-                    value={searchQuery || "all"}
-                    onValueChange={(value) => setSearchQuery(value === "all" ? "" : value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="active">Active Only</SelectItem>
-                      <SelectItem value="inactive">Inactive Only</SelectItem>
-                      <SelectItem value="hidden">Hidden from Menu</SelectItem>
-                      <SelectItem value="visible">Visible in Menu</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex flex-col md:flex-row gap-4 flex-1">
+                  <div className="flex-1 max-w-md">
+                    <Label htmlFor="category-filter" className="text-sm font-medium mb-2 block">
+                      Filter by Status
+                    </Label>
+                    <Select
+                      value={searchQuery || "all"}
+                      onValueChange={(value) => setSearchQuery(value === "all" ? "" : value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All categories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="active">Active Only</SelectItem>
+                        <SelectItem value="inactive">Inactive Only</SelectItem>
+                        <SelectItem value="hidden">Hidden from Menu</SelectItem>
+                        <SelectItem value="visible">Visible in Menu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex-1 max-w-md">
+                    <Label htmlFor="name-filter" className="text-sm font-medium mb-2 block">
+                      Filter by Name
+                    </Label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        id="name-filter"
+                        placeholder="Search categories..."
+                        value={nameFilter}
+                        onChange={(e) => setNameFilter(e.target.value)}
+                        className="pl-10"
+                        disabled={!canAddCategory && categories.length === 0}
+                      />
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -837,8 +874,8 @@ export default function Categories() {
                     <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
                     <p className="text-gray-600 mb-6">
-                      {searchQuery 
-                        ? "Try adjusting your filter selection"
+                      {searchQuery || nameFilter
+                        ? "Try adjusting your filter selection or search terms"
                         : selectedRootCategory 
                         ? "No categories found under the selected root category"
                         : "Start by creating your first product category"}
@@ -958,8 +995,8 @@ export default function Categories() {
               <Tag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
               <p className="text-gray-600 mb-6">
-                {searchQuery 
-                  ? "Try adjusting your filter selection"
+                {searchQuery || nameFilter
+                  ? "Try adjusting your filter selection or search terms"
                   : "Start by creating your first product category"}
               </p>
               <Button
