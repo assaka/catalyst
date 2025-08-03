@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useCallback } from "react";
-import { useParams, useSearchParams, Link } from "react-router-dom";
+import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { checkMultiplePathsForRedirect, getPossiblePaths, extractSlugFromRedirectUrl } from "@/utils/redirectUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
 import { User } from "@/api/entities";
 import cartService from "@/services/cartService";
@@ -57,6 +58,7 @@ export default function ProductDetail() {
 
   // Updated useStore destructuring: productLabels is now sourced directly from the store context.
   const { store, settings, loading: storeLoading, categories, productLabels, taxes, selectedCountry } = useStore();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -156,6 +158,21 @@ export default function ProductDetail() {
           checkWishlistStatus(foundProduct.id)
         ]);
       } else {
+        // No product found - check for redirects before showing 404
+        console.warn(`Product with slug '${slug}' not found. Checking for redirects...`);
+        
+        const possiblePaths = getPossiblePaths('product', slug);
+        const redirectTo = await checkMultiplePathsForRedirect(possiblePaths, store.id);
+        
+        if (redirectTo) {
+          console.log(`🔀 Redirecting from product ${slug} to ${redirectTo}`);
+          const newSlug = extractSlugFromRedirectUrl(redirectTo);
+          // Navigate to the new product URL
+          navigate(`/store/${store.slug}/product/${newSlug}`, { replace: true });
+          return;
+        }
+        
+        // No redirect found - show 404
         setProduct(null);
       }
     } catch (error) {

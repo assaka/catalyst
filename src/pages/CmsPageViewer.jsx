@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CmsPage } from '@/api/entities';
 import { Product } from '@/api/entities';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
+import { checkMultiplePathsForRedirect, getPossiblePaths, extractSlugFromRedirectUrl } from '@/utils/redirectUtils';
+import { useStore } from '@/components/storefront/StoreProvider';
 
 export default function CmsPageViewer() {
     const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const { store } = useStore();
     const [page, setPage] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -26,6 +30,28 @@ export default function CmsPageViewer() {
                             const filteredProducts = products.filter(p => currentPage.related_product_ids.includes(p.id));
                             setRelatedProducts(filteredProducts);
                         }
+                    } else {
+                        // No CMS page found - check for redirects before showing 404
+                        console.warn(`CMS page with slug '${slug}' not found. Checking for redirects...`);
+                        
+                        if (store?.id) {
+                            const possiblePaths = getPossiblePaths('cms', slug);
+                            const redirectTo = await checkMultiplePathsForRedirect(possiblePaths, store.id);
+                            
+                            if (redirectTo) {
+                                console.log(`🔀 Redirecting from CMS page ${slug} to ${redirectTo}`);
+                                const newSlug = extractSlugFromRedirectUrl(redirectTo);
+                                // Determine the correct URL format for CMS pages
+                                const cmsUrl = redirectTo.startsWith('/page/') ? 
+                                    `/store/${store.slug}/page?slug=${newSlug}` :
+                                    `/store/${store.slug}/${newSlug}`;
+                                navigate(cmsUrl, { replace: true });
+                                return;
+                            }
+                        }
+                        
+                        // No redirect found - page will remain null for 404
+                        setPage(null);
                     }
                 } catch (error) {
                     console.error("Error fetching CMS page:", error);
