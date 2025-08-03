@@ -251,6 +251,7 @@ function _getCurrentPage(url) {
 import RoleProtectedRoute from '../components/RoleProtectedRoute.jsx';
 import { StoreProvider } from '../components/storefront/StoreProvider.jsx';
 import StorefrontLayout from '../components/storefront/StorefrontLayout.jsx';
+import NotFoundPage from '../components/NotFoundPage.jsx';
 
 // Helper function to determine if route needs StoreProvider
 function isPublicRoute(pathname) {
@@ -414,6 +415,13 @@ function PagesContent() {
                     <RoleProtectedRoute allowedRoles={['customer']}>
                         <Orders />
                     </RoleProtectedRoute>
+                } />
+                
+                {/* Catch-all for unmatched public store routes */}
+                <Route path="/public/:storeCode/*" element={
+                    <StorefrontLayout>
+                        <NotFoundPage />
+                    </StorefrontLayout>
                 } />
                 
                 {/* =========================== */}
