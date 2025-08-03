@@ -119,11 +119,12 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         return;
       }
 
-      // Check all possible token storage locations
-      const token = localStorage.getItem('token') || 
-                   localStorage.getItem('authToken') || 
+      // Use the same token lookup logic as apiClient
+      const token = localStorage.getItem('store_owner_auth_token') ||
+                   localStorage.getItem('customer_auth_token') ||
                    localStorage.getItem('auth_token') ||
-                   localStorage.getItem('store_owner_auth_token') ||
+                   localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
                    sessionStorage.getItem('token') ||
                    sessionStorage.getItem('authToken');
       
