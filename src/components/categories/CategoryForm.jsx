@@ -122,12 +122,16 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       // Check all possible token storage locations
       const token = localStorage.getItem('token') || 
                    localStorage.getItem('authToken') || 
+                   localStorage.getItem('auth_token') ||
+                   localStorage.getItem('store_owner_auth_token') ||
                    sessionStorage.getItem('token') ||
                    sessionStorage.getItem('authToken');
       
       console.log('🔑 Token check:', {
         localStorage_token: !!localStorage.getItem('token'),
         localStorage_authToken: !!localStorage.getItem('authToken'),
+        localStorage_auth_token: !!localStorage.getItem('auth_token'),
+        localStorage_store_owner_auth_token: !!localStorage.getItem('store_owner_auth_token'),
         sessionStorage_token: !!sessionStorage.getItem('token'),
         sessionStorage_authToken: !!sessionStorage.getItem('authToken'),
         finalToken: !!token,

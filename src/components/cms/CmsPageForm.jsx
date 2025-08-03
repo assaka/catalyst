@@ -156,9 +156,17 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         return;
       }
 
-      const token = localStorage.getItem('token');
+      // Check all possible token storage locations
+      const token = localStorage.getItem('token') || 
+                   localStorage.getItem('authToken') || 
+                   localStorage.getItem('auth_token') ||
+                   localStorage.getItem('store_owner_auth_token') ||
+                   sessionStorage.getItem('token') ||
+                   sessionStorage.getItem('authToken');
+      
       if (!token) {
-        console.error('No authentication token available for redirect creation');
+        console.error('❌ No authentication token available for redirect creation');
+        console.log('Available localStorage keys:', Object.keys(localStorage));
         return;
       }
 
