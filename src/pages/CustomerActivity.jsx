@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Eye, ShoppingCart, Search, Heart, CreditCard, Package, RefreshCw } from "lucide-react";
+import { Eye, ShoppingCart, Search, Heart, CreditCard, Package, RefreshCw, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function CustomerActivityPage() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -17,31 +17,106 @@ export default function CustomerActivityPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activityFilter, setActivityFilter] = useState("all");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  
+  // Date range filter state
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     if (selectedStore) {
-      loadData();
+      loadData(1); // Reset to page 1 when store changes
     }
   }, [selectedStore]);
 
-  const loadData = async () => {
+  // Reload data when filters change
+  useEffect(() => {
+    if (selectedStore) {
+      setCurrentPage(1); // Reset to page 1 when filters change
+      loadData(1);
+    }
+  }, [activityFilter, startDate, endDate, searchQuery]);
+
+  // Handle pagination
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    loadData(page);
+  };
+
+  const loadData = async (page = currentPage) => {
     try {
       setLoading(true);
       
       if (!selectedStore) {
         setActivities([]);
         setStore(null);
+        setTotalItems(0);
+        setTotalPages(0);
         setLoading(false);
         return;
       }
       
       setStore(selectedStore);
-      const activitiesData = await CustomerActivity.filter({ store_id: selectedStore.id, limit: 100 });
-      setActivities(activitiesData || []);
+      
+      // Build filter parameters
+      const filters = {
+        store_id: selectedStore.id,
+        page: page,
+        limit: itemsPerPage
+      };
+      
+      // Add activity type filter
+      if (activityFilter !== "all") {
+        filters.activity_type = activityFilter;
+      }
+      
+      // Add date range filters
+      if (startDate) {
+        filters.start_date = startDate;
+      }
+      if (endDate) {
+        filters.end_date = endDate;
+      }
+      
+      // Add search query filter
+      if (searchQuery.trim()) {
+        // The API should support searching across multiple fields
+        filters.search = searchQuery.trim();
+      }
+      
+      console.log('🔍 Loading customer activities with filters:', filters);
+      
+      // Use findPaginated for proper pagination support
+      const paginatedResult = await CustomerActivity.findPaginated(
+        page,
+        itemsPerPage,
+        filters
+      );
+      
+      if (paginatedResult && paginatedResult.data) {
+        setActivities(paginatedResult.data || []);
+        setTotalItems(paginatedResult.pagination?.total || 0);
+        setTotalPages(paginatedResult.pagination?.total_pages || 0);
+        setCurrentPage(paginatedResult.pagination?.current_page || page);
+      } else {
+        // Fallback to filter method if findPaginated doesn't work
+        const activitiesData = await CustomerActivity.filter(filters);
+        setActivities(activitiesData || []);
+        setTotalItems(activitiesData?.length || 0);
+        setTotalPages(Math.ceil((activitiesData?.length || 0) / itemsPerPage));
+      }
+      
     } catch (error) {
       console.error("Error loading customer activity:", error);
       setActivities([]);
       setStore(null);
+      setTotalItems(0);
+      setTotalPages(0);
     } finally {
       setLoading(false);
     }
@@ -75,16 +150,89 @@ export default function CustomerActivityPage() {
     return colors[type] || "bg-gray-100 text-gray-800";
   };
 
-  const filteredActivities = activities.filter(activity => {
-    const matchesSearch = !searchQuery || 
-      activity.customer_email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      activity.search_query?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      activity.page_url?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesFilter = activityFilter === "all" || activity.activity_type === activityFilter;
-    
-    return matchesSearch && matchesFilter;
-  });
+  // Pagination component
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+
+    const getVisiblePages = () => {
+      const pages = [];
+      const showEllipsis = totalPages > 7;
+      
+      if (!showEllipsis) {
+        for (let i = 1; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        if (currentPage <= 4) {
+          for (let i = 1; i <= 5; i++) pages.push(i);
+          pages.push('ellipsis');
+          pages.push(totalPages);
+        } else if (currentPage >= totalPages - 3) {
+          pages.push(1);
+          pages.push('ellipsis');
+          for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+        } else {
+          pages.push(1);
+          pages.push('ellipsis');
+          for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+          pages.push('ellipsis');
+          pages.push(totalPages);
+        }
+      }
+      return pages;
+    };
+
+    return (
+      <div className="flex items-center justify-between mt-6">
+        <div className="text-sm text-gray-700">
+          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} activities
+        </div>
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="flex items-center gap-1"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Previous
+          </Button>
+          
+          {getVisiblePages().map((page, index) => (
+            <React.Fragment key={index}>
+              {page === 'ellipsis' ? (
+                <span className="px-3 py-1 text-gray-500">...</span>
+              ) : (
+                <Button
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageChange(page)}
+                  className="min-w-[2.5rem]"
+                >
+                  {page}
+                </Button>
+              )}
+            </React.Fragment>
+          ))}
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="flex items-center gap-1"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // No need for client-side filtering since we're doing server-side filtering
+  const filteredActivities = activities;
 
   if (loading) {
     return (
@@ -103,7 +251,7 @@ export default function CustomerActivityPage() {
             <p className="text-gray-600 mt-1">Track customer behavior and interactions</p>
           </div>
           <Button 
-            onClick={loadData} 
+            onClick={() => loadData(currentPage)} 
             disabled={loading}
             variant="outline"
             size="sm"
@@ -116,36 +264,80 @@ export default function CustomerActivityPage() {
 
         <Card className="mb-6">
           <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <Input
-                  placeholder="Search by email, query, or page..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+            <div className="space-y-4">
+              {/* First row: Search and Activity Filter */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Search by email, query, or page..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Select value={activityFilter} onValueChange={setActivityFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Filter by activity" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Activities</SelectItem>
+                    <SelectItem value="page_view">Page Views</SelectItem>
+                    <SelectItem value="product_view">Product Views</SelectItem>
+                    <SelectItem value="add_to_cart">Add to Cart</SelectItem>
+                    <SelectItem value="remove_from_cart">Remove from Cart</SelectItem>
+                    <SelectItem value="checkout_started">Checkout Started</SelectItem>
+                    <SelectItem value="order_completed">Orders Completed</SelectItem>
+                    <SelectItem value="search">Searches</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={activityFilter} onValueChange={setActivityFilter}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Filter by activity" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Activities</SelectItem>
-                  <SelectItem value="page_view">Page Views</SelectItem>
-                  <SelectItem value="product_view">Product Views</SelectItem>
-                  <SelectItem value="add_to_cart">Add to Cart</SelectItem>
-                  <SelectItem value="remove_from_cart">Remove from Cart</SelectItem>
-                  <SelectItem value="checkout_started">Checkout Started</SelectItem>
-                  <SelectItem value="order_completed">Orders Completed</SelectItem>
-                  <SelectItem value="search">Searches</SelectItem>
-                </SelectContent>
-              </Select>
+              
+              {/* Second row: Date Range Filter */}
+              <div className="flex flex-col md:flex-row gap-4 items-center">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap">Date Range:</span>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 flex-1">
+                  <div className="flex-1">
+                    <Input
+                      type="date"
+                      placeholder="Start date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Input
+                      type="date"
+                      placeholder="End date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  {(startDate || endDate) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setStartDate("");
+                        setEndDate("");
+                      }}
+                      className="text-sm"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Activity Log ({filteredActivities.length})</CardTitle>
+            <CardTitle>Activity Log ({totalItems} total, page {currentPage} of {totalPages})</CardTitle>
           </CardHeader>
           <CardContent>
             {filteredActivities.length > 0 ? (
@@ -210,6 +402,9 @@ export default function CustomerActivityPage() {
                 </p>
               </div>
             )}
+            
+            {/* Pagination */}
+            {renderPagination()}
           </CardContent>
         </Card>
       </div>
