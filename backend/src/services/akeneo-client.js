@@ -292,7 +292,7 @@ class AkeneoClient {
 
         do {
           pageCount++;
-          const params = nextUrl ? {} : { limit: 100, 'with_count': false };
+          const params = nextUrl ? {} : { limit: 100 };
           const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products-uuid';
           
           console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
@@ -325,8 +325,7 @@ class AkeneoClient {
           const searchCriteria = {};
           const response = await this.searchProducts(searchCriteria, { 
             limit: 100,
-            page: page,
-            'with_count': false
+            page: page
           });
           
           if (response._embedded && response._embedded.items) {
@@ -357,7 +356,7 @@ class AkeneoClient {
 
         do {
           pageCount++;
-          const params = nextUrl ? {} : { limit: 100, 'with_count': false };
+          const params = nextUrl ? {} : { limit: 100 };
           const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : '/api/rest/v1/products';
           
           console.log(`📄 Fetching page ${pageCount}${nextUrl ? ' (from next URL)' : ''}`);
