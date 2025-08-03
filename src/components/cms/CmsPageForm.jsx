@@ -151,13 +151,29 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
 
     try {
       const storeId = getSelectedStoreId();
-      if (!storeId) return;
+      if (!storeId) {
+        console.warn('No store ID available for redirect creation');
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('No authentication token available for redirect creation');
+        return;
+      }
+
+      console.log('Creating redirect for slug change:', {
+        old_slug: originalSlug,
+        new_slug: formData.slug,
+        entity_type: 'cms_page',
+        entity_id: page.id
+      });
 
       const response = await fetch('/api/redirects/slug-change', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           store_id: storeId,
@@ -171,20 +187,27 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
 
       if (response.ok) {
         const result = await response.json();
-        console.log('Redirect created:', result.message);
+        console.log('✅ Redirect created successfully:', result.message);
       } else {
-        console.error('Failed to create redirect:', await response.text());
+        const errorText = await response.text();
+        console.error('❌ Failed to create redirect:', response.status, errorText);
+        
+        // Still allow the form submission to continue
+        if (response.status === 401) {
+          console.error('Authentication failed - token may be expired');
+        }
       }
     } catch (error) {
-      console.error('Error creating redirect:', error);
+      console.error('❌ Error creating redirect:', error);
+      // Don't throw - allow form submission to continue
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Create redirect before updating if slug changed and user opted in
-    if (showSlugChangeWarning && createRedirect) {
+    // Always create redirect if slug changed (essential for SEO)
+    if (page && originalSlug && formData.slug !== originalSlug) {
       await createRedirectForSlugChange();
     }
     
