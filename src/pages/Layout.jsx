@@ -686,17 +686,14 @@ export default function Layout({ children, currentPageName }) {
                       <Link
                         key={item.name}
                         to={createAdminUrl(item.path)}
-                        className={itemClass}
+                        className={`${itemClass} ${item.isPremium ? 'relative' : ''}`}
                         onClick={() => setSidebarOpen(false)}
                       >
+                        {item.isPremium && (
+                          <Crown className="absolute -top-1 -left-1 w-3 h-3 text-yellow-500 z-10" />
+                        )}
                         <item.icon className="w-5 h-5" />
                         <span className="flex-1">{item.name}</span>
-                        {item.isPremium && (
-                          <div className="ml-2 flex items-center text-yellow-500 text-xs font-semibold">
-                            <Crown className="w-3 h-3 mr-1" />
-                            PRO
-                          </div>
-                        )}
                         {isActive && <ChevronRight className="w-4 h-4 ml-auto" />}
                       </Link>
                     );
