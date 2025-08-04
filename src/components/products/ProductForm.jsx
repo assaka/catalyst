@@ -657,6 +657,157 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </CardContent>
         </Card>
 
+        {/* Image Galleries Section - Independent of attribute sets */}
+        {(() => {
+          // Find all image gallery attributes from all attributes, not just selected ones
+          const allImageGalleryAttributes = passedAttributes?.filter(attr => 
+            attr && 
+            attr.type === 'file' && 
+            attr.name && 
+            attr.name.toLowerCase().includes('image gallery') &&
+            attr.file_settings?.allowed_extensions?.some(ext => 
+              ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+            )
+          ) || [];
+
+          if (allImageGalleryAttributes.length === 0) return null;
+
+          const galleriesWithImages = allImageGalleryAttributes.filter(attr => {
+            const value = formData.attributes[attr.code];
+            return value && (typeof value === 'object' ? value.url : value);
+          });
+          const galleriesWithoutImages = allImageGalleryAttributes.filter(attr => {
+            const value = formData.attributes[attr.code];
+            return !value || !(typeof value === 'object' ? value.url : value);
+          });
+
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <span className="mr-2">🖼️</span>
+                  Image Galleries
+                  <Badge variant="outline" className="ml-2">
+                    {galleriesWithImages.length}/{allImageGalleryAttributes.length} with images
+                  </Badge>
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Manage your product image galleries independently of attribute sets
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Galleries with images */}
+                {galleriesWithImages.length > 0 && (
+                  <div className="space-y-4">
+                    <h5 className="font-medium text-green-700">Images Added ({galleriesWithImages.length})</h5>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {galleriesWithImages.map(attribute => {
+                        const attributeValue = formData.attributes[attribute.code];
+                        const imageUrl = typeof attributeValue === 'object' ? attributeValue.url : attributeValue;
+                        
+                        return (
+                          <div key={attribute.id} className="border rounded-lg p-4 bg-green-50">
+                            <div className="flex items-start justify-between mb-3">
+                              <Label className="font-medium text-green-800">{attribute.name}</Label>
+                              <button
+                                type="button"
+                                onClick={() => handleAttributeValueChange(attribute.code, null)}
+                                className="text-red-500 hover:text-red-700 p-1"
+                                title="Remove image"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            
+                            {imageUrl && (
+                              <div className="mb-3">
+                                <img 
+                                  src={imageUrl} 
+                                  alt={attribute.name}
+                                  className="w-full h-32 object-cover rounded border"
+                                />
+                              </div>
+                            )}
+                            
+                            <div className="space-y-2">
+                              <input
+                                type="file"
+                                id={`gallery_${attribute.code}`}
+                                onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                                disabled={uploadingImage}
+                              />
+                              
+                              {uploadingImage && (
+                                <p className="text-sm text-blue-600">Uploading image...</p>
+                              )}
+                              
+                              {typeof attributeValue === 'object' && attributeValue.name && (
+                                <div className="text-sm text-gray-600">
+                                  <span className="font-medium">{attributeValue.name}</span>
+                                  {attributeValue.size && (
+                                    <span className="ml-2">
+                                      ({(attributeValue.size / 1024 / 1024).toFixed(2)} MB)
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              
+                              {attribute.file_settings && (
+                                <p className="text-xs text-gray-500">
+                                  Max: {attribute.file_settings.max_file_size}MB. 
+                                  Types: {attribute.file_settings.allowed_extensions?.join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Galleries without images */}
+                {galleriesWithoutImages.length > 0 && (
+                  <div className="space-y-4">
+                    <h5 className="font-medium text-amber-700">Add Images ({galleriesWithoutImages.length})</h5>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {galleriesWithoutImages.map(attribute => (
+                        <div key={attribute.id} className="border-2 border-dashed border-amber-300 rounded-lg p-4 bg-amber-50">
+                          <Label className="font-medium text-amber-800 mb-3 block">{attribute.name}</Label>
+                          
+                          <div className="space-y-2">
+                            <input
+                              type="file"
+                              id={`gallery_${attribute.code}`}
+                              onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                              accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
+                              disabled={uploadingImage}
+                            />
+                            
+                            {uploadingImage && (
+                              <p className="text-sm text-blue-600">Uploading image...</p>
+                            )}
+                            
+                            {attribute.file_settings && (
+                              <p className="text-xs text-gray-500">
+                                Max: {attribute.file_settings.max_file_size}MB. 
+                                Types: {attribute.file_settings.allowed_extensions?.join(', ')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         <Card>
           <CardHeader><CardTitle>Attributes</CardTitle></CardHeader>
           <CardContent className="space-y-4">
@@ -688,13 +839,15 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
             {selectedAttributes.length > 0 && (
               <div className="space-y-6">
-                {/* Image Attributes Section */}
+                {/* Image Attributes Section (excluding Image Galleries) */}
                 {(() => {
                   const imageAttributes = selectedAttributes.filter(attr => 
                     attr.type === 'file' && 
                     attr.file_settings?.allowed_extensions?.some(ext => 
                       ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
-                    )
+                    ) &&
+                    // Exclude image gallery attributes as they're handled in the separate section above
+                    !(attr.name && attr.name.toLowerCase().includes('image gallery'))
                   );
                   const attributesWithImages = imageAttributes.filter(attr => {
                     const value = formData.attributes[attr.code];
@@ -831,9 +984,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 {/* Non-Image Attributes Section */}
                 {(() => {
                   const nonImageAttributes = selectedAttributes.filter(attr => 
-                    attr.type !== 'file' || !attr.file_settings?.allowed_extensions?.some(ext => 
+                    (attr.type !== 'file' || !attr.file_settings?.allowed_extensions?.some(ext => 
                       ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
-                    )
+                    )) &&
+                    // Exclude image gallery attributes as they're handled in the separate section above
+                    !(attr.name && attr.name.toLowerCase().includes('image gallery'))
                   );
 
                   if (nonImageAttributes.length === 0) return null;
