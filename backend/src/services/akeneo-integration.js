@@ -654,16 +654,27 @@ class AkeneoIntegration {
    * Import families from Akeneo to Catalyst AttributeSets
    */
   async importFamilies(storeId, options = {}) {
-    const { dryRun = false } = options;
+    const { dryRun = false, filters = {} } = options;
     
     try {
       console.log('Starting family import from Akeneo...');
+      console.log(`🎯 Family filters:`, filters);
       
       // Get all families from Akeneo
-      const akeneoFamilies = await this.client.getAllFamilies();
+      let akeneoFamilies = await this.client.getAllFamilies();
+      
+      // Apply family filter if specified
+      if (filters.families && filters.families.length > 0) {
+        console.log(`🔍 Filtering to specific families: ${filters.families.join(', ')}`);
+        akeneoFamilies = akeneoFamilies.filter(family => 
+          filters.families.includes(family.code)
+        );
+        console.log(`📊 After filtering: ${akeneoFamilies.length} families selected`);
+      }
+      
       this.importStats.families.total = akeneoFamilies.length;
 
-      console.log(`Found ${akeneoFamilies.length} families in Akeneo`);
+      console.log(`Found ${akeneoFamilies.length} families to import`);
 
       // Transform families to Catalyst format
       const catalystFamilies = akeneoFamilies.map(akeneoFamily => 

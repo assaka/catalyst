@@ -52,6 +52,7 @@ const AkeneoIntegration = () => {
   const [availableCategories, setAvailableCategories] = useState([]);
   const [selectedRootCategories, setSelectedRootCategories] = useState([]);
   const [selectedFamilies, setSelectedFamilies] = useState([]);
+  const [selectedFamiliesToImport, setSelectedFamiliesToImport] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   
   // Advanced settings
@@ -982,7 +983,7 @@ const AkeneoIntegration = () => {
         requestPayload = { 
           dryRun,
           filters: {
-            families: selectedFamilies.length > 0 ? selectedFamilies : undefined
+            families: selectedFamiliesToImport.length > 0 ? selectedFamiliesToImport : undefined
           }
         };
         console.log('🔒 Using stored configuration for import');
@@ -992,13 +993,13 @@ const AkeneoIntegration = () => {
           ...config, 
           dryRun,
           filters: {
-            families: selectedFamilies.length > 0 ? selectedFamilies : undefined
+            families: selectedFamiliesToImport.length > 0 ? selectedFamiliesToImport : undefined
           }
         };
         console.log('📋 Using provided configuration for import');
       }
       
-      console.log('🎯 Selected families for import:', selectedFamilies);
+      console.log('🎯 Selected families for import:', selectedFamiliesToImport);
       
       const response = await apiClient.post('/integrations/akeneo/import-families', requestPayload, {
         'x-store-id': storeId
@@ -1962,6 +1963,30 @@ const AkeneoIntegration = () => {
                   Make sure to import <strong>Attributes</strong> first, as families depend on attributes being available in the system.
                 </AlertDescription>
               </Alert>
+
+              {/* Families Selection */}
+              {families.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Select Families to Import</Label>
+                  <MultiSelect
+                    options={families.map(family => ({
+                      value: family.code || family.name || family.id,
+                      label: family.code || family.name || family.id
+                    }))}
+                    value={selectedFamiliesToImport}
+                    onChange={setSelectedFamiliesToImport}
+                    placeholder="Select specific families..."
+                    searchPlaceholder="Search families..."
+                    emptyText="No families found"
+                  />
+                  <p className="text-xs text-gray-500">
+                    {selectedFamiliesToImport.length === 0 
+                      ? 'All families will be imported' 
+                      : `${selectedFamiliesToImport.length} families selected`
+                    }
+                  </p>
+                </div>
+              )}
 
               <div className="flex items-center space-x-2">
                 <Switch 

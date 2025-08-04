@@ -569,6 +569,7 @@ router.post('/akeneo/import-attributes',
 router.post('/akeneo/import-families', 
   storeAuth,
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  body('filters').optional().isObject().withMessage('Filters must be an object'),
   async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -582,9 +583,10 @@ router.post('/akeneo/import-families',
   console.log('🔍 Import families request body:', req.body);
   
   await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
-    const { dryRun = false } = body;
+    const { dryRun = false, filters = {} } = body;
     console.log(`📦 Starting family import with dryRun: ${dryRun}`);
-    return await integration.importFamilies(storeId, { dryRun });
+    console.log(`🎯 Family filters:`, filters);
+    return await integration.importFamilies(storeId, { dryRun, filters });
   });
 });
 
