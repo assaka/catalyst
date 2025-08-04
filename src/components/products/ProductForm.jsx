@@ -657,26 +657,30 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </CardContent>
         </Card>
 
-        {/* Image Galleries Section - Independent of attribute sets */}
+        {/* Image Attributes Section - Independent of attribute sets */}
         {(() => {
-          // Find all image gallery attributes from all attributes, not just selected ones
-          const allImageGalleryAttributes = passedAttributes?.filter(attr => 
+          // Find all image-related attributes from all attributes, not just selected ones
+          const allImageAttributes = passedAttributes?.filter(attr => 
             attr && 
             attr.type === 'file' && 
             attr.name && 
-            attr.name.toLowerCase().includes('image gallery') &&
+            (
+              attr.name.toLowerCase().includes('image gallery') ||
+              attr.name.toLowerCase().includes('image schade') ||
+              (attr.type === 'image') // Handle explicit image type
+            ) &&
             attr.file_settings?.allowed_extensions?.some(ext => 
               ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
             )
           ) || [];
 
-          if (allImageGalleryAttributes.length === 0) return null;
+          if (allImageAttributes.length === 0) return null;
 
-          const galleriesWithImages = allImageGalleryAttributes.filter(attr => {
+          const attributesWithImages = allImageAttributes.filter(attr => {
             const value = formData.attributes[attr.code];
             return value && (typeof value === 'object' ? value.url : value);
           });
-          const galleriesWithoutImages = allImageGalleryAttributes.filter(attr => {
+          const attributesWithoutImages = allImageAttributes.filter(attr => {
             const value = formData.attributes[attr.code];
             return !value || !(typeof value === 'object' ? value.url : value);
           });
@@ -686,33 +690,33 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
               <CardHeader>
                 <CardTitle className="flex items-center">
                   <span className="mr-2">🖼️</span>
-                  Image Galleries
+                  Product Images
                   <Badge variant="outline" className="ml-2">
-                    {galleriesWithImages.length}/{allImageGalleryAttributes.length} with images
+                    {attributesWithImages.length}/{allImageAttributes.length} with images
                   </Badge>
                 </CardTitle>
                 <p className="text-sm text-gray-600">
-                  Manage your product image galleries independently of attribute sets
+                  Manage your product images independently of attribute sets (Image Galleries, Image Schade, etc.)
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Galleries with images */}
-                {galleriesWithImages.length > 0 && (
+                {/* Attributes with images */}
+                {attributesWithImages.length > 0 && (
                   <div className="space-y-4">
-                    <h5 className="font-medium text-green-700">Images Added ({galleriesWithImages.length})</h5>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {galleriesWithImages.map(attribute => {
+                    <h5 className="font-medium text-green-700">Images Added ({attributesWithImages.length})</h5>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {attributesWithImages.map(attribute => {
                         const attributeValue = formData.attributes[attribute.code];
                         const imageUrl = typeof attributeValue === 'object' ? attributeValue.url : attributeValue;
                         
                         return (
-                          <div key={attribute.id} className="border rounded-lg p-4 bg-green-50">
+                          <div key={attribute.id} className="border rounded-lg p-4 bg-green-50 hover:bg-green-100 transition-colors">
                             <div className="flex items-start justify-between mb-3">
-                              <Label className="font-medium text-green-800">{attribute.name}</Label>
+                              <Label className="font-medium text-green-800 text-sm">{attribute.name}</Label>
                               <button
                                 type="button"
                                 onClick={() => handleAttributeValueChange(attribute.code, null)}
-                                className="text-red-500 hover:text-red-700 p-1"
+                                className="text-red-500 hover:text-red-700 p-1 hover:bg-red-100 rounded transition-colors"
                                 title="Remove image"
                               >
                                 <X className="w-4 h-4" />
@@ -720,43 +724,65 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                             </div>
                             
                             {imageUrl && (
-                              <div className="mb-3">
+                              <div className="mb-3 relative group">
                                 <img 
                                   src={imageUrl} 
                                   alt={attribute.name}
-                                  className="w-full h-32 object-cover rounded border"
+                                  className="w-full h-32 object-cover rounded border group-hover:opacity-80 transition-opacity cursor-pointer"
+                                  onClick={() => window.open(imageUrl, '_blank')}
                                 />
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <span className="bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
+                                    Click to view full size
+                                  </span>
+                                </div>
                               </div>
                             )}
                             
                             <div className="space-y-2">
-                              <input
-                                type="file"
-                                id={`gallery_${attribute.code}`}
-                                onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
-                                accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
-                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-                                disabled={uploadingImage}
-                              />
-                              
-                              {uploadingImage && (
-                                <p className="text-sm text-blue-600">Uploading image...</p>
-                              )}
+                              <div className="relative">
+                                <input
+                                  type="file"
+                                  id={`image_${attribute.code}`}
+                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                  accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                  className="hidden"
+                                  disabled={uploadingImage}
+                                />
+                                <label
+                                  htmlFor={`image_${attribute.code}`}
+                                  className="block w-full text-center py-2 px-4 border border-green-300 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 cursor-pointer transition-colors text-sm font-medium"
+                                >
+                                  {uploadingImage ? (
+                                    <span className="flex items-center justify-center">
+                                      <span className="animate-spin mr-2">⏳</span>
+                                      Uploading...
+                                    </span>
+                                  ) : (
+                                    <span className="flex items-center justify-center">
+                                      <Upload className="w-4 h-4 mr-2" />
+                                      Replace Image
+                                    </span>
+                                  )}
+                                </label>
+                              </div>
                               
                               {typeof attributeValue === 'object' && attributeValue.name && (
-                                <div className="text-sm text-gray-600">
-                                  <span className="font-medium">{attributeValue.name}</span>
+                                <div className="text-xs text-gray-600 p-2 bg-white rounded border">
+                                  <div className="font-medium truncate" title={attributeValue.name}>
+                                    {attributeValue.name}
+                                  </div>
                                   {attributeValue.size && (
-                                    <span className="ml-2">
-                                      ({(attributeValue.size / 1024 / 1024).toFixed(2)} MB)
-                                    </span>
+                                    <div className="text-gray-500">
+                                      {(attributeValue.size / 1024 / 1024).toFixed(2)} MB
+                                    </div>
                                   )}
                                 </div>
                               )}
                               
                               {attribute.file_settings && (
-                                <p className="text-xs text-gray-500">
-                                  Max: {attribute.file_settings.max_file_size}MB. 
+                                <p className="text-xs text-gray-500 text-center">
+                                  Max: {attribute.file_settings.max_file_size}MB | 
                                   Types: {attribute.file_settings.allowed_extensions?.join(', ')}
                                 </p>
                               )}
@@ -768,34 +794,51 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </div>
                 )}
                 
-                {/* Galleries without images */}
-                {galleriesWithoutImages.length > 0 && (
+                {/* Attributes without images */}
+                {attributesWithoutImages.length > 0 && (
                   <div className="space-y-4">
-                    <h5 className="font-medium text-amber-700">Add Images ({galleriesWithoutImages.length})</h5>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {galleriesWithoutImages.map(attribute => (
-                        <div key={attribute.id} className="border-2 border-dashed border-amber-300 rounded-lg p-4 bg-amber-50">
-                          <Label className="font-medium text-amber-800 mb-3 block">{attribute.name}</Label>
+                    <h5 className="font-medium text-amber-700">Add Images ({attributesWithoutImages.length})</h5>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {attributesWithoutImages.map(attribute => (
+                        <div key={attribute.id} className="border-2 border-dashed border-amber-300 rounded-lg p-4 bg-amber-50 hover:bg-amber-100 transition-colors">
+                          <Label className="font-medium text-amber-800 mb-3 block text-sm">{attribute.name}</Label>
                           
-                          <div className="space-y-2">
-                            <input
-                              type="file"
-                              id={`gallery_${attribute.code}`}
-                              onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
-                              accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
-                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
-                              disabled={uploadingImage}
-                            />
-                            
-                            {uploadingImage && (
-                              <p className="text-sm text-blue-600">Uploading image...</p>
-                            )}
+                          <div className="space-y-3">
+                            <div className="relative">
+                              <input
+                                type="file"
+                                id={`image_${attribute.code}`}
+                                onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                className="hidden"
+                                disabled={uploadingImage}
+                              />
+                              <label
+                                htmlFor={`image_${attribute.code}`}
+                                className="block w-full text-center py-4 px-4 border-2 border-dashed border-amber-400 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 hover:border-amber-500 cursor-pointer transition-all text-sm font-medium"
+                              >
+                                {uploadingImage ? (
+                                  <span className="flex flex-col items-center">
+                                    <span className="animate-spin mb-2 text-lg">⏳</span>
+                                    Uploading...
+                                  </span>
+                                ) : (
+                                  <span className="flex flex-col items-center">
+                                    <Upload className="w-6 h-6 mb-2" />
+                                    Click to Upload
+                                    <span className="text-xs mt-1 text-amber-600">
+                                      or drag & drop
+                                    </span>
+                                  </span>
+                                )}
+                              </label>
+                            </div>
                             
                             {attribute.file_settings && (
-                              <p className="text-xs text-gray-500">
-                                Max: {attribute.file_settings.max_file_size}MB. 
-                                Types: {attribute.file_settings.allowed_extensions?.join(', ')}
-                              </p>
+                              <div className="text-xs text-gray-500 text-center p-2 bg-white rounded border">
+                                <div>Max: {attribute.file_settings.max_file_size}MB</div>
+                                <div>Types: {attribute.file_settings.allowed_extensions?.join(', ')}</div>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -839,15 +882,19 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
             {selectedAttributes.length > 0 && (
               <div className="space-y-6">
-                {/* Image Attributes Section (excluding Image Galleries) */}
+                {/* Image Attributes Section (excluding those handled in Product Images section) */}
                 {(() => {
                   const imageAttributes = selectedAttributes.filter(attr => 
                     attr.type === 'file' && 
                     attr.file_settings?.allowed_extensions?.some(ext => 
                       ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
                     ) &&
-                    // Exclude image gallery attributes as they're handled in the separate section above
-                    !(attr.name && attr.name.toLowerCase().includes('image gallery'))
+                    // Exclude image attributes handled in the separate Product Images section above
+                    !(attr.name && (
+                      attr.name.toLowerCase().includes('image gallery') ||
+                      attr.name.toLowerCase().includes('image schade') ||
+                      attr.type === 'image'
+                    ))
                   );
                   const attributesWithImages = imageAttributes.filter(attr => {
                     const value = formData.attributes[attr.code];
@@ -987,8 +1034,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     (attr.type !== 'file' || !attr.file_settings?.allowed_extensions?.some(ext => 
                       ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
                     )) &&
-                    // Exclude image gallery attributes as they're handled in the separate section above
-                    !(attr.name && attr.name.toLowerCase().includes('image gallery'))
+                    // Exclude image attributes handled in the separate Product Images section above
+                    !(attr.name && (
+                      attr.name.toLowerCase().includes('image gallery') ||
+                      attr.name.toLowerCase().includes('image schade') ||
+                      attr.type === 'image'
+                    ))
                   );
 
                   if (nonImageAttributes.length === 0) return null;
