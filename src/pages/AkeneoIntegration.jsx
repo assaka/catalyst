@@ -53,6 +53,27 @@ const AkeneoIntegration = () => {
   const [selectedRootCategories, setSelectedRootCategories] = useState([]);
   const [selectedFamilies, setSelectedFamilies] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  
+  // Advanced settings
+  const [categorySettings, setCategorySettings] = useState({
+    hideFromMenu: false,
+    setNewActive: true
+  });
+  
+  const [productSettings, setProductSettings] = useState({
+    mode: 'standard', // standard, advanced
+    completeness: 100,
+    productModel: 'all_variants_complete', // at_least_one, all_variants_complete
+    updatedInterval: 24, // hours
+    status: 'enabled', // enabled, disabled
+    includeImages: true,
+    includeFiles: true
+  });
+  
+  const [attributeSettings, setAttributeSettings] = useState({
+    updatedInterval: 24, // hours
+    selectedFamilies: []
+  });
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [scheduleForm, setScheduleForm] = useState({
     import_type: 'attributes',
@@ -352,6 +373,37 @@ const AkeneoIntegration = () => {
           console.warn('⚠️ Failed to parse saved families:', error);
         }
       }
+
+      // Load saved advanced settings
+      const savedCategorySettings = localStorage.getItem('akeneo_category_settings');
+      if (savedCategorySettings) {
+        try {
+          const parsedSettings = JSON.parse(savedCategorySettings);
+          setCategorySettings(parsedSettings);
+        } catch (error) {
+          console.warn('⚠️ Failed to parse saved category settings:', error);
+        }
+      }
+
+      const savedProductSettings = localStorage.getItem('akeneo_product_settings');
+      if (savedProductSettings) {
+        try {
+          const parsedSettings = JSON.parse(savedProductSettings);
+          setProductSettings(parsedSettings);
+        } catch (error) {
+          console.warn('⚠️ Failed to parse saved product settings:', error);
+        }
+      }
+
+      const savedAttributeSettings = localStorage.getItem('akeneo_attribute_settings');
+      if (savedAttributeSettings) {
+        try {
+          const parsedSettings = JSON.parse(savedAttributeSettings);
+          setAttributeSettings(parsedSettings);
+        } catch (error) {
+          console.warn('⚠️ Failed to parse saved attribute settings:', error);
+        }
+      }
       
       await loadConfigStatus();
       await loadLocales();
@@ -387,6 +439,19 @@ const AkeneoIntegration = () => {
       localStorage.removeItem('akeneo_selected_families');
     }
   }, [selectedFamilies]);
+
+  // Save advanced settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('akeneo_category_settings', JSON.stringify(categorySettings));
+  }, [categorySettings]);
+
+  useEffect(() => {
+    localStorage.setItem('akeneo_product_settings', JSON.stringify(productSettings));
+  }, [productSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('akeneo_attribute_settings', JSON.stringify(attributeSettings));
+  }, [attributeSettings]);
 
   const loadConfigStatus = async () => {
     try {
@@ -1925,6 +1990,36 @@ const AkeneoIntegration = () => {
                   />
                   <Label htmlFor="categories-dry-run">Dry Run (Preview only)</Label>
                 </div>
+
+                {/* Advanced Category Settings */}
+                <Card className="bg-gray-50">
+                  <CardHeader>
+                    <CardTitle className="text-sm">Advanced Category Settings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="hide-from-menu"
+                        checked={categorySettings.hideFromMenu}
+                        onCheckedChange={(checked) => 
+                          setCategorySettings(prev => ({ ...prev, hideFromMenu: checked }))
+                        }
+                      />
+                      <Label htmlFor="hide-from-menu">Hide from menu</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="set-new-active"
+                        checked={categorySettings.setNewActive}
+                        onCheckedChange={(checked) => 
+                          setCategorySettings(prev => ({ ...prev, setNewActive: checked }))
+                        }
+                      />
+                      <Label htmlFor="set-new-active">Set new categories as active</Label>
+                    </div>
+                  </CardContent>
+                </Card>
 
                 <div className="flex items-center gap-4">
                   <Button 
