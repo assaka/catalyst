@@ -25,8 +25,7 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
     homepage: false,
     product: false,
     category: false,
-    cart: false,
-    generic: false
+    cart: false
   });
 
   useEffect(() => {
@@ -70,7 +69,10 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
       options: [
         { value: 'header', label: 'Site Header', description: 'Top of every page' },
         { value: 'footer', label: 'Site Footer', description: 'Bottom of every page' },
-        { value: 'sidebar', label: 'Sidebar', description: 'Side navigation area' }
+        { value: 'sidebar', label: 'Sidebar', description: 'Side navigation area' },
+        { value: 'before_content', label: 'Before Main Content', description: 'Above page content' },
+        { value: 'content', label: 'Content Area', description: 'Within page content' },
+        { value: 'after_content', label: 'After Main Content', description: 'Below page content' }
       ]
     },
     homepage: {
@@ -126,16 +128,6 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
         { value: 'checkout_below_form', label: 'Checkout: Below Form', description: 'After checkout form' },
         { value: 'checkout_above_payment', label: 'Checkout: Above Payment', description: 'Before payment section' },
         { value: 'checkout_below_payment', label: 'Checkout: Below Payment', description: 'After payment section' }
-      ]
-    },
-    generic: {
-      title: 'Generic Content',
-      icon: CreditCard,
-      description: 'General purpose locations',
-      options: [
-        { value: 'before_content', label: 'Before Main Content', description: 'Above page content' },
-        { value: 'content', label: 'Content Area', description: 'Within page content' },
-        { value: 'after_content', label: 'After Main Content', description: 'Below page content' }
       ]
     }
   };
