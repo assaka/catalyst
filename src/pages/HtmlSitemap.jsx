@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { Category } from '@/api/entities';
 import { Product } from '@/api/entities';
 import { CmsPage } from '@/api/entities';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
+import { createCmsPageUrl } from '@/utils/urlUtils';
 import { Layout, FileText, ChevronRight, Package } from 'lucide-react';
 
 export default function HtmlSitemap() {
+    const { storeCode } = useParams();
     const [categories, setCategories] = useState([]);
     const [products, setProducts] = useState([]);
     const [pages, setPages] = useState([]);
@@ -95,7 +98,7 @@ export default function HtmlSitemap() {
                     <ul>
                         {pages.map(page => (
                             <li key={page.id} className="my-2">
-                                <Link to={createPageUrl(`CmsPageViewer?slug=${page.slug}`)} className="flex items-center text-blue-600 hover:underline">
+                                <Link to={createCmsPageUrl(storeCode || 'store', page.slug)} className="flex items-center text-blue-600 hover:underline">
                                     <ChevronRight className="w-4 h-4 mr-2" />
                                     {page.title}
                                 </Link>
