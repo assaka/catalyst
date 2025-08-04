@@ -133,7 +133,8 @@ export default function Products() {
       // Build filters for products API - load products using admin API
       const productFilters = { 
         store_id: storeId, 
-        order_by: "-created_date"
+        order_by: "-created_date",
+        _t: Date.now() // Cache-busting timestamp
       };
 
       console.log('📋 Products: Using filters:', productFilters);
@@ -364,7 +365,8 @@ export default function Products() {
         console.log(`📝 Updating product "${product.name}" (${product.sku}) from "${product.status}" to "${newStatus}"`);
         return Product.update(id, { status: newStatus })
           .then(result => {
-            console.log(`✅ Successfully updated product ${id} to ${newStatus}:`, result);
+            console.log(`✅ Successfully updated product ${id} to ${newStatus}`);
+            console.log('📋 API Response:', JSON.stringify(result, null, 2));
             return result;
           })
           .catch(error => {
@@ -375,6 +377,17 @@ export default function Products() {
       
       await Promise.all(updatePromises);
       console.log('✅ All product updates completed');
+      
+      // Verify updates by fetching the specific products that were updated
+      console.log('🔍 Verifying updates by fetching updated products...');
+      for (const id of selectedProducts) {
+        try {
+          const updatedProduct = await Product.findById(id);
+          console.log(`📋 Product ${id} current status in database:`, updatedProduct?.status || 'NOT FOUND');
+        } catch (error) {
+          console.error(`❌ Failed to verify product ${id}:`, error);
+        }
+      }
       
       setSelectedProducts(new Set());
       setShowBulkActions(false);
