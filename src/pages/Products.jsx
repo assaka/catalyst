@@ -341,26 +341,42 @@ export default function Products() {
   const handleBulkStatusChange = async (newStatus) => {
     if (selectedProducts.size === 0) return;
     
+    console.log('🔄 Starting bulk status change to:', newStatus);
+    console.log('📋 Selected products:', Array.from(selectedProducts));
+    console.log('🔍 Current filters before change:', filters);
+    
     try {
       const updatePromises = Array.from(selectedProducts).map(id => {
         // Find product in full products array, not just paginated/filtered ones
         const product = products.find(p => p.id === id);
         if (!product) {
-          console.warn(`Product with id ${id} not found in products array`);
+          console.warn(`❌ Product with id ${id} not found in products array`);
           return Promise.resolve();
         }
+        console.log(`📝 Updating product "${product.name}" (${product.sku}) from "${product.status}" to "${newStatus}"`);
         return Product.update(id, { ...product, status: newStatus });
       });
+      
       await Promise.all(updatePromises);
+      console.log('✅ All product updates completed');
+      
       setSelectedProducts(new Set());
       setShowBulkActions(false);
       
       // Reset status filter to "all" to show updated products regardless of their new status
-      setFilters(prev => ({ ...prev, status: "all" }));
+      console.log('🔄 Resetting status filter to "all"');
+      const newFilters = { ...filters, status: "all" };
+      setFilters(newFilters);
+      console.log('📋 New filters:', newFilters);
       
+      // Add a small delay to ensure state update is processed before reloading
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('🔄 Reloading data...');
       await loadData();
+      console.log('✅ Data reload completed');
     } catch (error) {
-      console.error("Error updating product statuses:", error);
+      console.error("❌ Error updating product statuses:", error);
     }
   };
 
@@ -432,17 +448,14 @@ export default function Products() {
     if (filters.priceRange !== "all") {
       const price = parseFloat(product.price || 0);
       switch (filters.priceRange) {
-        case "0-25":
-          matchesPriceRange = price >= 0 && price <= 25;
+        case "under50":
+          matchesPriceRange = price < 50;
           break;
-        case "25-50":
-          matchesPriceRange = price > 25 && price <= 50;
+        case "50-200":
+          matchesPriceRange = price >= 50 && price <= 200;
           break;
-        case "50-100":
-          matchesPriceRange = price > 50 && price <= 100;
-          break;
-        case "100+":
-          matchesPriceRange = price > 100;
+        case "over200":
+          matchesPriceRange = price > 200;
           break;
       }
     }
@@ -455,7 +468,15 @@ export default function Products() {
     totalProducts: products.length,
     filteredProducts: filteredProducts.length,
     searchQuery,
-    filters
+    filters,
+    statusBreakdown: products.reduce((acc, p) => {
+      acc[p.status] = (acc[p.status] || 0) + 1;
+      return acc;
+    }, {}),
+    filteredStatusBreakdown: filteredProducts.reduce((acc, p) => {
+      acc[p.status] = (acc[p.status] || 0) + 1;
+      return acc;
+    }, {})
   });
 
   // Client-side pagination for display
