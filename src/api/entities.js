@@ -460,6 +460,80 @@ class ProductService extends BaseEntity {
     super('products');
   }
 
+  // Override findById to always use authenticated API for admin operations
+  async findById(id) {
+    try {
+      // Always use authenticated API for product details
+      const response = await apiClient.get(`${this.endpoint}/${id}`);
+      return response?.data || response;
+    } catch (error) {
+      console.error(`ProductService.findById() error:`, error.message);
+      return null;
+    }
+  }
+
+  // Override findPaginated to always use authenticated API for admin operations
+  async findPaginated(page = 1, limit = 10, filters = {}) {
+    try {
+      const params = {
+        page: page,
+        limit: limit,
+        ...filters
+      };
+      
+      const queryString = new URLSearchParams(params).toString();
+      const url = `${this.endpoint}?${queryString}`;
+      
+      console.log('🔧 ProductService.findPaginated: Forcing authenticated API for admin operations');
+      
+      // Always use authenticated endpoint for admin product management
+      const response = await apiClient.get(url);
+      
+      // Check if response has pagination structure
+      if (response && response.success && response.data) {
+        // Handle different entity key formats (products, etc.)
+        const entityKey = Object.keys(response.data).find(key => 
+          key !== 'pagination' && Array.isArray(response.data[key])
+        ) || 'products';
+        
+        if (entityKey && response.data[entityKey]) {
+          return {
+            data: response.data[entityKey],
+            pagination: response.data.pagination || {
+              current_page: page,
+              per_page: limit,
+              total: response.data[entityKey].length,
+              total_pages: Math.ceil(response.data[entityKey].length / limit)
+            }
+          };
+        }
+      }
+      
+      // Fallback
+      const data = Array.isArray(response) ? response : [];
+      return {
+        data: data,
+        pagination: {
+          current_page: page,
+          per_page: limit,
+          total: data.length,
+          total_pages: Math.ceil(data.length / limit)
+        }
+      };
+    } catch (error) {
+      console.error(`ProductService.findPaginated() error:`, error.message);
+      return {
+        data: [],
+        pagination: {
+          current_page: page,
+          per_page: limit,
+          total: 0,
+          total_pages: 0
+        }
+      };
+    }
+  }
+
   // Public product access (no authentication required)
   async filter(params = {}) {
     try {
