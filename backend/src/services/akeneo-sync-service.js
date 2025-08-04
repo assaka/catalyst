@@ -1,4 +1,5 @@
 const AkeneoIntegration = require('./akeneo-integration');
+const AkeneoImageProcessor = require('./akeneo-image-processor');
 const IntegrationConfig = require('../models/IntegrationConfig');
 
 /**
@@ -8,6 +9,7 @@ const IntegrationConfig = require('../models/IntegrationConfig');
 class AkeneoSyncService {
   constructor() {
     this.integration = null;
+    this.imageProcessor = null;
     this.config = null;
     this.storeId = null;
   }
@@ -37,12 +39,32 @@ class AkeneoSyncService {
     // Create single integration instance
     this.integration = new AkeneoIntegration(this.config);
     
+    // Initialize image processor with configuration
+    const imageConfig = {
+      cloudflare: {
+        accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
+        apiToken: process.env.CLOUDFLARE_API_TOKEN,
+        imagesApiKey: process.env.CLOUDFLARE_IMAGES_API_KEY,
+        r2BucketName: process.env.CLOUDFLARE_R2_BUCKET_NAME,
+        r2AccessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
+        r2SecretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+        r2Endpoint: process.env.CLOUDFLARE_R2_ENDPOINT,
+        imageDomain: process.env.CLOUDFLARE_IMAGES_DOMAIN,
+        useCloudflareImages: process.env.ENABLE_CLOUDFLARE_IMAGES !== 'false',
+        useR2Storage: process.env.ENABLE_CLOUDFLARE_R2 !== 'false'
+      },
+      processingEnabled: process.env.ENABLE_IMAGE_PROCESSING !== 'false'
+    };
+    
+    this.imageProcessor = new AkeneoImageProcessor(imageConfig);
+    
     console.log('🔧 AkeneoSyncService initialized:', {
       storeId: this.storeId,
       baseUrl: this.config.baseUrl,
       username: this.config.username,
       clientId: this.config.clientId,
-      clientSecretLength: this.config.clientSecret?.length
+      clientSecretLength: this.config.clientSecret?.length,
+      imageProcessingEnabled: imageConfig.processingEnabled
     });
   }
 
@@ -107,7 +129,13 @@ class AkeneoSyncService {
               result = await this.integration.importCategories(this.storeId, options);
               break;
             case 'products':
-              result = await this.integration.importProducts(this.storeId, options);
+              // Add image processing to options if enabled
+              const productOptions = {
+                ...options,
+                imageProcessor: this.imageProcessor,
+                processImages: process.env.ENABLE_IMAGE_PROCESSING !== 'false'
+              };
+              result = await this.integration.importProducts(this.storeId, productOptions);
               break;
             default:
               throw new Error(`Unknown operation: ${operation}`);
@@ -200,10 +228,198 @@ class AkeneoSyncService {
   }
 
   /**
+   * Process images for existing products
+   */
+  async processProductImages(options = {}) {
+    if (!this.integration || !this.imageProcessor) {
+      throw new Error('Service not initialized. Call initialize() first.');
+    }
+
+    const { 
+      limit = 50, 
+      offset = 0, 
+      forceReprocess = false,
+      concurrency = 2 
+    } = options;
+
+    try {
+      console.log(`🖼️ Processing images for products (limit: ${limit}, offset: ${offset})`);
+      
+      // Get products that need image processing
+      const { Product } = require('../models');
+      
+      const whereClause = forceReprocess ? 
+        { store_id: this.storeId } : 
+        { 
+          store_id: this.storeId,
+          $or: [
+            { images: null },
+            { images: [] },
+            { 'images.metadata.processed_at': null }
+          ]
+        };
+
+      const products = await Product.findAll({
+        where: whereClause,
+        limit,
+        offset,
+        order: [['created_at', 'DESC']]
+      });
+
+      if (products.length === 0) {
+        return {
+          success: true,
+          processed: 0,
+          message: 'No products found that need image processing'
+        };
+      }
+
+      console.log(`📦 Found ${products.length} products to process`);
+      
+      let processedCount = 0;
+      const errors = [];
+
+      // Process products in batches
+      for (let i = 0; i < products.length; i += concurrency) {
+        const batch = products.slice(i, i + concurrency);
+        
+        const batchPromises = batch.map(async (product) => {
+          try {
+            // Get fresh product data from Akeneo if needed
+            const akeneoProduct = await this.client.getProduct(product.akeneo_uuid || product.sku);
+            
+            // Process images
+            const processedImages = await this.imageProcessor.processProductImages(
+              akeneoProduct, 
+              this.config.baseUrl
+            );
+
+            if (processedImages.length > 0) {
+              // Convert to Catalyst format
+              const catalystImages = this.imageProcessor.convertToCatalystFormat(processedImages);
+              
+              // Update product
+              await product.update({ images: catalystImages });
+              console.log(`✅ Updated images for product: ${product.sku}`);
+              return true;
+            }
+            
+            return false;
+          } catch (error) {
+            console.error(`❌ Failed to process images for product ${product.sku}:`, error.message);
+            errors.push({
+              product_sku: product.sku,
+              error: error.message
+            });
+            return false;
+          }
+        });
+
+        const batchResults = await Promise.allSettled(batchPromises);
+        processedCount += batchResults.filter(r => r.status === 'fulfilled' && r.value).length;
+
+        // Small delay between batches
+        if (i + concurrency < products.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      return {
+        success: true,
+        processed: processedCount,
+        total: products.length,
+        errors: errors,
+        message: `Processed images for ${processedCount} out of ${products.length} products`
+      };
+
+    } catch (error) {
+      console.error('❌ Image processing failed:', error.message);
+      return {
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Test image processing configuration
+   */
+  async testImageProcessing(testUrl = null) {
+    if (!this.imageProcessor) {
+      throw new Error('Image processor not initialized');
+    }
+
+    try {
+      // Test Cloudflare connection
+      const connectionTest = await this.imageProcessor.cloudflareService.testConnection();
+      
+      // Test image processing if URL provided
+      let processingTest = null;
+      if (testUrl) {
+        processingTest = await this.imageProcessor.testProcessing(testUrl);
+      }
+
+      return {
+        success: true,
+        configuration: this.imageProcessor.getStatus(),
+        connection: connectionTest,
+        processing: processingTest
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        configuration: this.imageProcessor.getStatus()
+      };
+    }
+  }
+
+  /**
+   * Get image processing statistics
+   */
+  async getImageStats() {
+    try {
+      const { Product } = require('../models');
+      
+      const totalProducts = await Product.count({ 
+        where: { store_id: this.storeId }
+      });
+      
+      const productsWithImages = await Product.count({
+        where: { 
+          store_id: this.storeId,
+          images: { $ne: null },
+          'images.0': { $exists: true }
+        }
+      });
+
+      const processedImages = await Product.count({
+        where: {
+          store_id: this.storeId,
+          'images.metadata.processed_at': { $ne: null }
+        }
+      });
+
+      return {
+        total_products: totalProducts,
+        products_with_images: productsWithImages,
+        processed_images: processedImages,
+        processing_rate: totalProducts > 0 ? (processedImages / totalProducts * 100).toFixed(1) : 0
+      };
+    } catch (error) {
+      console.error('Error getting image stats:', error.message);
+      return {
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Clean up resources
    */
   cleanup() {
     this.integration = null;
+    this.imageProcessor = null;
     this.config = null;
     this.storeId = null;
   }

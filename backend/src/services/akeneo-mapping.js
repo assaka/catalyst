@@ -52,7 +52,7 @@ class AkeneoMapping {
   /**
    * Transform Akeneo product to Catalyst product format
    */
-  transformProduct(akeneoProduct, storeId, locale = 'en_US') {
+  transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null) {
     const values = akeneoProduct.values || {};
     
     const catalystProduct = {
@@ -78,7 +78,7 @@ class AkeneoMapping {
       weight: this.extractNumericValue(values, 'weight', locale) || 
               this.extractNumericValue(values, 'weight_kg', locale),
       dimensions: this.extractDimensions(values, locale),
-      images: this.extractImages(values),
+      images: this.extractImages(values, processedImages),
       status: akeneoProduct.enabled ? 'active' : 'inactive',
       visibility: 'visible',
       manage_stock: true,
@@ -182,24 +182,56 @@ class AkeneoMapping {
   }
 
   /**
-   * Extract images from product attributes
+   * Extract images from product attributes (enhanced)
    */
-  extractImages(values) {
+  extractImages(values, processedImages = null) {
+    // If we have processed images from Cloudflare, use those
+    if (processedImages && processedImages.length > 0) {
+      return processedImages.map((img, index) => ({
+        url: img.primary_url || img.url,
+        alt: img.alt || '',
+        sort_order: img.sort_order || index,
+        variants: img.variants || {
+          thumbnail: img.thumbnail || img.url,
+          medium: img.medium || img.url,
+          large: img.large || img.url
+        },
+        metadata: img.metadata || {}
+      }));
+    }
+    
+    // Fallback to original extraction logic
     const images = [];
     
     // Check common image attribute names
-    const imageAttributes = ['image', 'images', 'picture', 'pictures', 'photo', 'photos'];
+    const imageAttributes = ['image', 'images', 'picture', 'pictures', 'photo', 'photos', 'main_image', 'product_image'];
     
     imageAttributes.forEach(attrName => {
       const imageData = values[attrName];
       if (imageData && Array.isArray(imageData)) {
         imageData.forEach(item => {
           if (item.data) {
-            images.push({
-              url: item.data,
-              alt: '',
-              sort_order: images.length
-            });
+            const imageUrl = typeof item.data === 'string' ? item.data : 
+                           (item.data.url || item.data.path || item.data.href);
+            
+            if (imageUrl) {
+              images.push({
+                url: imageUrl,
+                alt: '',
+                sort_order: images.length,
+                variants: {
+                  thumbnail: imageUrl,
+                  medium: imageUrl, 
+                  large: imageUrl
+                },
+                metadata: {
+                  attribute: attrName,
+                  scope: item.scope,
+                  locale: item.locale,
+                  fallback: true
+                }
+              });
+            }
           }
         });
       }
