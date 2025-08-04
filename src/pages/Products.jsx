@@ -143,7 +143,7 @@ export default function Products() {
       const [firstProductBatch, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
         retryApiCall(() => {
           console.log('📦 Loading first batch of products...');
-          return Product.findPaginated(1, 500, productFilters);
+          return Product.findPaginated(1, 100, productFilters);
         }).catch((error) => {
           console.error('❌ Product.findPaginated failed:', error);
           return { data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } };
@@ -188,7 +188,7 @@ export default function Products() {
         console.log('🔄 Loading remaining products in batches...');
         
         // Load pages 2 onwards in smaller batches to avoid timeout
-        const batchSize = 3; // Load 3 pages at a time
+        const batchSize = 3; // Load 3 pages at a time (300 products per batch)
         
         for (let page = 2; page <= totalPages; page += batchSize) {
           const pagesToLoad = [];
@@ -199,7 +199,7 @@ export default function Products() {
           // Create promises for this batch
           for (let p = page; p <= endPage; p++) {
             pagesToLoad.push(
-              retryApiCall(() => Product.findPaginated(p, 500, productFilters))
+              retryApiCall(() => Product.findPaginated(p, 100, productFilters))
                 .catch((error) => {
                   console.error(`❌ Failed to load page ${p}:`, error);
                   return { data: [] };
@@ -219,17 +219,20 @@ export default function Products() {
           
           console.log(`✅ Batch complete. Total products loaded: ${allProducts.length}`);
           
-          // Update UI with current progress
-          setProducts(allProducts);
+          // Update UI with current progress - force re-render
+          setProducts([...allProducts]); // Create new array to force React re-render
           setTotalItems(totalProductsInStore);
           setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
+          
+          // Small delay to ensure UI updates properly
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
       
       console.log('✅ All products loaded:', allProducts.length, 'products');
       
-      // Final state update
-      setProducts(allProducts);
+      // Final state update - ensure fresh array reference
+      setProducts([...allProducts]); // Force React re-render with new array reference
       setTotalItems(totalProductsInStore);
       setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
       setCurrentPage(1);
@@ -432,6 +435,14 @@ export default function Products() {
     }
     
     return matchesSearch && matchesStatus && matchesCategory && matchesPriceRange;
+  });
+
+  // Debug logging for filtering
+  console.log('🔍 Products filtering debug:', {
+    totalProducts: products.length,
+    filteredProducts: filteredProducts.length,
+    searchQuery,
+    filters
   });
 
   // Client-side pagination for display
