@@ -7,9 +7,8 @@ import { createPageUrl } from '@/utils';
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus } from '@/api/functions';
 
 import { useAlertTypes } from '@/hooks/useAlert';
-export const SetupGuide = ({ 
-  const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
-store }) => {
+export const SetupGuide = ({ store }) => {
+    const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
     const navigate = useNavigate();
     const [connecting, setConnecting] = useState(false);
 
