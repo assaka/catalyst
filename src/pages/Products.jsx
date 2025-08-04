@@ -560,6 +560,7 @@ export default function Products() {
             <Plus className="w-4 h-4 mr-2" />
             Add Product
           </Button>
+          </div>
         </div>
 
         <Card className="material-elevation-1 border-0 mb-6">
