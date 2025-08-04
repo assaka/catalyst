@@ -687,84 +687,239 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             </div>
 
             {selectedAttributes.length > 0 && (
-              <div className="space-y-4">
-                <h4 className="font-medium">Attribute Values</h4>
-                {selectedAttributes.map(attribute => {
-                  const attributeValue = formData.attributes[attribute.code];
+              <div className="space-y-6">
+                {/* Image Attributes Section */}
+                {(() => {
+                  const imageAttributes = selectedAttributes.filter(attr => 
+                    attr.type === 'file' && 
+                    attr.file_settings?.allowed_extensions?.some(ext => 
+                      ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+                    )
+                  );
+                  const attributesWithImages = imageAttributes.filter(attr => {
+                    const value = formData.attributes[attr.code];
+                    return value && (typeof value === 'object' ? value.url : value);
+                  });
+                  const attributesWithoutImages = imageAttributes.filter(attr => {
+                    const value = formData.attributes[attr.code];
+                    return !value || !(typeof value === 'object' ? value.url : value);
+                  });
+
+                  if (imageAttributes.length === 0) return null;
+
                   return (
-                    <div key={attribute.id}>
-                      <Label htmlFor={`attr_${attribute.code}`}>{attribute.name}</Label>
-                      {attribute.type === 'select' && attribute.options ? (
-                        <Select
-                          value={attributeValue || ""}
-                          onValueChange={(v) => handleAttributeValueChange(attribute.code, v)}
-                        >
-                          <SelectTrigger><SelectValue placeholder={`Select ${attribute.name}`} /></SelectTrigger>
-                          <SelectContent>
-                            {attribute.options.filter(o => o.value !== "").map(option => (
-                              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-lg flex items-center">
+                        <span className="mr-2">🖼️</span>
+                        Image Attributes
+                        <Badge variant="outline" className="ml-2">
+                          {attributesWithImages.length}/{imageAttributes.length} with images
+                        </Badge>
+                      </h4>
+                      
+                      {/* Attributes with images */}
+                      {attributesWithImages.length > 0 && (
+                        <div className="space-y-4">
+                          <h5 className="font-medium text-green-700">Images Added ({attributesWithImages.length})</h5>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {attributesWithImages.map(attribute => {
+                              const attributeValue = formData.attributes[attribute.code];
+                              const imageUrl = typeof attributeValue === 'object' ? attributeValue.url : attributeValue;
+                              
+                              return (
+                                <div key={attribute.id} className="border rounded-lg p-4 bg-green-50">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <Label className="font-medium text-green-800">{attribute.name}</Label>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleAttributeValueChange(attribute.code, null)}
+                                      className="text-red-500 hover:text-red-700 p-1"
+                                      title="Remove image"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                  
+                                  {imageUrl && (
+                                    <div className="mb-3">
+                                      <img 
+                                        src={imageUrl} 
+                                        alt={attribute.name}
+                                        className="w-full h-32 object-cover rounded border"
+                                      />
+                                    </div>
+                                  )}
+                                  
+                                  <div className="space-y-2">
+                                    <input
+                                      type="file"
+                                      id={`attr_${attribute.code}`}
+                                      onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                      accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                                      disabled={uploadingImage}
+                                    />
+                                    
+                                    {uploadingImage && (
+                                      <p className="text-sm text-blue-600">Uploading image...</p>
+                                    )}
+                                    
+                                    {typeof attributeValue === 'object' && attributeValue.name && (
+                                      <div className="text-sm text-gray-600">
+                                        <span className="font-medium">{attributeValue.name}</span>
+                                        {attributeValue.size && (
+                                          <span className="ml-2">
+                                            ({(attributeValue.size / 1024 / 1024).toFixed(2)} MB)
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                    
+                                    {attribute.file_settings && (
+                                      <p className="text-xs text-gray-500">
+                                        Max: {attribute.file_settings.max_file_size}MB. 
+                                        Types: {attribute.file_settings.allowed_extensions?.join(', ')}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Attributes without images */}
+                      {attributesWithoutImages.length > 0 && (
+                        <div className="space-y-4">
+                          <h5 className="font-medium text-amber-700">Add Images ({attributesWithoutImages.length})</h5>
+                          <div className="grid md:grid-cols-2 gap-4">
+                            {attributesWithoutImages.map(attribute => (
+                              <div key={attribute.id} className="border-2 border-dashed border-amber-300 rounded-lg p-4 bg-amber-50">
+                                <Label className="font-medium text-amber-800 mb-3 block">{attribute.name}</Label>
+                                
+                                <div className="space-y-2">
+                                  <input
+                                    type="file"
+                                    id={`attr_${attribute.code}`}
+                                    onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                    accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
+                                    disabled={uploadingImage}
+                                  />
+                                  
+                                  {uploadingImage && (
+                                    <p className="text-sm text-blue-600">Uploading image...</p>
+                                  )}
+                                  
+                                  {attribute.file_settings && (
+                                    <p className="text-xs text-gray-500">
+                                      Max: {attribute.file_settings.max_file_size}MB. 
+                                      Types: {attribute.file_settings.allowed_extensions?.join(', ')}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
                             ))}
-                          </SelectContent>
-                        </Select>
-                      ) : attribute.type === 'boolean' ? (
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id={`attr_${attribute.code}`}
-                            checked={attributeValue || false}
-                            onCheckedChange={(checked) => handleAttributeValueChange(attribute.code, checked)}
-                          />
+                          </div>
                         </div>
-                      ) : attribute.type === 'file' ? (
-                        <div className="space-y-2">
-                          <input
-                            type="file"
-                            id={`attr_${attribute.code}`}
-                            onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
-                            accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
-                            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                            disabled={uploadingImage}
-                          />
-                          {uploadingImage && (
-                            <p className="text-sm text-blue-600">Uploading file...</p>
-                          )}
-                          {attributeValue && (typeof attributeValue === 'object' ? attributeValue.url : attributeValue) && (
-                            <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
-                              <span className="text-sm font-medium">
-                                {typeof attributeValue === 'object' ? attributeValue.name : 'File Link'}
-                              </span>
-                              {typeof attributeValue === 'object' && attributeValue.size && (
-                                <span className="text-xs text-gray-500">
-                                  {`(${(attributeValue.size / 1024 / 1024).toFixed(2)} MB)`}
-                                </span>
-                              )}
-                              <a
-                                href={typeof attributeValue === 'object' ? attributeValue.url : attributeValue}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 text-sm"
-                              >
-                                View
-                              </a>
-                            </div>
-                          )}
-                          {attribute.file_settings && (
-                            <p className="text-xs text-gray-500">
-                              Max size: {attribute.file_settings.max_file_size}MB.
-                              Allowed: {attribute.file_settings.allowed_extensions?.join(', ')}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <Input
-                          id={`attr_${attribute.code}`}
-                          type={attribute.type === 'number' ? 'number' : attribute.type === 'date' ? 'date' : 'text'}
-                          value={attributeValue && typeof attributeValue === 'object' ? '' : (attributeValue || "")}
-                          onChange={(e) => handleAttributeValueChange(attribute.code, e.target.value)}
-                        />
                       )}
                     </div>
                   );
-                })}
+                })()}
+
+                {/* Non-Image Attributes Section */}
+                {(() => {
+                  const nonImageAttributes = selectedAttributes.filter(attr => 
+                    attr.type !== 'file' || !attr.file_settings?.allowed_extensions?.some(ext => 
+                      ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+                    )
+                  );
+
+                  if (nonImageAttributes.length === 0) return null;
+
+                  return (
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-lg">Other Attributes</h4>
+                      {nonImageAttributes.map(attribute => {
+                        const attributeValue = formData.attributes[attribute.code];
+                        return (
+                          <div key={attribute.id}>
+                            <Label htmlFor={`attr_${attribute.code}`}>{attribute.name}</Label>
+                            {attribute.type === 'select' && attribute.options ? (
+                              <Select
+                                value={attributeValue || ""}
+                                onValueChange={(v) => handleAttributeValueChange(attribute.code, v)}
+                              >
+                                <SelectTrigger><SelectValue placeholder={`Select ${attribute.name}`} /></SelectTrigger>
+                                <SelectContent>
+                                  {attribute.options.filter(o => o.value !== "").map(option => (
+                                    <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : attribute.type === 'boolean' ? (
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  id={`attr_${attribute.code}`}
+                                  checked={attributeValue || false}
+                                  onCheckedChange={(checked) => handleAttributeValueChange(attribute.code, checked)}
+                                />
+                              </div>
+                            ) : attribute.type === 'file' ? (
+                              <div className="space-y-2">
+                                <input
+                                  type="file"
+                                  id={`attr_${attribute.code}`}
+                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                  accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                  disabled={uploadingImage}
+                                />
+                                {uploadingImage && (
+                                  <p className="text-sm text-blue-600">Uploading file...</p>
+                                )}
+                                {attributeValue && (typeof attributeValue === 'object' ? attributeValue.url : attributeValue) && (
+                                  <div className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                                    <span className="text-sm font-medium">
+                                      {typeof attributeValue === 'object' ? attributeValue.name : 'File Link'}
+                                    </span>
+                                    {typeof attributeValue === 'object' && attributeValue.size && (
+                                      <span className="text-xs text-gray-500">
+                                        {`(${(attributeValue.size / 1024 / 1024).toFixed(2)} MB)`}
+                                      </span>
+                                    )}
+                                    <a
+                                      href={typeof attributeValue === 'object' ? attributeValue.url : attributeValue}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 text-sm"
+                                    >
+                                      View
+                                    </a>
+                                  </div>
+                                )}
+                                {attribute.file_settings && (
+                                  <p className="text-xs text-gray-500">
+                                    Max size: {attribute.file_settings.max_file_size}MB.
+                                    Allowed: {attribute.file_settings.allowed_extensions?.join(', ')}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <Input
+                                id={`attr_${attribute.code}`}
+                                type={attribute.type === 'number' ? 'number' : attribute.type === 'date' ? 'date' : 'text'}
+                                value={attributeValue && typeof attributeValue === 'object' ? '' : (attributeValue || "")}
+                                onChange={(e) => handleAttributeValueChange(attribute.code, e.target.value)}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </CardContent>
