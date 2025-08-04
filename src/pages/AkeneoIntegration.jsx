@@ -2164,20 +2164,20 @@ const AkeneoIntegration = () => {
                   <Label htmlFor="categories-dry-run">Dry Run (Preview only)</Label>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                      id="prevent-category-url-override"
+                      checked={categorySettings.preventUrlKeyOverride}
+                      onCheckedChange={(checked) =>
+                          setCategorySettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
+                      }
+                  />
+                  <div>
                     <Label htmlFor="prevent-category-url-override">Prevent URL key override</Label>
                     <p className="text-sm text-muted-foreground">
                       Keep existing category URL slugs unchanged during import
                     </p>
                   </div>
-                  <Switch
-                    id="prevent-category-url-override"
-                    checked={categorySettings.preventUrlKeyOverride}
-                    onCheckedChange={(checked) => 
-                      setCategorySettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
-                    }
-                  />
                 </div>
 
                 {!categorySettings.preventUrlKeyOverride && (
@@ -2291,13 +2291,7 @@ const AkeneoIntegration = () => {
                 <Label htmlFor="products-dry-run">Dry Run (Preview only)</Label>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="prevent-product-url-override">Prevent URL key override</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Keep existing product URL slugs unchanged during import
-                  </p>
-                </div>
+              <div className="flex items-center space-x-2">
                 <Switch
                   id="prevent-product-url-override"
                   checked={productSettings.preventUrlKeyOverride}
@@ -2305,6 +2299,12 @@ const AkeneoIntegration = () => {
                     setProductSettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
                   }
                 />
+                <div className="space-y-1">
+                  <Label htmlFor="prevent-product-url-override">Prevent URL key override</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Keep existing product URL slugs unchanged during import
+                  </p>
+                </div>
               </div>
 
               {!productSettings.preventUrlKeyOverride && (
