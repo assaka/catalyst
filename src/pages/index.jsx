@@ -12,6 +12,8 @@ import Products from "./Products";
 
 import Categories from "./Categories";
 
+import ImageProcessing from "../components/admin/ImageProcessing";
+
 import Settings from "./Settings";
 
 import Attributes from "./Attributes";
@@ -115,6 +117,8 @@ const PAGES = {
     Products: Products,
     
     Categories: Categories,
+    
+    ImageProcessing: ImageProcessing,
     
     Settings: Settings,
     
@@ -225,6 +229,7 @@ function _getCurrentPage(url) {
         'product-tabs': 'ProductTabs',
         'product-labels': 'ProductLabels', 
         'custom-option-rules': 'CustomOptionRules',
+        'image-processing': 'ImageProcessing',
         'shipping-methods': 'ShippingMethods',
         'payment-methods': 'PaymentMethods',
         'delivery-settings': 'DeliverySettings',
@@ -314,6 +319,12 @@ function PagesContent() {
                 <Route path="/admin/categories" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Categories />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/image-processing" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ImageProcessing />
                     </RoleProtectedRoute>
                 } />
                 
@@ -705,6 +716,12 @@ function PagesContent() {
                 <Route path="/admin/categories" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Categories />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/image-processing" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ImageProcessing />
                     </RoleProtectedRoute>
                 } />
                 
