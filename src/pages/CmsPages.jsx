@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { CmsPage } from "@/api/entities";
 import { Product } from "@/api/entities";
+import { Store } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
 import { 
@@ -36,12 +37,26 @@ export default function CmsPages() {
   const [editingPage, setEditingPage] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [flashMessage, setFlashMessage] = useState(null);
+  const [fullStore, setFullStore] = useState(null);
 
   useEffect(() => {
     if (selectedStore) {
       loadPages();
+      loadFullStore();
     }
   }, [selectedStore]);
+
+  const loadFullStore = async () => {
+    if (selectedStore?.id) {
+      try {
+        const fullStoreData = await Store.findById(selectedStore.id);
+        const store = Array.isArray(fullStoreData) ? fullStoreData[0] : fullStoreData;
+        setFullStore(store);
+      } catch (error) {
+        console.error('Error loading full store data:', error);
+      }
+    }
+  };
 
   // Listen for store changes
   useEffect(() => {
@@ -198,9 +213,13 @@ export default function CmsPages() {
               </CardHeader>
               <CardContent>
                 <div className="flex justify-end space-x-2">
-                   <Link to={createCmsPageUrl(selectedStore?.slug, page.slug)} target="_blank">
-                      <Button variant="outline" size="sm">View</Button>
-                   </Link>
+                   {(fullStore?.slug || selectedStore?.slug) ? (
+                     <Link to={createCmsPageUrl(fullStore?.slug || selectedStore?.slug, page.slug)} target="_blank">
+                        <Button variant="outline" size="sm">View</Button>
+                     </Link>
+                   ) : (
+                     <Button variant="outline" size="sm" disabled title="Store slug not available">View</Button>
+                   )}
                    <Button
                     variant="outline"
                     size="sm"
