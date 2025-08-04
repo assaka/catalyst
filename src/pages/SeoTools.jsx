@@ -381,12 +381,8 @@ export default function SeoTools() {
   };
 
   const handleSaveTemplate = async () => {
-    console.log('🔍 handleSaveTemplate called');
-    
     // Check authentication status
     const adminToken = localStorage.getItem('admin_auth_token');
-    console.log('🔍 Admin token exists:', !!adminToken);
-    console.log('🔍 Admin token (first 20 chars):', adminToken ? adminToken.substring(0, 20) + '...' : 'null');
     
     if (!adminToken) {
       setFlashMessage({ type: 'error', message: 'Authentication required. Please refresh the page and try again.' });
@@ -415,11 +411,7 @@ export default function SeoTools() {
         store_id: storeId
       };
 
-      console.log('🔍 Template payload:', payload);
-      console.log('🔍 EditingTemplate:', editingTemplate);
-
       if (editingTemplate) {
-        console.log('🔍 Updating template:', editingTemplate.id);
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/seo-templates/${editingTemplate.id}`, {
           method: 'PUT',
           headers: {
@@ -429,12 +421,10 @@ export default function SeoTools() {
           body: JSON.stringify(payload)
         });
         const updateResult = await response.json();
-        console.log('🔍 Update result:', updateResult);
         if (!response.ok) {
           throw new Error(updateResult.message || 'Failed to update template');
         }
       } else {
-        console.log('🔍 Creating new template');
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/seo-templates`, {
           method: 'POST',
           headers: {
@@ -444,13 +434,10 @@ export default function SeoTools() {
           body: JSON.stringify(payload)
         });
         const createResult = await response.json();
-        console.log('🔍 Create result:', createResult);
         if (!response.ok) {
           throw new Error(createResult.message || 'Failed to create template');
         }
       }
-
-      console.log('🔍 Reloading data...');
       await loadData();
       setShowTemplateForm(false);
       setEditingTemplate(null);
@@ -459,9 +446,7 @@ export default function SeoTools() {
       // Clear storefront cache for instant updates
       if (storeId) clearSeoTemplatesCache(storeId);
     } catch (error) {
-      console.error('🔍 Save template error:', error);
-      console.error('🔍 Error message:', error.message);
-      console.error('🔍 Error response:', error.response);
+      console.error('Save template error:', error);
       setFlashMessage({ type: 'error', message: 'Failed to save template: ' + error.message });
     } finally {
       setSaving(false);

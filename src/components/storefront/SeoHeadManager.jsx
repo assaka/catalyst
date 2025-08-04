@@ -110,8 +110,8 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                     
                     const pageCategories = pageData?.category_ids || pageData?.categories || [];
                     
-                    // Debug category matching (temporarily enabled in production)
-                    if (true) {
+                    // Debug category matching
+                    if (process.env.NODE_ENV === 'development') {
                         console.log('🔍 Category matching for template:', template.name, {
                             templateCategories: template.conditions.categories,
                             pageCategories: pageCategories,
@@ -124,8 +124,9 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
                         pageCategories.includes(conditionCat)
                     );
                     
-                    // Debug match result (temporarily enabled in production)
-                    console.log('🔍 Category match result:', hasMatchingCategory);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.log('🔍 Category match result:', hasMatchingCategory);
+                    }
                     
                     if (!hasMatchingCategory) {
                         matches = false;
@@ -163,8 +164,8 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         
         const matchingTemplate = currentPageType ? findMatchingSeoTemplate(currentPageType) : null;
         
-        // Debug logging for SEO template matching (temporarily enabled in production)
-        if (currentPageType) {
+        // Debug logging for SEO template matching
+        if (process.env.NODE_ENV === 'development' && currentPageType) {
             console.log('🔍 SeoHeadManager: SEO Template Debug', {
                 pageType: currentPageType,
                 availableTemplates: seoTemplates?.length || 0,
