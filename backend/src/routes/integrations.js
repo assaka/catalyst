@@ -203,7 +203,15 @@ router.post('/akeneo/test-connection',
       });
     }
 
-    res.json(result);
+      res.json(result);
+    } catch (syncError) {
+      // Handle sync service initialization errors
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to initialize Akeneo configuration',
+        error: syncError.message
+      });
+    }
   } catch (error) {
     console.error('Error testing Akeneo connection:', error);
     res.status(500).json({
