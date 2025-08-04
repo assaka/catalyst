@@ -362,7 +362,15 @@ export default function Products() {
           return Promise.resolve();
         }
         console.log(`📝 Updating product "${product.name}" (${product.sku}) from "${product.status}" to "${newStatus}"`);
-        return Product.update(id, { ...product, status: newStatus });
+        return Product.update(id, { status: newStatus })
+          .then(result => {
+            console.log(`✅ Successfully updated product ${id} to ${newStatus}:`, result);
+            return result;
+          })
+          .catch(error => {
+            console.error(`❌ Failed to update product ${id}:`, error);
+            throw error;
+          });
       });
       
       await Promise.all(updatePromises);
@@ -371,14 +379,8 @@ export default function Products() {
       setSelectedProducts(new Set());
       setShowBulkActions(false);
       
-      // Reset status filter to "all" to show updated products regardless of their new status
-      console.log('🔄 Resetting status filter to "all"');
-      const newFilters = { ...filters, status: "all" };
-      setFilters(newFilters);
-      console.log('📋 New filters:', newFilters);
-      
-      // Add a small delay to ensure state update is processed before reloading
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Temporarily removing filter reset to debug backend update issue
+      console.log('🔄 NOT resetting filters to debug backend update issue');
       
       console.log('🔄 Reloading data...');
       await loadData();
@@ -427,7 +429,7 @@ export default function Products() {
 
   const handleStatusChange = async (product, newStatus) => {
     try {
-      await Product.update(product.id, { ...product, status: newStatus });
+      await Product.update(product.id, { status: newStatus });
       
       // Reset status filter to "all" to show updated product regardless of its new status
       setFilters(prev => ({ ...prev, status: "all" }));
