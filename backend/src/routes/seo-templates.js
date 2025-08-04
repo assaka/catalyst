@@ -4,10 +4,55 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
+// @route   GET /api/public/seo-templates
+// @desc    Get SEO templates for a store (public access)
+// @access  Public
+router.get('/', async (req, res) => {
+  try {
+    console.log('🔍 GET /api/public/seo-templates called');
+    console.log('🔍 Query params:', req.query);
+    
+    const { store_id, page_type } = req.query;
+
+    if (!store_id) {
+      console.log('❌ No store_id provided');
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required'
+      });
+    }
+
+    const whereClause = { 
+      store_id,
+      is_active: true // Only return active templates for public access
+    };
+    if (page_type) whereClause.type = page_type;
+    
+    console.log('🔍 Where clause:', whereClause);
+
+    const templates = await SeoTemplate.findAll({
+      where: whereClause,
+      order: [['sort_order', 'ASC'], ['type', 'ASC']]
+    });
+    
+    console.log('🔍 Found templates:', templates.length);
+    console.log('🔍 Templates data:', templates.map(t => ({ id: t.id, name: t.name, type: t.type, is_active: t.is_active })));
+
+    // Return array format that the frontend expects
+    res.json(templates);
+  } catch (error) {
+    console.error('Get public SEO templates error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+});
+
 // @route   GET /api/seo-templates
-// @desc    Get SEO templates for a store
+// @desc    Get SEO templates for a store (admin access)
 // @access  Private (admin only)
-router.get('/', auth, async (req, res) => {
+router.get('/admin', auth, async (req, res) => {
   try {
     console.log('🔍 GET /api/seo-templates called');
     console.log('🔍 Query params:', req.query);
