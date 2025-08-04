@@ -375,6 +375,7 @@ export default function SeoTools() {
   };
 
   const handleSaveTemplate = async () => {
+    console.log('🔍 handleSaveTemplate called');
     try {
       setSaving(true);
 
@@ -396,9 +397,14 @@ export default function SeoTools() {
         store_id: storeId
       };
 
+      console.log('🔍 Template payload:', payload);
+      console.log('🔍 EditingTemplate:', editingTemplate);
+
       if (editingTemplate) {
+        console.log('🔍 Updating template:', editingTemplate.id);
         await SeoTemplate.update(editingTemplate.id, payload);
       } else {
+        console.log('🔍 Creating new template');
         await SeoTemplate.create(payload);
       }
 
