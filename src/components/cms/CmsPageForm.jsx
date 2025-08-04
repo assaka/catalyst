@@ -53,7 +53,7 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         slug: page.slug || "",
         content: page.content || "",
         is_active: page.is_active ?? true,
-        store_id: page.store_id || (stores[0]?.id || ""),
+        store_id: page.store_id || getSelectedStoreId() || "",
         related_product_ids: page.related_product_ids || [],
         // Populate new SEO fields from page data, providing defaults if not present
         meta_title: page.meta_title || "",         // Populate meta_title
@@ -68,9 +68,9 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       setHasManuallyEditedSlug(!!(page.slug));
       setIsEditingSlug(!!(page.slug));
     } else {
-      // For new pages, ensure store_id is pre-selected if stores exist
-      // Other fields will retain their initial useState defaults.
-      setFormData(prev => ({ ...prev, store_id: stores[0]?.id || "" }));
+      // For new pages, automatically use the selected store ID
+      const storeId = getSelectedStoreId();
+      setFormData(prev => ({ ...prev, store_id: storeId || "" }));
     }
   }, [page, stores]);
 
@@ -337,26 +337,9 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         </div>
       </div>
 
-      {/* Store and Active switch section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Label htmlFor="store_id">Store *</Label>
-          <Select
-            value={formData.store_id}
-            onValueChange={(value) => handleInputChange("store_id", value)} // Keep specific handler for Select
-            required
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a store" />
-            </SelectTrigger>
-            <SelectContent>
-              {stores.map((store) => (
-                <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="flex items-center space-x-2 pt-6">
+      {/* Active switch section */}
+      <div className="grid grid-cols-1 gap-6">
+        <div className="flex items-center space-x-2">
           <Switch
             id="is_active"
             checked={formData.is_active}
