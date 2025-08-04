@@ -60,7 +60,8 @@ const AkeneoIntegration = () => {
   const [categorySettings, setCategorySettings] = useState({
     hideFromMenu: false,
     setNewActive: true,
-    preventUrlKeyOverride: false
+    preventUrlKeyOverride: false,
+    akeneoUrlField: 'url_key' // Default Akeneo field for URL generation
   });
   
   const [productSettings, setProductSettings] = useState({
@@ -72,7 +73,8 @@ const AkeneoIntegration = () => {
     includeImages: true,
     includeFiles: true,
     stockFilter: 'disabled', // disabled, in_stock, out_of_stock
-    preventUrlKeyOverride: false
+    preventUrlKeyOverride: false,
+    akeneoUrlField: 'url_key' // Default Akeneo field for URL generation
   });
   
   const [attributeSettings, setAttributeSettings] = useState({
@@ -811,7 +813,8 @@ const AkeneoIntegration = () => {
           settings: {
             hideFromMenu: categorySettings.hideFromMenu,
             setNewActive: categorySettings.setNewActive,
-            preventUrlKeyOverride: categorySettings.preventUrlKeyOverride
+            preventUrlKeyOverride: categorySettings.preventUrlKeyOverride,
+            akeneoUrlField: categorySettings.akeneoUrlField
           }
         };
         console.log('🔒 Using stored configuration for import');
@@ -826,7 +829,8 @@ const AkeneoIntegration = () => {
           settings: {
             hideFromMenu: categorySettings.hideFromMenu,
             setNewActive: categorySettings.setNewActive,
-            preventUrlKeyOverride: categorySettings.preventUrlKeyOverride
+            preventUrlKeyOverride: categorySettings.preventUrlKeyOverride,
+            akeneoUrlField: categorySettings.akeneoUrlField
           }
         };
         console.log('📋 Using provided configuration for import');
@@ -1077,7 +1081,8 @@ const AkeneoIntegration = () => {
           includeImages: productSettings.includeImages,
           includeFiles: productSettings.includeFiles,
           stockFilter: productSettings.stockFilter,
-          preventUrlKeyOverride: productSettings.preventUrlKeyOverride
+          preventUrlKeyOverride: productSettings.preventUrlKeyOverride,
+          akeneoUrlField: productSettings.akeneoUrlField
         },
         customMappings: customMappings
       };
@@ -2159,6 +2164,39 @@ const AkeneoIntegration = () => {
                   <Label htmlFor="categories-dry-run">Dry Run (Preview only)</Label>
                 </div>
 
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="prevent-category-url-override">Prevent URL key override</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Keep existing category URL slugs unchanged during import
+                    </p>
+                  </div>
+                  <Switch
+                    id="prevent-category-url-override"
+                    checked={categorySettings.preventUrlKeyOverride}
+                    onCheckedChange={(checked) => 
+                      setCategorySettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
+                    }
+                  />
+                </div>
+
+                {!categorySettings.preventUrlKeyOverride && (
+                  <div className="space-y-2">
+                    <Label htmlFor="category-akeneo-url-field">Akeneo URL field name</Label>
+                    <Input
+                      id="category-akeneo-url-field"
+                      placeholder="e.g., url_key, slug, seo_url"
+                      value={categorySettings.akeneoUrlField}
+                      onChange={(e) => 
+                        setCategorySettings(prev => ({ ...prev, akeneoUrlField: e.target.value }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Akeneo field to use for generating category URLs (leave empty to use category name)
+                    </p>
+                  </div>
+                )}
+
                 {/* Advanced Category Settings */}
                 <Card className="bg-gray-50">
                   <CardHeader>
@@ -2185,22 +2223,6 @@ const AkeneoIntegration = () => {
                         }
                       />
                       <Label htmlFor="set-new-active">Set new categories as active</Label>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label htmlFor="prevent-category-url-override">Prevent URL key override</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Keep existing category URL slugs unchanged during import
-                        </p>
-                      </div>
-                      <Switch
-                        id="prevent-category-url-override"
-                        checked={categorySettings.preventUrlKeyOverride}
-                        onCheckedChange={(checked) => 
-                          setCategorySettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
-                        }
-                      />
                     </div>
                   </CardContent>
                 </Card>
@@ -2268,6 +2290,39 @@ const AkeneoIntegration = () => {
                 />
                 <Label htmlFor="products-dry-run">Dry Run (Preview only)</Label>
               </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="prevent-product-url-override">Prevent URL key override</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Keep existing product URL slugs unchanged during import
+                  </p>
+                </div>
+                <Switch
+                  id="prevent-product-url-override"
+                  checked={productSettings.preventUrlKeyOverride}
+                  onCheckedChange={(checked) => 
+                    setProductSettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
+                  }
+                />
+              </div>
+
+              {!productSettings.preventUrlKeyOverride && (
+                <div className="space-y-2">
+                  <Label htmlFor="product-akeneo-url-field">Akeneo URL field name</Label>
+                  <Input
+                    id="product-akeneo-url-field"
+                    placeholder="e.g., url_key, slug, seo_url"
+                    value={productSettings.akeneoUrlField}
+                    onChange={(e) => 
+                      setProductSettings(prev => ({ ...prev, akeneoUrlField: e.target.value }))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Akeneo field to use for generating product URLs (leave empty to use product name)
+                  </p>
+                </div>
+              )}
 
               {/* Advanced Product Settings */}
               <Card className="bg-gray-50">
@@ -2440,21 +2495,6 @@ const AkeneoIntegration = () => {
                         checked={productSettings.includeFiles}
                         onCheckedChange={(checked) => 
                           setProductSettings(prev => ({ ...prev, includeFiles: checked }))
-                        }
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label>Prevent URL key override</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Keep existing product URL slugs unchanged during import
-                        </p>
-                      </div>
-                      <Switch
-                        checked={productSettings.preventUrlKeyOverride}
-                        onCheckedChange={(checked) => 
-                          setProductSettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
                         }
                       />
                     </div>

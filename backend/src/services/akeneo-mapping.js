@@ -26,10 +26,40 @@ class AkeneoMapping {
   transformCategory(akeneoCategory, storeId, locale = 'en_US', settings = {}) {
     const categoryName = this.extractLocalizedValue(akeneoCategory.labels, locale) || akeneoCategory.code;
     
+    // Determine what to use for slug generation
+    let slugSource = categoryName;
+    if (settings.akeneoUrlField) {
+      let urlFieldValue = null;
+      
+      // Try different places where the URL field might be
+      if (akeneoCategory.values && akeneoCategory.values[settings.akeneoUrlField]) {
+        // For categories with values structure (some Akeneo setups)
+        const rawValue = this.extractLocalizedValue(akeneoCategory.values[settings.akeneoUrlField], locale) ||
+                        this.extractProductValue(akeneoCategory.values, settings.akeneoUrlField, locale);
+        
+        // Extract the actual data value if it's an object with data property
+        if (rawValue && typeof rawValue === 'object' && rawValue.data) {
+          urlFieldValue = rawValue.data;
+        } else if (typeof rawValue === 'string') {
+          urlFieldValue = rawValue;
+        }
+      } else if (akeneoCategory[settings.akeneoUrlField]) {
+        // For direct field access
+        urlFieldValue = akeneoCategory[settings.akeneoUrlField];
+        if (typeof urlFieldValue === 'object' && urlFieldValue[locale]) {
+          urlFieldValue = urlFieldValue[locale];
+        }
+      }
+      
+      if (urlFieldValue && typeof urlFieldValue === 'string' && urlFieldValue.trim()) {
+        slugSource = urlFieldValue.trim();
+      }
+    }
+    
     const catalystCategory = {
       store_id: storeId,
       name: categoryName,
-      slug: this.generateSlug(categoryName),
+      slug: this.generateSlug(slugSource),
       description: null,
       image_url: null,
       sort_order: 0,
@@ -47,7 +77,7 @@ class AkeneoMapping {
       akeneo_code: akeneoCategory.code,
       akeneo_parent: akeneoCategory.parent,
       // Store original slug for comparison
-      _originalSlug: this.generateSlug(categoryName)
+      _originalSlug: this.generateSlug(slugSource)
     };
 
     return catalystCategory;
@@ -56,19 +86,29 @@ class AkeneoMapping {
   /**
    * Transform Akeneo product to Catalyst product format
    */
-  transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}) {
+  transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}) {
     const values = akeneoProduct.values || {};
     
-    // Extract product name for slug generation
+    // Extract product name
     const productName = this.extractProductValue(values, 'name', locale) || 
                        this.extractProductValue(values, 'label', locale) || 
                        akeneoProduct.identifier;
+    
+    // Determine what to use for slug generation
+    let slugSource = productName;
+    if (settings.akeneoUrlField && values[settings.akeneoUrlField]) {
+      // Try to extract the custom URL field value
+      const urlFieldValue = this.extractProductValue(values, settings.akeneoUrlField, locale);
+      if (urlFieldValue && typeof urlFieldValue === 'string' && urlFieldValue.trim()) {
+        slugSource = urlFieldValue.trim();
+      }
+    }
     
     // Start with default product structure
     const catalystProduct = {
       store_id: storeId,
       name: productName,
-      slug: this.generateSlug(productName),
+      slug: this.generateSlug(slugSource),
       sku: akeneoProduct.identifier,
       barcode: this.extractProductValue(values, 'ean', locale) || 
                this.extractProductValue(values, 'barcode', locale),
@@ -108,7 +148,7 @@ class AkeneoMapping {
       akeneo_family: akeneoProduct.family,
       akeneo_groups: akeneoProduct.groups || [],
       // Store original slug for comparison
-      _originalSlug: this.generateSlug(productName)
+      _originalSlug: this.generateSlug(slugSource)
     };
 
     // Apply custom attribute mappings
@@ -498,7 +538,7 @@ class AkeneoMapping {
    * Generate URL-friendly slug from text
    */
   generateSlug(text) {
-    if (!text) return '';
+    if (!text || typeof text !== 'string') return '';
     
     return text
       .toLowerCase()

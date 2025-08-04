@@ -657,9 +657,10 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </CardContent>
         </Card>
 
-        {/* Image Attributes Section - Independent of attribute sets */}
+
+        {/* Product Images Section - Always visible, independent of attribute sets */}
         {(() => {
-          // Find all image-related attributes from all attributes, not just selected ones
+          // Find all image-related attributes from ALL attributes, not just selected ones
           const allImageAttributes = passedAttributes?.filter(attr => 
             attr && 
             attr.type === 'file' && 
@@ -674,6 +675,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             )
           ) || [];
 
+          // Always show this section if there are any image attributes
           if (allImageAttributes.length === 0) return null;
 
           const attributesWithImages = allImageAttributes.filter(attr => {
@@ -686,37 +688,39 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           });
 
           return (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <span className="mr-2">🖼️</span>
+            <Card className="border-2 border-blue-200 bg-blue-50/30">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
+                <CardTitle className="flex items-center text-lg">
+                  <span className="mr-3 text-2xl">🖼️</span>
                   Product Images
-                  <Badge variant="outline" className="ml-2">
+                  <Badge variant="secondary" className="ml-3 bg-blue-100 text-blue-800 border-blue-300">
                     {attributesWithImages.length}/{allImageAttributes.length} with images
                   </Badge>
                 </CardTitle>
-                <p className="text-sm text-gray-600">
-                  Manage your product images independently of attribute sets (Image Galleries, Image Schade, etc.)
+                <p className="text-sm text-blue-700 mt-2">
+                  Manage all your product images (Image Galleries, Image Schade, etc.) - No attribute set selection needed
                 </p>
               </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Attributes with images */}
+              <CardContent className="space-y-6 p-6">
+                {/* Images Added Section */}
                 {attributesWithImages.length > 0 && (
                   <div className="space-y-4">
-                    <h5 className="font-medium text-green-700">Images Added ({attributesWithImages.length})</h5>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex items-center">
+                      <h4 className="font-semibold text-green-800 text-base">✅ Images Added ({attributesWithImages.length})</h4>
+                    </div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {attributesWithImages.map(attribute => {
                         const attributeValue = formData.attributes[attribute.code];
                         const imageUrl = typeof attributeValue === 'object' ? attributeValue.url : attributeValue;
                         
                         return (
-                          <div key={attribute.id} className="border rounded-lg p-4 bg-green-50 hover:bg-green-100 transition-colors">
+                          <div key={attribute.id} className="border-2 border-green-200 rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition-all duration-200">
                             <div className="flex items-start justify-between mb-3">
-                              <Label className="font-medium text-green-800 text-sm">{attribute.name}</Label>
+                              <Label className="font-semibold text-green-800 text-sm leading-tight">{attribute.name}</Label>
                               <button
                                 type="button"
                                 onClick={() => handleAttributeValueChange(attribute.code, null)}
-                                className="text-red-500 hover:text-red-700 p-1 hover:bg-red-100 rounded transition-colors"
+                                className="text-red-500 hover:text-red-700 p-1.5 hover:bg-red-100 rounded-full transition-colors"
                                 title="Remove image"
                               >
                                 <X className="w-4 h-4" />
@@ -724,22 +728,22 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                             </div>
                             
                             {imageUrl && (
-                              <div className="mb-3 relative group">
+                              <div className="mb-4 relative group">
                                 <img 
                                   src={imageUrl} 
                                   alt={attribute.name}
-                                  className="w-full h-32 object-cover rounded border group-hover:opacity-80 transition-opacity cursor-pointer"
+                                  className="w-full h-40 object-cover rounded-lg border-2 border-gray-200 group-hover:opacity-90 transition-opacity cursor-pointer shadow-sm"
                                   onClick={() => window.open(imageUrl, '_blank')}
                                 />
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <span className="bg-black bg-opacity-50 text-white px-2 py-1 rounded text-xs">
-                                    Click to view full size
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-lg">
+                                  <span className="bg-black/70 text-white px-3 py-1.5 rounded-full text-xs font-medium">
+                                    🔍 Click to view full size
                                   </span>
                                 </div>
                               </div>
                             )}
                             
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               <div className="relative">
                                 <input
                                   type="file"
@@ -751,11 +755,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 />
                                 <label
                                   htmlFor={`image_${attribute.code}`}
-                                  className="block w-full text-center py-2 px-4 border border-green-300 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 cursor-pointer transition-colors text-sm font-medium"
+                                  className="block w-full text-center py-3 px-4 border-2 border-green-300 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 hover:border-green-400 cursor-pointer transition-all text-sm font-semibold"
                                 >
                                   {uploadingImage ? (
                                     <span className="flex items-center justify-center">
-                                      <span className="animate-spin mr-2">⏳</span>
+                                      <span className="animate-spin mr-2 text-lg">⏳</span>
                                       Uploading...
                                     </span>
                                   ) : (
@@ -768,23 +772,16 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                               </div>
                               
                               {typeof attributeValue === 'object' && attributeValue.name && (
-                                <div className="text-xs text-gray-600 p-2 bg-white rounded border">
-                                  <div className="font-medium truncate" title={attributeValue.name}>
-                                    {attributeValue.name}
+                                <div className="text-xs text-gray-700 p-2.5 bg-gray-50 rounded-lg border">
+                                  <div className="font-medium truncate mb-1" title={attributeValue.name}>
+                                    📁 {attributeValue.name}
                                   </div>
                                   {attributeValue.size && (
                                     <div className="text-gray-500">
-                                      {(attributeValue.size / 1024 / 1024).toFixed(2)} MB
+                                      📊 {(attributeValue.size / 1024 / 1024).toFixed(2)} MB
                                     </div>
                                   )}
                                 </div>
-                              )}
-                              
-                              {attribute.file_settings && (
-                                <p className="text-xs text-gray-500 text-center">
-                                  Max: {attribute.file_settings.max_file_size}MB | 
-                                  Types: {attribute.file_settings.allowed_extensions?.join(', ')}
-                                </p>
                               )}
                             </div>
                           </div>
@@ -794,14 +791,16 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </div>
                 )}
                 
-                {/* Attributes without images */}
+                {/* Add Images Section */}
                 {attributesWithoutImages.length > 0 && (
                   <div className="space-y-4">
-                    <h5 className="font-medium text-amber-700">Add Images ({attributesWithoutImages.length})</h5>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="flex items-center">
+                      <h4 className="font-semibold text-amber-800 text-base">📤 Add Images ({attributesWithoutImages.length})</h4>
+                    </div>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {attributesWithoutImages.map(attribute => (
-                        <div key={attribute.id} className="border-2 border-dashed border-amber-300 rounded-lg p-4 bg-amber-50 hover:bg-amber-100 transition-colors">
-                          <Label className="font-medium text-amber-800 mb-3 block text-sm">{attribute.name}</Label>
+                        <div key={attribute.id} className="border-2 border-dashed border-amber-300 rounded-xl p-5 bg-amber-50/50 hover:bg-amber-100/70 hover:border-amber-400 transition-all duration-200">
+                          <Label className="font-semibold text-amber-800 mb-4 block text-sm leading-tight">{attribute.name}</Label>
                           
                           <div className="space-y-3">
                             <div className="relative">
@@ -815,19 +814,19 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                               />
                               <label
                                 htmlFor={`image_${attribute.code}`}
-                                className="block w-full text-center py-4 px-4 border-2 border-dashed border-amber-400 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 hover:border-amber-500 cursor-pointer transition-all text-sm font-medium"
+                                className="block w-full text-center py-6 px-4 border-2 border-dashed border-amber-400 rounded-xl bg-white text-amber-700 hover:bg-amber-50 hover:border-amber-500 cursor-pointer transition-all text-sm font-semibold shadow-sm"
                               >
                                 {uploadingImage ? (
                                   <span className="flex flex-col items-center">
-                                    <span className="animate-spin mb-2 text-lg">⏳</span>
-                                    Uploading...
+                                    <span className="animate-spin mb-2 text-2xl">⏳</span>
+                                    <span className="text-sm">Uploading...</span>
                                   </span>
                                 ) : (
                                   <span className="flex flex-col items-center">
-                                    <Upload className="w-6 h-6 mb-2" />
-                                    Click to Upload
-                                    <span className="text-xs mt-1 text-amber-600">
-                                      or drag & drop
+                                    <Upload className="w-8 h-8 mb-3 text-amber-600" />
+                                    <span className="text-base font-semibold">Click to Upload</span>
+                                    <span className="text-xs mt-1.5 text-amber-600">
+                                      or drag & drop your image here
                                     </span>
                                   </span>
                                 )}
@@ -835,9 +834,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                             </div>
                             
                             {attribute.file_settings && (
-                              <div className="text-xs text-gray-500 text-center p-2 bg-white rounded border">
-                                <div>Max: {attribute.file_settings.max_file_size}MB</div>
-                                <div>Types: {attribute.file_settings.allowed_extensions?.join(', ')}</div>
+                              <div className="text-xs text-gray-600 text-center p-3 bg-white rounded-lg border border-gray-200">
+                                <div className="font-medium mb-1">📏 Max: {attribute.file_settings.max_file_size}MB</div>
+                                <div className="text-gray-500">🎨 Types: {attribute.file_settings.allowed_extensions?.join(', ')}</div>
                               </div>
                             )}
                           </div>
@@ -846,9 +845,18 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     </div>
                   </div>
                 )}
+
+                {/* No Images Message */}
+                {allImageAttributes.length > 0 && attributesWithImages.length === 0 && (
+                  <div className="text-center py-8 px-4 bg-blue-50 rounded-xl border-2 border-dashed border-blue-300">
+                    <div className="text-4xl mb-3">📷</div>
+                    <h4 className="font-semibold text-blue-800 mb-2">No Images Added Yet</h4>
+                    <p className="text-sm text-blue-600">Upload images to make your product more appealing to customers</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          );
+          )
         })()}
 
         <Card>

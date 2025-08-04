@@ -337,7 +337,7 @@ class AkeneoIntegration {
             }
             
             // Transform product to Catalyst format
-            const catalystProduct = this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings);
+            const catalystProduct = this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, settings);
             
             // Apply product settings
             if (settings.status === 'disabled') {
