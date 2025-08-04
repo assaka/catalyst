@@ -94,17 +94,9 @@ const loadAkeneoConfig = async (storeId, reqBody = null) => {
 // Helper function to handle import operations with proper status tracking
 const handleImportOperation = async (storeId, req, res, importFunction) => {
   try {
-    // Load configuration from database or environment
-    const config = await loadAkeneoConfig(storeId, req.body);
-
-    if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Akeneo configuration is incomplete. Please save your configuration first.'
-      });
-    }
-
-    const integration = new AkeneoIntegration(config);
+    // Use the unified sync service approach
+    const syncService = new AkeneoSyncService();
+    await syncService.initialize(storeId);
     
     // Update sync status
     const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
@@ -113,7 +105,7 @@ const handleImportOperation = async (storeId, req, res, importFunction) => {
     }
 
     try {
-      const result = await importFunction(integration, storeId, req.body);
+      const result = await importFunction(syncService.integration, storeId, req.body);
       
       // Update sync status based on result
       if (integrationConfig) {
@@ -182,19 +174,14 @@ router.post('/akeneo/test-connection',
     }
 
     const storeId = req.storeId;
-    const config = await loadAkeneoConfig(storeId, req.body);
+    
+    try {
+      // Use the unified sync service approach
+      const syncService = new AkeneoSyncService();
+      await syncService.initialize(storeId);
+      const result = await syncService.testConnection();
 
-    if (!config.baseUrl || !config.clientId || !config.clientSecret || !config.username || !config.password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Akeneo configuration is incomplete. Please save your configuration first or provide all required fields.'
-      });
-    }
-
-    const integration = new AkeneoIntegration(config);
-    const result = await integration.testConnection();
-
-    if (!result.success) {
+      if (!result.success) {
       // Provide more specific error messages for authentication failures
       let errorMessage = result.message;
       

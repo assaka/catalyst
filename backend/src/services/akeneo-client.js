@@ -53,19 +53,29 @@ class AkeneoClient {
   async authenticate() {
     console.log('🔑 Starting authentication...');
     console.log('  Using credentials - ClientID exists:', !!this.clientId, 'Username:', this.username);
+    console.log('  Base URL:', this.baseUrl);
     
     try {
-      const response = await this.axiosInstance.post('/api/oauth/v1/token', {
+      // Use axios directly to avoid any baseURL issues
+      const authUrl = `${this.baseUrl}/api/oauth/v1/token`;
+      console.log('  Auth URL:', authUrl);
+      
+      const authData = {
         grant_type: 'password',
         username: this.username,
         password: this.password
-      }, {
-        headers: {
-          'Authorization': `Basic ${this.getEncodedCredentials()}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
+      };
+      
+      const authHeaders = {
+        'Authorization': `Basic ${this.getEncodedCredentials()}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      
+      console.log('  Auth data:', { ...authData, password: '***' });
+      console.log('  Auth headers:', { ...authHeaders, Authorization: authHeaders.Authorization.substring(0, 20) + '...' });
+      
+      const response = await axios.post(authUrl, authData, { headers: authHeaders });
 
       const { access_token, refresh_token, expires_in } = response.data;
       
@@ -79,8 +89,21 @@ class AkeneoClient {
       console.log('Successfully authenticated with Akeneo PIM');
       return true;
     } catch (error) {
-      console.error('Failed to authenticate with Akeneo PIM:', error.response?.data || error.message);
-      throw new Error(`Authentication failed: ${error.response?.data?.error_description || error.message}`);
+      console.error('Failed to authenticate with Akeneo PIM:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        url: error.config?.url
+      });
+      
+      // Special handling for 422 errors
+      if (error.response?.status === 422 && error.response?.data?.message?.includes('client_id')) {
+        console.error('Client ID validation error. Check if client_id and client_secret are correct.');
+        console.error('Current client_id:', this.clientId);
+        console.error('Client_id length:', this.clientId?.length);
+      }
+      
+      throw new Error(`Authentication failed: ${error.response?.data?.message || error.response?.data?.error_description || error.message}`);
     }
   }
 
