@@ -105,7 +105,7 @@ class AkeneoImageProcessor {
     
     // Make URL absolute if it's relative
     if (baseUrl && imageUrl.startsWith('/')) {
-      imageUrl = `${baseUrl.replace(/\\/$/, '')}${imageUrl}`;
+      imageUrl = `${baseUrl.replace(/\/$/, '')}${imageUrl}`;
     }
     
     // Validate URL format
