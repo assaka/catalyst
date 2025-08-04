@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Product } from "@/api/entities";
 import { Category } from "@/api/entities";
 import { Tax } from "@/api/entities";
@@ -17,7 +17,12 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
-  X
+  X,
+  CheckSquare,
+  Square,
+  Settings,
+  Tag,
+  FolderOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,6 +90,17 @@ export default function Products() {
     category: "all",
     priceRange: "all"
   });
+  
+  // Bulk action states
+  const [selectedProducts, setSelectedProducts] = useState(new Set());
+  const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  
+  // Lazy loading states
+  const [lazyLoadingEnabled, setLazyLoadingEnabled] = useState(false);
+  const [allProducts, setAllProducts] = useState([]);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
@@ -105,7 +121,7 @@ export default function Products() {
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
 
-  const loadData = async (page = currentPage) => {
+  const loadData = async (page = currentPage, appendToExisting = false) => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
       console.warn("No store selected");
@@ -114,7 +130,11 @@ export default function Products() {
     }
 
     try {
-      setLoading(true);
+      if (appendToExisting) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
 
       // Build filters for products API
       const productFilters = { 
@@ -146,7 +166,19 @@ export default function Products() {
         retryApiCall(() => AttributeSet.filter({ store_id: storeId, limit: 1000 })).catch(() => [])
       ]);
 
-      setProducts(Array.isArray(productsResult.data) ? productsResult.data : []);
+      const newProducts = Array.isArray(productsResult.data) ? productsResult.data : [];
+      
+      if (appendToExisting && lazyLoadingEnabled) {
+        setAllProducts(prev => [...prev, ...newProducts]);
+        setHasMore(productsResult.pagination.current_page < productsResult.pagination.total_pages);
+      } else {
+        setProducts(newProducts);
+        if (lazyLoadingEnabled) {
+          setAllProducts(newProducts);
+          setHasMore(productsResult.pagination.current_page < productsResult.pagination.total_pages);
+        }
+      }
+      
       setTotalItems(productsResult.pagination.total);
       setTotalPages(productsResult.pagination.total_pages);
       setCurrentPage(productsResult.pagination.current_page);
@@ -166,7 +198,11 @@ export default function Products() {
       setTotalItems(0);
       setTotalPages(0);
     } finally {
-      setLoading(false);
+      if (appendToExisting) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
@@ -213,6 +249,98 @@ export default function Products() {
     }
   };
 
+  // Bulk action handlers
+  const handleSelectProduct = (productId) => {
+    const newSelected = new Set(selectedProducts);
+    if (newSelected.has(productId)) {
+      newSelected.delete(productId);
+    } else {
+      newSelected.add(productId);
+    }
+    setSelectedProducts(newSelected);
+    setShowBulkActions(newSelected.size > 0);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProducts.size === paginatedProducts.length) {
+      setSelectedProducts(new Set());
+      setShowBulkActions(false);
+    } else {
+      const allIds = new Set(paginatedProducts.map(p => p.id));
+      setSelectedProducts(allIds);
+      setShowBulkActions(true);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedProducts.size === 0) return;
+    
+    const count = selectedProducts.size;
+    if (window.confirm(`Are you sure you want to delete ${count} selected product${count > 1 ? 's' : ''}?`)) {
+      try {
+        const deletePromises = Array.from(selectedProducts).map(id => Product.delete(id));
+        await Promise.all(deletePromises);
+        setSelectedProducts(new Set());
+        setShowBulkActions(false);
+        await loadData();
+      } catch (error) {
+        console.error("Error deleting products:", error);
+      }
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus) => {
+    if (selectedProducts.size === 0) return;
+    
+    try {
+      const updatePromises = Array.from(selectedProducts).map(id => {
+        const product = paginatedProducts.find(p => p.id === id);
+        return Product.update(id, { ...product, status: newStatus });
+      });
+      await Promise.all(updatePromises);
+      setSelectedProducts(new Set());
+      setShowBulkActions(false);
+      await loadData();
+    } catch (error) {
+      console.error("Error updating product statuses:", error);
+    }
+  };
+
+  const handleBulkCategoryChange = async (categoryId) => {
+    if (selectedProducts.size === 0) return;
+    
+    try {
+      const updatePromises = Array.from(selectedProducts).map(id => {
+        const product = paginatedProducts.find(p => p.id === id);
+        const newCategories = categoryId ? [categoryId] : [];
+        return Product.update(id, { ...product, category_ids: newCategories });
+      });
+      await Promise.all(updatePromises);
+      setSelectedProducts(new Set());
+      setShowBulkActions(false);
+      await loadData();
+    } catch (error) {
+      console.error("Error updating product categories:", error);
+    }
+  };
+
+  const handleBulkAttributeSetChange = async (attributeSetId) => {
+    if (selectedProducts.size === 0) return;
+    
+    try {
+      const updatePromises = Array.from(selectedProducts).map(id => {
+        const product = paginatedProducts.find(p => p.id === id);
+        return Product.update(id, { ...product, attribute_set_id: attributeSetId });
+      });
+      await Promise.all(updatePromises);
+      setSelectedProducts(new Set());
+      setShowBulkActions(false);
+      await loadData();
+    } catch (error) {
+      console.error("Error updating product attribute sets:", error);
+    }
+  };
+
   const handleStatusChange = async (product, newStatus) => {
     try {
       await Product.update(product.id, { ...product, status: newStatus });
@@ -223,13 +351,44 @@ export default function Products() {
   };
 
   // Server-side filtering, so use products directly
-  const paginatedProducts = products;
+  const paginatedProducts = lazyLoadingEnabled ? allProducts : products;
   const startIndex = (currentPage - 1) * itemsPerPage;
+  
+  // Memoized calculations for bulk actions
+  const isAllSelected = useMemo(() => {
+    return paginatedProducts.length > 0 && selectedProducts.size === paginatedProducts.length;
+  }, [selectedProducts, paginatedProducts]);
+  
+  const isPartiallySelected = useMemo(() => {
+    return selectedProducts.size > 0 && selectedProducts.size < paginatedProducts.length;
+  }, [selectedProducts, paginatedProducts]);
 
   // Handle page changes
   const handlePageChange = (page) => {
     setCurrentPage(page);
     loadData(page);
+  };
+  
+  // Load more products for lazy loading
+  const loadMoreProducts = () => {
+    if (!hasMore || loadingMore) return;
+    loadData(currentPage + 1, true);
+  };
+  
+  // Toggle lazy loading mode
+  const toggleLazyLoading = () => {
+    setLazyLoadingEnabled(!lazyLoadingEnabled);
+    setSelectedProducts(new Set());
+    setShowBulkActions(false);
+    if (!lazyLoadingEnabled) {
+      // Switching to lazy loading mode
+      setAllProducts(products);
+      setHasMore(currentPage < totalPages);
+    } else {
+      // Switching back to pagination mode
+      setAllProducts([]);
+      loadData(1); // Reload first page
+    }
   };
 
   // Reset to first page and reload data when search or filters change
@@ -382,7 +541,15 @@ export default function Products() {
             <h1 className="text-3xl font-bold text-gray-900">Products</h1>
             <p className="text-gray-600 mt-1">Manage your product catalog</p>
           </div>
-          <Button
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={toggleLazyLoading}
+              className={lazyLoadingEnabled ? 'bg-blue-50 border-blue-300' : ''}
+            >
+              {lazyLoadingEnabled ? 'Pagination Mode' : 'Lazy Loading Mode'}
+            </Button>
+            <Button
             onClick={() => {
               setSelectedProduct(null);
               setShowProductForm(true);
@@ -419,7 +586,7 @@ export default function Products() {
         <Card className="material-elevation-1 border-0">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Products ({totalItems})</span>
+              <span>Products ({lazyLoadingEnabled ? `${allProducts.length} of ${totalItems}` : totalItems})</span>
               {(searchQuery || Object.values(filters).some(f => f !== "all")) && (
                 <Button
                   variant="ghost"
@@ -438,10 +605,124 @@ export default function Products() {
           <CardContent>
             {paginatedProducts.length > 0 ? (
               <>
+                {/* Bulk Actions Bar */}
+                {showBulkActions && (
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4 rounded-r-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <p className="text-sm font-medium text-blue-800">
+                          {selectedProducts.size} product{selectedProducts.size > 1 ? 's' : ''} selected
+                        </p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Eye className="w-4 h-4 mr-2" />
+                              Change Status
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleBulkStatusChange('active')}>
+                              <Eye className="w-4 h-4 mr-2" />
+                              Activate
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleBulkStatusChange('inactive')}>
+                              <EyeOff className="w-4 h-4 mr-2" />
+                              Deactivate
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleBulkStatusChange('draft')}>
+                              <Edit className="w-4 h-4 mr-2" />
+                              Set as Draft
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <FolderOpen className="w-4 h-4 mr-2" />
+                              Move to Category
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleBulkCategoryChange(null)}>
+                              Remove from categories
+                            </DropdownMenuItem>
+                            {categories.map((category) => (
+                              <DropdownMenuItem 
+                                key={category.id} 
+                                onClick={() => handleBulkCategoryChange(category.id)}
+                              >
+                                <Tag className="w-4 h-4 mr-2" />
+                                {category.name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Settings className="w-4 h-4 mr-2" />
+                              Change Attribute Set
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                            {attributeSets.map((attributeSet) => (
+                              <DropdownMenuItem 
+                                key={attributeSet.id} 
+                                onClick={() => handleBulkAttributeSetChange(attributeSet.id)}
+                              >
+                                <Settings className="w-4 h-4 mr-2" />
+                                {attributeSet.name}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        
+                        <Button 
+                          variant="destructive" 
+                          size="sm" 
+                          onClick={handleBulkDelete}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete Selected
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => {
+                            setSelectedProducts(new Set());
+                            setShowBulkActions(false);
+                          }}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-gray-200">
+                        <th className="text-left py-3 px-4 font-medium text-gray-900 w-12">
+                          <button
+                            onClick={handleSelectAll}
+                            className="flex items-center justify-center w-6 h-6 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            {isAllSelected ? (
+                              <CheckSquare className="w-4 h-4 text-blue-600" />
+                            ) : isPartiallySelected ? (
+                              <div className="w-3 h-3 bg-blue-600 rounded-sm" />
+                            ) : (
+                              <Square className="w-4 h-4 text-gray-400" />
+                            )}
+                          </button>
+                        </th>
                         <th className="text-left py-3 px-4 font-medium text-gray-900">Product</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-900">SKU</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-900">Price</th>
@@ -452,7 +733,19 @@ export default function Products() {
                     </thead>
                     <tbody>
                       {paginatedProducts.map((product) => (
-                        <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
+                        <tr key={product.id} className={`border-b border-gray-100 hover:bg-gray-50 ${selectedProducts.has(product.id) ? 'bg-blue-50' : ''}`}>
+                          <td className="py-4 px-4">
+                            <button
+                              onClick={() => handleSelectProduct(product.id)}
+                              className="flex items-center justify-center w-6 h-6 rounded border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              {selectedProducts.has(product.id) ? (
+                                <CheckSquare className="w-4 h-4 text-blue-600" />
+                              ) : (
+                                <Square className="w-4 h-4 text-gray-400" />
+                              )}
+                            </button>
+                          </td>
                           <td className="py-4 px-4">
                             <div className="flex items-center space-x-3">
                               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
@@ -544,8 +837,30 @@ export default function Products() {
                   </table>
                 </div>
 
-                {/* Enhanced Pagination */}
-                {renderPagination(currentPage, totalPages, handlePageChange)}
+                {/* Enhanced Pagination or Lazy Loading */}
+                {lazyLoadingEnabled ? (
+                  hasMore && (
+                    <div className="text-center mt-6">
+                      <Button
+                        onClick={loadMoreProducts}
+                        disabled={loadingMore}
+                        variant="outline"
+                        className="w-full sm:w-auto"
+                      >
+                        {loadingMore ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                            Loading more products...
+                          </>
+                        ) : (
+                          `Load More Products (${totalItems - allProducts.length} remaining)`
+                        )}
+                      </Button>
+                    </div>
+                  )
+                ) : (
+                  renderPagination(currentPage, totalPages, handlePageChange)
+                )}
               </>
             ) : (
               <div className="text-center py-12">

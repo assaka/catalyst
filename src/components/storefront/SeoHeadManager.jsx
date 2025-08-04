@@ -78,6 +78,110 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         const processedDefaultDescription = applyTemplate(seoDefaultDescription, pageData);
         const processedDefaultKeywords = applyTemplate(seoDefaultKeywords, pageData);
 
+        // Find matching SEO template
+        const findMatchingSeoTemplate = (templateType) => {
+            if (!seoTemplates || !Array.isArray(seoTemplates) || seoTemplates.length === 0) {
+                return null;
+            }
+
+            // Filter templates by type and active status
+            const relevantTemplates = seoTemplates.filter(template => 
+                template.type === templateType && 
+                template.is_active !== false
+            );
+
+            if (relevantTemplates.length === 0) {
+                return null;
+            }
+
+            // Find template that matches current conditions
+            for (const template of relevantTemplates) {
+                if (!template.conditions) {
+                    // Template with no conditions matches all
+                    return template;
+                }
+
+                let matches = true;
+
+                // Check category conditions
+                if (template.conditions.categories && 
+                    Array.isArray(template.conditions.categories) && 
+                    template.conditions.categories.length > 0) {
+                    
+                    const pageCategories = pageData?.category_ids || pageData?.categories || [];
+                    const hasMatchingCategory = template.conditions.categories.some(conditionCat => 
+                        pageCategories.includes(conditionCat)
+                    );
+                    
+                    if (!hasMatchingCategory) {
+                        matches = false;
+                    }
+                }
+
+                // Check attribute set conditions
+                if (matches && 
+                    template.conditions.attribute_sets && 
+                    Array.isArray(template.conditions.attribute_sets) && 
+                    template.conditions.attribute_sets.length > 0) {
+                    
+                    const pageAttributeSetId = pageData?.attribute_set_id;
+                    const hasMatchingAttributeSet = template.conditions.attribute_sets.includes(pageAttributeSetId);
+                    
+                    if (!hasMatchingAttributeSet) {
+                        matches = false;
+                    }
+                }
+
+                if (matches) {
+                    return template;
+                }
+            }
+
+            // If no specific template matched, return the first template without conditions
+            return relevantTemplates.find(template => !template.conditions || 
+                (!template.conditions.categories?.length && !template.conditions.attribute_sets?.length)
+            ) || null;
+        };
+
+        // Get matching templates for current page type
+        const currentPageType = pageType === 'product' ? 'product' : 
+                               pageType === 'category' ? 'category' : null;
+        
+        const matchingTemplate = currentPageType ? findMatchingSeoTemplate(currentPageType) : null;
+        
+        // Debug logging for SEO template matching
+        if (process.env.NODE_ENV === 'development' && currentPageType) {
+            console.log('🔍 SeoHeadManager: SEO Template Debug', {
+                pageType: currentPageType,
+                availableTemplates: seoTemplates?.length || 0,
+                matchingTemplate: matchingTemplate ? {
+                    id: matchingTemplate.id,
+                    name: matchingTemplate.name,
+                    type: matchingTemplate.type,
+                    hasMetaTitle: !!matchingTemplate.meta_title,
+                    hasMetaDescription: !!matchingTemplate.meta_description,
+                    hasOgTitle: !!matchingTemplate.og_title,
+                    hasOgDescription: !!matchingTemplate.og_description
+                } : null,
+                pageData: pageData ? {
+                    hasCategories: !!(pageData.category_ids || pageData.categories),
+                    hasAttributeSet: !!pageData.attribute_set_id
+                } : null
+            });
+        }
+
+        // Apply templates to get processed template values
+        const templateTitle = matchingTemplate?.meta_title ? 
+            applyTemplate(matchingTemplate.meta_title, pageData) : '';
+        const templateDescription = matchingTemplate?.meta_description ? 
+            applyTemplate(matchingTemplate.meta_description, pageData) : '';
+        const templateKeywords = matchingTemplate?.meta_keywords ? 
+            applyTemplate(matchingTemplate.meta_keywords, pageData) : '';
+        const templateOgTitle = matchingTemplate?.og_title ? 
+            applyTemplate(matchingTemplate.og_title, pageData) : '';
+        const templateOgDescription = matchingTemplate?.og_description ? 
+            applyTemplate(matchingTemplate.og_description, pageData) : '';
+
         // Fallback to basic defaults if SEO settings don't provide them
         const basicDefaultTitle = store?.name ? `${pageTitle} | ${store.name}` : pageTitle;
         const basicDefaultDescription = pageDescription || store?.description || `Welcome to ${store?.name || 'our store'}. Discover quality products and excellent service.`;
@@ -85,18 +189,47 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Final values with priority: page data > SEO templates > SEO defaults > basic defaults
         const title = pageData?.meta_title || 
                      pageData?.seo?.meta_title || 
+                     templateTitle ||
                      processedDefaultTitle || 
                      basicDefaultTitle;
                      
         const description = pageData?.meta_description || 
                            pageData?.seo?.meta_description || 
+                           templateDescription ||
                            processedDefaultDescription || 
                            basicDefaultDescription;
                            
         const keywords = pageData?.meta_keywords || 
                         pageData?.seo?.meta_keywords || 
+                        templateKeywords ||
                         processedDefaultKeywords || 
                         `${store?.name}, products, quality, shopping`;
+
+        // Debug logging for final SEO values
+        if (process.env.NODE_ENV === 'development' && currentPageType) {
+            console.log('🎯 SeoHeadManager: Final SEO Values', {
+                title: {
+                    final: title,
+                    sources: {
+                        pageData: pageData?.meta_title,
+                        pageSeo: pageData?.seo?.meta_title,
+                        template: templateTitle,
+                        seoDefault: processedDefaultTitle,
+                        basicDefault: basicDefaultTitle
+                    }
+                },
+                description: {
+                    final: description,
+                    sources: {
+                        pageData: pageData?.meta_description,
+                        pageSeo: pageData?.seo?.meta_description,
+                        template: templateDescription,
+                        seoDefault: processedDefaultDescription,
+                        basicDefault: basicDefaultDescription
+                    }
+                }
+            });
+        }
 
         // Default description for structured data
         const defaultDescription = description || store?.description || 'Quality products and services';
@@ -244,8 +377,18 @@ export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDesc
         // Open Graph Tags (check if enabled)
         const enableOpenGraph = seoSettings?.enable_open_graph === true;
         if (enableOpenGraph) {
-            updateMetaTag('og:title', title, true);
-            updateMetaTag('og:description', description, true);
+            // Use Open Graph specific template values if available, otherwise fall back to regular meta values
+            const ogTitle = pageData?.og_title || 
+                           pageData?.seo?.og_title || 
+                           templateOgTitle ||
+                           title;
+            const ogDescription = pageData?.og_description || 
+                                 pageData?.seo?.og_description || 
+                                 templateOgDescription ||
+                                 description;
+            
+            updateMetaTag('og:title', ogTitle, true);
+            updateMetaTag('og:description', ogDescription, true);
             updateMetaTag('og:type', pageType === 'product' ? 'product' : 'website', true);
             if (ogImage) {
                 updateMetaTag('og:image', ogImage, true);
