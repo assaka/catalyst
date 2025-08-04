@@ -671,8 +671,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             )
           ) || [];
 
-          // Always show this section if there are any image attributes
-          if (allImageAttributes.length === 0) return null;
+          // Show section even without image attributes to guide users
 
           const attributesWithImages = allImageAttributes.filter(attr => {
             const value = formData.attributes[attr.code];
@@ -689,9 +688,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 <CardTitle className="flex items-center text-lg">
                   <span className="mr-3 text-2xl">🖼️</span>
                   Product Images
-                  <Badge variant="secondary" className="ml-3 bg-blue-100 text-blue-800 border-blue-300">
-                    {attributesWithImages.length}/{allImageAttributes.length} with images
-                  </Badge>
+                  {allImageAttributes.length > 0 && (
+                    <Badge variant="secondary" className="ml-3 bg-blue-100 text-blue-800 border-blue-300">
+                      {attributesWithImages.length}/{allImageAttributes.length} with images
+                    </Badge>
+                  )}
                 </CardTitle>
                 <p className="text-sm text-blue-700 mt-2">
                   Manage all your product images (Image Galleries, Image Schade, etc.) - No attribute set selection needed
@@ -891,6 +892,23 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                         </div>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* No Image Attributes Message */}
+                {allImageAttributes.length === 0 && (
+                  <div className="text-center py-8 px-4 bg-amber-50 rounded-xl border-2 border-dashed border-amber-300">
+                    <div className="text-4xl mb-3">📦</div>
+                    <h4 className="font-semibold text-amber-800 mb-2">No Image Attributes Available</h4>
+                    <p className="text-sm text-amber-700 mb-4">
+                      To add product images, you need to create image attributes first.
+                    </p>
+                    <div className="space-y-2 text-sm text-amber-700">
+                      <p>1. Go to <strong>Attributes</strong> in the admin menu</p>
+                      <p>2. Create a new attribute with type <strong>"File"</strong></p>
+                      <p>3. Set allowed extensions to include image formats (jpg, png, etc.)</p>
+                      <p>4. Come back here to upload your product images</p>
+                    </div>
                   </div>
                 )}
 
