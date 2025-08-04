@@ -136,7 +136,8 @@
       "Bash(awk:*)",
       "Bash(python3:*)",
       "Bash(timeout 10s npm run dev:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node -e \"\nconst { sequelize } = require(''./backend/src/database/connection.js'');\n(async () => {\n  try {\n    console.log(''🔍 Checking seo_templates table structure...'');\n    const [results] = await sequelize.query(''SELECT column_name, data_type, is_nullable, column_default FROM information_schema.columns WHERE table_name = \\''seo_templates\\'' ORDER BY ordinal_position;'');\n    \n    console.log(''📋 seo_templates table columns:'');\n    results.forEach(col => {\n      console.log(`- $col.column_name: $col.data_type $col.is_nullable === ''NO'' ? ''NOT NULL'' : ''NULL'' $col.column_default || ''''`);\n    });\n    \n    const hasIsActive = results.some(col => col.column_name === ''is_active'');\n    console.log(`\\n✅ is_active column exists: $hasIsActive`);\n    \n    await sequelize.close();\n  } catch (error) {\n    console.error(''❌ Error:'', error.message);\n  }\n})();\")"
     ],
     "deny": []
   }

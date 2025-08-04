@@ -112,6 +112,7 @@ export default function SeoTools() {
     meta_title: '',
     meta_description: '',
     meta_keywords: '',
+    is_active: true,
     conditions: {
       categories: [],
       attribute_sets: []
@@ -390,6 +391,7 @@ export default function SeoTools() {
         meta_title: templateForm.meta_title,
         meta_description: templateForm.meta_description,
         meta_keywords: templateForm.meta_keywords,
+        is_active: templateForm.is_active,
         conditions: templateForm.conditions,
         store_id: storeId
       };
@@ -436,6 +438,7 @@ export default function SeoTools() {
       meta_title: '',
       meta_description: '',
       meta_keywords: '',
+      is_active: true,
       conditions: {
         categories: [],
         attribute_sets: []
@@ -1024,6 +1027,7 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                                 meta_title: template.meta_title,
                                 meta_description: template.meta_description,
                                 meta_keywords: template.meta_keywords,
+                                is_active: template.is_active !== false,
                                 conditions: template.conditions || { categories: [], attribute_sets: [] }
                               });
                               setShowTemplateForm(true);
@@ -1040,7 +1044,12 @@ Sitemap: ${window.location.origin}/sitemap.xml`;
                           </Button>
                         </div>
                       </div>
-                      <Badge>{template.type}</Badge>
+                      <div className="flex gap-2 items-center">
+                        <Badge>{template.type}</Badge>
+                        <Badge variant={template.is_active !== false ? "default" : "secondary"}>
+                          {template.is_active !== false ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
                       <p className="text-sm text-gray-600 mt-2">{template.meta_title}</p>
                       {template.conditions && (
                         <div className="mt-2 text-xs text-gray-500">
@@ -2379,6 +2388,20 @@ Sitemap: /sitemap.xml     # Location of sitemap
                       <SelectItem value="category">Category</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="template-active"
+                    checked={templateForm.is_active}
+                    onCheckedChange={(checked) => setTemplateForm(prev => ({ ...prev, is_active: checked }))}
+                  />
+                  <Label htmlFor="template-active" className="text-sm font-medium">
+                    Active
+                  </Label>
+                  <span className="text-xs text-gray-500 ml-2">
+                    {templateForm.is_active ? 'Template rules will apply' : 'Template is disabled'}
+                  </span>
                 </div>
 
                 <div className="bg-gray-50 p-4 rounded-lg">
