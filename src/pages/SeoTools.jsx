@@ -204,7 +204,13 @@ export default function SeoTools() {
 
         try {
           const [templatesData, redirectsData, categoriesData, attributeSetsData] = await Promise.all([
-            SeoTemplate.filter({ store_id: selectedStore.id }).catch(() => []),
+            // Use direct admin API call for SEO templates to avoid public API filtering
+            fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/seo-templates?store_id=${selectedStore.id}`, {
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('admin_auth_token')}`
+              }
+            }).then(res => res.ok ? res.json() : []).catch(() => []),
             Redirect.filter({ store_id: selectedStore.id }).catch(() => []),
             Category.filter({ store_id: selectedStore.id }).catch(() => []),
             AttributeSet.filter({ store_id: selectedStore.id }).catch(() => [])
@@ -382,6 +388,12 @@ export default function SeoTools() {
     console.log('🔍 Admin token exists:', !!adminToken);
     console.log('🔍 Admin token (first 20 chars):', adminToken ? adminToken.substring(0, 20) + '...' : 'null');
     
+    if (!adminToken) {
+      setFlashMessage({ type: 'error', message: 'Authentication required. Please refresh the page and try again.' });
+      setSaving(false);
+      return;
+    }
+    
     try {
       setSaving(true);
 
@@ -408,12 +420,34 @@ export default function SeoTools() {
 
       if (editingTemplate) {
         console.log('🔍 Updating template:', editingTemplate.id);
-        const updateResult = await SeoTemplate.update(editingTemplate.id, payload);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/seo-templates/${editingTemplate.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const updateResult = await response.json();
         console.log('🔍 Update result:', updateResult);
+        if (!response.ok) {
+          throw new Error(updateResult.message || 'Failed to update template');
+        }
       } else {
         console.log('🔍 Creating new template');
-        const createResult = await SeoTemplate.create(payload);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/seo-templates`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+          },
+          body: JSON.stringify(payload)
+        });
+        const createResult = await response.json();
         console.log('🔍 Create result:', createResult);
+        if (!response.ok) {
+          throw new Error(createResult.message || 'Failed to create template');
+        }
       }
 
       console.log('🔍 Reloading data...');
@@ -437,7 +471,25 @@ export default function SeoTools() {
   const handleDeleteTemplate = async (templateId) => {
     if (window.confirm('Are you sure you want to delete this template?')) {
       try {
-        await SeoTemplate.delete(templateId);
+        const adminToken = localStorage.getItem('admin_auth_token');
+        if (!adminToken) {
+          setFlashMessage({ type: 'error', message: 'Authentication required. Please refresh the page and try again.' });
+          return;
+        }
+
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/seo-templates/${templateId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${adminToken}`
+          }
+        });
+
+        if (!response.ok) {
+          const result = await response.json();
+          throw new Error(result.message || 'Failed to delete template');
+        }
+
         await loadData();
         setFlashMessage({ type: 'success', message: 'Template deleted successfully!' });
         // Clear storefront cache for instant updates
