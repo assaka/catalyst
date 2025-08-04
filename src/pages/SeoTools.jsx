@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { SeoSetting } from "@/api/entities";
-import { SeoTemplate } from "@/api/entities";
+import { AdminSeoTemplate as SeoTemplate } from "@/api/admin-entities";
 import { Redirect } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { Category } from "@/api/entities";
