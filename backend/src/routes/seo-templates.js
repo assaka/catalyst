@@ -49,10 +49,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// @route   GET /api/seo-templates
+// @route   GET /api/seo-templates (main admin route)
 // @desc    Get SEO templates for a store (admin access)
 // @access  Private (admin only)
-router.get('/admin', auth, async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     console.log('🔍 GET /api/seo-templates called');
     console.log('🔍 Query params:', req.query);
