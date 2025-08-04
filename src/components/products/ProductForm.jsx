@@ -120,19 +120,19 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           meta_title: product.seo.meta_title || "",
           meta_description: product.seo.meta_description || "",
           meta_keywords: product.seo.meta_keywords || "",
-          url_key: product.seo.url_key || "",
+          url_key: product.seo.url_key || product.slug || "",
           meta_robots_tag: product.seo.meta_robots_tag !== undefined && product.seo.meta_robots_tag !== null ? product.seo.meta_robots_tag : "null" // Initialize from product or "null" for default
-        } : { meta_title: "", meta_description: "", meta_keywords: "", url_key: "", meta_robots_tag: "null" }, // Default for seo if product.seo is null/undefined
+        } : { meta_title: "", meta_description: "", meta_keywords: "", url_key: product.slug || "", meta_robots_tag: "null" }, // Default for seo if product.seo is null/undefined
         related_product_ids: Array.isArray(product.related_product_ids) ? product.related_product_ids : [],
         tags: Array.isArray(product.tags) ? product.tags : [],
         featured: product.featured || false
       });
       
       // Set original URL key for slug change detection
-      setOriginalUrlKey(product.seo?.url_key || "");
-      // If product has a URL key, consider it manually set
-      setHasManuallyEditedUrlKey(!!(product.seo?.url_key));
-      setIsEditingUrlKey(!!(product.seo?.url_key));
+      setOriginalUrlKey(product.seo?.url_key || product.slug || "");
+      // If product has a URL key or slug, consider it manually set
+      setHasManuallyEditedUrlKey(!!(product.seo?.url_key || product.slug));
+      setIsEditingUrlKey(!!(product.seo?.url_key || product.slug));
     } else {
         // Reset form for new product
         setFormData({
@@ -1276,7 +1276,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
               </div>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label htmlFor="url_key">URL Key</Label>
+                  <Label htmlFor="url_key">URL Key (Slug)</Label>
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="edit-url-key"
@@ -1299,8 +1299,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {!isEditingUrlKey 
-                    ? "Auto-generated from product name. Enable editing to customize."
-                    : "Custom URL key for this product. Changes will affect the product's URL."
+                    ? "Showing the product slug. Auto-generated from product name. Enable editing to customize."
+                    : "Custom URL key (slug) for this product. Changes will affect the product's URL."
                   }
                 </p>
               </div>
