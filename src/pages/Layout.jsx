@@ -62,7 +62,8 @@ import {
   Link2 as LinkIcon,
   Share2,
   Activity,
-  FlaskConical
+  FlaskConical,
+  Image
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -338,7 +339,6 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Categories", path: "CATEGORIES", icon: Tag },
         { name: "Products", path: "PRODUCTS", icon: Package },
-        { name: "Image Manager", path: "IMAGE_MANAGER", icon: Camera },
         { name: "Attributes", path: "ATTRIBUTES", icon: SettingsIcon },
         { name: "Custom Options", path: "CUSTOM_OPTION_RULES", icon: Plus },
         { name: "Product Tabs", path: "PRODUCT_TABS", icon: Package },
@@ -363,6 +363,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "CMS Blocks", path: "CMS_BLOCKS", icon: FileText },
         { name: "CMS Pages", path: "CMS_PAGES", icon: FileText },
+        { name: "Image Manager", path: "IMAGE_MANAGER", icon: Camera },
       ]
     },
     {
@@ -394,6 +395,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
+        { name: "Image Processing", path: "image-processing", icon: Image },
         { name: "Plugins", path: "PLUGINS", icon: Puzzle },
         { name: "Akeneo Integration", path: "akeneo-integration", icon: RefreshCw },
         { name: "Team", path: "team", icon: Users },
