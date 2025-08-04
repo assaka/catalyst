@@ -791,69 +791,113 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </div>
                 )}
                 
-                {/* Add Images Section */}
-                {attributesWithoutImages.length > 0 && (
+                {/* Upload Images Section - Always show when image attributes exist */}
+                {allImageAttributes.length > 0 && (
                   <div className="space-y-4">
                     <div className="flex items-center">
-                      <h4 className="font-semibold text-amber-800 text-base">📤 Add Images ({attributesWithoutImages.length})</h4>
+                      {attributesWithoutImages.length > 0 ? (
+                        <h4 className="font-semibold text-amber-800 text-base">📤 Add Images ({attributesWithoutImages.length})</h4>
+                      ) : (
+                        <h4 className="font-semibold text-green-800 text-base">🔄 Replace or Update Images</h4>
+                      )}
                     </div>
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {attributesWithoutImages.map(attribute => (
-                        <div key={attribute.id} className="border-2 border-dashed border-amber-300 rounded-xl p-5 bg-amber-50/50 hover:bg-amber-100/70 hover:border-amber-400 transition-all duration-200">
-                          <Label className="font-semibold text-amber-800 mb-4 block text-sm leading-tight">{attribute.name}</Label>
-                          
-                          <div className="space-y-3">
-                            <div className="relative">
-                              <input
-                                type="file"
-                                id={`image_${attribute.code}`}
-                                onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
-                                accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
-                                className="hidden"
-                                disabled={uploadingImage}
-                              />
-                              <label
-                                htmlFor={`image_${attribute.code}`}
-                                className="block w-full text-center py-6 px-4 border-2 border-dashed border-amber-400 rounded-xl bg-white text-amber-700 hover:bg-amber-50 hover:border-amber-500 cursor-pointer transition-all text-sm font-semibold shadow-sm"
-                              >
-                                {uploadingImage ? (
-                                  <span className="flex flex-col items-center">
-                                    <span className="animate-spin mb-2 text-2xl">⏳</span>
-                                    <span className="text-sm">Uploading...</span>
-                                  </span>
-                                ) : (
-                                  <span className="flex flex-col items-center">
-                                    <Upload className="w-8 h-8 mb-3 text-amber-600" />
-                                    <span className="text-base font-semibold">Click to Upload</span>
-                                    <span className="text-xs mt-1.5 text-amber-600">
-                                      or drag & drop your image here
-                                    </span>
-                                  </span>
-                                )}
-                              </label>
-                            </div>
+                    
+                    {attributesWithoutImages.length > 0 ? (
+                      // Show upload fields for empty attributes
+                      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {attributesWithoutImages.map(attribute => (
+                          <div key={attribute.id} className="border-2 border-dashed border-amber-300 rounded-xl p-5 bg-amber-50/50 hover:bg-amber-100/70 hover:border-amber-400 transition-all duration-200">
+                            <Label className="font-semibold text-amber-800 mb-4 block text-sm leading-tight">{attribute.name}</Label>
                             
-                            {attribute.file_settings && (
-                              <div className="text-xs text-gray-600 text-center p-3 bg-white rounded-lg border border-gray-200">
-                                <div className="font-medium mb-1">📏 Max: {attribute.file_settings.max_file_size}MB</div>
-                                <div className="text-gray-500">🎨 Types: {attribute.file_settings.allowed_extensions?.join(', ')}</div>
+                            <div className="space-y-3">
+                              <div className="relative">
+                                <input
+                                  type="file"
+                                  id={`image_${attribute.code}`}
+                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                  accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                  className="hidden"
+                                  disabled={uploadingImage}
+                                />
+                                <label
+                                  htmlFor={`image_${attribute.code}`}
+                                  className="block w-full text-center py-6 px-4 border-2 border-dashed border-amber-400 rounded-xl bg-white text-amber-700 hover:bg-amber-50 hover:border-amber-500 cursor-pointer transition-all text-sm font-semibold shadow-sm"
+                                >
+                                  {uploadingImage ? (
+                                    <span className="flex flex-col items-center">
+                                      <span className="animate-spin mb-2 text-2xl">⏳</span>
+                                      <span className="text-sm">Uploading...</span>
+                                    </span>
+                                  ) : (
+                                    <span className="flex flex-col items-center">
+                                      <Upload className="w-8 h-8 mb-3 text-amber-600" />
+                                      <span className="text-base font-semibold">Click to Upload</span>
+                                      <span className="text-xs mt-1.5 text-amber-600">
+                                        or drag & drop your image here
+                                      </span>
+                                    </span>
+                                  )}
+                                </label>
                               </div>
-                            )}
+                              
+                              {attribute.file_settings && (
+                                <div className="text-xs text-gray-600 text-center p-3 bg-white rounded-lg border border-gray-200">
+                                  <div className="font-medium mb-1">📏 Max: {attribute.file_settings.max_file_size}MB</div>
+                                  <div className="text-gray-500">🎨 Types: {attribute.file_settings.allowed_extensions?.join(', ')}</div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      // Show quick upload option when all attributes are filled
+                      <div className="border-2 border-dashed border-green-300 rounded-xl p-6 bg-green-50/50 hover:bg-green-100/70 hover:border-green-400 transition-all duration-200">
+                        <div className="text-center">
+                          <div className="text-3xl mb-3">🚀</div>
+                          <h5 className="font-semibold text-green-800 mb-2">Quick Upload to Next Available</h5>
+                          <p className="text-sm text-green-700 mb-4">Upload an image and assign it to the next available image attribute</p>
+                          
+                          <div className="relative inline-block">
+                            <input
+                              type="file"
+                              id="quick_image_upload"
+                              onChange={(e) => {
+                                // Find next available attribute or use first one to replace
+                                const nextAttribute = attributesWithoutImages.length > 0 
+                                  ? attributesWithoutImages[0] 
+                                  : allImageAttributes[0];
+                                if (nextAttribute) {
+                                  handleAttributeValueChange(nextAttribute.code, e, 'file');
+                                }
+                              }}
+                              accept={allImageAttributes[0]?.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                              className="hidden"
+                              disabled={uploadingImage}
+                            />
+                            <label
+                              htmlFor="quick_image_upload"
+                              className="inline-flex items-center px-6 py-3 border-2 border-green-400 rounded-lg bg-white text-green-700 hover:bg-green-50 hover:border-green-500 cursor-pointer transition-all text-sm font-semibold shadow-sm"
+                            >
+                              {uploadingImage ? (
+                                <>
+                                  <span className="animate-spin mr-2">⏳</span>
+                                  Uploading...
+                                </>
+                              ) : (
+                                <>
+                                  <Upload className="w-5 h-5 mr-2" />
+                                  Upload Image
+                                </>
+                              )}
+                            </label>
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* No Images Message */}
-                {allImageAttributes.length > 0 && attributesWithImages.length === 0 && (
-                  <div className="text-center py-8 px-4 bg-blue-50 rounded-xl border-2 border-dashed border-blue-300">
-                    <div className="text-4xl mb-3">📷</div>
-                    <h4 className="font-semibold text-blue-800 mb-2">No Images Added Yet</h4>
-                    <p className="text-sm text-blue-600">Upload images to make your product more appealing to customers</p>
-                  </div>
-                )}
               </CardContent>
             </Card>
           )
