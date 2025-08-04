@@ -125,15 +125,16 @@ export default function Products() {
     try {
       setLoading(true);
 
-      // Build filters for products API - load ALL products using admin API
+      // Build filters for products API - load products using admin API
       const productFilters = { 
         store_id: storeId, 
         order_by: "-created_date"
       };
 
-      // Load all products using admin API and other data without pagination (for form dropdowns)
+      // Load products using admin API with reasonable limit (1000) to avoid 520 errors
+      // Most stores have fewer than 1000 products, so this covers the majority of use cases
       const [productsResult, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
-        retryApiCall(() => Product.findPaginated(1, 10000, productFilters)).catch(() => ({ data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } })),
+        retryApiCall(() => Product.findPaginated(1, 1000, productFilters)).catch(() => ({ data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } })),
         retryApiCall(() => Category.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
         retryApiCall(() => Tax.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
         retryApiCall(() => Attribute.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
@@ -141,10 +142,11 @@ export default function Products() {
       ]);
 
       const allProducts = Array.isArray(productsResult.data) ? productsResult.data : [];
+      const totalProductsInStore = productsResult.pagination?.total || allProducts.length;
       
       setProducts(allProducts);
-      setTotalItems(allProducts.length);
-      setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
+      setTotalItems(totalProductsInStore); // Use actual total from server
+      setTotalPages(Math.ceil(allProducts.length / itemsPerPage)); // Pagination based on loaded products
       setCurrentPage(1);
       
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
@@ -560,7 +562,14 @@ export default function Products() {
         <Card className="material-elevation-1 border-0">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Products ({filteredProducts.length})</span>
+              <div className="flex flex-col">
+                <span>Products ({filteredProducts.length})</span>
+                {totalItems > products.length && (
+                  <p className="text-sm text-orange-600 font-normal mt-1">
+                    Showing first {products.length} of {totalItems} products. Use search/filters to find specific items.
+                  </p>
+                )}
+              </div>
               {(searchQuery || Object.values(filters).some(f => f !== "all")) && (
                 <Button
                   variant="ghost"
