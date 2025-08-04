@@ -301,25 +301,32 @@ const AkeneoIntegration = () => {
     }
   };
 
-  // Load families for filtering (using stats to get existing families)
+  // Load families for filtering directly from Akeneo
   const loadFamiliesForFilter = async () => {
     try {
       const storeId = localStorage.getItem('selectedStoreId');
       if (!storeId) return;
 
-      // For now, we'll load this from the database, but could be enhanced
-      // to load directly from Akeneo
-      const response = await apiClient.get('/attribute-sets', {
-        'x-store-id': storeId,
-        limit: 100
+      // Only load if we have a connection
+      if (!connectionStatus?.success) return;
+
+      setLoadingFamilies(true);
+      
+      // Load families directly from Akeneo
+      const response = await apiClient.get('/integrations/akeneo/families', {
+        'x-store-id': storeId
       });
 
-      if (response.data?.success) {
-        const familyData = response.data.data.attributes || [];
+      if (response.success) {
+        const familyData = response.families || [];
         setFamilies(familyData);
+        console.log(`Loaded ${familyData.length} families from Akeneo`);
       }
     } catch (error) {
-      console.error('Failed to load families:', error);
+      console.error('Failed to load families from Akeneo:', error);
+      // Silently fail - families are optional for filtering
+    } finally {
+      setLoadingFamilies(false);
     }
   };
 

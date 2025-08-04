@@ -716,6 +716,47 @@ router.get('/akeneo/stats', storeAuth, async (req, res) => {
 });
 
 /**
+ * Get families from Akeneo
+ * GET /api/integrations/akeneo/families
+ */
+router.get('/akeneo/families', storeAuth, async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    const syncService = new AkeneoSyncService();
+    
+    try {
+      await syncService.initialize(storeId);
+      const families = await syncService.integration.client.getAllFamilies();
+      
+      res.json({
+        success: true,
+        families: families.map(family => ({
+          code: family.code,
+          labels: family.labels,
+          attributes: family.attributes
+        })),
+        total: families.length
+      });
+    } catch (initError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to load families from Akeneo',
+        error: initError.message
+      });
+    } finally {
+      syncService.cleanup();
+    }
+  } catch (error) {
+    console.error('Error getting Akeneo families:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
  * Get available locales (mock data - could be enhanced to fetch from Akeneo)
  * GET /api/integrations/akeneo/locales
  */
