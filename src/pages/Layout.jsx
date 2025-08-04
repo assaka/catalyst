@@ -363,7 +363,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "CMS Blocks", path: "CMS_BLOCKS", icon: FileText },
         { name: "CMS Pages", path: "CMS_PAGES", icon: FileText },
-        { name: "File Manager", path: "IMAGE_MANAGER", icon: Camera },
+        { name: "File Manager", path: "file-manager", icon: Camera },
       ]
     },
     {
@@ -395,7 +395,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
-        { name: "File Processing", path: "image-processing", icon: Image },
+        { name: "File Processing", path: "file-processing", icon: Image },
         { name: "Plugins", path: "PLUGINS", icon: Puzzle },
         { name: "Akeneo Integration", path: "akeneo-integration", icon: RefreshCw },
         { name: "Team", path: "team", icon: Users },

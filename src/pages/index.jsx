@@ -229,7 +229,7 @@ function _getCurrentPage(url) {
         'product-tabs': 'ProductTabs',
         'product-labels': 'ProductLabels', 
         'custom-option-rules': 'CustomOptionRules',
-        'image-processing': 'FileProcessing',
+        'file-processing': 'FileProcessing',
         'shipping-methods': 'ShippingMethods',
         'payment-methods': 'PaymentMethods',
         'delivery-settings': 'DeliverySettings',
@@ -242,7 +242,7 @@ function _getCurrentPage(url) {
         'analytics': 'AnalyticsSettings',
         'theme-layout': 'ThemeLayout',
         'team': 'TeamPage',
-        'image-manager': 'FileManager',
+        'file-manager': 'FileManager',
         'stock-settings': 'StockSettings',
         'google-tag-manager': 'GoogleTagManager',
         'akeneo-integration': 'AkeneoIntegration',
@@ -322,7 +322,7 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/image-processing" element={
+                <Route path="/admin/file-processing" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <FileProcessing />
                     </RoleProtectedRoute>
@@ -530,7 +530,7 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/image-manager" element={
+                <Route path="/admin/file-manager" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <FileManager />
                     </RoleProtectedRoute>
@@ -719,7 +719,7 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/image-processing" element={
+                <Route path="/admin/file-processing" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <FileProcessing />
                     </RoleProtectedRoute>
@@ -837,7 +837,7 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/image-manager" element={
+                <Route path="/admin/file-manager" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <FileManager />
                     </RoleProtectedRoute>

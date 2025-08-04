@@ -2254,7 +2254,8 @@ const AkeneoIntegration = () => {
                   <CardTitle className="text-sm">Advanced Product Settings</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Group 1: Mode, Status, Stock Filter */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Mode Selection */}
                     <div className="space-y-2">
                       <Label>Mode</Label>
@@ -2293,6 +2294,45 @@ const AkeneoIntegration = () => {
                       </Select>
                     </div>
 
+                    {/* Stock Filter Setting */}
+                    <div className="space-y-2">
+                      <Label>Stock Filter</Label>
+                      <Select
+                        value={productSettings.stockFilter}
+                        onValueChange={(value) => 
+                          setProductSettings(prev => ({ ...prev, stockFilter: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="disabled">Disabled (no stock filtering)</SelectItem>
+                          <SelectItem value="in_stock">In Stock</SelectItem>
+                          <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500">Filter products from Akeneo based on their stock status</p>
+                    </div>
+                  </div>
+
+                  {/* Group 2: Updated Interval, Product Completeness, Product Model */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Updated Interval */}
+                    <div className="space-y-2">
+                      <Label>Updated Interval (hours)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={productSettings.updatedInterval}
+                        onChange={(e) => 
+                          setProductSettings(prev => ({ ...prev, updatedInterval: parseInt(e.target.value) || 24 }))
+                        }
+                        placeholder="24"
+                      />
+                      <p className="text-xs text-gray-500">Only import products updated within this timeframe</p>
+                    </div>
+
                     {/* Product Completeness */}
                     <div className="space-y-2">
                       <Label>Product Completeness (%)</Label>
@@ -2309,43 +2349,28 @@ const AkeneoIntegration = () => {
                       <p className="text-xs text-gray-500">Minimum completeness percentage required</p>
                     </div>
 
-                    {/* Updated Interval */}
+                    {/* Product Model */}
                     <div className="space-y-2">
-                      <Label>Updated Interval (hours)</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={productSettings.updatedInterval}
-                        onChange={(e) => 
-                          setProductSettings(prev => ({ ...prev, updatedInterval: parseInt(e.target.value) || 24 }))
+                      <Label>Product Model</Label>
+                      <Select
+                        value={productSettings.productModel}
+                        onValueChange={(value) => 
+                          setProductSettings(prev => ({ ...prev, productModel: value }))
                         }
-                        placeholder="24"
-                      />
-                      <p className="text-xs text-gray-500">Only import products updated within this timeframe</p>
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="at_least_one">At least 1 variant</SelectItem>
+                          <SelectItem value="all_variants_complete">All variants complete</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-500">Requirement for product model variants</p>
                     </div>
                   </div>
 
-                  {/* Product Model */}
-                  <div className="space-y-2">
-                    <Label>Product Model</Label>
-                    <Select
-                      value={productSettings.productModel}
-                      onValueChange={(value) => 
-                        setProductSettings(prev => ({ ...prev, productModel: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="at_least_one">At least 1 variant</SelectItem>
-                        <SelectItem value="all_variants_complete">All variants complete</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-gray-500">Requirement for product model variants</p>
-                  </div>
-
-                  {/* Families Selection for Products */}
+                  {/* Group 3: Families Selection */}
                   {families.length > 0 && (
                     <div className="space-y-2">
                       <Label>Families</Label>
@@ -2366,27 +2391,6 @@ const AkeneoIntegration = () => {
                       </p>
                     </div>
                   )}
-
-                  {/* Stock Filter Setting */}
-                  <div className="space-y-2">
-                    <Label>Stock Filter</Label>
-                    <Select
-                      value={productSettings.stockFilter}
-                      onValueChange={(value) => 
-                        setProductSettings(prev => ({ ...prev, stockFilter: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="disabled">Disabled (no stock filtering)</SelectItem>
-                        <SelectItem value="in_stock">In Stock</SelectItem>
-                        <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-gray-500">Filter products from Akeneo based on their stock status</p>
-                  </div>
 
                   {/* Media Settings */}
                   <Separator />
