@@ -198,7 +198,7 @@ export default function CmsPages() {
               </CardHeader>
               <CardContent>
                 <div className="flex justify-end space-x-2">
-                   <Link to={createCmsPageUrl(selectedStore?.slug || 'store', page.slug)} target="_blank">
+                   <Link to={createCmsPageUrl(selectedStore?.slug, page.slug)} target="_blank">
                       <Button variant="outline" size="sm">View</Button>
                    </Link>
                    <Button
