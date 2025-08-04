@@ -14,6 +14,7 @@ import { AlertCircle, CheckCircle, RefreshCw, Download, Settings, Database, Pack
 import { toast } from 'sonner';
 import { useStoreSlug } from '../hooks/useStoreSlug';
 import apiClient from '../api/client';
+import { MultiSelect } from '../components/ui/multi-select';
 
 const AkeneoIntegration = () => {
   const storeSlug = useStoreSlug();
@@ -50,6 +51,7 @@ const AkeneoIntegration = () => {
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [availableCategories, setAvailableCategories] = useState([]);
   const [selectedRootCategories, setSelectedRootCategories] = useState([]);
+  const [selectedFamilies, setSelectedFamilies] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [scheduleForm, setScheduleForm] = useState({
@@ -326,6 +328,30 @@ const AkeneoIntegration = () => {
           console.warn('⚠️ Failed to parse saved connection status:', error);
         }
       }
+
+      // Load saved category selections
+      const savedCategories = localStorage.getItem('akeneo_selected_categories');
+      if (savedCategories) {
+        try {
+          const parsedCategories = JSON.parse(savedCategories);
+          setSelectedRootCategories(parsedCategories);
+          console.log('📥 Loaded saved categories:', parsedCategories);
+        } catch (error) {
+          console.warn('⚠️ Failed to parse saved categories:', error);
+        }
+      }
+
+      // Load saved family selections
+      const savedFamilies = localStorage.getItem('akeneo_selected_families');
+      if (savedFamilies) {
+        try {
+          const parsedFamilies = JSON.parse(savedFamilies);
+          setSelectedFamilies(parsedFamilies);
+          console.log('📥 Loaded saved families:', parsedFamilies);
+        } catch (error) {
+          console.warn('⚠️ Failed to parse saved families:', error);
+        }
+      }
       
       await loadConfigStatus();
       await loadLocales();
@@ -344,6 +370,23 @@ const AkeneoIntegration = () => {
       loadAvailableCategories();
     }
   }, [connectionStatus?.success]);
+
+  // Save selections to localStorage when they change
+  useEffect(() => {
+    if (selectedRootCategories.length > 0) {
+      localStorage.setItem('akeneo_selected_categories', JSON.stringify(selectedRootCategories));
+    } else {
+      localStorage.removeItem('akeneo_selected_categories');
+    }
+  }, [selectedRootCategories]);
+
+  useEffect(() => {
+    if (selectedFamilies.length > 0) {
+      localStorage.setItem('akeneo_selected_families', JSON.stringify(selectedFamilies));
+    } else {
+      localStorage.removeItem('akeneo_selected_families');
+    }
+  }, [selectedFamilies]);
 
   const loadConfigStatus = async () => {
     try {
@@ -597,6 +640,13 @@ const AkeneoIntegration = () => {
       return;
     }
 
+    // Validate that at least one category is selected
+    if (selectedRootCategories.length === 0) {
+      console.error('❌ No categories selected');
+      toast.error('Please select at least 1 category to import');
+      return;
+    }
+
     // Get store_id from localStorage
     const storeId = localStorage.getItem('selectedStoreId');
     console.log('🏪 Using store ID:', storeId);
@@ -785,13 +835,26 @@ const AkeneoIntegration = () => {
       
       if (hasPlaceholders && configSaved) {
         // Use stored config for import
-        requestPayload = { dryRun };
+        requestPayload = { 
+          dryRun,
+          filters: {
+            families: selectedFamilies.length > 0 ? selectedFamilies : undefined
+          }
+        };
         console.log('🔒 Using stored configuration for import');
       } else {
         // Use provided config
-        requestPayload = { ...config, dryRun };
+        requestPayload = { 
+          ...config, 
+          dryRun,
+          filters: {
+            families: selectedFamilies.length > 0 ? selectedFamilies : undefined
+          }
+        };
         console.log('📋 Using provided configuration for import');
       }
+      
+      console.log('🎯 Selected families for import:', selectedFamilies);
       
       const response = await apiClient.post('/integrations/akeneo/import-families', requestPayload, {
         'x-store-id': storeId
@@ -1402,32 +1465,23 @@ const AkeneoIntegration = () => {
                         {families.length > 0 && (
                           <div className="space-y-2">
                             <Label>Families (leave empty for all)</Label>
-                            <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                              {families.map((family) => (
-                                <div key={family.id} className="flex items-center space-x-2">
-                                  <input
-                                    type="checkbox"
-                                    id={`family-${family.id}`}
-                                    checked={scheduleForm.filters.families.includes(family.name)}
-                                    onChange={(e) => {
-                                      const checked = e.target.checked;
-                                      setScheduleForm(prev => ({
-                                        ...prev,
-                                        filters: {
-                                          ...prev.filters,
-                                          families: checked 
-                                            ? [...prev.filters.families, family.name]
-                                            : prev.filters.families.filter(f => f !== family.name)
-                                        }
-                                      }));
-                                    }}
-                                  />
-                                  <Label htmlFor={`family-${family.id}`} className="text-sm">
-                                    {family.name}
-                                  </Label>
-                                </div>
-                              ))}
-                            </div>
+                            <MultiSelect
+                              options={families.map(family => ({
+                                value: family.name || family.id,
+                                label: family.name || family.id
+                              }))}
+                              value={scheduleForm.filters.families}
+                              onChange={(selectedFamilies) => {
+                                setScheduleForm(prev => ({
+                                  ...prev,
+                                  filters: {
+                                    ...prev.filters,
+                                    families: selectedFamilies
+                                  }
+                                }));
+                              }}
+                              placeholder="Select families for scheduled import..."
+                            />
                           </div>
                         )}
 
@@ -1711,6 +1765,27 @@ const AkeneoIntegration = () => {
                 <Label htmlFor="families-dry-run">Dry Run (Preview only)</Label>
               </div>
 
+              {families.length > 0 && (
+                <div className="space-y-2">
+                  <Label>Family Selection (leave empty for all)</Label>
+                  <MultiSelect
+                    options={families.map(family => ({
+                      value: family.name || family.id,
+                      label: family.name || family.id
+                    }))}
+                    value={selectedFamilies}
+                    onChange={setSelectedFamilies}
+                    placeholder="Select families to import..."
+                  />
+                  <p className="text-xs text-gray-500">
+                    {selectedFamilies.length === 0 
+                      ? 'All families will be imported' 
+                      : `${selectedFamilies.length} families selected`
+                    }
+                  </p>
+                </div>
+              )}
+
               <div className="flex items-center gap-4">
                 <Button 
                   onClick={importFamilies} 
@@ -1782,38 +1857,20 @@ const AkeneoIntegration = () => {
                       </div>
                     ) : availableCategories.length > 0 ? (
                       <div className="space-y-2">
-                        <div className="border rounded-md p-3 min-h-[80px] max-h-[200px] overflow-y-auto">
-                          {availableCategories.map(category => (
-                            <div key={category.code} className="flex items-center space-x-2 mb-2">
-                              <input
-                                type="checkbox"
-                                id={`category-${category.code}`}
-                                checked={selectedRootCategories.includes(category.code)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedRootCategories(prev => [...prev, category.code]);
-                                  } else {
-                                    setSelectedRootCategories(prev => prev.filter(code => code !== category.code));
-                                  }
-                                }}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                              />
-                              <label 
-                                htmlFor={`category-${category.code}`}
-                                className="text-sm font-medium text-gray-700 cursor-pointer"
-                              >
-                                {category.labels?.en_US || category.labels?.en || category.code}
-                              </label>
-                              <Badge variant="secondary" className="text-xs">
-                                {category.code}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
+                        <MultiSelect
+                          options={availableCategories.map(category => ({
+                            value: category.code,
+                            label: `${category.labels?.en_US || category.labels?.en || category.code} (${category.code})`
+                          }))}
+                          value={selectedRootCategories}
+                          onChange={setSelectedRootCategories}
+                          placeholder="Select categories to import (at least 1 required)..."
+                          className={selectedRootCategories.length === 0 ? "border-red-300" : ""}
+                        />
                         <div className="flex items-center justify-between">
-                          <p className="text-xs text-gray-500">
+                          <p className={`text-xs ${selectedRootCategories.length === 0 ? 'text-red-500' : 'text-gray-500'}`}>
                             {selectedRootCategories.length === 0 
-                              ? 'All root categories will be imported' 
+                              ? '⚠️ Please select at least 1 category to import' 
                               : `${selectedRootCategories.length} categories selected`
                             }
                           </p>
@@ -1872,7 +1929,7 @@ const AkeneoIntegration = () => {
                 <div className="flex items-center gap-4">
                   <Button 
                     onClick={importCategories} 
-                    disabled={importing || !connectionStatus?.success}
+                    disabled={importing || !connectionStatus?.success || selectedRootCategories.length === 0}
                     className="flex items-center gap-2"
                   >
                     {importing ? (
