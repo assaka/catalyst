@@ -10,9 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChevronDown, ChevronRight, MapPin, Home, ShoppingCart, Package, CreditCard, Layout } from 'lucide-react';
 
 import { useAlertTypes } from '@/hooks/useAlert';
-export default function CmsBlockForm({ 
+export default function CmsBlockForm({ block, onSubmit, onCancel }) {
   const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
-block, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     title: '',
     identifier: '',
