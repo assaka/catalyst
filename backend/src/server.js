@@ -81,6 +81,8 @@ const updateTestBlockPlacementRoutes = require('./routes/update-test-block-place
 const storeTeamRoutes = require('./routes/store-teams');
 const robotsRoutes = require('./routes/robots');
 const integrationRoutes = require('./routes/integrations');
+const imageRoutes = require('./routes/images');
+const cloudflareOAuthRoutes = require('./routes/cloudflare-oauth');
 
 const app = express();
 
@@ -1485,6 +1487,8 @@ app.use('/api/update-usps-block-placement', updateUspsBlockPlacementRoutes);
 app.use('/api/update-test-block-placement', updateTestBlockPlacementRoutes);
 app.use('/api/store-teams', authMiddleware, storeTeamRoutes);
 app.use('/api/integrations', authMiddleware, integrationRoutes);
+app.use('/api/images', authMiddleware, imageRoutes);
+app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
