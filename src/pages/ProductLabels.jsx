@@ -12,8 +12,11 @@ import { Switch } from '@/components/ui/switch';
 import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
+import { useAlertTypes } from '@/hooks/useAlert';
 export default function ProductLabels() {
-  const [labels, setLabels] = useState([]);
+  
+  const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
+const [labels, setLabels] = useState([]);
   const [attributes, setAttributes] = useState([]);
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [loading, setLoading] = useState(true);
@@ -63,13 +66,13 @@ export default function ProductLabels() {
     // Validate required fields
     if (!labelData.name || !labelData.name.trim()) {
       console.error("Cannot save product label: Name is required.");
-      alert("Please enter a name for the product label.");
+      showWarning('Please enter a name for the product label.');
       return;
     }
 
     if (!labelData.text || !labelData.text.trim()) {
       console.error("Cannot save product label: Display text is required.");
-      alert("Please enter display text for the product label.");
+      showWarning('Please enter display text for the product label.');
       return;
     }
 

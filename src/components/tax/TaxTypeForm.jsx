@@ -15,7 +15,10 @@ import {
 } from "@/components/ui/select";
 import { Trash2, Plus } from "lucide-react";
 
-export default function TaxTypeForm({ taxType, stores, onSubmit, onCancel }) {
+import { useAlertTypes } from '@/hooks/useAlert';
+export default function TaxTypeForm({ 
+  const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
+taxType, stores, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -65,7 +68,7 @@ export default function TaxTypeForm({ taxType, stores, onSubmit, onCancel }) {
     if (newCountry && newRate) {
       const rate = parseFloat(newRate);
       if (isNaN(rate) || rate < 0 || rate > 100) {
-        alert("Please enter a valid tax rate between 0 and 100");
+        showWarning('Please enter a valid tax rate between 0 and 100');
         return;
       }
 
@@ -102,7 +105,7 @@ export default function TaxTypeForm({ taxType, stores, onSubmit, onCancel }) {
 
     try {
       if (formData.country_rates.length === 0) {
-        alert("Please add at least one country tax rate");
+        showWarning('Please add at least one country tax rate');
         return;
       }
 

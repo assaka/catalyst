@@ -6,7 +6,10 @@ import { CheckCircle, AlertCircle, CreditCard, RefreshCw, Settings, Unlink, Info
 import { createPageUrl } from '@/utils';
 import { createStripeConnectAccount, createStripeConnectLink, checkStripeConnectStatus } from '@/api/functions';
 
-export const SetupGuide = ({ store }) => {
+import { useAlertTypes } from '@/hooks/useAlert';
+export const SetupGuide = ({ 
+  const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
+store }) => {
     const navigate = useNavigate();
     const [connecting, setConnecting] = useState(false);
 
@@ -99,11 +102,11 @@ export const SetupGuide = ({ store }) => {
                 window.location.href = onboardingUrl;
             } else {
                 console.error("Failed to get Stripe onboarding URL");
-                alert("Unable to connect to Stripe. Please try again or contact support.");
+                showError('Unable to connect to Stripe. Please try again or contact support.');
             }
         } catch (error) {
             console.error("Error setting up Stripe connect:", error);
-            alert("An error occurred while setting up Stripe. Please try again.");
+            showError('An error occurred while setting up Stripe. Please try again.');
         } finally {
             setConnecting(false);
         }

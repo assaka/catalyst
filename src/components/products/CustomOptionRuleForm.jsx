@@ -13,7 +13,10 @@ import { Badge } from '@/components/ui/badge';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
-export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
+import { useAlertTypes } from '@/hooks/useAlert';
+export default function CustomOptionRuleForm({ 
+  const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
+rule, onSubmit, onCancel }) {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   
   const [formData, setFormData] = useState({
@@ -180,7 +183,7 @@ export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
     e.preventDefault();
     
     if (!isFormValid) {
-      alert('Please fill in all required fields and add at least one condition (category, attribute set, SKU, or attribute condition).');
+      showWarning('Please fill in all required fields and add at least one condition (category, attribute set, SKU, or attribute condition).');
       return;
     }
     

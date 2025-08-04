@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAlertTypes } from "@/hooks/useAlert";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CountrySelect } from "@/components/ui/country-select";
@@ -43,6 +44,7 @@ import apiClient from "@/api/client";
 
 export default function Checkout() {
   const { store, settings, loading: storeLoading, selectedCountry, setSelectedCountry } = useStore();
+  const { showError, AlertComponent } = useAlertTypes();
   
   // Get currency symbol from settings
   const currencySymbol = settings?.currency_symbol || '$';
@@ -811,7 +813,7 @@ export default function Checkout() {
       }
     } catch (error) {
       console.error('Checkout failed:', error);
-      alert('Checkout failed. Please try again.');
+      showError('Checkout failed. Please try again.');
     } finally {
       setIsProcessing(false);
     }
@@ -1560,6 +1562,7 @@ export default function Checkout() {
         </div>
       </div>
       <CmsBlockRenderer position="checkout_below_form" />
+      <AlertComponent />
     </div>
   );
 }

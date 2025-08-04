@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+import { useAlertTypes } from '@/hooks/useAlert';
+
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
@@ -43,6 +45,7 @@ const retryApiCall = async (apiCall, maxRetries = 3, baseDelay = 2000) => {
 };
 
 export default function MarketplaceExport() {
+  const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -97,10 +100,10 @@ export default function MarketplaceExport() {
       };
       
       await Store.update(store.id, { settings: updatedSettings });
-      alert('Amazon configuration saved successfully!');
+      showSuccess('Amazon configuration saved successfully!');
     } catch (error) {
       console.error('Error saving config:', error);
-      alert('Failed to save configuration');
+      showError('Failed to save configuration');
     }
   };
 
@@ -114,12 +117,12 @@ export default function MarketplaceExport() {
 
   const exportToAmazon = async () => {
     if (selectedProducts.length === 0) {
-      alert('Please select at least one product to export');
+      showWarning('Please select at least one product to export');
       return;
     }
 
     if (!amazonConfig.client_id || !amazonConfig.client_secret || !amazonConfig.seller_id) {
-      alert('Please configure your Amazon API credentials first');
+      showWarning('Please configure your Amazon API credentials first');
       return;
     }
 
@@ -460,6 +463,7 @@ export default function MarketplaceExport() {
           )}
         </TabsContent>
       </Tabs>
+      <AlertComponent />
     </div>
   );
 }

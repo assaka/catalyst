@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { useAlertTypes } from "@/hooks/useAlert";
 
 import TaxForm from "../components/tax/TaxForm";
 
@@ -53,6 +54,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 
 export default function TaxPage() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { showError, showConfirm, AlertComponent } = useAlertTypes();
   const [taxes, setTaxes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -144,7 +146,7 @@ export default function TaxPage() {
       }, 100);
       
     } catch (error) {
-      alert(`Failed to update tax settings: ${error.message}`);
+      showError(`Failed to update tax settings: ${error.message}`);
     }
   };
 
@@ -188,7 +190,8 @@ export default function TaxPage() {
   };
 
   const handleDeleteTax = async (taxId) => {
-    if (window.confirm("Are you sure you want to delete this tax rule?")) {
+    const confirmed = await showConfirm("Are you sure you want to delete this tax rule?");
+    if (confirmed) {
       try {
         await Tax.delete(taxId);
         await loadData();
@@ -441,6 +444,7 @@ export default function TaxPage() {
             />
           </DialogContent>
         </Dialog>
+        <AlertComponent />
       </div>
     </div>
   );

@@ -8,7 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CountrySelect } from '@/components/ui/country-select';
 import { Textarea } from '@/components/ui/textarea';
 
-export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel }) {
+import { useAlertTypes } from '@/hooks/useAlert';
+export default function ShippingMethodForm({ 
+  const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
+method, storeId, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -51,7 +54,7 @@ export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel
     e.preventDefault();
     
     if (!storeId) {
-      alert('No store selected');
+      showWarning('No store selected');
       return;
     }
 

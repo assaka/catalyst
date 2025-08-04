@@ -9,9 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Users, Search, Download, Edit, Trash2, UserPlus } from 'lucide-react';
+import { useAlertTypes } from '@/hooks/useAlert';
 
 export default function Customers() {
     const { selectedStore, getSelectedStoreId } = useStoreSelection();
+    const { showError, AlertComponent } = useAlertTypes();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -84,7 +86,7 @@ export default function Customers() {
             setCustomers(customers.filter(c => c.id !== customerId));
         } catch (error) {
             console.error('Error deleting customer:', error);
-            alert('Failed to delete customer. Please try again.');
+            showError('Failed to delete customer. Please try again.');
         }
     };
 
@@ -125,7 +127,7 @@ export default function Customers() {
             setEditingCustomer(null);
         } catch (error) {
             console.error('Error updating customer:', error);
-            alert('Failed to update customer. Please try again.');
+            showError('Failed to update customer. Please try again.');
         } finally {
             setSaving(false);
         }
@@ -385,6 +387,7 @@ export default function Customers() {
                     )}
                 </DialogContent>
             </Dialog>
+            <AlertComponent />
         </div>
     );
 }

@@ -9,7 +9,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // Simple collapsible components if not available in UI library
 import { ChevronDown, ChevronRight, MapPin, Home, ShoppingCart, Package, CreditCard, Layout } from 'lucide-react';
 
-export default function CmsBlockForm({ block, onSubmit, onCancel }) {
+import { useAlertTypes } from '@/hooks/useAlert';
+export default function CmsBlockForm({ 
+  const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
+block, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     title: '',
     identifier: '',
@@ -142,7 +145,7 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
     
     // Validate that at least one placement is selected
     if (formData.placement.length === 0) {
-      alert('Please select at least one placement location for this block.');
+      showWarning('Please select at least one placement location for this block.');
       return;
     }
     

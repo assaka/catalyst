@@ -9,6 +9,7 @@ import { OrderItem } from "@/api/entities";
 import { CustomerWishlist, CustomerAddress, CustomerOrder, CustomerAuth } from "@/api/storefront-entities";
 import { Product } from "@/api/entities";
 import { Cart as CartEntity } from "@/api/entities";
+import { useAlertTypes } from "@/hooks/useAlert";
 
 import {
   User as UserIcon,
@@ -120,7 +121,7 @@ const OrdersTab = ({ orders, getCountryName, onStatusUpdate }) => {
       }
     } catch (error) {
       console.error('Failed to update order status:', error);
-      alert(`Failed to ${newStatus} order: ${error.message}`);
+      showError(`Failed to ${newStatus} order: ${error.message}`);
     } finally {
       setUpdatingStatus(prev => {
         const newSet = new Set(prev);
@@ -746,6 +747,7 @@ export default function CustomerDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { store, settings, taxes, selectedCountry } = useStore();
+  const { showError, AlertComponent } = useAlertTypes();
   const [user, setUser] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
   const [orders, setOrders] = useState([]);
@@ -1419,6 +1421,7 @@ export default function CustomerDashboard() {
           </div>
         )}
       </div>
+      <AlertComponent />
     </div>
   );
 }
