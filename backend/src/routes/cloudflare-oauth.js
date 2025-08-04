@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const CloudflareOAuthService = require('../services/cloudflare-oauth-service');
-const { requireAuth } = require('../middleware/auth');
+const authMiddleware = require('../middleware/auth');
 
 const oauthService = new CloudflareOAuthService();
 
 /**
  * Initialize OAuth flow - generate authorization URL
  */
-router.post('/authorize', requireAuth, async (req, res) => {
+router.post('/authorize', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.body;
     
@@ -106,7 +106,7 @@ router.get('/callback', async (req, res) => {
 /**
  * Get OAuth status for a store
  */
-router.get('/status/:store_id', requireAuth, async (req, res) => {
+router.get('/status/:store_id', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.params;
     
@@ -146,7 +146,7 @@ router.get('/status/:store_id', requireAuth, async (req, res) => {
 /**
  * Disconnect OAuth - revoke access
  */
-router.post('/disconnect', requireAuth, async (req, res) => {
+router.post('/disconnect', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.body;
     
@@ -185,7 +185,7 @@ router.post('/disconnect', requireAuth, async (req, res) => {
 /**
  * Test OAuth connection and get user zones
  */
-router.post('/test-connection', requireAuth, async (req, res) => {
+router.post('/test-connection', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.body;
     
@@ -234,7 +234,7 @@ router.post('/test-connection', requireAuth, async (req, res) => {
 /**
  * Update zone selection for a store
  */
-router.post('/update-zone', requireAuth, async (req, res) => {
+router.post('/update-zone', authMiddleware, async (req, res) => {
   try {
     const { store_id, zone_id } = req.body;
     
@@ -289,7 +289,7 @@ router.post('/update-zone', requireAuth, async (req, res) => {
 /**
  * Get available zones for a store
  */
-router.get('/zones/:store_id', requireAuth, async (req, res) => {
+router.get('/zones/:store_id', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.params;
     
@@ -322,7 +322,7 @@ router.get('/zones/:store_id', requireAuth, async (req, res) => {
 /**
  * Get OAuth service configuration
  */
-router.get('/config', requireAuth, async (req, res) => {
+router.get('/config', authMiddleware, async (req, res) => {
   try {
     const status = oauthService.getStatus();
     const configErrors = oauthService.validateConfig();

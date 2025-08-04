@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const AkeneoSyncService = require('../services/akeneo-sync-service');
 const CloudflareImageService = require('../services/cloudflare-image-service');
-const { requireAuth } = require('../middleware/auth');
+const authMiddleware = require('../middleware/auth');
 
 /**
  * Test image processing configuration
  */
-router.post('/test-config', requireAuth, async (req, res) => {
+router.post('/test-config', authMiddleware, async (req, res) => {
   try {
     const { store_id, test_url } = req.body;
     
@@ -37,7 +37,7 @@ router.post('/test-config', requireAuth, async (req, res) => {
 /**
  * Process images for existing products
  */
-router.post('/process-products', requireAuth, async (req, res) => {
+router.post('/process-products', authMiddleware, async (req, res) => {
   try {
     const { 
       store_id, 
@@ -78,7 +78,7 @@ router.post('/process-products', requireAuth, async (req, res) => {
 /**
  * Get image processing statistics
  */
-router.get('/stats/:store_id', requireAuth, async (req, res) => {
+router.get('/stats/:store_id', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.params;
     
@@ -104,7 +104,7 @@ router.get('/stats/:store_id', requireAuth, async (req, res) => {
 /**
  * Test direct Cloudflare connection
  */
-router.post('/test-cloudflare', requireAuth, async (req, res) => {
+router.post('/test-cloudflare', authMiddleware, async (req, res) => {
   try {
     const config = req.body;
     
@@ -138,7 +138,7 @@ router.post('/test-cloudflare', requireAuth, async (req, res) => {
 /**
  * Process a single image URL
  */
-router.post('/process-url', requireAuth, async (req, res) => {
+router.post('/process-url', authMiddleware, async (req, res) => {
   try {
     const { image_url, metadata = {}, config = {} } = req.body;
     
@@ -169,7 +169,7 @@ router.post('/process-url', requireAuth, async (req, res) => {
 /**
  * Get image processing status for products
  */
-router.get('/product-status/:store_id', requireAuth, async (req, res) => {
+router.get('/product-status/:store_id', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.params;
     const { limit = 20, offset = 0 } = req.query;
@@ -220,7 +220,7 @@ router.get('/product-status/:store_id', requireAuth, async (req, res) => {
 /**
  * Bulk process images for multiple products
  */
-router.post('/bulk-process', requireAuth, async (req, res) => {
+router.post('/bulk-process', authMiddleware, async (req, res) => {
   try {
     const { 
       store_id, 
