@@ -5,7 +5,7 @@ export const clearStorefrontCache = (storeId, dataTypes = []) => {
     localStorage.removeItem('storeProviderCache');
     
     // Clear specific cache keys if provided
-    const cacheKeysToClear = [];
+    let cacheKeysToClear = [];
     
     if (dataTypes.includes('categories')) {
       cacheKeysToClear.push(`categories-${storeId}`);
