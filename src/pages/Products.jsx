@@ -98,7 +98,10 @@ export default function Products() {
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
     if (selectedStore) {
+      console.log('🚀 Products: useEffect triggered, loading data...');
       loadData();
+    } else {
+      console.log('⚠️ Products: No selected store, skipping data load');
     }
   }, [selectedStore]);
 
@@ -124,6 +127,7 @@ export default function Products() {
 
     try {
       setLoading(true);
+      console.log('🔄 Products: Starting data load for store:', storeId);
 
       // Build filters for products API - load products using admin API
       const productFilters = { 
@@ -131,18 +135,45 @@ export default function Products() {
         order_by: "-created_date"
       };
 
+      console.log('📋 Products: Using filters:', productFilters);
+
       // Load products using admin API with reasonable limit (1000) to avoid 520 errors
       // Most stores have fewer than 1000 products, so this covers the majority of use cases
+      console.log('🚀 Products: Making API calls...');
+      
       const [productsResult, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
-        retryApiCall(() => Product.findPaginated(1, 1000, productFilters)).catch(() => ({ data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } })),
-        retryApiCall(() => Category.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
-        retryApiCall(() => Tax.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
-        retryApiCall(() => Attribute.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
-        retryApiCall(() => AttributeSet.filter({ store_id: storeId, limit: 1000 })).catch(() => [])
+        retryApiCall(() => {
+          console.log('📦 Calling Product.findPaginated...');
+          return Product.findPaginated(1, 1000, productFilters);
+        }).catch((error) => {
+          console.error('❌ Product.findPaginated failed:', error);
+          return { data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } };
+        }),
+        retryApiCall(() => Category.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
+          console.error('❌ Category.filter failed:', error);
+          return [];
+        }),
+        retryApiCall(() => Tax.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
+          console.error('❌ Tax.filter failed:', error);
+          return [];
+        }),
+        retryApiCall(() => Attribute.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
+          console.error('❌ Attribute.filter failed:', error);
+          return [];
+        }),
+        retryApiCall(() => AttributeSet.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
+          console.error('❌ AttributeSet.filter failed:', error);
+          return [];
+        })
       ]);
+
+      console.log('✅ Products: API calls completed');
+      console.log('📦 Products result:', productsResult);
 
       const allProducts = Array.isArray(productsResult.data) ? productsResult.data : [];
       const totalProductsInStore = productsResult.pagination?.total || allProducts.length;
+      
+      console.log('📈 Products: Setting state with', allProducts.length, 'products out of', totalProductsInStore, 'total');
       
       setProducts(allProducts);
       setTotalItems(totalProductsInStore); // Use actual total from server
@@ -154,8 +185,11 @@ export default function Products() {
       setAttributes(Array.isArray(attributesData) ? attributesData : []);
       setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
 
+      console.log('✅ Products: Data loading completed successfully');
+
     } catch (error) {
-      console.error("Error loading data:", error);
+      console.error("❌ Products: Error loading data:", error);
+      console.error("❌ Error details:", error.message, error.stack);
       setProducts([]);
       setCategories([]);
       setTaxes([]);
@@ -164,11 +198,8 @@ export default function Products() {
       setTotalItems(0);
       setTotalPages(0);
     } finally {
-      if (appendToExisting) {
-        setLoadingMore(false);
-      } else {
-        setLoading(false);
-      }
+      console.log('🏁 Products: Setting loading to false');
+      setLoading(false);
     }
   };
 
