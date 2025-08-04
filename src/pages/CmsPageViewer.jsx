@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { CmsPage } from '@/api/entities';
 import { Product } from '@/api/entities';
 import RecommendedProducts from '@/components/storefront/RecommendedProducts';
@@ -8,12 +8,11 @@ import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import { useNotFound } from '@/utils/notFoundUtils';
 
 export default function CmsPageViewer() {
-    const [searchParams] = useSearchParams();
+    const { slug } = useParams();
     const { showNotFound } = useNotFound();
     const [page, setPage] = useState(null);
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const slug = searchParams.get('slug');
 
     useEffect(() => {
         if (slug) {

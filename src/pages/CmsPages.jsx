@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { createCmsPageUrl } from "@/utils/urlUtils";
 import FlashMessage from "../components/storefront/FlashMessage";
 import CmsPageForm from "../components/cms/CmsPageForm";
 
@@ -197,7 +198,7 @@ export default function CmsPages() {
               </CardHeader>
               <CardContent>
                 <div className="flex justify-end space-x-2">
-                   <Link to={createPageUrl(`CmsPageViewer?slug=${page.slug}`)} target="_blank">
+                   <Link to={createCmsPageUrl(selectedStore?.slug || 'store', page.slug)} target="_blank">
                       <Button variant="outline" size="sm">View</Button>
                    </Link>
                    <Button

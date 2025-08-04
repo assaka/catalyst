@@ -60,7 +60,7 @@ const AkeneoIntegration = () => {
   const [categorySettings, setCategorySettings] = useState({
     hideFromMenu: false,
     setNewActive: true,
-    preventUrlKeyOverride: false,
+    preventUrlKeyOverride: true, // Enabled by default to preserve existing URLs
     akeneoUrlField: 'url_key' // Default Akeneo field for URL generation
   });
   
@@ -73,7 +73,7 @@ const AkeneoIntegration = () => {
     includeImages: true,
     includeFiles: true,
     stockFilter: 'disabled', // disabled, in_stock, out_of_stock
-    preventUrlKeyOverride: false,
+    preventUrlKeyOverride: true, // Enabled by default to preserve existing URLs
     akeneoUrlField: 'url_key' // Default Akeneo field for URL generation
   });
   

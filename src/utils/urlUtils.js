@@ -190,6 +190,13 @@ export function createCategoryUrl(storeSlug, categoryPath, filters = {}, params 
 }
 
 /**
+ * Create CMS page URL
+ */
+export function createCmsPageUrl(storeSlug, pageSlug) {
+  return `${URL_CONFIG.PUBLIC_PREFIX}/${storeSlug}/${URL_CONFIG.PAGES.CMS_PAGE}/${pageSlug}`;
+}
+
+/**
  * Build filter parameters for layered navigation
  */
 export function buildFilterParams(filters) {
