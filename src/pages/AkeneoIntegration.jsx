@@ -2346,6 +2346,20 @@ const AkeneoIntegration = () => {
                     </div>
                   )}
 
+                  {/* Stock Setting */}
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label>Include Stock Data</Label>
+                      <p className="text-xs text-gray-500">Import product stock/inventory information</p>
+                    </div>
+                    <Switch
+                      checked={productSettings.includeStock}
+                      onCheckedChange={(checked) => 
+                        setProductSettings(prev => ({ ...prev, includeStock: checked }))
+                      }
+                    />
+                  </div>
+
                   {/* Media Settings */}
                   <Separator />
                   <div className="space-y-4">
@@ -2377,18 +2391,6 @@ const AkeneoIntegration = () => {
                       />
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <Label>Stock</Label>
-                        <p className="text-xs text-gray-500">Include product stock/inventory data in import</p>
-                      </div>
-                      <Switch
-                        checked={productSettings.includeStock}
-                        onCheckedChange={(checked) => 
-                          setProductSettings(prev => ({ ...prev, includeStock: checked }))
-                        }
-                      />
-                    </div>
                   </div>
 
                   {/* Mapping Settings */}
