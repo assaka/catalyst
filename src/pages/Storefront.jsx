@@ -300,7 +300,7 @@ export default function Storefront() {
             <>
               <CmsBlockRenderer position="homepage_above_featured" />
               
-              <div className="flex justify-between items-center mb-8">
+              <div className="flex justify-between items-center my-8">
                 <h2 className="text-3xl font-bold">Featured Products</h2>
                 {categories.length > 0 && (
                   <Link to={createCategoryUrl(storeCode, categories[0]?.slug)}>
