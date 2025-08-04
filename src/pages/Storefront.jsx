@@ -265,7 +265,11 @@ export default function Storefront() {
     <div className="px-4 sm:px-6 lg:px-8 py-8">
       <SeoHeadManager 
         pageType={isHomepage ? "homepage" : "category"}
-        pageData={isHomepage ? store : (currentCategory || store)}
+        pageData={isHomepage ? store : (currentCategory ? {
+          ...currentCategory,
+          category_ids: [currentCategory.id],
+          categories: [currentCategory.id]
+        } : store)}
         pageTitle={pageTitle}
       />
       
