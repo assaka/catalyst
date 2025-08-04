@@ -849,15 +849,34 @@ const AkeneoIntegration = () => {
         'x-store-id': storeId
       });
 
-      setImportResults(response.data);
+      console.log('📥 Import products response:', response);
+      console.log('📥 Import products response.data:', response.data);
       
-      if (response.data.success) {
-        toast.success(`Products import completed! ${response.data.stats.imported} products imported`);
+      const responseData = response.data || response;
+      console.log('📥 Final responseData:', responseData);
+      console.log('📥 responseData.success:', responseData?.success);
+      
+      // Ensure responseData has the expected structure
+      const finalResults = {
+        success: responseData?.success ?? false,
+        stats: responseData?.stats || {},
+        message: responseData?.message || '',
+        error: responseData?.error || '',
+        ...responseData
+      };
+      
+      console.log('📥 Final results to set:', finalResults);
+      setImportResults(finalResults);
+      
+      if (responseData.success) {
+        console.log('✅ Products import successful');
+        const stats = responseData.stats;
+        toast.success(`Products import completed! ${stats?.imported || 0} products imported`);
         // Reload stats and config to reflect changes
         await loadStats();
         await loadConfigStatus();
       } else {
-        toast.error(`Products import failed: ${response.data.error}`);
+        toast.error(`Products import failed: ${responseData.error}`);
       }
     } catch (error) {
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
@@ -956,7 +975,7 @@ const AkeneoIntegration = () => {
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            {importResults.success ? (
+            {(importResults?.success ?? false) ? (
               <CheckCircle className="h-5 w-5 text-green-600" />
             ) : (
               <AlertCircle className="h-5 w-5 text-red-600" />
@@ -965,7 +984,7 @@ const AkeneoIntegration = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {importResults.success ? (
+          {(importResults?.success ?? false) ? (
             <div className="space-y-4">
               {importResults.stats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1630,13 +1649,13 @@ const AkeneoIntegration = () => {
               </div>
 
               {importResults && (
-                <Alert className={importResults.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-                  {importResults.success ? (
+                <Alert className={(importResults?.success ?? false) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                  {(importResults?.success ?? false) ? (
                     <CheckCircle className="h-4 w-4 text-green-600" />
                   ) : (
                     <AlertCircle className="h-4 w-4 text-red-600" />
                   )}
-                  <AlertDescription className={importResults.success ? 'text-green-800' : 'text-red-800'}>
+                  <AlertDescription className={(importResults?.success ?? false) ? 'text-green-800' : 'text-red-800'}>
                     {importResults.message || importResults.error}
                     {importResults.stats && (
                       <div className="mt-2 text-sm">
@@ -1708,13 +1727,13 @@ const AkeneoIntegration = () => {
               </div>
 
               {importResults && (
-                <Alert className={importResults.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-                  {importResults.success ? (
+                <Alert className={(importResults?.success ?? false) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                  {(importResults?.success ?? false) ? (
                     <CheckCircle className="h-4 w-4 text-green-600" />
                   ) : (
                     <AlertCircle className="h-4 w-4 text-red-600" />
                   )}
-                  <AlertDescription className={importResults.success ? 'text-green-800' : 'text-red-800'}>
+                  <AlertDescription className={(importResults?.success ?? false) ? 'text-green-800' : 'text-red-800'}>
                     {importResults.message || importResults.error}
                     {importResults.stats && (
                       <div className="mt-2 text-sm">
