@@ -869,15 +869,27 @@ class AkeneoIntegration {
   async buildCategoryMapping(storeId) {
     const categories = await Category.findAll({
       where: { store_id: storeId },
-      attributes: ['id', 'name']
+      attributes: ['id', 'name', 'akeneo_code']
     });
 
     const mapping = {};
     categories.forEach(category => {
-      // Create mapping based on category name (could be enhanced)
-      const akeneoCode = category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      mapping[akeneoCode] = category.id;
+      // Primary mapping: Use akeneo_code if available (preferred)
+      if (category.akeneo_code) {
+        mapping[category.akeneo_code] = category.id;
+      }
+      
+      // Fallback mapping: Create mapping based on category name for backwards compatibility
+      const nameBasedCode = category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      if (!mapping[nameBasedCode]) { // Don't override akeneo_code mapping
+        mapping[nameBasedCode] = category.id;
+      }
     });
+
+    console.log(`📋 Category mapping created: ${Object.keys(mapping).length} mappings`);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 Category mappings:', Object.keys(mapping).slice(0, 10).join(', '), '...');
+    }
 
     return mapping;
   }

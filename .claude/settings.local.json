@@ -148,7 +148,9 @@
       "Bash(DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -c \"\\d cms_blocks\")",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node -e \"\nconst { sequelize } = require(''./backend/src/database/connection.js'');\n(async () => {\n  try {\n    const [blocks] = await sequelize.query(''SELECT id, title, identifier, is_active, placement FROM cms_blocks WHERE placement::text LIKE \\''''%homepage_hero%\\'''' ORDER BY created_at DESC;'');\n    \n    console.log(''🎨 Created Hero CMS Blocks:'');\n    blocks.forEach(block => {\n      console.log(\\`✅ ${block.title} (${block.identifier})\\`);\n      console.log(\\`   ID: ${block.id}\\`);\n      console.log(\\`   Active: ${block.is_active}\\`);\n      console.log(\\`   Placement: ${JSON.stringify(block.placement)}\\`);\n      console.log('''');\n    });\n    \n    await sequelize.close();\n  } catch (error) {\n    console.error(''❌ Error:'', error.message);\n  }\n})();\")",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node verify-hero-blocks.cjs)",
-      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-url-key-override.js)"
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-url-key-override.js)",
+      "Bash(NODE_ENV=development DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-category-mapping.js)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-category-mapping.js)"
     ],
     "deny": []
   }

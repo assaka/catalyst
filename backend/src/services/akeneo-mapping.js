@@ -616,9 +616,24 @@ class AkeneoMapping {
    * Map Akeneo category codes to Catalyst category IDs
    */
   mapCategoryIds(akeneoCategoryCodes, categoryMapping) {
-    return akeneoCategoryCodes
-      .map(code => categoryMapping[code])
-      .filter(id => id); // Remove undefined mappings
+    const mappedIds = [];
+    const unmappedCodes = [];
+    
+    akeneoCategoryCodes.forEach(code => {
+      const mappedId = categoryMapping[code];
+      if (mappedId) {
+        mappedIds.push(mappedId);
+      } else {
+        unmappedCodes.push(code);
+      }
+    });
+    
+    // Log unmapped categories for debugging (only in development or if there are issues)
+    if (unmappedCodes.length > 0 && process.env.NODE_ENV === 'development') {
+      console.warn(`⚠️ Unmapped category codes: ${unmappedCodes.join(', ')}`);
+    }
+    
+    return mappedIds;
   }
 
   /**
