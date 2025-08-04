@@ -343,12 +343,21 @@ export default function Products() {
     
     try {
       const updatePromises = Array.from(selectedProducts).map(id => {
-        const product = paginatedProducts.find(p => p.id === id);
+        // Find product in full products array, not just paginated/filtered ones
+        const product = products.find(p => p.id === id);
+        if (!product) {
+          console.warn(`Product with id ${id} not found in products array`);
+          return Promise.resolve();
+        }
         return Product.update(id, { ...product, status: newStatus });
       });
       await Promise.all(updatePromises);
       setSelectedProducts(new Set());
       setShowBulkActions(false);
+      
+      // Reset status filter to "all" to show updated products regardless of their new status
+      setFilters(prev => ({ ...prev, status: "all" }));
+      
       await loadData();
     } catch (error) {
       console.error("Error updating product statuses:", error);
@@ -393,6 +402,10 @@ export default function Products() {
   const handleStatusChange = async (product, newStatus) => {
     try {
       await Product.update(product.id, { ...product, status: newStatus });
+      
+      // Reset status filter to "all" to show updated product regardless of its new status
+      setFilters(prev => ({ ...prev, status: "all" }));
+      
       await loadData();
     } catch (error) {
       console.error("Error updating product status:", error);
