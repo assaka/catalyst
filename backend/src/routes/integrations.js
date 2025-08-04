@@ -54,9 +54,9 @@ const storeAuth = (req, res, next) => {
   });
 };
 
-// Helper function to load Akeneo configuration
+// Helper function to load Akeneo configuration (database only - no backward compatibility)
 const loadAkeneoConfig = async (storeId, reqBody = null) => {
-  // If configuration is provided in request body, use it
+  // If configuration is provided in request body, use it (for testing purposes)
   if (reqBody && reqBody.baseUrl) {
     return {
       baseUrl: reqBody.baseUrl,
@@ -67,10 +67,10 @@ const loadAkeneoConfig = async (storeId, reqBody = null) => {
     };
   }
 
-  // Try to load from database
+  // Load from database only - clean database approach
   const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
   if (integrationConfig && integrationConfig.config_data) {
-    console.log('🔧 Using Akeneo config:', {
+    console.log('🔧 Using Akeneo config from database:', {
       baseUrl: integrationConfig.config_data.baseUrl,
       clientId: integrationConfig.config_data.clientId,
       username: integrationConfig.config_data.username,
@@ -81,14 +81,8 @@ const loadAkeneoConfig = async (storeId, reqBody = null) => {
     return integrationConfig.config_data;
   }
 
-  // Fallback to environment variables
-  return {
-    baseUrl: process.env.AKENEO_BASE_URL,
-    clientId: process.env.AKENEO_CLIENT_ID,
-    clientSecret: process.env.AKENEO_CLIENT_SECRET,
-    username: process.env.AKENEO_USERNAME,
-    password: process.env.AKENEO_PASSWORD
-  };
+  // No fallback to environment variables - require proper configuration
+  throw new Error('Akeneo integration not configured. Please save your configuration first.');
 };
 
 // Helper function to handle import operations with proper status tracking
@@ -462,6 +456,7 @@ router.post('/akeneo/import-products',
   body('batchSize').optional().isInt({ min: 1, max: 200 }).withMessage('Batch size must be between 1 and 200'),
   body('filters').optional().isObject().withMessage('Filters must be an object'),
   body('settings').optional().isObject().withMessage('Settings must be an object'),
+  body('customMappings').optional().isObject().withMessage('Custom mappings must be an object'),
   async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -480,12 +475,14 @@ router.post('/akeneo/import-products',
       dryRun = false, 
       batchSize = 50,
       filters = {},
-      settings = {}
+      settings = {},
+      customMappings = {}
     } = body;
     
     console.log(`📦 Starting product import with dryRun: ${dryRun}, locale: ${locale}`);
     console.log(`🎯 Product filters:`, filters);
     console.log(`⚙️ Product settings:`, settings);
+    console.log(`🗺️ Custom mappings:`, customMappings);
     
     // Process advanced product settings and filters
     const importOptions = {
@@ -504,8 +501,10 @@ router.post('/akeneo/import-products',
         status: settings.status || 'enabled',
         includeImages: settings.includeImages !== undefined ? settings.includeImages : true,
         includeFiles: settings.includeFiles !== undefined ? settings.includeFiles : true,
+        includeStock: settings.includeStock !== undefined ? settings.includeStock : true,
         ...settings
-      }
+      },
+      customMappings
     };
     
     return await integration.importProducts(storeId, importOptions);
@@ -621,7 +620,7 @@ router.get('/akeneo/config-status', storeAuth, async (req, res) => {
   try {
     const storeId = req.storeId;
     
-    // Try to get config from database first
+    // Get config from database only (clean database approach)
     const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
     
     let config = {};
@@ -644,26 +643,25 @@ router.get('/akeneo/config-status', storeAuth, async (req, res) => {
       };
       hasConfig = !!(configData.baseUrl && configData.clientId && configData.clientSecret && configData.username && configData.password);
     } else {
-      // Fallback to environment variables for backward compatibility
+      // No configuration found - clean database approach
       config = {
-        baseUrl: process.env.AKENEO_BASE_URL || '',
-        clientId: process.env.AKENEO_CLIENT_ID || '',
-        username: process.env.AKENEO_USERNAME || '',
-        // Provide placeholder values for sensitive fields if they exist
-        clientSecret: process.env.AKENEO_CLIENT_SECRET ? '••••••••' : '',
-        password: process.env.AKENEO_PASSWORD ? '••••••••' : '',
+        baseUrl: '',
+        clientId: '',
+        username: '',
+        clientSecret: '',
+        password: '',
         locale: 'en_US',
         lastSync: null,
-        syncStatus: 'idle',
+        syncStatus: 'not_configured',
         lastImportDates: {}
       };
-      hasConfig = !!(process.env.AKENEO_BASE_URL && process.env.AKENEO_CLIENT_ID && process.env.AKENEO_CLIENT_SECRET && process.env.AKENEO_USERNAME && process.env.AKENEO_PASSWORD);
+      hasConfig = false;
     }
 
     res.json({
       success: true,
       hasConfig,
-      source: integrationConfig ? 'database' : 'environment',
+      source: integrationConfig ? 'database' : 'not_configured',
       config
     });
   } catch (error) {

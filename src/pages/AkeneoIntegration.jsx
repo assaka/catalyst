@@ -67,12 +67,30 @@ const AkeneoIntegration = () => {
     updatedInterval: 24, // hours
     status: 'enabled', // enabled, disabled
     includeImages: true,
-    includeFiles: true
+    includeFiles: true,
+    includeStock: true
   });
   
   const [attributeSettings, setAttributeSettings] = useState({
     updatedInterval: 24, // hours
     selectedFamilies: []
+  });
+
+  // Custom mapping configurations
+  const [customMappings, setCustomMappings] = useState({
+    attributes: [
+      { akeneoField: 'name', catalystField: 'product_name', enabled: true },
+      { akeneoField: 'description', catalystField: 'description', enabled: true },
+      { akeneoField: 'price', catalystField: 'price', enabled: true }
+    ],
+    images: [
+      { akeneoField: 'image', catalystField: 'main_image', enabled: true },
+      { akeneoField: 'images', catalystField: 'gallery', enabled: true }
+    ],
+    files: [
+      { akeneoField: 'attachments', catalystField: 'files', enabled: true },
+      { akeneoField: 'documents', catalystField: 'downloads', enabled: true }
+    ]
   });
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [scheduleForm, setScheduleForm] = useState({
@@ -98,6 +116,30 @@ const AkeneoIntegration = () => {
   const handleDryRunChange = (checked) => {
     console.log('🔧 Dry run toggle changed:', checked);
     setDryRun(checked);
+  };
+
+  // Helper functions for custom mapping
+  const updateMapping = (type, index, field, value) => {
+    setCustomMappings(prev => ({
+      ...prev,
+      [type]: prev[type].map((mapping, i) => 
+        i === index ? { ...mapping, [field]: value } : mapping
+      )
+    }));
+  };
+
+  const addMapping = (type) => {
+    setCustomMappings(prev => ({
+      ...prev,
+      [type]: [...prev[type], { akeneoField: '', catalystField: '', enabled: true }]
+    }));
+  };
+
+  const removeMapping = (type, index) => {
+    setCustomMappings(prev => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index)
+    }));
   };
 
   // Load import statistics
@@ -404,6 +446,16 @@ const AkeneoIntegration = () => {
           console.warn('⚠️ Failed to parse saved attribute settings:', error);
         }
       }
+
+      const savedCustomMappings = localStorage.getItem('akeneo_custom_mappings');
+      if (savedCustomMappings) {
+        try {
+          const parsedMappings = JSON.parse(savedCustomMappings);
+          setCustomMappings(parsedMappings);
+        } catch (error) {
+          console.warn('⚠️ Failed to parse saved custom mappings:', error);
+        }
+      }
       
       await loadConfigStatus();
       await loadLocales();
@@ -452,6 +504,10 @@ const AkeneoIntegration = () => {
   useEffect(() => {
     localStorage.setItem('akeneo_attribute_settings', JSON.stringify(attributeSettings));
   }, [attributeSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('akeneo_custom_mappings', JSON.stringify(customMappings));
+  }, [customMappings]);
 
   const loadConfigStatus = async () => {
     try {
@@ -1006,8 +1062,10 @@ const AkeneoIntegration = () => {
           mode: productSettings.mode,
           status: productSettings.status,
           includeImages: productSettings.includeImages,
-          includeFiles: productSettings.includeFiles
-        }
+          includeFiles: productSettings.includeFiles,
+          includeStock: productSettings.includeStock
+        },
+        customMappings: customMappings
       };
 
       console.log('🎯 Product import settings:', requestPayload);
@@ -2318,73 +2376,222 @@ const AkeneoIntegration = () => {
                         }
                       />
                     </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Stock</Label>
+                        <p className="text-xs text-gray-500">Include product stock/inventory data in import</p>
+                      </div>
+                      <Switch
+                        checked={productSettings.includeStock}
+                        onCheckedChange={(checked) => 
+                          setProductSettings(prev => ({ ...prev, includeStock: checked }))
+                        }
+                      />
+                    </div>
                   </div>
 
                   {/* Mapping Settings */}
                   <Separator />
                   <div className="space-y-4">
-                    <h4 className="font-medium">Field Mapping</h4>
-                    <p className="text-sm text-gray-600">Map Akeneo attributes to Catalyst fields (optional - if empty, automatic mapping will be used)</p>
+                    <h4 className="font-medium">Custom Field Mapping</h4>
+                    <p className="text-sm text-gray-600">Configure custom mappings between Akeneo and Catalyst fields</p>
                     
                     {/* Attribute Mapping */}
                     <div className="space-y-2">
-                      <Label>Attribute Mapping</Label>
-                      <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div className="font-medium text-gray-600">Akeneo Attribute</div>
-                        <div className="font-medium text-gray-600">Catalyst Field</div>
+                      <div className="flex items-center justify-between">
+                        <Label>Attribute Mapping</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addMapping('attributes')}
+                          className="flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Add Mapping
+                        </Button>
                       </div>
-                      <div className="space-y-2 max-h-32 overflow-y-auto border rounded p-2">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-gray-500">name → product_name</div>
-                          <div className="text-gray-500">Auto-mapped</div>
+                      <div className="space-y-2 max-h-40 overflow-y-auto border rounded p-3">
+                        <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 mb-2">
+                          <div className="col-span-1"></div>
+                          <div className="col-span-4">Akeneo Field</div>
+                          <div className="col-span-4">Catalyst Field</div>
+                          <div className="col-span-2">Enabled</div>
+                          <div className="col-span-1">Actions</div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-gray-500">description → description</div>
-                          <div className="text-gray-500">Auto-mapped</div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-gray-500">price → price</div>
-                          <div className="text-gray-500">Auto-mapped</div>
-                        </div>
-                        <div className="text-xs text-gray-400 italic mt-2">
-                          Custom mapping configuration will be available in future updates
-                        </div>
+                        {customMappings.attributes.map((mapping, index) => (
+                          <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                            <div className="col-span-1 text-xs text-gray-400">{index + 1}</div>
+                            <div className="col-span-4">
+                              <Input
+                                size="sm"
+                                value={mapping.akeneoField}
+                                onChange={(e) => updateMapping('attributes', index, 'akeneoField', e.target.value)}
+                                placeholder="name"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <Input
+                                size="sm"
+                                value={mapping.catalystField}
+                                onChange={(e) => updateMapping('attributes', index, 'catalystField', e.target.value)}
+                                placeholder="product_name"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Switch
+                                checked={mapping.enabled}
+                                onCheckedChange={(checked) => updateMapping('attributes', index, 'enabled', checked)}
+                              />
+                            </div>
+                            <div className="col-span-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeMapping('attributes', index)}
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
                     {/* Image Mapping */}
                     <div className="space-y-2">
-                      <Label>Image Mapping</Label>
-                      <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-gray-500">image → main_image</div>
-                          <div className="text-gray-500">Auto-mapped</div>
+                      <div className="flex items-center justify-between">
+                        <Label>Image Mapping</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addMapping('images')}
+                          className="flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Add Mapping
+                        </Button>
+                      </div>
+                      <div className="space-y-2 max-h-32 overflow-y-auto border rounded p-3">
+                        <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 mb-2">
+                          <div className="col-span-1"></div>
+                          <div className="col-span-4">Akeneo Field</div>
+                          <div className="col-span-4">Catalyst Field</div>
+                          <div className="col-span-2">Enabled</div>
+                          <div className="col-span-1">Actions</div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-gray-500">images → gallery</div>
-                          <div className="text-gray-500">Auto-mapped</div>
-                        </div>
-                        <div className="text-xs text-gray-400 italic mt-2">
-                          Custom image mapping configuration will be available in future updates
-                        </div>
+                        {customMappings.images.map((mapping, index) => (
+                          <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                            <div className="col-span-1 text-xs text-gray-400">{index + 1}</div>
+                            <div className="col-span-4">
+                              <Input
+                                size="sm"
+                                value={mapping.akeneoField}
+                                onChange={(e) => updateMapping('images', index, 'akeneoField', e.target.value)}
+                                placeholder="image"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <Input
+                                size="sm"
+                                value={mapping.catalystField}
+                                onChange={(e) => updateMapping('images', index, 'catalystField', e.target.value)}
+                                placeholder="main_image"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Switch
+                                checked={mapping.enabled}
+                                onCheckedChange={(checked) => updateMapping('images', index, 'enabled', checked)}
+                              />
+                            </div>
+                            <div className="col-span-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeMapping('images', index)}
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
                     {/* Files Mapping */}
                     <div className="space-y-2">
-                      <Label>Files Mapping</Label>
-                      <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2">
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-gray-500">attachments → files</div>
-                          <div className="text-gray-500">Auto-mapped</div>
+                      <div className="flex items-center justify-between">
+                        <Label>Files Mapping</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addMapping('files')}
+                          className="flex items-center gap-1"
+                        >
+                          <Plus className="w-3 h-3" />
+                          Add Mapping
+                        </Button>
+                      </div>
+                      <div className="space-y-2 max-h-32 overflow-y-auto border rounded p-3">
+                        <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 mb-2">
+                          <div className="col-span-1"></div>
+                          <div className="col-span-4">Akeneo Field</div>
+                          <div className="col-span-4">Catalyst Field</div>
+                          <div className="col-span-2">Enabled</div>
+                          <div className="col-span-1">Actions</div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="text-gray-500">documents → downloads</div>
-                          <div className="text-gray-500">Auto-mapped</div>
-                        </div>
-                        <div className="text-xs text-gray-400 italic mt-2">
-                          Custom files mapping configuration will be available in future updates
-                        </div>
+                        {customMappings.files.map((mapping, index) => (
+                          <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                            <div className="col-span-1 text-xs text-gray-400">{index + 1}</div>
+                            <div className="col-span-4">
+                              <Input
+                                size="sm"
+                                value={mapping.akeneoField}
+                                onChange={(e) => updateMapping('files', index, 'akeneoField', e.target.value)}
+                                placeholder="attachments"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="col-span-4">
+                              <Input
+                                size="sm"
+                                value={mapping.catalystField}
+                                onChange={(e) => updateMapping('files', index, 'catalystField', e.target.value)}
+                                placeholder="files"
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <Switch
+                                checked={mapping.enabled}
+                                onCheckedChange={(checked) => updateMapping('files', index, 'enabled', checked)}
+                              />
+                            </div>
+                            <div className="col-span-1">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeMapping('files', index)}
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>

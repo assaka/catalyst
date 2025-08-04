@@ -52,9 +52,10 @@ class AkeneoMapping {
   /**
    * Transform Akeneo product to Catalyst product format
    */
-  transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null) {
+  transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}) {
     const values = akeneoProduct.values || {};
     
+    // Start with default product structure
     const catalystProduct = {
       store_id: storeId,
       name: this.extractProductValue(values, 'name', locale) || 
@@ -105,7 +106,228 @@ class AkeneoMapping {
       akeneo_groups: akeneoProduct.groups || []
     };
 
+    // Apply custom attribute mappings
+    if (customMappings.attributes && Array.isArray(customMappings.attributes)) {
+      customMappings.attributes.forEach(mapping => {
+        if (mapping.enabled && mapping.akeneoField && mapping.catalystField) {
+          const akeneoValue = this.extractProductValue(values, mapping.akeneoField, locale);
+          if (akeneoValue !== null && akeneoValue !== undefined) {
+            // Map to the specified Catalyst field
+            this.applyCustomMapping(catalystProduct, mapping.catalystField, akeneoValue, mapping.akeneoField);
+          }
+        }
+      });
+    }
+
+    // Apply custom image mappings
+    if (customMappings.images && Array.isArray(customMappings.images)) {
+      const customImages = [];
+      customMappings.images.forEach(mapping => {
+        if (mapping.enabled && mapping.akeneoField) {
+          const imageData = values[mapping.akeneoField];
+          if (imageData && Array.isArray(imageData)) {
+            imageData.forEach(item => {
+              if (item.data) {
+                const imageUrl = typeof item.data === 'string' ? item.data : 
+                               (item.data.url || item.data.path || item.data.href);
+                
+                if (imageUrl) {
+                  customImages.push({
+                    url: imageUrl,
+                    alt: '',
+                    sort_order: customImages.length,
+                    variants: {
+                      thumbnail: imageUrl,
+                      medium: imageUrl,
+                      large: imageUrl
+                    },
+                    metadata: {
+                      attribute: mapping.akeneoField,
+                      scope: item.scope,
+                      locale: item.locale,
+                      customMapping: true,
+                      catalystField: mapping.catalystField
+                    }
+                  });
+                }
+              }
+            });
+          }
+        }
+      });
+      
+      // Replace or merge with existing images based on mapping configuration
+      if (customImages.length > 0) {
+        catalystProduct.images = [...catalystProduct.images, ...customImages];
+      }
+    }
+
+    // Apply custom file mappings
+    if (customMappings.files && Array.isArray(customMappings.files)) {
+      const customFiles = [];
+      customMappings.files.forEach(mapping => {
+        if (mapping.enabled && mapping.akeneoField) {
+          const fileData = values[mapping.akeneoField];
+          if (fileData && Array.isArray(fileData)) {
+            fileData.forEach(item => {
+              if (item.data) {
+                const fileUrl = typeof item.data === 'string' ? item.data : 
+                               (item.data.url || item.data.path || item.data.href);
+                
+                if (fileUrl) {
+                  customFiles.push({
+                    url: fileUrl,
+                    name: item.data.name || mapping.akeneoField,
+                    type: item.data.extension || 'unknown',
+                    size: item.data.size || null,
+                    metadata: {
+                      attribute: mapping.akeneoField,
+                      scope: item.scope,
+                      locale: item.locale,
+                      customMapping: true,
+                      catalystField: mapping.catalystField
+                    }
+                  });
+                }
+              }
+            });
+          }
+        }
+      });
+      
+      // Add custom files to product
+      if (customFiles.length > 0) {
+        catalystProduct.files = customFiles;
+      }
+    }
+
     return catalystProduct;
+  }
+
+  /**
+   * Apply custom field mapping to catalyst product
+   */
+  applyCustomMapping(catalystProduct, catalystField, akeneoValue, akeneoField) {
+    // Handle different types of catalyst fields
+    switch (catalystField) {
+      case 'product_name':
+      case 'name':
+        catalystProduct.name = akeneoValue;
+        catalystProduct.slug = this.generateSlug(akeneoValue);
+        break;
+      
+      case 'description':
+        catalystProduct.description = akeneoValue;
+        break;
+      
+      case 'short_description':
+        catalystProduct.short_description = akeneoValue;
+        break;
+      
+      case 'price':
+        const numericPrice = parseFloat(akeneoValue);
+        if (!isNaN(numericPrice)) {
+          catalystProduct.price = numericPrice;
+        }
+        break;
+      
+      case 'compare_price':
+      case 'msrp':
+        const numericComparePrice = parseFloat(akeneoValue);
+        if (!isNaN(numericComparePrice)) {
+          catalystProduct.compare_price = numericComparePrice;
+        }
+        break;
+      
+      case 'cost_price':
+        const numericCostPrice = parseFloat(akeneoValue);
+        if (!isNaN(numericCostPrice)) {
+          catalystProduct.cost_price = numericCostPrice;
+        }
+        break;
+      
+      case 'weight':
+        const numericWeight = parseFloat(akeneoValue);
+        if (!isNaN(numericWeight)) {
+          catalystProduct.weight = numericWeight;
+        }
+        break;
+      
+      case 'sku':
+        catalystProduct.sku = akeneoValue;
+        break;
+      
+      case 'barcode':
+      case 'ean':
+        catalystProduct.barcode = akeneoValue;
+        break;
+      
+      case 'meta_title':
+        if (!catalystProduct.seo) catalystProduct.seo = {};
+        catalystProduct.seo.meta_title = akeneoValue;
+        break;
+      
+      case 'meta_description':
+        if (!catalystProduct.seo) catalystProduct.seo = {};
+        catalystProduct.seo.meta_description = akeneoValue;
+        break;
+      
+      case 'meta_keywords':
+        if (!catalystProduct.seo) catalystProduct.seo = {};
+        catalystProduct.seo.meta_keywords = akeneoValue;
+        break;
+      
+      case 'featured':
+        catalystProduct.featured = Boolean(akeneoValue);
+        break;
+      
+      case 'status':
+        // Map various status values
+        if (typeof akeneoValue === 'boolean') {
+          catalystProduct.status = akeneoValue ? 'active' : 'inactive';
+        } else if (typeof akeneoValue === 'string') {
+          const statusValue = akeneoValue.toLowerCase();
+          if (['active', 'enabled', 'true', '1', 'yes'].includes(statusValue)) {
+            catalystProduct.status = 'active';
+          } else if (['inactive', 'disabled', 'false', '0', 'no'].includes(statusValue)) {
+            catalystProduct.status = 'inactive';
+          }
+        }
+        break;
+      
+      case 'stock_quantity':
+        const numericStock = parseFloat(akeneoValue);
+        if (!isNaN(numericStock)) {
+          catalystProduct.stock_quantity = Math.max(0, Math.floor(numericStock));
+        }
+        break;
+      
+      case 'manage_stock':
+        catalystProduct.manage_stock = Boolean(akeneoValue);
+        break;
+      
+      case 'infinite_stock':
+        catalystProduct.infinite_stock = Boolean(akeneoValue);
+        break;
+      
+      case 'low_stock_threshold':
+        const numericThreshold = parseFloat(akeneoValue);
+        if (!isNaN(numericThreshold)) {
+          catalystProduct.low_stock_threshold = Math.max(0, Math.floor(numericThreshold));
+        }
+        break;
+      
+      default:
+        // For any other custom fields, add to attributes object
+        if (!catalystProduct.custom_attributes) {
+          catalystProduct.custom_attributes = {};
+        }
+        catalystProduct.custom_attributes[catalystField] = akeneoValue;
+        
+        // Also add to the main attributes object for backward compatibility
+        catalystProduct.attributes[akeneoField] = akeneoValue;
+        break;
+    }
   }
 
   /**

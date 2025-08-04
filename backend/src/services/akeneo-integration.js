@@ -240,7 +240,7 @@ class AkeneoIntegration {
    * Import products from Akeneo to Catalyst
    */
   async importProducts(storeId, options = {}) {
-    const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {}, settings = {} } = options;
+    const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {}, settings = {}, customMappings = {} } = options;
     
     try {
       console.log('🚀 Starting product import from Akeneo...');
@@ -260,6 +260,7 @@ class AkeneoIntegration {
       console.log(`📦 Found ${akeneoProducts.length} products in Akeneo`);
       console.log(`🎯 Product filters:`, filters);
       console.log(`⚙️ Product settings:`, settings);
+      console.log(`🗺️ Custom mappings:`, customMappings);
       
       // Apply product filters
       if (filters.families && filters.families.length > 0) {
@@ -322,7 +323,7 @@ class AkeneoIntegration {
             }
             
             // Transform product to Catalyst format
-            const catalystProduct = this.mapping.transformProduct(akeneoProduct, storeId, locale);
+            const catalystProduct = this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings);
             
             // Apply product settings
             if (settings.status === 'disabled') {
@@ -340,6 +341,16 @@ class AkeneoIntegration {
             if (!settings.includeFiles) {
               if (catalystProduct.files) {
                 catalystProduct.files = [];
+              }
+            }
+            
+            // Handle stock inclusion setting
+            if (!settings.includeStock) {
+              catalystProduct.stock_quantity = 0;
+              catalystProduct.manage_stock = false;
+              catalystProduct.infinite_stock = false;
+              if (catalystProduct.stock_data) {
+                delete catalystProduct.stock_data;
               }
             }
             
@@ -391,7 +402,16 @@ class AkeneoIntegration {
                   tags: catalystProduct.tags,
                   attributes: catalystProduct.attributes,
                   seo: catalystProduct.seo,
-                  category_ids: catalystProduct.category_ids
+                  category_ids: catalystProduct.category_ids,
+                  // Include stock-related fields
+                  manage_stock: catalystProduct.manage_stock,
+                  stock_quantity: catalystProduct.stock_quantity,
+                  allow_backorders: catalystProduct.allow_backorders,
+                  low_stock_threshold: catalystProduct.low_stock_threshold,
+                  infinite_stock: catalystProduct.infinite_stock,
+                  // Include custom fields if they exist
+                  custom_attributes: catalystProduct.custom_attributes,
+                  files: catalystProduct.files
                 });
                 
                 if (processed <= 5 || processed % 25 === 0) {
