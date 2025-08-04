@@ -79,6 +79,7 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
       description: 'Homepage-specific locations',
       options: [
         { value: 'homepage_above_hero', label: 'Above Hero Section', description: 'Top banner area' },
+        { value: 'homepage_hero', label: 'Hero Section', description: 'Main banner/hero area' },
         { value: 'homepage_below_hero', label: 'Below Hero Section', description: 'After main banner' },
         { value: 'homepage_above_featured', label: 'Above Featured Products', description: 'Before product showcase' },
         { value: 'homepage_below_featured', label: 'Below Featured Products', description: 'After product showcase' },

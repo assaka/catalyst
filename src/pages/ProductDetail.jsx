@@ -51,6 +51,44 @@ const ProductLabelComponent = ({ label }) => {
   );
 };
 
+// Utility function to generate a product name from attributes
+const generateProductName = (product, basePrefix = '') => {
+  if (!product?.attributes) return '';
+  
+  const nameComponents = [];
+  
+  // Add base prefix if provided
+  if (basePrefix) {
+    nameComponents.push(basePrefix);
+  }
+  
+  // Define priority order of attributes for name generation
+  const priorityAttributes = [
+    'brand', 'manufacturer', 'model', 'color', 'size', 'material', 'style', 'type'
+  ];
+  
+  // Add attributes in priority order
+  priorityAttributes.forEach(attrCode => {
+    const value = product.attributes[attrCode];
+    if (value && typeof value === 'string' && value.trim()) {
+      nameComponents.push(value.trim());
+    }
+  });
+  
+  // Add any other string attributes not yet included
+  Object.entries(product.attributes).forEach(([code, value]) => {
+    if (!priorityAttributes.includes(code) && 
+        value && 
+        typeof value === 'string' && 
+        value.trim() && 
+        !nameComponents.includes(value.trim())) {
+      nameComponents.push(value.trim());
+    }
+  });
+  
+  return nameComponents.join(' ');
+};
+
 export default function ProductDetail() {
   const { slug: paramSlug, productSlug: routeProductSlug } = useParams();
   const [searchParams] = useSearchParams();
@@ -644,6 +682,18 @@ export default function ProductDetail() {
           <div>
             <CmsBlockRenderer position="product_above_title" />
             <h1 className="text-3xl font-bold mb-2">{product?.name}</h1>
+            {product && product.attributes && Object.keys(product.attributes).length > 0 && (
+              <div className="mb-3">
+                {(() => {
+                  const autoName = generateProductName(product);
+                  return autoName && autoName !== product.name ? (
+                    <p className="text-lg text-gray-600 italic">
+                      Auto-generated: {autoName}
+                    </p>
+                  ) : null;
+                })()}
+              </div>
+            )}
             <CmsBlockRenderer position="product_below_title" />
             <CmsBlockRenderer position="product_above_price" />
             <div className="flex items-center space-x-4 mb-4">

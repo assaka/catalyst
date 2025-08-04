@@ -251,8 +251,11 @@ export default function Storefront() {
       }
     }
     
+    // Filter out root categories (categories with no parent_id or level 0)
+    const filteredChain = categoryChain.filter(cat => cat.parent_id !== null && cat.level > 0);
+    
     // Convert to breadcrumb items
-    return categoryChain.map((cat, index) => ({
+    return filteredChain.map((cat, index) => ({
       name: cat.name,
       url: createCategoryUrl(storeCode, cat.slug)
     }));
@@ -271,19 +274,8 @@ export default function Storefront() {
         <div className="max-w-7xl mx-auto">
           <CmsBlockRenderer position="homepage_above_hero" />
           
-          <section className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20 mb-12 rounded-lg">
-            <div className="text-center">
-              <h1 className="text-4xl md:text-6xl font-bold mb-4">{store?.name || "Welcome"}</h1>
-              <p className="text-xl mb-8">{store?.description || "Discover amazing products"}</p>
-              {categories.length > 0 && (
-                <Link to={createCategoryUrl(storeCode, categories[0]?.slug)}>
-                  <Button size="lg" className="btn-primary text-white">
-                    Shop Now
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </section>
+          {/* Hero section via CMS Block */}
+          <CmsBlockRenderer position="homepage_hero" />
           
           <CmsBlockRenderer position="homepage_below_hero" />
 

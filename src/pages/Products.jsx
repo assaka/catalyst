@@ -144,8 +144,8 @@ export default function Products() {
       
       const [firstProductBatch, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
         retryApiCall(() => {
-          console.log('📦 Loading first batch of products...');
-          return Product.findPaginated(1, 100, productFilters);
+          console.log('📦 Loading all products at once...');
+          return Product.findPaginated(1, 10000, productFilters);
         }).catch((error) => {
           console.error('❌ Product.findPaginated failed:', error);
           return { data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } };
@@ -185,12 +185,13 @@ export default function Products() {
       console.log('📊 Total products in store:', totalProductsInStore);
       console.log('📄 Total pages:', totalPages);
 
-      // Load remaining pages in batches if there are more
+      // Check if we need to load more products (should be rare with limit 10000)
       if (totalPages > 1) {
         console.log('🔄 Loading remaining products in batches...');
+        console.log('⚠️  Warning: Store has more than 10,000 products, loading in batches');
         
         // Load pages 2 onwards in smaller batches to avoid timeout
-        const batchSize = 3; // Load 3 pages at a time (300 products per batch)
+        const batchSize = 2; // Load 2 pages at a time to avoid timeout with large datasets
         
         for (let page = 2; page <= totalPages; page += batchSize) {
           const pagesToLoad = [];
@@ -201,7 +202,7 @@ export default function Products() {
           // Create promises for this batch
           for (let p = page; p <= endPage; p++) {
             pagesToLoad.push(
-              retryApiCall(() => Product.findPaginated(p, 100, productFilters))
+              retryApiCall(() => Product.findPaginated(p, 10000, productFilters))
                 .catch((error) => {
                   console.error(`❌ Failed to load page ${p}:`, error);
                   return { data: [] };
@@ -229,6 +230,8 @@ export default function Products() {
           // Small delay to ensure UI updates properly
           await new Promise(resolve => setTimeout(resolve, 100));
         }
+      } else {
+        console.log('✅ All products loaded in single request');
       }
       
       console.log('✅ All products loaded:', allProducts.length, 'products');
