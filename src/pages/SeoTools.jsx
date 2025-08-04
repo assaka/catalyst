@@ -208,7 +208,7 @@ export default function SeoTools() {
             fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/seo-templates?store_id=${selectedStore.id}`, {
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${localStorage.getItem('admin_auth_token')}`
+                'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
               }
             }).then(res => res.ok ? res.json() : []).catch(() => []),
             Redirect.filter({ store_id: selectedStore.id }).catch(() => []),
@@ -384,7 +384,7 @@ export default function SeoTools() {
     console.log('🔍 handleSaveTemplate called');
     
     // Check authentication status
-    const adminToken = localStorage.getItem('admin_auth_token');
+    const adminToken = localStorage.getItem('store_owner_auth_token');
     console.log('🔍 Admin token exists:', !!adminToken);
     
     if (!adminToken) {
@@ -471,7 +471,7 @@ export default function SeoTools() {
   const handleDeleteTemplate = async (templateId) => {
     if (window.confirm('Are you sure you want to delete this template?')) {
       try {
-        const adminToken = localStorage.getItem('admin_auth_token');
+        const adminToken = localStorage.getItem('store_owner_auth_token');
         if (!adminToken) {
           setFlashMessage({ type: 'error', message: 'Authentication required. Please refresh the page and try again.' });
           return;
