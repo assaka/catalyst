@@ -125,23 +125,22 @@ export default function Products() {
     try {
       setLoading(true);
 
-      // Build filters for products API - load ALL products like Attributes page
+      // Build filters for products API - load ALL products using admin API
       const productFilters = { 
         store_id: storeId, 
-        order_by: "-created_date",
-        limit: 10000 // Load all products
+        order_by: "-created_date"
       };
 
-      // Load all products and other data without pagination (for form dropdowns)
-      const [productsData, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
-        retryApiCall(() => Product.filter(productFilters)).catch(() => []),
+      // Load all products using admin API and other data without pagination (for form dropdowns)
+      const [productsResult, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
+        retryApiCall(() => Product.findPaginated(1, 10000, productFilters)).catch(() => ({ data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } })),
         retryApiCall(() => Category.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
         retryApiCall(() => Tax.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
         retryApiCall(() => Attribute.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
         retryApiCall(() => AttributeSet.filter({ store_id: storeId, limit: 1000 })).catch(() => [])
       ]);
 
-      const allProducts = Array.isArray(productsData) ? productsData : [];
+      const allProducts = Array.isArray(productsResult.data) ? productsResult.data : [];
       
       setProducts(allProducts);
       setTotalItems(allProducts.length);
