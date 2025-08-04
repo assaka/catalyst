@@ -94,6 +94,7 @@ export default function Products() {
   // Bulk action states
   const [selectedProducts, setSelectedProducts] = useState(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkActionInProgress, setBulkActionInProgress] = useState(false);
 
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
@@ -341,6 +342,13 @@ export default function Products() {
   const handleBulkStatusChange = async (newStatus) => {
     if (selectedProducts.size === 0) return;
     
+    // Prevent double execution
+    if (bulkActionInProgress) {
+      console.log('⚠️ Bulk action already in progress, skipping');
+      return;
+    }
+    
+    setBulkActionInProgress(true);
     console.log('🔄 Starting bulk status change to:', newStatus);
     console.log('📋 Selected products:', Array.from(selectedProducts));
     console.log('🔍 Current filters before change:', filters);
@@ -377,6 +385,8 @@ export default function Products() {
       console.log('✅ Data reload completed');
     } catch (error) {
       console.error("❌ Error updating product statuses:", error);
+    } finally {
+      setBulkActionInProgress(false);
     }
   };
 
@@ -464,20 +474,23 @@ export default function Products() {
   });
 
   // Debug logging for filtering
-  console.log('🔍 Products filtering debug:', {
-    totalProducts: products.length,
-    filteredProducts: filteredProducts.length,
-    searchQuery,
-    filters,
-    statusBreakdown: products.reduce((acc, p) => {
-      acc[p.status] = (acc[p.status] || 0) + 1;
-      return acc;
-    }, {}),
-    filteredStatusBreakdown: filteredProducts.reduce((acc, p) => {
-      acc[p.status] = (acc[p.status] || 0) + 1;
-      return acc;
-    }, {})
-  });
+  const statusBreakdown = products.reduce((acc, p) => {
+    acc[p.status] = (acc[p.status] || 0) + 1;
+    return acc;
+  }, {});
+  
+  const filteredStatusBreakdown = filteredProducts.reduce((acc, p) => {
+    acc[p.status] = (acc[p.status] || 0) + 1;
+    return acc;
+  }, {});
+  
+  console.log('🔍 Products filtering debug:');
+  console.log('  📊 Total products:', products.length);
+  console.log('  📊 Filtered products:', filteredProducts.length);
+  console.log('  🔍 Search query:', searchQuery);
+  console.log('  🔍 Filters:', filters);
+  console.log('  📋 Status breakdown (all):', statusBreakdown);
+  console.log('  📋 Status breakdown (filtered):', filteredStatusBreakdown);
 
   // Client-side pagination for display
   const startIndex = (currentPage - 1) * itemsPerPage;
