@@ -12,7 +12,7 @@ import Products from "./Products";
 
 import Categories from "./Categories";
 
-import ImageProcessing from "../components/admin/ImageProcessing";
+import FileProcessing from "../components/admin/FileProcessing";
 
 import Settings from "./Settings";
 
@@ -60,7 +60,7 @@ import ThemeLayout from "./ThemeLayout";
 
 import MarketplaceExport from "./MarketplaceExport";
 
-import ImageManager from "./ImageManager";
+import FileManager from "./FileManager";
 
 import HtmlSitemap from "./HtmlSitemap";
 
@@ -118,7 +118,7 @@ const PAGES = {
     
     Categories: Categories,
     
-    ImageProcessing: ImageProcessing,
+    FileProcessing: FileProcessing,
     
     Settings: Settings,
     
@@ -166,7 +166,7 @@ const PAGES = {
     
     MarketplaceExport: MarketplaceExport,
     
-    ImageManager: ImageManager,
+    FileManager: FileManager,
     
     HtmlSitemap: HtmlSitemap,
     
@@ -229,7 +229,7 @@ function _getCurrentPage(url) {
         'product-tabs': 'ProductTabs',
         'product-labels': 'ProductLabels', 
         'custom-option-rules': 'CustomOptionRules',
-        'image-processing': 'ImageProcessing',
+        'image-processing': 'FileProcessing',
         'shipping-methods': 'ShippingMethods',
         'payment-methods': 'PaymentMethods',
         'delivery-settings': 'DeliverySettings',
@@ -242,7 +242,7 @@ function _getCurrentPage(url) {
         'analytics': 'AnalyticsSettings',
         'theme-layout': 'ThemeLayout',
         'team': 'TeamPage',
-        'image-manager': 'ImageManager',
+        'image-manager': 'FileManager',
         'stock-settings': 'StockSettings',
         'google-tag-manager': 'GoogleTagManager',
         'akeneo-integration': 'AkeneoIntegration',
@@ -324,7 +324,7 @@ function PagesContent() {
                 
                 <Route path="/admin/image-processing" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <ImageProcessing />
+                        <FileProcessing />
                     </RoleProtectedRoute>
                 } />
                 
@@ -532,7 +532,7 @@ function PagesContent() {
                 
                 <Route path="/admin/image-manager" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <ImageManager />
+                        <FileManager />
                     </RoleProtectedRoute>
                 } />
                 
@@ -721,7 +721,7 @@ function PagesContent() {
                 
                 <Route path="/admin/image-processing" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <ImageProcessing />
+                        <FileProcessing />
                     </RoleProtectedRoute>
                 } />
                 
@@ -839,7 +839,7 @@ function PagesContent() {
                 
                 <Route path="/admin/image-manager" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <ImageManager />
+                        <FileManager />
                     </RoleProtectedRoute>
                 } />
                 

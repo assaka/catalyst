@@ -31,7 +31,7 @@ import {
   Info
 } from 'lucide-react';
 
-const ImageProcessing = () => {
+const FileProcessing = () => {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const { showError, showSuccess, showInfo, AlertComponent } = useAlertTypes();
   
@@ -279,7 +279,7 @@ const ImageProcessing = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Image className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">Please select a store to manage image processing</p>
+          <p className="text-gray-600">Please select a store to manage file processing</p>
         </div>
       </div>
     );
@@ -289,7 +289,7 @@ const ImageProcessing = () => {
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Image Processing</h1>
+          <h1 className="text-3xl font-bold text-gray-900">File Processing</h1>
           <p className="text-gray-600 mt-1">Optimize and deliver images through global CDN networks</p>
         </div>
         
@@ -602,4 +602,4 @@ const ImageProcessing = () => {
   );
 };
 
-export default ImageProcessing;
+export default FileProcessing;

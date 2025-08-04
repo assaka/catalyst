@@ -41,7 +41,7 @@ const retryApiCall = async (apiCall, retries = 3, delayMs = 1000) => {
   }
 };
 
-export default function ImageManager() {
+export default function FileManager() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -149,7 +149,7 @@ export default function ImageManager() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Image Manager</h1>
+            <h1 className="text-3xl font-bold text-gray-900">File Manager</h1>
             <p className="text-gray-600 mt-1">Upload and manage your media assets.</p>
           </div>
         </div>
