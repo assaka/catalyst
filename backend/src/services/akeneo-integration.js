@@ -156,8 +156,8 @@ class AkeneoIntegration {
             });
 
             if (existingCategory) {
-              // Update existing category
-              await existingCategory.update({
+              // Prepare update data
+              const updateData = {
                 name: category.name,
                 description: category.description,
                 image_url: category.image_url,
@@ -170,7 +170,20 @@ class AkeneoIntegration {
                 parent_id: category.isRoot ? null : parentId,
                 level: category.level,
                 path: category.path
-              });
+              };
+
+              // Check if prevent URL key override is enabled
+              const preventOverride = settings.preventUrlKeyOverride || false;
+              if (!preventOverride || !existingCategory.slug) {
+                // Update slug only if setting is disabled or existing category has no slug
+                updateData.slug = category.slug;
+                console.log(`  🔗 Updating slug to: ${category.slug}`);
+              } else {
+                console.log(`  🔒 Preserving existing slug: ${existingCategory.slug} (prevent override enabled)`);
+              }
+
+              // Update existing category
+              await existingCategory.update(updateData);
               
               createdCategories[category.akeneo_code] = existingCategory.id;
               console.log(`✅ Updated category: ${category.name} (ID: ${existingCategory.id})`);
@@ -180,6 +193,7 @@ class AkeneoIntegration {
               delete categoryData.id;
               delete categoryData._temp_parent_akeneo_code;
               delete categoryData.isRoot; // Remove temporary flag
+              delete categoryData._originalSlug; // Remove temporary slug field
               categoryData.parent_id = category.isRoot ? null : parentId;
               
               // Create new category
@@ -385,8 +399,8 @@ class AkeneoIntegration {
               });
 
               if (existingProduct) {
-                // Update existing product
-                await existingProduct.update({
+                // Prepare update data
+                const updateData = {
                   name: catalystProduct.name,
                   description: catalystProduct.description,
                   short_description: catalystProduct.short_description,
@@ -412,14 +426,35 @@ class AkeneoIntegration {
                   // Include custom fields if they exist
                   custom_attributes: catalystProduct.custom_attributes,
                   files: catalystProduct.files
-                });
+                };
+
+                // Check if prevent URL key override is enabled
+                const preventOverride = settings.preventUrlKeyOverride || false;
+                if (!preventOverride || !existingProduct.slug) {
+                  // Update slug only if setting is disabled or existing product has no slug
+                  updateData.slug = catalystProduct.slug;
+                  if (processed <= 5 || processed % 25 === 0) {
+                    console.log(`  🔗 Updating slug to: ${catalystProduct.slug}`);
+                  }
+                } else {
+                  if (processed <= 5 || processed % 25 === 0) {
+                    console.log(`  🔒 Preserving existing slug: ${existingProduct.slug} (prevent override enabled)`);
+                  }
+                }
+
+                // Update existing product
+                await existingProduct.update(updateData);
                 
                 if (processed <= 5 || processed % 25 === 0) {
                   console.log(`✅ Updated product: ${catalystProduct.name} (${catalystProduct.sku})`);
                 }
               } else {
+                // Prepare product data for creation
+                const productData = { ...catalystProduct };
+                delete productData._originalSlug; // Remove temporary slug field
+                
                 // Create new product
-                await Product.create(catalystProduct);
+                await Product.create(productData);
                 if (processed <= 5 || processed % 25 === 0) {
                   console.log(`✅ Created product: ${catalystProduct.name} (${catalystProduct.sku})`);
                 }

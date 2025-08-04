@@ -59,7 +59,8 @@ const AkeneoIntegration = () => {
   // Advanced settings
   const [categorySettings, setCategorySettings] = useState({
     hideFromMenu: false,
-    setNewActive: true
+    setNewActive: true,
+    preventUrlKeyOverride: false
   });
   
   const [productSettings, setProductSettings] = useState({
@@ -70,7 +71,8 @@ const AkeneoIntegration = () => {
     status: 'enabled', // enabled, disabled
     includeImages: true,
     includeFiles: true,
-    stockFilter: 'disabled' // disabled, in_stock, out_of_stock
+    stockFilter: 'disabled', // disabled, in_stock, out_of_stock
+    preventUrlKeyOverride: false
   });
   
   const [attributeSettings, setAttributeSettings] = useState({
@@ -808,7 +810,8 @@ const AkeneoIntegration = () => {
           },
           settings: {
             hideFromMenu: categorySettings.hideFromMenu,
-            setNewActive: categorySettings.setNewActive
+            setNewActive: categorySettings.setNewActive,
+            preventUrlKeyOverride: categorySettings.preventUrlKeyOverride
           }
         };
         console.log('🔒 Using stored configuration for import');
@@ -822,7 +825,8 @@ const AkeneoIntegration = () => {
           },
           settings: {
             hideFromMenu: categorySettings.hideFromMenu,
-            setNewActive: categorySettings.setNewActive
+            setNewActive: categorySettings.setNewActive,
+            preventUrlKeyOverride: categorySettings.preventUrlKeyOverride
           }
         };
         console.log('📋 Using provided configuration for import');
@@ -1072,7 +1076,8 @@ const AkeneoIntegration = () => {
           status: productSettings.status,
           includeImages: productSettings.includeImages,
           includeFiles: productSettings.includeFiles,
-          stockFilter: productSettings.stockFilter
+          stockFilter: productSettings.stockFilter,
+          preventUrlKeyOverride: productSettings.preventUrlKeyOverride
         },
         customMappings: customMappings
       };
@@ -2181,6 +2186,22 @@ const AkeneoIntegration = () => {
                       />
                       <Label htmlFor="set-new-active">Set new categories as active</Label>
                     </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label htmlFor="prevent-category-url-override">Prevent URL key override</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Keep existing category URL slugs unchanged during import
+                        </p>
+                      </div>
+                      <Switch
+                        id="prevent-category-url-override"
+                        checked={categorySettings.preventUrlKeyOverride}
+                        onCheckedChange={(checked) => 
+                          setCategorySettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
+                        }
+                      />
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -2419,6 +2440,21 @@ const AkeneoIntegration = () => {
                         checked={productSettings.includeFiles}
                         onCheckedChange={(checked) => 
                           setProductSettings(prev => ({ ...prev, includeFiles: checked }))
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Prevent URL key override</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Keep existing product URL slugs unchanged during import
+                        </p>
+                      </div>
+                      <Switch
+                        checked={productSettings.preventUrlKeyOverride}
+                        onCheckedChange={(checked) => 
+                          setProductSettings(prev => ({ ...prev, preventUrlKeyOverride: checked }))
                         }
                       />
                     </div>

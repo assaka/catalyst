@@ -24,10 +24,12 @@ class AkeneoMapping {
    * Transform Akeneo category to Catalyst category format
    */
   transformCategory(akeneoCategory, storeId, locale = 'en_US', settings = {}) {
+    const categoryName = this.extractLocalizedValue(akeneoCategory.labels, locale) || akeneoCategory.code;
+    
     const catalystCategory = {
       store_id: storeId,
-      name: this.extractLocalizedValue(akeneoCategory.labels, locale) || akeneoCategory.code,
-      slug: this.generateSlug(this.extractLocalizedValue(akeneoCategory.labels, locale) || akeneoCategory.code),
+      name: categoryName,
+      slug: this.generateSlug(categoryName),
       description: null,
       image_url: null,
       sort_order: 0,
@@ -43,7 +45,9 @@ class AkeneoMapping {
       product_count: 0,
       // Keep original Akeneo data for reference
       akeneo_code: akeneoCategory.code,
-      akeneo_parent: akeneoCategory.parent
+      akeneo_parent: akeneoCategory.parent,
+      // Store original slug for comparison
+      _originalSlug: this.generateSlug(categoryName)
     };
 
     return catalystCategory;
@@ -55,17 +59,16 @@ class AkeneoMapping {
   transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}) {
     const values = akeneoProduct.values || {};
     
+    // Extract product name for slug generation
+    const productName = this.extractProductValue(values, 'name', locale) || 
+                       this.extractProductValue(values, 'label', locale) || 
+                       akeneoProduct.identifier;
+    
     // Start with default product structure
     const catalystProduct = {
       store_id: storeId,
-      name: this.extractProductValue(values, 'name', locale) || 
-            this.extractProductValue(values, 'label', locale) || 
-            akeneoProduct.identifier,
-      slug: this.generateSlug(
-        this.extractProductValue(values, 'name', locale) || 
-        this.extractProductValue(values, 'label', locale) || 
-        akeneoProduct.identifier
-      ),
+      name: productName,
+      slug: this.generateSlug(productName),
       sku: akeneoProduct.identifier,
       barcode: this.extractProductValue(values, 'ean', locale) || 
                this.extractProductValue(values, 'barcode', locale),
@@ -103,7 +106,9 @@ class AkeneoMapping {
       akeneo_uuid: akeneoProduct.uuid,
       akeneo_identifier: akeneoProduct.identifier,
       akeneo_family: akeneoProduct.family,
-      akeneo_groups: akeneoProduct.groups || []
+      akeneo_groups: akeneoProduct.groups || [],
+      // Store original slug for comparison
+      _originalSlug: this.generateSlug(productName)
     };
 
     // Apply custom attribute mappings
