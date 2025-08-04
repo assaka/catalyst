@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { SeoSetting } from "@/api/entities";
-import { AdminSeoTemplate as SeoTemplate } from "@/api/admin-entities";
+import { SeoTemplate } from "@/api/entities";
 import { Redirect } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { Category } from "@/api/entities";
@@ -376,6 +376,12 @@ export default function SeoTools() {
 
   const handleSaveTemplate = async () => {
     console.log('🔍 handleSaveTemplate called');
+    
+    // Check authentication status
+    const adminToken = localStorage.getItem('admin_auth_token');
+    console.log('🔍 Admin token exists:', !!adminToken);
+    console.log('🔍 Admin token (first 20 chars):', adminToken ? adminToken.substring(0, 20) + '...' : 'null');
+    
     try {
       setSaving(true);
 
