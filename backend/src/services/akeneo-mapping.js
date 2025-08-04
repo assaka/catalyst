@@ -23,7 +23,7 @@ class AkeneoMapping {
   /**
    * Transform Akeneo category to Catalyst category format
    */
-  transformCategory(akeneoCategory, storeId, locale = 'en_US') {
+  transformCategory(akeneoCategory, storeId, locale = 'en_US', settings = {}) {
     const catalystCategory = {
       store_id: storeId,
       name: this.extractLocalizedValue(akeneoCategory.labels, locale) || akeneoCategory.code,
@@ -31,8 +31,8 @@ class AkeneoMapping {
       description: null,
       image_url: null,
       sort_order: 0,
-      is_active: true,
-      hide_in_menu: false,
+      is_active: settings.setNewActive !== undefined ? settings.setNewActive : true,
+      hide_in_menu: settings.hideFromMenu || false,
       meta_title: null,
       meta_description: null,
       meta_keywords: null,

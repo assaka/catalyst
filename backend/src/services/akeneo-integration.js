@@ -41,7 +41,7 @@ class AkeneoIntegration {
    * Import categories from Akeneo to Catalyst
    */
   async importCategories(storeId, options = {}) {
-    const { locale = 'en_US', dryRun = false, filters = {} } = options;
+    const { locale = 'en_US', dryRun = false, filters = {}, settings = {} } = options;
     
     try {
       console.log('Starting category import from Akeneo...');
@@ -101,7 +101,7 @@ class AkeneoIntegration {
 
       // Transform categories to Catalyst format
       const catalystCategories = akeneoCategories.map(akeneoCategory => 
-        this.mapping.transformCategory(akeneoCategory, storeId, locale)
+        this.mapping.transformCategory(akeneoCategory, storeId, locale, settings)
       );
 
       // Build category hierarchy
@@ -240,7 +240,7 @@ class AkeneoIntegration {
    * Import products from Akeneo to Catalyst
    */
   async importProducts(storeId, options = {}) {
-    const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {} } = options;
+    const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {}, settings = {} } = options;
     
     try {
       console.log('🚀 Starting product import from Akeneo...');
@@ -255,10 +255,45 @@ class AkeneoIntegration {
       
       // Get all products from Akeneo using the robust client method
       console.log('📡 Fetching all products from Akeneo...');
-      const akeneoProducts = await this.client.getAllProducts();
-      this.importStats.products.total = akeneoProducts.length;
-
+      let akeneoProducts = await this.client.getAllProducts();
+      
       console.log(`📦 Found ${akeneoProducts.length} products in Akeneo`);
+      console.log(`🎯 Product filters:`, filters);
+      console.log(`⚙️ Product settings:`, settings);
+      
+      // Apply product filters
+      if (filters.families && filters.families.length > 0) {
+        console.log(`🔍 Filtering by families: ${filters.families.join(', ')}`);
+        akeneoProducts = akeneoProducts.filter(product => 
+          filters.families.includes(product.family)
+        );
+        console.log(`📊 After family filtering: ${akeneoProducts.length} products`);
+      }
+      
+      if (filters.completeness && filters.completeness > 0) {
+        console.log(`🔍 Filtering by completeness: ${filters.completeness}%`);
+        // Note: This would require additional API calls to check completeness
+        // For now, we'll log this requirement for future implementation
+        console.log(`⚠️ Completeness filtering requires additional implementation`);
+      }
+      
+      if (filters.updatedSince) {
+        console.log(`🔍 Filtering by updated interval: ${filters.updatedSince} hours`);
+        // Calculate the date threshold
+        const hoursAgo = new Date();
+        hoursAgo.setHours(hoursAgo.getHours() - filters.updatedSince);
+        
+        akeneoProducts = akeneoProducts.filter(product => {
+          if (product.updated) {
+            const updatedDate = new Date(product.updated);
+            return updatedDate >= hoursAgo;
+          }
+          return true; // Include products without update timestamp
+        });
+        console.log(`📊 After time filtering: ${akeneoProducts.length} products`);
+      }
+      
+      this.importStats.products.total = akeneoProducts.length;
       
       if (akeneoProducts.length === 0) {
         console.log('⚠️ No products found in Akeneo');
@@ -288,6 +323,25 @@ class AkeneoIntegration {
             
             // Transform product to Catalyst format
             const catalystProduct = this.mapping.transformProduct(akeneoProduct, storeId, locale);
+            
+            // Apply product settings
+            if (settings.status === 'disabled') {
+              catalystProduct.status = 'inactive';
+            } else if (settings.status === 'enabled') {
+              catalystProduct.status = 'active';
+            }
+            
+            // Handle image inclusion setting
+            if (!settings.includeImages) {
+              catalystProduct.images = [];
+            }
+            
+            // Handle file inclusion setting (if implemented in transformProduct)
+            if (!settings.includeFiles) {
+              if (catalystProduct.files) {
+                catalystProduct.files = [];
+              }
+            }
             
             // Map category IDs
             const originalCategoryIds = akeneoProduct.categories || [];
@@ -410,7 +464,7 @@ class AkeneoIntegration {
    * Import attributes from Akeneo to Catalyst
    */
   async importAttributes(storeId, options = {}) {
-    const { dryRun = false } = options;
+    const { dryRun = false, filters = {}, settings = {} } = options;
     
     try {
       console.log('🚀 Starting attribute import from Akeneo...');
@@ -419,10 +473,37 @@ class AkeneoIntegration {
       
       // Get all attributes from Akeneo
       console.log('📡 Fetching attributes from Akeneo API...');
-      const akeneoAttributes = await this.client.getAllAttributes();
-      this.importStats.attributes.total = akeneoAttributes.length;
-
+      let akeneoAttributes = await this.client.getAllAttributes();
+      
       console.log(`📦 Found ${akeneoAttributes.length} attributes in Akeneo`);
+      console.log(`🎯 Attribute filters:`, filters);
+      console.log(`⚙️ Attribute settings:`, settings);
+      
+      // Apply attribute filters
+      if (filters.families && filters.families.length > 0) {
+        console.log(`🔍 Filtering by families: ${filters.families.join(', ')}`);
+        // Note: This would require additional API calls to get family attributes
+        // For now, we'll log this requirement for future implementation
+        console.log(`⚠️ Family filtering for attributes requires additional implementation`);
+      }
+      
+      if (filters.updatedSince) {
+        console.log(`🔍 Filtering by updated interval: ${filters.updatedSince} hours`);
+        // Calculate the date threshold
+        const hoursAgo = new Date();
+        hoursAgo.setHours(hoursAgo.getHours() - filters.updatedSince);
+        
+        akeneoAttributes = akeneoAttributes.filter(attribute => {
+          if (attribute.updated) {
+            const updatedDate = new Date(attribute.updated);
+            return updatedDate >= hoursAgo;
+          }
+          return true; // Include attributes without update timestamp
+        });
+        console.log(`📊 After time filtering: ${akeneoAttributes.length} attributes`);
+      }
+      
+      this.importStats.attributes.total = akeneoAttributes.length;
       
       // Log sample of attribute types
       const attributeTypes = {};

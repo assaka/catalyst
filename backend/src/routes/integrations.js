@@ -324,13 +324,15 @@ router.get('/akeneo/sync/status', storeAuth, async (req, res) => {
 });
 
 /**
- * Import categories from Akeneo (Legacy - Use /sync instead)
+ * Import categories from Akeneo with advanced settings
  * POST /api/integrations/akeneo/import-categories
  */
 router.post('/akeneo/import-categories', 
   storeAuth,
   body('locale').optional().isString().withMessage('Locale must be a string'),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  body('filters').optional().isObject().withMessage('Filters must be an object'),
+  body('settings').optional().isObject().withMessage('Settings must be an object'),
   async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -344,10 +346,30 @@ router.post('/akeneo/import-categories',
   console.log('🔍 Import categories request body:', req.body);
   
   await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
-    const { locale = 'en_US', dryRun = false, filters = {} } = body;
+    const { 
+      locale = 'en_US', 
+      dryRun = false, 
+      filters = {},
+      settings = {}
+    } = body;
+    
     console.log(`📦 Starting category import with dryRun: ${dryRun}, locale: ${locale}`);
     console.log(`🎯 Category filters:`, filters);
-    return await integration.importCategories(storeId, { locale, dryRun, filters });
+    console.log(`⚙️ Category settings:`, settings);
+    
+    // Process advanced category settings
+    const importOptions = {
+      locale,
+      dryRun,
+      filters,
+      settings: {
+        hideFromMenu: settings.hideFromMenu || false,
+        setNewActive: settings.setNewActive !== undefined ? settings.setNewActive : true,
+        ...settings
+      }
+    };
+    
+    return await integration.importCategories(storeId, importOptions);
   });
 });
 
@@ -430,7 +452,7 @@ router.get('/akeneo/categories', storeAuth, async (req, res) => {
 });
 
 /**
- * Import products from Akeneo
+ * Import products from Akeneo with advanced settings
  * POST /api/integrations/akeneo/import-products
  */
 router.post('/akeneo/import-products',
@@ -438,6 +460,8 @@ router.post('/akeneo/import-products',
   body('locale').optional().isString().withMessage('Locale must be a string'),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
   body('batchSize').optional().isInt({ min: 1, max: 200 }).withMessage('Batch size must be between 1 and 200'),
+  body('filters').optional().isObject().withMessage('Filters must be an object'),
+  body('settings').optional().isObject().withMessage('Settings must be an object'),
   async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -448,19 +472,55 @@ router.post('/akeneo/import-products',
   }
 
   const storeId = req.storeId;
+  console.log('🔍 Import products request body:', req.body);
+  
   await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
-    const { locale = 'en_US', dryRun = false, batchSize = 50 } = body;
-    return await integration.importProducts(storeId, { locale, dryRun, batchSize });
+    const { 
+      locale = 'en_US', 
+      dryRun = false, 
+      batchSize = 50,
+      filters = {},
+      settings = {}
+    } = body;
+    
+    console.log(`📦 Starting product import with dryRun: ${dryRun}, locale: ${locale}`);
+    console.log(`🎯 Product filters:`, filters);
+    console.log(`⚙️ Product settings:`, settings);
+    
+    // Process advanced product settings and filters
+    const importOptions = {
+      locale,
+      dryRun,
+      batchSize,
+      filters: {
+        families: filters.families || [],
+        completeness: filters.completeness || 100,
+        updatedSince: filters.updatedSince || 24,
+        productModel: filters.productModel || 'all_variants_complete',
+        ...filters
+      },
+      settings: {
+        mode: settings.mode || 'standard',
+        status: settings.status || 'enabled',
+        includeImages: settings.includeImages !== undefined ? settings.includeImages : true,
+        includeFiles: settings.includeFiles !== undefined ? settings.includeFiles : true,
+        ...settings
+      }
+    };
+    
+    return await integration.importProducts(storeId, importOptions);
   });
 });
 
 /**
- * Import attributes from Akeneo
+ * Import attributes from Akeneo with advanced settings
  * POST /api/integrations/akeneo/import-attributes
  */
 router.post('/akeneo/import-attributes', 
   storeAuth,
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
+  body('filters').optional().isObject().withMessage('Filters must be an object'),
+  body('settings').optional().isObject().withMessage('Settings must be an object'),
   async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -474,9 +534,32 @@ router.post('/akeneo/import-attributes',
   console.log('🔍 Import attributes request body:', req.body);
   
   await handleImportOperation(storeId, req, res, async (integration, storeId, body) => {
-    const { dryRun = false } = body;
+    const { 
+      dryRun = false,
+      filters = {},
+      settings = {}
+    } = body;
+    
     console.log(`📦 Starting attribute import with dryRun: ${dryRun}`);
-    return await integration.importAttributes(storeId, { dryRun });
+    console.log(`🎯 Attribute filters:`, filters);
+    console.log(`⚙️ Attribute settings:`, settings);
+    
+    // Process advanced attribute settings and filters
+    const importOptions = {
+      dryRun,
+      filters: {
+        families: filters.families || [],
+        updatedSince: filters.updatedSince || 24,
+        ...filters
+      },
+      settings: {
+        updatedInterval: settings.updatedInterval || 24,
+        selectedFamilies: settings.selectedFamilies || [],
+        ...settings
+      }
+    };
+    
+    return await integration.importAttributes(storeId, importOptions);
   });
 });
 

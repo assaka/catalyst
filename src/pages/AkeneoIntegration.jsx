@@ -740,6 +740,10 @@ const AkeneoIntegration = () => {
           dryRun,
           filters: {
             rootCategories: selectedRootCategories.length > 0 ? selectedRootCategories : undefined
+          },
+          settings: {
+            hideFromMenu: categorySettings.hideFromMenu,
+            setNewActive: categorySettings.setNewActive
           }
         };
         console.log('🔒 Using stored configuration for import');
@@ -750,6 +754,10 @@ const AkeneoIntegration = () => {
           dryRun,
           filters: {
             rootCategories: selectedRootCategories.length > 0 ? selectedRootCategories : undefined
+          },
+          settings: {
+            hideFromMenu: categorySettings.hideFromMenu,
+            setNewActive: categorySettings.setNewActive
           }
         };
         console.log('📋 Using provided configuration for import');
@@ -813,8 +821,6 @@ const AkeneoIntegration = () => {
       return;
     }
 
-    console.log('🔧 Import settings:', { dryRun });
-
     setImporting(true);
     setImportResults(null);
 
@@ -826,14 +832,31 @@ const AkeneoIntegration = () => {
       let requestPayload;
       
       if (hasPlaceholders && configSaved) {
-        // Use stored config for import
-        requestPayload = { dryRun };
+        // Use stored config for import with attribute settings
+        requestPayload = { 
+          dryRun,
+          filters: {
+            families: attributeSettings.selectedFamilies.length > 0 ? attributeSettings.selectedFamilies : undefined,
+            updatedSince: attributeSettings.updatedInterval
+          },
+          settings: attributeSettings
+        };
         console.log('🔒 Using stored configuration for import');
       } else {
-        // Use provided config
-        requestPayload = { ...config, dryRun };
+        // Use provided config with attribute settings
+        requestPayload = { 
+          ...config, 
+          dryRun,
+          filters: {
+            families: attributeSettings.selectedFamilies.length > 0 ? attributeSettings.selectedFamilies : undefined,
+            updatedSince: attributeSettings.updatedInterval
+          },
+          settings: attributeSettings
+        };
         console.log('📋 Using provided configuration for import');
       }
+
+      console.log('🎯 Attribute import settings:', requestPayload);
       
       const response = await apiClient.post('/integrations/akeneo/import-attributes', requestPayload, {
         'x-store-id': storeId
@@ -970,10 +993,26 @@ const AkeneoIntegration = () => {
     setImportResults(null);
 
     try {
-      const response = await apiClient.post('/integrations/akeneo/import-products', {
+      const requestPayload = {
         ...config,
-        dryRun
-      }, {
+        dryRun,
+        filters: {
+          families: selectedFamilies.length > 0 ? selectedFamilies : undefined,
+          completeness: productSettings.completeness,
+          updatedSince: productSettings.updatedInterval,
+          productModel: productSettings.productModel
+        },
+        settings: {
+          mode: productSettings.mode,
+          status: productSettings.status,
+          includeImages: productSettings.includeImages,
+          includeFiles: productSettings.includeFiles
+        }
+      };
+
+      console.log('🎯 Product import settings:', requestPayload);
+
+      const response = await apiClient.post('/integrations/akeneo/import-products', requestPayload, {
         'x-store-id': storeId
       });
 
@@ -1752,6 +1791,51 @@ const AkeneoIntegration = () => {
                 <Label htmlFor="attributes-dry-run">Dry Run (Preview only)</Label>
               </div>
 
+              {/* Advanced Attribute Settings */}
+              <Card className="bg-gray-50">
+                <CardHeader>
+                  <CardTitle className="text-sm">Advanced Attribute Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Updated Interval (hours)</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={attributeSettings.updatedInterval}
+                      onChange={(e) => 
+                        setAttributeSettings(prev => ({ ...prev, updatedInterval: parseInt(e.target.value) || 24 }))
+                      }
+                      placeholder="24"
+                    />
+                    <p className="text-xs text-gray-500">Only import attributes updated within this timeframe</p>
+                  </div>
+
+                  {families.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Families</Label>
+                      <MultiSelect
+                        options={families.map(family => ({
+                          value: family.name || family.id,
+                          label: family.name || family.id
+                        }))}
+                        value={attributeSettings.selectedFamilies}
+                        onChange={(selectedFamilies) => 
+                          setAttributeSettings(prev => ({ ...prev, selectedFamilies }))
+                        }
+                        placeholder="Select families to retrieve attributes from..."
+                      />
+                      <p className="text-xs text-gray-500">
+                        {attributeSettings.selectedFamilies.length === 0 
+                          ? 'Leave empty to import all attributes' 
+                          : `${attributeSettings.selectedFamilies.length} families selected`
+                        }
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <div className="flex items-center gap-4">
                 <Button 
                   onClick={importAttributes} 
@@ -2084,6 +2168,228 @@ const AkeneoIntegration = () => {
                 />
                 <Label htmlFor="products-dry-run">Dry Run (Preview only)</Label>
               </div>
+
+              {/* Advanced Product Settings */}
+              <Card className="bg-gray-50">
+                <CardHeader>
+                  <CardTitle className="text-sm">Advanced Product Settings</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Mode Selection */}
+                    <div className="space-y-2">
+                      <Label>Mode</Label>
+                      <Select
+                        value={productSettings.mode}
+                        onValueChange={(value) => 
+                          setProductSettings(prev => ({ ...prev, mode: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="standard">Standard</SelectItem>
+                          <SelectItem value="advanced">Advanced (JSON)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Status */}
+                    <div className="space-y-2">
+                      <Label>Status</Label>
+                      <Select
+                        value={productSettings.status}
+                        onValueChange={(value) => 
+                          setProductSettings(prev => ({ ...prev, status: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="enabled">Enabled</SelectItem>
+                          <SelectItem value="disabled">Disabled</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Product Completeness */}
+                    <div className="space-y-2">
+                      <Label>Product Completeness (%)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={productSettings.completeness}
+                        onChange={(e) => 
+                          setProductSettings(prev => ({ ...prev, completeness: parseInt(e.target.value) || 0 }))
+                        }
+                        placeholder="0-100"
+                      />
+                      <p className="text-xs text-gray-500">Minimum completeness percentage required</p>
+                    </div>
+
+                    {/* Updated Interval */}
+                    <div className="space-y-2">
+                      <Label>Updated Interval (hours)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={productSettings.updatedInterval}
+                        onChange={(e) => 
+                          setProductSettings(prev => ({ ...prev, updatedInterval: parseInt(e.target.value) || 24 }))
+                        }
+                        placeholder="24"
+                      />
+                      <p className="text-xs text-gray-500">Only import products updated within this timeframe</p>
+                    </div>
+                  </div>
+
+                  {/* Product Model */}
+                  <div className="space-y-2">
+                    <Label>Product Model</Label>
+                    <Select
+                      value={productSettings.productModel}
+                      onValueChange={(value) => 
+                        setProductSettings(prev => ({ ...prev, productModel: value }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="at_least_one">At least 1 variant</SelectItem>
+                        <SelectItem value="all_variants_complete">All variants complete</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">Requirement for product model variants</p>
+                  </div>
+
+                  {/* Families Selection for Products */}
+                  {families.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Families</Label>
+                      <MultiSelect
+                        options={families.map(family => ({
+                          value: family.name || family.id,
+                          label: family.name || family.id
+                        }))}
+                        value={selectedFamilies}
+                        onChange={setSelectedFamilies}
+                        placeholder="Select families to retrieve products from..."
+                      />
+                      <p className="text-xs text-gray-500">
+                        {selectedFamilies.length === 0 
+                          ? 'If empty, you may not have families in Akeneo or credentials are wrong' 
+                          : `${selectedFamilies.length} families selected`
+                        }
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Media Settings */}
+                  <Separator />
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Media Settings</h4>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Images</Label>
+                        <p className="text-xs text-gray-500">Include product images in import</p>
+                      </div>
+                      <Switch
+                        checked={productSettings.includeImages}
+                        onCheckedChange={(checked) => 
+                          setProductSettings(prev => ({ ...prev, includeImages: checked }))
+                        }
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <Label>Files</Label>
+                        <p className="text-xs text-gray-500">Include product files in import</p>
+                      </div>
+                      <Switch
+                        checked={productSettings.includeFiles}
+                        onCheckedChange={(checked) => 
+                          setProductSettings(prev => ({ ...prev, includeFiles: checked }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Mapping Settings */}
+                  <Separator />
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Field Mapping</h4>
+                    <p className="text-sm text-gray-600">Map Akeneo attributes to Catalyst fields (optional - if empty, automatic mapping will be used)</p>
+                    
+                    {/* Attribute Mapping */}
+                    <div className="space-y-2">
+                      <Label>Attribute Mapping</Label>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="font-medium text-gray-600">Akeneo Attribute</div>
+                        <div className="font-medium text-gray-600">Catalyst Field</div>
+                      </div>
+                      <div className="space-y-2 max-h-32 overflow-y-auto border rounded p-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="text-gray-500">name → product_name</div>
+                          <div className="text-gray-500">Auto-mapped</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="text-gray-500">description → description</div>
+                          <div className="text-gray-500">Auto-mapped</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="text-gray-500">price → price</div>
+                          <div className="text-gray-500">Auto-mapped</div>
+                        </div>
+                        <div className="text-xs text-gray-400 italic mt-2">
+                          Custom mapping configuration will be available in future updates
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Image Mapping */}
+                    <div className="space-y-2">
+                      <Label>Image Mapping</Label>
+                      <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="text-gray-500">image → main_image</div>
+                          <div className="text-gray-500">Auto-mapped</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="text-gray-500">images → gallery</div>
+                          <div className="text-gray-500">Auto-mapped</div>
+                        </div>
+                        <div className="text-xs text-gray-400 italic mt-2">
+                          Custom image mapping configuration will be available in future updates
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Files Mapping */}
+                    <div className="space-y-2">
+                      <Label>Files Mapping</Label>
+                      <div className="space-y-2 max-h-24 overflow-y-auto border rounded p-2">
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="text-gray-500">attachments → files</div>
+                          <div className="text-gray-500">Auto-mapped</div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="text-gray-500">documents → downloads</div>
+                          <div className="text-gray-500">Auto-mapped</div>
+                        </div>
+                        <div className="text-xs text-gray-400 italic mt-2">
+                          Custom files mapping configuration will be available in future updates
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               <div className="flex items-center gap-4">
                 <Button 
