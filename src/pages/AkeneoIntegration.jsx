@@ -70,7 +70,7 @@ const AkeneoIntegration = () => {
     status: 'enabled', // enabled, disabled
     includeImages: true,
     includeFiles: true,
-    includeStock: true
+    stockFilter: 'disabled' // disabled, in_stock, out_of_stock
   });
   
   const [attributeSettings, setAttributeSettings] = useState({
@@ -1072,7 +1072,7 @@ const AkeneoIntegration = () => {
           status: productSettings.status,
           includeImages: productSettings.includeImages,
           includeFiles: productSettings.includeFiles,
-          includeStock: productSettings.includeStock
+          stockFilter: productSettings.stockFilter
         },
         customMappings: customMappings
       };
@@ -2014,27 +2014,6 @@ const AkeneoIntegration = () => {
                 <Label htmlFor="families-dry-run">Dry Run (Preview only)</Label>
               </div>
 
-              {families.length > 0 && (
-                <div className="space-y-2">
-                  <Label>Family Selection (leave empty for all)</Label>
-                  <MultiSelect
-                    options={families.map(family => ({
-                      value: family.name || family.id,
-                      label: family.name || family.id
-                    }))}
-                    value={selectedFamilies}
-                    onChange={setSelectedFamilies}
-                    placeholder="Select families to import..."
-                  />
-                  <p className="text-xs text-gray-500">
-                    {selectedFamilies.length === 0 
-                      ? 'All families will be imported' 
-                      : `${selectedFamilies.length} families selected`
-                    }
-                  </p>
-                </div>
-              )}
-
               <div className="flex items-center gap-4">
                 <Button 
                   onClick={importFamilies} 
@@ -2388,18 +2367,25 @@ const AkeneoIntegration = () => {
                     </div>
                   )}
 
-                  {/* Has Stock Setting */}
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label>Has stock</Label>
-                      <p className="text-xs text-gray-500">Mark products as having stock. Use Attribute Mapping to import actual stock values.</p>
-                    </div>
-                    <Switch
-                      checked={productSettings.includeStock}
-                      onCheckedChange={(checked) => 
-                        setProductSettings(prev => ({ ...prev, includeStock: checked }))
+                  {/* Stock Filter Setting */}
+                  <div className="space-y-2">
+                    <Label>Stock Filter</Label>
+                    <Select
+                      value={productSettings.stockFilter}
+                      onValueChange={(value) => 
+                        setProductSettings(prev => ({ ...prev, stockFilter: value }))
                       }
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="disabled">Disabled (no stock filtering)</SelectItem>
+                        <SelectItem value="in_stock">In Stock</SelectItem>
+                        <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">Filter products from Akeneo based on their stock status</p>
                   </div>
 
                   {/* Media Settings */}
