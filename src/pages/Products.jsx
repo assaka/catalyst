@@ -93,14 +93,7 @@ export default function Products() {
   
   // Bulk action states
   const [selectedProducts, setSelectedProducts] = useState(new Set());
-  const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
-  
-  // Lazy loading states
-  const [lazyLoadingEnabled, setLazyLoadingEnabled] = useState(false);
-  const [allProducts, setAllProducts] = useState([]);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     document.title = "Products - Admin Dashboard";
@@ -121,7 +114,7 @@ export default function Products() {
     return () => window.removeEventListener('storeSelectionChanged', handleStoreChange);
   }, [selectedStore]);
 
-  const loadData = async (page = currentPage, appendToExisting = false) => {
+  const loadData = async () => {
     const storeId = getSelectedStoreId();
     if (!storeId) {
       console.warn("No store selected");
@@ -130,58 +123,30 @@ export default function Products() {
     }
 
     try {
-      if (appendToExisting) {
-        setLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
+      setLoading(true);
 
-      // Build filters for products API
+      // Build filters for products API - load ALL products like Attributes page
       const productFilters = { 
         store_id: storeId, 
-        order_by: "-created_date"
+        order_by: "-created_date",
+        limit: 10000 // Load all products
       };
-      
-      // Add search filter if present
-      if (searchQuery.trim()) {
-        productFilters.search = searchQuery.trim();
-      }
-      
-      // Add status filter
-      if (filters.status !== "all") {
-        productFilters.status = filters.status;
-      }
-      
-      // Add category filter
-      if (filters.category !== "all") {
-        productFilters.category_id = filters.category;
-      }
 
-      // Load products with pagination and other data without pagination (for form dropdowns)
-      const [productsResult, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
-        retryApiCall(() => Product.findPaginated(page, itemsPerPage, productFilters)).catch(() => ({ data: [], pagination: { total: 0, total_pages: 0, current_page: page } })),
+      // Load all products and other data without pagination (for form dropdowns)
+      const [productsData, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
+        retryApiCall(() => Product.filter(productFilters)).catch(() => []),
         retryApiCall(() => Category.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
         retryApiCall(() => Tax.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
         retryApiCall(() => Attribute.filter({ store_id: storeId, limit: 1000 })).catch(() => []),
         retryApiCall(() => AttributeSet.filter({ store_id: storeId, limit: 1000 })).catch(() => [])
       ]);
 
-      const newProducts = Array.isArray(productsResult.data) ? productsResult.data : [];
+      const allProducts = Array.isArray(productsData) ? productsData : [];
       
-      if (appendToExisting && lazyLoadingEnabled) {
-        setAllProducts(prev => [...prev, ...newProducts]);
-        setHasMore(productsResult.pagination.current_page < productsResult.pagination.total_pages);
-      } else {
-        setProducts(newProducts);
-        if (lazyLoadingEnabled) {
-          setAllProducts(newProducts);
-          setHasMore(productsResult.pagination.current_page < productsResult.pagination.total_pages);
-        }
-      }
-      
-      setTotalItems(productsResult.pagination.total);
-      setTotalPages(productsResult.pagination.total_pages);
-      setCurrentPage(productsResult.pagination.current_page);
+      setProducts(allProducts);
+      setTotalItems(allProducts.length);
+      setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
+      setCurrentPage(1);
       
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       setTaxes(Array.isArray(taxesData) ? taxesData : []);
@@ -350,9 +315,50 @@ export default function Products() {
     }
   };
 
-  // Server-side filtering, so use products directly
-  const paginatedProducts = lazyLoadingEnabled ? allProducts : products;
+  // Client-side filtering for search and filters (all data is loaded)
+  const filteredProducts = products.filter(product => {
+    // Search filter
+    const matchesSearch = !searchQuery.trim() || 
+      product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.short_description?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Status filter
+    const matchesStatus = filters.status === "all" || product.status === filters.status;
+    
+    // Category filter
+    const matchesCategory = filters.category === "all" || 
+      (product.category_ids && product.category_ids.includes(filters.category));
+    
+    // Price range filter
+    let matchesPriceRange = true;
+    if (filters.priceRange !== "all") {
+      const price = parseFloat(product.price || 0);
+      switch (filters.priceRange) {
+        case "0-25":
+          matchesPriceRange = price >= 0 && price <= 25;
+          break;
+        case "25-50":
+          matchesPriceRange = price > 25 && price <= 50;
+          break;
+        case "50-100":
+          matchesPriceRange = price > 50 && price <= 100;
+          break;
+        case "100+":
+          matchesPriceRange = price > 100;
+          break;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesCategory && matchesPriceRange;
+  });
+
+  // Client-side pagination for display
   const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  
+  // Calculate pagination based on filtered results
+  const calculatedTotalPages = Math.ceil(filteredProducts.length / itemsPerPage);
   
   // Memoized calculations for bulk actions
   const isAllSelected = useMemo(() => {
@@ -363,39 +369,14 @@ export default function Products() {
     return selectedProducts.size > 0 && selectedProducts.size < paginatedProducts.length;
   }, [selectedProducts, paginatedProducts]);
 
-  // Handle page changes
+  // Handle page changes (client-side only)
   const handlePageChange = (page) => {
     setCurrentPage(page);
-    loadData(page);
-  };
-  
-  // Load more products for lazy loading
-  const loadMoreProducts = () => {
-    if (!hasMore || loadingMore) return;
-    loadData(currentPage + 1, true);
-  };
-  
-  // Toggle lazy loading mode
-  const toggleLazyLoading = () => {
-    setLazyLoadingEnabled(!lazyLoadingEnabled);
-    setSelectedProducts(new Set());
-    setShowBulkActions(false);
-    if (!lazyLoadingEnabled) {
-      // Switching to lazy loading mode
-      setAllProducts(products);
-      setHasMore(currentPage < totalPages);
-    } else {
-      // Switching back to pagination mode
-      setAllProducts([]);
-      loadData(1); // Reload first page
-    }
   };
 
-  // Reset to first page and reload data when search or filters change
+  // Reset to first page when search or filters change
   useEffect(() => {
-    if (selectedStore) {
-      loadData(1); // Always load first page when search/filters change
-    }
+    setCurrentPage(1);
   }, [searchQuery, filters]);
 
   // Enhanced pagination component
@@ -426,7 +407,7 @@ export default function Products() {
     return (
       <div className="flex items-center justify-between mt-6">
         <p className="text-sm text-gray-700">
-          Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, totalItems)} of {totalItems} products
+          Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
         </p>
         
         <div className="flex items-center space-x-2">
@@ -543,13 +524,6 @@ export default function Products() {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              variant="outline"
-              onClick={toggleLazyLoading}
-              className={lazyLoadingEnabled ? 'bg-blue-50 border-blue-300' : ''}
-            >
-              {lazyLoadingEnabled ? 'Pagination Mode' : 'Lazy Loading Mode'}
-            </Button>
-            <Button
             onClick={() => {
               setSelectedProduct(null);
               setShowProductForm(true);
@@ -587,7 +561,7 @@ export default function Products() {
         <Card className="material-elevation-1 border-0">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Products ({lazyLoadingEnabled ? `${allProducts.length} of ${totalItems}` : totalItems})</span>
+              <span>Products ({filteredProducts.length})</span>
               {(searchQuery || Object.values(filters).some(f => f !== "all")) && (
                 <Button
                   variant="ghost"
@@ -838,30 +812,8 @@ export default function Products() {
                   </table>
                 </div>
 
-                {/* Enhanced Pagination or Lazy Loading */}
-                {lazyLoadingEnabled ? (
-                  hasMore && (
-                    <div className="text-center mt-6">
-                      <Button
-                        onClick={loadMoreProducts}
-                        disabled={loadingMore}
-                        variant="outline"
-                        className="w-full sm:w-auto"
-                      >
-                        {loadingMore ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                            Loading more products...
-                          </>
-                        ) : (
-                          `Load More Products (${totalItems - allProducts.length} remaining)`
-                        )}
-                      </Button>
-                    </div>
-                  )
-                ) : (
-                  renderPagination(currentPage, totalPages, handlePageChange)
-                )}
+                {/* Enhanced Pagination */}
+                {renderPagination(currentPage, calculatedTotalPages, handlePageChange)}
               </>
             ) : (
               <div className="text-center py-12">
@@ -869,7 +821,7 @@ export default function Products() {
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
                 <p className="text-gray-600 mb-6">
                   {searchQuery || Object.values(filters).some(f => f !== "all")
-                    ? "Try adjusting your search or filters"
+                    ? "Try adjusting your search terms or filters"
                     : "Start by adding your first product to your catalog"}
                 </p>
                 <Button
