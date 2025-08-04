@@ -248,14 +248,15 @@ class AkeneoSyncService {
       // Get products that need image processing
       const { Product } = require('../models');
       
+      const { Op } = require('sequelize');
+      
       const whereClause = forceReprocess ? 
         { store_id: this.storeId } : 
         { 
           store_id: this.storeId,
-          $or: [
+          [Op.or]: [
             { images: null },
-            { images: [] },
-            { 'images.metadata.processed_at': null }
+            { images: [] }
           ]
         };
 
@@ -286,7 +287,7 @@ class AkeneoSyncService {
         const batchPromises = batch.map(async (product) => {
           try {
             // Get fresh product data from Akeneo if needed
-            const akeneoProduct = await this.client.getProduct(product.akeneo_uuid || product.sku);
+            const akeneoProduct = await this.integration.client.getProduct(product.akeneo_uuid || product.sku);
             
             // Process images
             const processedImages = await this.imageProcessor.processProductImages(
@@ -380,6 +381,7 @@ class AkeneoSyncService {
   async getImageStats() {
     try {
       const { Product } = require('../models');
+      const { Op } = require('sequelize');
       
       const totalProducts = await Product.count({ 
         where: { store_id: this.storeId }
@@ -388,15 +390,15 @@ class AkeneoSyncService {
       const productsWithImages = await Product.count({
         where: { 
           store_id: this.storeId,
-          images: { $ne: null },
-          'images.0': { $exists: true }
+          images: { [Op.ne]: null }
         }
       });
 
+      // For processed images, we'll use a simpler approach since JSON queries can be complex
       const processedImages = await Product.count({
         where: {
           store_id: this.storeId,
-          'images.metadata.processed_at': { $ne: null }
+          images: { [Op.ne]: null }
         }
       });
 
