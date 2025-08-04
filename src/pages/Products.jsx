@@ -137,14 +137,13 @@ export default function Products() {
 
       console.log('📋 Products: Using filters:', productFilters);
 
-      // Load products using admin API with reasonable limit (1000) to avoid 520 errors
-      // Most stores have fewer than 1000 products, so this covers the majority of use cases
-      console.log('🚀 Products: Making API calls...');
+      // First, load other data and get initial product batch
+      console.log('🚀 Products: Loading initial data...');
       
-      const [productsResult, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
+      const [firstProductBatch, categoriesData, taxesData, attributesData, attributeSetsData] = await Promise.all([
         retryApiCall(() => {
-          console.log('📦 Calling Product.findPaginated...');
-          return Product.findPaginated(1, 1000, productFilters);
+          console.log('📦 Loading first batch of products...');
+          return Product.findPaginated(1, 500, productFilters);
         }).catch((error) => {
           console.error('❌ Product.findPaginated failed:', error);
           return { data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } };
@@ -167,23 +166,73 @@ export default function Products() {
         })
       ]);
 
-      console.log('✅ Products: API calls completed');
-      console.log('📦 Products result:', productsResult);
+      console.log('✅ Products: Initial data loaded');
+      console.log('📦 First batch:', firstProductBatch.data?.length || 0, 'products');
 
-      const allProducts = Array.isArray(productsResult.data) ? productsResult.data : [];
-      const totalProductsInStore = productsResult.pagination?.total || allProducts.length;
-      
-      console.log('📈 Products: Setting state with', allProducts.length, 'products out of', totalProductsInStore, 'total');
-      
-      setProducts(allProducts);
-      setTotalItems(totalProductsInStore); // Use actual total from server
-      setTotalPages(Math.ceil(allProducts.length / itemsPerPage)); // Pagination based on loaded products
-      setCurrentPage(1);
-      
+      // Set other data immediately
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       setTaxes(Array.isArray(taxesData) ? taxesData : []);
       setAttributes(Array.isArray(attributesData) ? attributesData : []);
       setAttributeSets(Array.isArray(attributeSetsData) ? attributeSetsData : []);
+
+      // Collect all products
+      let allProducts = Array.isArray(firstProductBatch.data) ? [...firstProductBatch.data] : [];
+      const totalProductsInStore = firstProductBatch.pagination?.total || 0;
+      const totalPages = firstProductBatch.pagination?.total_pages || 1;
+      
+      console.log('📊 Total products in store:', totalProductsInStore);
+      console.log('📄 Total pages:', totalPages);
+
+      // Load remaining pages in batches if there are more
+      if (totalPages > 1) {
+        console.log('🔄 Loading remaining products in batches...');
+        
+        // Load pages 2 onwards in smaller batches to avoid timeout
+        const batchSize = 3; // Load 3 pages at a time
+        
+        for (let page = 2; page <= totalPages; page += batchSize) {
+          const pagesToLoad = [];
+          const endPage = Math.min(page + batchSize - 1, totalPages);
+          
+          console.log(`📦 Loading pages ${page} to ${endPage}...`);
+          
+          // Create promises for this batch
+          for (let p = page; p <= endPage; p++) {
+            pagesToLoad.push(
+              retryApiCall(() => Product.findPaginated(p, 500, productFilters))
+                .catch((error) => {
+                  console.error(`❌ Failed to load page ${p}:`, error);
+                  return { data: [] };
+                })
+            );
+          }
+          
+          // Load this batch of pages
+          const batchResults = await Promise.all(pagesToLoad);
+          
+          // Add products from each page
+          for (const result of batchResults) {
+            if (result.data && Array.isArray(result.data)) {
+              allProducts = [...allProducts, ...result.data];
+            }
+          }
+          
+          console.log(`✅ Batch complete. Total products loaded: ${allProducts.length}`);
+          
+          // Update UI with current progress
+          setProducts(allProducts);
+          setTotalItems(totalProductsInStore);
+          setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
+        }
+      }
+      
+      console.log('✅ All products loaded:', allProducts.length, 'products');
+      
+      // Final state update
+      setProducts(allProducts);
+      setTotalItems(totalProductsInStore);
+      setTotalPages(Math.ceil(allProducts.length / itemsPerPage));
+      setCurrentPage(1);
 
       console.log('✅ Products: Data loading completed successfully');
 
@@ -593,14 +642,7 @@ export default function Products() {
         <Card className="material-elevation-1 border-0">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <div className="flex flex-col">
-                <span>Products ({filteredProducts.length})</span>
-                {totalItems > products.length && (
-                  <p className="text-sm text-orange-600 font-normal mt-1">
-                    Showing first {products.length} of {totalItems} products. Use search/filters to find specific items.
-                  </p>
-                )}
-              </div>
+              <span>Products ({filteredProducts.length})</span>
               {(searchQuery || Object.values(filters).some(f => f !== "all")) && (
                 <Button
                   variant="ghost"
