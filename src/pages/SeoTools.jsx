@@ -402,12 +402,15 @@ export default function SeoTools() {
 
       if (editingTemplate) {
         console.log('🔍 Updating template:', editingTemplate.id);
-        await SeoTemplate.update(editingTemplate.id, payload);
+        const updateResult = await SeoTemplate.update(editingTemplate.id, payload);
+        console.log('🔍 Update result:', updateResult);
       } else {
         console.log('🔍 Creating new template');
-        await SeoTemplate.create(payload);
+        const createResult = await SeoTemplate.create(payload);
+        console.log('🔍 Create result:', createResult);
       }
 
+      console.log('🔍 Reloading data...');
       await loadData();
       setShowTemplateForm(false);
       setEditingTemplate(null);
@@ -416,6 +419,9 @@ export default function SeoTools() {
       // Clear storefront cache for instant updates
       if (storeId) clearSeoTemplatesCache(storeId);
     } catch (error) {
+      console.error('🔍 Save template error:', error);
+      console.error('🔍 Error message:', error.message);
+      console.error('🔍 Error response:', error.response);
       setFlashMessage({ type: 'error', message: 'Failed to save template: ' + error.message });
     } finally {
       setSaving(false);
