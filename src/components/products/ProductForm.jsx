@@ -663,13 +663,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           // Find all image-related attributes from ALL attributes, not just selected ones
           const allImageAttributes = passedAttributes?.filter(attr => 
             attr && 
-            attr.type === 'file' && 
-            attr.name && 
             (
-              attr.name.toLowerCase().includes('image gallery') ||
-              attr.name.toLowerCase().includes('image schade') ||
-              (attr.type === 'image') // Handle explicit image type
-            ) &&
+              attr.type === 'file' || attr.type === 'image'
+            ) && 
             attr.file_settings?.allowed_extensions?.some(ext => 
               ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
             )
@@ -934,8 +930,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
             {selectedAttributes.length > 0 && (
               <div className="space-y-6">
-                {/* Image Attributes Section (excluding those handled in Product Images section) */}
-                {(() => {
+                {/* Image Attributes Section removed - all images handled in top Images section */}
+                {false && (() => {
                   const imageAttributes = selectedAttributes.filter(attr => 
                     attr.type === 'file' && 
                     attr.file_settings?.allowed_extensions?.some(ext => 
@@ -1083,15 +1079,13 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 {/* Non-Image Attributes Section */}
                 {(() => {
                   const nonImageAttributes = selectedAttributes.filter(attr => 
-                    (attr.type !== 'file' || !attr.file_settings?.allowed_extensions?.some(ext => 
-                      ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
-                    )) &&
-                    // Exclude image attributes handled in the separate Product Images section above
-                    !(attr.name && (
-                      attr.name.toLowerCase().includes('image gallery') ||
-                      attr.name.toLowerCase().includes('image schade') ||
-                      attr.type === 'image'
-                    ))
+                    // Exclude ALL image-related attributes (handled in top Images section)
+                    !(
+                      (attr.type === 'file' || attr.type === 'image') && 
+                      attr.file_settings?.allowed_extensions?.some(ext => 
+                        ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+                      )
+                    )
                   );
 
                   if (nonImageAttributes.length === 0) return null;
