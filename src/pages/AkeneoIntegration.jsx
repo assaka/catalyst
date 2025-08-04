@@ -54,6 +54,7 @@ const AkeneoIntegration = () => {
   const [selectedFamilies, setSelectedFamilies] = useState([]);
   const [selectedFamiliesToImport, setSelectedFamiliesToImport] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [loadingFamilies, setLoadingFamilies] = useState(false);
   
   // Advanced settings
   const [categorySettings, setCategorySettings] = useState({
@@ -1972,7 +1973,12 @@ const AkeneoIntegration = () => {
               </Alert>
 
               {/* Families Selection */}
-              {families.length > 0 && (
+              {loadingFamilies ? (
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Loading families from Akeneo...
+                </div>
+              ) : families.length > 0 ? (
                 <div className="space-y-2">
                   <Label>Select Families to Import</Label>
                   <MultiSelect
@@ -1993,7 +1999,11 @@ const AkeneoIntegration = () => {
                     }
                   </p>
                 </div>
-              )}
+              ) : connectionStatus?.success ? (
+                <div className="text-sm text-gray-500">
+                  No families found in Akeneo or connection failed
+                </div>
+              ) : null}
 
               <div className="flex items-center space-x-2">
                 <Switch 
@@ -2378,11 +2388,11 @@ const AkeneoIntegration = () => {
                     </div>
                   )}
 
-                  {/* Stock Setting */}
+                  {/* Has Stock Setting */}
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <Label>Include Stock Data</Label>
-                      <p className="text-xs text-gray-500">Import product stock/inventory information</p>
+                      <Label>Has stock</Label>
+                      <p className="text-xs text-gray-500">Mark products as having stock. Use Attribute Mapping to import actual stock values.</p>
                     </div>
                     <Switch
                       checked={productSettings.includeStock}
