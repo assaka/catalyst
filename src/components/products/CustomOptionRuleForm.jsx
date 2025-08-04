@@ -14,9 +14,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 import { useAlertTypes } from '@/hooks/useAlert';
-export default function CustomOptionRuleForm({ 
+export default function CustomOptionRuleForm({ rule, onSubmit, onCancel }) {
   const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
-rule, onSubmit, onCancel }) {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   
   const [formData, setFormData] = useState({

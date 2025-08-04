@@ -16,9 +16,8 @@ import {
 import { Trash2, Plus } from "lucide-react";
 
 import { useAlertTypes } from '@/hooks/useAlert';
-export default function TaxTypeForm({ 
+export default function TaxTypeForm({ taxType, stores, onSubmit, onCancel }) {
   const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
-taxType, stores, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: "",
     description: "",

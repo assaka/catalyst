@@ -9,9 +9,8 @@ import { CountrySelect } from '@/components/ui/country-select';
 import { Textarea } from '@/components/ui/textarea';
 
 import { useAlertTypes } from '@/hooks/useAlert';
-export default function ShippingMethodForm({ 
+export default function ShippingMethodForm({ method, storeId, onSubmit, onCancel }) {
   const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
-method, storeId, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
