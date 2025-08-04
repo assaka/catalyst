@@ -381,8 +381,11 @@ export default function SeoTools() {
   };
 
   const handleSaveTemplate = async () => {
+    console.log('🔍 handleSaveTemplate called');
+    
     // Check authentication status
     const adminToken = localStorage.getItem('admin_auth_token');
+    console.log('🔍 Admin token exists:', !!adminToken);
     
     if (!adminToken) {
       setFlashMessage({ type: 'error', message: 'Authentication required. Please refresh the page and try again.' });
@@ -411,6 +414,9 @@ export default function SeoTools() {
         store_id: storeId
       };
 
+      console.log('🔍 Payload:', payload);
+      console.log('🔍 EditingTemplate:', editingTemplate);
+
       if (editingTemplate) {
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/seo-templates/${editingTemplate.id}`, {
           method: 'PUT',
@@ -421,10 +427,14 @@ export default function SeoTools() {
           body: JSON.stringify(payload)
         });
         const updateResult = await response.json();
+        console.log('🔍 Update response:', response.status, response.ok);
         if (!response.ok) {
+          console.log('🔍 Update error:', updateResult);
           throw new Error(updateResult.message || 'Failed to update template');
         }
+        console.log('🔍 Update successful');
       } else {
+        console.log('🔍 Creating new template');
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000'}/api/seo-templates`, {
           method: 'POST',
           headers: {
@@ -434,10 +444,15 @@ export default function SeoTools() {
           body: JSON.stringify(payload)
         });
         const createResult = await response.json();
+        console.log('🔍 Create response:', response.status, response.ok);
         if (!response.ok) {
+          console.log('🔍 Create error:', createResult);
           throw new Error(createResult.message || 'Failed to create template');
         }
+        console.log('🔍 Create successful');
       }
+
+      console.log('🔍 Reloading data...');
       await loadData();
       setShowTemplateForm(false);
       setEditingTemplate(null);
