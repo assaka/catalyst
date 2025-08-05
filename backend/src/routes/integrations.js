@@ -175,30 +175,55 @@ router.post('/akeneo/test-connection',
       await syncService.initialize(storeId);
       const result = await syncService.testConnection();
 
+      // Get the integration config to save connection status
+      const IntegrationConfig = require('../models/IntegrationConfig');
+      let integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+
       if (!result.success) {
-      // Provide more specific error messages for authentication failures
-      let errorMessage = result.message;
-      
-      if (result.message.includes('401') || result.message.includes('Unauthorized')) {
-        errorMessage = 'Akeneo authentication failed. Please check your credentials (Client ID, Client Secret, Username, and Password).';
-      } else if (result.message.includes('403') || result.message.includes('Forbidden')) {
-        errorMessage = 'Akeneo access denied. Please check if your user has the required permissions.';
-      } else if (result.message.includes('404') || result.message.includes('Not Found')) {
-        errorMessage = 'Akeneo API endpoint not found. Please check your Base URL.';
-      } else if (result.message.includes('ENOTFOUND') || result.message.includes('ECONNREFUSED')) {
-        errorMessage = 'Cannot connect to Akeneo server. Please check your Base URL and network connection.';
+        // Provide more specific error messages for authentication failures
+        let errorMessage = result.message;
+        
+        if (result.message.includes('401') || result.message.includes('Unauthorized')) {
+          errorMessage = 'Akeneo authentication failed. Please check your credentials (Client ID, Client Secret, Username, and Password).';
+        } else if (result.message.includes('403') || result.message.includes('Forbidden')) {
+          errorMessage = 'Akeneo access denied. Please check if your user has the required permissions.';
+        } else if (result.message.includes('404') || result.message.includes('Not Found')) {
+          errorMessage = 'Akeneo API endpoint not found. Please check your Base URL.';
+        } else if (result.message.includes('ENOTFOUND') || result.message.includes('ECONNREFUSED')) {
+          errorMessage = 'Cannot connect to Akeneo server. Please check your Base URL and network connection.';
+        }
+        
+        // Save failed connection status
+        if (integrationConfig) {
+          await integrationConfig.updateConnectionStatus('failed', errorMessage);
+        }
+        
+        return res.status(400).json({
+          success: false,
+          message: 'Akeneo connection test failed',
+          error: errorMessage,
+          details: result.message // Keep original error for debugging
+        });
       }
-      
-      return res.status(400).json({
-        success: false,
-        message: 'Akeneo connection test failed',
-        error: errorMessage,
-        details: result.message // Keep original error for debugging
-      });
-    }
+
+      // Save successful connection status
+      if (integrationConfig) {
+        await integrationConfig.updateConnectionStatus('success', null);
+      }
 
       res.json(result);
     } catch (syncError) {
+      // Save failed connection status for sync initialization errors
+      try {
+        const IntegrationConfig = require('../models/IntegrationConfig');
+        let integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+        if (integrationConfig) {
+          await integrationConfig.updateConnectionStatus('failed', syncError.message);
+        }
+      } catch (statusUpdateError) {
+        console.error('Failed to update connection status:', statusUpdateError);
+      }
+      
       // Handle sync service initialization errors
       return res.status(400).json({
         success: false,
@@ -208,6 +233,48 @@ router.post('/akeneo/test-connection',
     }
   } catch (error) {
     console.error('Error testing Akeneo connection:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Get Akeneo connection status
+ * GET /api/integrations/akeneo/connection-status
+ */
+router.get('/akeneo/connection-status', 
+  storeAuth,
+  async (req, res) => {
+  try {
+    const storeId = req.storeId;
+    
+    const IntegrationConfig = require('../models/IntegrationConfig');
+    const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'akeneo');
+    
+    if (!integrationConfig) {
+      return res.json({
+        success: true,
+        connectionStatus: {
+          status: 'untested',
+          message: null,
+          testedAt: null
+        }
+      });
+    }
+    
+    res.json({
+      success: true,
+      connectionStatus: {
+        status: integrationConfig.connection_status || 'untested',
+        message: integrationConfig.connection_error || null,
+        testedAt: integrationConfig.connection_tested_at || null
+      }
+    });
+  } catch (error) {
+    console.error('Error retrieving Akeneo connection status:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',

@@ -816,6 +816,50 @@ const AkeneoIntegration = () => {
     };
   }, []);
 
+  // Load saved connection status on page load
+  const loadConnectionStatus = async () => {
+    try {
+      console.log('🔗 Loading saved connection status...');
+      
+      const storeId = localStorage.getItem('selectedStoreId');
+      if (!storeId) {
+        console.warn('⚠️ No store selected, skipping connection status load');
+        return;
+      }
+
+      const response = await apiClient.get('/integrations/akeneo/connection-status', {
+        'x-store-id': storeId
+      });
+      
+      console.log('📡 Connection status response:', response);
+      
+      const responseData = response.data || response;
+      if (responseData.success && responseData.connectionStatus) {
+        const { status, message, testedAt } = responseData.connectionStatus;
+        
+        if (status === 'success') {
+          setConnectionStatus({ 
+            success: true, 
+            message: 'Connection verified', 
+            testedAt 
+          });
+          console.log('✅ Loaded successful connection status from', testedAt);
+        } else if (status === 'failed') {
+          setConnectionStatus({ 
+            success: false, 
+            message: message || 'Connection failed', 
+            testedAt 
+          });
+          console.log('❌ Loaded failed connection status:', message);
+        } else {
+          console.log('ℹ️ Connection not yet tested');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Failed to load connection status:', error);
+    }
+  };
+
   const loadConfigStatus = async () => {
     try {
       console.log('🔄 Loading Akeneo configuration status...');
@@ -860,10 +904,8 @@ const AkeneoIntegration = () => {
           setConfigSaved(true);
           console.log('✅ Configuration marked as saved');
           
-          // Auto-test connection if config is loaded and appears complete
-          if (loadedConfig.clientSecret !== '' && loadedConfig.password !== '') {
-            console.log('💡 Complete configuration loaded, you may want to test the connection');
-          }
+          // Load saved connection status after config is loaded
+          await loadConnectionStatus();
         } else {
           console.log('⚠️ Incomplete configuration loaded');
         }

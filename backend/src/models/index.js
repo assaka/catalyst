@@ -34,6 +34,7 @@ const IntegrationConfig = require('./IntegrationConfig');
 const ImportStatistic = require('./ImportStatistic');
 const Plugin = require('./Plugin');
 const PluginConfiguration = require('./PluginConfiguration');
+const SupabaseOAuthToken = require('./SupabaseOAuthToken');
 
 // Define associations
 const defineAssociations = () => {
@@ -202,6 +203,10 @@ const defineAssociations = () => {
   Plugin.hasMany(PluginConfiguration, { foreignKey: 'plugin_id', as: 'storeConfigurations' });
   Store.hasMany(PluginConfiguration, { foreignKey: 'store_id', as: 'pluginConfigurations' });
   User.hasMany(PluginConfiguration, { foreignKey: 'last_configured_by', as: 'configuredPlugins' });
+  
+  // SupabaseOAuthToken associations
+  SupabaseOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasOne(SupabaseOAuthToken, { foreignKey: 'store_id' });
 };
 
 // Initialize associations
@@ -243,5 +248,6 @@ module.exports = {
   IntegrationConfig,
   ImportStatistic,
   Plugin,
-  PluginConfiguration
+  PluginConfiguration,
+  SupabaseOAuthToken
 };

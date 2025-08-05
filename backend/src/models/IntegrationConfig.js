@@ -20,7 +20,7 @@ const IntegrationConfig = sequelize.define('IntegrationConfig', {
     type: DataTypes.STRING(50),
     allowNull: false,
     validate: {
-      isIn: [['akeneo', 'magento', 'shopify', 'woocommerce']] // Extensible for future integrations
+      isIn: [['akeneo', 'magento', 'shopify', 'woocommerce', 'supabase']] // Extensible for future integrations
     }
   },
   config_data: {
@@ -41,6 +41,18 @@ const IntegrationConfig = sequelize.define('IntegrationConfig', {
     defaultValue: 'idle'
   },
   sync_error: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  connection_status: {
+    type: DataTypes.ENUM('untested', 'success', 'failed'),
+    defaultValue: 'untested'
+  },
+  connection_tested_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  connection_error: {
     type: DataTypes.TEXT,
     allowNull: true
   }
@@ -95,7 +107,8 @@ IntegrationConfig.getSensitiveFields = (integrationType) => {
     akeneo: ['clientSecret', 'password'],
     magento: ['apiKey', 'password'],
     shopify: ['accessToken', 'apiSecret'],
-    woocommerce: ['consumerSecret']
+    woocommerce: ['consumerSecret'],
+    supabase: ['accessToken', 'refreshToken', 'serviceRoleKey', 'databaseUrl']
   };
   
   return sensitiveFieldsMap[integrationType] || [];
@@ -175,6 +188,13 @@ IntegrationConfig.prototype.updateSyncStatus = async function(status, error = nu
   if (status === 'success') {
     this.last_sync_at = new Date();
   }
+  await this.save();
+};
+
+IntegrationConfig.prototype.updateConnectionStatus = async function(status, error = null) {
+  this.connection_status = status;
+  this.connection_error = error;
+  this.connection_tested_at = new Date();
   await this.save();
 };
 

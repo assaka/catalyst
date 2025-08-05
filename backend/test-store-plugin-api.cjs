@@ -1,6 +1,6 @@
 const request = require('supertest');
 const express = require('express');
-const pluginManager = require('./backend/src/core/PluginManager');
+const pluginManager = require('./src/core/PluginManager');
 
 // Mock the middleware and routes
 const app = express();
@@ -24,7 +24,7 @@ const mockStoreOwnership = (req, res, next) => {
 };
 
 // Load the store plugins routes
-const storePluginRoutes = require('./backend/src/routes/store-plugins');
+const storePluginRoutes = require('./src/routes/store-plugins');
 
 // Mount routes with middleware
 app.use('/api/stores/:store_id/plugins', mockAuth, mockStoreOwnership, storePluginRoutes);
