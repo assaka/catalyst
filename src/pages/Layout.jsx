@@ -123,6 +123,7 @@ export default function Layout({ children, currentPageName }) {
     "Content": false,
     "Marketing": false,
     "SEO": false, // Added new group for SEO
+    "Plugins": false, // Added new group for Plugins
     "Store": false,
   });
 
@@ -391,13 +392,18 @@ export default function Layout({ children, currentPageName }) {
       ]
     },
     {
+      name: "Plugins",
+      items: [
+        { name: "Installation", path: "PLUGINS", icon: Puzzle },
+        { name: "Akeneo Integration", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
+      ]
+    },
+    {
       name: "Store",
       items: [
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
         { name: "File Processing", path: "file-processing", icon: Image },
-        { name: "Plugins", path: "PLUGINS", icon: Puzzle },
-        { name: "Akeneo Integration", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
         { name: "Team", path: "team", icon: Users },
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "STORES", icon: Building2 },
