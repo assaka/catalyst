@@ -24,18 +24,38 @@ class AkeneoErrorBoundary extends React.Component {
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    // Only show error boundary for critical errors
+    const isCriticalError = error.message && (
+      error.message.includes('Cannot read properties of null') ||
+      error.message.includes('Cannot read properties of undefined') ||
+      error.message.includes('is not a function') ||
+      error.message.includes('Maximum update depth exceeded') ||
+      error.message.includes('Failed to fetch') ||
+      error.message.includes('Network Error')
+    );
+    
+    if (isCriticalError) {
+      console.error('🚨 Critical error detected, showing error boundary:', error.message);
+      return { hasError: true };
+    } else {
+      console.warn('🚨 Non-critical error detected, continuing execution:', error.message);
+      return { hasError: false };
+    }
   }
 
   componentDidCatch(error, errorInfo) {
     console.error('🚨 AkeneoIntegration Error Boundary caught an error:', error);
     console.error('🚨 Error Info:', errorInfo);
     console.error('🚨 Error Stack:', error.stack);
+    console.error('🚨 Component Stack:', errorInfo.componentStack);
     
-    this.setState({
-      error: error,
-      errorInfo: errorInfo
-    });
+    // Set error details for critical errors only
+    if (this.state.hasError) {
+      this.setState({
+        error: error,
+        errorInfo: errorInfo
+      });
+    }
   }
 
   render() {
@@ -3051,11 +3071,16 @@ const AkeneoIntegration = () => {
 
 // Wrap the component with Error Boundary to catch crashes
 const AkeneoIntegrationWithErrorBoundary = () => {
+  // Temporarily disable error boundary since imports are working correctly
+  return <AkeneoIntegration />;
+  
+  /* Uncomment to re-enable error boundary if needed:
   return (
     <AkeneoErrorBoundary>
       <AkeneoIntegration />
     </AkeneoErrorBoundary>
   );
+  */
 };
 
 export default AkeneoIntegrationWithErrorBoundary;
