@@ -685,7 +685,7 @@ export default function Layout({ children, currentPageName }) {
                     return (
                       <div key={item.name} className="relative">
                         {item.isPremium && (
-                          <Crown className="absolute top-0 right-0 w-6 h-6 text-yellow-500 font-bold z-10 pointer-events-none" />
+                          <Crown className="absolute top-0 right-0 w-4 h-4 text-yellow-500 font-bold z-10 pointer-events-none" />
                         )}
                         <Link
                           to={createAdminUrl(item.path)}
