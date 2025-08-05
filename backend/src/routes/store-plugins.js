@@ -5,27 +5,24 @@ const PluginConfiguration = require('../models/PluginConfiguration');
 const authMiddleware = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
-// Debug middleware imports
-console.log('🔍 Debug middleware imports:');
-console.log('  authMiddleware type:', typeof authMiddleware);
-console.log('  checkStoreOwnership type:', typeof checkStoreOwnership);
-console.log('  authMiddleware:', authMiddleware);
-console.log('  checkStoreOwnership:', checkStoreOwnership);
-
 // All routes require authentication and store access
-if (typeof authMiddleware === 'function') {
-  router.use(authMiddleware);
-} else {
-  console.error('❌ authMiddleware is not a function:', typeof authMiddleware);
-  console.log('⚠️ Temporarily proceeding without authMiddleware');
+// Add defensive checks for production environment issues
+if (typeof authMiddleware !== 'function') {
+  console.error('❌ CRITICAL: authMiddleware is not a function in production environment');
+  console.error('   This indicates a deployment or environment issue, not a code issue');
+  console.error('   Type:', typeof authMiddleware, 'Value:', authMiddleware);
+  throw new Error('Production environment error: authMiddleware not loaded correctly');
 }
 
-if (typeof checkStoreOwnership === 'function') {
-  router.use(checkStoreOwnership);
-} else {
-  console.error('❌ checkStoreOwnership is not a function:', typeof checkStoreOwnership);
-  console.log('⚠️ Temporarily proceeding without checkStoreOwnership');
+if (typeof checkStoreOwnership !== 'function') {
+  console.error('❌ CRITICAL: checkStoreOwnership is not a function in production environment');
+  console.error('   This indicates a deployment or environment issue, not a code issue');
+  console.error('   Type:', typeof checkStoreOwnership, 'Value:', checkStoreOwnership);
+  throw new Error('Production environment error: checkStoreOwnership not loaded correctly');
 }
+
+router.use(authMiddleware);
+router.use(checkStoreOwnership);
 
 /**
  * GET /api/stores/:store_id/plugins
