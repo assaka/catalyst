@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { apiRequest } from '../../api/functions';
+import apiClient from '../../api/client';
 import { ExternalLink, Trash2, Cloud, Image, BarChart3 } from 'lucide-react';
 
 const SupabaseIntegration = ({ storeId }) => {
@@ -18,11 +18,8 @@ const SupabaseIntegration = ({ storeId }) => {
   const loadStatus = async () => {
     try {
       setLoading(true);
-      const response = await apiRequest('/supabase/status', {
-        method: 'GET',
-        headers: {
-          'x-store-id': storeId
-        }
+      const response = await apiClient.get('/supabase/status', {
+        'x-store-id': storeId
       });
 
       if (response.success) {
@@ -43,11 +40,8 @@ const SupabaseIntegration = ({ storeId }) => {
     
     try {
       setLoadingStats(true);
-      const response = await apiRequest('/supabase/storage/stats', {
-        method: 'GET',
-        headers: {
-          'x-store-id': storeId
-        }
+      const response = await apiClient.get('/supabase/storage/stats', {
+        'x-store-id': storeId
       });
 
       if (response.success) {
@@ -69,11 +63,8 @@ const SupabaseIntegration = ({ storeId }) => {
   const handleConnect = async () => {
     try {
       setConnecting(true);
-      const response = await apiRequest('/supabase/connect', {
-        method: 'POST',
-        headers: {
-          'x-store-id': storeId
-        }
+      const response = await apiClient.post('/supabase/connect', {}, {
+        'x-store-id': storeId
       });
 
       if (response.success) {
@@ -110,11 +101,8 @@ const SupabaseIntegration = ({ storeId }) => {
   const handleTestConnection = async () => {
     try {
       setTesting(true);
-      const response = await apiRequest('/supabase/test', {
-        method: 'POST',
-        headers: {
-          'x-store-id': storeId
-        }
+      const response = await apiClient.post('/supabase/test', {}, {
+        'x-store-id': storeId
       });
 
       if (response.success) {
@@ -137,11 +125,8 @@ const SupabaseIntegration = ({ storeId }) => {
     }
 
     try {
-      const response = await apiRequest('/supabase/disconnect', {
-        method: 'POST',
-        headers: {
-          'x-store-id': storeId
-        }
+      const response = await apiClient.post('/supabase/disconnect', {}, {
+        'x-store-id': storeId
       });
 
       if (response.success) {
