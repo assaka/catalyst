@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
+import { apiClient } from "@/api/client";
 import { 
   Puzzle, 
   Plus, 
@@ -59,8 +60,8 @@ export default function Plugins() {
     try {
       // Load modern plugin system and marketplace
       const [pluginsResponse, marketplaceResponse, storesData, userData] = await Promise.all([
-        fetch('/api/plugins', { credentials: 'include' }).then(r => r.ok ? r.json() : { data: { plugins: [] } }),
-        fetch('/api/plugins/marketplace', { credentials: 'include' }).then(r => r.ok ? r.json() : { data: [] }),
+        apiClient.request('GET', 'plugins').catch(e => ({ data: { plugins: [] } })),
+        apiClient.request('GET', 'plugins/marketplace').catch(e => ({ data: [] })),
         Store.list(),
         User.me()
       ]);
@@ -109,17 +110,7 @@ export default function Plugins() {
 
   const handleInstallPlugin = async (plugin) => {
     try {
-      const response = await fetch(`/api/plugins/${plugin.slug}/install`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to install plugin');
-      }
-      
+      await apiClient.request('POST', `plugins/${plugin.slug}/install`);
       await loadData();
     } catch (error) {
       console.error("Error installing plugin:", error);
@@ -130,17 +121,7 @@ export default function Plugins() {
   const handleUninstallPlugin = async (pluginSlug) => {
     if (window.confirm("Are you sure you want to uninstall this plugin?")) {
       try {
-        const response = await fetch(`/api/plugins/${pluginSlug}/uninstall`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to uninstall plugin');
-        }
-        
+        await apiClient.request('POST', `plugins/${pluginSlug}/uninstall`);
         await loadData();
       } catch (error) {
         console.error("Error uninstalling plugin:", error);
@@ -157,19 +138,10 @@ export default function Plugins() {
 
     setInstalling(true);
     try {
-      const response = await fetch('/api/plugins/install-github', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ githubUrl: githubUrl.trim() })
+      const result = await apiClient.request('POST', 'plugins/install-github', {
+        githubUrl: githubUrl.trim()
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to install plugin from GitHub');
-      }
-
-      const result = await response.json();
+      
       alert(`Plugin installed successfully: ${result.message}`);
       
       setShowGitHubInstall(false);
