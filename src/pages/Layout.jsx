@@ -374,7 +374,6 @@ export default function Layout({ children, currentPageName }) {
         { name: "Analytics", path: "ANALYTICS", icon: BarChart3 },
         { name: "HeatMaps", path: "HEATMAPS", icon: Activity, isPremium: true },
         { name: "A/B Testing", path: "ABTESTING", icon: FlaskConical, isPremium: true },
-        { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
         { name: "Customer Activity", path: "CUSTOMER_ACTIVITY", icon: BarChart3 },
       ]
     },
@@ -396,6 +395,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Installation", path: "PLUGINS", icon: Puzzle },
         { name: "Akeneo Integration", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
+        { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
       ]
     },
     {
