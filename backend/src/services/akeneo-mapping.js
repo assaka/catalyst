@@ -73,9 +73,9 @@ class AkeneoMapping {
       level: 0, // Will be calculated
       path: null, // Will be calculated
       product_count: 0,
-      // Keep original Akeneo data for reference
-      akeneo_code: akeneoCategory.code,
-      akeneo_parent: akeneoCategory.parent,
+      // Keep original Akeneo data for reference (temporary fields, not saved to DB)
+      _temp_akeneo_code: akeneoCategory.code,
+      _temp_parent_akeneo_code: akeneoCategory.parent,
       // Store original slug for comparison
       _originalSlug: this.generateSlug(slugSource)
     };
@@ -86,7 +86,7 @@ class AkeneoMapping {
   /**
    * Transform Akeneo product to Catalyst product format
    */
-  transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}) {
+  async transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}) {
     const values = akeneoProduct.values || {};
     
     // Extract product name
@@ -122,7 +122,7 @@ class AkeneoMapping {
       weight: this.extractNumericValue(values, 'weight', locale) || 
               this.extractNumericValue(values, 'weight_kg', locale),
       dimensions: this.extractDimensions(values, locale),
-      images: this.extractImages(values, processedImages),
+      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl),
       status: akeneoProduct.enabled ? 'active' : 'inactive',
       visibility: 'visible',
       manage_stock: true,
@@ -451,7 +451,7 @@ class AkeneoMapping {
   /**
    * Extract images from product attributes (enhanced)
    */
-  extractImages(values, processedImages = null) {
+  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null) {
     // If we have processed images from Cloudflare, use those
     if (processedImages && processedImages.length > 0) {
       return processedImages.map((img, index) => ({
@@ -473,18 +473,36 @@ class AkeneoMapping {
     // Check common image attribute names
     const imageAttributes = ['image', 'images', 'picture', 'pictures', 'photo', 'photos', 'main_image', 'product_image'];
     
-    imageAttributes.forEach(attrName => {
+    for (const attrName of imageAttributes) {
       const imageData = values[attrName];
       if (imageData && Array.isArray(imageData)) {
-        imageData.forEach(item => {
+        for (const item of imageData) {
           if (item.data) {
-            const imageUrl = typeof item.data === 'string' ? item.data : 
-                           (item.data.url || item.data.path || item.data.href);
+            let imageUrl = typeof item.data === 'string' ? item.data : 
+                          (item.data.url || item.data.path || item.data.href);
             
             if (imageUrl) {
+              // Make sure URL is absolute
+              if (!imageUrl.startsWith('http') && baseUrl) {
+                imageUrl = `${baseUrl.replace(/\/+$/, '')}/${imageUrl.replace(/^\/+/, '')}`;
+              }
+              
+              // Download and upload image if enabled
+              if (downloadImages && imageUrl.startsWith('http')) {
+                try {
+                  const uploadedImage = await this.downloadAndUploadImage(imageUrl, item);
+                  if (uploadedImage) {
+                    imageUrl = uploadedImage.url;
+                  }
+                } catch (error) {
+                  console.warn(`⚠️ Failed to download image ${imageUrl}:`, error.message);
+                  // Continue with original URL as fallback
+                }
+              }
+              
               images.push({
                 url: imageUrl,
-                alt: '',
+                alt: item.data.alt || '',
                 sort_order: images.length,
                 variants: {
                   thumbnail: imageUrl,
@@ -495,16 +513,92 @@ class AkeneoMapping {
                   attribute: attrName,
                   scope: item.scope,
                   locale: item.locale,
-                  fallback: true
+                  original_url: typeof item.data === 'string' ? item.data : 
+                               (item.data.url || item.data.path || item.data.href),
+                  downloaded: downloadImages
                 }
               });
             }
           }
-        });
+        }
       }
-    });
+    }
 
     return images;
+  }
+
+  /**
+   * Download image from Akeneo and upload to storage system
+   */
+  async downloadAndUploadImage(imageUrl, imageItem) {
+    const fetch = require('node-fetch');
+    const FormData = require('form-data');
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+
+    try {
+      console.log(`📥 Downloading image: ${imageUrl}`);
+      
+      // Download the image
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      // Get the image content type and determine file extension
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      const extension = contentType.split('/')[1] || 'jpg';
+      
+      // Create temporary file
+      const tempFileName = `akeneo_image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
+      const tempFilePath = path.join(os.tmpdir(), tempFileName);
+      
+      // Save to temporary file
+      const buffer = await response.buffer();
+      fs.writeFileSync(tempFilePath, buffer);
+      
+      console.log(`💾 Saved temporary file: ${tempFilePath} (${buffer.length} bytes)`);
+      
+      // Create form data for file upload
+      const formData = new FormData();
+      formData.append('file', fs.createReadStream(tempFilePath), {
+        filename: tempFileName,
+        contentType: contentType
+      });
+      
+      // Upload to the file upload service
+      const uploadResponse = await fetch('http://localhost:5000/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      // Clean up temporary file
+      try {
+        fs.unlinkSync(tempFilePath);
+      } catch (unlinkError) {
+        console.warn(`⚠️ Failed to delete temp file ${tempFilePath}:`, unlinkError.message);
+      }
+      
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: HTTP ${uploadResponse.status}`);
+      }
+      
+      const uploadResult = await uploadResponse.json();
+      console.log(`✅ Image uploaded successfully: ${uploadResult.file_url}`);
+      
+      return {
+        url: uploadResult.file_url,
+        originalUrl: imageUrl,
+        filename: uploadResult.filename || tempFileName,
+        size: buffer.length,
+        contentType: contentType
+      };
+      
+    } catch (error) {
+      console.error(`❌ Failed to download and upload image ${imageUrl}:`, error.message);
+      throw error;
+    }
   }
 
   /**
@@ -559,18 +653,18 @@ class AkeneoMapping {
     // Create a map of Akeneo codes to Catalyst categories
     const codeToCategory = {};
     catalystCategories.forEach(category => {
-      codeToCategory[category.akeneo_code] = category;
+      codeToCategory[category._temp_akeneo_code] = category;
     });
 
     // Set parent relationships and calculate levels based on Akeneo hierarchy
     catalystCategories.forEach(category => {
-      const akeneoCategory = akeneoCodeToCategory[category.akeneo_code];
+      const akeneoCategory = akeneoCodeToCategory[category._temp_akeneo_code];
       
       if (!akeneoCategory) {
-        console.warn(`⚠️ Akeneo category not found for code: ${category.akeneo_code}`);
+        console.warn(`⚠️ Akeneo category not found for code: ${category._temp_akeneo_code}`);
         // Default to root if Akeneo category not found
         category.level = 0;
-        category.path = category.akeneo_code;
+        category.path = category._temp_akeneo_code;
         category.isRoot = true;
         category.parent_id = null;
         return;
@@ -584,23 +678,23 @@ class AkeneoMapping {
           category._temp_parent_akeneo_code = akeneoCategory.parent;
           category.level = (parentCategory.level || 0) + 1;
           category.path = parentCategory.path ? 
-            `${parentCategory.path}/${category.akeneo_code}` : 
-            category.akeneo_code;
+            `${parentCategory.path}/${category._temp_akeneo_code}` : 
+            category._temp_akeneo_code;
           category.isRoot = false;
-          console.log(`📎 "${category.name}" (${category.akeneo_code}) has parent: ${akeneoCategory.parent}`);
+          console.log(`📎 "${category.name}" (${category._temp_akeneo_code}) has parent: ${akeneoCategory.parent}`);
         } else {
           // Parent specified but not found in our import, make it root
           console.log(`⚠️ Parent "${akeneoCategory.parent}" not found for "${category.name}", making it a root category`);
           category.level = 0;
-          category.path = category.akeneo_code;
+          category.path = category._temp_akeneo_code;
           category.isRoot = true;
           category.parent_id = null;
         }
       } else {
         // No parent specified in Akeneo, this is a root category
-        console.log(`🌱 "${category.name}" (${category.akeneo_code}) is a root category (no parent in Akeneo)`);
+        console.log(`🌱 "${category.name}" (${category._temp_akeneo_code}) is a root category (no parent in Akeneo)`);
         category.level = 0;
-        category.path = category.akeneo_code;
+        category.path = category._temp_akeneo_code;
         category.isRoot = true;
         category.parent_id = null;
       }

@@ -68,7 +68,7 @@ const AkeneoIntegration = () => {
     mode: 'standard', // standard, advanced
     completeness: 100,
     productModel: 'all_variants_complete', // at_least_one, all_variants_complete
-    updatedInterval: 24, // hours
+    updatedInterval: 0, // hours
     status: 'enabled', // enabled, disabled
     includeImages: true,
     includeFiles: true,
@@ -78,7 +78,7 @@ const AkeneoIntegration = () => {
   });
   
   const [attributeSettings, setAttributeSettings] = useState({
-    updatedInterval: 24, // hours
+    updatedInterval: 0, // hours
     selectedFamilies: []
   });
 
@@ -1881,9 +1881,9 @@ const AkeneoIntegration = () => {
                       min="1"
                       value={attributeSettings.updatedInterval}
                       onChange={(e) => 
-                        setAttributeSettings(prev => ({ ...prev, updatedInterval: parseInt(e.target.value) || 24 }))
+                        setAttributeSettings(prev => ({ ...prev, updatedInterval: parseInt(e.target.value) || 0 }))
                       }
-                      placeholder="24"
+                      placeholder="0"
                     />
                     <p className="text-xs text-gray-500">Only import attributes updated within this timeframe</p>
                   </div>
@@ -2402,9 +2402,9 @@ const AkeneoIntegration = () => {
                         min="1"
                         value={productSettings.updatedInterval}
                         onChange={(e) => 
-                          setProductSettings(prev => ({ ...prev, updatedInterval: parseInt(e.target.value) || 24 }))
+                          setProductSettings(prev => ({ ...prev, updatedInterval: parseInt(e.target.value) || 0 }))
                         }
-                        placeholder="24"
+                        placeholder="0"
                       />
                       <p className="text-xs text-gray-500">Only import products updated within this timeframe</p>
                     </div>

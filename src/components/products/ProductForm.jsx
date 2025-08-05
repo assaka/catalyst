@@ -222,7 +222,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   };
 
   const handleAttributeValueChange = async (attributeCode, value, attributeType) => {
-    if (attributeType === 'file' && value && value.target && value.target.files[0]) {
+    if ((attributeType === 'file' || attributeType === 'image') && value && value.target && value.target.files[0]) {
       const file = value.target.files[0];
       setUploadingImage(true);
       try {
@@ -664,10 +664,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           const allImageAttributes = passedAttributes?.filter(attr => 
             attr && 
             (
-              attr.type === 'file' || attr.type === 'image'
-            ) && 
-            attr.file_settings?.allowed_extensions?.some(ext => 
-              ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+              attr.type === 'image' || 
+              (attr.type === 'file' && 
+                attr.file_settings?.allowed_extensions?.some(ext => 
+                  ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+                )
+              )
             )
           ) || [];
 
@@ -745,7 +747,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 <input
                                   type="file"
                                   id={`image_${attribute.code}`}
-                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
                                   accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
                                   className="hidden"
                                   disabled={uploadingImage}
@@ -811,7 +813,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 <input
                                   type="file"
                                   id={`image_${attribute.code}`}
-                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
                                   accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
                                   className="hidden"
                                   disabled={uploadingImage}
@@ -865,7 +867,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   ? attributesWithoutImages[0] 
                                   : allImageAttributes[0];
                                 if (nextAttribute) {
-                                  handleAttributeValueChange(nextAttribute.code, e, 'file');
+                                  handleAttributeValueChange(nextAttribute.code, e, nextAttribute.type);
                                 }
                               }}
                               accept={allImageAttributes[0]?.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
@@ -905,7 +907,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     </p>
                     <div className="space-y-2 text-sm text-amber-700">
                       <p>1. Go to <strong>Attributes</strong> in the admin menu</p>
-                      <p>2. Create a new attribute with type <strong>"File"</strong></p>
+                      <p>2. Create a new attribute with type <strong>"Image"</strong></p>
                       <p>3. Set allowed extensions to include image formats (jpg, png, etc.)</p>
                       <p>4. Come back here to upload your product images</p>
                     </div>
@@ -1020,7 +1022,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                     <input
                                       type="file"
                                       id={`attr_${attribute.code}`}
-                                      onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                      onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
                                       accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
                                       className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
                                       disabled={uploadingImage}
@@ -1068,7 +1070,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   <input
                                     type="file"
                                     id={`attr_${attribute.code}`}
-                                    onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                    onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
                                     accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
                                     className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
                                     disabled={uploadingImage}
@@ -1099,9 +1101,11 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   const nonImageAttributes = selectedAttributes.filter(attr => 
                     // Exclude ALL image-related attributes (handled in top Images section)
                     !(
-                      (attr.type === 'file' || attr.type === 'image') && 
-                      attr.file_settings?.allowed_extensions?.some(ext => 
-                        ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+                      attr.type === 'image' || 
+                      (attr.type === 'file' && 
+                        attr.file_settings?.allowed_extensions?.some(ext => 
+                          ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+                        )
                       )
                     )
                   );
@@ -1136,12 +1140,12 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   onCheckedChange={(checked) => handleAttributeValueChange(attribute.code, checked)}
                                 />
                               </div>
-                            ) : attribute.type === 'file' ? (
+                            ) : (attribute.type === 'file' || attribute.type === 'image') ? (
                               <div className="space-y-2">
                                 <input
                                   type="file"
                                   id={`attr_${attribute.code}`}
-                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, 'file')}
+                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
                                   accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
                                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                                   disabled={uploadingImage}

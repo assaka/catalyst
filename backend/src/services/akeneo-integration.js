@@ -43,6 +43,12 @@ class AkeneoIntegration {
   async importCategories(storeId, options = {}) {
     const { locale = 'en_US', dryRun = false, filters = {}, settings = {} } = options;
     
+    // Create separate stats for this import job
+    const jobStats = {
+      categories: { total: 0, imported: 0, skipped: 0, failed: 0 },
+      errors: []
+    };
+    
     try {
       console.log('Starting category import from Akeneo...');
       
@@ -95,7 +101,7 @@ class AkeneoIntegration {
         console.log(`📊 After root category filtering: ${akeneoCategories.length} categories selected`);
       }
       
-      this.importStats.categories.total = akeneoCategories.length;
+      jobStats.categories.total = akeneoCategories.length;
 
       console.log(`Found ${akeneoCategories.length} categories in Akeneo`);
 
@@ -119,10 +125,10 @@ class AkeneoIntegration {
           // Validate category
           const validationErrors = this.mapping.validateCategory(category);
           if (validationErrors.length > 0) {
-            this.importStats.categories.failed++;
-            this.importStats.errors.push({
+            jobStats.categories.failed++;
+            jobStats.errors.push({
               type: 'category',
-              akeneo_code: category.akeneo_code,
+              akeneo_code: category._temp_akeneo_code,
               errors: validationErrors
             });
             continue;
@@ -136,7 +142,7 @@ class AkeneoIntegration {
             }
             
             // Log category processing info
-            console.log(`🔍 Processing category: "${category.name}" (${category.akeneo_code})`);
+            console.log(`🔍 Processing category: "${category.name}" (${category._temp_akeneo_code})`);
             console.log(`   - Level: ${category.level}, IsRoot: ${category.isRoot}, Parent: ${category._temp_parent_akeneo_code || 'none'}`);
             console.log(`   - Resolved parent_id: ${parentId}`);
             
@@ -185,32 +191,61 @@ class AkeneoIntegration {
               // Update existing category
               await existingCategory.update(updateData);
               
-              createdCategories[category.akeneo_code] = existingCategory.id;
+              createdCategories[category._temp_akeneo_code] = existingCategory.id;
+              
+              // Create or update Akeneo mapping
+              const AkeneoMapping = require('../models/AkeneoMapping');
+              await AkeneoMapping.createMapping(
+                storeId,
+                category._temp_akeneo_code,
+                'category',
+                'category',
+                existingCategory.id,
+                existingCategory.slug,
+                { source: 'import', notes: `Updated during category import: ${category.name}`, force: true }
+              );
+              
               console.log(`✅ Updated category: ${category.name} (ID: ${existingCategory.id})`);
+              console.log(`  📋 Created/Updated mapping: ${category._temp_akeneo_code} -> ${existingCategory.id}`);
             } else {
               // Prepare category data with resolved parent_id
               const categoryData = { ...category };
               delete categoryData.id;
               delete categoryData._temp_parent_akeneo_code;
+              delete categoryData._temp_akeneo_code; // Remove temporary akeneo code
               delete categoryData.isRoot; // Remove temporary flag
               delete categoryData._originalSlug; // Remove temporary slug field
               categoryData.parent_id = category.isRoot ? null : parentId;
               
               // Create new category
               const newCategory = await Category.create(categoryData);
-              createdCategories[category.akeneo_code] = newCategory.id;
+              createdCategories[category._temp_akeneo_code] = newCategory.id;
+              
+              // Create Akeneo mapping for new category
+              const AkeneoMapping = require('../models/AkeneoMapping');
+              await AkeneoMapping.createMapping(
+                storeId,
+                category._temp_akeneo_code,
+                'category',
+                'category',
+                newCategory.id,
+                newCategory.slug,
+                { source: 'import', notes: `Created during category import: ${category.name}` }
+              );
+              
               console.log(`✅ Created category: ${newCategory.name} (ID: ${newCategory.id})`);
+              console.log(`  📋 Created mapping: ${category._temp_akeneo_code} -> ${newCategory.id}`);
             }
           } else {
             console.log(`🔍 Dry run - would process category: ${category.name}`);
           }
 
-          this.importStats.categories.imported++;
+          jobStats.categories.imported++;
         } catch (error) {
-          this.importStats.categories.failed++;
-          this.importStats.errors.push({
+          jobStats.categories.failed++;
+          jobStats.errors.push({
             type: 'category',
-            akeneo_code: category.akeneo_code,
+            akeneo_code: category._temp_akeneo_code,
             error: error.message
           });
           console.error(`Failed to import category ${category.name}:`, error.message);
@@ -219,23 +254,28 @@ class AkeneoIntegration {
 
       console.log('Category import completed');
       
+      // Update global stats for overall tracking
+      this.importStats.categories = jobStats.categories;
+      this.importStats.errors = [...this.importStats.errors, ...jobStats.errors];
+      
       // Prepare response based on dry run mode
       const response = {
         success: true,
-        stats: this.importStats.categories,
+        stats: jobStats.categories,
+        errors: jobStats.errors,
         dryRun: dryRun
       };
       
       if (dryRun) {
-        response.message = `Dry run completed. Would import ${this.importStats.categories.imported} categories`;
+        response.message = `Dry run completed. Would import ${jobStats.categories.imported} categories`;
         response.preview = {
-          totalFound: this.importStats.categories.total,
-          wouldImport: this.importStats.categories.imported,
-          wouldSkip: this.importStats.categories.skipped,
-          wouldFail: this.importStats.categories.failed
+          totalFound: jobStats.categories.total,
+          wouldImport: jobStats.categories.imported,
+          wouldSkip: jobStats.categories.skipped,
+          wouldFail: jobStats.categories.failed
         };
       } else {
-        response.message = `Imported ${this.importStats.categories.imported} categories`;
+        response.message = `Imported ${jobStats.categories.imported} categories`;
       }
       
       return response;
@@ -245,7 +285,8 @@ class AkeneoIntegration {
       return {
         success: false,
         error: error.message,
-        stats: this.importStats.categories
+        stats: jobStats.categories,
+        errors: jobStats.errors
       };
     }
   }
@@ -266,6 +307,11 @@ class AkeneoIntegration {
       console.log('📂 Building category mapping...');
       const categoryMapping = await this.buildCategoryMapping(storeId);
       console.log(`✅ Category mapping built: ${Object.keys(categoryMapping).length} categories`);
+      
+      // Get family mapping for product attribute set assignment
+      console.log('🏷️ Building family mapping...');
+      const familyMapping = await this.buildFamilyMapping(storeId);
+      console.log(`✅ Family mapping built: ${Object.keys(familyMapping).length} families`);
       
       // Get all products from Akeneo using the robust client method
       console.log('📡 Fetching all products from Akeneo...');
@@ -336,8 +382,8 @@ class AkeneoIntegration {
               console.log(`📊 Processing product ${processed}/${akeneoProducts.length}: ${akeneoProduct.identifier || akeneoProduct.uuid || 'Unknown'}`);
             }
             
-            // Transform product to Catalyst format
-            const catalystProduct = this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, settings);
+            // Transform product to Catalyst format (now async)
+            const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, settings);
             
             // Apply product settings
             if (settings.status === 'disabled') {
@@ -374,6 +420,13 @@ class AkeneoIntegration {
             
             if (originalCategoryIds.length > 0 && catalystProduct.category_ids.length === 0) {
               console.warn(`⚠️ Product ${catalystProduct.sku}: No valid category mappings found for ${originalCategoryIds.join(', ')}`);
+            }
+            
+            // Map family to attribute set
+            if (akeneoProduct.family && familyMapping[akeneoProduct.family]) {
+              catalystProduct.attribute_set_id = familyMapping[akeneoProduct.family];
+            } else if (akeneoProduct.family) {
+              console.warn(`⚠️ Product ${catalystProduct.sku}: No valid family mapping found for ${akeneoProduct.family}`);
             }
 
             // Validate product
@@ -891,6 +944,24 @@ class AkeneoIntegration {
     }
 
     return explicitMapping;
+  }
+
+  /**
+   * Build mapping from Akeneo family codes to Catalyst AttributeSet IDs
+   */
+  async buildFamilyMapping(storeId) {
+    const attributeSets = await AttributeSet.findAll({
+      where: { store_id: storeId },
+      attributes: ['id', 'name']
+    });
+
+    const mapping = {};
+    attributeSets.forEach(attributeSet => {
+      // Map by name since families are stored by name in AttributeSet
+      mapping[attributeSet.name] = attributeSet.id;
+    });
+
+    return mapping;
   }
 
   /**
