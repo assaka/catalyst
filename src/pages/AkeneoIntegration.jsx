@@ -1116,8 +1116,10 @@ const AkeneoIntegration = () => {
   };
 
   const importCategories = async () => {
-    console.log('📦 Starting categories import...');
-    console.log('🔗 Connection status:', connectionStatus);
+    console.log('🚀 IMPORT CATEGORIES FUNCTION CALLED - This should appear in console');
+    try {
+      console.log('📦 Starting categories import...');
+      console.log('🔗 Connection status:', connectionStatus);
     
     // Debug authentication state
     const authToken = localStorage.getItem('store_owner_auth_token');
@@ -1243,6 +1245,17 @@ const AkeneoIntegration = () => {
     } finally {
       console.log('🏁 Categories import completed');
       setImporting(false);
+    }
+    } catch (unexpectedError) {
+      console.error('🚨 UNEXPECTED ERROR in importCategories function:', unexpectedError);
+      console.error('🚨 Error type:', typeof unexpectedError);
+      console.error('🚨 Error name:', unexpectedError?.name);
+      console.error('🚨 Error message:', unexpectedError?.message);
+      console.error('🚨 Error stack:', unexpectedError?.stack);
+      
+      toast.error('An unexpected error occurred during import. Check console for details.');
+      setImporting(false);
+      setImportResults({ success: false, error: 'Unexpected error: ' + unexpectedError?.message });
     }
   };
 
@@ -2743,7 +2756,11 @@ const AkeneoIntegration = () => {
 
                 <div className="flex items-center gap-4">
                   <Button 
-                    onClick={importCategories} 
+                    onClick={() => {
+                      console.log('🖱️ IMPORT CATEGORIES BUTTON CLICKED - Button click registered');
+                      console.log('🖱️ Button state - importing:', importing, 'connectionStatus:', connectionStatus?.success, 'selectedCategories:', selectedRootCategories?.length);
+                      importCategories();
+                    }} 
                     disabled={importing || !connectionStatus?.success || selectedRootCategories.length === 0}
                     className="flex items-center gap-2"
                   >

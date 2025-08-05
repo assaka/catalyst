@@ -38,6 +38,8 @@ import PluginHowToProgressiveTabs from "./PluginHowToProgressiveTabs";
 
 import PluginHowToIconTest from "./PluginHowToIconTest";
 
+import PluginBuilder from "./PluginBuilder";
+
 import SimpleTest from "./SimpleTest";
 
 import Storefront from "./Storefront";
@@ -166,6 +168,8 @@ const PAGES = {
     
     PluginHowToIconTest: PluginHowToIconTest,
     
+    PluginBuilder: PluginBuilder,
+    
     Storefront: Storefront,
     
     ProductDetail: ProductDetail,
@@ -290,6 +294,8 @@ function _getCurrentPage(url) {
         'akeneo-integration': 'AkeneoIntegration',
         'integrations': 'Integrations',
         'plugin-how-to': 'PluginHowToFixed',
+        'plugin-builder': 'PluginBuilder',
+        'create-plugin': 'PluginBuilder',
         'plugin-test': 'PluginHowToTest',
         'heatmaps': 'HeatMaps',
         'ab-testing': 'ABTesting'
@@ -506,6 +512,18 @@ function PagesContent() {
                 <Route path="/admin/plugin-how-to" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <PluginHowToFixed />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/plugin-builder" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PluginBuilder />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/create-plugin" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PluginBuilder />
                     </RoleProtectedRoute>
                 } />
                 
@@ -827,6 +845,18 @@ function PagesContent() {
                 <Route path="/admin/plugin-how-to" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <PluginHowToFixed />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/plugin-builder" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PluginBuilder />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/create-plugin" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PluginBuilder />
                     </RoleProtectedRoute>
                 } />
                 
