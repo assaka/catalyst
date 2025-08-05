@@ -2027,6 +2027,8 @@ const AkeneoIntegration = () => {
                           console.log('🔍 Attributes tab - families for multiselect:', families);
                           console.log('🔍 Attributes tab - families.length:', families.length);
                           console.log('🔍 Sample family object:', families[0]);
+                          console.log('🔍 Family object keys:', families[0] ? Object.keys(families[0]) : 'no families');
+                          console.log('🔍 First 3 family objects:', families.slice(0, 3));
                           const options = families.map((family, index) => {
                             // Use code as value and get label from labels object (fallback to code)
                             const value = family.code;
@@ -2047,6 +2049,12 @@ const AkeneoIntegration = () => {
                             };
                           });
                           console.log('🔍 Attributes tab - mapped options:', options.slice(0, 3));
+                          console.log('🔍 All mapped options (first 5):', JSON.stringify(options.slice(0, 5), null, 2));
+                          console.log('🔍 Options valid check:', {
+                            hasOptions: options.length > 0,
+                            firstOptionValid: options[0] && options[0].value && options[0].label,
+                            sampleValues: options.slice(0, 3).map(opt => ({ value: opt.value, label: opt.label }))
+                          });
                           return options;
                         })()}
                         value={attributeSettings.selectedFamilies}
