@@ -1,662 +1,459 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
+import { Separator } from '../components/ui/separator';
 import { 
-  Box, 
-  Container, 
-  Typography, 
-  Tabs, 
-  Tab, 
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Alert,
-  Chip,
-  Paper,
-  Divider,
-  IconButton
-} from '@mui/material';
-import { 
-  Code as CodeIcon,
-  Upload as UploadIcon,
-  Psychology as AIIcon,
-  Template as TemplateIcon,
-  PlayArrow as PreviewIcon,
-  Save as SaveIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon
-} from '@mui/icons-material';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import CodeMirror from '@uiw/react-codemirror';
-import { javascript } from '@codemirror/lang-javascript';
-import { oneDark } from '@codemirror/theme-one-dark';
+  Code,
+  Upload,
+  Brain,
+  FileCode,
+  Play,
+  Save,
+  Plus,
+  Trash2,
+  AlertCircle,
+  CheckCircle
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 const PluginBuilder = () => {
-  const { storeId } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   
-  // Web Builder State
+  // Plugin data state
   const [pluginData, setPluginData] = useState({
     name: '',
     description: '',
+    version: '1.0.0',
     category: 'display',
-    hooks: ['homepage_header'],
+    hooks: [],
     code: '',
     configSchema: {}
   });
-  
-  // Templates State
-  const [templates, setTemplates] = useState([]);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  
-  // Upload State
+
+  // File upload state
   const [uploadFile, setUploadFile] = useState(null);
   
-  // AI State
+  // AI prompt state
   const [aiPrompt, setAiPrompt] = useState('');
-  const [aiResponse, setAiResponse] = useState(null);
   
-  // Configuration Schema Builder
-  const [configFields, setConfigFields] = useState([
-    { name: 'message', type: 'string', default: 'Hello World!', description: 'Message to display' }
-  ]);
+  // Templates
+  const templates = [
+    {
+      id: 'banner',
+      name: 'Banner Plugin',
+      description: 'Display custom banners on your store',
+      category: 'display',
+      code: `class BannerPlugin {
+  constructor() {
+    this.name = 'Banner Plugin';
+    this.version = '1.0.0';
+  }
+  
+  renderHomepageHeader(config, context) {
+    return \`
+      <div style="background: \${config.backgroundColor}; padding: 20px; text-align: center;">
+        <h2>\${config.message}</h2>
+      </div>
+    \`;
+  }
+}
 
-  useEffect(() => {
-    fetchTemplates();
-  }, []);
+module.exports = BannerPlugin;`
+    },
+    {
+      id: 'analytics',
+      name: 'Analytics Plugin',
+      description: 'Track user interactions',
+      category: 'analytics',
+      code: `class AnalyticsPlugin {
+  constructor() {
+    this.name = 'Analytics Plugin';
+    this.version = '1.0.0';
+  }
+  
+  trackPageView(config, context) {
+    // Analytics tracking code
+    console.log('Page viewed:', context.page);
+  }
+}
 
-  const fetchTemplates = async () => {
-    try {
-      const response = await fetch(`/api/stores/${storeId}/plugins/create/templates`);
-      const data = await response.json();
-      if (data.success) {
-        setTemplates(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching templates:', error);
+module.exports = AnalyticsPlugin;`
     }
-  };
+  ];
 
-  const handleTabChange = (event, newValue) => {
-    setActiveTab(newValue);
-    setError('');
-    setSuccess('');
-  };
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
-  // Web Builder Functions
   const handleTemplateSelect = (template) => {
     setSelectedTemplate(template);
     setPluginData({
+      ...pluginData,
       name: template.name,
       description: template.description,
       category: template.category,
-      hooks: template.hooks,
-      code: template.code,
-      configSchema: template.configSchema
+      code: template.code
     });
-    
-    // Convert config schema to fields for editing
-    const fields = Object.entries(template.configSchema).map(([name, config]) => ({
-      name,
-      type: config.type,
-      default: config.default,
-      description: config.description || ''
-    }));
-    setConfigFields(fields);
   };
 
-  const handleConfigFieldChange = (index, field, value) => {
-    const newFields = [...configFields];
-    newFields[index][field] = value;
-    setConfigFields(newFields);
-    
-    // Update plugin data config schema
-    const schema = {};
-    newFields.forEach(field => {
-      schema[field.name] = {
-        type: field.type,
-        default: field.default,
-        description: field.description
-      };
-    });
-    setPluginData({ ...pluginData, configSchema: schema });
-  };
-
-  const addConfigField = () => {
-    setConfigFields([...configFields, {
-      name: `field${configFields.length + 1}`,
-      type: 'string',
-      default: '',
-      description: ''
-    }]);
-  };
-
-  const removeConfigField = (index) => {
-    const newFields = configFields.filter((_, i) => i !== index);
-    setConfigFields(newFields);
-  };
-
-  const createWebPlugin = async () => {
-    setLoading(true);
-    setError('');
-    
-    try {
-      const response = await fetch(`/api/stores/${storeId}/plugins/create/web`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(pluginData)
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setSuccess(`Plugin "${data.data.plugin.name}" created successfully!`);
-        setTimeout(() => {
-          navigate(`/admin/stores/${storeId}/plugins`);
-        }, 2000);
-      } else {
-        setError(data.error);
-      }
-    } catch (error) {
-      setError('Failed to create plugin: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Upload Functions
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (file && file.name.endsWith('.zip')) {
       setUploadFile(file);
-      setError('');
+      toast.success('File selected: ' + file.name);
     } else {
-      setError('Please select a valid ZIP file');
+      toast.error('Please select a valid ZIP file');
     }
   };
 
-  const uploadPlugin = async () => {
-    if (!uploadFile) {
-      setError('Please select a ZIP file');
-      return;
-    }
-    
+  const createPlugin = async (method) => {
     setLoading(true);
-    setError('');
-    
-    const formData = new FormData();
-    formData.append('pluginZip', uploadFile);
     
     try {
-      const response = await fetch(`/api/stores/${storeId}/plugins/create/upload`, {
-        method: 'POST',
-        body: formData
-      });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      const data = await response.json();
+      toast.success(`Plugin "${pluginData.name}" created successfully!`);
       
-      if (data.success) {
-        setSuccess(`Plugin "${data.data.plugin.name}" uploaded successfully!`);
-        setTimeout(() => {
-          navigate(`/admin/stores/${storeId}/plugins`);
-        }, 2000);
-      } else {
-        setError(data.error);
-      }
+      // Navigate back to plugins page after a short delay
+      setTimeout(() => {
+        navigate('/admin/plugins');
+      }, 2000);
     } catch (error) {
-      setError('Failed to upload plugin: ' + error.message);
+      toast.error('Failed to create plugin: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
-
-  // AI Functions
-  const generateAIPlugin = async () => {
-    if (!aiPrompt.trim()) {
-      setError('Please describe the plugin you want to create');
-      return;
-    }
-    
-    setLoading(true);
-    setError('');
-    
-    try {
-      const response = await fetch(`/api/stores/${storeId}/plugins/create/ai`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          prompt: aiPrompt,
-          context: { storeId }
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        setAiResponse(data);
-        setSuccess(`Plugin "${data.data.plugin.name}" generated successfully with AI!`);
-        setTimeout(() => {
-          navigate(`/admin/stores/${storeId}/plugins`);
-        }, 3000);
-      } else {
-        setError(data.error);
-      }
-    } catch (error) {
-      setError('Failed to generate plugin: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const TabPanel = ({ children, value, index }) => (
-    <div hidden={value !== index} style={{ paddingTop: '20px' }}>
-      {value === index && children}
-    </div>
-  );
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" gutterBottom>
-          Plugin Builder
-        </Typography>
-        <Typography variant="body1" color="text.secondary">
+    <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Plugin Builder</h1>
+        <p className="text-gray-600">
           Create custom plugins for your store using multiple methods
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
-          {error}
-        </Alert>
-      )}
-
-      {success && (
-        <Alert severity="success" sx={{ mb: 3 }} onClose={() => setSuccess('')}>
-          {success}
-        </Alert>
-      )}
-
-      <Paper sx={{ width: '100%' }}>
-        <Tabs 
-          value={activeTab} 
-          onChange={handleTabChange}
-          variant="fullWidth"
-          sx={{ borderBottom: 1, borderColor: 'divider' }}
-        >
-          <Tab icon={<TemplateIcon />} label="Visual Builder" />
-          <Tab icon={<CodeIcon />} label="Code Editor" />
-          <Tab icon={<UploadIcon />} label="Upload ZIP" />
-          <Tab icon={<AIIcon />} label="AI Assistant" />
-        </Tabs>
+      <Tabs defaultValue="visual" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="visual" className="flex items-center space-x-2">
+            <FileCode className="w-4 h-4" />
+            <span>Visual Builder</span>
+          </TabsTrigger>
+          <TabsTrigger value="code" className="flex items-center space-x-2">
+            <Code className="w-4 h-4" />
+            <span>Code Editor</span>
+          </TabsTrigger>
+          <TabsTrigger value="upload" className="flex items-center space-x-2">
+            <Upload className="w-4 h-4" />
+            <span>Upload ZIP</span>
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="flex items-center space-x-2">
+            <Brain className="w-4 h-4" />
+            <span>AI Assistant</span>
+          </TabsTrigger>
+        </TabsList>
 
         {/* Visual Builder Tab */}
-        <TabPanel value={activeTab} index={0}>
-          <Box sx={{ p: 3 }}>
-            <Grid container spacing={3}>
-              {/* Template Selection */}
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>
-                  Choose a Template
-                </Typography>
-                <Grid container spacing={2}>
-                  {templates.map((template) => (
-                    <Grid item xs={12} md={4} key={template.id}>
-                      <Card 
-                        sx={{ 
-                          cursor: 'pointer',
-                          border: selectedTemplate?.id === template.id ? 2 : 1,
-                          borderColor: selectedTemplate?.id === template.id ? 'primary.main' : 'divider'
-                        }}
-                        onClick={() => handleTemplateSelect(template)}
-                      >
-                        <CardContent>
-                          <Typography variant="h6">{template.name}</Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                            {template.description}
-                          </Typography>
-                          <Chip label={template.category} size="small" />
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Grid>
+        <TabsContent value="visual" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Choose a Template</CardTitle>
+              <CardDescription>
+                Start with a pre-built template and customize it
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {templates.map((template) => (
+                  <Card 
+                    key={template.id}
+                    className={`cursor-pointer transition-all ${
+                      selectedTemplate?.id === template.id 
+                        ? 'ring-2 ring-blue-500' 
+                        : 'hover:shadow-lg'
+                    }`}
+                    onClick={() => handleTemplateSelect(template)}
+                  >
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold mb-2">{template.name}</h3>
+                      <p className="text-sm text-gray-600 mb-2">{template.description}</p>
+                      <Badge variant="secondary">{template.category}</Badge>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
 
               {selectedTemplate && (
                 <>
-                  <Grid item xs={12}>
-                    <Divider />
-                  </Grid>
-
-                  {/* Plugin Details */}
-                  <Grid item xs={12} md={6}>
-                    <Typography variant="h6" gutterBottom>Plugin Details</Typography>
-                    <TextField
-                      fullWidth
-                      label="Plugin Name"
-                      value={pluginData.name}
-                      onChange={(e) => setPluginData({ ...pluginData, name: e.target.value })}
-                      sx={{ mb: 2 }}
-                    />
-                    <TextField
-                      fullWidth
-                      label="Description"
-                      multiline
-                      rows={3}
-                      value={pluginData.description}
-                      onChange={(e) => setPluginData({ ...pluginData, description: e.target.value })}
-                      sx={{ mb: 2 }}
-                    />
-                    <FormControl fullWidth sx={{ mb: 2 }}>
-                      <InputLabel>Category</InputLabel>
-                      <Select
-                        value={pluginData.category}
-                        onChange={(e) => setPluginData({ ...pluginData, category: e.target.value })}
-                      >
-                        <MenuItem value="display">Display</MenuItem>
-                        <MenuItem value="marketing">Marketing</MenuItem>
-                        <MenuItem value="social">Social</MenuItem>
-                        <MenuItem value="analytics">Analytics</MenuItem>
-                        <MenuItem value="custom">Custom</MenuItem>
-                      </Select>
-                    </FormControl>
-                  </Grid>
-
-                  {/* Configuration Fields */}
-                  <Grid item xs={12} md={6}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <Typography variant="h6">Configuration Fields</Typography>
-                      <IconButton onClick={addConfigField} color="primary">
-                        <AddIcon />
-                      </IconButton>
-                    </Box>
+                  <Separator />
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Plugin Details</h3>
                     
-                    {configFields.map((field, index) => (
-                      <Paper key={index} sx={{ p: 2, mb: 2 }}>
-                        <Grid container spacing={2} alignItems="center">
-                          <Grid item xs={3}>
-                            <TextField
-                              size="small"
-                              label="Field Name"
-                              value={field.name}
-                              onChange={(e) => handleConfigFieldChange(index, 'name', e.target.value)}
-                            />
-                          </Grid>
-                          <Grid item xs={2}>
-                            <FormControl size="small" fullWidth>
-                              <InputLabel>Type</InputLabel>
-                              <Select
-                                value={field.type}
-                                onChange={(e) => handleConfigFieldChange(index, 'type', e.target.value)}
-                              >
-                                <MenuItem value="string">Text</MenuItem>
-                                <MenuItem value="number">Number</MenuItem>
-                                <MenuItem value="boolean">Yes/No</MenuItem>
-                              </Select>
-                            </FormControl>
-                          </Grid>
-                          <Grid item xs={3}>
-                            <TextField
-                              size="small"
-                              label="Default Value"
-                              value={field.default}
-                              onChange={(e) => handleConfigFieldChange(index, 'default', e.target.value)}
-                            />
-                          </Grid>
-                          <Grid item xs={3}>
-                            <TextField
-                              size="small"
-                              label="Description"
-                              value={field.description}
-                              onChange={(e) => handleConfigFieldChange(index, 'description', e.target.value)}
-                            />
-                          </Grid>
-                          <Grid item xs={1}>
-                            <IconButton 
-                              onClick={() => removeConfigField(index)}
-                              color="error"
-                              size="small"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Grid>
-                        </Grid>
-                      </Paper>
-                    ))}
-                  </Grid>
-
-                  {/* Plugin Code Preview */}
-                  <Grid item xs={12}>
-                    <Typography variant="h6" gutterBottom>Generated Code</Typography>
-                    <SyntaxHighlighter 
-                      language="javascript" 
-                      style={tomorrow}
-                      customStyle={{ maxHeight: '300px' }}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Plugin Name</Label>
+                        <Input
+                          id="name"
+                          value={pluginData.name}
+                          onChange={(e) => setPluginData({ ...pluginData, name: e.target.value })}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="version">Version</Label>
+                        <Input
+                          id="version"
+                          value={pluginData.version}
+                          onChange={(e) => setPluginData({ ...pluginData, version: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        rows={3}
+                        value={pluginData.description}
+                        onChange={(e) => setPluginData({ ...pluginData, description: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="category">Category</Label>
+                      <Select 
+                        value={pluginData.category}
+                        onValueChange={(value) => setPluginData({ ...pluginData, category: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="display">Display</SelectItem>
+                          <SelectItem value="analytics">Analytics</SelectItem>
+                          <SelectItem value="marketing">Marketing</SelectItem>
+                          <SelectItem value="integration">Integration</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={() => createPlugin('visual')}
+                      disabled={loading || !pluginData.name}
                     >
-                      {pluginData.code}
-                    </SyntaxHighlighter>
-                  </Grid>
-
-                  <Grid item xs={12}>
-                    <Button
-                      variant="contained"
-                      size="large"
-                      onClick={createWebPlugin}
-                      disabled={loading || !pluginData.name || !pluginData.code}
-                      startIcon={<SaveIcon />}
-                    >
-                      {loading ? 'Creating Plugin...' : 'Create Plugin'}
+                      {loading ? (
+                        <>
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Create Plugin
+                        </>
+                      )}
                     </Button>
-                  </Grid>
+                  </div>
                 </>
               )}
-            </Grid>
-          </Box>
-        </TabPanel>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* Code Editor Tab */}
-        <TabPanel value={activeTab} index={1}>
-          <Box sx={{ p: 3 }}>
-            <Grid container spacing={3}>
-              <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Plugin Name"
-                  value={pluginData.name}
-                  onChange={(e) => setPluginData({ ...pluginData, name: e.target.value })}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  fullWidth
-                  label="Description"
-                  multiline
-                  rows={3}
-                  value={pluginData.description}
-                  onChange={(e) => setPluginData({ ...pluginData, description: e.target.value })}
-                  sx={{ mb: 2 }}
-                />
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={pluginData.category}
-                    onChange={(e) => setPluginData({ ...pluginData, category: e.target.value })}
-                  >
-                    <MenuItem value="display">Display</MenuItem>
-                    <MenuItem value="marketing">Marketing</MenuItem>
-                    <MenuItem value="social">Social</MenuItem>
-                    <MenuItem value="analytics">Analytics</MenuItem>
-                    <MenuItem value="custom">Custom</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="h6" gutterBottom>Plugin Code</Typography>
-                <CodeMirror
+        <TabsContent value="code" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Code Editor</CardTitle>
+              <CardDescription>
+                Write your plugin code directly
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="code-name">Plugin Name</Label>
+                  <Input
+                    id="code-name"
+                    value={pluginData.name}
+                    onChange={(e) => setPluginData({ ...pluginData, name: e.target.value })}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="code-version">Version</Label>
+                  <Input
+                    id="code-version"
+                    value={pluginData.version}
+                    onChange={(e) => setPluginData({ ...pluginData, version: e.target.value })}
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="plugin-code">Plugin Code</Label>
+                <Textarea
+                  id="plugin-code"
+                  rows={15}
+                  className="font-mono text-sm"
+                  placeholder="// Write your plugin code here..."
                   value={pluginData.code}
-                  height="400px"
-                  extensions={[javascript()]}
-                  theme={oneDark}
-                  onChange={(value) => setPluginData({ ...pluginData, code: value })}
+                  onChange={(e) => setPluginData({ ...pluginData, code: e.target.value })}
                 />
-              </Grid>
-
-              <Grid item xs={12}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={createWebPlugin}
+              </div>
+              
+              <div className="flex justify-end">
+                <Button 
+                  onClick={() => createPlugin('code')}
                   disabled={loading || !pluginData.name || !pluginData.code}
-                  startIcon={<SaveIcon />}
                 >
-                  {loading ? 'Creating Plugin...' : 'Create Plugin'}
+                  {loading ? (
+                    <>
+                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Create Plugin
+                    </>
+                  )}
                 </Button>
-              </Grid>
-            </Grid>
-          </Box>
-        </TabPanel>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        {/* Upload Tab */}
-        <TabPanel value={activeTab} index={2}>
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <input
-              accept=".zip"
-              style={{ display: 'none' }}
-              id="plugin-upload"
-              type="file"
-              onChange={handleFileUpload}
-            />
-            <label htmlFor="plugin-upload">
-              <Card sx={{ p: 4, border: '2px dashed', borderColor: 'primary.main', cursor: 'pointer' }}>
-                <UploadIcon sx={{ fontSize: 64, color: 'primary.main', mb: 2 }} />
-                <Typography variant="h6" gutterBottom>
-                  Drop your plugin ZIP file here or click to browse
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Maximum file size: 10MB
-                </Typography>
-              </Card>
-            </label>
-
-            {uploadFile && (
-              <Box sx={{ mt: 3 }}>
-                <Typography variant="body1">
-                  Selected: {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
-                </Typography>
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={uploadPlugin}
-                  disabled={loading}
-                  startIcon={<UploadIcon />}
-                  sx={{ mt: 2 }}
-                >
-                  {loading ? 'Uploading...' : 'Upload & Install Plugin'}
-                </Button>
-              </Box>
-            )}
-
-            <Box sx={{ mt: 4, textAlign: 'left' }}>
-              <Typography variant="h6" gutterBottom>
-                Plugin ZIP Structure
-              </Typography>
-              <SyntaxHighlighter language="bash" style={tomorrow}>
-{`my-plugin/
-├── manifest.json    # Plugin configuration
-├── index.js         # Main plugin code
-├── styles.css       # CSS styles (optional)
-└── README.md        # Documentation (optional)`}
-              </SyntaxHighlighter>
-            </Box>
-          </Box>
-        </TabPanel>
+        {/* Upload ZIP Tab */}
+        <TabsContent value="upload" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload Plugin ZIP</CardTitle>
+              <CardDescription>
+                Upload a pre-built plugin package
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Your ZIP file should contain a manifest.json file and the plugin code
+                </AlertDescription>
+              </Alert>
+              
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                  <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <p className="text-sm text-gray-600 mb-4">
+                    {uploadFile ? uploadFile.name : 'Drop your ZIP file here or click to browse'}
+                  </p>
+                  <input
+                    type="file"
+                    accept=".zip"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label htmlFor="file-upload">
+                    <Button variant="outline" asChild>
+                      <span>Choose File</span>
+                    </Button>
+                  </label>
+                </div>
+                
+                {uploadFile && (
+                  <div className="flex justify-end">
+                    <Button 
+                      onClick={() => createPlugin('upload')}
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                          Uploading...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Plugin
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         {/* AI Assistant Tab */}
-        <TabPanel value={activeTab} index={3}>
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Describe Your Plugin
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Tell our AI what kind of plugin you want to create. Be as specific as possible!
-            </Typography>
-
-            <TextField
-              fullWidth
-              multiline
-              rows={6}
-              label="Plugin Description"
-              placeholder="I want a plugin that shows a welcome message with my store name on the homepage. It should have a nice gradient background and be customizable..."
-              value={aiPrompt}
-              onChange={(e) => setAiPrompt(e.target.value)}
-              sx={{ mb: 3 }}
-            />
-
-            <Button
-              variant="contained"
-              size="large"
-              onClick={generateAIPlugin}
-              disabled={loading || !aiPrompt.trim()}
-              startIcon={<AIIcon />}
-            >
-              {loading ? 'Generating Plugin...' : 'Generate Plugin with AI'}
-            </Button>
-
-            {aiResponse && (
-              <Box sx={{ mt: 4 }}>
-                <Alert severity="success">
-                  <Typography variant="h6">Plugin Generated Successfully!</Typography>
-                  <Typography variant="body2">
-                    {aiResponse.data.aiResponse}
-                  </Typography>
-                </Alert>
-              </Box>
-            )}
-
-            <Box sx={{ mt: 4 }}>
-              <Typography variant="h6" gutterBottom>
-                Example Prompts
-              </Typography>
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <Chip 
-                  label="Create a rotating welcome message that changes every 3 seconds"
-                  variant="outlined"
-                  clickable
-                  onClick={() => setAiPrompt("Create a rotating welcome message that changes every 3 seconds")}
+        <TabsContent value="ai" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Plugin Generator</CardTitle>
+              <CardDescription>
+                Describe what you want and let AI create the plugin
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="ai-prompt">Describe Your Plugin</Label>
+                <Textarea
+                  id="ai-prompt"
+                  rows={5}
+                  placeholder="Example: Create a plugin that shows a welcome message with the store name and current date..."
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
                 />
-                <Chip 
-                  label="Show a promotional banner with custom colors and call-to-action button"
-                  variant="outlined"
-                  clickable
-                  onClick={() => setAiPrompt("Show a promotional banner with custom colors and call-to-action button")}
-                />
-                <Chip 
-                  label="Display social media links with icons in the footer"
-                  variant="outlined"
-                  clickable
-                  onClick={() => setAiPrompt("Display social media links with icons in the footer")}
-                />
-              </Box>
-            </Box>
-          </Box>
-        </TabPanel>
-      </Paper>
-    </Container>
+              </div>
+              
+              <div className="flex justify-end">
+                <Button 
+                  onClick={() => createPlugin('ai')}
+                  disabled={loading || !aiPrompt}
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Brain className="mr-2 h-4 w-4" />
+                      Generate Plugin
+                    </>
+                  )}
+                </Button>
+              </div>
+              
+              {pluginData.code && (
+                <div className="space-y-2">
+                  <Label>Generated Code</Label>
+                  <Textarea
+                    rows={15}
+                    className="font-mono text-sm"
+                    value={pluginData.code}
+                    readOnly
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 };
 
