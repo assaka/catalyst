@@ -678,8 +678,12 @@ const AkeneoIntegration = () => {
   const loadLocales = async () => {
     try {
       const response = await apiClient.get('/integrations/akeneo/locales');
-      if (response.data.success) {
-        setLocales(response.data.locales);
+      
+      // Handle both wrapped and direct response formats
+      const responseData = response.data || response;
+      
+      if (responseData?.success) {
+        setLocales(responseData.locales);
       }
     } catch (error) {
       console.error('Failed to load locales:', error);
@@ -1239,17 +1243,19 @@ const AkeneoIntegration = () => {
         'x-store-id': storeId
       });
 
-      setImportResults(response.data);
+      // Handle both wrapped and direct response formats
+      const responseData = response.data || response;
+      setImportResults(responseData);
       
-      if (response.data.success) {
-        const categoryStats = response.data.results.categories.stats;
-        const productStats = response.data.results.products.stats;
+      if (responseData?.success) {
+        const categoryStats = responseData.results.categories.stats;
+        const productStats = responseData.results.products.stats;
         toast.success(`Full import completed! ${categoryStats.imported} categories and ${productStats.imported} products imported`);
         // Reload stats and config to reflect changes
         await loadStats();
         await loadConfigStatus();
       } else {
-        toast.error(`Import failed: ${response.data.error}`);
+        toast.error(`Import failed: ${responseData?.error || 'Unknown error'}`);
       }
     } catch (error) {
       const message = error.response?.data?.error || error.response?.data?.message || error.message;

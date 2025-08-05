@@ -3,6 +3,47 @@ const router = express.Router();
 const pluginManager = require('../core/PluginManager');
 const authMiddleware = require('../middleware/auth');
 
+/**
+ * GET /api/plugins/test
+ * Test endpoint without auth to debug plugin manager
+ */
+router.get('/test', async (req, res) => {
+  try {
+    console.log('🧪 Plugin test endpoint called (no auth)');
+    
+    // Ensure plugin manager is initialized
+    if (!pluginManager.isInitialized) {
+      console.log('⚠️ Plugin manager not initialized, initializing now...');
+      await pluginManager.initialize();
+    }
+    
+    const plugins = pluginManager.getAllPlugins();
+    const status = pluginManager.getStatus();
+    
+    console.log(`📊 Test endpoint returning ${plugins.length} plugins`);
+    
+    res.json({
+      success: true,
+      message: 'Plugin manager test - no auth required',
+      data: {
+        plugins,
+        summary: {
+          total: status.totalPlugins,
+          installed: status.installedPlugins,
+          enabled: status.enabledPlugins
+        }
+      }
+    });
+  } catch (error) {
+    console.error('❌ Plugin test endpoint error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+});
+
 // All plugin routes require authentication
 router.use(authMiddleware);
 
