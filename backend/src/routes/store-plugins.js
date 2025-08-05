@@ -5,9 +5,27 @@ const PluginConfiguration = require('../models/PluginConfiguration');
 const authMiddleware = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
+// Debug middleware imports
+console.log('🔍 Debug middleware imports:');
+console.log('  authMiddleware type:', typeof authMiddleware);
+console.log('  checkStoreOwnership type:', typeof checkStoreOwnership);
+console.log('  authMiddleware:', authMiddleware);
+console.log('  checkStoreOwnership:', checkStoreOwnership);
+
 // All routes require authentication and store access
-router.use(authMiddleware);
-router.use(checkStoreOwnership);
+if (typeof authMiddleware === 'function') {
+  router.use(authMiddleware);
+} else {
+  console.error('❌ authMiddleware is not a function:', typeof authMiddleware);
+  throw new Error('authMiddleware is not a function');
+}
+
+if (typeof checkStoreOwnership === 'function') {
+  router.use(checkStoreOwnership);
+} else {
+  console.error('❌ checkStoreOwnership is not a function:', typeof checkStoreOwnership);
+  throw new Error('checkStoreOwnership is not a function');
+}
 
 /**
  * GET /api/stores/:store_id/plugins
