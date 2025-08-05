@@ -126,6 +126,18 @@ const AkeneoIntegration = () => {
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  
+  // Debug importing state changes
+  React.useEffect(() => {
+    console.log('🔄 importing state changed to:', importing);
+    if (!importing) {
+      console.log('🔍 Import completed, current state:', {
+        hasConfig: config.baseUrl ? 'yes' : 'no',
+        familiesCount: families?.length || 0,
+        statsLoaded: stats ? 'yes' : 'no'
+      });
+    }
+  }, [importing, config.baseUrl, families?.length, stats]);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [configSaved, setConfigSaved] = useState(false);
   // Separate import results for each tab
@@ -1430,8 +1442,18 @@ const AkeneoIntegration = () => {
         setTimeout(async () => {
           try {
             console.log('🔄 Reloading stats after successful products import...');
+            console.log('🔍 State before stats reload:', {
+              hasConfig: config.baseUrl ? 'yes' : 'no',
+              familiesCount: families?.length || 0,
+              statsLoaded: stats ? 'yes' : 'no'
+            });
             await loadStats();
             console.log('✅ Stats reloaded successfully after products import');
+            console.log('🔍 State after stats reload:', {
+              hasConfig: config.baseUrl ? 'yes' : 'no',
+              familiesCount: families?.length || 0,
+              statsLoaded: stats ? 'yes' : 'no'
+            });
           } catch (statsError) {
             console.error('❌ Error reloading stats after products import:', statsError);
             console.error('Products stats error details:', {
@@ -1448,8 +1470,18 @@ const AkeneoIntegration = () => {
         setTimeout(async () => {
           try {
             console.log('🔄 Reloading config status after successful products import...');
+            console.log('🔍 State before config reload:', {
+              hasConfig: config.baseUrl ? 'yes' : 'no',
+              familiesCount: families?.length || 0,
+              statsLoaded: stats ? 'yes' : 'no'
+            });
             await loadConfigStatus();
             console.log('✅ Config status reloaded successfully after products import');
+            console.log('🔍 State after config reload:', {
+              hasConfig: config.baseUrl ? 'yes' : 'no',
+              familiesCount: families?.length || 0,
+              statsLoaded: stats ? 'yes' : 'no'
+            });
           } catch (configError) {
             console.error('❌ Error reloading config status after products import:', configError);
             console.error('Products config error details:', {
@@ -1481,7 +1513,14 @@ const AkeneoIntegration = () => {
       toast.error(`Import failed: ${message}`);
     } finally {
       console.log('🏁 Products import finally block executed');
+      console.log('🔍 State in finally block:', {
+        hasConfig: config.baseUrl ? 'yes' : 'no',
+        familiesCount: families?.length || 0,
+        statsLoaded: stats ? 'yes' : 'no',
+        importing: importing ? 'yes' : 'no'
+      });
       setImporting(false);
+      console.log('🏁 setImporting(false) completed');
     }
   };
 
