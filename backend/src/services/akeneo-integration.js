@@ -258,6 +258,24 @@ class AkeneoIntegration {
       this.importStats.categories = jobStats.categories;
       this.importStats.errors = [...this.importStats.errors, ...jobStats.errors];
       
+      // Save import statistics to database (only if not a dry run)
+      if (!dryRun) {
+        try {
+          const ImportStatistic = require('../models/ImportStatistic');
+          await ImportStatistic.saveImportResults(storeId, 'categories', {
+            totalProcessed: jobStats.categories.total,
+            successfulImports: jobStats.categories.imported,
+            failedImports: jobStats.categories.failed,
+            skippedImports: jobStats.categories.skipped,
+            errorDetails: jobStats.errors.length > 0 ? JSON.stringify(jobStats.errors) : null,
+            importMethod: 'manual'
+          });
+          console.log('✅ Category import statistics saved to database');
+        } catch (statsError) {
+          console.error('❌ Failed to save category import statistics:', statsError.message);
+        }
+      }
+
       // Prepare response based on dry run mode
       const response = {
         success: true,
@@ -548,6 +566,24 @@ class AkeneoIntegration {
         }
       };
       
+      // Save import statistics to database (only if not a dry run)
+      if (!dryRun) {
+        try {
+          const ImportStatistic = require('../models/ImportStatistic');
+          await ImportStatistic.saveImportResults(storeId, 'products', {
+            totalProcessed: this.importStats.products.total,
+            successfulImports: this.importStats.products.imported,
+            failedImports: this.importStats.products.failed,
+            skippedImports: this.importStats.products.skipped,
+            errorDetails: this.importStats.errors.length > 0 ? JSON.stringify(this.importStats.errors) : null,
+            importMethod: 'manual'
+          });
+          console.log('✅ Product import statistics saved to database');
+        } catch (statsError) {
+          console.error('❌ Failed to save product import statistics:', statsError.message);
+        }
+      }
+
       if (dryRun) {
         response.message = `Dry run completed. Would import ${this.importStats.products.imported} products`;
         console.log(`🧪 Dry run result: Would import ${this.importStats.products.imported}/${this.importStats.products.total} products`);
@@ -718,6 +754,24 @@ class AkeneoIntegration {
         }
       };
       
+      // Save import statistics to database (only if not a dry run)
+      if (!dryRun) {
+        try {
+          const ImportStatistic = require('../models/ImportStatistic');
+          await ImportStatistic.saveImportResults(storeId, 'attributes', {
+            totalProcessed: this.importStats.attributes.total,
+            successfulImports: this.importStats.attributes.imported,
+            failedImports: this.importStats.attributes.failed,
+            skippedImports: this.importStats.attributes.skipped,
+            errorDetails: this.importStats.errors.length > 0 ? JSON.stringify(this.importStats.errors) : null,
+            importMethod: 'manual'
+          });
+          console.log('✅ Attribute import statistics saved to database');
+        } catch (statsError) {
+          console.error('❌ Failed to save attribute import statistics:', statsError.message);
+        }
+      }
+
       if (dryRun) {
         response.message = `Dry run completed. Would import ${this.importStats.attributes.imported} attributes`;
         console.log(`🧪 Dry run result: Would import ${this.importStats.attributes.imported}/${this.importStats.attributes.total} attributes`);
@@ -845,6 +899,24 @@ class AkeneoIntegration {
         dryRun: dryRun
       };
       
+      // Save import statistics to database (only if not a dry run)
+      if (!dryRun) {
+        try {
+          const ImportStatistic = require('../models/ImportStatistic');
+          await ImportStatistic.saveImportResults(storeId, 'families', {
+            totalProcessed: this.importStats.families.total,
+            successfulImports: this.importStats.families.imported,
+            failedImports: this.importStats.families.failed,
+            skippedImports: this.importStats.families.skipped,
+            errorDetails: this.importStats.errors.length > 0 ? JSON.stringify(this.importStats.errors) : null,
+            importMethod: 'manual'
+          });
+          console.log('✅ Family import statistics saved to database');
+        } catch (statsError) {
+          console.error('❌ Failed to save family import statistics:', statsError.message);
+        }
+      }
+
       if (dryRun) {
         response.message = `Dry run completed. Would import ${this.importStats.families.imported} families`;
       } else {

@@ -684,26 +684,21 @@ router.get('/akeneo/stats', storeAuth, async (req, res) => {
   try {
     const storeId = req.storeId;
     
-    const Category = require('../models/Category');
-    const Attribute = require('../models/Attribute');
-    const AttributeSet = require('../models/AttributeSet');
-    const Product = require('../models/Product');
+    const ImportStatistic = require('../models/ImportStatistic');
     
-    const [categoriesCount, attributesCount, familiesCount, productsCount] = await Promise.all([
-      Category.count({ where: { store_id: storeId } }),
-      Attribute.count({ where: { store_id: storeId } }),
-      AttributeSet.count({ where: { store_id: storeId } }),
-      Product.count({ where: { store_id: storeId } })
-    ]);
+    // Get latest import statistics for each import type
+    const latestStats = await ImportStatistic.getLatestStats(storeId);
 
     res.json({
       success: true,
       stats: {
-        categories: categoriesCount,
-        attributes: attributesCount,
-        families: familiesCount,
-        products: productsCount
-      }
+        categories: latestStats.categories.successful_imports,
+        attributes: latestStats.attributes.successful_imports,
+        families: latestStats.families.successful_imports,
+        products: latestStats.products.successful_imports
+      },
+      // Also return detailed stats for each import type
+      detailed_stats: latestStats
     });
   } catch (error) {
     console.error('Error getting import stats:', error);

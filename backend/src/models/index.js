@@ -31,6 +31,7 @@ const ProductTab = require('./ProductTab');
 const StoreTeam = require('./StoreTeam');
 const StoreInvitation = require('./StoreInvitation');
 const IntegrationConfig = require('./IntegrationConfig');
+const ImportStatistic = require('./ImportStatistic');
 
 // Define associations
 const defineAssociations = () => {
@@ -184,6 +185,10 @@ const defineAssociations = () => {
   // IntegrationConfig associations
   IntegrationConfig.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(IntegrationConfig, { foreignKey: 'store_id' });
+
+  // ImportStatistic associations
+  ImportStatistic.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(ImportStatistic, { foreignKey: 'store_id' });
 };
 
 // Initialize associations
@@ -222,5 +227,6 @@ module.exports = {
   ProductTab,
   StoreTeam,
   StoreInvitation,
-  IntegrationConfig
+  IntegrationConfig,
+  ImportStatistic
 };
