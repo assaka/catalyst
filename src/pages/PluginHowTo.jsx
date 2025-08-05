@@ -668,7 +668,7 @@ export default function PluginSettings({ config, onSave }) {
                         </div>
                         <div className="flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-green-600" />
-                          Code coverage > 80%
+                          Code coverage &gt; 80%
                         </div>
                         <div className="flex items-center gap-2">
                           <CheckCircle className="w-4 h-4 text-green-600" />
