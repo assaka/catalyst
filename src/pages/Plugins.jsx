@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 
 import PluginForm from "../components/plugins/PluginForm";
+import UninstallDialog from "../components/plugins/UninstallDialog";
 
 export default function Plugins() {
   const [plugins, setPlugins] = useState([]);
@@ -51,6 +52,9 @@ export default function Plugins() {
   const [showGitHubInstall, setShowGitHubInstall] = useState(false);
   const [githubUrl, setGithubUrl] = useState("");
   const [installing, setInstalling] = useState(false);
+  const [showUninstallDialog, setShowUninstallDialog] = useState(false);
+  const [pluginToUninstall, setPluginToUninstall] = useState(null);
+  const [uninstalling, setUninstalling] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -130,15 +134,27 @@ export default function Plugins() {
     }
   };
 
-  const handleUninstallPlugin = async (pluginSlug) => {
-    if (window.confirm("Are you sure you want to uninstall this plugin?")) {
-      try {
-        await apiClient.request('POST', `plugins/${pluginSlug}/uninstall`);
-        await loadData();
-      } catch (error) {
-        console.error("Error uninstalling plugin:", error);
-        alert("Error uninstalling plugin: " + error.message);
-      }
+  const handleUninstallPlugin = (plugin) => {
+    setPluginToUninstall(plugin);
+    setShowUninstallDialog(true);
+  };
+
+  const confirmUninstall = async (pluginSlug, options) => {
+    setUninstalling(true);
+    try {
+      const result = await apiClient.request('POST', `plugins/${pluginSlug}/uninstall`, options);
+      
+      // Show success message with cleanup summary
+      alert(`Plugin uninstalled successfully!\n\nBackup created: ${result.data.backupPath ? 'Yes' : 'No'}\nCleanup performed: ${JSON.stringify(result.data.cleanupSummary.actions, null, 2)}`);
+      
+      setShowUninstallDialog(false);
+      setPluginToUninstall(null);
+      await loadData();
+    } catch (error) {
+      console.error("Error uninstalling plugin:", error);
+      alert("Error uninstalling plugin: " + error.message);
+    } finally {
+      setUninstalling(false);
     }
   };
 
@@ -466,7 +482,7 @@ export default function Plugins() {
                           Configure
                         </Button>
                         <Button
-                          onClick={() => handleUninstallPlugin(plugin.slug)}
+                          onClick={() => handleUninstallPlugin(plugin)}
                           variant="outline"
                           size="sm"
                           className="text-red-600 border-red-200 hover:bg-red-50"
@@ -585,6 +601,18 @@ export default function Plugins() {
             />
           </DialogContent>
         </Dialog>
+
+        {/* Enhanced Uninstall Dialog */}
+        <UninstallDialog
+          isOpen={showUninstallDialog}
+          onClose={() => {
+            setShowUninstallDialog(false);
+            setPluginToUninstall(null);
+          }}
+          plugin={pluginToUninstall}
+          onConfirm={confirmUninstall}
+          isUninstalling={uninstalling}
+        />
       </div>
     </div>
   );

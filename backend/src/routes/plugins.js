@@ -180,17 +180,34 @@ router.post('/:name/install', async (req, res) => {
 
 /**
  * POST /api/plugins/:name/uninstall
- * Uninstall a plugin
+ * Uninstall a plugin with enhanced cleanup options
  */
 router.post('/:name/uninstall', async (req, res) => {
   try {
     const { name } = req.params;
+    const {
+      removeCode = false,
+      cleanupData = 'ask',
+      cleanupTables = 'ask',
+      createBackup = true,
+      force = false
+    } = req.body;
     
-    await pluginManager.uninstallPlugin(name);
+    const result = await pluginManager.uninstallPlugin(name, {
+      removeCode,
+      cleanupData,
+      cleanupTables,
+      createBackup,
+      force
+    });
     
     res.json({
       success: true,
-      message: `Plugin ${name} uninstalled successfully`
+      message: result.message,
+      data: {
+        backupPath: result.backupPath,
+        cleanupSummary: result.cleanupSummary
+      }
     });
   } catch (error) {
     res.status(400).json({

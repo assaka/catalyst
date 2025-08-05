@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const Plugin = require('./Plugin');
 const PluginModel = require('../models/Plugin');
+const PluginUninstaller = require('./PluginUninstaller');
 const axios = require('axios');
 const { exec } = require('child_process');
 const { promisify } = require('util');
@@ -22,6 +23,7 @@ class PluginManager {
     this.isInitialized = false;
     this.isInitializing = false;
     this.initPromise = null;
+    this.uninstaller = new PluginUninstaller(this); // Enhanced uninstaller
   }
 
   /**
@@ -205,15 +207,22 @@ class PluginManager {
   }
 
   /**
-   * Uninstall a plugin
+   * Uninstall a plugin (enhanced with cleanup options)
    */
-  async uninstallPlugin(name) {
+  async uninstallPlugin(name, options = {}) {
+    return await this.uninstaller.uninstallPlugin(name, options);
+  }
+
+  /**
+   * Legacy uninstall method (basic removal)
+   */
+  async basicUninstallPlugin(name) {
     const plugin = this.installedPlugins.get(name);
     if (!plugin) {
       throw new Error(`Plugin ${name} is not installed`);
     }
 
-    console.log(`🗑️ Uninstalling plugin: ${name}`);
+    console.log(`🗑️ Basic uninstalling plugin: ${name}`);
 
     try {
       // Disable first if enabled
@@ -239,6 +248,14 @@ class PluginManager {
       console.error(`❌ Failed to uninstall plugin ${name}:`, error.message);
       throw error;
     }
+  }
+
+  /**
+   * Remove plugin from installed list (used by uninstaller)
+   */
+  async removeFromInstalled(name) {
+    this.installedPlugins.delete(name);
+    await this.savePluginConfig();
   }
 
   /**
