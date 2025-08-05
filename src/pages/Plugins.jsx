@@ -59,27 +59,29 @@ export default function Plugins() {
   const loadData = async () => {
     try {
       // Load modern plugin system and marketplace
-      const [pluginsResponse, marketplaceResponse, storesData, userData] = await Promise.all([
+      // Note: apiClient.request auto-unwraps the response, so we get arrays directly
+      const [plugins, marketplacePlugins, storesData, userData] = await Promise.all([
         apiClient.request('GET', 'plugins').catch(e => {
           console.error('❌ Plugin API error:', e);
-          return { data: { plugins: [] } };
+          return [];
         }),
         apiClient.request('GET', 'plugins/marketplace').catch(e => {
           console.error('❌ Marketplace API error:', e);
-          return { data: [] };
+          return [];
         }),
         Store.list(),
         User.me()
       ]);
       
-      // Get all plugins from the unified API response
-      const allPluginsFromAPI = pluginsResponse.data?.plugins || [];
-      const marketplaceData = marketplaceResponse.data || [];
-      
-      console.log('🔍 Debug: Raw API response:', { pluginsResponse, allPluginsFromAPI });
+      console.log('🔍 Debug: API responses:', { 
+        plugins: plugins, 
+        pluginsCount: plugins?.length,
+        marketplace: marketplacePlugins,
+        marketplaceCount: marketplacePlugins?.length 
+      });
       
       // Transform all plugins (both installed and marketplace) for display
-      const allPlugins = allPluginsFromAPI.map(plugin => ({
+      const allPlugins = (plugins || []).map(plugin => ({
         id: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
         name: plugin.name,
         slug: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
@@ -108,7 +110,7 @@ export default function Plugins() {
       console.log('🔍 Debug: Transformed plugins:', allPlugins);
       
       setPlugins(allPlugins);
-      setMarketplacePlugins(marketplaceData);
+      setMarketplacePlugins(marketplacePlugins || []);
       setStores(storesData);
       setUser(userData);
     } catch (error) {
