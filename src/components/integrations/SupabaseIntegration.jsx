@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'sonner';
 import { apiRequest } from '../../api/functions';
 import { ExternalLink, Trash2, Cloud, Image, BarChart3 } from 'lucide-react';
 
