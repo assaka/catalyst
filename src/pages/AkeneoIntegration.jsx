@@ -1425,19 +1425,19 @@ const AkeneoIntegration = () => {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{stats.attributes}</div>
+                <div className="text-2xl font-bold text-blue-600">{stats?.attributes || 0}</div>
                 <div className="text-sm text-blue-600">Attributes</div>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{stats.families}</div>
+                <div className="text-2xl font-bold text-green-600">{stats?.families || 0}</div>
                 <div className="text-sm text-green-600">Families</div>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">{stats.categories}</div>
+                <div className="text-2xl font-bold text-purple-600">{stats?.categories || 0}</div>
                 <div className="text-sm text-purple-600">Categories</div>
               </div>
               <div className="text-center p-4 bg-orange-50 rounded-lg">
-                <div className="text-2xl font-bold text-orange-600">{stats.products}</div>
+                <div className="text-2xl font-bold text-orange-600">{stats?.products || 0}</div>
                 <div className="text-sm text-orange-600">Products</div>
               </div>
             </div>
@@ -2613,7 +2613,7 @@ const AkeneoIntegration = () => {
                           <div className="col-span-2">Enabled</div>
                           <div className="col-span-1">Actions</div>
                         </div>
-                        {customMappings.attributes.map((mapping, index) => (
+                        {customMappings?.attributes?.map((mapping, index) => (
                           <div key={index} className="grid grid-cols-12 gap-2 items-center">
                             <div className="col-span-1 text-xs text-gray-400">{index + 1}</div>
                             <div className="col-span-4">
@@ -2679,7 +2679,7 @@ const AkeneoIntegration = () => {
                           <div className="col-span-2">Enabled</div>
                           <div className="col-span-1">Actions</div>
                         </div>
-                        {customMappings.images.map((mapping, index) => (
+                        {customMappings?.images?.map((mapping, index) => (
                           <div key={index} className="grid grid-cols-12 gap-2 items-center">
                             <div className="col-span-1 text-xs text-gray-400">{index + 1}</div>
                             <div className="col-span-4">
@@ -2745,7 +2745,7 @@ const AkeneoIntegration = () => {
                           <div className="col-span-2">Enabled</div>
                           <div className="col-span-1">Actions</div>
                         </div>
-                        {customMappings.files.map((mapping, index) => (
+                        {customMappings?.files?.map((mapping, index) => (
                           <div key={index} className="grid grid-cols-12 gap-2 items-center">
                             <div className="col-span-1 text-xs text-gray-400">{index + 1}</div>
                             <div className="col-span-4">
