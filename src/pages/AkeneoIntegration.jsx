@@ -310,13 +310,20 @@ const AkeneoIntegration = () => {
   const loadFamiliesForFilter = async () => {
     try {
       const storeId = localStorage.getItem('selectedStoreId');
-      if (!storeId) return;
+      console.log('🔍 loadFamiliesForFilter called with storeId:', storeId);
+      
+      if (!storeId) {
+        console.warn('❌ No storeId found in localStorage');
+        return;
+      }
 
       setLoadingFamilies(true);
       
       // First try to load families from local database (imported AttributeSets)
       try {
+        console.log('📡 Making API call to /attribute-sets with storeId:', storeId);
         const localResponse = await apiClient.get(`/attribute-sets?store_id=${storeId}`);
+        console.log('📋 API response:', localResponse);
 
         if (localResponse.success && localResponse.data?.attribute_sets?.length > 0) {
           const localFamilies = localResponse.data.attribute_sets.map(attributeSet => ({
@@ -326,11 +333,22 @@ const AkeneoIntegration = () => {
             source: 'local'
           }));
           setFamilies(localFamilies);
-          console.log(`Loaded ${localFamilies.length} families from local database`);
+          console.log(`✅ Loaded ${localFamilies.length} families from local database:`, localFamilies.slice(0, 3));
           return; // Use local families if available
+        } else {
+          console.warn('⚠️ API call successful but no families found:', {
+            success: localResponse.success,
+            hasData: !!localResponse.data,
+            attributeSetsLength: localResponse.data?.attribute_sets?.length
+          });
         }
       } catch (localError) {
-        console.warn('Failed to load families from local database:', localError);
+        console.error('❌ Failed to load families from local database:', localError);
+        console.error('Error details:', {
+          message: localError.message,
+          status: localError.status,
+          response: localError.response
+        });
       }
 
       // Fallback to loading families directly from Akeneo if connection is successful
@@ -503,12 +521,14 @@ const AkeneoIntegration = () => {
 
   // Load families on component mount (from local database)
   useEffect(() => {
+    console.log('🚀 AkeneoIntegration component mounted, loading families...');
     loadFamiliesForFilter();
   }, []);
 
   // Load additional data when connection becomes successful
   useEffect(() => {
     if (connectionStatus?.success) {
+      console.log('✅ Connection successful, reloading families and other data...');
       loadSchedules();
       loadChannels();
       loadFamiliesForFilter(); // Reload to get Akeneo families if available
