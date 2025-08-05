@@ -99,7 +99,13 @@ class AkeneoErrorBoundary extends React.Component {
 }
 
 const AkeneoIntegration = () => {
-  const storeSlug = useStoreSlug();
+  try {
+    console.log('🚀 AkeneoIntegration component starting...');
+    
+    let storeSlug;
+    console.log('📞 Calling useStoreSlug hook...');
+    storeSlug = useStoreSlug();
+    console.log('✅ useStoreSlug completed successfully:', storeSlug);
   
   // Add render debugging to track what's causing blank page
   const renderCount = React.useRef(0);
@@ -110,7 +116,11 @@ const AkeneoIntegration = () => {
     timestamp: new Date().toISOString()
   });
   
+  console.log('🔍 Early state check - storeSlug:', storeSlug);
+  console.log('🔍 Early state check - typeof storeSlug:', typeof storeSlug);
+  
   // Configuration state
+  console.log('🔧 Initializing config state...');
   const [config, setConfig] = useState({
     baseUrl: '',
     clientId: '',
@@ -119,6 +129,7 @@ const AkeneoIntegration = () => {
     password: '',
     locale: 'en_US'
   });
+  console.log('✅ Config state initialized');
   const [lastImportDates, setLastImportDates] = useState({});
 
   // UI state
@@ -126,18 +137,6 @@ const AkeneoIntegration = () => {
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
-  
-  // Debug importing state changes
-  React.useEffect(() => {
-    console.log('🔄 importing state changed to:', importing);
-    if (!importing) {
-      console.log('🔍 Import completed, current state:', {
-        hasConfig: config.baseUrl ? 'yes' : 'no',
-        familiesCount: families?.length || 0,
-        statsLoaded: stats ? 'yes' : 'no'
-      });
-    }
-  }, [importing, config.baseUrl, families?.length, stats]);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [configSaved, setConfigSaved] = useState(false);
   // Separate import results for each tab
@@ -164,6 +163,18 @@ const AkeneoIntegration = () => {
   const [selectedFamiliesToImport, setSelectedFamiliesToImport] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingFamilies, setLoadingFamilies] = useState(false);
+  
+  // Debug importing state changes (moved after all state declarations)
+  React.useEffect(() => {
+    console.log('🔄 importing state changed to:', importing);
+    if (!importing) {
+      console.log('🔍 Import completed, current state:', {
+        hasConfig: config.baseUrl ? 'yes' : 'no',
+        familiesCount: families?.length || 0,
+        statsLoaded: stats ? 'yes' : 'no'
+      });
+    }
+  }, [importing, config.baseUrl, families?.length, stats]);
   
   // Memoized family options to prevent excessive re-renders
   const familyOptions = useMemo(() => {
@@ -1712,29 +1723,29 @@ const AkeneoIntegration = () => {
     );
   };
 
-  console.log(`🎨 AkeneoIntegration about to render JSX for render #${renderCount.current}`);
-  console.log(`🔍 Key state values:`, {
-    hasConfig: config.baseUrl ? 'yes' : 'no',
-    familiesCount: families?.length || 0,
-    statsLoaded: stats ? 'yes' : 'no',
-    importing: importing ? 'yes' : 'no'
-  });
-  
-  // Defensive check - if critical state is invalid, return loading state
-  if (!config && !families && !stats) {
-    console.warn('⚠️ All critical state is empty, showing loading state');
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p>Loading Akeneo Integration...</p>
+    console.log(`🎨 AkeneoIntegration about to render JSX for render #${renderCount.current}`);
+    console.log(`🔍 Key state values:`, {
+      hasConfig: config.baseUrl ? 'yes' : 'no',
+      familiesCount: families?.length || 0,
+      statsLoaded: stats ? 'yes' : 'no',
+      importing: importing ? 'yes' : 'no'
+    });
+    
+    // Defensive check - if critical state is invalid, return loading state
+    if (!config && !families && !stats) {
+      console.warn('⚠️ All critical state is empty, showing loading state');
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Loading Akeneo Integration...</p>
+          </div>
         </div>
-      </div>
-    );
-  }
-  
-  return (
-    <div className="container mx-auto p-6 max-w-4xl">
+      );
+    }
+    
+    return (
+      <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2">Akeneo PIM Integration</h1>
         <p className="text-gray-600">
@@ -3133,9 +3144,38 @@ const AkeneoIntegration = () => {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>
-    </div>
-  );
+        </Tabs>
+      </div>
+    );
+    
+  } catch (error) {
+    console.error('🚨 AkeneoIntegration component crashed:', error);
+    console.error('🚨 Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
+    
+    // Return error fallback UI
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <h2 className="text-red-800 font-semibold mb-2">Component Error</h2>
+            <p className="text-red-700 text-sm mb-4">
+              The Akeneo Integration component encountered an error: {error.message}
+            </p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 };
 
 // Wrap the component with Error Boundary to catch crashes

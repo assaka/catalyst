@@ -32,6 +32,8 @@ const StoreTeam = require('./StoreTeam');
 const StoreInvitation = require('./StoreInvitation');
 const IntegrationConfig = require('./IntegrationConfig');
 const ImportStatistic = require('./ImportStatistic');
+const Plugin = require('./Plugin');
+const PluginConfiguration = require('./PluginConfiguration');
 
 // Define associations
 const defineAssociations = () => {
@@ -189,6 +191,17 @@ const defineAssociations = () => {
   // ImportStatistic associations
   ImportStatistic.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(ImportStatistic, { foreignKey: 'store_id' });
+
+  // Plugin associations (plugins are platform-wide, no store association)
+  
+  // PluginConfiguration associations (store-specific plugin configs)
+  PluginConfiguration.belongsTo(Plugin, { foreignKey: 'plugin_id', as: 'plugin' });
+  PluginConfiguration.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  PluginConfiguration.belongsTo(User, { foreignKey: 'last_configured_by', as: 'configuredBy' });
+  
+  Plugin.hasMany(PluginConfiguration, { foreignKey: 'plugin_id', as: 'storeConfigurations' });
+  Store.hasMany(PluginConfiguration, { foreignKey: 'store_id', as: 'pluginConfigurations' });
+  User.hasMany(PluginConfiguration, { foreignKey: 'last_configured_by', as: 'configuredPlugins' });
 };
 
 // Initialize associations
@@ -228,5 +241,7 @@ module.exports = {
   StoreTeam,
   StoreInvitation,
   IntegrationConfig,
-  ImportStatistic
+  ImportStatistic,
+  Plugin,
+  PluginConfiguration
 };

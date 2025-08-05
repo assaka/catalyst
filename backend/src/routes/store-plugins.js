@@ -1,168 +1,191 @@
 const express = require('express');
-const { StorePlugin } = require('../models');
-const auth = require('../middleware/auth');
-
 const router = express.Router();
+const pluginManager = require('../core/PluginManager');
+const PluginConfiguration = require('../models/PluginConfiguration');
+const authMiddleware = require('../middleware/auth');
+const storeAuth = require('../middleware/storeAuth');
 
-// @route   GET /api/store-plugins/public
-// @desc    Get active store plugins for public use
-// @access  Public
-router.get('/public', async (req, res) => {
+// All routes require authentication and store access
+router.use(authMiddleware);
+router.use(storeAuth);
+
+/**
+ * GET /api/stores/:storeId/plugins
+ * Get all available plugins with store-specific configuration status
+ */
+router.get('/', async (req, res) => {
   try {
-    const { store_id, plugin_slug } = req.query;
+    const { storeId } = req;
     
-    const whereClause = { is_active: true }; // Only return active plugins
-    if (store_id) whereClause.store_id = store_id;
-    if (plugin_slug) whereClause.plugin_slug = plugin_slug;
-
-    const plugins = await StorePlugin.findAll({
-      where: whereClause,
-      attributes: ['id', 'store_id', 'plugin_slug', 'plugin_name', 'is_active', 'version', 'createdAt', 'updatedAt'],
-      order: [['plugin_name', 'ASC']]
-    });
-
-    res.json({
-      success: true,
-      data: { store_plugins: plugins }
-    });
-  } catch (error) {
-    console.error('Get public store plugins error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// @route   GET /api/store-plugins
-// @desc    Get store plugins
-// @access  Private
-router.get('/', auth, async (req, res) => {
-  try {
-    const { store_id, plugin_slug, is_active } = req.query;
+    console.log(`🔍 Getting plugins for store: ${storeId}`);
     
-    const whereClause = {};
-    if (store_id) whereClause.store_id = store_id;
-    if (plugin_slug) whereClause.plugin_slug = plugin_slug;
-    if (is_active !== undefined) whereClause.is_active = is_active === 'true';
-
-    const plugins = await StorePlugin.findAll({
-      where: whereClause,
-      attributes: ['id', 'store_id', 'plugin_slug', 'plugin_name', 'is_active', 'version', 'createdAt', 'updatedAt'],
-      order: [['plugin_name', 'ASC']]
+    // Ensure plugin manager is initialized
+    if (!pluginManager.isInitialized) {
+      await pluginManager.initialize();
+    }
+    
+    // Get all available plugins (platform-wide)
+    const allPlugins = pluginManager.getAllPlugins();
+    
+    // Get store-specific configurations
+    const storeConfigs = await PluginConfiguration.findByStore(storeId);
+    const configMap = new Map(storeConfigs.map(config => [config.pluginId, config]));
+    
+    // Merge plugin info with store-specific status
+    const pluginsWithStoreStatus = allPlugins.map(plugin => {
+      const storeConfig = configMap.get(plugin.manifest?.id || plugin.slug);
+      
+      return {
+        ...plugin,
+        // Store-specific status
+        enabledForStore: storeConfig?.isEnabled || false,
+        configuredForStore: !!storeConfig,
+        storeConfiguration: storeConfig?.configData || {},
+        lastConfiguredAt: storeConfig?.lastConfiguredAt || null,
+        healthStatus: storeConfig?.healthStatus || 'unknown'
+      };
     });
-
+    
+    console.log(`📊 Returning ${pluginsWithStoreStatus.length} plugins with store status`);
+    
     res.json({
       success: true,
-      data: { store_plugins: plugins }
+      data: {
+        plugins: pluginsWithStoreStatus,
+        storeId,
+        summary: {
+          totalAvailable: allPlugins.length,
+          enabledForStore: storeConfigs.filter(c => c.isEnabled).length,
+          configuredForStore: storeConfigs.length
+        }
+      }
     });
   } catch (error) {
-    console.error('Get store plugins error:', error);
+    console.error('❌ Store plugins API error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error'
+      error: error.message
     });
   }
 });
 
-// @route   GET /api/store-plugins/:id
-// @desc    Get single store plugin
-// @access  Private
-router.get('/:id', auth, async (req, res) => {
+/**
+ * POST /api/stores/:storeId/plugins/:pluginSlug/enable
+ * Enable a plugin for this store with configuration
+ */
+router.post('/:pluginSlug/enable', async (req, res) => {
   try {
-    const plugin = await StorePlugin.findByPk(req.params.id);
-
+    const { storeId, user } = req;
+    const { pluginSlug } = req.params;
+    const { configuration = {} } = req.body;
+    
+    console.log(`🚀 Enabling plugin ${pluginSlug} for store ${storeId}`);
+    
+    // Verify plugin exists and is installed
+    const plugin = pluginManager.getPlugin(pluginSlug);
     if (!plugin) {
       return res.status(404).json({
         success: false,
-        message: 'Store plugin not found'
+        error: 'Plugin not found'
       });
     }
-
+    
+    if (!plugin.isInstalled) {
+      return res.status(400).json({
+        success: false,
+        error: 'Plugin must be installed before it can be enabled for a store'
+      });
+    }
+    
+    // Enable plugin for this store
+    const config = await PluginConfiguration.enableForStore(
+      plugin.manifest?.id || pluginSlug,
+      storeId,
+      configuration,
+      user.id
+    );
+    
+    console.log(`✅ Plugin ${pluginSlug} enabled for store ${storeId}`);
+    
     res.json({
       success: true,
-      data: plugin
+      message: `Plugin ${pluginSlug} enabled for store`,
+      data: {
+        pluginSlug,
+        storeId,
+        isEnabled: config.isEnabled,
+        configuration: config.configData,
+        enabledAt: config.enabledAt
+      }
     });
   } catch (error) {
-    console.error('Get store plugin error:', error);
-    res.status(500).json({
+    console.error('❌ Enable plugin for store error:', error);
+    res.status(400).json({
       success: false,
-      message: 'Server error'
+      error: error.message
     });
   }
 });
 
-// @route   POST /api/store-plugins
-// @desc    Install/add a plugin to store
-// @access  Private
-router.post('/', auth, async (req, res) => {
+/**
+ * PUT /api/stores/:storeId/plugins/:pluginSlug/configure
+ * Update plugin configuration for this store
+ */
+router.put('/:pluginSlug/configure', async (req, res) => {
   try {
-    const plugin = await StorePlugin.create(req.body);
-    res.status(201).json({
-      success: true,
-      data: plugin
-    });
-  } catch (error) {
-    console.error('Install store plugin error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// @route   PUT /api/store-plugins/:id
-// @desc    Update store plugin
-// @access  Private
-router.put('/:id', auth, async (req, res) => {
-  try {
-    const plugin = await StorePlugin.findByPk(req.params.id);
-
-    if (!plugin) {
+    const { storeId, user } = req;
+    const { pluginSlug } = req.params;
+    const { configuration } = req.body;
+    
+    if (!configuration || typeof configuration !== 'object') {
+      return res.status(400).json({
+        success: false,
+        error: 'Configuration object is required'
+      });
+    }
+    
+    console.log(`⚙️ Updating configuration for plugin ${pluginSlug} in store ${storeId}`);
+    
+    const config = await PluginConfiguration.updateConfig(
+      pluginSlug,
+      storeId,
+      configuration,
+      user.id
+    );
+    
+    if (!config) {
       return res.status(404).json({
         success: false,
-        message: 'Store plugin not found'
+        error: 'Plugin configuration not found for this store'
       });
     }
-
-    await plugin.update(req.body);
-    res.json({
-      success: true,
-      data: plugin
-    });
-  } catch (error) {
-    console.error('Update store plugin error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error'
-    });
-  }
-});
-
-// @route   DELETE /api/store-plugins/:id
-// @desc    Remove/uninstall plugin from store
-// @access  Private
-router.delete('/:id', auth, async (req, res) => {
-  try {
-    const plugin = await StorePlugin.findByPk(req.params.id);
-
-    if (!plugin) {
-      return res.status(404).json({
+    
+    // Validate configuration if schema exists
+    const validation = config.validateConfig();
+    if (!validation.valid) {
+      return res.status(400).json({
         success: false,
-        message: 'Store plugin not found'
+        error: 'Invalid configuration',
+        validationErrors: validation.errors
       });
     }
-
-    await plugin.destroy();
+    
     res.json({
       success: true,
-      message: 'Store plugin removed successfully'
+      message: `Plugin ${pluginSlug} configuration updated`,
+      data: {
+        pluginSlug,
+        storeId,
+        configuration: config.configData,
+        lastConfiguredAt: config.lastConfiguredAt,
+        validation
+      }
     });
   } catch (error) {
-    console.error('Remove store plugin error:', error);
-    res.status(500).json({
+    console.error('❌ Configure plugin for store error:', error);
+    res.status(400).json({
       success: false,
-      message: 'Server error'
+      error: error.message
     });
   }
 });
