@@ -129,13 +129,7 @@ const PluginConfiguration = sequelize.define('PluginConfiguration', {
  */
 PluginConfiguration.findByPluginAndStore = async function(pluginId, storeId) {
   return await this.findOne({ 
-    where: { pluginId, storeId },
-    include: [
-      {
-        model: sequelize.models.Plugin,
-        as: 'plugin'
-      }
-    ]
+    where: { pluginId, storeId }
   });
 };
 
@@ -145,12 +139,6 @@ PluginConfiguration.findByPluginAndStore = async function(pluginId, storeId) {
 PluginConfiguration.findByStore = async function(storeId, options = {}) {
   const query = { 
     where: { storeId },
-    include: [
-      {
-        model: sequelize.models.Plugin,
-        as: 'plugin'
-      }
-    ],
     order: [['updated_at', 'DESC']]
   };
   
@@ -255,17 +243,7 @@ PluginConfiguration.getEnabledPluginsForStore = async function(storeId) {
     where: { 
       storeId, 
       isEnabled: true 
-    },
-    include: [
-      {
-        model: sequelize.models.Plugin,
-        as: 'plugin',
-        where: {
-          isInstalled: true,
-          status: 'installed'
-        }
-      }
-    ]
+    }
   });
 };
 
