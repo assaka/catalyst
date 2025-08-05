@@ -35,6 +35,26 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/plugins/marketplace
+ * Get marketplace plugins
+ */
+router.get('/marketplace', async (req, res) => {
+  try {
+    const marketplacePlugins = Array.from(pluginManager.marketplace.values());
+    
+    res.json({
+      success: true,
+      data: marketplacePlugins
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
  * GET /api/plugins/:name
  * Get specific plugin details
  */
@@ -240,26 +260,5 @@ router.post('/install-github', async (req, res) => {
     });
   }
 });
-
-/**
- * GET /api/plugins/marketplace
- * Get marketplace plugins
- */
-router.get('/marketplace', async (req, res) => {
-  try {
-    const marketplacePlugins = Array.from(pluginManager.marketplace.values());
-    
-    res.json({
-      success: true,
-      data: marketplacePlugins
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
 
 module.exports = router;
