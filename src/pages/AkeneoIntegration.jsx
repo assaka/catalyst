@@ -504,12 +504,14 @@ const AkeneoIntegration = () => {
         }
         
         if (attributeSets.length > 0) {
-          const localFamilies = attributeSets.map(attributeSet => ({
-            code: attributeSet.name,
-            labels: { en_US: attributeSet.name },
-            attributes: attributeSet.attribute_ids || [],
-            source: 'local'
-          }));
+          const localFamilies = attributeSets
+            .filter(attributeSet => attributeSet && attributeSet.name) // Filter out null/undefined entries
+            .map(attributeSet => ({
+              code: attributeSet.name,
+              labels: { en_US: attributeSet.name },
+              attributes: attributeSet.attribute_ids || [],
+              source: 'local'
+            }));
           setFamilies(localFamilies);
           console.log(`✅ Loaded ${localFamilies.length} families from local database:`, localFamilies.slice(0, 3));
           console.log('🔍 Full families data for debugging:', localFamilies);
@@ -1154,9 +1156,9 @@ const AkeneoIntegration = () => {
       const responseData = response.data || response;
       setTabImportResults('categories', responseData);
       
-      if (responseData.success) {
+      if (responseData?.success) {
         console.log('✅ Categories import successful');
-        const stats = responseData.stats;
+        const stats = responseData?.stats || {};
         toast.success(`Categories import completed! ${stats?.imported || 0} categories imported`);
         // Reload stats and config to reflect changes
         await loadStats();
@@ -1247,9 +1249,9 @@ const AkeneoIntegration = () => {
       const responseData = response.data || response;
       setTabImportResults('attributes', responseData);
       
-      if (responseData.success) {
+      if (responseData?.success) {
         console.log('✅ Attributes import successful');
-        const stats = responseData.stats;
+        const stats = responseData?.stats || {};
         toast.success(`Attributes import completed! ${stats?.imported || 0} attributes imported`);
         // Reload stats and config to reflect changes
         try {
@@ -1356,9 +1358,9 @@ const AkeneoIntegration = () => {
       const responseData = response.data || response;
       setTabImportResults('families', responseData);
       
-      if (responseData.success) {
+      if (responseData?.success) {
         console.log('✅ Families import successful');
-        const stats = responseData.stats;
+        const stats = responseData?.stats || {};
         toast.success(`Families import completed! ${stats?.imported || 0} families imported`);
         // Reload stats and config to reflect changes
         await loadStats();
@@ -1442,9 +1444,9 @@ const AkeneoIntegration = () => {
       console.log('📥 Final results to set:', finalResults);
       setTabImportResults('products', finalResults);
       
-      if (responseData.success) {
+      if (responseData?.success) {
         console.log('✅ Products import successful');
-        const stats = responseData.stats;
+        const stats = responseData?.stats || {};
         toast.success(`Products import completed! ${stats?.imported || 0} products imported`);
         // Reload stats and config to reflect changes with enhanced error handling
         console.log('🔄 Starting post-import reload sequence...');
@@ -1564,9 +1566,9 @@ const AkeneoIntegration = () => {
       setImportResults(responseData);
       
       if (responseData?.success) {
-        const categoryStats = responseData.results.categories.stats;
-        const productStats = responseData.results.products.stats;
-        toast.success(`Full import completed! ${categoryStats.imported} categories and ${productStats.imported} products imported`);
+        const categoryStats = responseData?.results?.categories?.stats || {};
+        const productStats = responseData?.results?.products?.stats || {};
+        toast.success(`Full import completed! ${categoryStats?.imported || 0} categories and ${productStats?.imported || 0} products imported`);
         // Reload stats and config to reflect changes
         await loadStats();
         await loadConfigStatus();
@@ -2104,8 +2106,8 @@ const AkeneoIntegration = () => {
                             <Label>Families (leave empty for all)</Label>
                             <MultiSelect
                               options={families.map(family => ({
-                                value: family.name || family.id,
-                                label: family.name || family.id
+                                value: family.code || family.name || family.id,
+                                label: (family.labels && Object.values(family.labels)[0]) || family.code || family.name || family.id
                               }))}
                               value={scheduleForm.filters.families}
                               onChange={(selectedFamilies) => {
