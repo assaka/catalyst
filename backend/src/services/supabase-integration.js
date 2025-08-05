@@ -4,17 +4,26 @@ const { SupabaseOAuthToken, IntegrationConfig } = require('../models');
 
 class SupabaseIntegration {
   constructor() {
-    this.clientId = process.env.SUPABASE_OAUTH_CLIENT_ID;
-    this.clientSecret = process.env.SUPABASE_OAUTH_CLIENT_SECRET;
-    this.redirectUri = process.env.SUPABASE_OAUTH_REDIRECT_URI || `${process.env.BACKEND_URL}/api/integrations/supabase/callback`;
+    this.clientId = process.env.SUPABASE_OAUTH_CLIENT_ID || 'pending_configuration';
+    this.clientSecret = process.env.SUPABASE_OAUTH_CLIENT_SECRET || 'pending_configuration';
+    this.redirectUri = process.env.SUPABASE_OAUTH_REDIRECT_URI || 
+                      `${process.env.BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/supabase/callback`;
     this.authorizationBaseUrl = 'https://app.supabase.com/authorize';
     this.tokenUrl = 'https://api.supabase.com/v1/oauth/token';
+    
+    // Check if OAuth is properly configured
+    this.oauthConfigured = this.clientId !== 'pending_configuration' && 
+                           this.clientSecret !== 'pending_configuration';
   }
 
   /**
    * Generate OAuth authorization URL for Supabase
    */
   getAuthorizationUrl(storeId, state) {
+    if (!this.oauthConfigured) {
+      throw new Error('Supabase OAuth is not configured. Please add SUPABASE_OAUTH_CLIENT_ID and SUPABASE_OAUTH_CLIENT_SECRET environment variables.');
+    }
+    
     const params = new URLSearchParams({
       client_id: this.clientId,
       redirect_uri: this.redirectUri,
@@ -264,13 +273,23 @@ class SupabaseIntegration {
    */
   async getConnectionStatus(storeId) {
     try {
+      // Check if OAuth is configured
+      if (!this.oauthConfigured) {
+        return {
+          connected: false,
+          message: 'Supabase OAuth is not configured. Please contact your administrator to set up Supabase OAuth credentials.',
+          oauthConfigured: false
+        };
+      }
+      
       const token = await SupabaseOAuthToken.findByStore(storeId);
       const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
 
       if (!token) {
         return {
           connected: false,
-          message: 'Supabase not connected'
+          message: 'Supabase not connected',
+          oauthConfigured: true
         };
       }
 
@@ -282,7 +301,8 @@ class SupabaseIntegration {
         expiresAt: token.expires_at,
         isExpired,
         connectionStatus: config?.connection_status,
-        lastTestedAt: config?.connection_tested_at
+        lastTestedAt: config?.connection_tested_at,
+        oauthConfigured: true
       };
     } catch (error) {
       console.error('Error getting connection status:', error);
