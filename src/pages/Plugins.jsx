@@ -60,8 +60,14 @@ export default function Plugins() {
     try {
       // Load modern plugin system and marketplace
       const [pluginsResponse, marketplaceResponse, storesData, userData] = await Promise.all([
-        apiClient.request('GET', 'plugins').catch(e => ({ data: { plugins: [] } })),
-        apiClient.request('GET', 'plugins/marketplace').catch(e => ({ data: [] })),
+        apiClient.request('GET', 'plugins').catch(e => {
+          console.error('❌ Plugin API error:', e);
+          return { data: { plugins: [] } };
+        }),
+        apiClient.request('GET', 'plugins/marketplace').catch(e => {
+          console.error('❌ Marketplace API error:', e);
+          return { data: [] };
+        }),
         Store.list(),
         User.me()
       ]);

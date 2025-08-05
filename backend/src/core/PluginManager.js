@@ -19,12 +19,36 @@ class PluginManager {
     this.pluginDirectory = path.join(__dirname, '../plugins');
     this.hooks = new Map();
     this.marketplace = new Map(); // Available plugins from marketplace/registry
+    this.isInitialized = false;
+    this.isInitializing = false;
+    this.initPromise = null;
   }
 
   /**
    * Initialize the plugin manager
    */
   async initialize() {
+    if (this.isInitialized) {
+      console.log('✅ Plugin Manager already initialized');
+      return;
+    }
+    
+    if (this.isInitializing) {
+      console.log('⏳ Plugin Manager initialization in progress, waiting...');
+      return this.initPromise;
+    }
+    
+    this.isInitializing = true;
+    this.initPromise = this._doInitialize();
+    
+    try {
+      await this.initPromise;
+    } finally {
+      this.isInitializing = false;
+    }
+  }
+  
+  async _doInitialize() {
     console.log('🔌 Initializing Plugin Manager...');
     
     // Ensure plugin directory exists
@@ -42,6 +66,7 @@ class PluginManager {
     // Auto-enable previously enabled plugins
     await this.autoEnablePlugins();
     
+    this.isInitialized = true;
     console.log(`✅ Plugin Manager initialized with ${this.plugins.size} plugins, ${this.marketplace.size} marketplace plugins`);
   }
 

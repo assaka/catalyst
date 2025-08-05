@@ -12,8 +12,18 @@ router.use(authMiddleware);
  */
 router.get('/', async (req, res) => {
   try {
+    console.log('🔍 Plugin API called - getting all plugins');
+    
+    // Ensure plugin manager is initialized
+    if (!pluginManager.isInitialized) {
+      console.log('⚠️ Plugin manager not initialized, initializing now...');
+      await pluginManager.initialize();
+    }
+    
     const plugins = pluginManager.getAllPlugins();
     const status = pluginManager.getStatus();
+    
+    console.log(`📊 Returning ${plugins.length} plugins`);
     
     res.json({
       success: true,
@@ -27,6 +37,7 @@ router.get('/', async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('❌ Plugin API error:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -40,13 +51,23 @@ router.get('/', async (req, res) => {
  */
 router.get('/marketplace', async (req, res) => {
   try {
+    console.log('🔍 Marketplace API called');
+    
+    // Ensure plugin manager is initialized
+    if (!pluginManager.isInitialized) {
+      console.log('⚠️ Plugin manager not initialized, initializing now...');
+      await pluginManager.initialize();
+    }
+    
     const marketplacePlugins = Array.from(pluginManager.marketplace.values());
+    console.log(`🏪 Returning ${marketplacePlugins.length} marketplace plugins`);
     
     res.json({
       success: true,
       data: marketplacePlugins
     });
   } catch (error) {
+    console.error('❌ Marketplace API error:', error);
     res.status(500).json({
       success: false,
       error: error.message
