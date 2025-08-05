@@ -83,6 +83,7 @@ const robotsRoutes = require('./routes/robots');
 const integrationRoutes = require('./routes/integrations');
 const imageRoutes = require('./routes/images');
 const cloudflareOAuthRoutes = require('./routes/cloudflare-oauth');
+const pluginRoutes = require('./routes/plugins');
 
 const app = express();
 
@@ -1489,6 +1490,7 @@ app.use('/api/store-teams', authMiddleware, storeTeamRoutes);
 app.use('/api/integrations', authMiddleware, integrationRoutes);
 app.use('/api/images', authMiddleware, imageRoutes);
 app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
+app.use('/api/plugins', pluginRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
@@ -1549,6 +1551,17 @@ const startServer = async () => {
         } else {
           await sequelize.sync({ alter: false });
           console.log('📊 Database schema validated (production mode).');
+        }
+        
+        // Initialize Plugin Manager
+        console.log('🔌 Initializing Plugin Manager...');
+        try {
+          const pluginManager = require('./core/PluginManager');
+          await pluginManager.initialize();
+          console.log('✅ Plugin Manager initialized successfully');
+        } catch (error) {
+          console.warn('⚠️ Plugin Manager initialization failed:', error.message);
+          // Don't fail server startup if plugin manager fails
         }
         
         // Run all pending database migrations automatically

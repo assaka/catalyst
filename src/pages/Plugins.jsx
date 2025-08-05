@@ -1,7 +1,5 @@
 
 import React, { useState, useEffect } from "react";
-import { Plugin } from "@/api/entities";
-import { StorePlugin } from "@/api/entities";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
 import { 
@@ -56,50 +54,37 @@ export default function Plugins() {
 
   const loadData = async () => {
     try {
-      const [pluginsData, storePluginsData, storesData, userData] = await Promise.all([
-        Plugin.list("-created_date"),
-        StorePlugin.list(),
+      // Load modern plugin system only
+      const [pluginsResponse, storesData, userData] = await Promise.all([
+        fetch('/api/plugins', { credentials: 'include' }).then(r => r.ok ? r.json() : { data: { plugins: [] } }),
         Store.list(),
         User.me()
       ]);
       
-      let updatedPluginsData = pluginsData;
-
-      // Add Google Tag Manager plugin if it doesn't exist
-      const gtmPlugin = pluginsData.find(p => p.slug === 'google-tag-manager');
-      if (!gtmPlugin) {
-        const newGtmPlugin = await Plugin.create({
-          name: "Google Tag Manager",
-          slug: "google-tag-manager",
-          description: "Integrate Google Tag Manager for advanced analytics and tracking",
-          long_description: "This plugin allows you to easily integrate Google Tag Manager (GTM) into your store. GTM is a tag management system that allows you to quickly and easily deploy tracking codes and related code fragments collectively known as tags on your website.",
-          version: "1.0.0",
-          price: 0,
-          category: "analytics",
-          icon_url: "https://via.placeholder.com/64x64/4285F4/FFFFFF?text=GTM",
-          creator_id: "system",
-          creator_name: "System",
-          status: "approved",
-          configuration: {
-            gtm_id: {
-              type: "text",
-              label: "GTM Container ID",
-              description: "Your Google Tag Manager container ID (e.g., GTM-XXXXXXX)",
-              required: true
-            },
-            enable_enhanced_ecommerce: {
-              type: "boolean",
-              label: "Enable Enhanced E-commerce",
-              description: "Track e-commerce events like purchases, add to cart, etc.",
-              default: true
-            }
-          }
-        });
-        updatedPluginsData = [...pluginsData, newGtmPlugin];
-      }
+      // Transform plugin system data for display
+      const transformedPlugins = pluginsResponse.data?.plugins?.map(plugin => ({
+        id: plugin.name.toLowerCase().replace(/\s+/g, '-'),
+        name: plugin.name,
+        slug: plugin.name.toLowerCase().replace(/\s+/g, '-'),
+        description: plugin.manifest?.description || 'No description available',
+        long_description: plugin.manifest?.description || 'No description available',
+        version: plugin.manifest?.version || '1.0.0',
+        price: 0,
+        category: plugin.manifest?.category || 'integration',
+        icon_url: "https://via.placeholder.com/64x64/4285F4/FFFFFF?text=" + plugin.name.charAt(0),
+        creator_id: "system",
+        creator_name: plugin.manifest?.author || "System",
+        status: "approved",
+        downloads: 0,
+        rating: 0,
+        reviews_count: 0,
+        isEnabled: plugin.isEnabled,
+        isInstalled: plugin.isInstalled,
+        availableMethods: plugin.manifest?.methods || []
+      })) || [];
       
-      setPlugins(updatedPluginsData);
-      setInstalledPlugins(storePluginsData);
+      setPlugins(transformedPlugins);
+      setInstalledPlugins([]); // Modern plugin system tracks installation internally
       setStores(storesData);
       setUser(userData);
     } catch (error) {
@@ -111,48 +96,51 @@ export default function Plugins() {
 
   const handleInstallPlugin = async (plugin) => {
     try {
-      if (stores.length > 0) {
-        await StorePlugin.create({
-          store_id: stores[0].id,
-          plugin_id: plugin.id,
-          is_active: true,
-          configuration: {},
-          installed_at: new Date().toISOString()
-        });
-        
-        // Update plugin download count
-        await Plugin.update(plugin.id, {
-          ...plugin,
-          downloads: (plugin.downloads || 0) + 1
-        });
-        
-        await loadData();
+      const response = await fetch(`/api/plugins/${plugin.slug}/install`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to install plugin');
       }
+      
+      await loadData();
     } catch (error) {
       console.error("Error installing plugin:", error);
+      alert("Error installing plugin: " + error.message);
     }
   };
 
-  const handleUninstallPlugin = async (storePlugin) => {
+  const handleUninstallPlugin = async (pluginSlug) => {
     if (window.confirm("Are you sure you want to uninstall this plugin?")) {
       try {
-        await StorePlugin.delete(storePlugin.id);
+        const response = await fetch(`/api/plugins/${pluginSlug}/uninstall`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to uninstall plugin');
+        }
+        
         await loadData();
       } catch (error) {
         console.error("Error uninstalling plugin:", error);
+        alert("Error uninstalling plugin: " + error.message);
       }
     }
   };
 
   const handleCreatePlugin = async (pluginData) => {
     try {
-      await Plugin.create({
-        ...pluginData,
-        creator_id: user.id,
-        creator_name: user.full_name,
-        status: "pending"
-      });
-      await loadData();
+      // TODO: Implement modern plugin creation API
+      console.log("Plugin creation not yet implemented for modern plugin system:", pluginData);
+      alert("Plugin creation will be available in the next version");
       setShowPluginForm(false);
     } catch (error) {
       console.error("Error creating plugin:", error);
@@ -166,8 +154,12 @@ export default function Plugins() {
     return matchesSearch && matchesCategory && plugin.status === "approved";
   });
 
-  const isPluginInstalled = (pluginId) => {
-    return installedPlugins.some(sp => sp.plugin_id === pluginId);
+  const isPluginInstalled = (plugin) => {
+    return plugin.isInstalled;
+  };
+
+  const isPluginEnabled = (plugin) => {
+    return plugin.isEnabled;
   };
 
   const categoryIcons = {
@@ -223,7 +215,7 @@ export default function Plugins() {
             </TabsTrigger>
             <TabsTrigger value="installed" className="flex items-center gap-2">
               <Download className="w-4 h-4" />
-              Installed ({installedPlugins.length})
+              Installed ({plugins.filter(plugin => plugin.isInstalled).length})
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
@@ -269,7 +261,8 @@ export default function Plugins() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredPlugins.map((plugin) => {
                 const CategoryIcon = categoryIcons[plugin.category] || Settings;
-                const installed = isPluginInstalled(plugin.id);
+                const installed = isPluginInstalled(plugin);
+                const enabled = isPluginEnabled(plugin);
                 
                 return (
                   <Card key={plugin.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
@@ -284,15 +277,35 @@ export default function Plugins() {
                             <p className="text-sm text-gray-500">by {plugin.creator_name}</p>
                           </div>
                         </div>
-                        <Badge className="bg-blue-100 text-blue-700">
-                          v{plugin.version}
-                        </Badge>
+                        <div className="flex flex-col gap-1">
+                          <Badge className="bg-blue-100 text-blue-700">
+                            v{plugin.version}
+                          </Badge>
+                          {enabled && (
+                            <Badge className="bg-green-100 text-green-700 text-xs">
+                              Active
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
                       <p className="text-gray-600 text-sm mb-4 line-clamp-3">
                         {plugin.description}
                       </p>
+                      
+                      {plugin.availableMethods && plugin.availableMethods.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-xs text-gray-500 mb-2">Available Methods:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {plugin.availableMethods.map(method => (
+                              <Badge key={method} className="bg-gray-100 text-gray-600 text-xs">
+                                {method}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-4">
@@ -320,17 +333,19 @@ export default function Plugins() {
                         <div className="text-lg font-bold text-gray-900">
                           {plugin.price === 0 ? 'Free' : `$${plugin.price}`}
                         </div>
-                        <Button
-                          onClick={() => handleInstallPlugin(plugin)}
-                          disabled={installed}
-                          className={installed 
-                            ? "bg-gray-400 cursor-not-allowed" 
-                            : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-                          }
-                          size="sm"
-                        >
-                          {installed ? "Installed" : "Install"}
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            onClick={() => handleInstallPlugin(plugin)}
+                            disabled={installed}
+                            className={installed 
+                              ? "bg-gray-400 cursor-not-allowed" 
+                              : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
+                            }
+                            size="sm"
+                          >
+                            {installed ? (enabled ? "Enabled" : "Disabled") : "Install"}
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -356,14 +371,11 @@ export default function Plugins() {
           {/* Installed Tab */}
           <TabsContent value="installed">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {installedPlugins.map((storePlugin) => {
-                const plugin = plugins.find(p => p.id === storePlugin.plugin_id);
-                if (!plugin) return null;
-                
+              {plugins.filter(plugin => plugin.isInstalled).map((plugin) => {
                 const CategoryIcon = categoryIcons[plugin.category] || Settings;
                 
                 return (
-                  <Card key={storePlugin.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
+                  <Card key={plugin.id} className="material-elevation-1 border-0 hover:material-elevation-2 transition-all duration-300">
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-3">
@@ -375,8 +387,8 @@ export default function Plugins() {
                             <p className="text-sm text-gray-500">by {plugin.creator_name}</p>
                           </div>
                         </div>
-                        <Badge className={storePlugin.is_active ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
-                          {storePlugin.is_active ? "Active" : "Inactive"}
+                        <Badge className={plugin.isEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"}>
+                          {plugin.isEnabled ? "Active" : "Inactive"}
                         </Badge>
                       </div>
                     </CardHeader>
@@ -391,7 +403,7 @@ export default function Plugins() {
                           Configure
                         </Button>
                         <Button
-                          onClick={() => handleUninstallPlugin(storePlugin)}
+                          onClick={() => handleUninstallPlugin(plugin.slug)}
                           variant="outline"
                           size="sm"
                           className="text-red-600 border-red-200 hover:bg-red-50"
@@ -405,7 +417,7 @@ export default function Plugins() {
               })}
             </div>
 
-            {installedPlugins.length === 0 && (
+            {plugins.filter(plugin => plugin.isInstalled).length === 0 && (
               <Card className="material-elevation-1 border-0">
                 <CardContent className="text-center py-12">
                   <Download className="w-16 h-16 text-gray-400 mx-auto mb-4" />

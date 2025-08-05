@@ -17,7 +17,7 @@ const Attribute = sequelize.define('Attribute', {
     unique: true
   },
   type: {
-    type: DataTypes.ENUM('text', 'number', 'select', 'multiselect', 'boolean', 'date', 'file'),
+    type: DataTypes.ENUM('text', 'number', 'select', 'multiselect', 'boolean', 'date', 'file', 'image'),
     allowNull: false,
     defaultValue: 'text'
   },

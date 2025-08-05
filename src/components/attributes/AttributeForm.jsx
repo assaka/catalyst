@@ -47,10 +47,26 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
   }, [attribute]);
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+      
+      // Auto-configure file settings when switching to image type
+      if (field === 'type' && value === 'image') {
+        newData.file_settings = {
+          allowed_extensions: ["jpg", "jpeg", "png", "gif", "webp", "svg"],
+          max_file_size: 10, // Larger default for images
+        };
+      }
+      // Auto-configure file settings when switching to file type
+      else if (field === 'type' && value === 'file') {
+        newData.file_settings = {
+          allowed_extensions: ["pdf", "doc", "docx", "txt", "png", "jpg"],
+          max_file_size: 5,
+        };
+      }
+      
+      return newData;
+    });
   };
 
   const handleOptionChange = (index, field, value) => {
@@ -141,6 +157,7 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
                   <SelectItem value="boolean">Boolean (Yes/No)</SelectItem>
                   <SelectItem value="date">Date</SelectItem>
                   <SelectItem value="file">File</SelectItem>
+                  <SelectItem value="image">Image</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -270,10 +287,10 @@ export default function AttributeForm({ attribute, onSubmit, onCancel }) {
         </Card>
       )}
 
-      {formData.type === "file" && (
+      {(formData.type === "file" || formData.type === "image") && (
         <Card>
           <CardHeader>
-            <CardTitle>File Settings</CardTitle>
+            <CardTitle>{formData.type === 'image' ? 'Image Settings' : 'File Settings'}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

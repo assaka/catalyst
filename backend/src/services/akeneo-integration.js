@@ -865,33 +865,32 @@ class AkeneoIntegration {
 
   /**
    * Build mapping from Akeneo category codes to Catalyst category IDs
+   * Uses dedicated akeneo_mappings table for flexible mapping
    */
   async buildCategoryMapping(storeId) {
-    const categories = await Category.findAll({
-      where: { store_id: storeId },
-      attributes: ['id', 'name', 'akeneo_code']
-    });
-
-    const mapping = {};
-    categories.forEach(category => {
-      // Primary mapping: Use akeneo_code if available (preferred)
-      if (category.akeneo_code) {
-        mapping[category.akeneo_code] = category.id;
-      }
+    const AkeneoMapping = require('../models/AkeneoMapping');
+    
+    // First, try to get explicit mappings from the mapping table
+    const explicitMapping = await AkeneoMapping.buildCategoryMapping(storeId);
+    
+    // If no explicit mappings exist, auto-create them from existing categories
+    if (Object.keys(explicitMapping).length === 0) {
+      console.log('📋 No explicit Akeneo mappings found. Auto-generating from existing categories...');
+      await AkeneoMapping.autoCreateCategoryMappings(storeId);
       
-      // Fallback mapping: Create mapping based on category name for backwards compatibility
-      const nameBasedCode = category.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      if (!mapping[nameBasedCode]) { // Don't override akeneo_code mapping
-        mapping[nameBasedCode] = category.id;
-      }
-    });
-
-    console.log(`📋 Category mapping created: ${Object.keys(mapping).length} mappings`);
+      // Rebuild mapping after auto-creation
+      const autoMapping = await AkeneoMapping.buildCategoryMapping(storeId);
+      console.log(`✅ Auto-created ${Object.keys(autoMapping).length} category mappings`);
+      return autoMapping;
+    }
+    
+    console.log(`📋 Category mapping loaded: ${Object.keys(explicitMapping).length} explicit mappings from akeneo_mappings table`);
+    
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Category mappings:', Object.keys(mapping).slice(0, 10).join(', '), '...');
+      console.log('🔍 Sample mappings:', Object.keys(explicitMapping).slice(0, 10).join(', '), '...');
     }
 
-    return mapping;
+    return explicitMapping;
   }
 
   /**
