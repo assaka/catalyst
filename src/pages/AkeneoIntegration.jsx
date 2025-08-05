@@ -1145,8 +1145,7 @@ const AkeneoIntegration = () => {
       return;
     }
 
-    // Get store_id from localStorage
-    const storeId = localStorage.getItem('selectedStoreId');
+    // storeId already declared above
     console.log('🏪 Using store ID:', storeId);
     
     if (!storeId) {
@@ -1269,8 +1268,7 @@ const AkeneoIntegration = () => {
       return;
     }
 
-    // Get store_id from localStorage
-    const storeId = localStorage.getItem('selectedStoreId');
+    // storeId already declared above
     console.log('🏪 Using store ID:', storeId);
     
     if (!storeId) {
@@ -1484,8 +1482,7 @@ const AkeneoIntegration = () => {
       return;
     }
 
-    // Get store_id from localStorage
-    const storeId = localStorage.getItem('selectedStoreId');
+    // storeId already declared above
     if (!storeId) {
       toast.error('No store selected. Please select a store first.');
       return;
