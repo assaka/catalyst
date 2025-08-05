@@ -16,6 +16,68 @@ import { useStoreSlug } from '../hooks/useStoreSlug';
 import apiClient from '../api/client';
 import { MultiSelect } from '../components/ui/multi-select';
 
+// Error Boundary to catch component crashes
+class AkeneoErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, errorInfo: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('🚨 AkeneoIntegration Error Boundary caught an error:', error);
+    console.error('🚨 Error Info:', errorInfo);
+    console.error('🚨 Error Stack:', error.stack);
+    
+    this.setState({
+      error: error,
+      errorInfo: errorInfo
+    });
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full">
+            <Card className="border-red-200">
+              <CardHeader>
+                <CardTitle className="text-red-600 flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5" />
+                  Component Error
+                </CardTitle>
+                <CardDescription>
+                  The Akeneo Integration page encountered an error and crashed.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-red-50 p-3 rounded border text-sm">
+                  <strong>Error:</strong> {this.state.error?.message}
+                </div>
+                <Button 
+                  onClick={() => {
+                    this.setState({ hasError: false, error: null, errorInfo: null });
+                    window.location.reload();
+                  }}
+                  className="w-full"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Reload Page
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const AkeneoIntegration = () => {
   const storeSlug = useStoreSlug();
   
@@ -187,7 +249,7 @@ const AkeneoIntegration = () => {
     }));
   };
 
-  // Load import statistics
+  // Load import statistics with enhanced error handling
   const loadStats = async () => {
     console.log('🔍 Loading statistics...');
     console.log('Store slug:', storeSlug);
@@ -204,14 +266,23 @@ const AkeneoIntegration = () => {
       
       if (!storeId) {
         console.log('❌ No store ID found in localStorage');
+        setLoadingStats(false);
         return;
       }
 
       console.log('📡 Making API call to /integrations/akeneo/stats');
+      
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await apiClient.get('/integrations/akeneo/stats', {
         'x-store-id': storeId
+      }, {
+        signal: controller.signal
       });
-
+      
+      clearTimeout(timeoutId);
       console.log('📥 Stats API response:', response);
 
       // Check if response has data property or is the direct response
@@ -219,17 +290,29 @@ const AkeneoIntegration = () => {
       
       if (responseData?.success) {
         console.log('✅ Stats loaded successfully:', responseData.stats);
-        setStats(responseData.stats);
+        setStats(responseData.stats || {});
       } else {
         console.log('❌ Stats API returned unsuccessful response:', responseData);
+        // Set empty stats to prevent undefined errors
+        setStats({});
       }
     } catch (error) {
       console.error('❌ Failed to load stats:', error);
       console.error('Error details:', {
+        name: error.name,
         status: error.status,
         message: error.message,
-        response: error.response?.data
+        response: error.response?.data,
+        stack: error.stack
       });
+      
+      // Set empty stats to prevent component crash
+      setStats({});
+      
+      // Don't show error toast for aborted requests
+      if (error.name !== 'AbortError') {
+        console.warn('⚠️ Stats loading failed but continuing with empty stats');
+      }
     } finally {
       setLoadingStats(false);
     }
@@ -646,6 +729,38 @@ const AkeneoIntegration = () => {
   useEffect(() => {
     localStorage.setItem('akeneo_custom_mappings', JSON.stringify(customMappings));
   }, [customMappings]);
+
+  // Add global error handlers to catch any unhandled errors that might cause blank page
+  useEffect(() => {
+    const handleWindowError = (event) => {
+      console.error('🚨 Global window error caught:', event.error);
+      console.error('🚨 Error details:', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error
+      });
+    };
+
+    const handleUnhandledRejection = (event) => {
+      console.error('🚨 Unhandled promise rejection caught:', event.reason);
+      console.error('🚨 Rejection details:', {
+        reason: event.reason,
+        promise: event.promise
+      });
+      // Prevent default behavior (logging to console)
+      event.preventDefault();
+    };
+
+    window.addEventListener('error', handleWindowError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+    return () => {
+      window.removeEventListener('error', handleWindowError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
 
   const loadConfigStatus = async () => {
     try {
@@ -1279,40 +1394,64 @@ const AkeneoIntegration = () => {
         console.log('✅ Products import successful');
         const stats = responseData.stats;
         toast.success(`Products import completed! ${stats?.imported || 0} products imported`);
-        // Reload stats and config to reflect changes
-        try {
-          console.log('🔄 Reloading stats after successful products import...');
-          await loadStats();
-          console.log('✅ Stats reloaded successfully after products import');
-        } catch (statsError) {
-          console.error('❌ Error reloading stats after products import:', statsError);
-          console.error('Products stats error details:', {
-            message: statsError.message,
-            stack: statsError.stack,
-            response: statsError.response
-          });
-        }
-        try {
-          console.log('🔄 Reloading config status after successful products import...');
-          await loadConfigStatus();
-          console.log('✅ Config status reloaded successfully after products import');
-        } catch (configError) {
-          console.error('❌ Error reloading config status after products import:', configError);
-          console.error('Products config error details:', {
-            message: configError.message,
-            stack: configError.stack,
-            response: configError.response
-          });
-        }
-        console.log('🏁 Post-products-import reload completed');
+        // Reload stats and config to reflect changes with enhanced error handling
+        console.log('🔄 Starting post-import reload sequence...');
+        
+        // Reload stats with isolation
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Reloading stats after successful products import...');
+            await loadStats();
+            console.log('✅ Stats reloaded successfully after products import');
+          } catch (statsError) {
+            console.error('❌ Error reloading stats after products import:', statsError);
+            console.error('Products stats error details:', {
+              name: statsError.name,
+              message: statsError.message,
+              stack: statsError.stack,
+              response: statsError.response?.data
+            });
+            // Continue even if stats reload fails
+          }
+        }, 100);
+        
+        // Reload config with isolation
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Reloading config status after successful products import...');
+            await loadConfigStatus();
+            console.log('✅ Config status reloaded successfully after products import');
+          } catch (configError) {
+            console.error('❌ Error reloading config status after products import:', configError);
+            console.error('Products config error details:', {
+              name: configError.name,
+              message: configError.message,
+              stack: configError.stack,
+              response: configError.response?.data
+            });
+            // Continue even if config reload fails
+          }
+        }, 200);
+        
+        console.log('🏁 Post-products-import reload sequence initiated');
       } else {
+        console.log('❌ Products import was not successful:', responseData);
         toast.error(`Products import failed: ${responseData.error}`);
       }
     } catch (error) {
+      console.error('❌ Products import failed with error:', error);
+      console.error('Error details:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data
+      });
+      
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      setImportResults({ success: false, error: message });
+      setTabImportResults('products', { success: false, error: message });
       toast.error(`Import failed: ${message}`);
     } finally {
+      console.log('🏁 Products import finally block executed');
       setImporting(false);
     }
   };
@@ -2116,8 +2255,6 @@ const AkeneoIntegration = () => {
                         }
                         placeholder="Select families to retrieve attributes from..."
                       />
-                    </div>
-                  )}
                       <p className="text-xs text-gray-500">
                         {attributeSettings.selectedFamilies.length === 0 
                           ? 'Leave empty to import all attributes' 
@@ -2192,10 +2329,7 @@ const AkeneoIntegration = () => {
                 <div className="space-y-2">
                   <Label>Select Families to Import</Label>
                   <MultiSelect
-                    options={families.map(family => ({
-                      value: family.code || family.name || family.id,
-                      label: family.code || family.name || family.id
-                    }))}
+                    options={familyOptions}
                     value={selectedFamiliesToImport}
                     onChange={setSelectedFamiliesToImport}
                     placeholder="Select specific families..."
@@ -2637,29 +2771,7 @@ const AkeneoIntegration = () => {
                     <div className="space-y-2">
                       <Label>Families</Label>
                       <MultiSelect
-                        options={(() => {
-                          // Add render count to detect excessive re-renders
-                          if (!window.productsRenderCount) window.productsRenderCount = 0;
-                          window.productsRenderCount++;
-                          
-                          if (window.productsRenderCount <= 3 || window.productsRenderCount % 10 === 0) {
-                            console.log(`🔍 Products tab render #${window.productsRenderCount} - families for multiselect:`, families);
-                            console.log('🔍 Products tab - families.length:', families.length);
-                          } else if (window.productsRenderCount > 20) {
-                            console.warn(`⚠️ Excessive re-renders detected in Products tab: ${window.productsRenderCount} renders`);
-                          }
-                          const options = families.map(family => {
-                            // Use code as value and get label from labels object (fallback to code)
-                            const value = family.code;
-                            const label = (family.labels && Object.values(family.labels)[0]) || family.code;
-                            return {
-                              value,
-                              label
-                            };
-                          });
-                          console.log('🔍 Products tab - mapped options:', options.slice(0, 3));
-                          return options;
-                        })()}
+                        options={familyOptions}
                         value={selectedFamilies}
                         onChange={setSelectedFamilies}
                         placeholder="Select families to retrieve products from..."
@@ -2937,4 +3049,13 @@ const AkeneoIntegration = () => {
   );
 };
 
-export default AkeneoIntegration;
+// Wrap the component with Error Boundary to catch crashes
+const AkeneoIntegrationWithErrorBoundary = () => {
+  return (
+    <AkeneoErrorBoundary>
+      <AkeneoIntegration />
+    </AkeneoErrorBoundary>
+  );
+};
+
+export default AkeneoIntegrationWithErrorBoundary;
