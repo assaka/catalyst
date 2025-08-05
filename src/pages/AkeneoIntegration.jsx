@@ -560,6 +560,34 @@ const AkeneoIntegration = () => {
   useEffect(() => {
     console.log('🚀 AkeneoIntegration component mounted, loading families...');
     loadFamiliesForFilter();
+    
+    // Add global error handler to catch unhandled errors that might cause blank page
+    const handleError = (event) => {
+      console.error('🚨 Global error detected in AkeneoIntegration:', event.error);
+      console.error('Error details:', {
+        message: event.error?.message,
+        stack: event.error?.stack,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+      });
+    };
+    
+    const handleUnhandledRejection = (event) => {
+      console.error('🚨 Unhandled promise rejection in AkeneoIntegration:', event.reason);
+      console.error('Rejection details:', {
+        reason: event.reason,
+        promise: event.promise
+      });
+    };
+    
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
   }, []);
 
   // Load additional data when connection becomes successful
@@ -1051,6 +1079,11 @@ const AkeneoIntegration = () => {
           console.log('✅ Stats reloaded successfully');
         } catch (statsError) {
           console.error('❌ Error reloading stats:', statsError);
+          console.error('Stats error details:', {
+            message: statsError.message,
+            stack: statsError.stack,
+            response: statsError.response
+          });
         }
         try {
           console.log('🔄 Reloading config status after successful import...');
@@ -1058,7 +1091,13 @@ const AkeneoIntegration = () => {
           console.log('✅ Config status reloaded successfully');
         } catch (configError) {
           console.error('❌ Error reloading config status:', configError);
+          console.error('Config error details:', {
+            message: configError.message,
+            stack: configError.stack,
+            response: configError.response
+          });
         }
+        console.log('🏁 Post-import reload completed');
       } else {
         console.log('❌ Attributes import failed:', responseData.error);
         toast.error(`Attributes import failed: ${responseData.error}`);
@@ -1229,8 +1268,31 @@ const AkeneoIntegration = () => {
         const stats = responseData.stats;
         toast.success(`Products import completed! ${stats?.imported || 0} products imported`);
         // Reload stats and config to reflect changes
-        await loadStats();
-        await loadConfigStatus();
+        try {
+          console.log('🔄 Reloading stats after successful products import...');
+          await loadStats();
+          console.log('✅ Stats reloaded successfully after products import');
+        } catch (statsError) {
+          console.error('❌ Error reloading stats after products import:', statsError);
+          console.error('Products stats error details:', {
+            message: statsError.message,
+            stack: statsError.stack,
+            response: statsError.response
+          });
+        }
+        try {
+          console.log('🔄 Reloading config status after successful products import...');
+          await loadConfigStatus();
+          console.log('✅ Config status reloaded successfully after products import');
+        } catch (configError) {
+          console.error('❌ Error reloading config status after products import:', configError);
+          console.error('Products config error details:', {
+            message: configError.message,
+            stack: configError.stack,
+            response: configError.response
+          });
+        }
+        console.log('🏁 Post-products-import reload completed');
       } else {
         toast.error(`Products import failed: ${responseData.error}`);
       }
@@ -2032,11 +2094,19 @@ const AkeneoIntegration = () => {
                   </div>
 
                   {families.length > 0 && (() => {
-                    console.log('🔍 Attributes tab - families for multiselect:', families);
-                    console.log('🔍 Attributes tab - families.length:', families.length);
-                    console.log('🔍 Sample family object:', families[0]);
-                    console.log('🔍 Family object keys:', families[0] ? Object.keys(families[0]) : 'no families');
-                    console.log('🔍 First 3 family objects:', families.slice(0, 3));
+                    // Add render count to detect excessive re-renders
+                    if (!window.attributesRenderCount) window.attributesRenderCount = 0;
+                    window.attributesRenderCount++;
+                    
+                    if (window.attributesRenderCount <= 3 || window.attributesRenderCount % 10 === 0) {
+                      console.log(`🔍 Attributes tab render #${window.attributesRenderCount} - families for multiselect:`, families);
+                      console.log('🔍 Attributes tab - families.length:', families.length);
+                      console.log('🔍 Sample family object:', families[0]);
+                      console.log('🔍 Family object keys:', families[0] ? Object.keys(families[0]) : 'no families');
+                      console.log('🔍 First 3 family objects:', families.slice(0, 3));
+                    } else if (window.attributesRenderCount > 20) {
+                      console.warn(`⚠️ Excessive re-renders detected in Attributes tab: ${window.attributesRenderCount} renders`);
+                    }
                     
                     const familyOptions = families.map((family, index) => {
                       // Use code as value and get label from labels object (fallback to code)
@@ -2600,8 +2670,16 @@ const AkeneoIntegration = () => {
                       <Label>Families</Label>
                       <MultiSelect
                         options={(() => {
-                          console.log('🔍 Products tab - families for multiselect:', families);
-                          console.log('🔍 Products tab - families.length:', families.length);
+                          // Add render count to detect excessive re-renders
+                          if (!window.productsRenderCount) window.productsRenderCount = 0;
+                          window.productsRenderCount++;
+                          
+                          if (window.productsRenderCount <= 3 || window.productsRenderCount % 10 === 0) {
+                            console.log(`🔍 Products tab render #${window.productsRenderCount} - families for multiselect:`, families);
+                            console.log('🔍 Products tab - families.length:', families.length);
+                          } else if (window.productsRenderCount > 20) {
+                            console.warn(`⚠️ Excessive re-renders detected in Products tab: ${window.productsRenderCount} renders`);
+                          }
                           const options = families.map(family => {
                             // Use code as value and get label from labels object (fallback to code)
                             const value = family.code;
