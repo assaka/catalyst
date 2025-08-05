@@ -65,62 +65,36 @@ export default function Plugins() {
         User.me()
       ]);
       
-      // Transform plugin system data for display
-      const transformedPlugins = pluginsResponse.data?.plugins?.map(plugin => ({
+      // Get all plugins from the unified API response
+      const allPluginsFromAPI = pluginsResponse.data?.plugins || [];
+      const marketplaceData = marketplaceResponse.data || [];
+      
+      // Transform all plugins (both installed and marketplace) for display
+      const allPlugins = allPluginsFromAPI.map(plugin => ({
         id: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
         name: plugin.name,
         slug: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
-        description: plugin.manifest?.description || 'No description available',
-        long_description: plugin.manifest?.description || 'No description available',
-        version: plugin.manifest?.version || '1.0.0',
+        description: plugin.manifest?.description || plugin.description || 'No description available',
+        long_description: plugin.manifest?.description || plugin.description || 'No description available',
+        version: plugin.manifest?.version || plugin.version || '1.0.0',
         price: 0,
-        category: plugin.manifest?.category || 'integration',
-        icon_url: "https://via.placeholder.com/64x64/4285F4/FFFFFF?text=" + plugin.name.charAt(0),
-        creator_id: "system",
-        creator_name: plugin.manifest?.author || "System",
+        category: plugin.manifest?.category || plugin.category || 'integration',
+        icon_url: plugin.source === 'marketplace' 
+          ? "https://via.placeholder.com/64x64/10B981/FFFFFF?text=" + plugin.name.charAt(0)
+          : "https://via.placeholder.com/64x64/4285F4/FFFFFF?text=" + plugin.name.charAt(0),
+        creator_id: plugin.source === 'marketplace' ? "marketplace" : "system",
+        creator_name: plugin.manifest?.author || plugin.author || "System",
         status: "approved",
-        downloads: 0,
-        rating: 0,
-        reviews_count: 0,
-        isEnabled: plugin.isEnabled,
-        isInstalled: plugin.isInstalled,
-        availableMethods: plugin.manifest?.methods || [],
+        downloads: plugin.downloads || 0,
+        rating: plugin.rating || 0,
+        reviews_count: plugin.reviews_count || 0,
+        isEnabled: plugin.isEnabled || false,
+        isInstalled: plugin.isInstalled || false,
+        availableMethods: plugin.manifest?.methods || plugin.methods || [],
         source: plugin.source || 'local',
-        sourceType: plugin.manifest?.sourceType || 'local'
-      })) || [];
-      
-      // Add marketplace plugins that aren't installed
-      const marketplaceData = marketplaceResponse.data || [];
-      const allPlugins = [...transformedPlugins];
-      
-      marketplaceData.forEach(marketplacePlugin => {
-        const existingPlugin = transformedPlugins.find(p => p.slug === marketplacePlugin.slug);
-        if (!existingPlugin) {
-          allPlugins.push({
-            id: marketplacePlugin.slug,
-            name: marketplacePlugin.name,
-            slug: marketplacePlugin.slug,
-            description: marketplacePlugin.description,
-            long_description: marketplacePlugin.description,
-            version: marketplacePlugin.version,
-            price: 0,
-            category: marketplacePlugin.category,
-            icon_url: "https://via.placeholder.com/64x64/10B981/FFFFFF?text=" + marketplacePlugin.name.charAt(0),
-            creator_id: "marketplace",
-            creator_name: marketplacePlugin.author,
-            status: "approved",
-            downloads: 0,
-            rating: 0,
-            reviews_count: 0,
-            isEnabled: false,
-            isInstalled: false,
-            availableMethods: [],
-            source: 'marketplace',
-            sourceType: marketplacePlugin.sourceType,
-            sourceUrl: marketplacePlugin.sourceUrl
-          });
-        }
-      });
+        sourceType: plugin.manifest?.sourceType || plugin.sourceType || 'local',
+        sourceUrl: plugin.sourceUrl
+      }));
       
       setPlugins(allPlugins);
       setMarketplacePlugins(marketplaceData);
@@ -435,17 +409,21 @@ export default function Plugins() {
                           {plugin.price === 0 ? 'Free' : `$${plugin.price}`}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button
-                            onClick={() => handleInstallPlugin(plugin)}
-                            disabled={installed}
-                            className={installed 
-                              ? "bg-gray-400 cursor-not-allowed" 
-                              : "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
-                            }
-                            size="sm"
-                          >
-                            {installed ? (enabled ? "Enabled" : "Disabled") : "Install"}
-                          </Button>
+                          {installed ? (
+                            <div className="flex gap-1">
+                              <Badge className={enabled ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
+                                {enabled ? "Installed & Active" : "Installed"}
+                              </Badge>
+                            </div>
+                          ) : (
+                            <Button
+                              onClick={() => handleInstallPlugin(plugin)}
+                              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple"
+                              size="sm"
+                            >
+                              Install
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
