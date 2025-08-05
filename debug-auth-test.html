@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Token Debug Test</title>
+</head>
+<body>
+    <h1>Authentication Token Debug Test</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Get the authentication state
+        const authToken = localStorage.getItem('store_owner_auth_token');
+        const storeId = localStorage.getItem('selectedStoreId');
+        const userLoggedOut = localStorage.getItem('user_logged_out');
+        
+        const results = document.getElementById('results');
+        
+        const authInfo = {
+            tokenPresent: !!authToken,
+            tokenLength: authToken ? authToken.length : 0,
+            tokenPreview: authToken ? authToken.substring(0, 50) + '...' : 'None',
+            storeId: storeId || 'None',
+            userLoggedOut: userLoggedOut || 'false',
+            currentPath: window.location.pathname
+        };
+        
+        // Try to parse JWT token
+        if (authToken) {
+            try {
+                const parts = authToken.split('.');
+                const payload = JSON.parse(atob(parts[1]));
+                const now = Math.floor(Date.now() / 1000);
+                
+                authInfo.jwtPayload = {
+                    userId: payload.id,
+                    role: payload.role,
+                    exp: payload.exp,
+                    iat: payload.iat,
+                    isExpired: payload.exp < now,
+                    expiresIn: payload.exp - now + ' seconds'
+                };
+            } catch (e) {
+                authInfo.jwtParseError = e.message;
+            }
+        }
+        
+        results.innerHTML = '<h2>Authentication State:</h2><pre>' + JSON.stringify(authInfo, null, 2) + '</pre>';
+        
+        // Test API call if we have auth token
+        if (authToken && storeId) {
+            results.innerHTML += '<h2>Testing API Call...</h2>';
+            
+            fetch('https://catalyst-backend-fzhu.onrender.com/api/integrations/akeneo/config-status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + authToken,
+                    'x-store-id': storeId,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                console.log('API Response Status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                results.innerHTML += '<h3>✅ API Test Successful:</h3><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+            })
+            .catch(error => {
+                results.innerHTML += '<h3>❌ API Test Failed:</h3><pre>' + error.message + '</pre>';
+                console.error('API Error:', error);
+            });
+        } else {
+            results.innerHTML += '<h2>❌ Cannot test API - Missing auth token or store ID</h2>';
+        }
+    </script>
+</body>
+</html>

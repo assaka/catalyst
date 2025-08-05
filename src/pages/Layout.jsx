@@ -397,6 +397,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "Installation", path: "PLUGINS", icon: Puzzle },
         { name: "Create Plugin", path: "plugin-builder", icon: Plus },
         { name: "How-To Guide", path: "plugin-how-to", icon: Book },
+        { name: "Integrations", path: "integrations", icon: RefreshCw, isPremium: true },
         { name: "Akeneo Integration", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
         { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
       ]
