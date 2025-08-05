@@ -1463,7 +1463,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/languages', languageRoutes);
 app.use('/api/customer-activity', customerActivityRoutes);
-app.use('/api/store-plugins', storePluginRoutes);
+app.use('/api/stores/:store_id/plugins', storePluginRoutes);
 app.use('/api/seo-settings', seoSettingsRoutes);
 app.use('/api/seo-templates', seoTemplateRoutes);
 app.use('/api/redirects', redirectRoutes);

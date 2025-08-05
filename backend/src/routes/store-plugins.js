@@ -3,19 +3,19 @@ const router = express.Router();
 const pluginManager = require('../core/PluginManager');
 const PluginConfiguration = require('../models/PluginConfiguration');
 const authMiddleware = require('../middleware/auth');
-const storeAuth = require('../middleware/storeAuth');
+const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // All routes require authentication and store access
 router.use(authMiddleware);
-router.use(storeAuth);
+router.use(checkStoreOwnership);
 
 /**
- * GET /api/stores/:storeId/plugins
+ * GET /api/stores/:store_id/plugins
  * Get all available plugins with store-specific configuration status
  */
 router.get('/', async (req, res) => {
   try {
-    const { storeId } = req;
+    const storeId = req.params.store_id;
     
     console.log(`🔍 Getting plugins for store: ${storeId}`);
     
@@ -70,12 +70,13 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * POST /api/stores/:storeId/plugins/:pluginSlug/enable
+ * POST /api/stores/:store_id/plugins/:pluginSlug/enable
  * Enable a plugin for this store with configuration
  */
 router.post('/:pluginSlug/enable', async (req, res) => {
   try {
-    const { storeId, user } = req;
+    const storeId = req.params.store_id;
+    const { user } = req;
     const { pluginSlug } = req.params;
     const { configuration = {} } = req.body;
     
@@ -128,12 +129,13 @@ router.post('/:pluginSlug/enable', async (req, res) => {
 });
 
 /**
- * PUT /api/stores/:storeId/plugins/:pluginSlug/configure
+ * PUT /api/stores/:store_id/plugins/:pluginSlug/configure
  * Update plugin configuration for this store
  */
 router.put('/:pluginSlug/configure', async (req, res) => {
   try {
-    const { storeId, user } = req;
+    const storeId = req.params.store_id;
+    const { user } = req;
     const { pluginSlug } = req.params;
     const { configuration } = req.body;
     
