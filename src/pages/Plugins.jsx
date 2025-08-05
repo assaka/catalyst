@@ -70,6 +70,8 @@ export default function Plugins() {
       const allPluginsFromAPI = pluginsResponse.data?.plugins || [];
       const marketplaceData = marketplaceResponse.data || [];
       
+      console.log('🔍 Debug: Raw API response:', { pluginsResponse, allPluginsFromAPI });
+      
       // Transform all plugins (both installed and marketplace) for display
       const allPlugins = allPluginsFromAPI.map(plugin => ({
         id: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
@@ -89,13 +91,15 @@ export default function Plugins() {
         downloads: plugin.downloads || 0,
         rating: plugin.rating || 0,
         reviews_count: plugin.reviews_count || 0,
-        isEnabled: plugin.isEnabled || false,
-        isInstalled: plugin.isInstalled || false,
+        isEnabled: Boolean(plugin.isEnabled),
+        isInstalled: Boolean(plugin.isInstalled),
         availableMethods: plugin.manifest?.methods || plugin.methods || [],
         source: plugin.source || 'local',
         sourceType: plugin.manifest?.sourceType || plugin.sourceType || 'local',
         sourceUrl: plugin.sourceUrl
       }));
+      
+      console.log('🔍 Debug: Transformed plugins:', allPlugins);
       
       setPlugins(allPlugins);
       setMarketplacePlugins(marketplaceData);
