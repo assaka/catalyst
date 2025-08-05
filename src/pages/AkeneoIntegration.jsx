@@ -101,6 +101,15 @@ class AkeneoErrorBoundary extends React.Component {
 const AkeneoIntegration = () => {
   const storeSlug = useStoreSlug();
   
+  // Add render debugging to track what's causing blank page
+  const renderCount = React.useRef(0);
+  renderCount.current += 1;
+  
+  console.log(`🔄 AkeneoIntegration render #${renderCount.current}`, {
+    storeSlug,
+    timestamp: new Date().toISOString()
+  });
+  
   // Configuration state
   const [config, setConfig] = useState({
     baseUrl: '',
@@ -1664,6 +1673,27 @@ const AkeneoIntegration = () => {
     );
   };
 
+  console.log(`🎨 AkeneoIntegration about to render JSX for render #${renderCount.current}`);
+  console.log(`🔍 Key state values:`, {
+    hasConfig: config.baseUrl ? 'yes' : 'no',
+    familiesCount: families?.length || 0,
+    statsLoaded: stats ? 'yes' : 'no',
+    importing: importing ? 'yes' : 'no'
+  });
+  
+  // Defensive check - if critical state is invalid, return loading state
+  if (!config && !families && !stats) {
+    console.warn('⚠️ All critical state is empty, showing loading state');
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Loading Akeneo Integration...</p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <div className="mb-6">
