@@ -37,7 +37,13 @@ const AkeneoIntegration = () => {
   const [importing, setImporting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [configSaved, setConfigSaved] = useState(false);
-  const [importResults, setImportResults] = useState(null);
+  // Separate import results for each tab
+  const [importResults, setImportResults] = useState({
+    categories: null,
+    products: null,
+    attributes: null,
+    families: null
+  });
   const [dryRun, setDryRun] = useState(true);
   const [locales, setLocales] = useState([]);
   const [activeTab, setActiveTab] = useState('configuration');
@@ -122,6 +128,27 @@ const AkeneoIntegration = () => {
   const handleDryRunChange = (checked) => {
     console.log('🔧 Dry run toggle changed:', checked);
     setDryRun(checked);
+  };
+
+  // Functions to manage per-tab import results
+  const setTabImportResults = (tab, results) => {
+    const newResults = { ...importResults, [tab]: results };
+    setImportResults(newResults);
+    // Persist to localStorage
+    localStorage.setItem('akeneo_import_results', JSON.stringify(newResults));
+  };
+
+  const loadImportResults = () => {
+    try {
+      const savedResults = localStorage.getItem('akeneo_import_results');
+      if (savedResults) {
+        const parsedResults = JSON.parse(savedResults);
+        setImportResults(parsedResults);
+        console.log('📥 Loaded saved import results:', parsedResults);
+      }
+    } catch (error) {
+      console.warn('Failed to load saved import results:', error);
+    }
   };
 
   // Helper functions for custom mapping
@@ -516,6 +543,9 @@ const AkeneoIntegration = () => {
           console.warn('⚠️ Failed to parse saved custom mappings:', error);
         }
       }
+
+      // Load saved import results
+      loadImportResults();
       
       await loadConfigStatus();
       await loadLocales();
@@ -899,7 +929,7 @@ const AkeneoIntegration = () => {
       console.log('📥 Import categories response:', response);
       
       const responseData = response.data || response;
-      setImportResults(responseData);
+      setTabImportResults('categories', responseData);
       
       if (responseData.success) {
         console.log('✅ Categories import successful');
@@ -992,7 +1022,7 @@ const AkeneoIntegration = () => {
       console.log('📥 Import attributes response:', response);
       
       const responseData = response.data || response;
-      setImportResults(responseData);
+      setTabImportResults('attributes', responseData);
       
       if (responseData.success) {
         console.log('✅ Attributes import successful');
@@ -1078,7 +1108,7 @@ const AkeneoIntegration = () => {
       console.log('📥 Import families response:', response);
       
       const responseData = response.data || response;
-      setImportResults(responseData);
+      setTabImportResults('families', responseData);
       
       if (responseData.success) {
         console.log('✅ Families import successful');
@@ -1164,7 +1194,7 @@ const AkeneoIntegration = () => {
       };
       
       console.log('📥 Final results to set:', finalResults);
-      setImportResults(finalResults);
+      setTabImportResults('products', finalResults);
       
       if (responseData.success) {
         console.log('✅ Products import successful');
@@ -1266,8 +1296,37 @@ const AkeneoIntegration = () => {
     );
   };
 
+  // Render tab-specific import results
+  const renderTabImportResults = (tabName) => {
+    const tabResults = importResults[tabName];
+    if (!tabResults) return null;
+
+    return (
+      <Alert className={(tabResults?.success ?? false) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+        {(tabResults?.success ?? false) ? (
+          <CheckCircle className="h-4 w-4 text-green-600" />
+        ) : (
+          <AlertCircle className="h-4 w-4 text-red-600" />
+        )}
+        <AlertDescription className={(tabResults?.success ?? false) ? 'text-green-800' : 'text-red-800'}>
+          {tabResults.message || tabResults.error}
+          {tabResults.stats && (
+            <div className="mt-2 text-sm">
+              <p>Total: {tabResults.stats.total}, Imported: {tabResults.stats.imported}, Failed: {tabResults.stats.failed}</p>
+              {tabResults.stats.duration && (
+                <p>Duration: {tabResults.stats.duration}</p>
+              )}
+            </div>
+          )}
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   const renderImportResults = () => {
-    if (!importResults) return null;
+    // This is kept for backward compatibility or general display
+    const hasAnyResults = Object.values(importResults).some(result => result !== null);
+    if (!hasAnyResults) return null;
 
     return (
       <Card className="mt-6">
@@ -1982,23 +2041,7 @@ const AkeneoIntegration = () => {
                 </Button>
               </div>
 
-              {importResults && (
-                <Alert className={(importResults?.success ?? false) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-                  {(importResults?.success ?? false) ? (
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                  )}
-                  <AlertDescription className={(importResults?.success ?? false) ? 'text-green-800' : 'text-red-800'}>
-                    {importResults.message || importResults.error}
-                    {importResults.stats && (
-                      <div className="mt-2 text-sm">
-                        <p>Total: {importResults.stats.total}, Imported: {importResults.stats.imported}, Failed: {importResults.stats.failed}</p>
-                      </div>
-                    )}
-                  </AlertDescription>
-                </Alert>
-              )}
+              {renderTabImportResults('attributes')}
             </CardContent>
           </Card>
         </TabsContent>
@@ -2093,23 +2136,7 @@ const AkeneoIntegration = () => {
                 </Button>
               </div>
 
-              {importResults && (
-                <Alert className={(importResults?.success ?? false) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-                  {(importResults?.success ?? false) ? (
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 text-red-600" />
-                  )}
-                  <AlertDescription className={(importResults?.success ?? false) ? 'text-green-800' : 'text-red-800'}>
-                    {importResults.message || importResults.error}
-                    {importResults.stats && (
-                      <div className="mt-2 text-sm">
-                        <p>Total: {importResults.stats.total}, Imported: {importResults.stats.imported}, Failed: {importResults.stats.failed}</p>
-                      </div>
-                    )}
-                  </AlertDescription>
-                </Alert>
-              )}
+              {renderTabImportResults('families')}
             </CardContent>
           </Card>
         </TabsContent>
@@ -2308,6 +2335,8 @@ const AkeneoIntegration = () => {
                   )}
                 </div>
               </div>
+
+              {renderTabImportResults('categories')}
             </CardContent>
           </Card>
         </TabsContent>
@@ -2776,12 +2805,12 @@ const AkeneoIntegration = () => {
                   {importing ? 'Importing...' : 'Import Products'}
                 </Button>
               </div>
+
+              {renderTabImportResults('products')}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
-
-      {renderImportResults()}
     </div>
   );
 };
