@@ -1045,8 +1045,20 @@ const AkeneoIntegration = () => {
         const stats = responseData.stats;
         toast.success(`Attributes import completed! ${stats?.imported || 0} attributes imported`);
         // Reload stats and config to reflect changes
-        await loadStats();
-        await loadConfigStatus();
+        try {
+          console.log('🔄 Reloading stats after successful import...');
+          await loadStats();
+          console.log('✅ Stats reloaded successfully');
+        } catch (statsError) {
+          console.error('❌ Error reloading stats:', statsError);
+        }
+        try {
+          console.log('🔄 Reloading config status after successful import...');
+          await loadConfigStatus();
+          console.log('✅ Config status reloaded successfully');
+        } catch (configError) {
+          console.error('❌ Error reloading config status:', configError);
+        }
       } else {
         console.log('❌ Attributes import failed:', responseData.error);
         toast.error(`Attributes import failed: ${responseData.error}`);
@@ -2019,50 +2031,55 @@ const AkeneoIntegration = () => {
                     <p className="text-xs text-gray-500">Only import attributes updated within this timeframe</p>
                   </div>
 
-                  {families.length > 0 && (
-                    <div className="space-y-2">
-                      <Label>Families</Label>
-                      <MultiSelect
-                        options={(() => {
-                          console.log('🔍 Attributes tab - families for multiselect:', families);
-                          console.log('🔍 Attributes tab - families.length:', families.length);
-                          console.log('🔍 Sample family object:', families[0]);
-                          console.log('🔍 Family object keys:', families[0] ? Object.keys(families[0]) : 'no families');
-                          console.log('🔍 First 3 family objects:', families.slice(0, 3));
-                          const options = families.map((family, index) => {
-                            // Use code as value and get label from labels object (fallback to code)
-                            const value = family.code;
-                            const label = (family.labels && Object.values(family.labels)[0]) || family.code;
-                            if (index < 3) {
-                              console.log(`🔍 Family ${index}:`, { 
-                                original: family, 
-                                value, 
-                                label,
-                                hasCode: !!family.code,
-                                hasLabels: !!family.labels,
-                                labelsKeys: family.labels ? Object.keys(family.labels) : []
-                              });
-                            }
-                            return {
-                              value,
-                              label
-                            };
-                          });
-                          console.log('🔍 Attributes tab - mapped options:', options.slice(0, 3));
-                          console.log('🔍 All mapped options (first 5):', JSON.stringify(options.slice(0, 5), null, 2));
-                          console.log('🔍 Options valid check:', {
-                            hasOptions: options.length > 0,
-                            firstOptionValid: options[0] && options[0].value && options[0].label,
-                            sampleValues: options.slice(0, 3).map(opt => ({ value: opt.value, label: opt.label }))
-                          });
-                          return options;
-                        })()}
-                        value={attributeSettings.selectedFamilies}
-                        onChange={(selectedFamilies) => 
-                          setAttributeSettings(prev => ({ ...prev, selectedFamilies }))
-                        }
-                        placeholder="Select families to retrieve attributes from..."
-                      />
+                  {families.length > 0 && (() => {
+                    console.log('🔍 Attributes tab - families for multiselect:', families);
+                    console.log('🔍 Attributes tab - families.length:', families.length);
+                    console.log('🔍 Sample family object:', families[0]);
+                    console.log('🔍 Family object keys:', families[0] ? Object.keys(families[0]) : 'no families');
+                    console.log('🔍 First 3 family objects:', families.slice(0, 3));
+                    
+                    const familyOptions = families.map((family, index) => {
+                      // Use code as value and get label from labels object (fallback to code)
+                      const value = family.code;
+                      const label = (family.labels && Object.values(family.labels)[0]) || family.code;
+                      if (index < 3) {
+                        console.log(`🔍 Family ${index}:`, { 
+                          original: family, 
+                          value, 
+                          label,
+                          hasCode: !!family.code,
+                          hasLabels: !!family.labels,
+                          labelsKeys: family.labels ? Object.keys(family.labels) : []
+                        });
+                      }
+                      return {
+                        value,
+                        label
+                      };
+                    });
+                    
+                    console.log('🔍 Attributes tab - mapped options:', familyOptions.slice(0, 3));
+                    console.log('🔍 All mapped options (first 5):', JSON.stringify(familyOptions.slice(0, 5), null, 2));
+                    console.log('🔍 Options valid check:', {
+                      hasOptions: familyOptions.length > 0,
+                      firstOptionValid: familyOptions[0] && familyOptions[0].value && familyOptions[0].label,
+                      sampleValues: familyOptions.slice(0, 3).map(opt => ({ value: opt.value, label: opt.label }))
+                    });
+                    
+                    return (
+                      <div className="space-y-2">
+                        <Label>Families</Label>
+                        <MultiSelect
+                          options={familyOptions}
+                          value={attributeSettings.selectedFamilies}
+                          onChange={(selectedFamilies) => 
+                            setAttributeSettings(prev => ({ ...prev, selectedFamilies }))
+                          }
+                          placeholder="Select families to retrieve attributes from..."
+                        />
+                      </div>
+                    );
+                  })()}
                       <p className="text-xs text-gray-500">
                         {attributeSettings.selectedFamilies.length === 0 
                           ? 'Leave empty to import all attributes' 
