@@ -306,21 +306,17 @@ const AkeneoIntegration = () => {
     console.log('🔍 Loading statistics...');
     console.log('Store slug:', storeSlug);
     
-    if (!storeSlug) {
-      console.log('❌ No store slug, skipping stats load');
+    // Use storeId directly instead of relying on storeSlug
+    const storeId = localStorage.getItem('selectedStoreId');
+    console.log('Store ID from localStorage:', storeId);
+    
+    if (!storeId) {
+      console.log('❌ No store ID found, skipping stats load');
       return;
     }
     
     setLoadingStats(true);
     try {
-      const storeId = localStorage.getItem('selectedStoreId');
-      console.log('Store ID from localStorage:', storeId);
-      
-      if (!storeId) {
-        console.log('❌ No store ID found in localStorage');
-        setLoadingStats(false);
-        return;
-      }
 
       console.log('📡 Making API call to /integrations/akeneo/stats');
       
@@ -342,11 +338,18 @@ const AkeneoIntegration = () => {
       
       if (responseData?.success) {
         console.log('✅ Stats loaded successfully:', responseData.stats);
-        setStats(responseData.stats || {});
+        // Ensure stats is always an object, never null or undefined
+        const newStats = responseData.stats || {};
+        setStats(prevStats => ({
+          categories: newStats.categories ?? prevStats?.categories ?? 0,
+          attributes: newStats.attributes ?? prevStats?.attributes ?? 0,
+          families: newStats.families ?? prevStats?.families ?? 0,
+          products: newStats.products ?? prevStats?.products ?? 0
+        }));
       } else {
         console.log('❌ Stats API returned unsuccessful response:', responseData);
-        // Set empty stats to prevent undefined errors
-        setStats({});
+        // Keep existing stats on error instead of resetting
+        console.log('⚠️ Keeping existing stats on error');
       }
     } catch (error) {
       console.error('❌ Failed to load stats:', error);
@@ -358,8 +361,8 @@ const AkeneoIntegration = () => {
         stack: error.stack
       });
       
-      // Set empty stats to prevent component crash
-      setStats({});
+      // Keep existing stats on error instead of resetting to empty
+      console.log('⚠️ Keeping existing stats after error');
       
       // Don't show error toast for aborted requests
       if (error.name !== 'AbortError') {
