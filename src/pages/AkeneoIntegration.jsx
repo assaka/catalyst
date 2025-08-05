@@ -1119,6 +1119,19 @@ const AkeneoIntegration = () => {
     console.log('📦 Starting categories import...');
     console.log('🔗 Connection status:', connectionStatus);
     
+    // Debug authentication state
+    const authToken = localStorage.getItem('store_owner_auth_token');
+    const storeId = localStorage.getItem('selectedStoreId');
+    console.log('🔐 Auth token present:', !!authToken);
+    console.log('🔐 Auth token length:', authToken?.length || 0);
+    console.log('🏪 Store ID:', storeId);
+    
+    if (!authToken) {
+      console.error('❌ No authentication token found');
+      toast.error('Authentication required. Please refresh the page and log in again.');
+      return;
+    }
+    
     if (!connectionStatus?.success) {
       console.error('❌ Connection not tested or failed');
       toast.error('Please test the connection first');
@@ -1217,6 +1230,14 @@ const AkeneoIntegration = () => {
         response: error.response?.data
       });
       
+      // Handle authentication errors specifically
+      if (error.status === 401) {
+        console.error('🚨 Authentication error detected - token may be expired');
+        toast.error('Authentication expired. Please refresh the page and log in again.');
+        setImportResults({ success: false, error: 'Authentication expired' });
+        return;
+      }
+      
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
       setImportResults({ success: false, error: message });
       toast.error(`Import failed: ${message}`);
@@ -1228,6 +1249,19 @@ const AkeneoIntegration = () => {
 
   const importAttributes = async () => {
     console.log('📦 Starting attributes import...');
+    
+    // Debug authentication state
+    const authToken = localStorage.getItem('store_owner_auth_token');
+    const storeId = localStorage.getItem('selectedStoreId');
+    console.log('🔐 Auth token present:', !!authToken);
+    console.log('🔐 Auth token length:', authToken?.length || 0);
+    console.log('🏪 Store ID:', storeId);
+    
+    if (!authToken) {
+      console.error('❌ No authentication token found');
+      toast.error('Authentication required. Please refresh the page and log in again.');
+      return;
+    }
     
     if (!connectionStatus?.success) {
       console.error('❌ Connection not tested or failed');
@@ -1328,8 +1362,16 @@ const AkeneoIntegration = () => {
     } catch (error) {
       console.error('❌ Attributes import error:', error);
       
+      // Handle authentication errors specifically
+      if (error.status === 401) {
+        console.error('🚨 Authentication error detected - token may be expired');
+        toast.error('Authentication expired. Please refresh the page and log in again.');
+        setTabImportResults('attributes', { success: false, error: 'Authentication expired' });
+        return;
+      }
+      
       const message = error.response?.data?.error || error.response?.data?.message || error.message;
-      setImportResults({ success: false, error: message });
+      setTabImportResults('attributes', { success: false, error: message });
       toast.error(`Import failed: ${message}`);
     } finally {
       console.log('🏁 Attributes import completed');
@@ -1346,8 +1388,6 @@ const AkeneoIntegration = () => {
       return;
     }
 
-    // Get store_id from localStorage
-    const storeId = localStorage.getItem('selectedStoreId');
     console.log('🏪 Using store ID:', storeId);
     
     if (!storeId) {
@@ -1424,6 +1464,21 @@ const AkeneoIntegration = () => {
   };
 
   const importProducts = async () => {
+    console.log('📦 Starting products import...');
+    
+    // Debug authentication state
+    const authToken = localStorage.getItem('store_owner_auth_token');
+    const storeId = localStorage.getItem('selectedStoreId');
+    console.log('🔐 Auth token present:', !!authToken);
+    console.log('🔐 Auth token length:', authToken?.length || 0);
+    console.log('🏪 Store ID:', storeId);
+    
+    if (!authToken) {
+      console.error('❌ No authentication token found');
+      toast.error('Authentication required. Please refresh the page and log in again.');
+      return;
+    }
+    
     if (!connectionStatus?.success) {
       toast.error('Please test the connection first');
       return;
