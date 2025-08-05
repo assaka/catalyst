@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -61,6 +61,18 @@ const AkeneoIntegration = () => {
   const [selectedFamiliesToImport, setSelectedFamiliesToImport] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingFamilies, setLoadingFamilies] = useState(false);
+  
+  // Memoized family options to prevent excessive re-renders
+  const familyOptions = useMemo(() => {
+    if (!families || families.length === 0) return [];
+    
+    console.log('🔄 Computing family options (this should only happen when families change)');
+    return families.map((family) => {
+      const value = family.code;
+      const label = (family.labels && Object.values(family.labels)[0]) || family.code;
+      return { value, label };
+    });
+  }, [families]);
   
   // Advanced settings
   const [categorySettings, setCategorySettings] = useState({
@@ -2093,63 +2105,19 @@ const AkeneoIntegration = () => {
                     <p className="text-xs text-gray-500">Only import attributes updated within this timeframe</p>
                   </div>
 
-                  {families.length > 0 && (() => {
-                    // Add render count to detect excessive re-renders
-                    if (!window.attributesRenderCount) window.attributesRenderCount = 0;
-                    window.attributesRenderCount++;
-                    
-                    if (window.attributesRenderCount <= 3 || window.attributesRenderCount % 10 === 0) {
-                      console.log(`🔍 Attributes tab render #${window.attributesRenderCount} - families for multiselect:`, families);
-                      console.log('🔍 Attributes tab - families.length:', families.length);
-                      console.log('🔍 Sample family object:', families[0]);
-                      console.log('🔍 Family object keys:', families[0] ? Object.keys(families[0]) : 'no families');
-                      console.log('🔍 First 3 family objects:', families.slice(0, 3));
-                    } else if (window.attributesRenderCount > 20) {
-                      console.warn(`⚠️ Excessive re-renders detected in Attributes tab: ${window.attributesRenderCount} renders`);
-                    }
-                    
-                    const familyOptions = families.map((family, index) => {
-                      // Use code as value and get label from labels object (fallback to code)
-                      const value = family.code;
-                      const label = (family.labels && Object.values(family.labels)[0]) || family.code;
-                      if (index < 3) {
-                        console.log(`🔍 Family ${index}:`, { 
-                          original: family, 
-                          value, 
-                          label,
-                          hasCode: !!family.code,
-                          hasLabels: !!family.labels,
-                          labelsKeys: family.labels ? Object.keys(family.labels) : []
-                        });
-                      }
-                      return {
-                        value,
-                        label
-                      };
-                    });
-                    
-                    console.log('🔍 Attributes tab - mapped options:', familyOptions.slice(0, 3));
-                    console.log('🔍 All mapped options (first 5):', JSON.stringify(familyOptions.slice(0, 5), null, 2));
-                    console.log('🔍 Options valid check:', {
-                      hasOptions: familyOptions.length > 0,
-                      firstOptionValid: familyOptions[0] && familyOptions[0].value && familyOptions[0].label,
-                      sampleValues: familyOptions.slice(0, 3).map(opt => ({ value: opt.value, label: opt.label }))
-                    });
-                    
-                    return (
-                      <div className="space-y-2">
-                        <Label>Families</Label>
-                        <MultiSelect
-                          options={familyOptions}
-                          value={attributeSettings.selectedFamilies}
-                          onChange={(selectedFamilies) => 
-                            setAttributeSettings(prev => ({ ...prev, selectedFamilies }))
-                          }
-                          placeholder="Select families to retrieve attributes from..."
-                        />
-                      </div>
-                    );
-                  })()}
+                  {familyOptions.length > 0 && (
+                    <div className="space-y-2">
+                      <Label>Families</Label>
+                      <MultiSelect
+                        options={familyOptions}
+                        value={attributeSettings.selectedFamilies}
+                        onChange={(selectedFamilies) => 
+                          setAttributeSettings(prev => ({ ...prev, selectedFamilies }))
+                        }
+                        placeholder="Select families to retrieve attributes from..."
+                      />
+                    </div>
+                  )}
                       <p className="text-xs text-gray-500">
                         {attributeSettings.selectedFamilies.length === 0 
                           ? 'Leave empty to import all attributes' 

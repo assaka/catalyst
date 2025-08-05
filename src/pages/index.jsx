@@ -26,6 +26,12 @@ import PluginHowToSimple from "./PluginHowToSimple";
 
 import PluginHowToFixed from "./PluginHowToFixed";
 
+import PluginHowToTest from "./PluginHowToTest";
+
+import PluginHowToDebug from "./PluginHowToDebug";
+
+import PluginHowToMinimal from "./PluginHowToMinimal";
+
 import Storefront from "./Storefront";
 
 import ProductDetail from "./ProductDetail";
@@ -137,6 +143,12 @@ const PAGES = {
     PluginHowToSimple: PluginHowToSimple,
     
     PluginHowToFixed: PluginHowToFixed,
+    
+    PluginHowToTest: PluginHowToTest,
+    
+    PluginHowToDebug: PluginHowToDebug,
+    
+    PluginHowToMinimal: PluginHowToMinimal,
     
     Storefront: Storefront,
     
@@ -258,7 +270,8 @@ function _getCurrentPage(url) {
         'stock-settings': 'StockSettings',
         'google-tag-manager': 'GoogleTagManager',
         'akeneo-integration': 'AkeneoIntegration',
-        'plugin-how-to': 'PluginHowToFixed',
+        'plugin-how-to': 'PluginHowToMinimal',
+        'plugin-test': 'PluginHowToTest',
         'heatmaps': 'HeatMaps',
         'ab-testing': 'ABTesting'
     };
@@ -473,7 +486,7 @@ function PagesContent() {
                 
                 <Route path="/admin/plugin-how-to" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <PluginHowToFixed />
+                        <PluginHowToMinimal />
                     </RoleProtectedRoute>
                 } />
                 
@@ -786,7 +799,7 @@ function PagesContent() {
                 
                 <Route path="/admin/plugin-how-to" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <PluginHowToFixed />
+                        <PluginHowToMinimal />
                     </RoleProtectedRoute>
                 } />
                 
