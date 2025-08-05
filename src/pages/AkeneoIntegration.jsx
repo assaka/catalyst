@@ -269,22 +269,15 @@ const AkeneoIntegration = () => {
       if (response.data?.success || response.success) {
         const responseData = response.data || response;
         const categories = responseData.categories || [];
-        
-        console.log('📦 Total categories received:', categories.length);
-        console.log('📊 Sample categories:', categories.slice(0, 3));
-        
+
         // Filter to only root categories (no parent)
         const rootCategories = categories.filter(cat => {
           const isRoot = !cat.parent || cat.parent === null || cat.parent === undefined || cat.parent === '';
-          console.log(`🔍 Category "${cat.code}" parent: "${cat.parent}" isRoot: ${isRoot}`);
           return isRoot;
         });
         
         setAvailableCategories(rootCategories);
-        
-        console.log('📂 Loaded root categories:', rootCategories.length);
-        console.log('🌱 Root categories:', rootCategories.map(cat => ({ code: cat.code, name: cat.labels?.en_US || cat.code })));
-        
+
         if (rootCategories.length === 0) {
           console.warn('⚠️ No root categories found. All categories might have parents.');
           toast.info('No root categories found in Akeneo. All categories appear to have parent categories.');
@@ -325,8 +318,19 @@ const AkeneoIntegration = () => {
         const localResponse = await apiClient.get(`/attribute-sets?store_id=${storeId}`);
         console.log('📋 API response:', localResponse);
 
+        // Handle both wrapped and raw array response formats
+        let attributeSets = [];
+        
         if (localResponse.success && localResponse.data?.attribute_sets?.length > 0) {
-          const localFamilies = localResponse.data.attribute_sets.map(attributeSet => ({
+          // Wrapped response format (authenticated)
+          attributeSets = localResponse.data.attribute_sets;
+        } else if (Array.isArray(localResponse) && localResponse.length > 0) {
+          // Raw array response format (public/unauthenticated)
+          attributeSets = localResponse;
+        }
+        
+        if (attributeSets.length > 0) {
+          const localFamilies = attributeSets.map(attributeSet => ({
             code: attributeSet.name,
             labels: { en_US: attributeSet.name },
             attributes: attributeSet.attribute_ids || [],
@@ -339,7 +343,9 @@ const AkeneoIntegration = () => {
           console.warn('⚠️ API call successful but no families found:', {
             success: localResponse.success,
             hasData: !!localResponse.data,
-            attributeSetsLength: localResponse.data?.attribute_sets?.length
+            attributeSetsLength: localResponse.data?.attribute_sets?.length,
+            isArray: Array.isArray(localResponse),
+            arrayLength: Array.isArray(localResponse) ? localResponse.length : 'not array'
           });
         }
       } catch (localError) {
