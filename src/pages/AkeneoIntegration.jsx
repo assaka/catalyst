@@ -306,29 +306,52 @@ const AkeneoIntegration = () => {
     }
   };
 
-  // Load families for filtering directly from Akeneo
+  // Load families for filtering - try local database first, then Akeneo
   const loadFamiliesForFilter = async () => {
     try {
       const storeId = localStorage.getItem('selectedStoreId');
       if (!storeId) return;
 
-      // Only load if we have a connection
-      if (!connectionStatus?.success) return;
-
       setLoadingFamilies(true);
       
-      // Load families directly from Akeneo
-      const response = await apiClient.get('/integrations/akeneo/families', {
-        'x-store-id': storeId
-      });
+      // First try to load families from local database (imported AttributeSets)
+      try {
+        const localResponse = await apiClient.get(`/attribute-sets?store_id=${storeId}`);
 
-      if (response.success) {
-        const familyData = response.families || [];
-        setFamilies(familyData);
-        console.log(`Loaded ${familyData.length} families from Akeneo`);
+        if (localResponse.success && localResponse.data?.attribute_sets?.length > 0) {
+          const localFamilies = localResponse.data.attribute_sets.map(attributeSet => ({
+            code: attributeSet.name,
+            labels: { en_US: attributeSet.name },
+            attributes: attributeSet.attribute_ids || [],
+            source: 'local'
+          }));
+          setFamilies(localFamilies);
+          console.log(`Loaded ${localFamilies.length} families from local database`);
+          return; // Use local families if available
+        }
+      } catch (localError) {
+        console.warn('Failed to load families from local database:', localError);
+      }
+
+      // Fallback to loading families directly from Akeneo if connection is successful
+      if (connectionStatus?.success) {
+        const response = await apiClient.get('/integrations/akeneo/families', {
+          'x-store-id': storeId
+        });
+
+        if (response.success) {
+          const familyData = response.families?.map(family => ({
+            ...family,
+            source: 'akeneo'
+          })) || [];
+          setFamilies(familyData);
+          console.log(`Loaded ${familyData.length} families from Akeneo`);
+        }
+      } else {
+        console.log('No Akeneo connection available, and no local families found');
       }
     } catch (error) {
-      console.error('Failed to load families from Akeneo:', error);
+      console.error('Failed to load families:', error);
       // Silently fail - families are optional for filtering
     } finally {
       setLoadingFamilies(false);
@@ -478,12 +501,17 @@ const AkeneoIntegration = () => {
     loadData();
   }, []);
 
+  // Load families on component mount (from local database)
+  useEffect(() => {
+    loadFamiliesForFilter();
+  }, []);
+
   // Load additional data when connection becomes successful
   useEffect(() => {
     if (connectionStatus?.success) {
       loadSchedules();
       loadChannels();
-      loadFamiliesForFilter();
+      loadFamiliesForFilter(); // Reload to get Akeneo families if available
       loadAvailableCategories();
     }
   }, [connectionStatus?.success]);

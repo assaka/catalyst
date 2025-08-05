@@ -492,7 +492,7 @@ router.post('/akeneo/import-products',
       filters: {
         families: filters.families || [],
         completeness: filters.completeness || 100,
-        updatedSince: filters.updatedSince || 24,
+        updatedSince: filters.updatedSince || 0,
         productModel: filters.productModel || 'all_variants_complete',
         ...filters
       },
@@ -548,11 +548,11 @@ router.post('/akeneo/import-attributes',
       dryRun,
       filters: {
         families: filters.families || [],
-        updatedSince: filters.updatedSince || 24,
+        updatedSince: filters.updatedSince || 0,
         ...filters
       },
       settings: {
-        updatedInterval: settings.updatedInterval || 24,
+        updatedInterval: settings.updatedInterval || 0,
         selectedFamilies: settings.selectedFamilies || [],
         ...settings
       }
