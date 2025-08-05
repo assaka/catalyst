@@ -2026,11 +2026,27 @@ const AkeneoIntegration = () => {
                         options={(() => {
                           console.log('🔍 Attributes tab - families for multiselect:', families);
                           console.log('🔍 Attributes tab - families.length:', families.length);
-                          const options = families.map(family => ({
-                            value: family.name || family.id,
-                            label: family.name || family.id
-                          }));
-                          console.log('🔍 Attributes tab - mapped options:', options);
+                          console.log('🔍 Sample family object:', families[0]);
+                          const options = families.map((family, index) => {
+                            // Use code as value and get label from labels object (fallback to code)
+                            const value = family.code;
+                            const label = (family.labels && Object.values(family.labels)[0]) || family.code;
+                            if (index < 3) {
+                              console.log(`🔍 Family ${index}:`, { 
+                                original: family, 
+                                value, 
+                                label,
+                                hasCode: !!family.code,
+                                hasLabels: !!family.labels,
+                                labelsKeys: family.labels ? Object.keys(family.labels) : []
+                              });
+                            }
+                            return {
+                              value,
+                              label
+                            };
+                          });
+                          console.log('🔍 Attributes tab - mapped options:', options.slice(0, 3));
                           return options;
                         })()}
                         value={attributeSettings.selectedFamilies}
@@ -2561,11 +2577,16 @@ const AkeneoIntegration = () => {
                         options={(() => {
                           console.log('🔍 Products tab - families for multiselect:', families);
                           console.log('🔍 Products tab - families.length:', families.length);
-                          const options = families.map(family => ({
-                            value: family.name || family.id,
-                            label: family.name || family.id
-                          }));
-                          console.log('🔍 Products tab - mapped options:', options);
+                          const options = families.map(family => {
+                            // Use code as value and get label from labels object (fallback to code)
+                            const value = family.code;
+                            const label = (family.labels && Object.values(family.labels)[0]) || family.code;
+                            return {
+                              value,
+                              label
+                            };
+                          });
+                          console.log('🔍 Products tab - mapped options:', options.slice(0, 3));
                           return options;
                         })()}
                         value={selectedFamilies}
