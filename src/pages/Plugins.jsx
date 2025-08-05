@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Store } from "@/api/entities";
 import { User } from "@/api/entities";
-import { apiClient } from "@/api/client";
+import apiClient from "@/api/client";
 import { 
   Puzzle, 
   Plus, 
