@@ -20,6 +20,8 @@ import Attributes from "./Attributes";
 
 import Plugins from "./Plugins";
 
+import PluginHowTo from "./PluginHowTo";
+
 import Storefront from "./Storefront";
 
 import ProductDetail from "./ProductDetail";
@@ -125,6 +127,8 @@ const PAGES = {
     Attributes: Attributes,
     
     Plugins: Plugins,
+    
+    "plugin-how-to": PluginHowTo,
     
     Storefront: Storefront,
     
