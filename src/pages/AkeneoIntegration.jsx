@@ -365,6 +365,7 @@ const AkeneoIntegration = () => {
           }));
           setFamilies(localFamilies);
           console.log(`✅ Loaded ${localFamilies.length} families from local database:`, localFamilies.slice(0, 3));
+          console.log('🔍 Full families data for debugging:', localFamilies);
           return; // Use local families if available
         } else {
           console.warn('⚠️ API call successful but no families found:', {
@@ -677,16 +678,27 @@ const AkeneoIntegration = () => {
 
   const loadLocales = async () => {
     try {
+      console.log('🌐 Loading locales...');
       const response = await apiClient.get('/integrations/akeneo/locales');
+      console.log('🌐 Locales API response:', response);
       
       // Handle both wrapped and direct response formats
       const responseData = response.data || response;
+      console.log('🌐 Locales responseData:', responseData);
       
       if (responseData?.success) {
+        console.log('✅ Locales loaded successfully:', responseData.locales);
         setLocales(responseData.locales);
+      } else {
+        console.log('❌ Locales API returned unsuccessful response');
       }
     } catch (error) {
-      console.error('Failed to load locales:', error);
+      console.error('❌ Failed to load locales:', error);
+      console.error('Locales error details:', {
+        message: error.message,
+        status: error.status,
+        response: error.response
+      });
     }
   };
 
@@ -2011,10 +2023,16 @@ const AkeneoIntegration = () => {
                     <div className="space-y-2">
                       <Label>Families</Label>
                       <MultiSelect
-                        options={families.map(family => ({
-                          value: family.name || family.id,
-                          label: family.name || family.id
-                        }))}
+                        options={(() => {
+                          console.log('🔍 Attributes tab - families for multiselect:', families);
+                          console.log('🔍 Attributes tab - families.length:', families.length);
+                          const options = families.map(family => ({
+                            value: family.name || family.id,
+                            label: family.name || family.id
+                          }));
+                          console.log('🔍 Attributes tab - mapped options:', options);
+                          return options;
+                        })()}
                         value={attributeSettings.selectedFamilies}
                         onChange={(selectedFamilies) => 
                           setAttributeSettings(prev => ({ ...prev, selectedFamilies }))
@@ -2540,10 +2558,16 @@ const AkeneoIntegration = () => {
                     <div className="space-y-2">
                       <Label>Families</Label>
                       <MultiSelect
-                        options={families.map(family => ({
-                          value: family.name || family.id,
-                          label: family.name || family.id
-                        }))}
+                        options={(() => {
+                          console.log('🔍 Products tab - families for multiselect:', families);
+                          console.log('🔍 Products tab - families.length:', families.length);
+                          const options = families.map(family => ({
+                            value: family.name || family.id,
+                            label: family.name || family.id
+                          }));
+                          console.log('🔍 Products tab - mapped options:', options);
+                          return options;
+                        })()}
                         value={selectedFamilies}
                         onChange={setSelectedFamilies}
                         placeholder="Select families to retrieve products from..."
