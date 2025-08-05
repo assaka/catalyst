@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { apiRequest } from '../../api/functions';
-import { ArrowTopRightOnSquareIcon, TrashIcon, CloudIcon, PhotoIcon, ChartBarIcon } from '@heroicons/react/24/outline';
+import { ExternalLink, Trash2, Cloud, Image, BarChart3 } from 'lucide-react';
 
 const SupabaseIntegration = ({ storeId }) => {
   const [status, setStatus] = useState(null);
@@ -177,7 +177,7 @@ const SupabaseIntegration = ({ storeId }) => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-green-100 rounded-lg">
-            <CloudIcon className="w-8 h-8 text-green-600" />
+            <Cloud className="w-8 h-8 text-green-600" />
           </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900">Supabase Integration</h3>
@@ -205,7 +205,7 @@ const SupabaseIntegration = ({ storeId }) => {
           {/* Connection Details */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
-              <CloudIcon className="w-5 h-5 text-green-600 mt-0.5" />
+              <Cloud className="w-5 h-5 text-green-600 mt-0.5" />
               <div className="flex-1">
                 <h4 className="text-sm font-medium text-green-900 mb-1">
                   Connected to Supabase Project
@@ -233,7 +233,7 @@ const SupabaseIntegration = ({ storeId }) => {
           {storageStats && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-start space-x-3">
-                <PhotoIcon className="w-5 h-5 text-blue-600 mt-0.5" />
+                <Image className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div className="flex-1">
                   <h4 className="text-sm font-medium text-blue-900 mb-2">
                     Storage Usage
@@ -258,7 +258,7 @@ const SupabaseIntegration = ({ storeId }) => {
                   disabled={loadingStats}
                   className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
                 >
-                  <ChartBarIcon className="w-4 h-4" />
+                  <BarChart3 className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -286,14 +286,14 @@ const SupabaseIntegration = ({ storeId }) => {
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               Open Project
-              <ArrowTopRightOnSquareIcon className="ml-2 h-4 w-4" />
+              <ExternalLink className="ml-2 h-4 w-4" />
             </button>
 
             <button
               onClick={handleDisconnect}
               className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
-              <TrashIcon className="mr-2 h-4 w-4" />
+              <Trash2 className="mr-2 h-4 w-4" />
               Disconnect
             </button>
           </div>
@@ -303,19 +303,19 @@ const SupabaseIntegration = ({ storeId }) => {
             <h4 className="text-sm font-medium text-gray-900 mb-3">Available Features</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <PhotoIcon className="w-4 h-4 text-green-500" />
+                <Image className="w-4 h-4 text-green-500" />
                 <span>Image Storage & CDN</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <CloudIcon className="w-4 h-4 text-green-500" />
+                <Cloud className="w-4 h-4 text-green-500" />
                 <span>Database Management</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <ChartBarIcon className="w-4 h-4 text-green-500" />
+                <BarChart3 className="w-4 h-4 text-green-500" />
                 <span>Storage Analytics</span>
               </div>
               <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <ArrowTopRightOnSquareIcon className="w-4 h-4 text-green-500" />
+                <ExternalLink className="w-4 h-4 text-green-500" />
                 <span>Project Dashboard Access</span>
               </div>
             </div>
@@ -323,7 +323,7 @@ const SupabaseIntegration = ({ storeId }) => {
         </div>
       ) : (
         <div className="text-center py-8">
-          <CloudIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+          <Cloud className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
             Connect to Supabase
           </h3>
@@ -344,7 +344,7 @@ const SupabaseIntegration = ({ storeId }) => {
                 </>
               ) : (
                 <>
-                  <CloudIcon className="mr-2 h-5 w-5" />
+                  <Cloud className="mr-2 h-5 w-5" />
                   Connect Supabase Account
                 </>
               )}
@@ -363,19 +363,19 @@ const SupabaseIntegration = ({ storeId }) => {
             <h4 className="text-sm font-medium text-gray-900 mb-3">What you'll get:</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-gray-600">
               <div className="flex items-center space-x-2">
-                <PhotoIcon className="w-4 h-4 text-gray-400" />
+                <Image className="w-4 h-4 text-gray-400" />
                 <span>Automatic image uploads to Supabase Storage</span>
               </div>
               <div className="flex items-center space-x-2">
-                <CloudIcon className="w-4 h-4 text-gray-400" />
+                <Cloud className="w-4 h-4 text-gray-400" />
                 <span>Database management for your store data</span>
               </div>
               <div className="flex items-center space-x-2">
-                <ChartBarIcon className="w-4 h-4 text-gray-400" />
+                <BarChart3 className="w-4 h-4 text-gray-400" />
                 <span>Storage usage analytics</span>
               </div>
               <div className="flex items-center space-x-2">
-                <ArrowTopRightOnSquareIcon className="w-4 h-4 text-gray-400" />
+                <ExternalLink className="w-4 h-4 text-gray-400" />
                 <span>Access to Supabase dashboard</span>
               </div>
             </div>

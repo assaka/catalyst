@@ -3,7 +3,7 @@ import { useStoreSlug } from '../hooks/useStoreSlug';
 import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { CloudIcon, DatabaseIcon, ShoppingBagIcon } from '@heroicons/react/24/outline';
+import { Cloud, Database, ShoppingBag } from 'lucide-react';
 
 const Integrations = () => {
   const { storeId } = useStoreSlug();
@@ -20,15 +20,15 @@ const Integrations = () => {
       <Tabs defaultValue="supabase" className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="supabase" className="flex items-center space-x-2">
-            <CloudIcon className="w-4 h-4" />
+            <Cloud className="w-4 h-4" />
             <span>Supabase</span>
           </TabsTrigger>
           <TabsTrigger value="akeneo" className="flex items-center space-x-2">
-            <DatabaseIcon className="w-4 h-4" />
+            <Database className="w-4 h-4" />
             <span>Akeneo PIM</span>
           </TabsTrigger>
           <TabsTrigger value="ecommerce" className="flex items-center space-x-2">
-            <ShoppingBagIcon className="w-4 h-4" />
+            <ShoppingBag className="w-4 h-4" />
             <span>E-commerce</span>
           </TabsTrigger>
         </TabsList>
@@ -41,7 +41,7 @@ const Integrations = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <DatabaseIcon className="w-5 h-5" />
+                <Database className="w-5 h-5" />
                 <span>Akeneo PIM Integration</span>
               </CardTitle>
               <CardDescription>
