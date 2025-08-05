@@ -85,6 +85,8 @@ const supabaseRoutes = require('./routes/supabase');
 const imageRoutes = require('./routes/images');
 const cloudflareOAuthRoutes = require('./routes/cloudflare-oauth');
 const pluginRoutes = require('./routes/plugins');
+const pluginCreationRoutes = require('./routes/plugin-creation');
+const pluginRenderRoutes = require('./routes/plugin-render');
 
 const app = express();
 
@@ -1493,6 +1495,8 @@ app.use('/api/supabase', supabaseRoutes);
 app.use('/api/images', authMiddleware, imageRoutes);
 app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
 app.use('/api/plugins', pluginRoutes);
+app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
+app.use('/api/stores/:store_id/plugins', pluginRenderRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

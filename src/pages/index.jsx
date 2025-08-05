@@ -118,6 +118,8 @@ import TeamPage from "./TeamPage";
 
 import AkeneoIntegration from "./AkeneoIntegration";
 
+import Integrations from "./Integrations";
+
 import HeatMaps from "./HeatMaps";
 
 import ABTesting from "./ABTesting";
@@ -241,6 +243,8 @@ const PAGES = {
     
     AkeneoIntegration: AkeneoIntegration,
     
+    Integrations: Integrations,
+    
     HeatMaps: HeatMaps,
     
     ABTesting: ABTesting,
@@ -284,6 +288,7 @@ function _getCurrentPage(url) {
         'stock-settings': 'StockSettings',
         'google-tag-manager': 'GoogleTagManager',
         'akeneo-integration': 'AkeneoIntegration',
+        'integrations': 'Integrations',
         'plugin-how-to': 'PluginHowToFixed',
         'plugin-test': 'PluginHowToTest',
         'heatmaps': 'HeatMaps',
@@ -678,6 +683,12 @@ function PagesContent() {
                         <AkeneoIntegration />
                     </RoleProtectedRoute>
                 } />
+
+                <Route path="/admin/integrations" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Integrations />
+                    </RoleProtectedRoute>
+                } />
                 
                 <Route path="/admin/heatmaps" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
@@ -991,6 +1002,12 @@ function PagesContent() {
                 <Route path="/admin/akeneo-integration" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <AkeneoIntegration />
+                    </RoleProtectedRoute>
+                } />
+
+                <Route path="/admin/integrations" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <Integrations />
                     </RoleProtectedRoute>
                 } />
                 

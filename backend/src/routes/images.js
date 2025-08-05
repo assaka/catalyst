@@ -2,7 +2,26 @@ const express = require('express');
 const router = express.Router();
 const AkeneoSyncService = require('../services/akeneo-sync-service');
 const CloudflareImageService = require('../services/cloudflare-image-service');
+const supabaseProductImages = require('../services/supabase-product-images');
+const { SupabaseOAuthToken } = require('../models');
 const authMiddleware = require('../middleware/auth');
+const multer = require('multer');
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only images are allowed.'));
+    }
+  }
+});
 
 /**
  * Test image processing configuration
@@ -324,6 +343,189 @@ router.post('/bulk-process', authMiddleware, async (req, res) => {
       success: false,
       message: 'Failed to process images in bulk',
       error: error.message
+    });
+  }
+});
+
+// ======================
+// Supabase Image Endpoints
+// ======================
+
+/**
+ * Upload product images to Supabase Storage
+ */
+router.post('/supabase/upload-product/:productId', 
+  authMiddleware, 
+  upload.array('images', 10),
+  async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const { store_id, folder, image_type = 'gallery' } = req.body;
+
+      if (!store_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Store ID is required'
+        });
+      }
+
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No image files provided'
+        });
+      }
+
+      // Check if Supabase is connected
+      const token = await SupabaseOAuthToken.findByStore(store_id);
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Supabase not connected for this store'
+        });
+      }
+
+      const result = await supabaseProductImages.uploadProductImages(
+        store_id, 
+        productId, 
+        req.files, 
+        { folder, type: image_type }
+      );
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error uploading product images to Supabase:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+);
+
+/**
+ * Upload single product image to Supabase Storage
+ */
+router.post('/supabase/upload-product/:productId/single',
+  authMiddleware,
+  upload.single('image'),
+  async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const { store_id, folder, image_type = 'gallery' } = req.body;
+
+      if (!store_id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Store ID is required'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No image file provided'
+        });
+      }
+
+      const token = await SupabaseOAuthToken.findByStore(store_id);
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          message: 'Supabase not connected for this store'
+        });
+      }
+
+      const result = await supabaseProductImages.uploadProductImage(
+        store_id,
+        productId,
+        req.file,
+        { folder, type: image_type }
+      );
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error uploading product image to Supabase:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+);
+
+/**
+ * Delete product image from Supabase Storage
+ */
+router.delete('/supabase/product/:productId/image', authMiddleware, async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { store_id, image_path } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    if (!image_path) {
+      return res.status(400).json({
+        success: false,
+        message: 'Image path is required'
+      });
+    }
+
+    const result = await supabaseProductImages.deleteProductImage(store_id, productId, image_path);
+    res.json(result);
+  } catch (error) {
+    console.error('Error deleting product image from Supabase:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Migrate product images to Supabase Storage
+ */
+router.post('/supabase/migrate-product/:productId', authMiddleware, async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const { store_id } = req.body;
+
+    if (!store_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Store ID is required'
+      });
+    }
+
+    const result = await supabaseProductImages.migrateProductImagesToSupabase(store_id, productId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error migrating product images to Supabase:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
+ * Get product images
+ */
+router.get('/supabase/product/:productId', authMiddleware, async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const result = await supabaseProductImages.getProductImages(productId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error getting product images:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
     });
   }
 });
