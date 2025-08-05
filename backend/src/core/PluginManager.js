@@ -70,7 +70,14 @@ class PluginManager {
    */
   async loadPlugin(name, pluginPath) {
     try {
-      const manifestPath = path.join(pluginPath, 'plugin.json');
+      // Try manifest.json first, then plugin.json for backward compatibility
+      let manifestPath = path.join(pluginPath, 'manifest.json');
+      try {
+        await fs.access(manifestPath);
+      } catch {
+        manifestPath = path.join(pluginPath, 'plugin.json');
+      }
+      
       const indexPath = path.join(pluginPath, 'index.js');
       
       // Check if required files exist
@@ -78,7 +85,7 @@ class PluginManager {
         await fs.access(manifestPath);
         await fs.access(indexPath);
       } catch (error) {
-        console.warn(`⚠️ Plugin ${name} missing required files (plugin.json or index.js)`);
+        console.warn(`⚠️ Plugin ${name} missing required files (manifest.json/plugin.json or index.js)`);
         return;
       }
       
@@ -278,22 +285,6 @@ class PluginManager {
     }
   }
 
-  /**
-   * Get all plugins with their status
-   */
-  getAllPlugins() {
-    const result = [];
-    
-    for (const [name, plugin] of this.plugins.entries()) {
-      result.push({
-        name,
-        ...plugin.getStatus(),
-        manifest: plugin.manifest
-      });
-    }
-    
-    return result;
-  }
 
   /**
    * Get a specific plugin
@@ -411,9 +402,14 @@ class PluginManager {
       // Discover plugins from filesystem
       await this.discoverPlugins();
       
+      // Define built-in plugins that should be marked as installed
+      const builtInPlugins = ['akeneo', 'marketplace-export'];
+      
       // Sync each discovered plugin with database
       for (const [name, plugin] of this.plugins.entries()) {
         try {
+          const isBuiltIn = builtInPlugins.includes(name);
+          
           await PluginModel.createOrUpdate({
             name: plugin.manifest.name || name,
             slug: name,
@@ -424,12 +420,24 @@ class PluginManager {
             type: plugin.manifest.type || 'plugin',
             sourceType: 'local',
             installPath: plugin.pluginPath,
-            status: 'available',
+            status: isBuiltIn ? 'installed' : 'available',
+            isInstalled: isBuiltIn,
+            isEnabled: isBuiltIn,
             configSchema: plugin.manifest.config || {},
             dependencies: plugin.manifest.dependencies || {},
             permissions: plugin.manifest.permissions || [],
-            manifest: plugin.manifest
+            manifest: plugin.manifest,
+            installedAt: isBuiltIn ? new Date() : null,
+            enabledAt: isBuiltIn ? new Date() : null
           });
+          
+          // Mark built-in plugins as installed and enabled in memory
+          if (isBuiltIn) {
+            plugin.isInstalled = true;
+            plugin.isEnabled = true;
+            this.installedPlugins.set(name, plugin);
+            this.enabledPlugins.set(name, plugin);
+          }
         } catch (error) {
           console.warn(`⚠️ Failed to sync plugin ${name} with database:`, error.message);
         }

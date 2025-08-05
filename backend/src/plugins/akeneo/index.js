@@ -15,6 +15,19 @@ class AkeneoPlugin extends Plugin {
     this.mapping = null;
   }
 
+  static getMetadata() {
+    return {
+      name: 'Akeneo PIM Integration',
+      slug: 'akeneo',
+      version: '1.2.0',
+      description: 'Comprehensive integration with Akeneo PIM for product information management',
+      author: 'Catalyst Team',
+      category: 'integration',
+      dependencies: [],
+      permissions: ['products:write', 'categories:write', 'attributes:write']
+    };
+  }
+
   /**
    * Initialize the plugin
    */
