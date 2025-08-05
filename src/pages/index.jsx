@@ -24,6 +24,8 @@ import PluginHowTo from "./PluginHowTo";
 
 import PluginHowToSimple from "./PluginHowToSimple";
 
+import PluginHowToFixed from "./PluginHowToFixed";
+
 import Storefront from "./Storefront";
 
 import ProductDetail from "./ProductDetail";
@@ -133,6 +135,8 @@ const PAGES = {
     PluginHowTo: PluginHowTo,
     
     PluginHowToSimple: PluginHowToSimple,
+    
+    PluginHowToFixed: PluginHowToFixed,
     
     Storefront: Storefront,
     
@@ -254,7 +258,7 @@ function _getCurrentPage(url) {
         'stock-settings': 'StockSettings',
         'google-tag-manager': 'GoogleTagManager',
         'akeneo-integration': 'AkeneoIntegration',
-        'plugin-how-to': 'PluginHowToSimple',
+        'plugin-how-to': 'PluginHowToFixed',
         'heatmaps': 'HeatMaps',
         'ab-testing': 'ABTesting'
     };
