@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pluginManager = require('../core/PluginManager');
-const { authMiddleware } = require('../middleware/auth');
+const authMiddleware = require('../middleware/auth');
 
 // All plugin routes require authentication
 router.use(authMiddleware);
