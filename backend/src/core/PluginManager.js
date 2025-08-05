@@ -1,6 +1,11 @@
 const fs = require('fs').promises;
 const path = require('path');
 const Plugin = require('./Plugin');
+const PluginModel = require('../models/Plugin');
+const axios = require('axios');
+const { exec } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
 
 /**
  * Plugin Manager
@@ -8,12 +13,12 @@ const Plugin = require('./Plugin');
  */
 class PluginManager {
   constructor() {
-    this.plugins = new Map();
-    this.installedPlugins = new Map();
-    this.enabledPlugins = new Map();
+    this.plugins = new Map(); // Runtime plugin instances
+    this.installedPlugins = new Map(); // Installed plugin instances
+    this.enabledPlugins = new Map(); // Enabled plugin instances
     this.pluginDirectory = path.join(__dirname, '../plugins');
-    this.configFile = path.join(__dirname, '../config/plugins.json');
     this.hooks = new Map();
+    this.marketplace = new Map(); // Available plugins from marketplace/registry
   }
 
   /**
@@ -25,16 +30,19 @@ class PluginManager {
     // Ensure plugin directory exists
     await this.ensurePluginDirectory();
     
-    // Load plugin configuration
-    await this.loadPluginConfig();
+    // Sync database with filesystem plugins
+    await this.syncPluginsWithDatabase();
     
-    // Discover available plugins
-    await this.discoverPlugins();
+    // Load installed plugins from database
+    await this.loadInstalledPlugins();
+    
+    // Load marketplace plugins
+    await this.loadMarketplace();
     
     // Auto-enable previously enabled plugins
     await this.autoEnablePlugins();
     
-    console.log(`✅ Plugin Manager initialized with ${this.plugins.size} plugins`);
+    console.log(`✅ Plugin Manager initialized with ${this.plugins.size} plugins, ${this.marketplace.size} marketplace plugins`);
   }
 
   /**
@@ -105,6 +113,11 @@ class PluginManager {
    * Install a plugin
    */
   async installPlugin(name) {
+    // Check if it's a marketplace plugin
+    if (this.marketplace.has(name)) {
+      return await this.installFromMarketplace(name);
+    }
+    
     const plugin = this.plugins.get(name);
     if (!plugin) {
       throw new Error(`Plugin ${name} not found`);
@@ -126,11 +139,16 @@ class PluginManager {
       // Install the plugin
       await plugin.install();
 
-      // Mark as installed
+      // Update database
+      const pluginRecord = await PluginModel.findBySlug(name);
+      if (pluginRecord) {
+        await pluginRecord.markInstalled();
+        plugin.dbRecord = pluginRecord;
+      }
+
+      // Mark as installed in memory
+      plugin.isInstalled = true;
       this.installedPlugins.set(name, plugin);
-      
-      // Save configuration
-      await this.savePluginConfig();
 
       console.log(`✅ Plugin ${name} installed successfully`);
       
@@ -140,6 +158,16 @@ class PluginManager {
       return plugin;
     } catch (error) {
       console.error(`❌ Failed to install plugin ${name}:`, error.message);
+      
+      // Update database with error
+      const pluginRecord = await PluginModel.findBySlug(name);
+      if (pluginRecord) {
+        await pluginRecord.update({
+          status: 'error',
+          installationLog: `Installation failed: ${error.message}`
+        });
+      }
+      
       throw error;
     }
   }
@@ -376,6 +404,271 @@ class PluginManager {
   }
 
   /**
+   * Sync filesystem plugins with database
+   */
+  async syncPluginsWithDatabase() {
+    try {
+      // Discover plugins from filesystem
+      await this.discoverPlugins();
+      
+      // Sync each discovered plugin with database
+      for (const [name, plugin] of this.plugins.entries()) {
+        try {
+          await PluginModel.createOrUpdate({
+            name: plugin.manifest.name || name,
+            slug: name,
+            version: plugin.manifest.version || '1.0.0',
+            description: plugin.manifest.description || '',
+            author: plugin.manifest.author || 'Unknown',
+            category: plugin.manifest.category || 'other',
+            type: plugin.manifest.type || 'plugin',
+            sourceType: 'local',
+            installPath: plugin.pluginPath,
+            status: 'available',
+            configSchema: plugin.manifest.config || {},
+            dependencies: plugin.manifest.dependencies || {},
+            permissions: plugin.manifest.permissions || [],
+            manifest: plugin.manifest
+          });
+        } catch (error) {
+          console.warn(`⚠️ Failed to sync plugin ${name} with database:`, error.message);
+        }
+      }
+      
+      console.log(`🔄 Synced ${this.plugins.size} filesystem plugins with database`);
+    } catch (error) {
+      console.error('❌ Failed to sync plugins with database:', error.message);
+    }
+  }
+
+  /**
+   * Load installed plugins from database
+   */
+  async loadInstalledPlugins() {
+    try {
+      const installedPlugins = await PluginModel.findInstalled();
+      
+      for (const pluginRecord of installedPlugins) {
+        const plugin = this.plugins.get(pluginRecord.slug);
+        if (plugin) {
+          this.installedPlugins.set(pluginRecord.slug, plugin);
+          plugin.isInstalled = true;
+          plugin.dbRecord = pluginRecord;
+          
+          if (pluginRecord.isEnabled) {
+            this.enabledPlugins.set(pluginRecord.slug, plugin);
+            plugin.isEnabled = true;
+          }
+        }
+      }
+      
+      console.log(`📦 Loaded ${this.installedPlugins.size} installed plugins from database`);
+    } catch (error) {
+      console.error('❌ Failed to load installed plugins:', error.message);
+    }
+  }
+
+  /**
+   * Load marketplace plugins
+   */
+  async loadMarketplace() {
+    try {
+      // TODO: Load from actual marketplace registry
+      // For now, just load GitHub plugins or known registry
+      const marketplacePlugins = [
+        {
+          name: 'Google Analytics 4',
+          slug: 'google-analytics-4',
+          description: 'Integrate Google Analytics 4 for advanced tracking',
+          author: 'Catalyst Team',
+          category: 'analytics',
+          version: '1.0.0',
+          sourceType: 'github',
+          sourceUrl: 'https://github.com/catalyst-plugins/google-analytics-4',
+          status: 'available'
+        },
+        {
+          name: 'Stripe Payment Gateway',
+          slug: 'stripe-payment',
+          description: 'Accept payments through Stripe',
+          author: 'Catalyst Team',
+          category: 'payment',
+          version: '2.0.0',
+          sourceType: 'github',
+          sourceUrl: 'https://github.com/catalyst-plugins/stripe-payment',
+          status: 'available'
+        }
+      ];
+      
+      for (const plugin of marketplacePlugins) {
+        this.marketplace.set(plugin.slug, plugin);
+      }
+      
+      console.log(`🏪 Loaded ${this.marketplace.size} marketplace plugins`);
+    } catch (error) {
+      console.error('❌ Failed to load marketplace:', error.message);
+    }
+  }
+
+  /**
+   * Install plugin from GitHub
+   */
+  async installFromGitHub(githubUrl, options = {}) {
+    try {
+      console.log(`📥 Installing plugin from GitHub: ${githubUrl}`);
+      
+      // Parse GitHub URL
+      const urlMatch = githubUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+      if (!urlMatch) {
+        throw new Error('Invalid GitHub URL format');
+      }
+      
+      const [, owner, repo] = urlMatch;
+      const pluginName = repo.replace(/[^a-zA-Z0-9-]/g, '');
+      const pluginPath = path.join(this.pluginDirectory, pluginName);
+      
+      // Create database record first
+      const pluginRecord = await PluginModel.create({
+        name: pluginName,
+        slug: pluginName,
+        version: '0.0.0', // Will be updated after cloning
+        description: 'Installing from GitHub...',
+        author: owner,
+        category: 'unknown',
+        sourceType: 'github',
+        sourceUrl: githubUrl,
+        installPath: pluginPath,
+        status: 'installing',
+        installationLog: `Starting installation from ${githubUrl}`
+      });
+      
+      try {
+        // Clone the repository
+        const cloneCmd = `git clone ${githubUrl} "${pluginPath}"`;
+        const { stdout, stderr } = await execAsync(cloneCmd);
+        
+        // Check if plugin.json exists
+        const manifestPath = path.join(pluginPath, 'plugin.json');
+        try {
+          await fs.access(manifestPath);
+        } catch (error) {
+          throw new Error('Plugin manifest (plugin.json) not found in repository');
+        }
+        
+        // Load and validate manifest
+        const manifestContent = await fs.readFile(manifestPath, 'utf8');
+        const manifest = JSON.parse(manifestContent);
+        
+        if (!manifest.name || !manifest.version) {
+          throw new Error('Invalid plugin manifest: missing name or version');
+        }
+        
+        // Update database record with manifest data
+        await pluginRecord.update({
+          name: manifest.name,
+          version: manifest.version,
+          description: manifest.description || '',
+          category: manifest.category || 'other',
+          type: manifest.type || 'plugin',
+          configSchema: manifest.config || {},
+          dependencies: manifest.dependencies || {},
+          permissions: manifest.permissions || [],
+          manifest: manifest,
+          status: 'installed',
+          isInstalled: true,
+          installedAt: new Date(),
+          installationLog: `Successfully installed from ${githubUrl}\n\nClone output:\n${stdout}\n${stderr}`
+        });
+        
+        // Load the plugin
+        await this.loadPlugin(pluginName, pluginPath);
+        const plugin = this.plugins.get(pluginName);
+        if (plugin) {
+          plugin.isInstalled = true;
+          plugin.dbRecord = pluginRecord;
+          this.installedPlugins.set(pluginName, plugin);
+        }
+        
+        console.log(`✅ Successfully installed plugin ${manifest.name} v${manifest.version} from GitHub`);
+        
+        return {
+          success: true,
+          plugin: pluginRecord,
+          message: `Plugin ${manifest.name} installed successfully`
+        };
+        
+      } catch (installError) {
+        // Update database with error
+        await pluginRecord.update({
+          status: 'error',
+          installationLog: `Installation failed: ${installError.message}`
+        });
+        
+        // Clean up failed installation
+        try {
+          await fs.rmdir(pluginPath, { recursive: true });
+        } catch (cleanupError) {
+          console.warn(`⚠️ Failed to clean up ${pluginPath}:`, cleanupError.message);
+        }
+        
+        throw installError;
+      }
+      
+    } catch (error) {
+      console.error(`❌ GitHub installation failed:`, error.message);
+      throw new Error(`GitHub installation failed: ${error.message}`);
+    }
+  }
+
+  /**
+   * Install plugin from marketplace
+   */
+  async installFromMarketplace(pluginSlug, options = {}) {
+    const marketplacePlugin = this.marketplace.get(pluginSlug);
+    if (!marketplacePlugin) {
+      throw new Error(`Plugin ${pluginSlug} not found in marketplace`);
+    }
+    
+    if (marketplacePlugin.sourceType === 'github') {
+      return await this.installFromGitHub(marketplacePlugin.sourceUrl, options);
+    } else {
+      throw new Error(`Unsupported marketplace source type: ${marketplacePlugin.sourceType}`);
+    }
+  }
+
+  /**
+   * Get all plugins (filesystem + marketplace)
+   */
+  getAllPlugins() {
+    const result = [];
+    
+    // Add filesystem plugins
+    for (const [name, plugin] of this.plugins.entries()) {
+      result.push({
+        name: plugin.manifest?.name || name,
+        slug: name,
+        ...plugin.getStatus(),
+        manifest: plugin.manifest,
+        source: 'local'
+      });
+    }
+    
+    // Add marketplace plugins that aren't installed
+    for (const [slug, marketplacePlugin] of this.marketplace.entries()) {
+      if (!this.plugins.has(slug)) {
+        result.push({
+          ...marketplacePlugin,
+          isInstalled: false,
+          isEnabled: false,
+          source: 'marketplace'
+        });
+      }
+    }
+    
+    return result;
+  }
+
+  /**
    * Get plugin manager status
    */
   getStatus() {
@@ -383,6 +676,7 @@ class PluginManager {
       totalPlugins: this.plugins.size,
       installedPlugins: this.installedPlugins.size,
       enabledPlugins: this.enabledPlugins.size,
+      marketplacePlugins: this.marketplace.size,
       pluginDirectory: this.pluginDirectory,
       plugins: this.getAllPlugins()
     };

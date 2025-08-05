@@ -40,13 +40,16 @@ import PluginForm from "../components/plugins/PluginForm";
 
 export default function Plugins() {
   const [plugins, setPlugins] = useState([]);
-  const [installedPlugins, setInstalledPlugins] = useState([]);
+  const [marketplacePlugins, setMarketplacePlugins] = useState([]);
   const [stores, setStores] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [showPluginForm, setShowPluginForm] = useState(false);
+  const [showGitHubInstall, setShowGitHubInstall] = useState(false);
+  const [githubUrl, setGithubUrl] = useState("");
+  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -54,18 +57,19 @@ export default function Plugins() {
 
   const loadData = async () => {
     try {
-      // Load modern plugin system only
-      const [pluginsResponse, storesData, userData] = await Promise.all([
+      // Load modern plugin system and marketplace
+      const [pluginsResponse, marketplaceResponse, storesData, userData] = await Promise.all([
         fetch('/api/plugins', { credentials: 'include' }).then(r => r.ok ? r.json() : { data: { plugins: [] } }),
+        fetch('/api/plugins/marketplace', { credentials: 'include' }).then(r => r.ok ? r.json() : { data: [] }),
         Store.list(),
         User.me()
       ]);
       
       // Transform plugin system data for display
       const transformedPlugins = pluginsResponse.data?.plugins?.map(plugin => ({
-        id: plugin.name.toLowerCase().replace(/\s+/g, '-'),
+        id: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
         name: plugin.name,
-        slug: plugin.name.toLowerCase().replace(/\s+/g, '-'),
+        slug: plugin.slug || plugin.name.toLowerCase().replace(/\s+/g, '-'),
         description: plugin.manifest?.description || 'No description available',
         long_description: plugin.manifest?.description || 'No description available',
         version: plugin.manifest?.version || '1.0.0',
@@ -80,11 +84,46 @@ export default function Plugins() {
         reviews_count: 0,
         isEnabled: plugin.isEnabled,
         isInstalled: plugin.isInstalled,
-        availableMethods: plugin.manifest?.methods || []
+        availableMethods: plugin.manifest?.methods || [],
+        source: plugin.source || 'local',
+        sourceType: plugin.manifest?.sourceType || 'local'
       })) || [];
       
-      setPlugins(transformedPlugins);
-      setInstalledPlugins([]); // Modern plugin system tracks installation internally
+      // Add marketplace plugins that aren't installed
+      const marketplaceData = marketplaceResponse.data || [];
+      const allPlugins = [...transformedPlugins];
+      
+      marketplaceData.forEach(marketplacePlugin => {
+        const existingPlugin = transformedPlugins.find(p => p.slug === marketplacePlugin.slug);
+        if (!existingPlugin) {
+          allPlugins.push({
+            id: marketplacePlugin.slug,
+            name: marketplacePlugin.name,
+            slug: marketplacePlugin.slug,
+            description: marketplacePlugin.description,
+            long_description: marketplacePlugin.description,
+            version: marketplacePlugin.version,
+            price: 0,
+            category: marketplacePlugin.category,
+            icon_url: "https://via.placeholder.com/64x64/10B981/FFFFFF?text=" + marketplacePlugin.name.charAt(0),
+            creator_id: "marketplace",
+            creator_name: marketplacePlugin.author,
+            status: "approved",
+            downloads: 0,
+            rating: 0,
+            reviews_count: 0,
+            isEnabled: false,
+            isInstalled: false,
+            availableMethods: [],
+            source: 'marketplace',
+            sourceType: marketplacePlugin.sourceType,
+            sourceUrl: marketplacePlugin.sourceUrl
+          });
+        }
+      });
+      
+      setPlugins(allPlugins);
+      setMarketplacePlugins(marketplaceData);
       setStores(storesData);
       setUser(userData);
     } catch (error) {
@@ -133,6 +172,40 @@ export default function Plugins() {
         console.error("Error uninstalling plugin:", error);
         alert("Error uninstalling plugin: " + error.message);
       }
+    }
+  };
+
+  const handleInstallFromGitHub = async () => {
+    if (!githubUrl.trim()) {
+      alert("Please enter a GitHub URL");
+      return;
+    }
+
+    setInstalling(true);
+    try {
+      const response = await fetch('/api/plugins/install-github', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ githubUrl: githubUrl.trim() })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to install plugin from GitHub');
+      }
+
+      const result = await response.json();
+      alert(`Plugin installed successfully: ${result.message}`);
+      
+      setShowGitHubInstall(false);
+      setGithubUrl("");
+      await loadData();
+    } catch (error) {
+      console.error("Error installing from GitHub:", error);
+      alert("Error installing plugin: " + error.message);
+    } finally {
+      setInstalling(false);
     }
   };
 
@@ -198,13 +271,23 @@ export default function Plugins() {
             <h1 className="text-3xl font-bold text-gray-900">Plugin Marketplace</h1>
             <p className="text-gray-600 mt-1">Extend your store with powerful plugins</p>
           </div>
-          <Button
-            onClick={() => setShowPluginForm(true)}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Submit Plugin
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowGitHubInstall(true)}
+              variant="outline"
+              className="border-green-200 text-green-700 hover:bg-green-50"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Install from GitHub
+            </Button>
+            <Button
+              onClick={() => setShowPluginForm(true)}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple material-elevation-1"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Submit Plugin
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="marketplace" className="space-y-6">
@@ -269,11 +352,29 @@ export default function Plugins() {
                     <CardHeader className="pb-3">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                          <div className={`w-12 h-12 ${
+                            plugin.source === 'marketplace' 
+                              ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
+                              : plugin.sourceType === 'github'
+                              ? 'bg-gradient-to-r from-gray-700 to-gray-900'
+                              : 'bg-gradient-to-r from-blue-500 to-purple-600'
+                          } rounded-lg flex items-center justify-center`}>
                             <CategoryIcon className="w-6 h-6 text-white" />
                           </div>
                           <div>
-                            <CardTitle className="text-lg">{plugin.name}</CardTitle>
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-lg">{plugin.name}</CardTitle>
+                              {plugin.source === 'marketplace' && (
+                                <Badge className="bg-green-100 text-green-700 text-xs">
+                                  Marketplace
+                                </Badge>
+                              )}
+                              {plugin.sourceType === 'github' && (
+                                <Badge className="bg-gray-100 text-gray-700 text-xs">
+                                  GitHub
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-sm text-gray-500">by {plugin.creator_name}</p>
                           </div>
                         </div>
@@ -468,6 +569,47 @@ export default function Plugins() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* GitHub Installation Dialog */}
+        <Dialog open={showGitHubInstall} onOpenChange={setShowGitHubInstall}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Install Plugin from GitHub</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  GitHub Repository URL
+                </label>
+                <Input
+                  placeholder="https://github.com/user/plugin-name"
+                  value={githubUrl}
+                  onChange={(e) => setGithubUrl(e.target.value)}
+                  disabled={installing}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  The repository must contain a plugin.json manifest file
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowGitHubInstall(false)}
+                  disabled={installing}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleInstallFromGitHub}
+                  disabled={installing || !githubUrl.trim()}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {installing ? "Installing..." : "Install"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Plugin Form Dialog */}
         <Dialog open={showPluginForm} onOpenChange={setShowPluginForm}>

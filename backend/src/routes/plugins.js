@@ -203,5 +203,63 @@ router.get('/:name/health', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/plugins/install-github
+ * Install plugin from GitHub
+ */
+router.post('/install-github', async (req, res) => {
+  try {
+    const { githubUrl, options = {} } = req.body;
+    
+    if (!githubUrl) {
+      return res.status(400).json({
+        success: false,
+        error: 'GitHub URL is required'
+      });
+    }
+    
+    // Validate GitHub URL format
+    if (!githubUrl.includes('github.com')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid GitHub URL format'
+      });
+    }
+    
+    const result = await pluginManager.installFromGitHub(githubUrl, options);
+    
+    res.json({
+      success: true,
+      message: result.message,
+      data: result.plugin
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/plugins/marketplace
+ * Get marketplace plugins
+ */
+router.get('/marketplace', async (req, res) => {
+  try {
+    const marketplacePlugins = Array.from(pluginManager.marketplace.values());
+    
+    res.json({
+      success: true,
+      data: marketplacePlugins
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 
 module.exports = router;
