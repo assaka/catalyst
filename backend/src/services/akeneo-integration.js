@@ -963,6 +963,11 @@ class AkeneoIntegration {
 
       return {
         success: true,
+        stats: {
+          categories: categoryResult.stats,
+          products: productResult.stats,
+          total: (categoryResult.stats?.imported || 0) + (productResult.stats?.imported || 0)
+        },
         results: {
           categories: categoryResult,
           products: productResult
@@ -979,6 +984,7 @@ class AkeneoIntegration {
       return {
         success: false,
         error: error.message,
+        stats: null, // Add missing stats property for consistency
         totalStats: {
           categories: this.importStats.categories,
           products: this.importStats.products,
