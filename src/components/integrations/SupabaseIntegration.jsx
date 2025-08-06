@@ -240,8 +240,12 @@ const SupabaseIntegration = ({ storeId }) => {
       });
 
       if (response.success) {
-        toast.success('Supabase disconnected successfully');
-        setStatus({ connected: false });
+        toast.success('Supabase disconnected successfully', {
+          description: response.note || 'You may need to revoke access in your Supabase account settings.',
+          duration: 8000
+        });
+        // Reload status to show orphaned authorization warning if applicable
+        loadStatus();
         setStorageStats(null);
       } else {
         throw new Error(response.message || 'Failed to disconnect');
@@ -348,6 +352,51 @@ const SupabaseIntegration = ({ storeId }) => {
                   <li>Set redirect URL to: <code className="bg-yellow-100 px-1">https://catalyst-backend-fzhu.onrender.com/api/supabase/callback</code></li>
                   <li>Add the credentials to your server environment</li>
                 </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : status?.hasOrphanedAuthorization ? (
+        <div className="space-y-6">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Cloud className="w-5 h-5 text-orange-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-orange-900 mb-1">
+                  Authorization May Still Be Active
+                </h4>
+                <p className="text-sm text-orange-700 mb-3">
+                  You disconnected Catalyst from Supabase, but the app may still be authorized in your Supabase account.
+                </p>
+                <div className="space-y-2">
+                  <p className="text-sm text-orange-700">
+                    To completely revoke access:
+                  </p>
+                  <ol className="text-sm text-orange-700 list-decimal list-inside space-y-1">
+                    <li>Go to <a href="https://supabase.com/dashboard/account/apps" target="_blank" rel="noopener noreferrer" className="underline">Supabase Authorized Apps</a></li>
+                    <li>Find "Catalyst" in the list</li>
+                    <li>Click "Revoke Access"</li>
+                  </ol>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={handleConnect}
+                    disabled={connecting}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                  >
+                    {connecting ? (
+                      <>
+                        <div className="animate-spin -ml-1 mr-3 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        Connecting...
+                      </>
+                    ) : (
+                      <>
+                        <Cloud className="mr-2 h-4 w-4" />
+                        Reconnect Supabase
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

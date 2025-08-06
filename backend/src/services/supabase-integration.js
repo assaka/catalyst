@@ -566,6 +566,10 @@ class SupabaseIntegration {
     try {
       console.log('Disconnecting Supabase for store:', storeId);
       
+      // Get current config data before deletion
+      const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
+      const userEmail = config?.config_data?.userEmail || null;
+      
       // Delete token from database
       const token = await SupabaseOAuthToken.findByStore(storeId);
       if (token) {
@@ -575,8 +579,7 @@ class SupabaseIntegration {
         console.log('No OAuth token found to delete');
       }
 
-      // Update IntegrationConfig
-      const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
+      // Update IntegrationConfig - preserve userEmail to detect orphaned authorizations
       if (config) {
         console.log('Updating IntegrationConfig to disconnected state');
         await config.update({
@@ -584,7 +587,9 @@ class SupabaseIntegration {
           connection_status: 'disconnected',
           config_data: {
             connected: false,
-            disconnectedAt: new Date()
+            disconnectedAt: new Date(),
+            userEmail: userEmail, // Preserve email to track orphaned authorizations
+            message: 'Disconnected by user. App may still be authorized in Supabase account.'
           }
         });
       } else {
@@ -592,7 +597,11 @@ class SupabaseIntegration {
       }
 
       console.log('✅ Supabase disconnection completed');
-      return { success: true, message: 'Supabase disconnected successfully' };
+      return { 
+        success: true, 
+        message: 'Supabase disconnected successfully',
+        note: 'To fully revoke access, go to your Supabase account settings and remove the Catalyst app authorization.'
+      };
     } catch (error) {
       console.error('Error disconnecting Supabase:', error);
       throw new Error('Failed to disconnect Supabase: ' + error.message);
@@ -618,10 +627,21 @@ class SupabaseIntegration {
 
       // Check if token exists and IntegrationConfig shows as connected
       if (!token || (config && config.config_data?.connected === false)) {
+        // Check if user might still have the app authorized on Supabase's side
+        // by looking at the config history
+        let hasOrphanedAuthorization = false;
+        if (config && config.config_data?.disconnectedAt && config.config_data?.userEmail) {
+          // If we have a disconnectedAt timestamp and userEmail, the app might still be authorized
+          hasOrphanedAuthorization = true;
+        }
+        
         return {
           connected: false,
-          message: 'Supabase not connected',
-          oauthConfigured: true
+          message: hasOrphanedAuthorization 
+            ? 'Supabase disconnected locally. You may need to revoke access in your Supabase account settings.'
+            : 'Supabase not connected',
+          oauthConfigured: true,
+          hasOrphanedAuthorization
         };
       }
 
@@ -637,6 +657,10 @@ class SupabaseIntegration {
         };
       }
 
+      // Check if connection has limited scope
+      const hasLimitedScope = token.project_url === 'https://pending-configuration.supabase.co' || 
+                              token.project_url === 'pending_configuration';
+
       return {
         connected: true,
         projectUrl: token.project_url,
@@ -644,7 +668,9 @@ class SupabaseIntegration {
         isExpired,
         connectionStatus: config?.connection_status,
         lastTestedAt: config?.connection_tested_at,
-        oauthConfigured: true
+        oauthConfigured: true,
+        limitedScope: hasLimitedScope,
+        userEmail: config?.config_data?.userEmail
       };
     } catch (error) {
       console.error('Error getting connection status:', error);
