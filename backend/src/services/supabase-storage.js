@@ -55,14 +55,52 @@ class SupabaseStorageService {
 
   /**
    * Upload image using direct API call with OAuth token
+   * Note: This requires anon key or service role key. OAuth token alone is not sufficient for Storage API.
    */
   async uploadImageDirect(storeId, file, options = {}) {
     try {
-      const token = await supabaseIntegration.getValidToken(storeId);
       const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
       
       if (!tokenInfo || !tokenInfo.project_url || tokenInfo.project_url === 'pending_configuration') {
-        throw new Error('Project URL not configured');
+        throw new Error('Project URL not configured. Please select a project.');
+      }
+
+      // Check if we have valid API keys
+      const hasValidAnonKey = tokenInfo.anon_key && 
+                              tokenInfo.anon_key !== 'pending_configuration' &&
+                              tokenInfo.anon_key !== 'pending' &&
+                              tokenInfo.anon_key !== '' &&
+                              !tokenInfo.anon_key.includes('dummy') &&
+                              !tokenInfo.anon_key.includes('pending');
+      
+      const hasValidServiceKey = tokenInfo.service_role_key && 
+                                 tokenInfo.service_role_key !== 'pending_configuration' &&
+                                 tokenInfo.service_role_key !== '';
+
+      if (!hasValidAnonKey && !hasValidServiceKey) {
+        // Try to fetch API keys if we have OAuth token
+        console.log('No valid API keys found, attempting to fetch from Supabase...');
+        const fetchResult = await supabaseIntegration.fetchAndUpdateApiKeys(storeId);
+        
+        if (!fetchResult.success || !fetchResult.hasAnonKey) {
+          throw new Error('Storage operations require API keys. The OAuth token does not have permission to fetch API keys. Please reconnect with full permissions or manually configure the API keys.');
+        }
+        
+        // Reload token info after fetching keys
+        const updatedTokenInfo = await supabaseIntegration.getTokenInfo(storeId);
+        if (updatedTokenInfo.anon_key && updatedTokenInfo.anon_key !== 'pending_configuration') {
+          tokenInfo.anon_key = updatedTokenInfo.anon_key;
+        }
+        if (updatedTokenInfo.service_role_key) {
+          tokenInfo.service_role_key = updatedTokenInfo.service_role_key;
+        }
+      }
+
+      // Use the appropriate key (prefer anon key for public operations)
+      const apiKey = hasValidAnonKey ? tokenInfo.anon_key : tokenInfo.service_role_key;
+      
+      if (!apiKey) {
+        throw new Error('No valid API key available for storage operations. Please reconnect with full permissions.');
       }
 
       // Generate unique filename
@@ -79,6 +117,7 @@ class SupabaseStorageService {
       const storageUrl = projectUrl.replace('.supabase.co', '.supabase.co/storage/v1');
 
       console.log('Direct upload to:', `${storageUrl}/object/${bucketName}/${filePath}`);
+      console.log('Using API key type:', hasValidAnonKey ? 'anon' : 'service_role');
 
       // First, try to create bucket if it doesn't exist
       try {
@@ -93,7 +132,8 @@ class SupabaseStorageService {
           },
           {
             headers: {
-              'Authorization': `Bearer ${token}`,
+              'Authorization': `Bearer ${apiKey}`,
+              'apikey': apiKey,
               'Content-Type': 'application/json'
             }
           }
@@ -106,13 +146,14 @@ class SupabaseStorageService {
         }
       }
 
-      // Upload using direct API call
+      // Upload using direct API call with proper authentication
       const uploadResponse = await axios.post(
         `${storageUrl}/object/${bucketName}/${filePath}`,
         file.buffer || file,
         {
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${apiKey}`,
+            'apikey': apiKey,
             'Content-Type': file.mimetype || 'image/jpeg',
             'Cache-Control': 'max-age=3600'
           },
@@ -139,6 +180,12 @@ class SupabaseStorageService {
       };
     } catch (error) {
       console.error('Direct upload error:', error.response?.data || error.message);
+      
+      // Check if it's an authentication error
+      if (error.response?.status === 403 || error.response?.status === 401) {
+        throw new Error('Authentication failed. Please reconnect to Supabase with full permissions to enable storage operations.');
+      }
+      
       throw new Error(`Failed to upload image: ${error.response?.data?.message || error.message}`);
     }
   }
@@ -172,7 +219,7 @@ class SupabaseStorageService {
                               !tokenInfo.anon_key.includes('pending');
 
       if (!hasValidAnonKey) {
-        console.log('No valid anon key detected, using direct API upload');
+        console.log('No valid anon key detected, attempting direct API upload with key fetching');
         return await this.uploadImageDirect(storeId, file, options);
       }
 
