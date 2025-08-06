@@ -184,9 +184,38 @@ router.get('/callback', async (req, res) => {
               userEmail: '${userEmail}'
             }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
           }
-          // Close window after 2 seconds
+          
+          // Try to close window after 2 seconds
           setTimeout(() => {
-            window.close();
+            try {
+              // Try window.close() first
+              window.close();
+              
+              // If still open after 100ms, try alternative methods
+              setTimeout(() => {
+                // For some browsers, we need to use self.close()
+                self.close();
+                
+                // If still not closed, show a message
+                setTimeout(() => {
+                  document.querySelector('.container').innerHTML = 
+                    '<div class="success">✓</div>' +
+                    '<h1>All Done!</h1>' +
+                    '<p>You can now close this window and return to the dashboard.</p>' +
+                    '<button onclick="window.close(); self.close();" style="' +
+                    'background: #10b981; color: white; border: none; ' +
+                    'padding: 10px 20px; border-radius: 6px; cursor: pointer; ' +
+                    'font-size: 16px; margin-top: 10px;">Close Window</button>';
+                }, 100);
+              }, 100);
+            } catch (e) {
+              console.error('Cannot close window:', e);
+              // Show manual close message
+              document.querySelector('.container').innerHTML = 
+                '<div class="success">✓</div>' +
+                '<h1>All Done!</h1>' +
+                '<p>You can now close this window and return to the dashboard.</p>';
+            }
           }, 2000);
         </script>
       </body>
@@ -256,9 +285,27 @@ router.get('/callback', async (req, res) => {
               error: '${error.message.replace(/'/g, "\\'")}'
             }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
           }
-          // Close window after 3 seconds
+          
+          // Try to close window after 3 seconds
           setTimeout(() => {
-            window.close();
+            try {
+              window.close();
+              self.close();
+              
+              // If still not closed, show manual close option
+              setTimeout(() => {
+                document.querySelector('.container').innerHTML = 
+                  '<div class="error">✗</div>' +
+                  '<h1>Connection Failed</h1>' +
+                  '<p>You can close this window and try again.</p>' +
+                  '<button onclick="window.close(); self.close();" style="' +
+                  'background: #ef4444; color: white; border: none; ' +
+                  'padding: 10px 20px; border-radius: 6px; cursor: pointer; ' +
+                  'font-size: 16px; margin-top: 10px;">Close Window</button>';
+              }, 200);
+            } catch (e) {
+              console.error('Cannot close window:', e);
+            }
           }, 3000);
         </script>
       </body>
