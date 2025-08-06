@@ -298,7 +298,6 @@ function _getCurrentPage(url) {
         'plugin-how-to': 'PluginHowToFixed',
         'plugin-builder': 'PluginBuilder',
         'template-editor': 'TemplateEditor',
-        'create-plugin': 'PluginBuilder',
         'plugin-test': 'PluginHowToTest',
         'heatmaps': 'HeatMaps',
         'ab-testing': 'ABTesting'
@@ -524,11 +523,6 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/create-plugin" element={
-                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <PluginBuilder />
-                    </RoleProtectedRoute>
-                } />
                 
                 <Route path="/admin/template-editor" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
@@ -863,11 +857,6 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/create-plugin" element={
-                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <PluginBuilder />
-                    </RoleProtectedRoute>
-                } />
                 
                 <Route path="/admin/template-editor" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
