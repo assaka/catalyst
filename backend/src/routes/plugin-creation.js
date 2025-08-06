@@ -542,138 +542,460 @@ router.post('/ai', async (req, res) => {
  */
 async function generatePluginWithAI(prompt, context) {
   try {
-    // This is a mock implementation
-    // In production, this would call OpenAI GPT-4 or similar
     console.log('🤖 Generating plugin with AI:', prompt);
-
-    // Simple keyword-based generation for demo
-    const isHelloWorld = prompt.toLowerCase().includes('hello') || 
-                         prompt.toLowerCase().includes('welcome');
     
-    const isBanner = prompt.toLowerCase().includes('banner') || 
-                     prompt.toLowerCase().includes('announcement');
-
+    // Try to use OpenAI if available
+    if (process.env.OPENAI_API_KEY) {
+      const OpenAI = require('openai');
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
+      });
+      
+      try {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: `You are a plugin code generator for an e-commerce platform. Generate a complete plugin based on the user's request.
+              
+              Return a JSON object with:
+              - manifest: object with name, version, description, category, hooks array, and configSchema
+              - code: string containing the JavaScript plugin class code
+              - styles: optional CSS string
+              
+              Available hooks: homepage_header, homepage_content, product_detail_above, cart_summary, checkout_form, footer_content
+              
+              The code should be a class with methods that return HTML strings. Use template literals for HTML.
+              Config values are passed as config parameter, store info as context parameter.`
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000
+        });
+        
+        const response = JSON.parse(completion.choices[0].message.content);
+        return {
+          success: true,
+          data: response,
+          explanation: `Generated plugin using AI based on: "${prompt}"`
+        };
+      } catch (aiError) {
+        console.error('OpenAI API error:', aiError);
+        // Fall back to enhanced mock generation
+      }
+    }
+    
+    // Enhanced mock generation with better pattern matching
+    const promptLower = prompt.toLowerCase();
+    
+    // Analyze the prompt for intent
+    const intents = {
+      countdown: promptLower.includes('countdown') || promptLower.includes('timer'),
+      popup: promptLower.includes('popup') || promptLower.includes('modal'),
+      banner: promptLower.includes('banner') || promptLower.includes('announcement'),
+      social: promptLower.includes('social') || promptLower.includes('facebook') || promptLower.includes('twitter'),
+      gallery: promptLower.includes('gallery') || promptLower.includes('image') || promptLower.includes('carousel'),
+      form: promptLower.includes('form') || promptLower.includes('contact') || promptLower.includes('subscribe'),
+      welcome: promptLower.includes('welcome') || promptLower.includes('hello') || promptLower.includes('greeting')
+    };
+    
     let manifest, code, styles;
-
-    if (isHelloWorld) {
+    
+    if (intents.countdown) {
+      // Generate countdown timer plugin
       manifest = {
-        name: 'AI Welcome Message',
+        name: 'Sale Countdown Timer',
         version: '1.0.0',
-        description: 'AI-generated welcome message plugin',
-        category: 'ai-generated',
-        hooks: ['homepage_header'],
+        description: 'Display a countdown timer for sales and promotions',
+        category: 'marketing',
+        hooks: ['homepage_header', 'product_detail_above'],
         configSchema: {
-          message: { type: 'string', default: 'Welcome!' },
-          style: { type: 'string', default: 'modern' }
+          endDate: { type: 'string', default: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), description: 'Sale end date' },
+          title: { type: 'string', default: 'Sale Ends In:', description: 'Timer title' },
+          backgroundColor: { type: 'string', default: '#ff4444', description: 'Background color' },
+          textColor: { type: 'string', default: '#ffffff', description: 'Text color' }
         }
       };
-
-      code = `/**
- * AI-Generated Welcome Message Plugin
- */
-class AIWelcomeMessagePlugin {
-  renderWelcomeMessage(config, context) {
-    const styles = config.style === 'modern' ? 
-      'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px;' :
-      'background: #f8f9fa; color: #333; border: 2px solid #dee2e6;';
+      
+      code = `class SaleCountdownTimer {
+  constructor() {
+    this.name = 'Sale Countdown Timer';
+    this.version = '1.0.0';
+  }
+  
+  renderHomepageHeader(config, context) {
+    const endDate = new Date(config.endDate || Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const timerId = 'countdown-' + Math.random().toString(36).substr(2, 9);
     
     return \`
-      <div style="\${styles} padding: 20px; text-align: center; margin: 15px 0;">
-        <h2 style="margin: 0 0 10px 0;">\${config.message}</h2>
-        <p style="margin: 0; opacity: 0.9;">
-          Welcome to \${context.store.name}! We're glad you're here.
+      <div style="
+        background: \${config.backgroundColor || '#ff4444'};
+        color: \${config.textColor || '#ffffff'};
+        padding: 20px;
+        text-align: center;
+        border-radius: 8px;
+        margin: 10px 0;
+      ">
+        <h3 style="margin: 0 0 10px 0;">\${config.title || 'Sale Ends In:'}</h3>
+        <div id="\${timerId}" style="
+          font-size: 24px;
+          font-weight: bold;
+          display: flex;
+          justify-content: center;
+          gap: 20px;
+        ">
+          <div><span id="\${timerId}-days">0</span> Days</div>
+          <div><span id="\${timerId}-hours">0</span> Hours</div>
+          <div><span id="\${timerId}-minutes">0</span> Minutes</div>
+          <div><span id="\${timerId}-seconds">0</span> Seconds</div>
+        </div>
+      </div>
+      <script>
+        (function() {
+          const endDate = new Date('\${endDate.toISOString()}');
+          const timer = setInterval(function() {
+            const now = new Date();
+            const diff = endDate - now;
+            
+            if (diff <= 0) {
+              clearInterval(timer);
+              document.getElementById('\${timerId}').innerHTML = 'Sale has ended!';
+              return;
+            }
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            document.getElementById('\${timerId}-days').textContent = days;
+            document.getElementById('\${timerId}-hours').textContent = hours;
+            document.getElementById('\${timerId}-minutes').textContent = minutes;
+            document.getElementById('\${timerId}-seconds').textContent = seconds;
+          }, 1000);
+        })();
+      </script>
+    \`;
+  }
+  
+  renderProductDetailAbove(config, context) {
+    return this.renderHomepageHeader(config, context);
+  }
+}
+
+module.exports = SaleCountdownTimer;`;
+      
+    } else if (intents.popup) {
+      // Generate popup plugin
+      manifest = {
+        name: 'Promotional Popup',
+        version: '1.0.0',
+        description: 'Show timed promotional popups',
+        category: 'marketing',
+        hooks: ['homepage_header'],
+        configSchema: {
+          title: { type: 'string', default: 'Special Offer!', description: 'Popup title' },
+          message: { type: 'string', default: 'Get 20% off your first order!', description: 'Popup message' },
+          delay: { type: 'number', default: 5000, description: 'Delay before showing (ms)' },
+          buttonText: { type: 'string', default: 'Shop Now', description: 'Button text' },
+          buttonUrl: { type: 'string', default: '/products', description: 'Button URL' }
+        }
+      };
+      
+      code = `class PromotionalPopup {
+  constructor() {
+    this.name = 'Promotional Popup';
+    this.version = '1.0.0';
+  }
+  
+  renderHomepageHeader(config, context) {
+    const popupId = 'popup-' + Math.random().toString(36).substr(2, 9);
+    
+    return \`
+      <div id="\${popupId}-container"></div>
+      <script>
+        setTimeout(function() {
+          const popup = document.createElement('div');
+          popup.id = '\${popupId}';
+          popup.style.cssText = \`
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            z-index: 10000;
+            max-width: 400px;
+            animation: fadeIn 0.3s ease;
+          \`;
+          
+          popup.innerHTML = \`
+            <button onclick="document.getElementById('\${popupId}').remove()" style="
+              position: absolute;
+              top: 10px;
+              right: 10px;
+              background: none;
+              border: none;
+              font-size: 24px;
+              cursor: pointer;
+              color: #999;
+            ">&times;</button>
+            <h2 style="margin: 0 0 15px 0; color: #333;">\${config.title}</h2>
+            <p style="margin: 0 0 20px 0; color: #666;">\${config.message}</p>
+            <a href="\${config.buttonUrl}" style="
+              display: inline-block;
+              background: #3b82f6;
+              color: white;
+              padding: 12px 24px;
+              text-decoration: none;
+              border-radius: 6px;
+              font-weight: bold;
+            ">\${config.buttonText}</a>
+          \`;
+          
+          document.getElementById('\${popupId}-container').appendChild(popup);
+          
+          // Auto-close after 30 seconds
+          setTimeout(function() {
+            const p = document.getElementById('\${popupId}');
+            if (p) p.remove();
+          }, 30000);
+        }, \${config.delay});
+      </script>
+      <style>
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translate(-50%, -45%); }
+          to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+      </style>
+    \`;
+  }
+}
+
+module.exports = PromotionalPopup;`;
+      
+    } else if (intents.social) {
+      // Generate social media plugin
+      manifest = {
+        name: 'Social Media Links',
+        version: '1.0.0',
+        description: 'Display social media links with icons',
+        category: 'marketing',
+        hooks: ['footer_content'],
+        configSchema: {
+          facebook: { type: 'string', default: '', description: 'Facebook URL' },
+          twitter: { type: 'string', default: '', description: 'Twitter/X URL' },
+          instagram: { type: 'string', default: '', description: 'Instagram URL' },
+          linkedin: { type: 'string', default: '', description: 'LinkedIn URL' },
+          youtube: { type: 'string', default: '', description: 'YouTube URL' }
+        }
+      };
+      
+      code = `class SocialMediaLinks {
+  constructor() {
+    this.name = 'Social Media Links';
+    this.version = '1.0.0';
+  }
+  
+  renderFooterContent(config, context) {
+    const links = [];
+    
+    if (config.facebook) {
+      links.push({ name: 'Facebook', url: config.facebook, icon: '📘', color: '#1877f2' });
+    }
+    if (config.twitter) {
+      links.push({ name: 'Twitter', url: config.twitter, icon: '🐦', color: '#1da1f2' });
+    }
+    if (config.instagram) {
+      links.push({ name: 'Instagram', url: config.instagram, icon: '📷', color: '#e4405f' });
+    }
+    if (config.linkedin) {
+      links.push({ name: 'LinkedIn', url: config.linkedin, icon: '💼', color: '#0077b5' });
+    }
+    if (config.youtube) {
+      links.push({ name: 'YouTube', url: config.youtube, icon: '📺', color: '#ff0000' });
+    }
+    
+    if (links.length === 0) return '';
+    
+    return \`
+      <div style="
+        background: #f8f9fa;
+        padding: 30px;
+        text-align: center;
+        border-top: 1px solid #dee2e6;
+      ">
+        <h4 style="margin: 0 0 20px 0; color: #495057;">Follow Us</h4>
+        <div style="display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;">
+          \${links.map(link => \`
+            <a href="\${link.url}" target="_blank" rel="noopener" style="
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              width: 45px;
+              height: 45px;
+              background: \${link.color};
+              color: white;
+              border-radius: 50%;
+              text-decoration: none;
+              font-size: 20px;
+              transition: transform 0.2s;
+            " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"
+               title="\${link.name}">
+              \${link.icon}
+            </a>
+          \`).join('')}
+        </div>
+      </div>
+    \`;
+  }
+}
+
+module.exports = SocialMediaLinks;`;
+      
+    } else if (intents.form) {
+      // Generate subscription form plugin
+      manifest = {
+        name: 'Newsletter Subscription',
+        version: '1.0.0',
+        description: 'Newsletter subscription form',
+        category: 'marketing',
+        hooks: ['homepage_content', 'footer_content'],
+        configSchema: {
+          title: { type: 'string', default: 'Subscribe to Our Newsletter', description: 'Form title' },
+          description: { type: 'string', default: 'Get the latest updates and exclusive offers', description: 'Form description' },
+          buttonText: { type: 'string', default: 'Subscribe', description: 'Button text' },
+          successMessage: { type: 'string', default: 'Thank you for subscribing!', description: 'Success message' }
+        }
+      };
+      
+      code = `class NewsletterSubscription {
+  constructor() {
+    this.name = 'Newsletter Subscription';
+    this.version = '1.0.0';
+  }
+  
+  renderHomepageContent(config, context) {
+    const formId = 'newsletter-' + Math.random().toString(36).substr(2, 9);
+    
+    return \`
+      <div style="
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 40px;
+        text-align: center;
+        border-radius: 12px;
+        margin: 20px 0;
+      ">
+        <h3 style="color: white; margin: 0 0 10px 0;">\${config.title}</h3>
+        <p style="color: rgba(255,255,255,0.9); margin: 0 0 20px 0;">\${config.description}</p>
+        <form id="\${formId}" style="max-width: 400px; margin: 0 auto;">
+          <div style="display: flex; gap: 10px;">
+            <input type="email" placeholder="Enter your email" required style="
+              flex: 1;
+              padding: 12px;
+              border: none;
+              border-radius: 6px;
+              font-size: 16px;
+            ">
+            <button type="submit" style="
+              background: white;
+              color: #667eea;
+              border: none;
+              padding: 12px 24px;
+              border-radius: 6px;
+              font-weight: bold;
+              cursor: pointer;
+            ">\${config.buttonText}</button>
+          </div>
+        </form>
+        <div id="\${formId}-message" style="color: white; margin-top: 15px; display: none;"></div>
+      </div>
+      <script>
+        document.getElementById('\${formId}').addEventListener('submit', function(e) {
+          e.preventDefault();
+          const messageDiv = document.getElementById('\${formId}-message');
+          messageDiv.textContent = '\${config.successMessage}';
+          messageDiv.style.display = 'block';
+          this.reset();
+          setTimeout(() => { messageDiv.style.display = 'none'; }, 5000);
+        });
+      </script>
+    \`;
+  }
+  
+  renderFooterContent(config, context) {
+    return this.renderHomepageContent(config, context);
+  }
+}
+
+module.exports = NewsletterSubscription;`;
+      
+    } else {
+      // Default/welcome plugin
+      manifest = {
+        name: prompt.slice(0, 30) || 'Custom Plugin',
+        version: '1.0.0',
+        description: prompt || 'AI-generated custom plugin',
+        category: 'custom',
+        hooks: ['homepage_header'],
+        configSchema: {
+          message: { type: 'string', default: 'Welcome!', description: 'Display message' },
+          backgroundColor: { type: 'string', default: '#3b82f6', description: 'Background color' },
+          textColor: { type: 'string', default: '#ffffff', description: 'Text color' }
+        }
+      };
+      
+      code = `class CustomPlugin {
+  constructor() {
+    this.name = '${manifest.name}';
+    this.version = '1.0.0';
+  }
+  
+  renderHomepageHeader(config, context) {
+    return \`
+      <div style="
+        background: \${config.backgroundColor || '#3b82f6'};
+        color: \${config.textColor || '#ffffff'};
+        padding: 25px;
+        text-align: center;
+        border-radius: 10px;
+        margin: 15px 0;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      ">
+        <h2 style="margin: 0 0 10px 0; font-size: 28px;">\${config.message}</h2>
+        <p style="margin: 0; opacity: 0.95; font-size: 16px;">
+          Welcome to \${context.store.name}
         </p>
       </div>
     \`;
   }
 }
 
-module.exports = AIWelcomeMessagePlugin;`;
-
-    } else if (isBanner) {
-      manifest = {
-        name: 'AI Announcement Banner',
-        version: '1.0.0',
-        description: 'AI-generated announcement banner',
-        category: 'marketing',
-        hooks: ['homepage_header'],
-        configSchema: {
-          title: { type: 'string', default: 'Special Announcement' },
-          message: { type: 'string', default: 'Check out our latest offers!' }
-        }
-      };
-
-      code = `/**
- * AI-Generated Announcement Banner
- */
-class AIAnnouncementBannerPlugin {
-  renderAnnouncementBanner(config, context) {
-    return \`
-      <div style="
-        background: linear-gradient(45deg, #FF6B6B, #4ECDC4);
-        color: white;
-        padding: 15px;
-        text-align: center;
-        margin: 10px 0;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      ">
-        <h3 style="margin: 0 0 8px 0;">\${config.title}</h3>
-        <p style="margin: 0;">\${config.message}</p>
-      </div>
-    \`;
-  }
-}
-
-module.exports = AIAnnouncementBannerPlugin;`;
-
-    } else {
-      // Generic plugin
-      manifest = {
-        name: 'AI Custom Plugin',
-        version: '1.0.0',
-        description: 'AI-generated custom plugin',
-        category: 'custom',
-        hooks: ['homepage_content'],
-        configSchema: {
-          content: { type: 'string', default: 'Custom content' }
-        }
-      };
-
-      code = `/**
- * AI-Generated Custom Plugin
- */
-class AICustomPlugin {
-  renderCustomContent(config, context) {
-    return \`
-      <div style="
-        background: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 20px;
-        margin: 15px 0;
-      ">
-        <p>\${config.content}</p>
-        <small>Generated by AI for \${context.store.name}</small>
-      </div>
-    \`;
-  }
-}
-
-module.exports = AICustomPlugin;`;
+module.exports = CustomPlugin;`;
     }
-
+    
     return {
       success: true,
-      data: { manifest, code, styles: null },
-      explanation: `I've generated a ${manifest.name} based on your request: "${prompt}"`
+      data: { 
+        manifest, 
+        code, 
+        styles: null 
+      },
+      explanation: `I've generated a ${manifest.name} plugin based on your request: "${prompt}"`
     };
-
+    
   } catch (error) {
     console.error('AI generation error:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message || 'Failed to generate plugin'
     };
   }
 }

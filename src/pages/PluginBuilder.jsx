@@ -430,17 +430,30 @@ module.exports = SocialMediaPlugin;`
         // Generate with AI
         response = await apiClient.post(`/api/stores/${storeId}/plugins/create/ai`, {
           prompt: aiPrompt,
-          name: pluginData.name,
-          description: pluginData.description
+          context: {
+            storeName: localStorage.getItem('store_name') || 'Your Store'
+          }
         });
         
-        if (response.data.plugin) {
+        // The AI endpoint returns the created plugin data
+        if (response?.data?.success && response.data.data?.plugin) {
+          const aiPlugin = response.data.data.plugin;
+          
+          // Show the generated code to the user
           setPluginData({
-            ...pluginData,
-            code: response.data.plugin.code,
-            hooks: response.data.plugin.hooks || [],
-            configSchema: response.data.plugin.configSchema || {}
+            name: aiPlugin.name,
+            description: aiPlugin.description || aiPrompt,
+            version: aiPlugin.version,
+            category: aiPlugin.category,
+            code: '', // Code is already saved on backend
+            hooks: [],
+            configSchema: {}
           });
+          
+          // Show AI explanation
+          if (response.data.data.aiResponse) {
+            toast.success(response.data.data.aiResponse);
+          }
         }
       }
       
@@ -982,12 +995,17 @@ module.exports = SocialMediaPlugin;`
                 <Textarea
                   id="ai-prompt"
                   rows={8}
-                  placeholder="Example: Create a plugin that shows a countdown timer for sales. It should:
-- Display on the homepage header
-- Allow configuring the end date and time
-- Show days, hours, minutes remaining
-- Have customizable colors for the timer
-- Include a message when the sale ends"
+                  placeholder="Examples:
+• 'Create a countdown timer for sales'
+• 'Add a popup that shows after 5 seconds with a special offer'
+• 'Display social media links in the footer'
+• 'Create a newsletter subscription form'
+• 'Show a welcome banner with custom message'
+
+Be specific about:
+- Where it should appear (homepage, footer, etc.)
+- What configuration options you need
+- Any specific styling or behavior"
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                 />
