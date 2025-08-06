@@ -28,7 +28,7 @@ class SupabaseIntegration {
       client_id: this.clientId,
       redirect_uri: this.redirectUri,
       response_type: 'code',
-      scope: 'projects:read projects:write storage:read storage:write database:read database:write',
+      scope: 'email profile projects:read projects:write storage:read storage:write database:read database:write',
       state: JSON.stringify({ storeId, state })
     });
 
