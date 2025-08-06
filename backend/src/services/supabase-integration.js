@@ -28,7 +28,7 @@ class SupabaseIntegration {
       client_id: this.clientId,
       redirect_uri: this.redirectUri,
       response_type: 'code',
-      scope: 'email profile projects:read projects:write storage:read storage:write database:read database:write',
+      scope: 'email profile projects:read projects:write secrets:read storage:read storage:write database:read database:write',
       state: JSON.stringify({ storeId, state })
     });
 
@@ -95,11 +95,50 @@ class SupabaseIntegration {
         // Use the first project or let user select later
         if (projectsResponse.data && projectsResponse.data.length > 0) {
           const firstProject = projectsResponse.data[0];
+          console.log('First project data:', firstProject);
+          
+          // Fetch API keys for the project
+          let anonKey = '';
+          let serviceRoleKey = '';
+          
+          try {
+            const apiKeysResponse = await axios.get(`https://api.supabase.com/v1/projects/${firstProject.id}/config/secrets/project-api-keys`, {
+              headers: {
+                'Authorization': `Bearer ${access_token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            console.log('API keys response:', JSON.stringify(apiKeysResponse.data, null, 2));
+            
+            // Extract anon and service_role keys from response
+            if (apiKeysResponse.data && Array.isArray(apiKeysResponse.data)) {
+              const anonKeyObj = apiKeysResponse.data.find(key => key.name === 'anon' || key.name === 'anon_key');
+              const serviceKeyObj = apiKeysResponse.data.find(key => key.name === 'service_role' || key.name === 'service_role_key');
+              
+              anonKey = anonKeyObj?.api_key || '';
+              serviceRoleKey = serviceKeyObj?.api_key || '';
+            } else if (apiKeysResponse.data) {
+              // Handle different response format
+              anonKey = apiKeysResponse.data.anon || apiKeysResponse.data.anon_key || '';
+              serviceRoleKey = apiKeysResponse.data.service_role || apiKeysResponse.data.service_role_key || '';
+            }
+            
+            console.log('Extracted API keys:', { 
+              anonKey: anonKey ? anonKey.substring(0, 20) + '...' : 'not found',
+              serviceRoleKey: serviceRoleKey ? serviceRoleKey.substring(0, 20) + '...' : 'not found'
+            });
+            
+          } catch (apiKeysError) {
+            console.error('Error fetching API keys:', apiKeysError.response?.data || apiKeysError.message);
+            // Continue without API keys - user can configure them later
+          }
+          
           projectData = {
             project_url: `https://${firstProject.id}.supabase.co`,
-            anon_key: firstProject.anon_key || '',
-            service_role_key: firstProject.service_role_key || '',
-            database_url: firstProject.database_url || '',
+            anon_key: anonKey,
+            service_role_key: serviceRoleKey,
+            database_url: `postgresql://postgres.[projectRef]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`,
             storage_url: `https://${firstProject.id}.supabase.co/storage/v1`,
             auth_url: `https://${firstProject.id}.supabase.co/auth/v1`
           };
@@ -313,11 +352,52 @@ class SupabaseIntegration {
             url: `https://${firstProject.id}.supabase.co`
           };
           
-          // Save the project info
+          // Fetch API keys for the project
+          let anonKey = token.anon_key || '';
+          let serviceRoleKey = token.service_role_key || '';
+          
+          try {
+            const apiKeysResponse = await axios.get(`https://api.supabase.com/v1/projects/${firstProject.id}/config/secrets/project-api-keys`, {
+              headers: {
+                'Authorization': `Bearer ${token.access_token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            console.log('Test connection - API keys response:', JSON.stringify(apiKeysResponse.data, null, 2));
+            
+            // Extract anon and service_role keys from response
+            if (apiKeysResponse.data && Array.isArray(apiKeysResponse.data)) {
+              const anonKeyObj = apiKeysResponse.data.find(key => key.name === 'anon' || key.name === 'anon_key');
+              const serviceKeyObj = apiKeysResponse.data.find(key => key.name === 'service_role' || key.name === 'service_role_key');
+              
+              if (anonKeyObj?.api_key) anonKey = anonKeyObj.api_key;
+              if (serviceKeyObj?.api_key) serviceRoleKey = serviceKeyObj.api_key;
+            } else if (apiKeysResponse.data) {
+              // Handle different response format
+              if (apiKeysResponse.data.anon || apiKeysResponse.data.anon_key) {
+                anonKey = apiKeysResponse.data.anon || apiKeysResponse.data.anon_key;
+              }
+              if (apiKeysResponse.data.service_role || apiKeysResponse.data.service_role_key) {
+                serviceRoleKey = apiKeysResponse.data.service_role || apiKeysResponse.data.service_role_key;
+              }
+            }
+            
+            console.log('Test connection - Extracted API keys:', { 
+              anonKey: anonKey ? anonKey.substring(0, 20) + '...' : 'not found',
+              serviceRoleKey: serviceRoleKey ? serviceRoleKey.substring(0, 20) + '...' : 'not found'
+            });
+            
+          } catch (apiKeysError) {
+            console.error('Test connection - Error fetching API keys:', apiKeysError.response?.data || apiKeysError.message);
+            // Continue with existing keys
+          }
+          
+          // Save the project info and API keys
           await token.update({
             project_url: projectInfo.url,
-            anon_key: firstProject.anon_key || token.anon_key || '',
-            service_role_key: firstProject.service_role_key || token.service_role_key || ''
+            anon_key: anonKey,
+            service_role_key: serviceRoleKey
           });
           
           console.log('Updated token with first project:', projectInfo.name);
