@@ -290,52 +290,37 @@ class SupabaseIntegration {
       try {
         console.log('Testing Supabase OAuth token validity...');
         
-        // Use the /v1/profile endpoint to validate the token
-        const profileResponse = await axios.get('https://api.supabase.com/v1/profile', {
+        // Test token validity by fetching projects (this is the standard way)
+        const projectsTestResponse = await axios.get('https://api.supabase.com/v1/projects', {
           headers: {
             'Authorization': `Bearer ${token.access_token}`,
             'Content-Type': 'application/json'
           }
         });
         
-        console.log('Token is valid, user profile:', profileResponse.data);
+        console.log('Token is valid, found', projectsTestResponse.data.length, 'projects');
         
-        // Try to get projects list to show what's available
-        let projects = [];
+        // Use the projects from our test response
+        const projects = projectsTestResponse.data || [];
         let projectInfo = null;
         
-        try {
-          const projectsResponse = await axios.get('https://api.supabase.com/v1/projects', {
-            headers: {
-              'Authorization': `Bearer ${token.access_token}`,
-              'Content-Type': 'application/json'
-            }
+        // If we have projects and no project_url saved, update it
+        if (projects.length > 0 && (!token.project_url || token.project_url === '')) {
+          const firstProject = projects[0];
+          projectInfo = {
+            id: firstProject.id,
+            name: firstProject.name,
+            url: `https://${firstProject.id}.supabase.co`
+          };
+          
+          // Save the project info
+          await token.update({
+            project_url: projectInfo.url,
+            anon_key: firstProject.anon_key || token.anon_key || '',
+            service_role_key: firstProject.service_role_key || token.service_role_key || ''
           });
           
-          projects = projectsResponse.data || [];
-          console.log(`Found ${projects.length} Supabase projects`);
-          
-          // If we have projects and no project_url saved, update it
-          if (projects.length > 0 && (!token.project_url || token.project_url === '')) {
-            const firstProject = projects[0];
-            projectInfo = {
-              id: firstProject.id,
-              name: firstProject.name,
-              url: `https://${firstProject.id}.supabase.co`
-            };
-            
-            // Save the project info
-            await token.update({
-              project_url: projectInfo.url,
-              anon_key: firstProject.anon_key || token.anon_key || '',
-              service_role_key: firstProject.service_role_key || token.service_role_key || ''
-            });
-            
-            console.log('Updated token with first project:', projectInfo.name);
-          }
-        } catch (projectError) {
-          console.log('Could not fetch projects:', projectError.response?.status);
-          // This is OK - user might not have projects yet
+          console.log('Updated token with first project:', projectInfo.name);
         }
 
         // Update connection status
@@ -349,7 +334,6 @@ class SupabaseIntegration {
           message: projects.length > 0 
             ? `Connected to Supabase with ${projects.length} project(s)` 
             : 'Connected to Supabase (no projects yet)',
-          profile: profileResponse.data,
           projects: projects.length,
           projectUrl: token.project_url || projectInfo?.url,
           hasProjects: projects.length > 0

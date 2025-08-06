@@ -2,7 +2,25 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const authMiddleware = require('../middleware/auth');
-const { extractStoreId, checkStoreOwnership } = require('../middleware/storeAuth');
+const { checkStoreOwnership } = require('../middleware/storeAuth');
+
+// Extract store ID middleware - gets storeId from headers/body/params
+const extractStoreId = (req, res, next) => {
+  const storeId = req.headers['x-store-id'] || 
+                  req.body.store_id || 
+                  req.query.store_id ||
+                  req.params.store_id;
+  
+  if (!storeId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Store ID is required'
+    });
+  }
+  
+  req.storeId = storeId;
+  next();
+};
 const { Category } = require('../models');
 const storageManager = require('../services/storage-manager');
 

@@ -681,6 +681,7 @@ module.exports = SocialMediaPlugin;`
               </Card>
             </div>
           </div>
+        </div>
 
       <Tabs defaultValue="visual" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
