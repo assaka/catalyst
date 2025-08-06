@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
 // Add global error handler to catch minified errors
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && !window.__akeneoErrorHandlerInstalled) {
+  window.__akeneoErrorHandlerInstalled = true;
+  
   window.addEventListener('error', (event) => {
     if (event.error && event.error.message && event.error.message.includes("can't access property")) {
       console.error('🚨 CAUGHT GLOBAL ERROR:', {
@@ -11,6 +13,19 @@ if (typeof window !== 'undefined') {
         lineno: event.lineno,
         colno: event.colno
       });
+      
+      // Try to identify the source by looking for common patterns
+      const errorMsg = event.error.message;
+      if (errorMsg.includes('attributes')) {
+        console.error('🔍 Error involves "attributes" property access');
+        console.error('🔍 Current URL:', window.location.href);
+        console.error('🔍 Error occurred in file:', event.filename);
+        
+        // Log current state if available
+        if (window.__currentAkeneoState) {
+          console.error('🔍 Current Akeneo component state:', window.__currentAkeneoState);
+        }
+      }
     }
   });
 }
@@ -139,6 +154,18 @@ const AkeneoIntegration = () => {
     timestamp: new Date().toISOString()
   });
   
+  // Store current state globally for error debugging
+  if (typeof window !== 'undefined') {
+    window.__currentAkeneoState = {
+      stats,
+      statsType: typeof stats,
+      familiesLength: families?.length,
+      attributesLength: attributes?.length,
+      importResults,
+      activeTab
+    };
+  }
+  
   console.log('🔍 Early state check - storeSlug:', storeSlug);
   console.log('🔍 Early state check - typeof storeSlug:', typeof storeSlug);
   
@@ -204,11 +231,13 @@ const AkeneoIntegration = () => {
     if (!families || families.length === 0) return [];
     
     console.log('🔄 Computing family options (this should only happen when families change)');
-    return families.map((family) => {
-      const value = family?.code || '';
-      const label = (family?.labels && Object.values(family?.labels)[0]) || family?.code || '';
-      return { value, label };
-    });
+    return families
+      .filter(family => family != null) // Filter out any null/undefined entries
+      .map((family) => {
+        const value = family?.code || '';
+        const label = (family?.labels && Object.values(family?.labels)[0]) || family?.code || '';
+        return { value, label };
+      });
   }, [families]);
   
   // Advanced settings
@@ -1371,7 +1400,13 @@ const AkeneoIntegration = () => {
       console.log('📥 Import attributes response:', response);
       
       const responseData = response.data || response;
-      setTabImportResults('attributes', responseData);
+      // Ensure responseData is not null before setting
+      if (responseData) {
+        setTabImportResults('attributes', responseData);
+      } else {
+        console.error('⚠️ Received null response data');
+        setTabImportResults('attributes', { success: false, error: 'Invalid response from server' });
+      }
       
       if (responseData?.success) {
         console.log('✅ Attributes import successful');
@@ -1913,7 +1948,7 @@ const AkeneoIntegration = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{stats?.attributes ?? 0}</div>
+              <div className="text-2xl font-bold text-blue-600">{(stats && stats.attributes != null) ? stats.attributes : 0}</div>
               <div className="text-sm text-blue-600">Attributes</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
@@ -2247,10 +2282,12 @@ const AkeneoIntegration = () => {
                           <div className="space-y-2">
                             <Label>Families (leave empty for all)</Label>
                             <MultiSelect
-                              options={families.map(family => ({
-                                value: family?.code || family?.name || family?.id || '',
-                                label: (family?.labels && Object.values(family?.labels)[0]) || family?.code || family?.name || family?.id || ''
-                              }))}
+                              options={families
+                                .filter(family => family != null)
+                                .map(family => ({
+                                  value: family?.code || family?.name || family?.id || '',
+                                  label: (family?.labels && Object.values(family?.labels)[0]) || family?.code || family?.name || family?.id || ''
+                                }))}
                               value={scheduleForm.filters.families}
                               onChange={(selectedFamilies) => {
                                 setScheduleForm(prev => ({
