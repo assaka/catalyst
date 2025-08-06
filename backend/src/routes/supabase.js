@@ -131,9 +131,11 @@ router.get('/callback', async (req, res) => {
     const userEmail = result.user?.email || '';
     
     // Check if this is a limited scope connection
-    const isLimitedScope = projectUrl === 'Configuration pending' || 
+    const isLimitedScope = result.limitedScope || 
+                          projectUrl === 'Configuration pending' || 
                           projectUrl === 'https://pending-configuration.supabase.co' ||
-                          projectUrl === 'pending_configuration';
+                          projectUrl === 'pending_configuration' ||
+                          projectUrl === 'Configuration pending - limited scope';
     
     res.send(`
       <!DOCTYPE html>
