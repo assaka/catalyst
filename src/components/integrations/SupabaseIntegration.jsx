@@ -13,6 +13,10 @@ const SupabaseIntegration = ({ storeId }) => {
   const [testingUpload, setTestingUpload] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [projects, setProjects] = useState([]);
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [changingProject, setChangingProject] = useState(false);
 
   // Check for and clear logout flags on component mount
   useEffect(() => {
@@ -102,8 +106,65 @@ const SupabaseIntegration = ({ storeId }) => {
   useEffect(() => {
     if (status?.connected) {
       loadStorageStats();
+      // Load projects if we have proper permissions
+      if (!status.limitedScope && status.projectUrl !== 'https://pending-configuration.supabase.co') {
+        loadProjects();
+      }
     }
   }, [status?.connected]);
+
+  const loadProjects = async () => {
+    try {
+      setLoadingProjects(true);
+      const response = await apiClient.get('/supabase/projects', {
+        'x-store-id': storeId
+      });
+
+      if (response.success) {
+        setProjects(response.projects || []);
+        // Set the selected project ID based on current project
+        const currentProject = response.projects?.find(p => p.isCurrent);
+        if (currentProject) {
+          setSelectedProjectId(currentProject.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading projects:', error);
+      // Don't show error for limited scope connections
+      if (!status?.limitedScope) {
+        toast.error('Could not load projects list');
+      }
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const handleProjectChange = async (projectId) => {
+    if (!projectId || projectId === selectedProjectId) return;
+    
+    try {
+      setChangingProject(true);
+      const response = await apiClient.post('/supabase/select-project', 
+        { projectId },
+        { 'x-store-id': storeId }
+      );
+
+      if (response.success) {
+        toast.success(response.message || 'Project changed successfully');
+        setSelectedProjectId(projectId);
+        // Reload status and storage stats
+        loadStatus();
+        loadStorageStats();
+      } else {
+        throw new Error(response.message || 'Failed to change project');
+      }
+    } catch (error) {
+      console.error('Error changing project:', error);
+      toast.error(error.message || 'Failed to change project');
+    } finally {
+      setChangingProject(false);
+    }
+  };
 
   const handleConnect = async () => {
     try {
@@ -530,9 +591,83 @@ const SupabaseIntegration = ({ storeId }) => {
                 <h4 className="text-sm font-medium text-green-900 mb-1">
                   Connected to Supabase Project
                 </h4>
-                <p className="text-sm text-green-700 mb-2">
-                  Project URL: {status.projectUrl}
-                </p>
+                
+                {/* Project Selector Dropdown */}
+                {projects.length > 1 && !status.limitedScope && (
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-medium text-green-700">
+                        Select Project:
+                      </label>
+                      <button
+                        onClick={loadProjects}
+                        disabled={loadingProjects}
+                        className="text-green-600 hover:text-green-800 disabled:opacity-50"
+                        title="Refresh projects list"
+                      >
+                        <svg className={`w-3 h-3 ${loadingProjects ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                    </div>
+                    <select
+                      value={selectedProjectId || ''}
+                      onChange={(e) => handleProjectChange(e.target.value)}
+                      disabled={changingProject || loadingProjects}
+                      className="block w-full px-3 py-2 text-sm border border-green-300 rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 disabled:opacity-50 disabled:cursor-not-allowed bg-white"
+                    >
+                      {loadingProjects ? (
+                        <option>Loading projects...</option>
+                      ) : (
+                        <>
+                          {projects.map(project => (
+                            <option key={project.id} value={project.id}>
+                              {project.name} {project.isCurrent ? '(current)' : ''}
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                    {changingProject && (
+                      <p className="text-xs text-green-600 mt-1">Switching project...</p>
+                    )}
+                  </div>
+                )}
+                
+                {/* Show message if projects couldn't be loaded but we're connected */}
+                {projects.length === 0 && !status.limitedScope && status.projectUrl && status.projectUrl !== 'https://pending-configuration.supabase.co' && (
+                  <div className="mb-2">
+                    <p className="text-sm text-green-700">
+                      Project URL: {status.projectUrl}
+                    </p>
+                    <button
+                      onClick={loadProjects}
+                      className="text-xs text-green-600 hover:text-green-800 underline mt-1"
+                    >
+                      Load projects list
+                    </button>
+                  </div>
+                )}
+                
+                {/* Single Project */}
+                {projects.length === 1 && !status.limitedScope && (
+                  <div className="mb-2">
+                    <p className="text-sm text-green-700">
+                      Project: <span className="font-medium">{projects[0].name}</span>
+                    </p>
+                    <p className="text-xs text-green-600">
+                      {status.projectUrl}
+                    </p>
+                  </div>
+                )}
+                
+                {/* Limited scope - no project selection */}
+                {status.limitedScope && (
+                  <p className="text-sm text-green-700 mb-2">
+                    Project URL: {status.projectUrl}
+                  </p>
+                )}
+                
                 <div className="text-xs text-green-600">
                   <p>Connection Status: {status.connectionStatus || 'Unknown'}</p>
                   {status.lastTestedAt && (

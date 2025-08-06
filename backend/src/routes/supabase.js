@@ -130,6 +130,11 @@ router.get('/callback', async (req, res) => {
     const projectUrl = result.project?.url || 'Connected';
     const userEmail = result.user?.email || '';
     
+    // Check if this is a limited scope connection
+    const isLimitedScope = projectUrl === 'Configuration pending' || 
+                          projectUrl === 'https://pending-configuration.supabase.co' ||
+                          projectUrl === 'pending_configuration';
+    
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -176,9 +181,12 @@ router.get('/callback', async (req, res) => {
       <body>
         <div class="container">
           <div class="success">✓</div>
-          <h1>Successfully Connected!</h1>
-          <p>Your Supabase account has been connected. This window will close automatically.</p>
+          <h1>${isLimitedScope ? 'Connected with Limited Scope' : 'Successfully Connected!'}</h1>
+          <p>${isLimitedScope 
+            ? 'Connection established but with limited permissions. You may need to update your OAuth app scopes for full functionality.' 
+            : 'Your Supabase account has been connected. This window will close automatically.'}</p>
           ${userEmail ? `<p class="email">Connected as: ${userEmail}</p>` : ''}
+          ${isLimitedScope ? '<p class="email" style="color: #f59e0b;">⚠️ Limited permissions - some features may not work</p>' : ''}
         </div>
         <script>
           // Notify parent window of success
@@ -316,6 +324,43 @@ router.get('/callback', async (req, res) => {
       </body>
       </html>
     `);
+  }
+});
+
+// Get available projects
+router.get('/projects', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+  try {
+    const result = await supabaseIntegration.getProjects(req.storeId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching Supabase projects:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Select a project
+router.post('/select-project', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+  try {
+    const { projectId } = req.body;
+    
+    if (!projectId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Project ID is required'
+      });
+    }
+    
+    const result = await supabaseIntegration.selectProject(req.storeId, projectId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error selecting Supabase project:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
   }
 });
 
