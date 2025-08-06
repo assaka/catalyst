@@ -131,6 +131,12 @@ class SupabaseIntegration {
             
           } catch (apiKeysError) {
             console.error('Error fetching API keys:', apiKeysError.response?.data || apiKeysError.message);
+            // If it's a scope error, set default values
+            if (apiKeysError.response?.status === 403 || apiKeysError.response?.data?.message?.includes('scope')) {
+              console.log('OAuth token lacks secrets:read scope for API keys access');
+              anonKey = 'pending_configuration';
+              serviceRoleKey = null;
+            }
             // Continue without API keys - user can configure them later
           }
           
@@ -145,15 +151,30 @@ class SupabaseIntegration {
         }
       } catch (projectError) {
         console.error('Error fetching projects:', projectError.response?.data || projectError.message);
-        // Continue without project data - user can configure later
-        projectData = {
-          project_url: 'https://pending-configuration.supabase.co',
-          anon_key: 'pending_configuration',
-          service_role_key: null,
-          database_url: 'pending_configuration',
-          storage_url: 'pending_configuration',
-          auth_url: 'pending_configuration'
-        };
+        
+        // Check if it's a scope error (403) vs other errors
+        if (projectError.response?.status === 403 || projectError.message?.includes('scope')) {
+          console.log('OAuth token lacks required scopes for project access');
+          // Set pending values that will pass validation
+          projectData = {
+            project_url: 'https://pending-configuration.supabase.co',
+            anon_key: 'pending_configuration',
+            service_role_key: null,
+            database_url: null,  // Use null for optional fields
+            storage_url: null,
+            auth_url: null
+          };
+        } else {
+          // For other errors, still try to save with pending values
+          projectData = {
+            project_url: 'https://pending-configuration.supabase.co',
+            anon_key: 'pending_configuration',
+            service_role_key: null,
+            database_url: null,
+            storage_url: null,
+            auth_url: null
+          };
+        }
       }
 
       // Save token to database
@@ -171,8 +192,21 @@ class SupabaseIntegration {
         service_role_key: tokenData.service_role_key ? 'set' : 'not set'
       });
 
-      await SupabaseOAuthToken.createOrUpdate(storeId, tokenData);
-      console.log('✅ Token saved successfully');
+      try {
+        await SupabaseOAuthToken.createOrUpdate(storeId, tokenData);
+        console.log('✅ Token saved successfully');
+      } catch (dbError) {
+        console.error('Database save error:', {
+          error: dbError.message,
+          errors: dbError.errors?.map(e => ({ field: e.path, message: e.message, value: e.value })),
+          tokenData: {
+            ...tokenData,
+            access_token: tokenData.access_token ? 'present' : 'missing',
+            refresh_token: tokenData.refresh_token ? 'present' : 'missing'
+          }
+        });
+        throw dbError;
+      }
 
       // Also save to IntegrationConfig for consistency
       await IntegrationConfig.createOrUpdate(storeId, 'supabase', {
@@ -201,8 +235,9 @@ class SupabaseIntegration {
       
       // More specific error messages
       if (error.name === 'SequelizeValidationError') {
-        const validationErrors = error.errors.map(e => `${e.path}: ${e.message}`).join(', ');
-        throw new Error(`Validation error: ${validationErrors}`);
+        const validationErrors = error.errors?.map(e => `${e.path}: ${e.message}`).join(', ') || 'Unknown validation error';
+        console.error('Sequelize validation error details:', error.errors);
+        throw new Error(`Unable to save connection details. Please try reconnecting.`);
       } else if (error.response?.status === 400) {
         throw new Error('Invalid OAuth request: ' + (error.response?.data?.error_description || error.response?.data?.error || 'Bad request'));
       } else if (error.response?.status === 401) {
