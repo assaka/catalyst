@@ -20,7 +20,6 @@ import Attributes from "./Attributes";
 
 import Plugins from "./Plugins";
 
-
 import PluginBuilder from "./PluginBuilder";
 
 import TemplateEditor from "./TemplateEditor";
@@ -134,7 +133,6 @@ const PAGES = {
     Attributes: Attributes,
     
     Plugins: Plugins,
-    
     
     PluginBuilder: PluginBuilder,
     
@@ -475,7 +473,6 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                
                 <Route path="/admin/plugin-builder" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <PluginBuilder />
@@ -803,7 +800,6 @@ function PagesContent() {
                         <Plugins />
                     </RoleProtectedRoute>
                 } />
-                
                 
                 <Route path="/admin/plugin-builder" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
