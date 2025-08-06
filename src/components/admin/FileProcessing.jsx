@@ -9,7 +9,6 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAlertTypes } from '@/hooks/useAlert';
-import CloudflareCDN from './CloudflareCDN';
 import SupabaseStorage from './SupabaseStorage';
 import {
   Image,
@@ -73,7 +72,7 @@ const FileProcessing = () => {
       cost: 'Free',
       costType: 'free',
       features: ['Global CDN', 'Image Optimization', 'DDoS Protection', 'SSL/TLS'],
-      status: 'available'
+      status: 'coming-soon'
     },
     {
       id: 'google-cloud',
@@ -326,10 +325,9 @@ const FileProcessing = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="supabase">Supabase</TabsTrigger>
-          <TabsTrigger value="cloudflare">Cloudflare</TabsTrigger>
           <TabsTrigger value="processing">Processing</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
@@ -415,14 +413,14 @@ const FileProcessing = () => {
             </CardHeader>
             <CardContent>
               <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">How Credits Work</h4>
+                <h4 className="font-medium text-blue-900 mb-2">Storage Options</h4>
                 <ul className="text-blue-800 text-sm space-y-1">
-                  <li>• Supabase Storage (Default) is completely free - included with your Supabase project</li>
-                  <li>• Cloudflare CDN is also completely free with unlimited bandwidth</li>
-                  <li>• Google Cloud Storage and AWS S3 cost 1 credit per day when active</li>
-                  <li>• Credits are consumed only on days when the service processes images</li>
-                  <li>• You can switch between providers anytime</li>
-                  <li>• Free tier includes 30 credits per month</li>
+                  <li>• <strong>Supabase Storage (Available):</strong> Completely free - included with your Supabase project</li>
+                  <li>• <strong>Coming Soon:</strong> Cloudflare CDN, Google Cloud Storage, and AWS S3</li>
+                  <li>• Future paid options will cost 1 credit per day when active</li>
+                  <li>• Credits will only be consumed on days when the service processes images</li>
+                  <li>• You'll be able to switch between providers anytime</li>
+                  <li>• Free tier will include 30 credits per month for paid options</li>
                 </ul>
               </div>
             </CardContent>
@@ -431,10 +429,6 @@ const FileProcessing = () => {
 
         <TabsContent value="supabase">
           <SupabaseStorage />
-        </TabsContent>
-
-        <TabsContent value="cloudflare">
-          <CloudflareCDN />
         </TabsContent>
 
         <TabsContent value="processing" className="space-y-6">

@@ -39,26 +39,8 @@ const extractStoreId = (req, res, next) => {
   req.storeId = storeId;
   next();
 };
-const { Category } = require('../models');
-const storageManager = require('../services/storage-manager');
 
-// Configure multer for file uploads
-const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 5 // Maximum 5 files at once for categories
-  },
-  fileFilter: (req, file, cb) => {
-    // Check if file is an image
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed'), false);
-    }
-  }
-});
+const storageManager = require('../services/storage-manager');
 
 // All routes require authentication and store ownership
 router.use(authMiddleware);
