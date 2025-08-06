@@ -366,11 +366,17 @@ const SupabaseIntegration = ({ storeId }) => {
                     Connection Needs Update
                   </h4>
                   <p className="text-sm text-yellow-700 mb-2">
-                    Your connection was created with older permissions. Please reconnect to enable all features including project management and API key configuration.
+                    Your OAuth app doesn't have the required permissions. To fix this:
                   </p>
+                  <ol className="text-sm text-yellow-700 mb-3 list-decimal list-inside space-y-1">
+                    <li>Go to your Supabase OAuth app settings</li>
+                    <li>Add these scopes: projects:read, projects:write, secrets:read</li>
+                    <li>Save the OAuth app changes</li>
+                    <li>Click the button below to reconnect</li>
+                  </ol>
                   <button
                     onClick={handleDisconnect}
-                    className="text-sm font-medium text-yellow-900 underline hover:text-yellow-800"
+                    className="px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm font-medium"
                   >
                     Disconnect and Reconnect
                   </button>
