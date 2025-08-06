@@ -161,18 +161,7 @@ const AkeneoIntegration = () => {
     timestamp: new Date().toISOString()
   });
   
-  // Store current state globally for error debugging
-  if (typeof window !== 'undefined') {
-    window.__currentAkeneoState = {
-      stats,
-      statsType: typeof stats,
-      familiesLength: families?.length,
-      attributesLength: attributes?.length,
-      importResults,
-      activeTab
-    };
-  }
-  
+  // Early state check that doesn't depend on component state
   console.log('🔍 Early state check - storeSlug:', storeSlug);
   console.log('🔍 Early state check - typeof storeSlug:', typeof storeSlug);
   
@@ -220,6 +209,18 @@ const AkeneoIntegration = () => {
   const [selectedFamiliesToImport, setSelectedFamiliesToImport] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingFamilies, setLoadingFamilies] = useState(false);
+  
+  // Store current state globally for error debugging (moved after state declarations)
+  if (typeof window !== 'undefined') {
+    window.__currentAkeneoState = {
+      stats,
+      statsType: typeof stats,
+      familiesLength: families?.length,
+      attributesLength: attributes?.length,
+      importResults,
+      activeTab
+    };
+  }
   
   // Debug importing state changes (moved after all state declarations)
   React.useEffect(() => {
