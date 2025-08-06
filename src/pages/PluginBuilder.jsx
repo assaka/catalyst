@@ -649,7 +649,8 @@ module.exports = SocialMediaPlugin;`
                   Documentation
               </Button>
             </div>
-
+          </div>
+          <div className="flex items-center justify-between mb-6">
             {/* Quick Actions */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <Card className="cursor-pointer hover:shadow-md transition-shadow">
@@ -673,7 +674,7 @@ module.exports = SocialMediaPlugin;`
                   <p className="text-xs text-gray-500">Custom code & APIs</p>
                 </CardContent>
               </Card>
-              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/template-editor')}>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" >
                 <CardContent className="p-4 text-center">
                   <Layout className="w-8 h-8 mx-auto mb-2 text-green-600" />
                   <h3 className="font-medium">Templates</h3>
