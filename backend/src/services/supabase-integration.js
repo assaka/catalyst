@@ -216,6 +216,15 @@ class SupabaseIntegration {
       throw new Error('Supabase not connected for this store');
     }
 
+    // Check if we have required data
+    if (!token.project_url || token.project_url === '' || token.project_url === 'pending_configuration') {
+      throw new Error('Supabase project URL is not configured');
+    }
+
+    if (!token.anon_key || token.anon_key === '' || token.anon_key === 'pending' || token.anon_key === 'pending_configuration') {
+      throw new Error('Supabase anon key is not configured');
+    }
+
     // Ensure token is valid
     await this.getValidToken(storeId);
 
@@ -272,26 +281,147 @@ class SupabaseIntegration {
    */
   async testConnection(storeId) {
     try {
-      const client = await this.getSupabaseClient(storeId);
-      
-      // Try to list buckets as a test
-      const { data, error } = await client.storage.listBuckets();
-      
-      if (error) {
-        throw error;
+      const token = await SupabaseOAuthToken.findByStore(storeId);
+      if (!token) {
+        throw new Error('Supabase not connected for this store');
       }
 
-      // Update connection status
-      const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
-      if (config) {
-        await config.updateConnectionStatus('success');
+      // Check if we have the minimum required data
+      if (!token.project_url || token.project_url === '') {
+        console.log('No project URL found, attempting to fetch projects...');
+        
+        // Try to fetch projects with the access token
+        try {
+          const projectsResponse = await axios.get('https://api.supabase.com/v1/projects', {
+            headers: {
+              'Authorization': `Bearer ${token.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('Projects API response:', projectsResponse.data);
+          
+          if (projectsResponse.data && projectsResponse.data.length > 0) {
+            const firstProject = projectsResponse.data[0];
+            
+            // Update token with project information
+            await token.update({
+              project_url: `https://${firstProject.id}.supabase.co`,
+              anon_key: firstProject.anon_key || token.anon_key || 'pending',
+              service_role_key: firstProject.service_role_key || token.service_role_key,
+              database_url: firstProject.database_url || token.database_url
+            });
+            
+            // Reload token with updated data
+            await token.reload();
+            
+            console.log('Updated token with project data:', {
+              project_url: token.project_url,
+              has_anon_key: !!token.anon_key
+            });
+          } else {
+            return {
+              success: false,
+              message: 'No Supabase projects found. Please create a project in Supabase first.',
+              needsConfiguration: true
+            };
+          }
+        } catch (fetchError) {
+          console.error('Failed to fetch projects:', fetchError.response?.data || fetchError.message);
+          
+          // If it's an auth error, token might be invalid
+          if (fetchError.response?.status === 401) {
+            throw new Error('Authentication failed. Please reconnect to Supabase.');
+          }
+          
+          return {
+            success: false,
+            message: 'Connected but unable to fetch project details. You may need to configure project settings manually.',
+            connected: true,
+            needsConfiguration: true
+          };
+        }
       }
 
-      return {
-        success: true,
-        message: 'Successfully connected to Supabase',
-        buckets: data
-      };
+      // Now check if we can create a client
+      if (!token.project_url || token.project_url === '' || token.project_url === 'pending_configuration') {
+        return {
+          success: false,
+          message: 'Project URL is not configured. Please reconnect to Supabase or configure manually.',
+          needsConfiguration: true
+        };
+      }
+
+      if (!token.anon_key || token.anon_key === '' || token.anon_key === 'pending' || token.anon_key === 'pending_configuration') {
+        // For testing connection, we can still verify the access token works
+        try {
+          // Test the access token by making a simple API call
+          const testResponse = await axios.get('https://api.supabase.com/v1/profile', {
+            headers: {
+              'Authorization': `Bearer ${token.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          return {
+            success: true,
+            message: 'OAuth connection is valid, but project keys need to be configured',
+            partial: true,
+            needsConfiguration: true,
+            projectUrl: token.project_url
+          };
+        } catch (error) {
+          console.error('Token validation failed:', error.response?.data || error.message);
+          throw new Error('Token validation failed. Please reconnect.');
+        }
+      }
+
+      // Try to create a client and test it
+      try {
+        const client = await this.getSupabaseClient(storeId);
+        
+        // Try to list buckets as a test
+        const { data, error } = await client.storage.listBuckets();
+        
+        if (error) {
+          console.error('Storage test error:', error);
+          // Even if storage fails, connection might be valid
+          return {
+            success: true,
+            message: 'Connected to Supabase (storage access may be limited)',
+            partial: true,
+            projectUrl: token.project_url
+          };
+        }
+
+        // Update connection status
+        const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
+        if (config) {
+          await config.updateConnectionStatus('success');
+        }
+
+        return {
+          success: true,
+          message: 'Successfully connected to Supabase',
+          buckets: data?.length || 0,
+          projectUrl: token.project_url
+        };
+      } catch (clientError) {
+        console.error('Client creation error:', clientError);
+        
+        // Update connection status
+        const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
+        if (config) {
+          await config.updateConnectionStatus('partial', 'Connected but client initialization failed');
+        }
+
+        return {
+          success: false,
+          message: 'Connected but unable to initialize Supabase client. Project configuration may be incomplete.',
+          connected: true,
+          needsConfiguration: true
+        };
+      }
     } catch (error) {
       // Update connection status
       const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
@@ -299,6 +429,7 @@ class SupabaseIntegration {
         await config.updateConnectionStatus('failed', error.message);
       }
 
+      console.error('Connection test failed:', error);
       throw new Error('Connection test failed: ' + error.message);
     }
   }
