@@ -1159,15 +1159,25 @@ class SupabaseIntegration {
           }
         });
 
+        console.log('API keys response status:', apiKeysResponse.status);
+        console.log('API keys response data:', JSON.stringify(apiKeysResponse.data, null, 2));
+
         if (apiKeysResponse.data && Array.isArray(apiKeysResponse.data)) {
           const anonKeyObj = apiKeysResponse.data.find(key => key.name === 'anon' || key.name === 'anon_key');
           const serviceKeyObj = apiKeysResponse.data.find(key => key.name === 'service_role' || key.name === 'service_role_key');
           
           anonKey = anonKeyObj?.api_key;
           serviceRoleKey = serviceKeyObj?.api_key;
+          
+          console.log('Found anon key:', !!anonKey);
+          console.log('Found service role key:', !!serviceRoleKey);
         }
       } catch (error) {
-        console.log('Primary API keys endpoint failed:', error.response?.status, error.response?.data?.message || error.message);
+        console.log('Primary API keys endpoint failed:');
+        console.log('  Status:', error.response?.status);
+        console.log('  Status Text:', error.response?.statusText);
+        console.log('  Error Data:', JSON.stringify(error.response?.data, null, 2));
+        console.log('  Error Message:', error.message);
         
         // Check if it's a permission error
         if (error.response?.status === 403) {
@@ -1179,7 +1189,7 @@ class SupabaseIntegration {
           };
         }
         
-        // Try alternative endpoint
+        // Try alternative endpoints
         try {
           console.log('Trying alternative config endpoint...');
           const configResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}/config`, {
@@ -1189,13 +1199,35 @@ class SupabaseIntegration {
             }
           });
           
+          console.log('Config endpoint response:', JSON.stringify(configResponse.data, null, 2));
+          
           if (configResponse.data?.api) {
             anonKey = configResponse.data.api.anon_key;
             serviceRoleKey = configResponse.data.api.service_role_key;
             console.log('Found keys via config endpoint');
           }
         } catch (altError) {
-          console.log('Alternative endpoint also failed:', altError.response?.status, altError.response?.data?.message || altError.message);
+          console.log('Config endpoint also failed:', altError.response?.status, altError.response?.data?.message || altError.message);
+        }
+        
+        // Try project details endpoint (might have public keys)
+        try {
+          console.log('Trying project details endpoint...');
+          const projectResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          console.log('Project details response:', JSON.stringify(projectResponse.data, null, 2));
+          
+          // Check if project details contain any API info
+          if (projectResponse.data?.api_url || projectResponse.data?.endpoint) {
+            console.log('Found project API URL:', projectResponse.data.api_url || projectResponse.data.endpoint);
+          }
+        } catch (projError) {
+          console.log('Project details endpoint failed:', projError.response?.status, projError.message);
         }
       }
 

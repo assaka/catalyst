@@ -460,12 +460,24 @@ router.post('/storage/test-upload',
       let result;
       try {
         console.log('Attempting direct API upload for test...');
+        console.log('Store ID:', req.storeId);
+        
+        // First check if we have API keys
+        const tokenInfo = await supabaseIntegration.getTokenInfo(req.storeId);
+        console.log('Token info check for test upload:');
+        console.log('  Has project URL:', !!tokenInfo?.project_url);
+        console.log('  Project URL:', tokenInfo?.project_url);
+        console.log('  Has anon key:', !!tokenInfo?.anon_key);
+        console.log('  Anon key preview:', tokenInfo?.anon_key ? tokenInfo.anon_key.substring(0, 20) + '...' : 'none');
+        console.log('  Has service key:', !!tokenInfo?.service_role_key);
+        
         result = await supabaseStorage.uploadImageDirect(req.storeId, mockFile, {
           folder: 'test-products',
           public: true
         });
       } catch (directError) {
-        console.log('Direct API failed, falling back to regular upload:', directError.message);
+        console.log('Direct API failed:', directError.message);
+        console.log('Attempting regular upload as fallback...');
         result = await supabaseStorage.uploadImage(req.storeId, mockFile, {
           folder: 'test-products',
           public: true
