@@ -677,10 +677,16 @@ router.post('/fetch-api-keys', auth, extractStoreId, checkStoreOwnership, async 
   }
 });
 
-// Manually update project configuration (for limited scope connections)
+// Manually update project configuration (for limited scope connections or when API doesn't provide keys)
 router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const { projectUrl, anonKey, serviceRoleKey, databaseUrl, storageUrl, authUrl } = req.body;
+    
+    console.log('Manual config update request:', {
+      hasProjectUrl: !!projectUrl,
+      hasAnonKey: !!anonKey,
+      hasServiceRoleKey: !!serviceRoleKey
+    });
     
     // Validate at least one field is provided
     if (!projectUrl && !anonKey && !serviceRoleKey && !databaseUrl && !storageUrl && !authUrl) {
@@ -706,6 +712,20 @@ router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (
       storageUrl,
       authUrl
     });
+    
+    // After updating, test if storage works
+    if (anonKey || serviceRoleKey) {
+      try {
+        const tokenInfo = await supabaseIntegration.getTokenInfo(req.storeId);
+        console.log('Config updated. New token info:', {
+          hasAnonKey: !!tokenInfo?.anon_key && tokenInfo.anon_key !== 'pending_configuration',
+          hasServiceKey: !!tokenInfo?.service_role_key
+        });
+        result.storageReady = true;
+      } catch (testError) {
+        console.log('Could not verify storage readiness:', testError.message);
+      }
+    }
     
     res.json(result);
   } catch (error) {

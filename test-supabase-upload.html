@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Storage Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .status.warning {
+            background: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+        }
+        .status.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 100px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .instructions {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #0369a1;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+            color: #0c4a6e;
+        }
+        .instructions code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #e0f2fe;
+            font-size: 12px;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .key-status {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .key-status.configured {
+            background: #d4edda;
+            color: #155724;
+        }
+        .key-status.missing {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Supabase Storage Configuration Test</h1>
+        
+        <div id="connectionStatus" class="status info">
+            Checking connection status...
+        </div>
+
+        <div class="form-group">
+            <label for="apiUrl">API URL:</label>
+            <input type="text" id="apiUrl" value="https://catalyst-backend-fzhu.onrender.com" />
+        </div>
+
+        <div class="form-group">
+            <label for="token">JWT Token:</label>
+            <input type="password" id="token" placeholder="Your JWT token from login" />
+        </div>
+
+        <div class="form-group">
+            <label for="storeId">Store ID:</label>
+            <input type="text" id="storeId" value="157d4590-49bf-4b0b-bd77-abe131909528" />
+        </div>
+
+        <button onclick="checkStatus()">Check Status</button>
+        <button onclick="testUpload()">Test Upload</button>
+        <button onclick="showConfigInstructions()">Configuration Help</button>
+
+        <div id="configSection" style="display:none;">
+            <div class="instructions">
+                <h3>📋 How to Configure API Keys</h3>
+                <ol>
+                    <li>Go to your <a href="https://supabase.com/dashboard" target="_blank">Supabase Dashboard</a></li>
+                    <li>Select your project</li>
+                    <li>Navigate to <strong>Settings → API</strong></li>
+                    <li>Copy the <strong>anon</strong> key (starts with <code>eyJ...</code>)</li>
+                    <li>Use it in the configuration below</li>
+                </ol>
+            </div>
+
+            <div class="form-group">
+                <label for="anonKey">
+                    Anon Key (Public Key)
+                    <span id="anonKeyStatus" class="key-status missing">Not Configured</span>
+                </label>
+                <textarea id="anonKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></textarea>
+            </div>
+
+            <button onclick="saveApiKeys()">Save API Keys</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let currentStatus = null;
+
+        async function checkStatus() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('token').value;
+            const storeId = document.getElementById('storeId').value;
+
+            if (!token) {
+                showResult('Please enter your JWT token', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}/api/supabase/status`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'x-store-id': storeId
+                    }
+                });
+
+                const data = await response.json();
+                currentStatus = data;
+
+                if (data.success || data.connected) {
+                    let statusHtml = `✅ Connected to Supabase\n`;
+                    statusHtml += `Project: ${data.projectUrl || 'Not configured'}\n`;
+                    statusHtml += `User: ${data.userEmail || 'Unknown'}\n`;
+                    statusHtml += `Anon Key: ${data.hasAnonKey ? '✅ Configured' : '❌ Not Configured'}\n`;
+                    statusHtml += `Service Key: ${data.hasServiceRoleKey ? '✅ Configured' : '❌ Not Configured'}\n`;
+                    statusHtml += `Storage Ready: ${data.storageReady ? '✅ Yes' : '❌ No'}\n`;
+
+                    showResult(statusHtml, data.storageReady ? 'success' : 'warning');
+                    
+                    // Update UI based on status
+                    document.getElementById('anonKeyStatus').className = 
+                        `key-status ${data.hasAnonKey ? 'configured' : 'missing'}`;
+                    document.getElementById('anonKeyStatus').textContent = 
+                        data.hasAnonKey ? 'Configured' : 'Not Configured';
+                    
+                    // Show config section if needed
+                    if (!data.storageReady || data.requiresManualConfiguration) {
+                        document.getElementById('configSection').style.display = 'block';
+                        showResult(statusHtml + '\n⚠️ Manual configuration required for storage operations', 'warning');
+                    }
+                } else {
+                    showResult('❌ Not connected to Supabase\n' + (data.message || data.error || ''), 'error');
+                }
+            } catch (error) {
+                showResult('Error checking status: ' + error.message, 'error');
+            }
+        }
+
+        async function testUpload() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('token').value;
+            const storeId = document.getElementById('storeId').value;
+
+            if (!token) {
+                showResult('Please enter your JWT token', 'error');
+                return;
+            }
+
+            showResult('Testing upload...', 'info');
+
+            try {
+                const response = await fetch(`${apiUrl}/api/supabase/storage/test-upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'x-store-id': storeId,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResult(`✅ Upload successful!\n\nPublic URL:\n${data.publicUrl || data.url}\n\nPath: ${data.path}`, 'success');
+                } else {
+                    showResult(`❌ Upload failed:\n${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('Error testing upload: ' + error.message, 'error');
+            }
+        }
+
+        async function saveApiKeys() {
+            const apiUrl = document.getElementById('apiUrl').value;
+            const token = document.getElementById('token').value;
+            const storeId = document.getElementById('storeId').value;
+            const anonKey = document.getElementById('anonKey').value.trim();
+
+            if (!token) {
+                showResult('Please enter your JWT token', 'error');
+                return;
+            }
+
+            if (!anonKey) {
+                showResult('Please enter the anon key', 'error');
+                return;
+            }
+
+            showResult('Saving API keys...', 'info');
+
+            try {
+                const response = await fetch(`${apiUrl}/api/supabase/update-config`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'x-store-id': storeId,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        anonKey: anonKey
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showResult('✅ API keys saved successfully!\n\nYou can now test the upload functionality.', 'success');
+                    document.getElementById('anonKey').value = '';
+                    // Refresh status
+                    setTimeout(checkStatus, 1000);
+                } else {
+                    showResult(`❌ Failed to save keys:\n${data.message}`, 'error');
+                }
+            } catch (error) {
+                showResult('Error saving keys: ' + error.message, 'error');
+            }
+        }
+
+        function showConfigInstructions() {
+            document.getElementById('configSection').style.display = 
+                document.getElementById('configSection').style.display === 'none' ? 'block' : 'none';
+        }
+
+        function showResult(message, type = 'info') {
+            const statusDiv = document.getElementById('connectionStatus');
+            const resultDiv = document.getElementById('result');
+            
+            // Update status div
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message.split('\n')[0];
+            
+            // Update result div with full message
+            resultDiv.textContent = message;
+            resultDiv.style.border = `1px solid ${
+                type === 'success' ? '#c3e6cb' : 
+                type === 'error' ? '#f5c6cb' : 
+                type === 'warning' ? '#ffeeba' : '#bee5eb'
+            }`;
+        }
+
+        // Auto-check status on load if token is present
+        window.onload = () => {
+            const token = localStorage.getItem('catalyst_token');
+            if (token) {
+                document.getElementById('token').value = token;
+                checkStatus();
+            }
+        };
+    </script>
+</body>
+</html>

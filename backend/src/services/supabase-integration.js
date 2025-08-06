@@ -1081,6 +1081,17 @@ class SupabaseIntegration {
         }
       }
 
+      // Check if keys are properly configured (not just present)
+      const hasValidAnonKey = token.anon_key && 
+                             token.anon_key !== 'pending_configuration' &&
+                             token.anon_key !== 'pending' &&
+                             token.anon_key !== '' &&
+                             !token.anon_key.includes('dummy');
+      
+      const hasValidServiceKey = token.service_role_key && 
+                                token.service_role_key !== 'pending_configuration' &&
+                                token.service_role_key !== '';
+
       return {
         connected: true,
         projectUrl: token.project_url,
@@ -1091,8 +1102,10 @@ class SupabaseIntegration {
         oauthConfigured: true,
         limitedScope: hasLimitedScope,
         userEmail: config?.config_data?.userEmail,
-        hasAnonKey: token.anon_key && token.anon_key !== 'pending_configuration',
-        hasServiceRoleKey: !!token.service_role_key
+        hasAnonKey: hasValidAnonKey,
+        hasServiceRoleKey: hasValidServiceKey,
+        requiresManualConfiguration: !hasValidAnonKey && !hasLimitedScope,
+        storageReady: hasValidAnonKey || hasValidServiceKey
       };
     } catch (error) {
       console.error('Error getting connection status:', error);
@@ -1149,6 +1162,31 @@ class SupabaseIntegration {
       let serviceRoleKey = null;
       let updated = false;
 
+      // First check if project is active
+      try {
+        console.log(`Checking project status for ${projectId}...`);
+        const projectResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Project status:', projectResponse.data?.status);
+        
+        if (projectResponse.data?.status === 'INACTIVE') {
+          console.log('Project is INACTIVE - cannot fetch API keys');
+          return { 
+            success: false, 
+            message: 'Supabase project is inactive. Please activate the project in your Supabase dashboard to enable storage operations.',
+            projectStatus: 'INACTIVE',
+            requiresProjectActivation: true 
+          };
+        }
+      } catch (statusError) {
+        console.log('Could not check project status:', statusError.message);
+      }
+
       // Try to fetch API keys
       try {
         console.log(`Attempting to fetch API keys for project ${projectId}...`);
@@ -1179,7 +1217,7 @@ class SupabaseIntegration {
         console.log('  Error Data:', JSON.stringify(error.response?.data, null, 2));
         console.log('  Error Message:', error.message);
         
-        // Check if it's a permission error
+        // Check if it's a permission error or not found
         if (error.response?.status === 403) {
           console.log('OAuth token lacks secrets:read scope');
           return { 
@@ -1187,6 +1225,9 @@ class SupabaseIntegration {
             message: 'OAuth token lacks permission to fetch API keys (missing secrets:read scope)',
             requiresReconnection: true 
           };
+        } else if (error.response?.status === 404) {
+          console.log('API keys endpoint not available - this might be a Supabase API limitation');
+          // Don't return error for 404, continue trying alternative methods
         }
         
         // Try alternative endpoints
@@ -1244,11 +1285,34 @@ class SupabaseIntegration {
         console.log('Updated service role key for project');
       }
 
+      // If no keys were found at all, indicate manual configuration is needed
+      if (!anonKey && !serviceRoleKey && !token.anon_key && !token.service_role_key) {
+        return {
+          success: false,
+          updated: false,
+          hasAnonKey: false,
+          hasServiceRoleKey: false,
+          requiresManualConfiguration: true,
+          message: 'API keys could not be fetched automatically. The Supabase Management API does not provide access to project API keys through OAuth. Please manually configure your API keys from your Supabase dashboard.',
+          instructions: [
+            '1. Go to your Supabase dashboard',
+            '2. Select your project',
+            '3. Navigate to Settings > API',
+            '4. Copy the "anon" public key',
+            '5. Enter it in the Supabase integration settings'
+          ]
+        };
+      }
+
       return {
         success: true,
         updated,
-        hasAnonKey: !!anonKey,
-        hasServiceRoleKey: !!serviceRoleKey
+        hasAnonKey: !!anonKey || !!token.anon_key,
+        hasServiceRoleKey: !!serviceRoleKey || !!token.service_role_key,
+        existingKeys: {
+          hasAnonKey: !!token.anon_key,
+          hasServiceRoleKey: !!token.service_role_key
+        }
       };
     } catch (error) {
       console.error('Error fetching API keys:', error);

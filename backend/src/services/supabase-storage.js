@@ -84,6 +84,10 @@ class SupabaseStorageService {
         try {
           const fetchResult = await supabaseIntegration.fetchAndUpdateApiKeys(storeId);
           
+          if (fetchResult.requiresProjectActivation) {
+            throw new Error('Your Supabase project is inactive. Please go to your Supabase dashboard and activate the project to enable storage operations.');
+          }
+          
           if (fetchResult.success && (fetchResult.hasAnonKey || fetchResult.hasServiceRoleKey)) {
             // Reload token info after fetching keys
             const updatedTokenInfo = await supabaseIntegration.getTokenInfo(storeId);
@@ -98,11 +102,15 @@ class SupabaseStorageService {
           }
         } catch (fetchError) {
           console.log('Failed to fetch API keys:', fetchError.message);
+          // Re-throw if it's a project activation error
+          if (fetchError.message.includes('inactive')) {
+            throw fetchError;
+          }
         }
         
         // If we still don't have keys after trying to fetch them
         if (!hasValidAnonKey && !hasValidServiceKey) {
-          throw new Error('Storage operations require API keys. Your current OAuth token does not have permission to fetch API keys (missing secrets:read scope). Please reconnect to Supabase to grant the necessary permissions.');
+          throw new Error('Storage operations require API keys (anon key or service role key). The Supabase API is not providing these keys through the OAuth connection. Please manually configure the API keys in the Supabase integration settings.');
         }
       }
 
