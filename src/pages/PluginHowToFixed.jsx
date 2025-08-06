@@ -1,115 +1,85 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { Button } from '../components/ui/button';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Badge } from '../components/ui/badge';
+import { Separator } from '../components/ui/separator';
+import { ScrollArea } from '../components/ui/scroll-area';
 import { 
-    Box, 
-    Typography, 
-    Paper, 
-    Tabs, 
-    Tab, 
-    Button, 
-    Alert,
-    Stepper,
-    Step,
-    StepLabel,
-    StepContent,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
-    Chip,
-    Card,
-    CardContent,
-    Grid,
-    Divider,
-    Link,
-    Container
-} from '@mui/material';
-import {
-    Code as CodeIcon,
-    Storage as StorageIcon,
-    Security as SecurityIcon,
-    Speed as SpeedIcon,
-    Extension as ExtensionIcon,
-    CheckCircle as CheckCircleIcon,
-    Build as BuildIcon,
-    GitHub as GitHubIcon,
-    Folder as FolderIcon,
-    Settings as SettingsIcon,
-    PlayArrow as PlayArrowIcon,
-    Description as DescriptionIcon,
-    CloudUpload as CloudUploadIcon,
-    Store as StoreIcon,
-    Api as ApiIcon,
-    Lightbulb as LightbulbIcon,
-    Warning as WarningIcon
-} from '@mui/icons-material';
+  Code,
+  FileCode,
+  Play,
+  Lightbulb,
+  CheckCircle,
+  AlertCircle,
+  ChevronRight,
+  GitBranch,
+  Folder,
+  Settings,
+  Shield,
+  Zap,
+  Package,
+  Globe,
+  Database,
+  Webhook,
+  Book
+} from 'lucide-react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { useNavigate } from 'react-router-dom';
 
 const PluginHowToFixed = () => {
-    const [activeTab, setActiveTab] = useState(0);
     const [activeStep, setActiveStep] = useState(0);
     const navigate = useNavigate();
 
-    const handleTabChange = (event, newValue) => {
-        setActiveTab(newValue);
-    };
-
-    const handleNext = () => {
-        setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    };
-
-    const handleBack = () => {
-        setActiveStep((prevActiveStep) => prevActiveStep - 1);
-    };
-
-    const handleReset = () => {
-        setActiveStep(0);
-    };
-
     const steps = [
         {
-            label: 'Understand Plugin Architecture',
+            title: 'Understand Plugin Architecture',
+            description: 'Learn how Catalyst plugins work',
+            icon: <Book className="w-5 h-5" />,
             content: (
-                <Box>
-                    <Typography variant="body1" paragraph>
+                <div className="space-y-4">
+                    <p className="text-gray-600">
                         Catalyst plugins extend your store's functionality through a secure, sandboxed environment.
-                    </Typography>
-                    <List>
-                        <ListItem>
-                            <ListItemIcon><SecurityIcon color="primary" /></ListItemIcon>
-                            <ListItemText 
-                                primary="Secure Sandbox" 
-                                secondary="Plugins run in an isolated environment with restricted access"
-                            />
-                        </ListItem>
-                        <ListItem>
-                            <ListItemIcon><ExtensionIcon color="primary" /></ListItemIcon>
-                            <ListItemText 
-                                primary="Hook System" 
-                                secondary="Inject content at predefined points in your storefront"
-                            />
-                        </ListItem>
-                        <ListItem>
-                            <ListItemIcon><SettingsIcon color="primary" /></ListItemIcon>
-                            <ListItemText 
-                                primary="Configuration Schema" 
-                                secondary="Define customizable settings for store owners"
-                            />
-                        </ListItem>
-                    </List>
-                </Box>
+                    </p>
+                    <div className="space-y-3">
+                        <div className="flex items-start gap-3">
+                            <Shield className="w-5 h-5 text-blue-500 mt-1" />
+                            <div>
+                                <h4 className="font-semibold">Secure Sandbox</h4>
+                                <p className="text-sm text-gray-600">Plugins run in an isolated environment with restricted access</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <Package className="w-5 h-5 text-blue-500 mt-1" />
+                            <div>
+                                <h4 className="font-semibold">Hook System</h4>
+                                <p className="text-sm text-gray-600">Inject content at predefined points in your storefront</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-3">
+                            <Settings className="w-5 h-5 text-blue-500 mt-1" />
+                            <div>
+                                <h4 className="font-semibold">Configuration Schema</h4>
+                                <p className="text-sm text-gray-600">Define customizable settings for store owners</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )
         },
         {
-            label: 'Create Plugin Structure',
+            title: 'Create Plugin Structure',
+            description: 'Set up your plugin files',
+            icon: <Folder className="w-5 h-5" />,
             content: (
-                <Box>
-                    <Typography variant="body1" paragraph>
+                <div className="space-y-4">
+                    <p className="text-gray-600">
                         Create the following file structure for your plugin:
-                    </Typography>
-                    <Paper sx={{ p: 2, bgcolor: 'grey.900' }}>
-                        <SyntaxHighlighter language="bash" style={atomDark}>
+                    </p>
+                    <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                        <SyntaxHighlighter language="bash" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
 {`my-plugin/
 ├── manifest.json      # Plugin metadata and configuration
 ├── index.js          # Main plugin code
@@ -118,19 +88,21 @@ const PluginHowToFixed = () => {
     ├── icon.png
     └── styles.css`}
                         </SyntaxHighlighter>
-                    </Paper>
-                </Box>
+                    </div>
+                </div>
             )
         },
         {
-            label: 'Write manifest.json',
+            title: 'Write manifest.json',
+            description: 'Define plugin metadata',
+            icon: <FileCode className="w-5 h-5" />,
             content: (
-                <Box>
-                    <Typography variant="body1" paragraph>
+                <div className="space-y-4">
+                    <p className="text-gray-600">
                         Define your plugin's metadata and configuration:
-                    </Typography>
-                    <Paper sx={{ p: 2, bgcolor: 'grey.900' }}>
-                        <SyntaxHighlighter language="json" style={atomDark}>
+                    </p>
+                    <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                        <SyntaxHighlighter language="json" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
 {`{
   "name": "My Custom Plugin",
   "version": "1.0.0",
@@ -171,19 +143,21 @@ const PluginHowToFixed = () => {
   "category": "marketing"
 }`}
                         </SyntaxHighlighter>
-                    </Paper>
-                </Box>
+                    </div>
+                </div>
             )
         },
         {
-            label: 'Implement Plugin Logic',
+            title: 'Implement Plugin Logic',
+            description: 'Write your plugin code',
+            icon: <Code className="w-5 h-5" />,
             content: (
-                <Box>
-                    <Typography variant="body1" paragraph>
+                <div className="space-y-4">
+                    <p className="text-gray-600">
                         Write your plugin's main functionality:
-                    </Typography>
-                    <Paper sx={{ p: 2, bgcolor: 'grey.900' }}>
-                        <SyntaxHighlighter language="javascript" style={atomDark}>
+                    </p>
+                    <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                        <SyntaxHighlighter language="javascript" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
 {`// index.js
 class MyPlugin {
   constructor(config, context) {
@@ -238,92 +212,95 @@ class MyPlugin {
 // Export the plugin
 module.exports = MyPlugin;`}
                         </SyntaxHighlighter>
-                    </Paper>
-                </Box>
+                    </div>
+                </div>
             )
         },
         {
-            label: 'Test Your Plugin',
+            title: 'Test Your Plugin',
+            description: 'Use Plugin Builder to test',
+            icon: <Play className="w-5 h-5" />,
             content: (
-                <Box>
-                    <Typography variant="body1" paragraph>
+                <div className="space-y-4">
+                    <p className="text-gray-600">
                         Use the Plugin Builder to test your plugin:
-                    </Typography>
-                    <List>
-                        <ListItem>
-                            <ListItemText 
-                                primary="1. Navigate to Plugin Builder"
-                                secondary="Go to Admin → Plugin Builder"
-                            />
-                        </ListItem>
-                        <ListItem>
-                            <ListItemText 
-                                primary="2. Upload or paste your code"
-                                secondary="Use the editor to test your plugin logic"
-                            />
-                        </ListItem>
-                        <ListItem>
-                            <ListItemText 
-                                primary="3. Configure settings"
-                                secondary="Test different configuration values"
-                            />
-                        </ListItem>
-                        <ListItem>
-                            <ListItemText 
-                                primary="4. Preview output"
-                                secondary="See how your plugin renders in different hooks"
-                            />
-                        </ListItem>
-                    </List>
+                    </p>
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 text-sm font-semibold">1</span>
+                            <div>
+                                <p className="font-medium">Navigate to Plugin Builder</p>
+                                <p className="text-sm text-gray-600">Go to Admin → Plugin Builder</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 text-sm font-semibold">2</span>
+                            <div>
+                                <p className="font-medium">Upload or paste your code</p>
+                                <p className="text-sm text-gray-600">Use the editor to test your plugin logic</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 text-sm font-semibold">3</span>
+                            <div>
+                                <p className="font-medium">Configure settings</p>
+                                <p className="text-sm text-gray-600">Test different configuration values</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600 text-sm font-semibold">4</span>
+                            <div>
+                                <p className="font-medium">Preview output</p>
+                                <p className="text-sm text-gray-600">See how your plugin renders in different hooks</p>
+                            </div>
+                        </div>
+                    </div>
                     <Button 
-                        variant="contained" 
-                        startIcon={<PlayArrowIcon />}
                         onClick={() => navigate('/admin/plugin-builder')}
-                        sx={{ mt: 2 }}
+                        className="w-full sm:w-auto"
                     >
+                        <Play className="w-4 h-4 mr-2" />
                         Open Plugin Builder
                     </Button>
-                </Box>
+                </div>
             )
         },
         {
-            label: 'Deploy Your Plugin',
+            title: 'Deploy Your Plugin',
+            description: 'Make your plugin available',
+            icon: <GitBranch className="w-5 h-5" />,
             content: (
-                <Box>
-                    <Typography variant="body1" paragraph>
+                <div className="space-y-4">
+                    <p className="text-gray-600">
                         Deploy your plugin to make it available:
-                    </Typography>
-                    <Grid container spacing={2}>
-                        <Grid item xs={12} md={6}>
-                            <Card>
-                                <CardContent>
-                                    <GitHubIcon color="primary" sx={{ mb: 1 }} />
-                                    <Typography variant="h6">GitHub Repository</Typography>
-                                    <Typography variant="body2" color="text.secondary" paragraph>
-                                        Push your plugin to a public GitHub repository
-                                    </Typography>
-                                    <Typography variant="body2">
-                                        Install URL: https://github.com/username/plugin-name
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                        <Grid item xs={12} md={6}>
-                            <Card>
-                                <CardContent>
-                                    <CloudUploadIcon color="primary" sx={{ mb: 1 }} />
-                                    <Typography variant="h6">Direct Upload</Typography>
-                                    <Typography variant="body2" color="text.secondary" paragraph>
-                                        Upload ZIP file directly in Plugin Manager
-                                    </Typography>
-                                    <Typography variant="body2">
-                                        Go to Plugins → Install → Upload ZIP
-                                    </Typography>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-                    </Grid>
-                </Box>
+                    </p>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Card>
+                            <CardHeader>
+                                <GitBranch className="w-8 h-8 text-blue-500 mb-2" />
+                                <CardTitle className="text-lg">GitHub Repository</CardTitle>
+                                <CardDescription>Push your plugin to a public GitHub repository</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm font-mono bg-gray-100 p-2 rounded">
+                                    https://github.com/username/plugin-name
+                                </p>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <Package className="w-8 h-8 text-blue-500 mb-2" />
+                                <CardTitle className="text-lg">Direct Upload</CardTitle>
+                                <CardDescription>Upload ZIP file directly in Plugin Manager</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-gray-600">
+                                    Go to Plugins → Install → Upload ZIP
+                                </p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
             )
         }
     ];
@@ -332,7 +309,7 @@ module.exports = MyPlugin;`}
         {
             name: "Hello World Banner",
             description: "Simple banner that displays a customizable message",
-            difficulty: "Beginner",
+            difficulty: "beginner",
             code: `// Simple banner plugin
 class HelloWorldBanner {
   constructor(config) {
@@ -351,7 +328,7 @@ class HelloWorldBanner {
         {
             name: "Product Badge",
             description: "Adds custom badges to products based on conditions",
-            difficulty: "Intermediate",
+            difficulty: "intermediate",
             code: `// Product badge plugin
 class ProductBadge {
   async product_card_overlay(product) {
@@ -368,7 +345,7 @@ class ProductBadge {
         {
             name: "Analytics Tracker",
             description: "Tracks user interactions and stores analytics data",
-            difficulty: "Advanced",
+            difficulty: "advanced",
             code: `// Analytics tracking plugin
 class AnalyticsTracker {
   async onPageView(page) {
@@ -387,207 +364,221 @@ class AnalyticsTracker {
         }
     ];
 
+    const availableHooks = [
+        { name: 'homepage_header', description: 'Top of homepage, below navigation' },
+        { name: 'homepage_content', description: 'Main homepage content area' },
+        { name: 'product_detail_after_title', description: 'Product page, after product title' },
+        { name: 'product_card_overlay', description: 'Product listing card overlay' },
+        { name: 'cart_summary_after', description: 'After cart summary section' },
+        { name: 'checkout_payment_after', description: 'After payment options in checkout' }
+    ];
+
     const bestPractices = [
         {
-            icon: <SecurityIcon />,
+            icon: <Shield className="w-5 h-5" />,
             title: "Security First",
             description: "Never include sensitive data or credentials in your plugin code"
         },
         {
-            icon: <SpeedIcon />,
+            icon: <Zap className="w-5 h-5" />,
             title: "Performance",
             description: "Keep plugins lightweight and optimize for fast loading"
         },
         {
-            icon: <CodeIcon />,
+            icon: <Code className="w-5 h-5" />,
             title: "Clean Code",
             description: "Write readable, maintainable code with clear documentation"
         },
         {
-            icon: <ApiIcon />,
+            icon: <Webhook className="w-5 h-5" />,
             title: "API Usage",
             description: "Use provided APIs and respect rate limits"
         }
     ];
 
     return (
-        <Container maxWidth="lg">
-            <Box sx={{ py: 4 }}>
-                <Box sx={{ mb: 4, textAlign: 'center' }}>
-                    <Typography variant="h3" gutterBottom>
-                        Plugin Development Guide
-                    </Typography>
-                    <Typography variant="subtitle1" color="text.secondary">
-                        Learn how to create powerful plugins for your Catalyst store
-                    </Typography>
-                </Box>
+        <div className="container mx-auto p-6 max-w-7xl">
+            <div className="mb-8 text-center">
+                <h1 className="text-4xl font-bold mb-4">Plugin Development Guide</h1>
+                <p className="text-gray-600 text-lg">
+                    Learn how to create powerful plugins for your Catalyst store
+                </p>
+            </div>
 
-                <Paper sx={{ mb: 3 }}>
-                    <Tabs 
-                        value={activeTab} 
-                        onChange={handleTabChange}
-                        variant="fullWidth"
-                        sx={{ borderBottom: 1, borderColor: 'divider' }}
-                    >
-                        <Tab label="Getting Started" icon={<LightbulbIcon />} iconPosition="start" />
-                        <Tab label="Examples" icon={<CodeIcon />} iconPosition="start" />
-                        <Tab label="API Reference" icon={<ApiIcon />} iconPosition="start" />
-                        <Tab label="Best Practices" icon={<CheckCircleIcon />} iconPosition="start" />
-                    </Tabs>
+            <Tabs defaultValue="getting-started" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="getting-started">
+                        <Lightbulb className="w-4 h-4 mr-2" />
+                        Getting Started
+                    </TabsTrigger>
+                    <TabsTrigger value="examples">
+                        <Code className="w-4 h-4 mr-2" />
+                        Examples
+                    </TabsTrigger>
+                    <TabsTrigger value="api">
+                        <Webhook className="w-4 h-4 mr-2" />
+                        API Reference
+                    </TabsTrigger>
+                    <TabsTrigger value="best-practices">
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Best Practices
+                    </TabsTrigger>
+                </TabsList>
 
-                    <Box sx={{ p: 3 }}>
-                        {activeTab === 0 && (
-                            <Box>
-                                <Alert severity="info" sx={{ mb: 3 }}>
-                                    <Typography variant="body2">
-                                        <strong>Quick Start:</strong> Use the Plugin Builder to create and test plugins 
-                                        without writing code from scratch!
-                                    </Typography>
-                                </Alert>
+                <TabsContent value="getting-started" className="space-y-6">
+                    <Alert>
+                        <Lightbulb className="h-4 w-4" />
+                        <AlertDescription>
+                            <strong>Quick Start:</strong> Use the Plugin Builder to create and test plugins 
+                            without writing code from scratch!
+                        </AlertDescription>
+                    </Alert>
 
-                                <Stepper activeStep={activeStep} orientation="vertical">
-                                    {steps.map((step, index) => (
-                                        <Step key={step.label}>
-                                            <StepLabel>{step.label}</StepLabel>
-                                            <StepContent>
-                                                {step.content}
-                                                <Box sx={{ mb: 2, mt: 2 }}>
-                                                    <Button
-                                                        variant="contained"
-                                                        onClick={handleNext}
-                                                        sx={{ mt: 1, mr: 1 }}
-                                                        disabled={index === steps.length - 1}
-                                                    >
-                                                        {index === steps.length - 1 ? 'Finish' : 'Continue'}
-                                                    </Button>
-                                                    <Button
-                                                        disabled={index === 0}
-                                                        onClick={handleBack}
-                                                        sx={{ mt: 1, mr: 1 }}
-                                                    >
-                                                        Back
-                                                    </Button>
-                                                </Box>
-                                            </StepContent>
-                                        </Step>
-                                    ))}
-                                </Stepper>
-                                {activeStep === steps.length && (
-                                    <Paper square elevation={0} sx={{ p: 3 }}>
-                                        <Typography>All steps completed - you're ready to build plugins!</Typography>
-                                        <Button onClick={handleReset} sx={{ mt: 1, mr: 1 }}>
-                                            Reset
-                                        </Button>
-                                        <Button 
-                                            variant="contained" 
-                                            onClick={() => navigate('/admin/plugin-builder')}
-                                            sx={{ mt: 1 }}
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        <div className="lg:col-span-1">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Steps</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="space-y-2">
+                                        {steps.map((step, index) => (
+                                            <button
+                                                key={index}
+                                                onClick={() => setActiveStep(index)}
+                                                className={`w-full text-left p-3 rounded-lg transition-colors ${
+                                                    activeStep === index 
+                                                        ? 'bg-blue-50 border-l-4 border-blue-500' 
+                                                        : 'hover:bg-gray-50'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold ${
+                                                        activeStep === index 
+                                                            ? 'bg-blue-500 text-white' 
+                                                            : 'bg-gray-200 text-gray-600'
+                                                    }`}>
+                                                        {index + 1}
+                                                    </span>
+                                                    <div className="flex-1">
+                                                        <p className="font-medium">{step.title}</p>
+                                                        <p className="text-sm text-gray-600">{step.description}</p>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        <div className="lg:col-span-2">
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        {steps[activeStep].icon}
+                                        <div>
+                                            <CardTitle>{steps[activeStep].title}</CardTitle>
+                                            <CardDescription>{steps[activeStep].description}</CardDescription>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    {steps[activeStep].content}
+                                    <div className="flex justify-between mt-6">
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => setActiveStep(Math.max(0, activeStep - 1))}
+                                            disabled={activeStep === 0}
                                         >
-                                            Go to Plugin Builder
+                                            Previous
                                         </Button>
-                                    </Paper>
-                                )}
-                            </Box>
-                        )}
+                                        {activeStep < steps.length - 1 ? (
+                                            <Button
+                                                onClick={() => setActiveStep(activeStep + 1)}
+                                            >
+                                                Next
+                                                <ChevronRight className="w-4 h-4 ml-2" />
+                                            </Button>
+                                        ) : (
+                                            <Button
+                                                onClick={() => navigate('/admin/plugin-builder')}
+                                            >
+                                                Go to Plugin Builder
+                                                <ChevronRight className="w-4 h-4 ml-2" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+                    </div>
+                </TabsContent>
 
-                        {activeTab === 1 && (
-                            <Box>
-                                <Typography variant="h5" gutterBottom>
-                                    Example Plugins
-                                </Typography>
-                                <Grid container spacing={3}>
-                                    {examplePlugins.map((example, index) => (
-                                        <Grid item xs={12} key={index}>
-                                            <Card>
-                                                <CardContent>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                                                        <Typography variant="h6">
-                                                            {example.name}
-                                                        </Typography>
-                                                        <Chip 
-                                                            label={example.difficulty} 
-                                                            size="small"
-                                                            color={
-                                                                example.difficulty === 'Beginner' ? 'success' :
-                                                                example.difficulty === 'Intermediate' ? 'warning' : 'error'
-                                                            }
-                                                        />
-                                                    </Box>
-                                                    <Typography variant="body2" color="text.secondary" paragraph>
-                                                        {example.description}
-                                                    </Typography>
-                                                    <Paper sx={{ p: 2, bgcolor: 'grey.900' }}>
-                                                        <SyntaxHighlighter 
-                                                            language="javascript" 
-                                                            style={atomDark}
-                                                            customStyle={{ margin: 0 }}
-                                                        >
-                                                            {example.code}
-                                                        </SyntaxHighlighter>
-                                                    </Paper>
-                                                </CardContent>
-                                            </Card>
-                                        </Grid>
-                                    ))}
-                                </Grid>
-                            </Box>
-                        )}
+                <TabsContent value="examples" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Example Plugins</CardTitle>
+                            <CardDescription>Learn from these example implementations</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {examplePlugins.map((example, index) => (
+                                <div key={index} className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-semibold">{example.name}</h3>
+                                        <Badge variant={
+                                            example.difficulty === 'beginner' ? 'default' :
+                                            example.difficulty === 'intermediate' ? 'secondary' : 'destructive'
+                                        }>
+                                            {example.difficulty}
+                                        </Badge>
+                                    </div>
+                                    <p className="text-gray-600">{example.description}</p>
+                                    <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                                        <SyntaxHighlighter 
+                                            language="javascript" 
+                                            style={atomDark}
+                                            customStyle={{ margin: 0, background: 'transparent' }}
+                                        >
+                                            {example.code}
+                                        </SyntaxHighlighter>
+                                    </div>
+                                    {index < examplePlugins.length - 1 && <Separator />}
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
 
-                        {activeTab === 2 && (
-                            <Box>
-                                <Typography variant="h5" gutterBottom>
-                                    Plugin API Reference
-                                </Typography>
-                                
-                                <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
-                                    Available Hooks
-                                </Typography>
-                                <List>
-                                    <ListItem>
-                                        <ListItemText 
-                                            primary="homepage_header"
-                                            secondary="Top of homepage, below navigation"
-                                        />
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText 
-                                            primary="homepage_content"
-                                            secondary="Main homepage content area"
-                                        />
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText 
-                                            primary="product_detail_after_title"
-                                            secondary="Product page, after product title"
-                                        />
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText 
-                                            primary="product_card_overlay"
-                                            secondary="Product listing card overlay"
-                                        />
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText 
-                                            primary="cart_summary_after"
-                                            secondary="After cart summary section"
-                                        />
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemText 
-                                            primary="checkout_payment_after"
-                                            secondary="After payment options in checkout"
-                                        />
-                                    </ListItem>
-                                </List>
+                <TabsContent value="api" className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Available Hooks</CardTitle>
+                            <CardDescription>Hook points where your plugin can inject content</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                {availableHooks.map((hook, index) => (
+                                    <div key={index} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50">
+                                        <Code className="w-5 h-5 text-blue-500 mt-0.5" />
+                                        <div>
+                                            <p className="font-mono font-medium">{hook.name}</p>
+                                            <p className="text-sm text-gray-600">{hook.description}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                                <Divider sx={{ my: 3 }} />
-
-                                <Typography variant="h6" sx={{ mb: 2 }}>
-                                    Context Object
-                                </Typography>
-                                <Paper sx={{ p: 2, bgcolor: 'grey.900' }}>
-                                    <SyntaxHighlighter language="javascript" style={atomDark}>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Context Object</CardTitle>
+                            <CardDescription>Data available to your plugin in all hooks</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                                <SyntaxHighlighter language="javascript" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
 {`// Available in all hooks
 context = {
   store: {
@@ -610,14 +601,20 @@ context = {
   category: { /* Category data if on category page */ },
   cart: { /* Cart data if available */ }
 }`}
-                                    </SyntaxHighlighter>
-                                </Paper>
+                                </SyntaxHighlighter>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                                <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
-                                    Storage API
-                                </Typography>
-                                <Paper sx={{ p: 2, bgcolor: 'grey.900' }}>
-                                    <SyntaxHighlighter language="javascript" style={atomDark}>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Storage API</CardTitle>
+                                <CardDescription>Persist data for your plugin</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                                    <SyntaxHighlighter language="javascript" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
 {`// Store data persistently
 await this.storage.set('key', value);
 const value = await this.storage.get('key');
@@ -629,122 +626,116 @@ const keys = await this.storage.keys();
 // Clear all data
 await this.storage.clear();`}
                                     </SyntaxHighlighter>
-                                </Paper>
+                                </div>
+                            </CardContent>
+                        </Card>
 
-                                <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
-                                    HTTP API
-                                </Typography>
-                                <Paper sx={{ p: 2, bgcolor: 'grey.900' }}>
-                                    <SyntaxHighlighter language="javascript" style={atomDark}>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>HTTP API</CardTitle>
+                                <CardDescription>Make external API calls</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
+                                    <SyntaxHighlighter language="javascript" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
 {`// Make external API calls
-const response = await this.api.get('https://api.example.com/data');
-const data = await this.api.post('https://api.example.com/submit', {
-  body: { key: 'value' },
-  headers: { 'Authorization': 'Bearer token' }
-});`}
+const response = await this.api.get(
+  'https://api.example.com/data'
+);
+
+const data = await this.api.post(
+  'https://api.example.com/submit', 
+  {
+    body: { key: 'value' },
+    headers: { 
+      'Authorization': 'Bearer token' 
+    }
+  }
+);`}
                                     </SyntaxHighlighter>
-                                </Paper>
-                            </Box>
-                        )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
 
-                        {activeTab === 3 && (
-                            <Box>
-                                <Typography variant="h5" gutterBottom>
-                                    Best Practices
-                                </Typography>
-                                
-                                <Grid container spacing={3}>
-                                    {bestPractices.map((practice, index) => (
-                                        <Grid item xs={12} sm={6} key={index}>
-                                            <Card>
-                                                <CardContent>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                                        {React.cloneElement(practice.icon, { 
-                                                            sx: { mr: 2 }, 
-                                                            color: 'primary' 
-                                                        })}
-                                                        <Typography variant="h6">
-                                                            {practice.title}
-                                                        </Typography>
-                                                    </Box>
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {practice.description}
-                                                    </Typography>
-                                                </CardContent>
-                                            </Card>
-                                        </Grid>
-                                    ))}
-                                </Grid>
+                <TabsContent value="best-practices" className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-2">
+                        {bestPractices.map((practice, index) => (
+                            <Card key={index}>
+                                <CardHeader>
+                                    <div className="flex items-center gap-3">
+                                        {React.cloneElement(practice.icon, { className: 'w-5 h-5 text-blue-500' })}
+                                        <CardTitle className="text-lg">{practice.title}</CardTitle>
+                                    </div>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-gray-600">{practice.description}</p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
 
-                                <Alert severity="warning" sx={{ mt: 3 }}>
-                                    <Typography variant="body2">
-                                        <strong>Important:</strong> Plugins run in a sandboxed environment with limited 
-                                        access to system resources. Direct file system access, network sockets, and 
-                                        process spawning are not allowed for security reasons.
-                                    </Typography>
-                                </Alert>
+                    <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                            <strong>Important:</strong> Plugins run in a sandboxed environment with limited 
+                            access to system resources. Direct file system access, network sockets, and 
+                            process spawning are not allowed for security reasons.
+                        </AlertDescription>
+                    </Alert>
 
-                                <Typography variant="h6" sx={{ mt: 3, mb: 2 }}>
-                                    Testing Checklist
-                                </Typography>
-                                <List>
-                                    <ListItem>
-                                        <ListItemIcon>
-                                            <CheckCircleIcon color="primary" />
-                                        </ListItemIcon>
-                                        <ListItemText primary="Test with different configuration values" />
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemIcon>
-                                            <CheckCircleIcon color="primary" />
-                                        </ListItemIcon>
-                                        <ListItemText primary="Verify HTML output is properly escaped" />
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemIcon>
-                                            <CheckCircleIcon color="primary" />
-                                        </ListItemIcon>
-                                        <ListItemText primary="Check performance with large datasets" />
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemIcon>
-                                            <CheckCircleIcon color="primary" />
-                                        </ListItemIcon>
-                                        <ListItemText primary="Handle errors gracefully" />
-                                    </ListItem>
-                                    <ListItem>
-                                        <ListItemIcon>
-                                            <CheckCircleIcon color="primary" />
-                                        </ListItemIcon>
-                                        <ListItemText primary="Test on different devices and browsers" />
-                                    </ListItem>
-                                </List>
-                            </Box>
-                        )}
-                    </Box>
-                </Paper>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Testing Checklist</CardTitle>
+                            <CardDescription>Ensure your plugin works correctly</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle className="w-5 h-5 text-green-500" />
+                                    <span>Test with different configuration values</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle className="w-5 h-5 text-green-500" />
+                                    <span>Verify HTML output is properly escaped</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle className="w-5 h-5 text-green-500" />
+                                    <span>Check performance with large datasets</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle className="w-5 h-5 text-green-500" />
+                                    <span>Handle errors gracefully</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle className="w-5 h-5 text-green-500" />
+                                    <span>Test on different devices and browsers</span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
 
-                <Box sx={{ mt: 4, textAlign: 'center' }}>
-                    <Button 
-                        variant="contained" 
-                        size="large"
-                        startIcon={<BuildIcon />}
-                        onClick={() => navigate('/admin/plugin-builder')}
-                        sx={{ mr: 2 }}
-                    >
-                        Start Building
-                    </Button>
-                    <Button 
-                        variant="outlined" 
-                        size="large"
-                        startIcon={<StoreIcon />}
-                        onClick={() => navigate('/admin/plugins')}
-                    >
-                        Manage Plugins
-                    </Button>
-                </Box>
-            </Box>
-        </Container>
+            <div className="mt-8 flex justify-center gap-4">
+                <Button 
+                    size="lg"
+                    onClick={() => navigate('/admin/plugin-builder')}
+                >
+                    <Package className="w-4 h-4 mr-2" />
+                    Start Building
+                </Button>
+                <Button 
+                    size="lg"
+                    variant="outline"
+                    onClick={() => navigate('/admin/plugins')}
+                >
+                    <Globe className="w-4 h-4 mr-2" />
+                    Manage Plugins
+                </Button>
+            </div>
+        </div>
     );
 };
 
