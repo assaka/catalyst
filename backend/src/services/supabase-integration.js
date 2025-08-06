@@ -453,21 +453,36 @@ class SupabaseIntegration {
             // Token is invalid or user revoked authorization
             console.error('OAuth token is invalid or revoked');
             
-            // Mark the connection as revoked in our database
+            // Auto-disconnect the invalid connection
+            console.log('Auto-disconnecting revoked authorization during test');
+            
+            // Store the project URL before deleting
+            const lastProjectUrl = token.project_url;
+            
+            // Delete the invalid token
+            await token.destroy();
+            
+            // Update config to mark as disconnected
             const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
             if (config) {
               await config.update({
-                connection_status: 'revoked',
+                is_active: false,
+                connection_status: 'disconnected',
                 config_data: {
                   ...config.config_data,
+                  connected: false,
+                  autoDisconnected: true,
+                  autoDisconnectedAt: new Date(),
                   revokedAt: new Date(),
                   revokedDetected: true,
-                  message: 'Authorization was revoked in Supabase. Please disconnect and reconnect.'
+                  disconnectedReason: 'Authorization was revoked in Supabase',
+                  lastKnownProjectUrl: lastProjectUrl,
+                  message: 'Authorization was revoked and connection was automatically removed.'
                 }
               });
             }
             
-            throw new Error('Authorization has been revoked in your Supabase account. Please disconnect here and reconnect.');
+            throw new Error('Authorization was revoked and the connection has been automatically removed. Please reconnect.');
           }
           
           // If scope error (403), check if we have a project_url already saved
@@ -837,13 +852,37 @@ class SupabaseIntegration {
 
       // Check if authorization was revoked
       if (config && config.connection_status === 'revoked' && config.config_data?.revokedDetected) {
+        // Automatically disconnect invalid connection
+        console.log('Auto-disconnecting revoked authorization for store:', storeId);
+        
+        // Delete the invalid token
+        if (token) {
+          await token.destroy();
+        }
+        
+        // Update config to show disconnected with revocation history
+        await config.update({
+          is_active: false,
+          connection_status: 'disconnected',
+          config_data: {
+            ...config.config_data,
+            connected: false,
+            autoDisconnected: true,
+            autoDisconnectedAt: new Date(),
+            disconnectedReason: 'Authorization was revoked in Supabase',
+            lastKnownProjectUrl: token?.project_url || config.config_data?.projectUrl
+          }
+        });
+        
         return {
           connected: false,
-          message: 'Authorization was revoked in Supabase. Please disconnect and reconnect.',
+          message: 'Authorization was revoked. Connection has been automatically removed.',
           oauthConfigured: true,
           authorizationRevoked: true,
-          hasToken: !!token,
-          userEmail: config.config_data?.userEmail
+          autoDisconnected: true,
+          hasToken: false,
+          userEmail: config.config_data?.userEmail,
+          lastKnownProjectUrl: token?.project_url || config.config_data?.projectUrl
         };
       }
       
@@ -866,31 +905,44 @@ class SupabaseIntegration {
         } catch (validationError) {
           console.log('Token validation failed during status check:', validationError.response?.status);
           
-          // If 401, mark as revoked immediately
+          // If 401, mark as revoked and auto-disconnect
           if (validationError.response?.status === 401) {
-            console.log('Detected revoked authorization during status check');
+            console.log('Detected revoked authorization during status check - auto-disconnecting');
             
-            // Update config to mark as revoked
+            // Store the project URL before deleting token
+            const lastProjectUrl = token.project_url;
+            
+            // Delete the invalid token immediately
+            await token.destroy();
+            
+            // Update config to mark as disconnected with revocation history
             if (config) {
               await config.update({
-                connection_status: 'revoked',
+                is_active: false,
+                connection_status: 'disconnected',
                 config_data: {
                   ...config.config_data,
+                  connected: false,
+                  autoDisconnected: true,
+                  autoDisconnectedAt: new Date(),
                   revokedAt: new Date(),
                   revokedDetected: true,
-                  message: 'Authorization was revoked in Supabase. Please disconnect and reconnect.'
+                  disconnectedReason: 'Authorization was revoked in Supabase',
+                  lastKnownProjectUrl: lastProjectUrl,
+                  message: 'Authorization was revoked and connection was automatically removed.'
                 }
               });
             }
             
             return {
               connected: false,
-              message: 'Authorization was revoked in Supabase. Please disconnect and reconnect.',
+              message: 'Authorization was revoked. Connection has been automatically removed.',
               oauthConfigured: true,
               authorizationRevoked: true,
-              hasToken: true,
+              autoDisconnected: true,
+              hasToken: false,
               userEmail: config?.config_data?.userEmail,
-              projectUrl: token.project_url
+              lastKnownProjectUrl: lastProjectUrl
             };
           }
         }
@@ -901,18 +953,27 @@ class SupabaseIntegration {
         // Check if user might still have the app authorized on Supabase's side
         // by looking at the config history
         let hasOrphanedAuthorization = false;
+        let wasAutoDisconnected = false;
+        let lastKnownProjectUrl = null;
+        
         if (config && config.config_data?.disconnectedAt && config.config_data?.userEmail) {
           // If we have a disconnectedAt timestamp and userEmail, the app might still be authorized
-          hasOrphanedAuthorization = true;
+          hasOrphanedAuthorization = !config.config_data?.autoDisconnected;
+          wasAutoDisconnected = !!config.config_data?.autoDisconnected;
+          lastKnownProjectUrl = config.config_data?.lastKnownProjectUrl;
         }
         
         return {
           connected: false,
-          message: hasOrphanedAuthorization 
-            ? 'Supabase disconnected locally. You may need to revoke access in your Supabase account settings.'
-            : 'Supabase not connected',
+          message: wasAutoDisconnected
+            ? 'Connection was automatically removed after authorization was revoked.'
+            : hasOrphanedAuthorization 
+              ? 'Supabase disconnected locally. You may need to revoke access in your Supabase account settings.'
+              : 'Supabase not connected',
           oauthConfigured: true,
-          hasOrphanedAuthorization
+          hasOrphanedAuthorization,
+          wasAutoDisconnected,
+          lastKnownProjectUrl
         };
       }
 

@@ -53,13 +53,26 @@ const SupabaseIntegration = ({ storeId }) => {
       if (response.success) {
         setStatus(response);
         if (showRefreshToast) {
-          if (response.authorizationRevoked) {
-            toast.error('Authorization has been revoked', {
-              description: 'Please disconnect and reconnect.'
+          if (response.authorizationRevoked && response.autoDisconnected) {
+            toast.info('Invalid connection was automatically removed', {
+              description: 'You can now reconnect with a valid authorization.'
             });
+          } else if (response.authorizationRevoked) {
+            toast.warning('Authorization revoked - removing connection...', {
+              description: 'The invalid connection is being removed automatically.'
+            });
+            // Refresh again in 1 second to show the auto-disconnected state
+            setTimeout(() => {
+              loadStatus(false);
+            }, 1000);
           } else if (response.connected) {
             toast.success('Connection status updated');
           }
+        } else if (response.authorizationRevoked && !response.autoDisconnected) {
+          // If we detect revoked authorization without toast, still refresh to show auto-disconnect
+          setTimeout(() => {
+            loadStatus(false);
+          }, 500);
         }
       } else {
         setStatus({ connected: false });
@@ -457,6 +470,44 @@ const SupabaseIntegration = ({ storeId }) => {
             </div>
           </div>
         </div>
+      ) : status?.authorizationRevoked && status?.autoDisconnected ? (
+        <div className="space-y-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Cloud className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-blue-900 mb-1">
+                  Connection Automatically Removed
+                </h4>
+                <p className="text-sm text-blue-700 mb-3">
+                  Your authorization was revoked in Supabase, so we've automatically disconnected the invalid connection.
+                </p>
+                {status.lastKnownProjectUrl && (
+                  <p className="text-xs text-blue-600 mb-3">
+                    Last known project: {status.lastKnownProjectUrl}
+                  </p>
+                )}
+                <button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  {connecting ? (
+                    <>
+                      <div className="animate-spin -ml-1 mr-3 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      Reconnecting...
+                    </>
+                  ) : (
+                    <>
+                      <Cloud className="mr-2 h-4 w-4" />
+                      Reconnect to Supabase
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : status?.authorizationRevoked ? (
         <div className="space-y-6">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -466,41 +517,57 @@ const SupabaseIntegration = ({ storeId }) => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h4 className="text-sm font-medium text-red-900 mb-1">
-                      Authorization Revoked
+                      Authorization Revoked - Disconnecting...
                     </h4>
                     <p className="text-sm text-red-700 mb-3">
-                      You revoked Catalyst's access in your Supabase account, but the connection wasn't removed here.
-                      Please disconnect and reconnect to restore access.
+                      Detected revoked authorization. Automatically removing invalid connection...
                     </p>
                   </div>
-                  <button
-                    onClick={handleRefreshStatus}
-                    disabled={refreshing}
-                    className="ml-3 p-1 text-red-400 hover:text-red-600 disabled:opacity-50"
-                    title="Recheck authorization status"
-                  >
-                    <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                  </button>
+                  <div className="animate-spin h-4 w-4 border-2 border-red-600 border-t-transparent rounded-full"></div>
                 </div>
                 {status.projectUrl && (
                   <p className="text-xs text-red-600 mb-3">
                     Last known project: {status.projectUrl}
                   </p>
                 )}
-                <div className="space-y-3">
-                  <button
-                    onClick={handleDisconnect}
-                    className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Disconnect Invalid Connection
-                  </button>
-                  <p className="text-xs text-red-600">
-                    After disconnecting, you can reconnect with a valid authorization.
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : status?.wasAutoDisconnected ? (
+        <div className="space-y-6">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Cloud className="w-5 h-5 text-gray-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-gray-900 mb-1">
+                  Ready to Reconnect
+                </h4>
+                <p className="text-sm text-gray-700 mb-3">
+                  The previous connection was removed after authorization was revoked. You can now connect with a new authorization.
+                </p>
+                {status.lastKnownProjectUrl && (
+                  <p className="text-xs text-gray-600 mb-3">
+                    Previous project: {status.lastKnownProjectUrl}
                   </p>
-                </div>
+                )}
+                <button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                >
+                  {connecting ? (
+                    <>
+                      <div className="animate-spin -ml-1 mr-3 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Cloud className="mr-2 h-4 w-4" />
+                      Connect Supabase
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
