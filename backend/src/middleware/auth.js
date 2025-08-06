@@ -5,6 +5,12 @@ const { supabase } = require('../database/connection');
 const authMiddleware = async (req, res, next) => {
   try {
     console.log('🔍 Auth middleware called for:', req.method, req.path);
+    console.log('🔍 Headers:', {
+      'authorization': req.headers.authorization ? 'Present' : 'Missing',
+      'x-store-id': req.headers['x-store-id'],
+      'content-type': req.headers['content-type']
+    });
+    
     const token = req.header('Authorization')?.replace('Bearer ', '');
     console.log('🔍 Token present:', !!token);
     console.log('🔍 Token (first 20 chars):', token?.substring(0, 20));

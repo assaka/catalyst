@@ -68,16 +68,38 @@ const checkTeamMembership = async (userId, storeId, requiredPermissions = []) =>
  */
 const checkStoreOwnership = async (req, res, next) => {
   try {
-    console.log('🔍 Store ownership check:', {
-      user: req.user?.id,
-      storeId: req.params.store_id || req.body?.store_id || req.query?.store_id
+    console.log('🔍 Store ownership check started');
+    console.log('🔍 Request details:', {
+      method: req.method,
+      path: req.path,
+      params: req.params,
+      body: req.body,
+      query: req.query,
+      headers: {
+        'x-store-id': req.headers['x-store-id'],
+        'authorization': req.headers.authorization ? 'Bearer ...' : 'None'
+      },
+      user: req.user ? { id: req.user.id, email: req.user.email, role: req.user.role } : 'No user'
     });
 
-    // Extract store_id from various sources
-    const storeId = req.params.store_id || 
+    // Check if user is authenticated
+    if (!req.user) {
+      console.log('❌ No authenticated user found in request');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
+    }
+
+    // Extract store_id from various sources (including the one set by extractStoreId middleware)
+    const storeId = req.storeId || // Set by extractStoreId middleware
+                   req.params.store_id || 
                    req.params.id || // For store update/delete routes
                    req.body?.store_id || 
-                   req.query?.store_id;
+                   req.query?.store_id ||
+                   req.headers['x-store-id'];
+
+    console.log('🔍 Extracted storeId:', storeId);
 
     if (!storeId) {
       console.log('⚠️ No store_id provided, skipping ownership check');
@@ -135,9 +157,11 @@ const checkStoreOwnership = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('❌ Store ownership check error:', error);
+    console.error('Error stack:', error.stack);
     return res.status(500).json({
       success: false,
-      message: 'Error checking store ownership'
+      message: 'Error checking store ownership: ' + error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 };
