@@ -157,12 +157,22 @@ class SupabaseStorageService {
 
       // Check if we should use direct API
       const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
-      const hasValidAnonKey = tokenInfo && tokenInfo.anon_key && 
+      console.log('Token info check:', {
+        hasToken: !!tokenInfo,
+        anonKey: tokenInfo?.anon_key ? `${tokenInfo.anon_key.substring(0, 20)}...` : 'none',
+        projectUrl: tokenInfo?.project_url
+      });
+
+      const hasValidAnonKey = tokenInfo && 
+                              tokenInfo.anon_key && 
                               tokenInfo.anon_key !== 'pending_configuration' &&
-                              tokenInfo.anon_key !== '';
+                              tokenInfo.anon_key !== 'pending' &&
+                              tokenInfo.anon_key !== '' &&
+                              !tokenInfo.anon_key.includes('dummy') &&
+                              !tokenInfo.anon_key.includes('pending');
 
       if (!hasValidAnonKey) {
-        console.log('No valid anon key, using direct API upload');
+        console.log('No valid anon key detected, using direct API upload');
         return await this.uploadImageDirect(storeId, file, options);
       }
 
@@ -237,6 +247,18 @@ class SupabaseStorageService {
       };
     } catch (error) {
       console.error('Error uploading image:', error);
+      
+      // If any error occurs, try direct API as last resort
+      if (!options._isRetry) {
+        console.log('Upload failed, attempting direct API as fallback');
+        try {
+          return await this.uploadImageDirect(storeId, file, { ...options, _isRetry: true });
+        } catch (directError) {
+          console.error('Direct API also failed:', directError);
+          throw new Error('Failed to upload image: ' + directError.message);
+        }
+      }
+      
       throw new Error('Failed to upload image: ' + error.message);
     }
   }

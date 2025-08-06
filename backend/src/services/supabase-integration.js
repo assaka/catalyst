@@ -382,7 +382,13 @@ class SupabaseIntegration {
     }
 
     // If we don't have a valid anon key, throw error to force direct API usage
-    if (!token.anon_key || token.anon_key === '' || token.anon_key === 'pending_configuration') {
+    if (!token.anon_key || 
+        token.anon_key === '' || 
+        token.anon_key === 'pending_configuration' ||
+        token.anon_key === 'pending' ||
+        token.anon_key.includes('pending') ||
+        token.anon_key.includes('dummy')) {
+      console.log('Invalid anon key detected:', token.anon_key ? token.anon_key.substring(0, 30) + '...' : 'none');
       throw new Error('Anon key not available - use direct API');
     }
 

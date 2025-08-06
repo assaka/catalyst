@@ -456,10 +456,21 @@ router.post('/storage/test-upload',
         size: testImageBuffer.length
       };
 
-      const result = await supabaseStorage.uploadImage(req.storeId, mockFile, {
-        folder: 'test-products',
-        public: true
-      });
+      // For test upload, always try direct API first
+      let result;
+      try {
+        console.log('Attempting direct API upload for test...');
+        result = await supabaseStorage.uploadImageDirect(req.storeId, mockFile, {
+          folder: 'test-products',
+          public: true
+        });
+      } catch (directError) {
+        console.log('Direct API failed, falling back to regular upload:', directError.message);
+        result = await supabaseStorage.uploadImage(req.storeId, mockFile, {
+          folder: 'test-products',
+          public: true
+        });
+      }
 
       res.json({
         success: true,
