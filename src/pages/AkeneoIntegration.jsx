@@ -1119,7 +1119,7 @@ const AkeneoIntegration = () => {
   };
 
   const importCategories = async () => {
-    console.log('🚀 IMPORT CATEGORIES FUNCTION CALLED - This should appear in console');
+    console.log('🚀 IMPORT CATEGORIES FUNCTION CALLED - v2 - This should appear in console');
     try {
       console.log('📦 Starting categories import...');
       console.log('🔗 Connection status:', connectionStatus);
