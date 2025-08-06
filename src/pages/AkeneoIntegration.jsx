@@ -1809,6 +1809,9 @@ const AkeneoIntegration = () => {
 
   // Render tab-specific import results
   const renderTabImportResults = (tabName) => {
+    // Add null check for importResults before accessing properties
+    if (!importResults || typeof importResults !== 'object') return null;
+    
     const tabResults = importResults[tabName];
     if (!tabResults) return null;
 
@@ -1836,6 +1839,9 @@ const AkeneoIntegration = () => {
 
   const renderImportResults = () => {
     // This is kept for backward compatibility or general display
+    // Add null check for importResults before using Object.values
+    if (!importResults || typeof importResults !== 'object') return null;
+    
     const hasAnyResults = Object.values(importResults).some(result => result !== null);
     if (!hasAnyResults) return null;
 
