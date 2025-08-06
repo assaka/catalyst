@@ -658,6 +658,55 @@ class SupabaseIntegration {
           userEmail: config.config_data?.userEmail
         };
       }
+      
+      // If we have a token, quickly test if it's still valid
+      if (token && token.project_url && token.project_url !== 'https://pending-configuration.supabase.co') {
+        try {
+          // Quick validation check - just see if token works
+          const axios = require('axios');
+          const testResponse = await axios.get('https://api.supabase.com/v1/projects', {
+            headers: {
+              'Authorization': `Bearer ${token.access_token}`,
+              'Content-Type': 'application/json'
+            },
+            timeout: 5000 // 5 second timeout for quick check
+          });
+          
+          // Token is valid, continue normal flow
+          console.log('Token validation successful during status check');
+          
+        } catch (validationError) {
+          console.log('Token validation failed during status check:', validationError.response?.status);
+          
+          // If 401, mark as revoked immediately
+          if (validationError.response?.status === 401) {
+            console.log('Detected revoked authorization during status check');
+            
+            // Update config to mark as revoked
+            if (config) {
+              await config.update({
+                connection_status: 'revoked',
+                config_data: {
+                  ...config.config_data,
+                  revokedAt: new Date(),
+                  revokedDetected: true,
+                  message: 'Authorization was revoked in Supabase. Please disconnect and reconnect.'
+                }
+              });
+            }
+            
+            return {
+              connected: false,
+              message: 'Authorization was revoked in Supabase. Please disconnect and reconnect.',
+              oauthConfigured: true,
+              authorizationRevoked: true,
+              hasToken: true,
+              userEmail: config?.config_data?.userEmail,
+              projectUrl: token.project_url
+            };
+          }
+        }
+      }
 
       // Check if token exists and IntegrationConfig shows as connected
       if (!token || (config && config.config_data?.connected === false)) {

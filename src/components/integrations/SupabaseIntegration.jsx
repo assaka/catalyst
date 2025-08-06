@@ -12,6 +12,7 @@ const SupabaseIntegration = ({ storeId }) => {
   const [loadingStats, setLoadingStats] = useState(false);
   const [testingUpload, setTestingUpload] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // Check for and clear logout flags on component mount
   useEffect(() => {
@@ -29,7 +30,7 @@ const SupabaseIntegration = ({ storeId }) => {
     }
   }, [storeId]);
 
-  const loadStatus = async () => {
+  const loadStatus = async (showRefreshToast = false) => {
     if (!storeId || storeId === 'undefined') {
       console.error('Invalid storeId:', storeId);
       setStatus({ connected: false });
@@ -38,13 +39,24 @@ const SupabaseIntegration = ({ storeId }) => {
     }
     
     try {
-      setLoading(true);
+      if (!showRefreshToast) {
+        setLoading(true);
+      }
       const response = await apiClient.get('/supabase/status', {
         'x-store-id': storeId
       });
 
       if (response.success) {
         setStatus(response);
+        if (showRefreshToast) {
+          if (response.authorizationRevoked) {
+            toast.error('Authorization has been revoked', {
+              description: 'Please disconnect and reconnect.'
+            });
+          } else if (response.connected) {
+            toast.success('Connection status updated');
+          }
+        }
       } else {
         setStatus({ connected: false });
       }
@@ -53,7 +65,13 @@ const SupabaseIntegration = ({ storeId }) => {
       setStatus({ connected: false });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+  
+  const handleRefreshStatus = async () => {
+    setRefreshing(true);
+    await loadStatus(true);
   };
 
   const loadStorageStats = async () => {
@@ -317,9 +335,21 @@ const SupabaseIntegration = ({ storeId }) => {
         
         <div className="flex items-center space-x-2">
           {status?.connected ? (
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              Connected
-            </span>
+            <>
+              <button
+                onClick={handleRefreshStatus}
+                disabled={refreshing}
+                className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                title="Refresh connection status"
+              >
+                <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </button>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Connected
+              </span>
+            </>
           ) : (
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
               Not Connected
@@ -366,13 +396,32 @@ const SupabaseIntegration = ({ storeId }) => {
             <div className="flex items-start space-x-3">
               <Cloud className="w-5 h-5 text-red-600 mt-0.5" />
               <div className="flex-1">
-                <h4 className="text-sm font-medium text-red-900 mb-1">
-                  Authorization Revoked
-                </h4>
-                <p className="text-sm text-red-700 mb-3">
-                  You revoked Catalyst's access in your Supabase account, but the connection wasn't removed here.
-                  Please disconnect and reconnect to restore access.
-                </p>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="text-sm font-medium text-red-900 mb-1">
+                      Authorization Revoked
+                    </h4>
+                    <p className="text-sm text-red-700 mb-3">
+                      You revoked Catalyst's access in your Supabase account, but the connection wasn't removed here.
+                      Please disconnect and reconnect to restore access.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleRefreshStatus}
+                    disabled={refreshing}
+                    className="ml-3 p-1 text-red-400 hover:text-red-600 disabled:opacity-50"
+                    title="Recheck authorization status"
+                  >
+                    <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                </div>
+                {status.projectUrl && (
+                  <p className="text-xs text-red-600 mb-3">
+                    Last known project: {status.projectUrl}
+                  </p>
+                )}
                 <div className="space-y-3">
                   <button
                     onClick={handleDisconnect}
