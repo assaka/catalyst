@@ -1177,7 +1177,7 @@ class AdvancedPlugin {
                   <Settings className="w-4 h-4 mr-2" />
                   Configure Permissions
                 </Button>
-                <Button onClick={handleCreatePlugin} disabled={loading}>
+                <Button onClick={() => createPlugin('advanced')} disabled={loading}>
                   {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />}
                   <Save className="w-4 h-4 mr-2" />
                   Create Advanced Plugin
