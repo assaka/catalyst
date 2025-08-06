@@ -1357,9 +1357,10 @@ class SupabaseIntegration {
         throw new Error('Supabase not connected for this store');
       }
 
-      // Extract project ID from current project URL
-      let projectId = null;
-      if (token.project_url) {
+      // Use provided projectId or extract from URL
+      let projectId = config.projectId;
+      
+      if (!projectId && token.project_url) {
         const match = token.project_url.match(/https:\/\/([^.]+)\.supabase\.co/);
         if (match) {
           projectId = match[1];

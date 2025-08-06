@@ -680,9 +680,10 @@ router.post('/fetch-api-keys', auth, extractStoreId, checkStoreOwnership, async 
 // Manually update project configuration (for limited scope connections or when API doesn't provide keys)
 router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
-    const { projectUrl, anonKey, serviceRoleKey, databaseUrl, storageUrl, authUrl } = req.body;
+    const { projectId, projectUrl, anonKey, serviceRoleKey, databaseUrl, storageUrl, authUrl } = req.body;
     
     console.log('Manual config update request:', {
+      hasProjectId: !!projectId,
       hasProjectUrl: !!projectUrl,
       hasAnonKey: !!anonKey,
       hasServiceRoleKey: !!serviceRoleKey

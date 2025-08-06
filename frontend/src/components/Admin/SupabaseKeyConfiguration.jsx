@@ -57,6 +57,7 @@ const SupabaseKeyConfiguration = ({ storeId, projectId, onConfigured }) => {
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/supabase/update-config`,
         {
+          projectId: projectId,
           anonKey: anonKey || undefined,
           serviceRoleKey: serviceRoleKey || undefined
         },
@@ -106,6 +107,9 @@ const SupabaseKeyConfiguration = ({ storeId, projectId, onConfigured }) => {
   const hasServiceKey = currentConfig?.hasServiceRoleKey;
   const isFullyConfigured = hasAnonKey;
 
+  // Always show the configuration form for now to allow reconfiguration
+  // Remove this condition temporarily to debug the issue
+  /*
   if (isFullyConfigured && !currentConfig?.requiresManualConfiguration) {
     return (
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -121,9 +125,27 @@ const SupabaseKeyConfiguration = ({ storeId, projectId, onConfigured }) => {
       </div>
     );
   }
+  */
 
   return (
     <div className="space-y-6">
+      {/* Show current status if keys are configured */}
+      {isFullyConfigured && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <CheckCircle className="h-5 w-5 text-green-600 mr-2" />
+              <div>
+                <p className="text-green-800 font-medium">Keys Already Configured</p>
+                <p className="text-green-600 text-sm mt-1">
+                  You can reconfigure the keys below if needed.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Warning Banner */}
       <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
         <div className="flex items-start">

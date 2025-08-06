@@ -20,6 +20,8 @@ import Attributes from "./Attributes";
 
 import Plugins from "./Plugins";
 
+import PluginHowToFixed from "./PluginHowToFixed";
+
 import PluginBuilder from "./PluginBuilder";
 
 import TemplateEditor from "./TemplateEditor";
@@ -133,6 +135,8 @@ const PAGES = {
     Attributes: Attributes,
     
     Plugins: Plugins,
+    
+    PluginHowToFixed: PluginHowToFixed,
     
     PluginBuilder: PluginBuilder,
     
@@ -259,6 +263,7 @@ function _getCurrentPage(url) {
         'google-tag-manager': 'GoogleTagManager',
         'akeneo-integration': 'AkeneoIntegration',
         'integrations': 'Integrations',
+        'plugin-how-to': 'PluginHowToFixed',
         'plugin-builder': 'PluginBuilder',
         'template-editor': 'TemplateEditor',
         'heatmaps': 'HeatMaps',
@@ -470,6 +475,12 @@ function PagesContent() {
                 <Route path="/admin/plugins" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Plugins />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/plugin-how-to" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PluginHowToFixed />
                     </RoleProtectedRoute>
                 } />
                 
@@ -798,6 +809,12 @@ function PagesContent() {
                 <Route path="/admin/plugins" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Plugins />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/plugin-how-to" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PluginHowToFixed />
                     </RoleProtectedRoute>
                 } />
                 
