@@ -26,8 +26,14 @@ import {
   Webhook,
   Book
 } from 'lucide-react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+// Simple code block component without external dependencies
+const CodeBlock = ({ language, children }) => (
+    <pre className="overflow-x-auto">
+        <code className="text-sm font-mono text-gray-100">
+            {children}
+        </code>
+    </pre>
+);
 
 const PluginHowToFixed = () => {
     const [activeStep, setActiveStep] = useState(0);
@@ -79,7 +85,7 @@ const PluginHowToFixed = () => {
                         Create the following file structure for your plugin:
                     </p>
                     <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
-                        <SyntaxHighlighter language="bash" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
+                        <CodeBlock language="bash">
 {`my-plugin/
 ├── manifest.json      # Plugin metadata and configuration
 ├── index.js          # Main plugin code
@@ -87,7 +93,7 @@ const PluginHowToFixed = () => {
 └── assets/          # Optional: images, styles
     ├── icon.png
     └── styles.css`}
-                        </SyntaxHighlighter>
+                        </CodeBlock>
                     </div>
                 </div>
             )
@@ -102,7 +108,7 @@ const PluginHowToFixed = () => {
                         Define your plugin's metadata and configuration:
                     </p>
                     <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
-                        <SyntaxHighlighter language="json" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
+                        <CodeBlock language="json">
 {`{
   "name": "My Custom Plugin",
   "version": "1.0.0",
@@ -142,7 +148,7 @@ const PluginHowToFixed = () => {
   "permissions": ["storage", "api"],
   "category": "marketing"
 }`}
-                        </SyntaxHighlighter>
+                        </CodeBlock>
                     </div>
                 </div>
             )
@@ -157,7 +163,7 @@ const PluginHowToFixed = () => {
                         Write your plugin's main functionality:
                     </p>
                     <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
-                        <SyntaxHighlighter language="javascript" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
+                        <CodeBlock language="javascript">
 {`// index.js
 class MyPlugin {
   constructor(config, context) {
@@ -211,7 +217,7 @@ class MyPlugin {
 
 // Export the plugin
 module.exports = MyPlugin;`}
-                        </SyntaxHighlighter>
+                        </CodeBlock>
                     </div>
                 </div>
             )
@@ -535,13 +541,9 @@ class AnalyticsTracker {
                                     </div>
                                     <p className="text-gray-600">{example.description}</p>
                                     <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
-                                        <SyntaxHighlighter 
-                                            language="javascript" 
-                                            style={atomDark}
-                                            customStyle={{ margin: 0, background: 'transparent' }}
-                                        >
+                                        <CodeBlock language="javascript">
                                             {example.code}
-                                        </SyntaxHighlighter>
+                                        </CodeBlock>
                                     </div>
                                     {index < examplePlugins.length - 1 && <Separator />}
                                 </div>
@@ -578,7 +580,7 @@ class AnalyticsTracker {
                         </CardHeader>
                         <CardContent>
                             <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
-                                <SyntaxHighlighter language="javascript" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
+                                <CodeBlock language="javascript">
 {`// Available in all hooks
 context = {
   store: {
@@ -601,7 +603,7 @@ context = {
   category: { /* Category data if on category page */ },
   cart: { /* Cart data if available */ }
 }`}
-                                </SyntaxHighlighter>
+                                </CodeBlock>
                             </div>
                         </CardContent>
                     </Card>
@@ -614,7 +616,7 @@ context = {
                             </CardHeader>
                             <CardContent>
                                 <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
-                                    <SyntaxHighlighter language="javascript" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
+                                    <CodeBlock language="javascript">
 {`// Store data persistently
 await this.storage.set('key', value);
 const value = await this.storage.get('key');
@@ -625,7 +627,7 @@ const keys = await this.storage.keys();
 
 // Clear all data
 await this.storage.clear();`}
-                                    </SyntaxHighlighter>
+                                    </CodeBlock>
                                 </div>
                             </CardContent>
                         </Card>
@@ -637,7 +639,7 @@ await this.storage.clear();`}
                             </CardHeader>
                             <CardContent>
                                 <div className="bg-gray-900 p-4 rounded-lg overflow-x-auto">
-                                    <SyntaxHighlighter language="javascript" style={atomDark} customStyle={{ margin: 0, background: 'transparent' }}>
+                                    <CodeBlock language="javascript">
 {`// Make external API calls
 const response = await this.api.get(
   'https://api.example.com/data'
@@ -652,7 +654,7 @@ const data = await this.api.post(
     }
   }
 );`}
-                                    </SyntaxHighlighter>
+                                    </CodeBlock>
                                 </div>
                             </CardContent>
                         </Card>
