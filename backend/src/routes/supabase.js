@@ -60,10 +60,15 @@ router.get('/status', auth, extractStoreId, checkStoreOwnership, async (req, res
 router.post('/connect', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     console.log('Initiating Supabase OAuth connection for store:', req.storeId);
+    console.log('OAuth configuration status:', {
+      clientIdConfigured: !!process.env.SUPABASE_OAUTH_CLIENT_ID,
+      clientSecretConfigured: !!process.env.SUPABASE_OAUTH_CLIENT_SECRET,
+      redirectUriConfigured: !!process.env.SUPABASE_OAUTH_REDIRECT_URI
+    });
     
     const state = uuidv4();
     const authUrl = supabaseIntegration.getAuthorizationUrl(req.storeId, state);
-    console.log('Generated OAuth URL:', authUrl);
+    console.log('Generated OAuth URL length:', authUrl.length);
     
     // Store state in session or database for verification
     req.session = req.session || {};

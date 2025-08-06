@@ -368,9 +368,16 @@ class SupabaseIntegration {
           projects = projectsTestResponse.data || [];
           console.log('Token is valid, found', projects.length, 'projects');
         } catch (scopeError) {
-          console.log('Projects endpoint failed (scope issue):', scopeError.response?.data);
+          console.log('Projects endpoint failed:', scopeError.response?.status, scopeError.response?.data);
           
-          // If scope error, check if we have a project_url already saved
+          // Check if it's a 401 (unauthorized) or 403 (forbidden) error
+          if (scopeError.response?.status === 401) {
+            // Token is invalid or user revoked authorization
+            console.error('OAuth token is invalid or revoked');
+            throw new Error('Authorization has been revoked. Please reconnect to Supabase.');
+          }
+          
+          // If scope error (403), check if we have a project_url already saved
           if (token.project_url && token.project_url !== 'pending_configuration' && token.project_url !== 'https://pending-configuration.supabase.co') {
             console.log('Using existing project URL for connection test:', token.project_url);
             
@@ -522,24 +529,34 @@ class SupabaseIntegration {
    */
   async disconnect(storeId) {
     try {
+      console.log('Disconnecting Supabase for store:', storeId);
+      
       // Delete token from database
       const token = await SupabaseOAuthToken.findByStore(storeId);
       if (token) {
+        console.log('Deleting OAuth token from database');
         await token.destroy();
+      } else {
+        console.log('No OAuth token found to delete');
       }
 
       // Update IntegrationConfig
       const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
       if (config) {
+        console.log('Updating IntegrationConfig to disconnected state');
         await config.update({
           is_active: false,
+          connection_status: 'disconnected',
           config_data: {
             connected: false,
             disconnectedAt: new Date()
           }
         });
+      } else {
+        console.log('No IntegrationConfig found to update');
       }
 
+      console.log('✅ Supabase disconnection completed');
       return { success: true, message: 'Supabase disconnected successfully' };
     } catch (error) {
       console.error('Error disconnecting Supabase:', error);
@@ -564,7 +581,8 @@ class SupabaseIntegration {
       const token = await SupabaseOAuthToken.findByStore(storeId);
       const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
 
-      if (!token) {
+      // Check if token exists and IntegrationConfig shows as connected
+      if (!token || (config && config.config_data?.connected === false)) {
         return {
           connected: false,
           message: 'Supabase not connected',
@@ -573,6 +591,16 @@ class SupabaseIntegration {
       }
 
       const isExpired = SupabaseOAuthToken.isTokenExpired(token);
+      
+      // If token is expired or connection test recently failed, show as disconnected
+      if (isExpired || (config && config.connection_status === 'failed')) {
+        return {
+          connected: false,
+          message: isExpired ? 'Supabase connection expired' : 'Supabase connection failed - please reconnect',
+          oauthConfigured: true,
+          tokenExpired: isExpired
+        };
+      }
 
       return {
         connected: true,
