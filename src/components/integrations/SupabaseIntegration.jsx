@@ -12,10 +12,20 @@ const SupabaseIntegration = ({ storeId }) => {
   const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
-    loadStatus();
+    console.log('SupabaseIntegration mounted with storeId:', storeId);
+    if (storeId && storeId !== 'undefined') {
+      loadStatus();
+    }
   }, [storeId]);
 
   const loadStatus = async () => {
+    if (!storeId || storeId === 'undefined') {
+      console.error('Invalid storeId:', storeId);
+      setStatus({ connected: false });
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       const response = await apiClient.get('/supabase/status', {

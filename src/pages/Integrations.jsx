@@ -1,12 +1,13 @@
 import React from 'react';
-import { useStoreSlug } from '../hooks/useStoreSlug';
+import { useStoreSelection } from '../contexts/StoreSelectionContext';
 import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Cloud, Database, ShoppingBag } from 'lucide-react';
 
 const Integrations = () => {
-  const { storeId } = useStoreSlug();
+  const { selectedStore } = useStoreSelection();
+  const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -34,7 +35,17 @@ const Integrations = () => {
         </TabsList>
 
         <TabsContent value="supabase" className="space-y-6">
-          <SupabaseIntegration storeId={storeId} />
+          {storeId ? (
+            <SupabaseIntegration storeId={storeId} />
+          ) : (
+            <Card>
+              <CardContent className="py-8">
+                <p className="text-center text-gray-600">
+                  Please select a store from the dropdown above to manage integrations.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="akeneo" className="space-y-6">
