@@ -20,23 +20,6 @@ import Attributes from "./Attributes";
 
 import Plugins from "./Plugins";
 
-import PluginHowTo from "./PluginHowTo";
-
-import PluginHowToSimple from "./PluginHowToSimple";
-
-import PluginHowToFixed from "./PluginHowToFixed";
-
-import PluginHowToTest from "./PluginHowToTest";
-
-import PluginHowToDebug from "./PluginHowToDebug";
-
-import PluginHowToMinimal from "./PluginHowToMinimal";
-
-import PluginHowToProgressive from "./PluginHowToProgressive";
-
-import PluginHowToProgressiveTabs from "./PluginHowToProgressiveTabs";
-
-import PluginHowToIconTest from "./PluginHowToIconTest";
 
 import PluginBuilder from "./PluginBuilder";
 
@@ -152,23 +135,6 @@ const PAGES = {
     
     Plugins: Plugins,
     
-    PluginHowTo: PluginHowTo,
-    
-    PluginHowToSimple: PluginHowToSimple,
-    
-    PluginHowToFixed: PluginHowToFixed,
-    
-    PluginHowToTest: PluginHowToTest,
-    
-    PluginHowToDebug: PluginHowToDebug,
-    
-    PluginHowToMinimal: PluginHowToMinimal,
-    
-    PluginHowToProgressive: PluginHowToProgressive,
-    
-    PluginHowToProgressiveTabs: PluginHowToProgressiveTabs,
-    
-    PluginHowToIconTest: PluginHowToIconTest,
     
     PluginBuilder: PluginBuilder,
     
@@ -295,10 +261,8 @@ function _getCurrentPage(url) {
         'google-tag-manager': 'GoogleTagManager',
         'akeneo-integration': 'AkeneoIntegration',
         'integrations': 'Integrations',
-        'plugin-how-to': 'PluginHowToFixed',
         'plugin-builder': 'PluginBuilder',
         'template-editor': 'TemplateEditor',
-        'plugin-test': 'PluginHowToTest',
         'heatmaps': 'HeatMaps',
         'ab-testing': 'ABTesting'
     };
@@ -511,11 +475,6 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/plugin-how-to" element={
-                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <PluginHowToFixed />
-                    </RoleProtectedRoute>
-                } />
                 
                 <Route path="/admin/plugin-builder" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
@@ -845,11 +804,6 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/plugin-how-to" element={
-                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <PluginHowToFixed />
-                    </RoleProtectedRoute>
-                } />
                 
                 <Route path="/admin/plugin-builder" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
