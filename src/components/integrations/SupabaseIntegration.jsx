@@ -13,6 +13,15 @@ const SupabaseIntegration = ({ storeId }) => {
   const [testingUpload, setTestingUpload] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
 
+  // Check for and clear logout flags on component mount
+  useEffect(() => {
+    if (localStorage.getItem('user_logged_out') === 'true') {
+      console.log('🔧 SupabaseIntegration: Clearing logout flag on mount');
+      localStorage.removeItem('user_logged_out');
+      apiClient.isLoggedOut = false;
+    }
+  }, []);
+
   useEffect(() => {
     console.log('SupabaseIntegration mounted with storeId:', storeId);
     if (storeId && storeId !== 'undefined') {
@@ -75,6 +84,14 @@ const SupabaseIntegration = ({ storeId }) => {
   const handleConnect = async () => {
     try {
       setConnecting(true);
+      
+      // Check for and clear any logout flags that might interfere
+      if (localStorage.getItem('user_logged_out') === 'true') {
+        console.log('🔧 Clearing logout flag before Supabase connection');
+        localStorage.removeItem('user_logged_out');
+        apiClient.isLoggedOut = false;
+      }
+      
       const response = await apiClient.post('/supabase/connect', { store_id: storeId }, {
         'x-store-id': storeId
       });
@@ -144,7 +161,20 @@ const SupabaseIntegration = ({ storeId }) => {
       }
     } catch (error) {
       console.error('Error connecting to Supabase:', error);
-      toast.error(error.message || 'Failed to connect to Supabase');
+      
+      // Handle specific error types
+      if (error.message?.includes('Session has been terminated')) {
+        toast.error('Your session has expired. Please refresh the page and try again.', {
+          duration: 8000,
+          action: {
+            label: 'Refresh Page',
+            onClick: () => window.location.reload()
+          }
+        });
+      } else {
+        toast.error(error.message || 'Failed to connect to Supabase');
+      }
+      
       setConnecting(false);
     }
   };
