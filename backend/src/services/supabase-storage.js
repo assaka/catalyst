@@ -323,25 +323,67 @@ class SupabaseStorageService {
    */
   async getStorageStats(storeId) {
     try {
-      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+      // Try to get admin client first, fall back to regular client
+      let client;
+      let canListBuckets = true;
+      
+      try {
+        client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+      } catch (adminError) {
+        console.log('Admin client not available, using regular client for stats');
+        client = await supabaseIntegration.getSupabaseClient(storeId);
+        canListBuckets = false; // Regular client can't list all buckets
+      }
       
       // Get bucket sizes
-      const { data: buckets } = await client.storage.listBuckets();
+      let buckets = [];
+      if (canListBuckets) {
+        const { data: bucketList } = await client.storage.listBuckets();
+        buckets = bucketList || [];
+      } else {
+        // For regular client, just check known buckets
+        buckets = [
+          { name: this.bucketName },
+          { name: this.publicBucketName }
+        ];
+      }
       
       const stats = await Promise.all(
         buckets.map(async (bucket) => {
-          const { data: files } = await client.storage
-            .from(bucket.name)
-            .list(`store-${storeId}`, { limit: 1000 });
+          try {
+            const { data: files, error } = await client.storage
+              .from(bucket.name)
+              .list(`store-${storeId}`, { limit: 1000 });
 
-          const totalSize = files?.reduce((sum, file) => sum + (file.metadata?.size || 0), 0) || 0;
+            if (error) {
+              console.log(`Could not access bucket ${bucket.name}:`, error.message);
+              return {
+                bucket: bucket.name,
+                fileCount: 0,
+                totalSize: 0,
+                totalSizeMB: '0.00',
+                error: 'Access denied or bucket not found'
+              };
+            }
 
-          return {
-            bucket: bucket.name,
-            fileCount: files?.length || 0,
-            totalSize,
-            totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2)
-          };
+            const totalSize = files?.reduce((sum, file) => sum + (file.metadata?.size || 0), 0) || 0;
+
+            return {
+              bucket: bucket.name,
+              fileCount: files?.length || 0,
+              totalSize,
+              totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2)
+            };
+          } catch (bucketError) {
+            console.log(`Error accessing bucket ${bucket.name}:`, bucketError.message);
+            return {
+              bucket: bucket.name,
+              fileCount: 0,
+              totalSize: 0,
+              totalSizeMB: '0.00',
+              error: bucketError.message
+            };
+          }
         })
       );
 

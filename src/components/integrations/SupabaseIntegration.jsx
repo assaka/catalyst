@@ -88,6 +88,12 @@ const SupabaseIntegration = ({ storeId }) => {
       }
     } catch (error) {
       console.error('Error loading storage stats:', error);
+      // Don't show error toast for limited scope connections
+      if (!status?.limitedScope && !error.message?.includes('Service role key')) {
+        toast.error('Could not load storage statistics', {
+          description: 'Storage access may be limited without full permissions.'
+        });
+      }
     } finally {
       setLoadingStats(false);
     }
