@@ -136,8 +136,8 @@ class SupabaseIntegration {
           
           projectData = {
             project_url: `https://${firstProject.id}.supabase.co`,
-            anon_key: anonKey,
-            service_role_key: serviceRoleKey,
+            anon_key: anonKey || 'pending_configuration',
+            service_role_key: serviceRoleKey || null,
             database_url: `postgresql://postgres.[projectRef]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`,
             storage_url: `https://${firstProject.id}.supabase.co/storage/v1`,
             auth_url: `https://${firstProject.id}.supabase.co/auth/v1`
@@ -147,12 +147,12 @@ class SupabaseIntegration {
         console.error('Error fetching projects:', projectError.response?.data || projectError.message);
         // Continue without project data - user can configure later
         projectData = {
-          project_url: '',
-          anon_key: '',
-          service_role_key: '',
-          database_url: '',
-          storage_url: '',
-          auth_url: ''
+          project_url: 'https://pending-configuration.supabase.co',
+          anon_key: 'pending_configuration',
+          service_role_key: null,
+          database_url: 'pending_configuration',
+          storage_url: 'pending_configuration',
+          auth_url: 'pending_configuration'
         };
       }
 
@@ -164,7 +164,15 @@ class SupabaseIntegration {
         ...projectData
       };
 
+      console.log('Saving token data to database:', {
+        storeId,
+        project_url: tokenData.project_url,
+        anon_key: tokenData.anon_key ? tokenData.anon_key.substring(0, 20) + '...' : 'not set',
+        service_role_key: tokenData.service_role_key ? 'set' : 'not set'
+      });
+
       await SupabaseOAuthToken.createOrUpdate(storeId, tokenData);
+      console.log('✅ Token saved successfully');
 
       // Also save to IntegrationConfig for consistency
       await IntegrationConfig.createOrUpdate(storeId, 'supabase', {
@@ -174,6 +182,7 @@ class SupabaseIntegration {
         connectedAt: new Date(),
         userEmail: user?.email || ''
       });
+      console.log('✅ Integration config saved successfully');
 
       return { 
         success: true, 
@@ -183,8 +192,24 @@ class SupabaseIntegration {
         user
       };
     } catch (error) {
-      console.error('Error exchanging code for token:', error.response?.data || error.message);
-      throw new Error('Failed to connect to Supabase: ' + (error.response?.data?.error || error.message));
+      console.error('Error exchanging code for token:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        stack: error.stack
+      });
+      
+      // More specific error messages
+      if (error.name === 'SequelizeValidationError') {
+        const validationErrors = error.errors.map(e => `${e.path}: ${e.message}`).join(', ');
+        throw new Error(`Validation error: ${validationErrors}`);
+      } else if (error.response?.status === 400) {
+        throw new Error('Invalid OAuth request: ' + (error.response?.data?.error_description || error.response?.data?.error || 'Bad request'));
+      } else if (error.response?.status === 401) {
+        throw new Error('Invalid OAuth credentials: ' + (error.response?.data?.error_description || 'Unauthorized'));
+      } else {
+        throw new Error('Failed to connect to Supabase: ' + (error.response?.data?.error || error.message));
+      }
     }
   }
 
@@ -396,8 +421,8 @@ class SupabaseIntegration {
           // Save the project info and API keys
           await token.update({
             project_url: projectInfo.url,
-            anon_key: anonKey,
-            service_role_key: serviceRoleKey
+            anon_key: anonKey || 'pending_configuration',
+            service_role_key: serviceRoleKey || null
           });
           
           console.log('Updated token with first project:', projectInfo.name);
