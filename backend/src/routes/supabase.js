@@ -135,6 +135,20 @@ router.get('/callback', async (req, res) => {
     
     console.log('Token exchange result:', result);
     
+    // Try to create buckets after successful connection
+    if (result.success) {
+      try {
+        console.log('Attempting to create storage buckets...');
+        const bucketResult = await supabaseStorage.ensureBucketsExist(storeId);
+        if (bucketResult.success) {
+          console.log('Bucket creation result:', bucketResult.message);
+        }
+      } catch (bucketError) {
+        console.log('Could not create buckets immediately:', bucketError.message);
+        // Non-blocking - buckets will be created on first use
+      }
+    }
+    
     // Send success page that closes the popup window
     const projectUrl = result.project?.url || 'Connected';
     const userEmail = result.user?.email || '';
@@ -365,6 +379,25 @@ router.post('/select-project', auth, extractStoreId, checkStoreOwnership, async 
     }
     
     const result = await supabaseIntegration.selectProject(req.storeId, projectId);
+    
+    // Try to create buckets after project selection
+    if (result.success) {
+      try {
+        console.log('Attempting to create storage buckets after project selection...');
+        const bucketResult = await supabaseStorage.ensureBucketsExist(req.storeId);
+        if (bucketResult.success) {
+          console.log('Bucket creation result:', bucketResult.message);
+          result.bucketsCreated = bucketResult.bucketsCreated;
+          if (bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
+            result.message = `${result.message || 'Project selected successfully'}. Auto-created buckets: ${bucketResult.bucketsCreated.join(', ')}`;
+          }
+        }
+      } catch (bucketError) {
+        console.log('Could not create buckets after project selection:', bucketError.message);
+        // Non-blocking - buckets will be created on first use
+      }
+    }
+    
     res.json(result);
   } catch (error) {
     console.error('Error selecting Supabase project:', error);
@@ -728,13 +761,22 @@ router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (
       authUrl
     });
     
-    // After updating, test if storage works
+    // After updating, test if storage works and create buckets
     if (serviceRoleKey) {
       try {
         const tokenInfo = await supabaseIntegration.getTokenInfo(req.storeId);
         console.log('Config updated. New token info:', {
           hasServiceKey: !!tokenInfo?.service_role_key
         });
+        
+        // Try to create buckets with the new service role key
+        console.log('Attempting to create storage buckets with new config...');
+        const bucketResult = await supabaseStorage.ensureBucketsExist(req.storeId);
+        if (bucketResult.success) {
+          console.log('Bucket creation result:', bucketResult.message);
+          result.bucketsCreated = bucketResult.bucketsCreated;
+        }
+        
         result.storageReady = true;
       } catch (testError) {
         console.log('Could not verify storage readiness:', testError.message);
@@ -744,6 +786,20 @@ router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (
     res.json(result);
   } catch (error) {
     console.error('Error updating project config:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Ensure buckets exist - can be called anytime to create missing buckets
+router.post('/storage/ensure-buckets', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+  try {
+    const result = await supabaseStorage.ensureBucketsExist(req.storeId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error ensuring buckets exist:', error);
     res.status(500).json({
       success: false,
       message: error.message

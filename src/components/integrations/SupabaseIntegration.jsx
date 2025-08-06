@@ -129,8 +129,12 @@ const SupabaseIntegration = ({ storeId }) => {
       if (!status.limitedScope && status.projectUrl !== 'https://pending-configuration.supabase.co') {
         loadProjects();
       }
+      // Auto-create buckets if we have service role key
+      if (status.hasServiceRoleKey) {
+        ensureBucketsExist();
+      }
     }
-  }, [status?.connected]);
+  }, [status?.connected, status?.hasServiceRoleKey]);
 
   const loadProjects = async () => {
     try {
@@ -418,6 +422,27 @@ const SupabaseIntegration = ({ storeId }) => {
       toast.error(error.message || 'Failed to save API keys');
     } finally {
       setSavingKeys(false);
+    }
+  };
+
+  const ensureBucketsExist = async () => {
+    if (!status?.connected || !status?.hasServiceRoleKey) return;
+    
+    try {
+      const response = await apiClient.post('/supabase/storage/ensure-buckets', {}, {
+        'x-store-id': storeId
+      });
+
+      if (response.success) {
+        if (response.bucketsCreated && response.bucketsCreated.length > 0) {
+          toast.success(`Created storage buckets: ${response.bucketsCreated.join(', ')}`);
+          // Reload buckets list after creation
+          await loadBuckets();
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring buckets exist:', error);
+      // Silent fail - buckets will be created on first use
     }
   };
 

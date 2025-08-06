@@ -872,8 +872,11 @@ class SupabaseIntegration {
    */
   async getConnectionStatus(storeId) {
     try {
-      // Check if OAuth is configured
-      if (!this.oauthConfigured) {
+      const token = await SupabaseOAuthToken.findByStore(storeId);
+      const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
+      
+      // Check if OAuth is configured for new connections
+      if (!this.oauthConfigured && !token) {
         return {
           connected: false,
           message: 'Supabase OAuth is not configured. Please contact your administrator to set up Supabase OAuth credentials.',
@@ -881,9 +884,6 @@ class SupabaseIntegration {
           connectionStatus: 'not_configured'
         };
       }
-      
-      const token = await SupabaseOAuthToken.findByStore(storeId);
-      const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
 
       // Check if authorization was revoked
       if (config && config.connection_status === 'revoked' && config.config_data?.revokedDetected) {
