@@ -182,8 +182,8 @@ const AkeneoIntegration = () => {
     
     console.log('🔄 Computing family options (this should only happen when families change)');
     return families.map((family) => {
-      const value = family.code;
-      const label = (family.labels && Object.values(family.labels)[0]) || family.code;
+      const value = family?.code || '';
+      const label = (family?.labels && Object.values(family?.labels)[0]) || family?.code || '';
       return { value, label };
     });
   }, [families]);
@@ -1743,11 +1743,11 @@ const AkeneoIntegration = () => {
           <AlertCircle className="h-4 w-4 text-red-600" />
         )}
         <AlertDescription className={(tabResults?.success ?? false) ? 'text-green-800' : 'text-red-800'}>
-          {tabResults.message || tabResults.error}
-          {tabResults.stats && (
+          {tabResults?.message || tabResults?.error}
+          {tabResults?.stats && (
             <div className="mt-2 text-sm">
-              <p>Total: {tabResults.stats.total}, Imported: {tabResults.stats.imported}, Failed: {tabResults.stats.failed}</p>
-              {tabResults.stats.duration && (
+              <p>Total: {tabResults.stats?.total ?? 0}, Imported: {tabResults.stats?.imported ?? 0}, Failed: {tabResults.stats?.failed ?? 0}</p>
+              {tabResults.stats?.duration && (
                 <p>Duration: {tabResults.stats.duration}</p>
               )}
             </div>
@@ -1777,45 +1777,45 @@ const AkeneoIntegration = () => {
         <CardContent>
           {(importResults?.success ?? false) ? (
             <div className="space-y-4">
-              {importResults.stats && (
+              {importResults?.stats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">{importResults.stats.total}</div>
+                    <div className="text-2xl font-bold text-blue-600">{importResults.stats?.total ?? 0}</div>
                     <div className="text-sm text-gray-600">Total</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">{importResults.stats.imported}</div>
+                    <div className="text-2xl font-bold text-green-600">{importResults.stats?.imported ?? 0}</div>
                     <div className="text-sm text-gray-600">Imported</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-yellow-600">{importResults.stats.skipped}</div>
+                    <div className="text-2xl font-bold text-yellow-600">{importResults.stats?.skipped ?? 0}</div>
                     <div className="text-sm text-gray-600">Skipped</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-red-600">{importResults.stats.failed}</div>
+                    <div className="text-2xl font-bold text-red-600">{importResults.stats?.failed ?? 0}</div>
                     <div className="text-sm text-gray-600">Failed</div>
                   </div>
                 </div>
               )}
               
-              {importResults.results && (
+              {importResults?.results && (
                 <div className="space-y-3">
                   <Separator />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <h4 className="font-semibold mb-2">Categories</h4>
                       <div className="text-sm space-y-1">
-                        <div>Total: {importResults.results.categories.stats.total}</div>
-                        <div>Imported: {importResults.results.categories.stats.imported}</div>
-                        <div>Failed: {importResults.results.categories.stats.failed}</div>
+                        <div>Total: {importResults.results?.categories?.stats?.total ?? 0}</div>
+                        <div>Imported: {importResults.results?.categories?.stats?.imported ?? 0}</div>
+                        <div>Failed: {importResults.results?.categories?.stats?.failed ?? 0}</div>
                       </div>
                     </div>
                     <div>
                       <h4 className="font-semibold mb-2">Products</h4>
                       <div className="text-sm space-y-1">
-                        <div>Total: {importResults.results.products.stats.total}</div>
-                        <div>Imported: {importResults.results.products.stats.imported}</div>
-                        <div>Failed: {importResults.results.products.stats.failed}</div>
+                        <div>Total: {importResults.results?.products?.stats?.total ?? 0}</div>
+                        <div>Imported: {importResults.results?.products?.stats?.imported ?? 0}</div>
+                        <div>Failed: {importResults.results?.products?.stats?.failed ?? 0}</div>
                       </div>
                     </div>
                   </div>
@@ -1826,7 +1826,7 @@ const AkeneoIntegration = () => {
             <Alert className="border-red-200 bg-red-50">
               <AlertCircle className="h-4 w-4 text-red-600" />
               <AlertDescription className="text-red-800">
-                {importResults.error}
+                {importResults?.error}
               </AlertDescription>
             </Alert>
           )}
@@ -2214,8 +2214,8 @@ const AkeneoIntegration = () => {
                             <Label>Families (leave empty for all)</Label>
                             <MultiSelect
                               options={families.map(family => ({
-                                value: family.code || family.name || family.id,
-                                label: (family.labels && Object.values(family.labels)[0]) || family.code || family.name || family.id
+                                value: family?.code || family?.name || family?.id || '',
+                                label: (family?.labels && Object.values(family?.labels)[0]) || family?.code || family?.name || family?.id || ''
                               }))}
                               value={scheduleForm.filters.families}
                               onChange={(selectedFamilies) => {
