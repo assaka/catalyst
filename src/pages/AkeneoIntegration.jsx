@@ -227,6 +227,7 @@ const AkeneoIntegration = () => {
     if (!responseData) return responseData;
     
     if (responseData.details?.errors) {
+      console.log('🔍 Fresh import response errors for debugging:', responseData.details.errors);
       return {
         ...responseData,
         stats: {
@@ -468,6 +469,7 @@ const AkeneoIntegration = () => {
                   failedItems: detail.error_details ? (() => {
                     try {
                       const parsed = JSON.parse(detail.error_details);
+                      console.log('🔍 Parsed error_details for debugging:', parsed);
                       if (Array.isArray(parsed)) {
                         return parsed.slice(0, 10).map(item => {
                           let errorMessage = 'Unknown error';
