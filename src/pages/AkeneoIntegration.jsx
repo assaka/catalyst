@@ -221,6 +221,33 @@ const AkeneoIntegration = () => {
       activeTab
     };
   }
+
+  // Helper function to enhance import responses with detailed error info
+  const enhanceImportResponse = (responseData, importType) => {
+    if (!responseData) return responseData;
+    
+    if (responseData.details?.errors) {
+      return {
+        ...responseData,
+        stats: {
+          ...responseData.stats,
+          failedItems: responseData.details.errors.slice(0, 10).map(item => ({
+            code: item.akeneo_identifier || item.akeneo_code || item.code || `Item ${Math.random().toString(36).substr(2, 5)}`,
+            error: Array.isArray(item.errors) ? item.errors.join(', ') : (item.error || item.message || 'Unknown error')
+          })),
+          timestamp: new Date().toISOString()
+        }
+      };
+    } else {
+      return {
+        ...responseData,
+        stats: {
+          ...responseData.stats,
+          timestamp: new Date().toISOString()
+        }
+      };
+    }
+  };
   
   // Debug importing state changes (moved after all state declarations)
   React.useEffect(() => {
@@ -422,9 +449,15 @@ const AkeneoIntegration = () => {
                   failedItems: detail.error_details ? (() => {
                     try {
                       const parsed = JSON.parse(detail.error_details);
-                      return Array.isArray(parsed) ? parsed.slice(0, 10) : [];
+                      if (Array.isArray(parsed)) {
+                        return parsed.slice(0, 10).map(item => ({
+                          code: item.akeneo_identifier || item.akeneo_code || item.code || `Item ${Math.random().toString(36).substr(2, 5)}`,
+                          error: Array.isArray(item.errors) ? item.errors.join(', ') : (item.error || item.message || 'Unknown error')
+                        }));
+                      }
+                      return [];
                     } catch (e) {
-                      return [{ error: detail.error_details }];
+                      return [{ code: 'Parse Error', error: detail.error_details }];
                     }
                   })() : []
                 }
@@ -1300,7 +1333,9 @@ const AkeneoIntegration = () => {
       console.log('📥 Import categories response:', response);
       
       const responseData = response.data || response;
-      setTabImportResults('categories', responseData);
+      // Enhance with error details and timestamp
+      const enhancedResponseData = enhanceImportResponse(responseData, 'categories');
+      setTabImportResults('categories', enhancedResponseData);
       
       if (responseData?.success) {
         console.log('✅ Categories import successful');
@@ -1441,7 +1476,8 @@ const AkeneoIntegration = () => {
       const responseData = response.data || response;
       // Ensure responseData is not null before setting
       if (responseData) {
-        setTabImportResults('attributes', responseData);
+        const enhancedResponseData = enhanceImportResponse(responseData, 'attributes');
+        setTabImportResults('attributes', enhancedResponseData);
       } else {
         console.error('⚠️ Received null response data');
         setTabImportResults('attributes', { success: false, error: 'Invalid response from server' });
@@ -1560,7 +1596,8 @@ const AkeneoIntegration = () => {
       console.log('📥 Import families response:', response);
       
       const responseData = response.data || response;
-      setTabImportResults('families', responseData);
+      const enhancedResponseData = enhanceImportResponse(responseData, 'families');
+      setTabImportResults('families', enhancedResponseData);
       
       if (responseData?.success) {
         console.log('✅ Families import successful');
