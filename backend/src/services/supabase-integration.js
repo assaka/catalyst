@@ -244,14 +244,23 @@ class SupabaseIntegration {
       }
 
       // Also save to IntegrationConfig for consistency
-      await IntegrationConfig.createOrUpdate(storeId, 'supabase', {
+      const integrationConfig = await IntegrationConfig.createOrUpdate(storeId, 'supabase', {
         projectUrl: projectData.project_url || 'pending_configuration',
         anonKey: projectData.anon_key || 'pending_configuration',
         connected: true,
         connectedAt: new Date(),
         userEmail: user?.email || ''
       });
-      console.log('✅ Integration config saved successfully');
+      
+      // Update connection status to success
+      if (integrationConfig) {
+        await integrationConfig.update({
+          connection_status: 'connected',
+          is_active: true
+        });
+      }
+      
+      console.log('✅ Integration config saved successfully with connected status');
 
       return { 
         success: true, 
@@ -1007,7 +1016,7 @@ class SupabaseIntegration {
         projectUrl: token.project_url,
         expiresAt: token.expires_at,
         isExpired,
-        connectionStatus: config?.connection_status,
+        connectionStatus: config?.connection_status || 'connected',
         lastTestedAt: config?.connection_tested_at,
         oauthConfigured: true,
         limitedScope: hasLimitedScope,

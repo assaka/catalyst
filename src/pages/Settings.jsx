@@ -105,12 +105,23 @@ export default function Settings() {
       let freshStoreData = null;
       try {
         const storeResponse = await retryApiCall(() => Store.findById(selectedStore.id));
-        // Store.findById returns an array, so get the first item
-        freshStoreData = Array.isArray(storeResponse) ? storeResponse[0] : storeResponse;
+        // The API returns { success: true, data: store }
+        if (storeResponse && storeResponse.success && storeResponse.data) {
+          freshStoreData = storeResponse.data;
+        } else if (storeResponse && storeResponse.id) {
+          // Direct store object
+          freshStoreData = storeResponse;
+        } else if (Array.isArray(storeResponse) && storeResponse.length > 0) {
+          // Array response
+          freshStoreData = storeResponse[0];
+        } else {
+          console.warn('⚠️ Unexpected store response format:', storeResponse);
+          freshStoreData = selectedStore;
+        }
         console.log('✅ Fresh store data received:', {
           rawResponse: storeResponse,
-          isArray: Array.isArray(storeResponse),
-          extractedStore: freshStoreData
+          extractedStore: freshStoreData,
+          storeId: freshStoreData?.id
         });
       } catch (error) {
         console.error('❌ Failed to fetch fresh store data:', error);
@@ -131,6 +142,13 @@ export default function Settings() {
       
       // Load categories for the root category selector
       try {
+        // Make sure we have a valid store ID
+        if (!storeData || !storeData.id) {
+          console.error('❌ No valid store data available for loading categories');
+          setCategories([]);
+          return;
+        }
+        
         console.log('🔍 Loading categories for store:', storeData.id);
         
         // First, try to get ALL categories including root categories
@@ -190,20 +208,25 @@ export default function Settings() {
         console.error('❌ Failed to load categories:', error);
         console.error('   Full error:', error.response || error);
         
-        // Try fallback: get categories directly from database
+        // Try fallback: use public categories endpoint
         try {
-          console.log('🔄 Trying direct database query fallback...');
+          console.log('🔄 Trying public categories endpoint fallback...');
           
-          // Use the Store entity to get fresh data with categories
-          const storeWithCategories = await Store.findById(storeData.id);
-          if (storeWithCategories && storeWithCategories.categories) {
-            console.log('✅ Got categories from store data:', storeWithCategories.categories.length);
-            setCategories(storeWithCategories.categories);
+          // Try the public endpoint which doesn't require authentication
+          const publicResponse = await apiClient.publicRequest('GET', `public/categories?store_id=${storeData.id}&limit=100`);
+          
+          if (Array.isArray(publicResponse)) {
+            console.log('✅ Got categories from public endpoint:', publicResponse.length);
+            setCategories(publicResponse);
+          } else if (publicResponse && publicResponse.data) {
+            console.log('✅ Got categories from public endpoint (wrapped):', publicResponse.data.length);
+            setCategories(publicResponse.data);
           } else {
+            console.log('⚠️ No categories found in public endpoint');
             setCategories([]);
           }
         } catch (fallbackError) {
-          console.error('❌ Fallback also failed:', fallbackError);
+          console.error('❌ Public endpoint fallback also failed:', fallbackError);
           setCategories([]);
         }
       }
