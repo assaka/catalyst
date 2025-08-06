@@ -1,6 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const { SupabaseOAuthToken, IntegrationConfig } = require('../models');
+const SupabaseProjectKeys = require('../models/SupabaseProjectKeys');
 
 class SupabaseIntegration {
   constructor() {
@@ -736,15 +737,23 @@ class SupabaseIntegration {
 
       const projects = response.data || [];
       
-      // Format projects for frontend
-      const formattedProjects = projects.map(project => ({
-        id: project.id,
-        name: project.name,
-        url: `https://${project.id}.supabase.co`,
-        region: project.region,
-        organizationId: project.organization_id,
-        createdAt: project.created_at,
-        isCurrent: token.project_url === `https://${project.id}.supabase.co`
+      // Format projects for frontend and check which have keys configured
+      const formattedProjects = await Promise.all(projects.map(async project => {
+        // Check if we have keys stored for this project
+        const storedKeys = await SupabaseProjectKeys.getKeysForProject(storeId, project.id);
+        const hasKeys = storedKeys && storedKeys.anonKey && storedKeys.anonKey !== 'pending_configuration';
+        
+        return {
+          id: project.id,
+          name: project.name,
+          url: `https://${project.id}.supabase.co`,
+          region: project.region,
+          organizationId: project.organization_id,
+          createdAt: project.created_at,
+          isCurrent: token.project_url === `https://${project.id}.supabase.co`,
+          hasKeysConfigured: hasKeys,
+          status: project.status || 'ACTIVE'
+        };
       }));
 
       return {
@@ -851,15 +860,33 @@ class SupabaseIntegration {
         }
       }
 
+      // First check if we have stored keys for this project
+      const storedKeys = await SupabaseProjectKeys.getKeysForProject(storeId, projectId);
+      if (storedKeys && storedKeys.anonKey) {
+        console.log('Using stored keys for project:', projectId);
+        anonKey = storedKeys.anonKey;
+        serviceRoleKey = storedKeys.serviceRoleKey || serviceRoleKey;
+      }
+
+      const projectUrl = `https://${projectId}.supabase.co`;
+
       // Update token with new project details
       await token.update({
-        project_url: `https://${projectId}.supabase.co`,
+        project_url: projectUrl,
         anon_key: anonKey,
         service_role_key: serviceRoleKey,
         database_url: `postgresql://postgres.[projectRef]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`,
         storage_url: `https://${projectId}.supabase.co/storage/v1`,
         auth_url: `https://${projectId}.supabase.co/auth/v1`
       });
+
+      // Store the keys for this project if we have them
+      if (anonKey && anonKey !== 'pending_configuration') {
+        await SupabaseProjectKeys.upsertKeys(storeId, projectId, projectUrl, {
+          anonKey: anonKey,
+          serviceRoleKey: serviceRoleKey
+        });
+      }
 
       // Update IntegrationConfig as well
       const config = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
@@ -1330,10 +1357,24 @@ class SupabaseIntegration {
         throw new Error('Supabase not connected for this store');
       }
 
+      // Extract project ID from current project URL
+      let projectId = null;
+      if (token.project_url) {
+        const match = token.project_url.match(/https:\/\/([^.]+)\.supabase\.co/);
+        if (match) {
+          projectId = match[1];
+        }
+      }
+
       // Update token with new configuration
       const updateData = {};
       if (config.projectUrl) {
         updateData.project_url = config.projectUrl;
+        // Extract project ID from new URL if provided
+        const newMatch = config.projectUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
+        if (newMatch) {
+          projectId = newMatch[1];
+        }
       }
       if (config.anonKey) {
         updateData.anon_key = config.anonKey;
@@ -1352,6 +1393,16 @@ class SupabaseIntegration {
       }
 
       await token.update(updateData);
+
+      // Store keys for this specific project
+      if (projectId && (config.anonKey || config.serviceRoleKey)) {
+        await SupabaseProjectKeys.upsertKeys(storeId, projectId, 
+          config.projectUrl || token.project_url, {
+          anonKey: config.anonKey,
+          serviceRoleKey: config.serviceRoleKey
+        });
+        console.log(`Stored keys for project ${projectId}`);
+      }
 
       // Also update IntegrationConfig
       const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
