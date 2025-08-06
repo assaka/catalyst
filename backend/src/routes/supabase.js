@@ -59,8 +59,11 @@ router.get('/status', auth, extractStoreId, checkStoreOwnership, async (req, res
 // Initialize OAuth flow
 router.post('/connect', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
+    console.log('Initiating Supabase OAuth connection for store:', req.storeId);
+    
     const state = uuidv4();
     const authUrl = supabaseIntegration.getAuthorizationUrl(req.storeId, state);
+    console.log('Generated OAuth URL:', authUrl);
     
     // Store state in session or database for verification
     req.session = req.session || {};
@@ -84,7 +87,18 @@ router.post('/connect', auth, extractStoreId, checkStoreOwnership, async (req, r
 // OAuth callback
 router.get('/callback', async (req, res) => {
   try {
-    const { code, state } = req.query;
+    console.log('Supabase OAuth callback received:', {
+      query: req.query,
+      headers: req.headers
+    });
+
+    const { code, state, error, error_description } = req.query;
+    
+    // Check for OAuth errors from Supabase
+    if (error) {
+      console.error('OAuth error from Supabase:', error, error_description);
+      throw new Error(error_description || error || 'Authorization failed');
+    }
     
     if (!code) {
       throw new Error('Authorization code not provided');
@@ -95,11 +109,14 @@ router.get('/callback', async (req, res) => {
     try {
       const stateData = JSON.parse(state);
       storeId = stateData.storeId;
-    } catch {
+      console.log('Parsed state:', stateData);
+    } catch (err) {
+      console.error('Failed to parse state:', state, err);
       throw new Error('Invalid state parameter');
     }
 
     // Exchange code for token
+    console.log('Exchanging code for token...');
     const result = await supabaseIntegration.exchangeCodeForToken(code, storeId);
     
     // Send success page that closes the popup window

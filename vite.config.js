@@ -28,4 +28,17 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    sourcemap: true, // Enable source maps for production debugging
+    minify: 'terser', // Use terser for better control over minification
+    terserOptions: {
+      compress: {
+        drop_console: false, // Keep console logs in production for debugging
+        drop_debugger: false // Keep debugger statements for now
+      },
+      mangle: {
+        keep_fnames: true, // Keep function names for better error messages
+      }
+    }
+  }
 }) 

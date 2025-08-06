@@ -45,6 +45,7 @@ import { toast } from 'sonner';
 import { useStoreSlug } from '../hooks/useStoreSlug';
 import apiClient from '../api/client';
 import { MultiSelect } from '../components/ui/multi-select';
+import { debugEnvironment } from '../utils/env-debug';
 
 // Error Boundary to catch component crashes
 class AkeneoErrorBoundary extends React.Component {

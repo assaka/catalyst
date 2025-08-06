@@ -8,7 +8,7 @@ class SupabaseIntegration {
     this.clientSecret = process.env.SUPABASE_OAUTH_CLIENT_SECRET || 'pending_configuration';
     this.redirectUri = process.env.SUPABASE_OAUTH_REDIRECT_URI || 
                       `${process.env.BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/supabase/callback`;
-    this.authorizationBaseUrl = 'https://app.supabase.com/authorize';
+    this.authorizationBaseUrl = 'https://api.supabase.com/v1/oauth/authorize';
     this.tokenUrl = 'https://api.supabase.com/v1/oauth/token';
     
     // Check if OAuth is properly configured
@@ -47,15 +47,18 @@ class SupabaseIntegration {
         redirectUri: this.redirectUri
       });
 
-      const response = await axios.post(this.tokenUrl, {
+      // Use form-urlencoded for OAuth token exchange (standard OAuth2 format)
+      const params = new URLSearchParams({
         grant_type: 'authorization_code',
         code,
         client_id: this.clientId,
         client_secret: this.clientSecret,
         redirect_uri: this.redirectUri
-      }, {
+      });
+
+      const response = await axios.post(this.tokenUrl, params, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
       });
 
@@ -104,14 +107,17 @@ class SupabaseIntegration {
         throw new Error('No Supabase token found for this store');
       }
 
-      const response = await axios.post(this.tokenUrl, {
+      // Use form-urlencoded for OAuth token refresh (standard OAuth2 format)
+      const params = new URLSearchParams({
         grant_type: 'refresh_token',
         refresh_token: token.refresh_token,
         client_id: this.clientId,
         client_secret: this.clientSecret
-      }, {
+      });
+
+      const response = await axios.post(this.tokenUrl, params, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/x-www-form-urlencoded'
         }
       });
 
