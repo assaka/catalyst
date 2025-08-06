@@ -119,7 +119,12 @@ router.get('/callback', async (req, res) => {
     console.log('Exchanging code for token...');
     const result = await supabaseIntegration.exchangeCodeForToken(code, storeId);
     
+    console.log('Token exchange result:', result);
+    
     // Send success page that closes the popup window
+    const projectUrl = result.project?.url || 'Connected';
+    const userEmail = result.user?.email || '';
+    
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -156,6 +161,11 @@ router.get('/callback', async (req, res) => {
             color: #6b7280;
             margin-bottom: 1rem;
           }
+          .email {
+            font-size: 14px;
+            color: #4b5563;
+            margin-top: 0.5rem;
+          }
         </style>
       </head>
       <body>
@@ -163,13 +173,15 @@ router.get('/callback', async (req, res) => {
           <div class="success">✓</div>
           <h1>Successfully Connected!</h1>
           <p>Your Supabase account has been connected. This window will close automatically.</p>
+          ${userEmail ? `<p class="email">Connected as: ${userEmail}</p>` : ''}
         </div>
         <script>
           // Notify parent window of success
           if (window.opener) {
             window.opener.postMessage({ 
               type: 'supabase-oauth-success',
-              project: '${result.project.url}'
+              project: '${projectUrl}',
+              userEmail: '${userEmail}'
             }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
           }
           // Close window after 2 seconds

@@ -62,35 +62,87 @@ class SupabaseIntegration {
         }
       });
 
-      const { access_token, refresh_token, expires_in, project } = response.data;
+      console.log('Token exchange response:', JSON.stringify(response.data, null, 2));
+
+      const { 
+        access_token, 
+        refresh_token, 
+        expires_in,
+        token_type,
+        user
+      } = response.data;
+
+      if (!access_token || !refresh_token) {
+        throw new Error('Invalid token response from Supabase');
+      }
 
       // Calculate expiration time
-      const expiresAt = new Date(Date.now() + expires_in * 1000);
+      const expiresAt = new Date(Date.now() + (expires_in || 3600) * 1000);
+
+      // Get user's projects using the access token
+      let projectData = {};
+      try {
+        // Fetch user's projects
+        const projectsResponse = await axios.get('https://api.supabase.com/v1/projects', {
+          headers: {
+            'Authorization': `Bearer ${access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Projects response:', JSON.stringify(projectsResponse.data, null, 2));
+        
+        // Use the first project or let user select later
+        if (projectsResponse.data && projectsResponse.data.length > 0) {
+          const firstProject = projectsResponse.data[0];
+          projectData = {
+            project_url: `https://${firstProject.id}.supabase.co`,
+            anon_key: firstProject.anon_key || '',
+            service_role_key: firstProject.service_role_key || '',
+            database_url: firstProject.database_url || '',
+            storage_url: `https://${firstProject.id}.supabase.co/storage/v1`,
+            auth_url: `https://${firstProject.id}.supabase.co/auth/v1`
+          };
+        }
+      } catch (projectError) {
+        console.error('Error fetching projects:', projectError.response?.data || projectError.message);
+        // Continue without project data - user can configure later
+        projectData = {
+          project_url: '',
+          anon_key: '',
+          service_role_key: '',
+          database_url: '',
+          storage_url: '',
+          auth_url: ''
+        };
+      }
 
       // Save token to database
       const tokenData = {
         access_token,
         refresh_token,
         expires_at: expiresAt,
-        project_url: project.url,
-        anon_key: project.anon_key,
-        service_role_key: project.service_role_key,
-        database_url: project.database_url,
-        storage_url: `${project.url}/storage/v1`,
-        auth_url: `${project.url}/auth/v1`
+        ...projectData
       };
 
       await SupabaseOAuthToken.createOrUpdate(storeId, tokenData);
 
       // Also save to IntegrationConfig for consistency
       await IntegrationConfig.createOrUpdate(storeId, 'supabase', {
-        projectUrl: project.url,
-        anonKey: project.anon_key,
+        projectUrl: projectData.project_url || 'pending_configuration',
+        anonKey: projectData.anon_key || 'pending_configuration',
         connected: true,
-        connectedAt: new Date()
+        connectedAt: new Date(),
+        userEmail: user?.email || ''
       });
 
-      return { success: true, project };
+      return { 
+        success: true, 
+        project: {
+          url: projectData.project_url || 'Configuration pending'
+        },
+        user
+      };
     } catch (error) {
       console.error('Error exchanging code for token:', error.response?.data || error.message);
       throw new Error('Failed to connect to Supabase: ' + (error.response?.data?.error || error.message));
