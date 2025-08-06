@@ -40,6 +40,13 @@ class SupabaseIntegration {
    */
   async exchangeCodeForToken(code, storeId) {
     try {
+      console.log('Exchanging code for token:', {
+        code: code.substring(0, 10) + '...',
+        storeId,
+        clientId: this.clientId,
+        redirectUri: this.redirectUri
+      });
+
       const response = await axios.post(this.tokenUrl, {
         grant_type: 'authorization_code',
         code,

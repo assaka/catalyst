@@ -102,13 +102,139 @@ router.get('/callback', async (req, res) => {
     // Exchange code for token
     const result = await supabaseIntegration.exchangeCodeForToken(code, storeId);
     
-    // Redirect to frontend with success message
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(`${frontendUrl}/dashboard/integrations/supabase?connected=true&project=${encodeURIComponent(result.project.url)}`);
+    // Send success page that closes the popup window
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Supabase Connected</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          }
+          .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+          }
+          .success {
+            color: #10b981;
+            font-size: 48px;
+            margin-bottom: 1rem;
+          }
+          h1 {
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+          }
+          p {
+            color: #6b7280;
+            margin-bottom: 1rem;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="success">✓</div>
+          <h1>Successfully Connected!</h1>
+          <p>Your Supabase account has been connected. This window will close automatically.</p>
+        </div>
+        <script>
+          // Notify parent window of success
+          if (window.opener) {
+            window.opener.postMessage({ 
+              type: 'supabase-oauth-success',
+              project: '${result.project.url}'
+            }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
+          }
+          // Close window after 2 seconds
+          setTimeout(() => {
+            window.close();
+          }, 2000);
+        </script>
+      </body>
+      </html>
+    `);
   } catch (error) {
     console.error('OAuth callback error:', error);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    res.redirect(`${frontendUrl}/dashboard/integrations/supabase?error=${encodeURIComponent(error.message)}`);
+    // Send error page that closes the popup window
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Connection Failed</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: #f3f4f6;
+          }
+          .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+          }
+          .error {
+            color: #ef4444;
+            font-size: 48px;
+            margin-bottom: 1rem;
+          }
+          h1 {
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+          }
+          p {
+            color: #6b7280;
+            margin-bottom: 1rem;
+          }
+          .error-details {
+            background: #fef2f2;
+            color: #991b1b;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 1rem;
+            font-size: 14px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="error">✗</div>
+          <h1>Connection Failed</h1>
+          <p>Unable to connect to Supabase. This window will close automatically.</p>
+          <div class="error-details">${error.message}</div>
+        </div>
+        <script>
+          // Notify parent window of error
+          if (window.opener) {
+            window.opener.postMessage({ 
+              type: 'supabase-oauth-error',
+              error: '${error.message.replace(/'/g, "\\'")}'
+            }, '${process.env.FRONTEND_URL || 'http://localhost:3000'}');
+          }
+          // Close window after 3 seconds
+          setTimeout(() => {
+            window.close();
+          }, 3000);
+        </script>
+      </body>
+      </html>
+    `);
   }
 });
 

@@ -85,16 +85,56 @@ const SupabaseIntegration = ({ storeId }) => {
           'width=600,height=700,scrollbars=yes,resizable=yes'
         );
 
-        // Listen for OAuth completion
+        // Listen for postMessage from OAuth callback
+        const messageHandler = (event) => {
+          // Verify origin
+          const allowedOrigins = [
+            process.env.REACT_APP_API_URL,
+            'https://catalyst-backend-fzhu.onrender.com',
+            'http://localhost:5000'
+          ];
+          
+          if (!allowedOrigins.some(origin => event.origin.startsWith(origin))) {
+            return;
+          }
+
+          if (event.data.type === 'supabase-oauth-success') {
+            console.log('Supabase OAuth success:', event.data);
+            window.removeEventListener('message', messageHandler);
+            setConnecting(false);
+            toast.success('Successfully connected to Supabase!');
+            // Reload status to show connection
+            setTimeout(() => {
+              loadStatus();
+            }, 500);
+          } else if (event.data.type === 'supabase-oauth-error') {
+            console.error('Supabase OAuth error:', event.data.error);
+            window.removeEventListener('message', messageHandler);
+            setConnecting(false);
+            toast.error(event.data.error || 'Failed to connect to Supabase');
+          }
+        };
+
+        window.addEventListener('message', messageHandler);
+
+        // Also check if window is closed manually
         const checkClosed = setInterval(() => {
           if (authWindow.closed) {
             clearInterval(checkClosed);
-            // Reload status after OAuth
-            setTimeout(() => {
-              loadStatus();
-            }, 1000);
+            window.removeEventListener('message', messageHandler);
+            setConnecting(false);
           }
         }, 1000);
+
+        // Clean up after 5 minutes (timeout)
+        setTimeout(() => {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', messageHandler);
+          if (connecting) {
+            setConnecting(false);
+            toast.error('Connection timeout. Please try again.');
+          }
+        }, 300000); // 5 minutes
 
         toast.success('Please complete the authorization in the popup window');
       } else {
@@ -103,7 +143,6 @@ const SupabaseIntegration = ({ storeId }) => {
     } catch (error) {
       console.error('Error connecting to Supabase:', error);
       toast.error(error.message || 'Failed to connect to Supabase');
-    } finally {
       setConnecting(false);
     }
   };
