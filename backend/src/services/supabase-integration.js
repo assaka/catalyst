@@ -381,19 +381,18 @@ class SupabaseIntegration {
       throw new Error('Supabase project URL is not configured');
     }
 
+    // If we don't have a valid anon key, throw error to force direct API usage
+    if (!token.anon_key || token.anon_key === '' || token.anon_key === 'pending_configuration') {
+      throw new Error('Anon key not available - use direct API');
+    }
+
     // Ensure token is valid
     const validAccessToken = await this.getValidToken(storeId);
 
-    // If we don't have anon key, use a dummy key and rely on OAuth token
-    // The OAuth token in the Authorization header will override the anon key
-    const anonKey = (token.anon_key && token.anon_key !== 'pending_configuration') 
-      ? token.anon_key 
-      : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1bW15IiwiaWF0IjoxNjQ2MjM5MDIyLCJleHAiOjE5NjE4MTUwMjJ9.dummy'; // Dummy JWT for structure
-
-    // Create Supabase client with OAuth token
+    // Create Supabase client with real anon key
     const supabaseClient = createClient(
       token.project_url,
-      anonKey,
+      token.anon_key,
       {
         auth: {
           persistSession: false,
@@ -401,47 +400,7 @@ class SupabaseIntegration {
         },
         global: {
           headers: {
-            Authorization: `Bearer ${validAccessToken}` // OAuth token overrides anon key
-          }
-        }
-      }
-    );
-
-    return supabaseClient;
-  }
-
-  /**
-   * Get Supabase client with OAuth token only (for operations that don't need anon key)
-   */
-  async getSupabaseOAuthClient(storeId) {
-    const token = await SupabaseOAuthToken.findByStore(storeId);
-    if (!token) {
-      throw new Error('Supabase not connected for this store');
-    }
-
-    if (!token.project_url || token.project_url === '' || token.project_url === 'pending_configuration') {
-      throw new Error('Supabase project URL is not configured');
-    }
-
-    // Ensure token is valid
-    const validAccessToken = await this.getValidToken(storeId);
-
-    // Use a minimal dummy anon key just for the client structure
-    const dummyAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1bW15IiwiaWF0IjoxNjQ2MjM5MDIyLCJleHAiOjE5NjE4MTUwMjJ9.dummy';
-
-    // Create client with OAuth token as primary auth
-    const supabaseClient = createClient(
-      token.project_url,
-      dummyAnonKey,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${validAccessToken}`,
-            apikey: dummyAnonKey // Some operations might check for apikey header
+            Authorization: `Bearer ${validAccessToken}` // OAuth token for additional auth
           }
         }
       }

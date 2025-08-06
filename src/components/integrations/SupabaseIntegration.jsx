@@ -702,7 +702,7 @@ const SupabaseIntegration = ({ storeId }) => {
                 )}
                 
                 {/* Show message if projects couldn't be loaded but we're connected */}
-                {projects.length === 0 && !status.limitedScope && status.projectUrl && status.projectUrl !== 'https://pending-configuration.supabase.co' && (
+                {!status.limitedScope && status.projectUrl && status.projectUrl !== 'https://pending-configuration.supabase.co' && (
                   <div className="mb-2">
                     <p className="text-sm text-green-700">
                       Project URL: {status.projectUrl}

@@ -208,6 +208,11 @@ class SupabaseStorageService {
 
       if (error) {
         console.error('Storage upload error:', error);
+        // If it's a JWT error, retry with direct API
+        if (error.message && (error.message.includes('JWT') || error.message.includes('JWS'))) {
+          console.log('JWT error detected, retrying with direct API upload');
+          return await this.uploadImageDirect(storeId, file, options);
+        }
         throw error;
       }
 
@@ -278,8 +283,8 @@ class SupabaseStorageService {
       try {
         client = await supabaseIntegration.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed, trying OAuth client:', error.message);
-        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+        console.log('Regular client failed:', error.message);
+        throw new Error('Storage operations require API keys to be configured');
       }
       const bucket = bucketName || this.bucketName;
 
@@ -308,8 +313,8 @@ class SupabaseStorageService {
       try {
         client = await supabaseIntegration.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed, trying OAuth client:', error.message);
-        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+        console.log('Regular client failed:', error.message);
+        throw new Error('Storage operations require API keys to be configured');
       }
       const bucketName = options.bucket || this.bucketName;
       const folderPath = folder || `store-${storeId}`;
@@ -360,8 +365,8 @@ class SupabaseStorageService {
       try {
         client = await supabaseIntegration.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed, trying OAuth client:', error.message);
-        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+        console.log('Regular client failed:', error.message);
+        throw new Error('Storage operations require API keys to be configured');
       }
       const bucket = bucketName || this.bucketName;
 
@@ -399,8 +404,8 @@ class SupabaseStorageService {
       try {
         client = await supabaseIntegration.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed, trying OAuth client:', error.message);
-        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+        console.log('Regular client failed:', error.message);
+        throw new Error('Storage operations require API keys to be configured');
       }
       const bucket = bucketName || this.bucketName;
 
@@ -438,8 +443,8 @@ class SupabaseStorageService {
       try {
         client = await supabaseIntegration.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed, trying OAuth client:', error.message);
-        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+        console.log('Regular client failed:', error.message);
+        throw new Error('Storage operations require API keys to be configured');
       }
       const bucket = bucketName || this.bucketName;
 
@@ -492,17 +497,16 @@ class SupabaseStorageService {
       try {
         client = await supabaseIntegration.getSupabaseAdminClient(storeId);
       } catch (adminError) {
-        console.log('Admin client not available, using OAuth client for stats');
+        console.log('Admin client not available, trying regular client for stats');
         try {
-          // Use OAuth client which works without anon key
-          client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+          client = await supabaseIntegration.getSupabaseClient(storeId);
           canListBuckets = false; // Regular client might have limited permissions
         } catch (clientError) {
-          console.error('Failed to create OAuth client:', clientError.message);
-          // If we can't get any client, return graceful error
+          console.error('Failed to create client:', clientError.message);
+          // If we can't get any client, return graceful error with empty stats
           return {
-            success: false,
-            message: 'Unable to access storage. OAuth token may need refresh.',
+            success: true, // Return success with empty stats instead of error
+            message: 'Storage statistics require API keys. Stats will be available once keys are configured.',
             stats: {
               totalFiles: 0,
               totalSize: 0,
