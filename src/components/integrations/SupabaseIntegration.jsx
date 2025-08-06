@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import apiClient from '../../api/client';
-import { ExternalLink, Trash2, Cloud, Image, BarChart3 } from 'lucide-react';
+import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight } from 'lucide-react';
 
 const SupabaseIntegration = ({ storeId }) => {
   const [status, setStatus] = useState(null);
@@ -17,6 +17,11 @@ const SupabaseIntegration = ({ storeId }) => {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [changingProject, setChangingProject] = useState(false);
+  const [showKeyConfig, setShowKeyConfig] = useState(false);
+  const [anonKey, setAnonKey] = useState('');
+  const [serviceRoleKey, setServiceRoleKey] = useState('');
+  const [savingKeys, setSavingKeys] = useState(false);
+  const [showServiceRole, setShowServiceRole] = useState(false);
 
   // Check for and clear logout flags on component mount
   useEffect(() => {
@@ -380,6 +385,40 @@ const SupabaseIntegration = ({ storeId }) => {
       toast.error(error.message || 'Failed to upload test image');
     } finally {
       setTestingUpload(false);
+    }
+  };
+
+  const handleSaveKeys = async () => {
+    if (!anonKey && !serviceRoleKey) {
+      toast.error('Please provide at least the anon key');
+      return;
+    }
+
+    setSavingKeys(true);
+    try {
+      const response = await apiClient.post('/supabase/update-config', {
+        projectId: selectedProjectId,
+        anonKey: anonKey || undefined,
+        serviceRoleKey: serviceRoleKey || undefined
+      }, {
+        'x-store-id': storeId
+      });
+
+      if (response.success) {
+        toast.success('API keys configured successfully!');
+        setAnonKey('');
+        setServiceRoleKey('');
+        setShowKeyConfig(false);
+        // Refresh status
+        await loadStatus();
+      } else {
+        throw new Error(response.message || 'Failed to save API keys');
+      }
+    } catch (error) {
+      console.error('Error saving keys:', error);
+      toast.error(error.message || 'Failed to save API keys');
+    } finally {
+      setSavingKeys(false);
     }
   };
 
@@ -775,6 +814,128 @@ const SupabaseIntegration = ({ storeId }) => {
                   className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
                 >
                   <BarChart3 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* API Key Configuration */}
+          {(!status.hasAnonKey || showKeyConfig) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <Key className="w-5 h-5 text-amber-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-amber-900 mb-2">
+                    Configure API Keys
+                  </h4>
+                  <p className="text-sm text-amber-700 mb-4">
+                    Supabase Storage requires API keys for authentication. Copy them from your Supabase dashboard.
+                  </p>
+                  
+                  {/* Instructions */}
+                  <div className="bg-white rounded-lg p-4 mb-4">
+                    <p className="text-sm text-gray-700 font-medium mb-2">How to get your keys:</p>
+                    <ol className="text-sm text-gray-600 list-decimal list-inside space-y-1">
+                      <li>Go to your <a href={`https://supabase.com/dashboard/project/${selectedProjectId || 'your-project'}/settings/api`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Supabase API Settings</a></li>
+                      <li>Copy the "anon" key (public key)</li>
+                      <li>Optionally copy the "service_role" key for server-side operations</li>
+                      <li>Paste them below and save</li>
+                    </ol>
+                  </div>
+
+                  {/* Key Input Fields */}
+                  <div className="space-y-3">
+                    {/* Anon Key */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Anon Key (Required)
+                      </label>
+                      <input
+                        type="password"
+                        value={anonKey}
+                        onChange={(e) => setAnonKey(e.target.value)}
+                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={savingKeys}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        This is the public API key used for client-side operations
+                      </p>
+                    </div>
+
+                    {/* Service Role Key (Optional) */}
+                    <div>
+                      <button
+                        onClick={() => setShowServiceRole(!showServiceRole)}
+                        className="text-sm text-blue-600 hover:text-blue-700 mb-2"
+                      >
+                        {showServiceRole ? '−' : '+'} Advanced: Service Role Key (Optional)
+                      </button>
+                      
+                      {showServiceRole && (
+                        <>
+                          <input
+                            type="password"
+                            value={serviceRoleKey}
+                            onChange={(e) => setServiceRoleKey(e.target.value)}
+                            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            disabled={savingKeys}
+                          />
+                          <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
+                            <p className="text-xs text-yellow-800 flex items-start">
+                              <Info className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+                              Keep this key secret! It has admin privileges. Only add if you need server-side operations.
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Save Button */}
+                    <button
+                      onClick={handleSaveKeys}
+                      disabled={savingKeys || (!anonKey && !serviceRoleKey)}
+                      className={`w-full py-2 px-4 rounded-md font-medium flex items-center justify-center ${
+                        savingKeys || (!anonKey && !serviceRoleKey)
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {savingKeys ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          Save API Keys
+                          <ArrowRight className="w-4 h-4 ml-2" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Show success message if keys are configured */}
+          {status.hasAnonKey && !showKeyConfig && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Key className="w-5 h-5 text-green-600 mr-2" />
+                  <div>
+                    <p className="text-green-800 font-medium">API Keys Configured</p>
+                    <p className="text-green-600 text-sm">Storage operations are enabled</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowKeyConfig(true)}
+                  className="text-sm text-green-600 hover:text-green-700 underline"
+                >
+                  Reconfigure Keys
                 </button>
               </div>
             </div>

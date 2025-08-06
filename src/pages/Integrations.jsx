@@ -1,7 +1,6 @@
 import React from 'react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
-// Use the SupabaseIntegration with anon key configuration UI
-import SupabaseIntegration from '../../frontend/src/pages/Admin/Integrations/SupabaseIntegration';
+import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Cloud, Database, ShoppingBag } from 'lucide-react';
