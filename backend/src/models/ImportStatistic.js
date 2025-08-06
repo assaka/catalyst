@@ -94,7 +94,8 @@ ImportStatistic.getLatestStats = async function(storeId) {
         failed_imports: stat.failed_imports,
         skipped_imports: stat.skipped_imports,
         import_date: stat.import_date,
-        processing_time_seconds: stat.processing_time_seconds
+        processing_time_seconds: stat.processing_time_seconds,
+        error_details: stat.error_details
       };
       processedTypes.add(stat.import_type);
     }

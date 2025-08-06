@@ -530,6 +530,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/template-editor" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <TemplateEditor />
+                    </RoleProtectedRoute>
+                } />
+                
                 <Route path="/admin/cms-blocks" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <CmsBlocks />
@@ -860,6 +866,12 @@ function PagesContent() {
                 <Route path="/admin/create-plugin" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <PluginBuilder />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/template-editor" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <TemplateEditor />
                     </RoleProtectedRoute>
                 } />
                 

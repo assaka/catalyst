@@ -402,6 +402,37 @@ const AkeneoIntegration = () => {
           families: response.stats.families ?? 0,
           products: response.stats.products ?? 0
         });
+        
+        // Update importResults with detailed stats that include failed items and timestamps
+        if (response?.detailed_stats) {
+          const detailedImportResults = {};
+          Object.keys(response.detailed_stats).forEach(type => {
+            const detail = response.detailed_stats[type];
+            if (detail) {
+              detailedImportResults[type] = {
+                success: true,
+                message: `Last import: ${detail.successful_imports || 0} imported, ${detail.failed_imports || 0} failed`,
+                stats: {
+                  total: detail.total_processed || 0,
+                  imported: detail.successful_imports || 0,
+                  failed: detail.failed_imports || 0,
+                  skipped: detail.skipped_imports || 0,
+                  duration: detail.processing_time_seconds ? `${detail.processing_time_seconds}s` : null,
+                  timestamp: detail.import_date,
+                  failedItems: detail.error_details ? (() => {
+                    try {
+                      const parsed = JSON.parse(detail.error_details);
+                      return Array.isArray(parsed) ? parsed.slice(0, 10) : [];
+                    } catch (e) {
+                      return [{ error: detail.error_details }];
+                    }
+                  })() : []
+                }
+              };
+            }
+          });
+          setImportResults(prev => ({ ...prev, ...detailedImportResults }));
+        }
       } else {
         console.log('❌ Stats API returned invalid response:', response);
         // Keep existing stats on error instead of resetting
@@ -1825,10 +1856,28 @@ const AkeneoIntegration = () => {
         <AlertDescription className={(tabResults?.success ?? false) ? 'text-green-800' : 'text-red-800'}>
           {tabResults?.message || tabResults?.error}
           {tabResults?.stats && (
-            <div className="mt-2 text-sm">
+            <div className="mt-2 text-sm space-y-2">
               <p>Total: {tabResults.stats?.total ?? 0}, Imported: {tabResults.stats?.imported ?? 0}, Failed: {tabResults.stats?.failed ?? 0}</p>
               {tabResults.stats?.duration && (
                 <p>Duration: {tabResults.stats.duration}</p>
+              )}
+              {tabResults.stats?.timestamp && (
+                <p>Last Import: {new Date(tabResults.stats.timestamp).toLocaleString()}</p>
+              )}
+              {tabResults.stats?.failed > 0 && tabResults.stats?.failedItems && (
+                <div className="mt-2">
+                  <p className="font-medium">Failed Items (first 10):</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    {tabResults.stats.failedItems.slice(0, 10).map((item, index) => (
+                      <li key={index} className="text-xs">
+                        <span className="font-medium">{item.code || item.id || `Item ${index + 1}`}:</span> {item.error || item.message}
+                      </li>
+                    ))}
+                  </ul>
+                  {tabResults.stats.failedItems.length > 10 && (
+                    <p className="text-xs mt-1 italic">...and {tabResults.stats.failedItems.length - 10} more</p>
+                  )}
+                </div>
               )}
             </div>
           )}
