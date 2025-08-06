@@ -64,7 +64,14 @@ class SupabaseStorageService {
         type: file.mimetype
       });
 
-      const client = await supabaseIntegration.getSupabaseClient(storeId);
+      // Try to get client - prefer OAuth client which works without anon key
+      let client;
+      try {
+        client = await supabaseIntegration.getSupabaseClient(storeId);
+      } catch (error) {
+        console.log('Regular client failed, trying OAuth client:', error.message);
+        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+      }
       
       // Try to ensure buckets exist (non-blocking)
       try {
@@ -164,7 +171,14 @@ class SupabaseStorageService {
    */
   async deleteImage(storeId, imagePath, bucketName = null) {
     try {
-      const client = await supabaseIntegration.getSupabaseClient(storeId);
+      // Try to get client - prefer OAuth client which works without anon key
+      let client;
+      try {
+        client = await supabaseIntegration.getSupabaseClient(storeId);
+      } catch (error) {
+        console.log('Regular client failed, trying OAuth client:', error.message);
+        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+      }
       const bucket = bucketName || this.bucketName;
 
       const { error } = await client.storage
@@ -187,7 +201,14 @@ class SupabaseStorageService {
    */
   async listImages(storeId, folder = null, options = {}) {
     try {
-      const client = await supabaseIntegration.getSupabaseClient(storeId);
+      // Try to get client - prefer OAuth client which works without anon key
+      let client;
+      try {
+        client = await supabaseIntegration.getSupabaseClient(storeId);
+      } catch (error) {
+        console.log('Regular client failed, trying OAuth client:', error.message);
+        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+      }
       const bucketName = options.bucket || this.bucketName;
       const folderPath = folder || `store-${storeId}`;
 
@@ -232,7 +253,14 @@ class SupabaseStorageService {
    */
   async moveImage(storeId, fromPath, toPath, bucketName = null) {
     try {
-      const client = await supabaseIntegration.getSupabaseClient(storeId);
+      // Try to get client - prefer OAuth client which works without anon key
+      let client;
+      try {
+        client = await supabaseIntegration.getSupabaseClient(storeId);
+      } catch (error) {
+        console.log('Regular client failed, trying OAuth client:', error.message);
+        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+      }
       const bucket = bucketName || this.bucketName;
 
       const { error: moveError } = await client.storage
@@ -264,7 +292,14 @@ class SupabaseStorageService {
    */
   async copyImage(storeId, fromPath, toPath, bucketName = null) {
     try {
-      const client = await supabaseIntegration.getSupabaseClient(storeId);
+      // Try to get client - prefer OAuth client which works without anon key
+      let client;
+      try {
+        client = await supabaseIntegration.getSupabaseClient(storeId);
+      } catch (error) {
+        console.log('Regular client failed, trying OAuth client:', error.message);
+        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+      }
       const bucket = bucketName || this.bucketName;
 
       const { error: copyError } = await client.storage
@@ -296,7 +331,14 @@ class SupabaseStorageService {
    */
   async getSignedUrl(storeId, filePath, expiresIn = 3600, bucketName = null) {
     try {
-      const client = await supabaseIntegration.getSupabaseClient(storeId);
+      // Try to get client - prefer OAuth client which works without anon key
+      let client;
+      try {
+        client = await supabaseIntegration.getSupabaseClient(storeId);
+      } catch (error) {
+        console.log('Regular client failed, trying OAuth client:', error.message);
+        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+      }
       const bucket = bucketName || this.bucketName;
 
       const { data, error } = await client.storage
@@ -326,10 +368,10 @@ class SupabaseStorageService {
       // First check if we have proper credentials
       const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
       
-      if (!connectionStatus.connected || !connectionStatus.hasAnonKey) {
+      if (!connectionStatus.connected) {
         return {
           success: false,
-          message: 'Storage statistics unavailable. Please configure your Supabase project with API keys.',
+          message: 'Supabase not connected. Please connect your Supabase account.',
           requiresConfiguration: true,
           stats: {
             totalFiles: 0,
@@ -341,22 +383,24 @@ class SupabaseStorageService {
         };
       }
       
-      // Try to get admin client first, fall back to regular client
+      // Try to get admin client first, fall back to regular/OAuth client
       let client;
       let canListBuckets = true;
       
       try {
         client = await supabaseIntegration.getSupabaseAdminClient(storeId);
       } catch (adminError) {
-        console.log('Admin client not available, using regular client for stats');
+        console.log('Admin client not available, using OAuth client for stats');
         try {
-          client = await supabaseIntegration.getSupabaseClient(storeId);
-          canListBuckets = false; // Regular client can't list all buckets
+          // Use OAuth client which works without anon key
+          client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+          canListBuckets = false; // Regular client might have limited permissions
         } catch (clientError) {
+          console.error('Failed to create OAuth client:', clientError.message);
           // If we can't get any client, return graceful error
           return {
             success: false,
-            message: 'Unable to access storage. Please check your Supabase configuration.',
+            message: 'Unable to access storage. OAuth token may need refresh.',
             stats: {
               totalFiles: 0,
               totalSize: 0,
