@@ -212,15 +212,19 @@ const SupabaseIntegration = ({ storeId }) => {
             onClick: () => handleDisconnect()
           }
         });
-      } else if (error.message?.includes('revoked')) {
-        toast.error('Your authorization has been revoked.', {
-          duration: 8000,
-          description: 'Please reconnect to Supabase.',
+      } else if (error.message?.includes('revoked') || error.message?.includes('Authorization has been revoked')) {
+        toast.error('Authorization was revoked in Supabase.', {
+          duration: 10000,
+          description: 'You need to disconnect the invalid connection first.',
           action: {
-            label: 'Reconnect',
-            onClick: () => handleConnect()
+            label: 'Disconnect Now',
+            onClick: () => handleDisconnect()
           }
         });
+        // Reload status to show revoked authorization UI
+        setTimeout(() => {
+          loadStatus();
+        }, 500);
       } else {
         toast.error(error.message || 'Connection test failed');
       }
@@ -352,6 +356,35 @@ const SupabaseIntegration = ({ storeId }) => {
                   <li>Set redirect URL to: <code className="bg-yellow-100 px-1">https://catalyst-backend-fzhu.onrender.com/api/supabase/callback</code></li>
                   <li>Add the credentials to your server environment</li>
                 </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : status?.authorizationRevoked ? (
+        <div className="space-y-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <Cloud className="w-5 h-5 text-red-600 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-red-900 mb-1">
+                  Authorization Revoked
+                </h4>
+                <p className="text-sm text-red-700 mb-3">
+                  You revoked Catalyst's access in your Supabase account, but the connection wasn't removed here.
+                  Please disconnect and reconnect to restore access.
+                </p>
+                <div className="space-y-3">
+                  <button
+                    onClick={handleDisconnect}
+                    className="inline-flex items-center px-4 py-2 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Disconnect Invalid Connection
+                  </button>
+                  <p className="text-xs text-red-600">
+                    After disconnecting, you can reconnect with a valid authorization.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
