@@ -377,6 +377,53 @@ router.post('/storage/upload',
   }
 );
 
+// Test upload - upload a sample product image
+router.post('/storage/test-upload', 
+  auth, 
+  extractStoreId, 
+  checkStoreOwnership,
+  async (req, res) => {
+    try {
+      console.log('Testing Supabase storage upload...');
+      
+      // Create a test image buffer (1x1 pixel PNG)
+      const testImageBuffer = Buffer.from([
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+        0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+        0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+        0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+        0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+        0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
+      ]);
+
+      // Create mock file object
+      const mockFile = {
+        originalname: 'test-product.png',
+        mimetype: 'image/png',
+        buffer: testImageBuffer,
+        size: testImageBuffer.length
+      };
+
+      const result = await supabaseStorage.uploadImage(req.storeId, mockFile, {
+        folder: 'test-products',
+        public: true
+      });
+
+      res.json({
+        success: true,
+        message: 'Test image uploaded successfully!',
+        ...result
+      });
+    } catch (error) {
+      console.error('Error in test upload:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+);
+
 // Upload multiple images
 router.post('/storage/upload-multiple',
   auth,

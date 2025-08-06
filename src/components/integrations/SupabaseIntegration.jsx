@@ -10,6 +10,8 @@ const SupabaseIntegration = ({ storeId }) => {
   const [testing, setTesting] = useState(false);
   const [storageStats, setStorageStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [testingUpload, setTestingUpload] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
 
   useEffect(() => {
     console.log('SupabaseIntegration mounted with storeId:', storeId);
@@ -191,6 +193,31 @@ const SupabaseIntegration = ({ storeId }) => {
     }
   };
 
+  const handleTestUpload = async () => {
+    try {
+      setTestingUpload(true);
+      setUploadResult(null);
+      
+      const response = await apiClient.post('/supabase/storage/test-upload', { store_id: storeId }, {
+        'x-store-id': storeId
+      });
+
+      if (response.success) {
+        toast.success('Test image uploaded successfully!');
+        setUploadResult(response);
+        // Refresh storage stats
+        loadStorageStats();
+      } else {
+        throw new Error(response.message || 'Failed to upload test image');
+      }
+    } catch (error) {
+      console.error('Error testing upload:', error);
+      toast.error(error.message || 'Failed to upload test image');
+    } finally {
+      setTestingUpload(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -331,7 +358,7 @@ const SupabaseIntegration = ({ storeId }) => {
           )}
 
           {/* Actions */}
-          <div className="flex space-x-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={handleTestConnection}
               disabled={testing}
@@ -344,6 +371,24 @@ const SupabaseIntegration = ({ storeId }) => {
                 </>
               ) : (
                 'Test Connection'
+              )}
+            </button>
+
+            <button
+              onClick={handleTestUpload}
+              disabled={testingUpload}
+              className="inline-flex items-center px-4 py-2 border border-green-300 rounded-md shadow-sm text-sm font-medium text-green-700 bg-white hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+            >
+              {testingUpload ? (
+                <>
+                  <div className="animate-spin -ml-1 mr-2 h-4 w-4 border-2 border-green-400 border-t-transparent rounded-full"></div>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Image className="mr-2 h-4 w-4" />
+                  Test Upload
+                </>
               )}
             </button>
 
@@ -363,6 +408,51 @@ const SupabaseIntegration = ({ storeId }) => {
               Disconnect
             </button>
           </div>
+
+          {/* Upload Result */}
+          {uploadResult && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <Image className="w-5 h-5 text-green-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-green-900 mb-1">
+                    Test Upload Successful!
+                  </h4>
+                  <p className="text-sm text-green-700 mb-2">
+                    {uploadResult.message}
+                  </p>
+                  {uploadResult.url && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-green-600">
+                        <strong>File URL:</strong> 
+                        <a 
+                          href={uploadResult.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="ml-1 underline hover:text-green-800"
+                        >
+                          {uploadResult.url}
+                        </a>
+                      </p>
+                      {uploadResult.publicUrl && (
+                        <div className="flex items-center space-x-2">
+                          <img 
+                            src={uploadResult.publicUrl} 
+                            alt="Test upload" 
+                            className="w-8 h-8 rounded border"
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                            }}
+                          />
+                          <span className="text-xs text-green-600">Image served from Supabase CDN</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Features */}
           <div className="border-t pt-6">

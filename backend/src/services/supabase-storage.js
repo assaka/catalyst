@@ -57,10 +57,21 @@ class SupabaseStorageService {
    */
   async uploadImage(storeId, file, options = {}) {
     try {
+      console.log('Starting image upload for store:', storeId);
+      console.log('File info:', {
+        name: file.originalname || file.name,
+        size: file.size,
+        type: file.mimetype
+      });
+
       const client = await supabaseIntegration.getSupabaseClient(storeId);
       
-      // Ensure buckets exist
-      await this.ensureBucketsExist(storeId);
+      // Try to ensure buckets exist (non-blocking)
+      try {
+        await this.ensureBucketsExist(storeId);
+      } catch (bucketError) {
+        console.log('Could not ensure buckets exist, continuing with upload:', bucketError.message);
+      }
 
       // Generate unique filename
       const fileExt = path.extname(file.originalname || file.name || '');
@@ -70,6 +81,12 @@ class SupabaseStorageService {
       const folder = options.folder || `store-${storeId}`;
       const bucketName = options.public ? this.publicBucketName : this.bucketName;
       const filePath = `${folder}/${fileName}`;
+
+      console.log('Upload details:', {
+        bucketName,
+        filePath,
+        fileName
+      });
 
       // Upload file
       const { data, error } = await client.storage
@@ -81,21 +98,28 @@ class SupabaseStorageService {
         });
 
       if (error) {
+        console.error('Storage upload error:', error);
         throw error;
       }
+
+      console.log('Upload successful:', data);
 
       // Get public URL
       const { data: urlData } = client.storage
         .from(bucketName)
         .getPublicUrl(filePath);
 
+      console.log('Public URL:', urlData.publicUrl);
+
       return {
         success: true,
         url: urlData.publicUrl,
+        publicUrl: urlData.publicUrl, // For frontend display
         path: filePath,
         bucket: bucketName,
         size: file.size,
-        mimetype: file.mimetype
+        mimetype: file.mimetype,
+        filename: fileName
       };
     } catch (error) {
       console.error('Error uploading image:', error);
