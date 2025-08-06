@@ -114,8 +114,8 @@ class SupabaseStorageService {
         }
       }
 
-      // Use the appropriate key (prefer anon key for public operations)
-      const apiKey = hasValidAnonKey ? tokenInfo.anon_key : tokenInfo.service_role_key;
+      // Use the appropriate key (prefer service_role for reliability if available)
+      const apiKey = hasValidServiceKey ? tokenInfo.service_role_key : tokenInfo.anon_key;
       
       if (!apiKey) {
         throw new Error('No valid API key available for storage operations. Please reconnect with full permissions.');
@@ -135,7 +135,7 @@ class SupabaseStorageService {
       const storageUrl = projectUrl.replace('.supabase.co', '.supabase.co/storage/v1');
 
       console.log('Direct upload to:', `${storageUrl}/object/${bucketName}/${filePath}`);
-      console.log('Using API key type:', hasValidAnonKey ? 'anon' : 'service_role');
+      console.log('Using API key type:', apiKey === tokenInfo.service_role_key ? 'service_role' : 'anon');
 
       // First, try to create bucket if it doesn't exist
       try {
