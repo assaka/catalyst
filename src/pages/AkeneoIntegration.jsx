@@ -1,4 +1,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
+
+// Add global error handler to catch minified errors
+if (typeof window !== 'undefined') {
+  window.addEventListener('error', (event) => {
+    if (event.error && event.error.message && event.error.message.includes("can't access property")) {
+      console.error('🚨 CAUGHT GLOBAL ERROR:', {
+        message: event.error.message,
+        stack: event.error.stack,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno
+      });
+    }
+  });
+}
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -102,10 +117,18 @@ const AkeneoIntegration = () => {
   try {
     console.log('🚀 AkeneoIntegration component starting...');
     
-    let storeSlug;
+    let storeSlugData;
     console.log('📞 Calling useStoreSlug hook...');
-    storeSlug = useStoreSlug();
-    console.log('✅ useStoreSlug completed successfully:', storeSlug);
+    try {
+      storeSlugData = useStoreSlug();
+      console.log('✅ useStoreSlug completed successfully:', storeSlugData);
+    } catch (hookError) {
+      console.error('❌ useStoreSlug hook failed:', hookError);
+      console.error('Stack:', hookError.stack);
+      throw hookError;
+    }
+    
+    const { storeSlug } = storeSlugData;
   
   // Add render debugging to track what's causing blank page
   const renderCount = React.useRef(0);
@@ -1260,6 +1283,21 @@ const AkeneoIntegration = () => {
 
   const importAttributes = async () => {
     console.log('📦 Starting attributes import...');
+    
+    // Add comprehensive state debugging
+    console.log('🔍 Complete component state at import time:', {
+      stats: stats,
+      statsType: typeof stats,
+      statsIsNull: stats === null,
+      statsIsUndefined: stats === undefined,
+      statsKeys: stats ? Object.keys(stats) : 'N/A',
+      families: families?.length || 0,
+      familiesType: typeof families,
+      familiesIsArray: Array.isArray(families),
+      attributes: attributes?.length || 0,
+      importResults: importResults,
+      activeTab: activeTab
+    });
     
     // Debug authentication state
     const authToken = localStorage.getItem('store_owner_auth_token');

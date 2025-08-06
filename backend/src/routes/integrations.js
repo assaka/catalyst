@@ -755,14 +755,34 @@ router.get('/akeneo/stats', storeAuth, async (req, res) => {
     
     // Get latest import statistics for each import type
     const latestStats = await ImportStatistic.getLatestStats(storeId);
+    
+    // Ensure latestStats has all required properties
+    if (!latestStats || typeof latestStats !== 'object') {
+      console.error('Invalid latestStats returned:', latestStats);
+      return res.json({
+        success: true,
+        stats: {
+          categories: 0,
+          attributes: 0,
+          families: 0,
+          products: 0
+        },
+        detailed_stats: {
+          categories: { successful_imports: 0, total_processed: 0, failed_imports: 0, skipped_imports: 0 },
+          attributes: { successful_imports: 0, total_processed: 0, failed_imports: 0, skipped_imports: 0 },
+          families: { successful_imports: 0, total_processed: 0, failed_imports: 0, skipped_imports: 0 },
+          products: { successful_imports: 0, total_processed: 0, failed_imports: 0, skipped_imports: 0 }
+        }
+      });
+    }
 
     res.json({
       success: true,
       stats: {
-        categories: latestStats.categories.successful_imports,
-        attributes: latestStats.attributes.successful_imports,
-        families: latestStats.families.successful_imports,
-        products: latestStats.products.successful_imports
+        categories: latestStats?.categories?.successful_imports || 0,
+        attributes: latestStats?.attributes?.successful_imports || 0,
+        families: latestStats?.families?.successful_imports || 0,
+        products: latestStats?.products?.successful_imports || 0
       },
       // Also return detailed stats for each import type
       detailed_stats: latestStats
@@ -772,7 +792,14 @@ router.get('/akeneo/stats', storeAuth, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      error: error.message
+      error: error.message,
+      // Return safe defaults even on error
+      stats: {
+        categories: 0,
+        attributes: 0,
+        families: 0,
+        products: 0
+      }
     });
   }
 });
