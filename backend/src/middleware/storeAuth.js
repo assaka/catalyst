@@ -91,9 +91,8 @@ const checkStoreOwnership = async (req, res, next) => {
       });
     }
 
-    // Extract store_id from various sources (including the one set by extractStoreId middleware)
-    const storeId = req.storeId || // Set by extractStoreId middleware
-                   req.params.store_id || 
+    // Extract store_id from various sources
+    const storeId = req.params.store_id || 
                    req.params.id || // For store update/delete routes
                    req.body?.store_id || 
                    req.query?.store_id ||
