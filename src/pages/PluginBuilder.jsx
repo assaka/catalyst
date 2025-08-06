@@ -522,9 +522,10 @@ module.exports = SocialMediaPlugin;`
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* File Explorer Sidebar */}
-      <div className={`${showFileExplorer ? 'w-64' : 'w-0'} transition-all duration-300 bg-white border-r border-gray-200 overflow-hidden`}>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <div className="flex">
+        {/* File Explorer Sidebar */}
+        <div className={`${showFileExplorer ? 'w-64 mr-6' : 'w-0'} transition-all duration-300 bg-white border border-gray-200 rounded-lg overflow-hidden`}>
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-sm text-gray-700">Created Plugins</h3>
@@ -537,7 +538,7 @@ module.exports = SocialMediaPlugin;`
             </Button>
           </div>
         </div>
-        <ScrollArea className="h-[calc(100vh-60px)]">
+        <ScrollArea className="h-96">
           <div className="p-2">
             {createdPlugins.length === 0 ? (
               <p className="text-sm text-gray-500 p-4 text-center">No plugins created yet</p>
@@ -609,9 +610,9 @@ module.exports = SocialMediaPlugin;`
         </ScrollArea>
       </div>
       
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        <div className="container mx-auto py-8 px-4 max-w-6xl">
+        {/* Main Content */}
+        <div className="flex-1">
+          <div className="max-w-6xl">
           <div className="mb-8">
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -1336,6 +1337,7 @@ Be specific about:
           </Card>
         </TabsContent>
       </Tabs>
+          </div>
         </div>
       </div>
       
