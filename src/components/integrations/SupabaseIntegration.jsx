@@ -707,12 +707,6 @@ const SupabaseIntegration = ({ storeId }) => {
                     <p className="text-sm text-green-700">
                       Project URL: {status.projectUrl}
                     </p>
-                    <button
-                      onClick={loadProjects}
-                      className="text-xs text-green-600 hover:text-green-800 underline mt-1"
-                    >
-                      Load projects list
-                    </button>
                   </div>
                 )}
                 
