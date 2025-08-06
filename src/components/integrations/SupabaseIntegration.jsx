@@ -63,7 +63,7 @@ const SupabaseIntegration = ({ storeId }) => {
   const handleConnect = async () => {
     try {
       setConnecting(true);
-      const response = await apiClient.post('/supabase/connect', {}, {
+      const response = await apiClient.post('/supabase/connect', { store_id: storeId }, {
         'x-store-id': storeId
       });
 
@@ -101,7 +101,7 @@ const SupabaseIntegration = ({ storeId }) => {
   const handleTestConnection = async () => {
     try {
       setTesting(true);
-      const response = await apiClient.post('/supabase/test', {}, {
+      const response = await apiClient.post('/supabase/test', { store_id: storeId }, {
         'x-store-id': storeId
       });
 
@@ -125,7 +125,7 @@ const SupabaseIntegration = ({ storeId }) => {
     }
 
     try {
-      const response = await apiClient.post('/supabase/disconnect', {}, {
+      const response = await apiClient.post('/supabase/disconnect', { store_id: storeId }, {
         'x-store-id': storeId
       });
 
