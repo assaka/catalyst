@@ -23,6 +23,7 @@ const extractStoreId = (req, res, next) => {
 };
 const { Product } = require('../models');
 const storageManager = require('../services/storage-manager');
+const supabaseStorage = require('../services/supabase-storage');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -80,19 +81,48 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
 
     console.log(`📤 Uploading ${req.files.length} images for product ${productId} in store ${storeId}`);
 
-    // Upload options - organize by product
-    const options = {
-      folder: `products/${productId}`,
-      public: true,
-      metadata: {
-        product_id: productId,
-        store_id: storeId,
-        uploaded_by: req.user.id,
-        upload_type: 'product_image'
-      }
-    };
+    // Upload options with Magento-style directory structure
+    const uploadPromises = req.files.map(file => {
+      const options = {
+        useMagentoStructure: true,
+        type: 'product',
+        filename: file.originalname,
+        public: true,
+        metadata: {
+          product_id: productId,
+          store_id: storeId,
+          uploaded_by: req.user.id,
+          upload_type: 'product_image'
+        }
+      };
+      
+      return supabaseStorage.uploadImage(storeId, file, options);
+    });
 
-    const uploadResult = await storageManager.uploadMultipleImages(storeId, req.files, options);
+    // Upload all images in parallel
+    const uploadResults = await Promise.allSettled(uploadPromises);
+    
+    // Separate successful and failed uploads
+    const uploaded = [];
+    const failed = [];
+    
+    uploadResults.forEach((result, index) => {
+      if (result.status === 'fulfilled' && result.value.success) {
+        uploaded.push(result.value);
+      } else {
+        failed.push({
+          file: req.files[index].originalname,
+          error: result.reason?.message || 'Upload failed'
+        });
+      }
+    });
+
+    const uploadResult = {
+      uploaded,
+      failed,
+      totalUploaded: uploaded.length,
+      totalFailed: failed.length
+    };
 
     // Update product images array
     const currentImages = product.images || [];

@@ -90,6 +90,7 @@ const pluginRenderRoutes = require('./routes/plugin-render');
 const storageRoutes = require('./routes/storage');
 const productImageRoutes = require('./routes/product-images');
 const categoryImageRoutes = require('./routes/category-images');
+const fileManagerRoutes = require('./routes/file-manager');
 const templateRoutes = require('./routes/templates');
 
 const app = express();
@@ -1504,6 +1505,7 @@ app.use('/api/stores/:store_id/plugins', pluginRenderRoutes);
 app.use('/api/stores/:store_id/storage', storageRoutes);
 app.use('/api/stores/:store_id/products', productImageRoutes);
 app.use('/api/stores/:store_id/categories', categoryImageRoutes);
+app.use('/api/file-manager', fileManagerRoutes);
 app.use('/api/stores/:store_id/templates', authMiddleware, templateRoutes);
 
 // 404 handler

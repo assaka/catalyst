@@ -84,6 +84,27 @@ class SupabaseStorageService {
   }
 
   /**
+   * Generate Magento-style directory path from filename
+   * e.g., "testimage.png" -> "t/e/testimage.png"
+   */
+  generateMagentoPath(filename) {
+    // Remove extension for path generation
+    const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.')) || filename;
+    const cleanName = nameWithoutExt.toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    if (cleanName.length >= 2) {
+      // Use first two characters for directory structure
+      return `${cleanName[0]}/${cleanName[1]}/${filename}`;
+    } else if (cleanName.length === 1) {
+      // If only one character, use it twice
+      return `${cleanName[0]}/${cleanName[0]}/${filename}`;
+    } else {
+      // Fallback for edge cases
+      return `misc/${filename}`;
+    }
+  }
+
+  /**
    * Upload image using direct API call with OAuth token
    * Note: This requires anon key or service role key. OAuth token alone is not sufficient for Storage API.
    */
@@ -140,14 +161,37 @@ class SupabaseStorageService {
         throw new Error('No valid API key available for storage operations. Please reconnect with full permissions.');
       }
 
-      // Generate unique filename
+      // Generate filename based on options
       const fileExt = path.extname(file.originalname || file.name || '');
-      const fileName = `${uuidv4()}${fileExt}`;
+      let fileName, filePath;
       
-      // Determine path based on options
-      const folder = options.folder || `store-${storeId}`;
+      if (options.useMagentoStructure) {
+        // Use original filename with Magento-style path
+        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
+        const magentoPath = this.generateMagentoPath(fileName);
+        
+        // Determine base folder based on type
+        let baseFolder = '';
+        if (options.type === 'category') {
+          baseFolder = 'categories';
+        } else if (options.type === 'product') {
+          baseFolder = 'products';
+        } else if (options.type === 'asset') {
+          baseFolder = 'assets';
+        } else {
+          baseFolder = options.folder || `store-${storeId}`;
+        }
+        
+        filePath = `${baseFolder}/${magentoPath}`;
+      } else {
+        // Legacy path structure (for backward compatibility)
+        fileName = `${uuidv4()}${fileExt}`;
+        const folder = options.folder || `store-${storeId}`;
+        filePath = `${folder}/${fileName}`;
+      }
+      
+      // Determine bucket based on options
       const bucketName = options.public ? this.publicBucketName : this.bucketName;
-      const filePath = `${folder}/${fileName}`;
 
       // Extract project ID from URL
       const projectUrl = tokenInfo.project_url;
@@ -274,14 +318,36 @@ class SupabaseStorageService {
         console.log('Could not ensure buckets exist, continuing with upload:', bucketError.message);
       }
 
-      // Generate unique filename
+      // Generate filename and path based on options
       const fileExt = path.extname(file.originalname || file.name || '');
-      const fileName = `${uuidv4()}${fileExt}`;
+      let fileName, filePath;
       
-      // Determine path based on options
-      const folder = options.folder || `store-${storeId}`;
+      if (options.useMagentoStructure) {
+        // Use original filename with Magento-style path
+        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
+        const magentoPath = this.generateMagentoPath(fileName);
+        
+        // Determine base folder based on type
+        let baseFolder = '';
+        if (options.type === 'category') {
+          baseFolder = 'categories';
+        } else if (options.type === 'product') {
+          baseFolder = 'products';
+        } else if (options.type === 'asset') {
+          baseFolder = 'assets';
+        } else {
+          baseFolder = options.folder || `store-${storeId}`;
+        }
+        
+        filePath = `${baseFolder}/${magentoPath}`;
+      } else {
+        // Legacy path structure (for backward compatibility)
+        fileName = `${uuidv4()}${fileExt}`;
+        const folder = options.folder || `store-${storeId}`;
+        filePath = `${folder}/${fileName}`;
+      }
+      
       const bucketName = options.public ? this.publicBucketName : this.bucketName;
-      const filePath = `${folder}/${fileName}`;
 
       console.log('Upload details:', {
         bucketName,

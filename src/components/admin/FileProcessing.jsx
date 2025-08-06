@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAlertTypes } from '@/hooks/useAlert';
 import CloudflareCDN from './CloudflareCDN';
+import SupabaseStorage from './SupabaseStorage';
 import {
   Image,
   Upload,
@@ -53,6 +54,18 @@ const FileProcessing = () => {
   // CDN Providers data
   const cdnProviders = [
     {
+      id: 'supabase',
+      name: 'Supabase Storage',
+      description: 'Built-in storage with your Supabase project',
+      icon: Database,
+      cost: 'Free',
+      costType: 'free',
+      features: ['Integrated with Database', 'Row Level Security', 'Direct API Access', 'Auto-generated CDN URLs'],
+      status: 'available',
+      default: true,
+      popular: true
+    },
+    {
       id: 'cloudflare',
       name: 'Cloudflare CDN',
       description: 'Global CDN with 200+ edge locations',
@@ -60,8 +73,7 @@ const FileProcessing = () => {
       cost: 'Free',
       costType: 'free',
       features: ['Global CDN', 'Image Optimization', 'DDoS Protection', 'SSL/TLS'],
-      status: 'available',
-      popular: true
+      status: 'available'
     },
     {
       id: 'google-cloud',
@@ -209,7 +221,15 @@ const FileProcessing = () => {
 
   const CDNProviderCard = ({ provider }) => (
     <Card className={`relative ${provider.status === 'available' ? 'border-green-200' : 'border-gray-200 opacity-75'}`}>
-      {provider.popular && (
+      {provider.default && (
+        <div className="absolute -top-3 left-4">
+          <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Default
+          </Badge>
+        </div>
+      )}
+      {provider.popular && !provider.default && (
         <div className="absolute -top-3 left-4">
           <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
             <Crown className="w-3 h-3 mr-1" />
@@ -306,10 +326,11 @@ const FileProcessing = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="cloudflare">Cloudflare CDN</TabsTrigger>
-          <TabsTrigger value="processing">Bulk Processing</TabsTrigger>
+          <TabsTrigger value="supabase">Supabase</TabsTrigger>
+          <TabsTrigger value="cloudflare">Cloudflare</TabsTrigger>
+          <TabsTrigger value="processing">Processing</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
         </TabsList>
 
@@ -396,7 +417,8 @@ const FileProcessing = () => {
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-medium text-blue-900 mb-2">How Credits Work</h4>
                 <ul className="text-blue-800 text-sm space-y-1">
-                  <li>• Cloudflare CDN is completely free with unlimited bandwidth</li>
+                  <li>• Supabase Storage (Default) is completely free - included with your Supabase project</li>
+                  <li>• Cloudflare CDN is also completely free with unlimited bandwidth</li>
                   <li>• Google Cloud Storage and AWS S3 cost 1 credit per day when active</li>
                   <li>• Credits are consumed only on days when the service processes images</li>
                   <li>• You can switch between providers anytime</li>
@@ -405,6 +427,10 @@ const FileProcessing = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="supabase">
+          <SupabaseStorage />
         </TabsContent>
 
         <TabsContent value="cloudflare">

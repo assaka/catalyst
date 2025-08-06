@@ -1,8 +1,26 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const supabaseStorage = require('../services/supabase-storage');
+const { Category } = require('../models');
 const authMiddleware = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
+
+// Configure multer for image uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit for category images
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only images are allowed.'));
+    }
+  }
+});
 
 // Extract store ID middleware - gets storeId from headers/body/params
 const extractStoreId = (req, res, next) => {
@@ -80,9 +98,11 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
 
     console.log(`📤 Uploading main image for category ${categoryId} in store ${storeId}`);
 
-    // Upload options - organize by category
+    // Upload options with Magento-style directory structure
     const options = {
-      folder: `categories/${categoryId}`,
+      useMagentoStructure: true,
+      type: 'category',
+      filename: req.file.originalname,
       public: true,
       metadata: {
         category_id: categoryId,
@@ -93,7 +113,8 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
       }
     };
 
-    const uploadResult = await storageManager.uploadImage(storeId, req.file, options);
+    // Use supabaseStorage instead of storageManager for Supabase integration
+    const uploadResult = await supabaseStorage.uploadImage(storeId, req.file, options);
 
     if (!uploadResult.success) {
       return res.status(500).json({
