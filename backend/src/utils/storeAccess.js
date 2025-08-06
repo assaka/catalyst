@@ -16,6 +16,9 @@ async function getUserStoresForDropdown(userId) {
           s.id,
           s.name,
           s.logo_url,
+          s.created_at,
+          s.updated_at,
+          s.is_active,
           CASE 
             WHEN s.user_id = :userId THEN 'owner'
             ELSE (
