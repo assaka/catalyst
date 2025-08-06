@@ -1123,6 +1123,27 @@ class SupabaseIntegration {
   }
 
   /**
+   * Get token info without throwing errors
+   */
+  async getTokenInfo(storeId) {
+    try {
+      const token = await SupabaseOAuthToken.findByStore(storeId);
+      if (!token) {
+        return null;
+      }
+      return {
+        project_url: token.project_url,
+        anon_key: token.anon_key,
+        service_role_key: token.service_role_key,
+        access_token: token.access_token
+      };
+    } catch (error) {
+      console.error('Error getting token info:', error);
+      return null;
+    }
+  }
+
+  /**
    * Try to fetch and update API keys for the current project
    */
   async fetchAndUpdateApiKeys(storeId) {

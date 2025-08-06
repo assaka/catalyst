@@ -1,6 +1,7 @@
 const supabaseIntegration = require('./supabase-integration');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
 
 class SupabaseStorageService {
   constructor() {
@@ -53,6 +54,96 @@ class SupabaseStorageService {
   }
 
   /**
+   * Upload image using direct API call with OAuth token
+   */
+  async uploadImageDirect(storeId, file, options = {}) {
+    try {
+      const token = await supabaseIntegration.getValidToken(storeId);
+      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
+      
+      if (!tokenInfo || !tokenInfo.project_url || tokenInfo.project_url === 'pending_configuration') {
+        throw new Error('Project URL not configured');
+      }
+
+      // Generate unique filename
+      const fileExt = path.extname(file.originalname || file.name || '');
+      const fileName = `${uuidv4()}${fileExt}`;
+      
+      // Determine path based on options
+      const folder = options.folder || `store-${storeId}`;
+      const bucketName = options.public ? this.publicBucketName : this.bucketName;
+      const filePath = `${folder}/${fileName}`;
+
+      // Extract project ID from URL
+      const projectUrl = tokenInfo.project_url;
+      const storageUrl = projectUrl.replace('.supabase.co', '.supabase.co/storage/v1');
+
+      console.log('Direct upload to:', `${storageUrl}/object/${bucketName}/${filePath}`);
+
+      // First, try to create bucket if it doesn't exist
+      try {
+        await axios.post(
+          `${storageUrl}/bucket`,
+          {
+            id: bucketName,
+            name: bucketName,
+            public: true,
+            file_size_limit: 10485760,
+            allowed_mime_types: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        console.log('Bucket created or already exists');
+      } catch (bucketError) {
+        // Ignore if bucket already exists
+        if (!bucketError.response?.data?.message?.includes('already exists')) {
+          console.log('Bucket creation error (non-fatal):', bucketError.response?.data || bucketError.message);
+        }
+      }
+
+      // Upload using direct API call
+      const uploadResponse = await axios.post(
+        `${storageUrl}/object/${bucketName}/${filePath}`,
+        file.buffer || file,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': file.mimetype || 'image/jpeg',
+            'Cache-Control': 'max-age=3600'
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity
+        }
+      );
+
+      console.log('Direct upload response:', uploadResponse.data);
+
+      // Get public URL
+      const publicUrl = `${storageUrl}/object/public/${bucketName}/${filePath}`;
+
+      return {
+        success: true,
+        path: filePath,
+        fullPath: `${bucketName}/${filePath}`,
+        publicUrl,
+        url: publicUrl,
+        bucket: bucketName,
+        size: file.size,
+        mimetype: file.mimetype,
+        filename: fileName
+      };
+    } catch (error) {
+      console.error('Direct upload error:', error.response?.data || error.message);
+      throw new Error(`Failed to upload image: ${error.response?.data?.message || error.message}`);
+    }
+  }
+
+  /**
    * Upload image to Supabase Storage
    */
   async uploadImage(storeId, file, options = {}) {
@@ -64,13 +155,24 @@ class SupabaseStorageService {
         type: file.mimetype
       });
 
-      // Try to get client - prefer OAuth client which works without anon key
+      // Check if we should use direct API
+      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
+      const hasValidAnonKey = tokenInfo && tokenInfo.anon_key && 
+                              tokenInfo.anon_key !== 'pending_configuration' &&
+                              tokenInfo.anon_key !== '';
+
+      if (!hasValidAnonKey) {
+        console.log('No valid anon key, using direct API upload');
+        return await this.uploadImageDirect(storeId, file, options);
+      }
+
+      // Try to get client
       let client;
       try {
         client = await supabaseIntegration.getSupabaseClient(storeId);
       } catch (error) {
-        console.log('Regular client failed, trying OAuth client:', error.message);
-        client = await supabaseIntegration.getSupabaseOAuthClient(storeId);
+        console.log('Client creation failed, using direct API:', error.message);
+        return await this.uploadImageDirect(storeId, file, options);
       }
       
       // Try to ensure buckets exist (non-blocking)
