@@ -42,10 +42,19 @@ const extractStoreId = (req, res, next) => {
   next();
 };
 
-// Get connection status
+// Get connection status and ensure buckets exist
 router.get('/status', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const status = await supabaseIntegration.getConnectionStatus(req.storeId);
+    
+    // If connected with both keys, ensure buckets exist
+    if (status.connected && status.hasAnonKey && status.hasServiceRoleKey) {
+      const bucketResult = await supabaseStorage.ensureBucketsExist(req.storeId);
+      if (bucketResult.success && bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
+        console.log('Auto-created buckets on status check:', bucketResult.bucketsCreated);
+      }
+    }
+    
     res.json({ success: true, ...status });
   } catch (error) {
     console.error('Error getting Supabase status:', error);
@@ -366,10 +375,19 @@ router.post('/select-project', auth, extractStoreId, checkStoreOwnership, async 
   }
 });
 
-// Test connection
+// Test connection and ensure buckets exist
 router.post('/test', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const result = await supabaseIntegration.testConnection(req.storeId);
+    
+    // If connection is successful and has keys, ensure buckets exist
+    if (result.success) {
+      const bucketResult = await supabaseStorage.ensureBucketsExist(req.storeId);
+      if (bucketResult.success && bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
+        result.message = `${result.message}. Auto-created buckets: ${bucketResult.bucketsCreated.join(', ')}`;
+      }
+    }
+    
     res.json(result);
   } catch (error) {
     console.error('Error testing Supabase connection:', error);

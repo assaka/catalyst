@@ -5,24 +5,41 @@ const axios = require('axios');
 
 class SupabaseStorageService {
   constructor() {
-    this.bucketName = 'product-images';
-    this.publicBucketName = 'public-assets';
+    this.bucketName = 'suprshop-images';
+    this.publicBucketName = 'suprshop-assets';
   }
 
   /**
-   * Ensure required storage buckets exist
+   * Ensure required storage buckets exist (auto-creates suprshop-images and suprshop-assets)
    */
   async ensureBucketsExist(storeId) {
     try {
+      // First check if we have the necessary keys
+      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
+      
+      if (!tokenInfo || !tokenInfo.service_role_key) {
+        console.log('Service role key not available, skipping bucket auto-creation');
+        return { success: false, message: 'Service role key required for bucket creation' };
+      }
+      
       const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
       
-      // Check if product-images bucket exists
-      const { data: buckets } = await client.storage.listBuckets();
+      // Check if buckets exist
+      const { data: buckets, error: listError } = await client.storage.listBuckets();
+      
+      if (listError) {
+        console.error('Error listing buckets:', listError);
+        return { success: false, error: listError.message };
+      }
+      
       const productBucketExists = buckets?.some(b => b.name === this.bucketName);
       const publicBucketExists = buckets?.some(b => b.name === this.publicBucketName);
+      
+      let bucketsCreated = [];
 
-      // Create product-images bucket if it doesn't exist
+      // Create suprshop-images bucket if it doesn't exist
       if (!productBucketExists) {
+        console.log(`Creating ${this.bucketName} bucket...`);
         const { error: createError } = await client.storage.createBucket(this.bucketName, {
           public: true,
           fileSizeLimit: 10485760, // 10MB
@@ -30,26 +47,39 @@ class SupabaseStorageService {
         });
 
         if (createError && !createError.message.includes('already exists')) {
-          throw createError;
+          console.error(`Error creating ${this.bucketName}:`, createError);
+        } else {
+          console.log(`✅ Created ${this.bucketName} bucket`);
+          bucketsCreated.push(this.bucketName);
         }
       }
 
-      // Create public-assets bucket if it doesn't exist
+      // Create suprshop-assets bucket if it doesn't exist
       if (!publicBucketExists) {
+        console.log(`Creating ${this.publicBucketName} bucket...`);
         const { error: createError } = await client.storage.createBucket(this.publicBucketName, {
           public: true,
           fileSizeLimit: 10485760, // 10MB
         });
 
         if (createError && !createError.message.includes('already exists')) {
-          throw createError;
+          console.error(`Error creating ${this.publicBucketName}:`, createError);
+        } else {
+          console.log(`✅ Created ${this.publicBucketName} bucket`);
+          bucketsCreated.push(this.publicBucketName);
         }
       }
 
-      return { success: true };
+      return { 
+        success: true,
+        bucketsCreated,
+        message: bucketsCreated.length > 0 ? 
+          `Created buckets: ${bucketsCreated.join(', ')}` : 
+          'All required buckets already exist'
+      };
     } catch (error) {
       console.error('Error ensuring buckets exist:', error);
-      throw error;
+      return { success: false, error: error.message };
     }
   }
 
