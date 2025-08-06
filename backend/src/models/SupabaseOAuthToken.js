@@ -33,10 +33,6 @@ const SupabaseOAuthToken = sequelize.define('SupabaseOAuthToken', {
     type: DataTypes.TEXT,
     allowNull: false
   },
-  anon_key: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  },
   service_role_key: {
     type: DataTypes.TEXT,
     allowNull: true

@@ -18,10 +18,8 @@ const SupabaseIntegration = ({ storeId }) => {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [changingProject, setChangingProject] = useState(false);
   const [showKeyConfig, setShowKeyConfig] = useState(false);
-  const [anonKey, setAnonKey] = useState('');
   const [serviceRoleKey, setServiceRoleKey] = useState('');
   const [savingKeys, setSavingKeys] = useState(false);
-  const [showServiceRole, setShowServiceRole] = useState(false);
   const [buckets, setBuckets] = useState([]);
   const [loadingBuckets, setLoadingBuckets] = useState(false);
   // Removed manual bucket creation/deletion states as buckets are auto-generated
@@ -392,8 +390,8 @@ const SupabaseIntegration = ({ storeId }) => {
   };
 
   const handleSaveKeys = async () => {
-    if (!anonKey && !serviceRoleKey) {
-      toast.error('Please provide at least the anon key');
+    if (!serviceRoleKey) {
+      toast.error('Please provide the service role key');
       return;
     }
 
@@ -401,15 +399,13 @@ const SupabaseIntegration = ({ storeId }) => {
     try {
       const response = await apiClient.post('/supabase/update-config', {
         projectId: selectedProjectId,
-        anonKey: anonKey || undefined,
         serviceRoleKey: serviceRoleKey || undefined
       }, {
         'x-store-id': storeId
       });
 
       if (response.success) {
-        toast.success('API keys configured successfully!');
-        setAnonKey('');
+        toast.success('Service role key configured successfully!');
         setServiceRoleKey('');
         setShowKeyConfig(false);
         // Refresh status
@@ -859,84 +855,57 @@ const SupabaseIntegration = ({ storeId }) => {
           )}
 
           {/* API Key Configuration */}
-          {(!status.hasAnonKey || showKeyConfig) && (
+          {(!status.hasServiceRoleKey || showKeyConfig) && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
               <div className="flex items-start space-x-3">
                 <Key className="w-5 h-5 text-amber-600 mt-0.5" />
                 <div className="flex-1">
                   <h4 className="text-sm font-medium text-amber-900 mb-2">
-                    Configure API Keys
+                    Configure Service Role Key
                   </h4>
                   <p className="text-sm text-amber-700 mb-4">
-                    Supabase Storage requires API keys for authentication. Copy them from your Supabase dashboard.
+                    Supabase Storage requires the service role key for full access. Copy it from your Supabase dashboard.
                   </p>
                   
                   {/* Instructions */}
                   <div className="bg-white rounded-lg p-4 mb-4">
-                    <p className="text-sm text-gray-700 font-medium mb-2">How to get your keys:</p>
+                    <p className="text-sm text-gray-700 font-medium mb-2">How to get your service role key:</p>
                     <ol className="text-sm text-gray-600 list-decimal list-inside space-y-1">
                       <li>Go to your <a href={`https://supabase.com/dashboard/project/${selectedProjectId || 'your-project'}/settings/api`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Supabase API Settings</a></li>
-                      <li>Copy the "anon" key (public key)</li>
-                      <li>Optionally copy the "service_role" key for server-side operations</li>
-                      <li>Paste them below and save</li>
+                      <li>Copy the "service_role" key (secret key with full access)</li>
+                      <li>Paste it below and save</li>
                     </ol>
                   </div>
 
-                  {/* Key Input Fields */}
+                  {/* Key Input Field */}
                   <div className="space-y-3">
-                    {/* Anon Key */}
+                    {/* Service Role Key */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Anon Key (Required)
+                        Service Role Key (Required)
                       </label>
                       <input
                         type="password"
-                        value={anonKey}
-                        onChange={(e) => setAnonKey(e.target.value)}
+                        value={serviceRoleKey}
+                        onChange={(e) => setServiceRoleKey(e.target.value)}
                         placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         disabled={savingKeys}
                       />
-                      <p className="text-xs text-gray-500 mt-1">
-                        This is the public API key used for client-side operations
-                      </p>
-                    </div>
-
-                    {/* Service Role Key (Optional) */}
-                    <div>
-                      <button
-                        onClick={() => setShowServiceRole(!showServiceRole)}
-                        className="text-sm text-blue-600 hover:text-blue-700 mb-2"
-                      >
-                        {showServiceRole ? '−' : '+'} Advanced: Service Role Key (Optional)
-                      </button>
-                      
-                      {showServiceRole && (
-                        <>
-                          <input
-                            type="password"
-                            value={serviceRoleKey}
-                            onChange={(e) => setServiceRoleKey(e.target.value)}
-                            placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            disabled={savingKeys}
-                          />
-                          <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
-                            <p className="text-xs text-yellow-800 flex items-start">
-                              <Info className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
-                              Keep this key secret! It has admin privileges. Only add if you need server-side operations.
-                            </p>
-                          </div>
-                        </>
-                      )}
+                      <div className="bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
+                        <p className="text-xs text-yellow-800 flex items-start">
+                          <Info className="w-3 h-3 mr-1 mt-0.5 flex-shrink-0" />
+                          Keep this key secret! It has admin privileges and provides full access to storage operations.
+                        </p>
+                      </div>
                     </div>
 
                     {/* Save Button */}
                     <button
                       onClick={handleSaveKeys}
-                      disabled={savingKeys || (!anonKey && !serviceRoleKey)}
+                      disabled={savingKeys || !serviceRoleKey}
                       className={`w-full py-2 px-4 rounded-md font-medium flex items-center justify-center ${
-                        savingKeys || (!anonKey && !serviceRoleKey)
+                        savingKeys || !serviceRoleKey
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-blue-600 text-white hover:bg-blue-700'
                       }`}
@@ -948,7 +917,7 @@ const SupabaseIntegration = ({ storeId }) => {
                         </>
                       ) : (
                         <>
-                          Save API Keys
+                          Save Service Role Key
                           <ArrowRight className="w-4 h-4 ml-2" />
                         </>
                       )}
@@ -960,17 +929,15 @@ const SupabaseIntegration = ({ storeId }) => {
           )}
 
           {/* Show success message if keys are configured */}
-          {status.hasAnonKey && !showKeyConfig && (
+          {status.hasServiceRoleKey && !showKeyConfig && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center">
                   <Key className="w-5 h-5 text-green-600 mr-2" />
                   <div>
-                    <p className="text-green-800 font-medium">API Keys Configured</p>
+                    <p className="text-green-800 font-medium">Service Role Key Configured</p>
                     <p className="text-green-600 text-sm">
-                      {status.hasServiceRoleKey ? 
-                        'Full storage access enabled (anon + service role keys)' : 
-                        'Basic storage access enabled (anon key only)'}
+                      Full storage access enabled with service role key
                     </p>
                   </div>
                 </div>
@@ -987,13 +954,12 @@ const SupabaseIntegration = ({ storeId }) => {
           {/* Key Requirements Info */}
           {status.connected && !showKeyConfig && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-              <h4 className="text-sm font-medium text-blue-900 mb-2">API Key Requirements:</h4>
+              <h4 className="text-sm font-medium text-blue-900 mb-2">Storage Configuration:</h4>
               <ul className="text-sm text-blue-800 space-y-1">
-                <li>• <strong>Anon Key:</strong> Required for basic operations (public bucket access)</li>
-                <li>• <strong>Service Role Key:</strong> Required for full access (bypasses RLS policies, reliable uploads)</li>
+                <li>• <strong>Service Role Key:</strong> Required for all storage operations (bypasses RLS policies)</li>
                 <li className="text-xs text-blue-600 mt-2">
-                  Note: Both keys are automatically configured when you connect Supabase. 
-                  Storage buckets (suprshop-images, suprshop-assets) are created automatically when both keys are present.
+                  Note: The service role key is automatically configured when you connect Supabase. 
+                  Storage buckets (suprshop-images, suprshop-assets) are created automatically when the key is present.
                 </li>
               </ul>
             </div>

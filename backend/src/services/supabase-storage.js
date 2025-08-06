@@ -95,19 +95,12 @@ class SupabaseStorageService {
         throw new Error('Project URL not configured. Please select a project.');
       }
 
-      // Check if we have valid API keys
-      const hasValidAnonKey = tokenInfo.anon_key && 
-                              tokenInfo.anon_key !== 'pending_configuration' &&
-                              tokenInfo.anon_key !== 'pending' &&
-                              tokenInfo.anon_key !== '' &&
-                              !tokenInfo.anon_key.includes('dummy') &&
-                              !tokenInfo.anon_key.includes('pending');
-      
+      // Check if we have valid service role key
       const hasValidServiceKey = tokenInfo.service_role_key && 
                                  tokenInfo.service_role_key !== 'pending_configuration' &&
                                  tokenInfo.service_role_key !== '';
 
-      if (!hasValidAnonKey && !hasValidServiceKey) {
+      if (!hasValidServiceKey) {
         // Try to fetch API keys if we have OAuth token
         console.log('No valid API keys found, attempting to fetch from Supabase...');
         
@@ -118,13 +111,9 @@ class SupabaseStorageService {
             throw new Error('Your Supabase project is inactive. Please go to your Supabase dashboard and activate the project to enable storage operations.');
           }
           
-          if (fetchResult.success && (fetchResult.hasAnonKey || fetchResult.hasServiceRoleKey)) {
+          if (fetchResult.success && fetchResult.hasServiceRoleKey) {
             // Reload token info after fetching keys
             const updatedTokenInfo = await supabaseIntegration.getTokenInfo(storeId);
-            if (updatedTokenInfo.anon_key && updatedTokenInfo.anon_key !== 'pending_configuration') {
-              tokenInfo.anon_key = updatedTokenInfo.anon_key;
-              hasValidAnonKey = true;
-            }
             if (updatedTokenInfo.service_role_key) {
               tokenInfo.service_role_key = updatedTokenInfo.service_role_key;
               hasValidServiceKey = true;
@@ -138,14 +127,14 @@ class SupabaseStorageService {
           }
         }
         
-        // If we still don't have keys after trying to fetch them
-        if (!hasValidAnonKey && !hasValidServiceKey) {
-          throw new Error('Storage operations require API keys (anon key or service role key). The Supabase API is not providing these keys through the OAuth connection. Please manually configure the API keys in the Supabase integration settings.');
+        // If we still don't have service role key after trying to fetch it
+        if (!hasValidServiceKey) {
+          throw new Error('Storage operations require service role key. The Supabase API is not providing this key through the OAuth connection. Please manually configure the service role key in the Supabase integration settings.');
         }
       }
 
-      // Use the appropriate key (prefer service_role for reliability if available)
-      const apiKey = hasValidServiceKey ? tokenInfo.service_role_key : tokenInfo.anon_key;
+      // Use service role key (only key we use now)
+      const apiKey = tokenInfo.service_role_key;
       
       if (!apiKey) {
         throw new Error('No valid API key available for storage operations. Please reconnect with full permissions.');
@@ -165,7 +154,7 @@ class SupabaseStorageService {
       const storageUrl = projectUrl.replace('.supabase.co', '.supabase.co/storage/v1');
 
       console.log('Direct upload to:', `${storageUrl}/object/${bucketName}/${filePath}`);
-      console.log('Using API key type:', apiKey === tokenInfo.service_role_key ? 'service_role' : 'anon');
+      console.log('Using service role key for upload');
 
       // First, try to create bucket if it doesn't exist
       try {
@@ -254,20 +243,18 @@ class SupabaseStorageService {
       const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
       console.log('Token info check:', {
         hasToken: !!tokenInfo,
-        anonKey: tokenInfo?.anon_key ? `${tokenInfo.anon_key.substring(0, 20)}...` : 'none',
+        serviceKey: tokenInfo?.service_role_key ? 'configured' : 'none',
         projectUrl: tokenInfo?.project_url
       });
 
-      const hasValidAnonKey = tokenInfo && 
-                              tokenInfo.anon_key && 
-                              tokenInfo.anon_key !== 'pending_configuration' &&
-                              tokenInfo.anon_key !== 'pending' &&
-                              tokenInfo.anon_key !== '' &&
-                              !tokenInfo.anon_key.includes('dummy') &&
-                              !tokenInfo.anon_key.includes('pending');
+      // Check if we have service role key, if not use direct API
+      const hasValidServiceKey = tokenInfo && 
+                                tokenInfo.service_role_key && 
+                                tokenInfo.service_role_key !== 'pending_configuration' &&
+                                tokenInfo.service_role_key !== '';
 
-      if (!hasValidAnonKey) {
-        console.log('No valid anon key detected, attempting direct API upload with key fetching');
+      if (!hasValidServiceKey) {
+        console.log('No valid service role key detected, attempting direct API upload with key fetching');
         return await this.uploadImageDirect(storeId, file, options);
       }
 

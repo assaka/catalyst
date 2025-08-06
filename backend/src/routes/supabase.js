@@ -47,8 +47,8 @@ router.get('/status', auth, extractStoreId, checkStoreOwnership, async (req, res
   try {
     const status = await supabaseIntegration.getConnectionStatus(req.storeId);
     
-    // If connected with both keys, ensure buckets exist
-    if (status.connected && status.hasAnonKey && status.hasServiceRoleKey) {
+    // If connected with service role key, ensure buckets exist
+    if (status.connected && status.hasServiceRoleKey) {
       const bucketResult = await supabaseStorage.ensureBucketsExist(req.storeId);
       if (bucketResult.success && bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
         console.log('Auto-created buckets on status check:', bucketResult.bucketsCreated);
@@ -485,8 +485,6 @@ router.post('/storage/test-upload',
         console.log('Token info check for test upload:');
         console.log('  Has project URL:', !!tokenInfo?.project_url);
         console.log('  Project URL:', tokenInfo?.project_url);
-        console.log('  Has anon key:', !!tokenInfo?.anon_key);
-        console.log('  Anon key preview:', tokenInfo?.anon_key ? tokenInfo.anon_key.substring(0, 20) + '...' : 'none');
         console.log('  Has service key:', !!tokenInfo?.service_role_key);
         
         result = await supabaseStorage.uploadImageDirect(req.storeId, mockFile, {
@@ -698,17 +696,16 @@ router.post('/fetch-api-keys', auth, extractStoreId, checkStoreOwnership, async 
 // Manually update project configuration (for limited scope connections or when API doesn't provide keys)
 router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
-    const { projectId, projectUrl, anonKey, serviceRoleKey, databaseUrl, storageUrl, authUrl } = req.body;
+    const { projectId, projectUrl, serviceRoleKey, databaseUrl, storageUrl, authUrl } = req.body;
     
     console.log('Manual config update request:', {
       hasProjectId: !!projectId,
       hasProjectUrl: !!projectUrl,
-      hasAnonKey: !!anonKey,
       hasServiceRoleKey: !!serviceRoleKey
     });
     
     // Validate at least one field is provided
-    if (!projectUrl && !anonKey && !serviceRoleKey && !databaseUrl && !storageUrl && !authUrl) {
+    if (!projectUrl && !serviceRoleKey && !databaseUrl && !storageUrl && !authUrl) {
       return res.status(400).json({
         success: false,
         message: 'At least one configuration field must be provided'
@@ -725,7 +722,6 @@ router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (
     
     const result = await supabaseIntegration.updateProjectConfig(req.storeId, {
       projectUrl,
-      anonKey,
       serviceRoleKey,
       databaseUrl,
       storageUrl,
@@ -733,11 +729,10 @@ router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (
     });
     
     // After updating, test if storage works
-    if (anonKey || serviceRoleKey) {
+    if (serviceRoleKey) {
       try {
         const tokenInfo = await supabaseIntegration.getTokenInfo(req.storeId);
         console.log('Config updated. New token info:', {
-          hasAnonKey: !!tokenInfo?.anon_key && tokenInfo.anon_key !== 'pending_configuration',
           hasServiceKey: !!tokenInfo?.service_role_key
         });
         result.storageReady = true;

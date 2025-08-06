@@ -107,8 +107,7 @@ class SupabaseIntegration {
           const firstProject = allProjects[0];
           console.log('Using first project as default:', firstProject.name || firstProject.id);
           
-          // Fetch API keys for the project
-          let anonKey = '';
+          // Fetch service role key for the project (anon key no longer needed)
           let serviceRoleKey = '';
           
           try {
@@ -121,30 +120,22 @@ class SupabaseIntegration {
             
             console.log('API keys response:', JSON.stringify(apiKeysResponse.data, null, 2));
             
-            // Extract anon and service_role keys from response
+            // Extract service_role key from response
             if (apiKeysResponse.data && Array.isArray(apiKeysResponse.data)) {
-              const anonKeyObj = apiKeysResponse.data.find(key => key.name === 'anon' || key.name === 'anon_key');
               const serviceKeyObj = apiKeysResponse.data.find(key => key.name === 'service_role' || key.name === 'service_role_key');
-              
-              anonKey = anonKeyObj?.api_key || '';
               serviceRoleKey = serviceKeyObj?.api_key || '';
             } else if (apiKeysResponse.data) {
               // Handle different response format
-              anonKey = apiKeysResponse.data.anon || apiKeysResponse.data.anon_key || '';
               serviceRoleKey = apiKeysResponse.data.service_role || apiKeysResponse.data.service_role_key || '';
             }
             
-            console.log('Extracted API keys:', { 
-              anonKey: anonKey ? anonKey.substring(0, 20) + '...' : 'not found',
-              serviceRoleKey: serviceRoleKey ? serviceRoleKey.substring(0, 20) + '...' : 'not found'
-            });
+            console.log('Extracted service role key:', serviceRoleKey ? serviceRoleKey.substring(0, 20) + '...' : 'not found');
             
           } catch (apiKeysError) {
             console.error('Error fetching API keys:', apiKeysError.response?.data || apiKeysError.message);
             // If it's a scope error, set default values
             if (apiKeysError.response?.status === 403 || apiKeysError.response?.data?.message?.includes('scope')) {
               console.log('OAuth token lacks secrets:read scope for API keys access');
-              anonKey = 'pending_configuration';
               serviceRoleKey = null;
             }
             // Continue without API keys - user can configure them later
@@ -152,7 +143,7 @@ class SupabaseIntegration {
           
           projectData = {
             project_url: `https://${firstProject.id}.supabase.co`,
-            anon_key: anonKey || 'pending_configuration',
+            anon_key: null,  // No longer used,
             service_role_key: serviceRoleKey || null,
             database_url: `postgresql://postgres.[projectRef]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres`,
             storage_url: `https://${firstProject.id}.supabase.co/storage/v1`,
@@ -168,7 +159,7 @@ class SupabaseIntegration {
           // Set pending values that will pass validation
           projectData = {
             project_url: 'https://pending-configuration.supabase.co',
-            anon_key: 'pending_configuration',
+            anon_key: null,  // No longer used,
             service_role_key: null,
             database_url: null,  // Use null for optional fields
             storage_url: null,
@@ -178,7 +169,7 @@ class SupabaseIntegration {
           // For other errors, still try to save with pending values
           projectData = {
             project_url: 'https://pending-configuration.supabase.co',
-            anon_key: 'pending_configuration',
+            anon_key: null,  // No longer used,
             service_role_key: null,
             database_url: null,
             storage_url: null,
@@ -198,7 +189,6 @@ class SupabaseIntegration {
       console.log('Saving token data to database:', {
         storeId,
         project_url: tokenData.project_url,
-        anon_key: tokenData.anon_key ? tokenData.anon_key.substring(0, 20) + '...' : 'not set',
         service_role_key: tokenData.service_role_key ? 'set' : 'not set',
         has_access_token: !!tokenData.access_token,
         has_refresh_token: !!tokenData.refresh_token,
@@ -212,7 +202,7 @@ class SupabaseIntegration {
           refresh_token: tokenData.refresh_token,
           expires_at: tokenData.expires_at,
           project_url: tokenData.project_url || 'https://pending-configuration.supabase.co',
-          anon_key: tokenData.anon_key || 'pending_configuration',
+          anon_key: null,  // No longer used, set to null,
           service_role_key: tokenData.service_role_key || null,
           database_url: tokenData.database_url || null,
           storage_url: tokenData.storage_url || null,
@@ -230,8 +220,7 @@ class SupabaseIntegration {
             ...tokenData,
             access_token: tokenData.access_token ? 'present' : 'missing',
             refresh_token: tokenData.refresh_token ? 'present' : 'missing',
-            project_url: tokenData.project_url,
-            anon_key: tokenData.anon_key
+            project_url: tokenData.project_url
           }
         });
         
@@ -247,7 +236,6 @@ class SupabaseIntegration {
       // Also save to IntegrationConfig for consistency
       const integrationConfig = await IntegrationConfig.createOrUpdate(storeId, 'supabase', {
         projectUrl: projectData.project_url || 'pending_configuration',
-        anonKey: projectData.anon_key || 'pending_configuration',
         connected: true,
         connectedAt: new Date(),
         userEmail: user?.email || ''
@@ -369,51 +357,12 @@ class SupabaseIntegration {
   }
 
   /**
-   * Get Supabase client for a store
+   * Get Supabase client for a store (using service role key)
+   * Since we're removing anon key dependency, this now uses service role key
    */
   async getSupabaseClient(storeId) {
-    const token = await SupabaseOAuthToken.findByStore(storeId);
-    if (!token) {
-      throw new Error('Supabase not connected for this store');
-    }
-
-    // Check if we have required data
-    if (!token.project_url || token.project_url === '' || token.project_url === 'pending_configuration') {
-      throw new Error('Supabase project URL is not configured');
-    }
-
-    // If we don't have a valid anon key, throw error to force direct API usage
-    if (!token.anon_key || 
-        token.anon_key === '' || 
-        token.anon_key === 'pending_configuration' ||
-        token.anon_key === 'pending' ||
-        token.anon_key.includes('pending') ||
-        token.anon_key.includes('dummy')) {
-      console.log('Invalid anon key detected:', token.anon_key ? token.anon_key.substring(0, 30) + '...' : 'none');
-      throw new Error('Anon key not available - use direct API');
-    }
-
-    // Ensure token is valid
-    const validAccessToken = await this.getValidToken(storeId);
-
-    // Create Supabase client with real anon key
-    const supabaseClient = createClient(
-      token.project_url,
-      token.anon_key,
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${validAccessToken}` // OAuth token for additional auth
-          }
-        }
-      }
-    );
-
-    return supabaseClient;
+    // Just redirect to admin client since we only use service role key now
+    return this.getSupabaseAdminClient(storeId);
   }
 
   /**
@@ -602,7 +551,7 @@ class SupabaseIntegration {
           // Save the project info and API keys
           await token.update({
             project_url: projectInfo.url,
-            anon_key: anonKey || 'pending_configuration',
+            anon_key: null,  // No longer used,
             service_role_key: serviceRoleKey || null
           });
           
@@ -1081,9 +1030,9 @@ class SupabaseIntegration {
       const hasLimitedScope = token.project_url === 'https://pending-configuration.supabase.co' || 
                               token.project_url === 'pending_configuration';
 
-      // If anon key is missing, try to fetch it
-      if ((!token.anon_key || token.anon_key === 'pending_configuration') && !hasLimitedScope) {
-        console.log('Anon key missing, attempting to fetch from Supabase API...');
+      // If service role key is missing, try to fetch it
+      if (!token.service_role_key && !hasLimitedScope) {
+        console.log('Service role key missing, attempting to fetch from Supabase API...');
         const keyFetchResult = await this.fetchAndUpdateApiKeys(storeId);
         if (keyFetchResult.updated) {
           // Reload token to get updated keys
@@ -1100,7 +1049,6 @@ class SupabaseIntegration {
             oauthConfigured: true,
             limitedScope: true,
             userEmail: config?.config_data?.userEmail,
-            hasAnonKey: false,
             hasServiceRoleKey: false,
             message: 'Connected but with limited permissions. Storage operations require reconnecting to Supabase to grant secrets:read permission.',
             requiresReconnection: true
@@ -1108,13 +1056,7 @@ class SupabaseIntegration {
         }
       }
 
-      // Check if keys are properly configured (not just present)
-      const hasValidAnonKey = token.anon_key && 
-                             token.anon_key !== 'pending_configuration' &&
-                             token.anon_key !== 'pending' &&
-                             token.anon_key !== '' &&
-                             !token.anon_key.includes('dummy');
-      
+      // Check if service role key is properly configured
       const hasValidServiceKey = token.service_role_key && 
                                 token.service_role_key !== 'pending_configuration' &&
                                 token.service_role_key !== '';
@@ -1129,10 +1071,9 @@ class SupabaseIntegration {
         oauthConfigured: true,
         limitedScope: hasLimitedScope,
         userEmail: config?.config_data?.userEmail,
-        hasAnonKey: hasValidAnonKey,
         hasServiceRoleKey: hasValidServiceKey,
-        requiresManualConfiguration: !hasValidAnonKey && !hasLimitedScope,
-        storageReady: hasValidAnonKey || hasValidServiceKey
+        requiresManualConfiguration: !hasValidServiceKey && !hasLimitedScope,
+        storageReady: hasValidServiceKey
       };
     } catch (error) {
       console.error('Error getting connection status:', error);
@@ -1155,7 +1096,6 @@ class SupabaseIntegration {
       }
       return {
         project_url: token.project_url,
-        anon_key: token.anon_key,
         service_role_key: token.service_role_key,
         access_token: token.access_token
       };
@@ -1185,7 +1125,6 @@ class SupabaseIntegration {
       // Get valid access token
       const accessToken = await this.getValidToken(storeId);
 
-      let anonKey = null;
       let serviceRoleKey = null;
       let updated = false;
 
@@ -1228,13 +1167,8 @@ class SupabaseIntegration {
         console.log('API keys response data:', JSON.stringify(apiKeysResponse.data, null, 2));
 
         if (apiKeysResponse.data && Array.isArray(apiKeysResponse.data)) {
-          const anonKeyObj = apiKeysResponse.data.find(key => key.name === 'anon' || key.name === 'anon_key');
           const serviceKeyObj = apiKeysResponse.data.find(key => key.name === 'service_role' || key.name === 'service_role_key');
-          
-          anonKey = anonKeyObj?.api_key;
           serviceRoleKey = serviceKeyObj?.api_key;
-          
-          console.log('Found anon key:', !!anonKey);
           console.log('Found service role key:', !!serviceRoleKey);
         }
       } catch (error) {
@@ -1270,9 +1204,8 @@ class SupabaseIntegration {
           console.log('Config endpoint response:', JSON.stringify(configResponse.data, null, 2));
           
           if (configResponse.data?.api) {
-            anonKey = configResponse.data.api.anon_key;
             serviceRoleKey = configResponse.data.api.service_role_key;
-            console.log('Found keys via config endpoint');
+            console.log('Found service role key via config endpoint');
           }
         } catch (altError) {
           console.log('Config endpoint also failed:', altError.response?.status, altError.response?.data?.message || altError.message);
@@ -1299,33 +1232,26 @@ class SupabaseIntegration {
         }
       }
 
-      // Update if we found new keys
-      if (anonKey && anonKey !== token.anon_key) {
-        await token.update({ anon_key: anonKey });
-        updated = true;
-        console.log('Updated anon key for project');
-      }
-      
+      // Update if we found new key
       if (serviceRoleKey && serviceRoleKey !== token.service_role_key) {
         await token.update({ service_role_key: serviceRoleKey });
         updated = true;
         console.log('Updated service role key for project');
       }
 
-      // If no keys were found at all, indicate manual configuration is needed
-      if (!anonKey && !serviceRoleKey && !token.anon_key && !token.service_role_key) {
+      // If no service role key was found, indicate manual configuration is needed
+      if (!serviceRoleKey && !token.service_role_key) {
         return {
           success: false,
           updated: false,
-          hasAnonKey: false,
           hasServiceRoleKey: false,
           requiresManualConfiguration: true,
-          message: 'API keys could not be fetched automatically. The Supabase Management API does not provide access to project API keys through OAuth. Please manually configure your API keys from your Supabase dashboard.',
+          message: 'Service role key could not be fetched automatically. The Supabase Management API does not provide access to project API keys through OAuth. Please manually configure your service role key from your Supabase dashboard.',
           instructions: [
             '1. Go to your Supabase dashboard',
             '2. Select your project',
             '3. Navigate to Settings > API',
-            '4. Copy the "anon" public key',
+            '4. Copy the "service_role" secret key',
             '5. Enter it in the Supabase integration settings'
           ]
         };
@@ -1334,10 +1260,8 @@ class SupabaseIntegration {
       return {
         success: true,
         updated,
-        hasAnonKey: !!anonKey || !!token.anon_key,
         hasServiceRoleKey: !!serviceRoleKey || !!token.service_role_key,
         existingKeys: {
-          hasAnonKey: !!token.anon_key,
           hasServiceRoleKey: !!token.service_role_key
         }
       };
@@ -1377,9 +1301,7 @@ class SupabaseIntegration {
           projectId = newMatch[1];
         }
       }
-      if (config.anonKey) {
-        updateData.anon_key = config.anonKey;
-      }
+      // No longer update anon_key since we don't use it
       if (config.serviceRoleKey) {
         updateData.service_role_key = config.serviceRoleKey;
       }
