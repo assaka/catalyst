@@ -1061,6 +1061,23 @@ class SupabaseIntegration {
         if (keyFetchResult.updated) {
           // Reload token to get updated keys
           await token.reload();
+        } else if (keyFetchResult.requiresReconnection) {
+          // OAuth token lacks permissions
+          return {
+            connected: true,
+            projectUrl: token.project_url,
+            expiresAt: token.expires_at,
+            isExpired,
+            connectionStatus: 'limited',
+            lastTestedAt: config?.connection_tested_at,
+            oauthConfigured: true,
+            limitedScope: true,
+            userEmail: config?.config_data?.userEmail,
+            hasAnonKey: false,
+            hasServiceRoleKey: false,
+            message: 'Connected but with limited permissions. Storage operations require reconnecting to Supabase to grant secrets:read permission.',
+            requiresReconnection: true
+          };
         }
       }
 
@@ -1150,10 +1167,21 @@ class SupabaseIntegration {
           serviceRoleKey = serviceKeyObj?.api_key;
         }
       } catch (error) {
-        console.log('Primary API keys endpoint failed, trying alternative...');
+        console.log('Primary API keys endpoint failed:', error.response?.status, error.response?.data?.message || error.message);
+        
+        // Check if it's a permission error
+        if (error.response?.status === 403) {
+          console.log('OAuth token lacks secrets:read scope');
+          return { 
+            success: false, 
+            message: 'OAuth token lacks permission to fetch API keys (missing secrets:read scope)',
+            requiresReconnection: true 
+          };
+        }
         
         // Try alternative endpoint
         try {
+          console.log('Trying alternative config endpoint...');
           const configResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}/config`, {
             headers: {
               'Authorization': `Bearer ${accessToken}`,
@@ -1164,9 +1192,10 @@ class SupabaseIntegration {
           if (configResponse.data?.api) {
             anonKey = configResponse.data.api.anon_key;
             serviceRoleKey = configResponse.data.api.service_role_key;
+            console.log('Found keys via config endpoint');
           }
         } catch (altError) {
-          console.log('Alternative endpoint also failed');
+          console.log('Alternative endpoint also failed:', altError.response?.status, altError.response?.data?.message || altError.message);
         }
       }
 

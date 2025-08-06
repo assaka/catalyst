@@ -80,19 +80,29 @@ class SupabaseStorageService {
       if (!hasValidAnonKey && !hasValidServiceKey) {
         // Try to fetch API keys if we have OAuth token
         console.log('No valid API keys found, attempting to fetch from Supabase...');
-        const fetchResult = await supabaseIntegration.fetchAndUpdateApiKeys(storeId);
         
-        if (!fetchResult.success || !fetchResult.hasAnonKey) {
-          throw new Error('Storage operations require API keys. The OAuth token does not have permission to fetch API keys. Please reconnect with full permissions or manually configure the API keys.');
+        try {
+          const fetchResult = await supabaseIntegration.fetchAndUpdateApiKeys(storeId);
+          
+          if (fetchResult.success && (fetchResult.hasAnonKey || fetchResult.hasServiceRoleKey)) {
+            // Reload token info after fetching keys
+            const updatedTokenInfo = await supabaseIntegration.getTokenInfo(storeId);
+            if (updatedTokenInfo.anon_key && updatedTokenInfo.anon_key !== 'pending_configuration') {
+              tokenInfo.anon_key = updatedTokenInfo.anon_key;
+              hasValidAnonKey = true;
+            }
+            if (updatedTokenInfo.service_role_key) {
+              tokenInfo.service_role_key = updatedTokenInfo.service_role_key;
+              hasValidServiceKey = true;
+            }
+          }
+        } catch (fetchError) {
+          console.log('Failed to fetch API keys:', fetchError.message);
         }
         
-        // Reload token info after fetching keys
-        const updatedTokenInfo = await supabaseIntegration.getTokenInfo(storeId);
-        if (updatedTokenInfo.anon_key && updatedTokenInfo.anon_key !== 'pending_configuration') {
-          tokenInfo.anon_key = updatedTokenInfo.anon_key;
-        }
-        if (updatedTokenInfo.service_role_key) {
-          tokenInfo.service_role_key = updatedTokenInfo.service_role_key;
+        // If we still don't have keys after trying to fetch them
+        if (!hasValidAnonKey && !hasValidServiceKey) {
+          throw new Error('Storage operations require API keys. Your current OAuth token does not have permission to fetch API keys (missing secrets:read scope). Please reconnect to Supabase to grant the necessary permissions.');
         }
       }
 
