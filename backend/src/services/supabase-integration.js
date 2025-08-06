@@ -382,7 +382,7 @@ class SupabaseIntegration {
     }
 
     if (!token.anon_key || token.anon_key === '' || token.anon_key === 'pending' || token.anon_key === 'pending_configuration') {
-      throw new Error('Supabase anon key is not configured');
+      throw new Error('Supabase anon key is not configured. Please reconnect with appropriate permissions or manually configure the anon key in your Supabase project settings.');
     }
 
     // Ensure token is valid
@@ -861,7 +861,8 @@ class SupabaseIntegration {
         return {
           connected: false,
           message: 'Supabase OAuth is not configured. Please contact your administrator to set up Supabase OAuth credentials.',
-          oauthConfigured: false
+          oauthConfigured: false,
+          connectionStatus: 'not_configured'
         };
       }
       
@@ -991,7 +992,8 @@ class SupabaseIntegration {
           oauthConfigured: true,
           hasOrphanedAuthorization,
           wasAutoDisconnected,
-          lastKnownProjectUrl
+          lastKnownProjectUrl,
+          connectionStatus: 'disconnected'
         };
       }
 
@@ -1003,7 +1005,8 @@ class SupabaseIntegration {
           connected: false,
           message: isExpired ? 'Supabase connection expired' : 'Supabase connection failed - please reconnect',
           oauthConfigured: true,
-          tokenExpired: isExpired
+          tokenExpired: isExpired,
+          connectionStatus: 'failed'
         };
       }
 
@@ -1016,18 +1019,77 @@ class SupabaseIntegration {
         projectUrl: token.project_url,
         expiresAt: token.expires_at,
         isExpired,
-        connectionStatus: config?.connection_status || 'connected',
+        connectionStatus: config?.connection_status || 'success',
         lastTestedAt: config?.connection_tested_at,
         oauthConfigured: true,
         limitedScope: hasLimitedScope,
-        userEmail: config?.config_data?.userEmail
+        userEmail: config?.config_data?.userEmail,
+        hasAnonKey: token.anon_key && token.anon_key !== 'pending_configuration',
+        hasServiceRoleKey: !!token.service_role_key
       };
     } catch (error) {
       console.error('Error getting connection status:', error);
       return {
         connected: false,
-        error: error.message
+        error: error.message,
+        connectionStatus: 'error'
       };
+    }
+  }
+
+  /**
+   * Manually update project configuration (for limited scope connections)
+   */
+  async updateProjectConfig(storeId, config) {
+    try {
+      const token = await SupabaseOAuthToken.findByStore(storeId);
+      if (!token) {
+        throw new Error('Supabase not connected for this store');
+      }
+
+      // Update token with new configuration
+      const updateData = {};
+      if (config.projectUrl) {
+        updateData.project_url = config.projectUrl;
+      }
+      if (config.anonKey) {
+        updateData.anon_key = config.anonKey;
+      }
+      if (config.serviceRoleKey) {
+        updateData.service_role_key = config.serviceRoleKey;
+      }
+      if (config.databaseUrl) {
+        updateData.database_url = config.databaseUrl;
+      }
+      if (config.storageUrl) {
+        updateData.storage_url = config.storageUrl;
+      }
+      if (config.authUrl) {
+        updateData.auth_url = config.authUrl;
+      }
+
+      await token.update(updateData);
+
+      // Also update IntegrationConfig
+      const integrationConfig = await IntegrationConfig.findByStoreAndType(storeId, 'supabase');
+      if (integrationConfig) {
+        await integrationConfig.update({
+          config_data: {
+            ...integrationConfig.config_data,
+            ...config,
+            manuallyConfigured: true,
+            manuallyConfiguredAt: new Date()
+          }
+        });
+      }
+
+      return {
+        success: true,
+        message: 'Project configuration updated successfully'
+      };
+    } catch (error) {
+      console.error('Error updating project config:', error);
+      throw error;
     }
   }
 }

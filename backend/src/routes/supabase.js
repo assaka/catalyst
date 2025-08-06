@@ -632,4 +632,44 @@ router.get('/storage/stats', auth, extractStoreId, checkStoreOwnership, async (r
   }
 });
 
+// Manually update project configuration (for limited scope connections)
+router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+  try {
+    const { projectUrl, anonKey, serviceRoleKey, databaseUrl, storageUrl, authUrl } = req.body;
+    
+    // Validate at least one field is provided
+    if (!projectUrl && !anonKey && !serviceRoleKey && !databaseUrl && !storageUrl && !authUrl) {
+      return res.status(400).json({
+        success: false,
+        message: 'At least one configuration field must be provided'
+      });
+    }
+    
+    // Validate project URL format if provided
+    if (projectUrl && !projectUrl.includes('supabase.co')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid project URL format. Expected format: https://[project-id].supabase.co'
+      });
+    }
+    
+    const result = await supabaseIntegration.updateProjectConfig(req.storeId, {
+      projectUrl,
+      anonKey,
+      serviceRoleKey,
+      databaseUrl,
+      storageUrl,
+      authUrl
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error updating project config:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;
