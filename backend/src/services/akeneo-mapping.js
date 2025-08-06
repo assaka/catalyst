@@ -490,7 +490,7 @@ class AkeneoMapping {
               // Download and upload image if enabled
               if (downloadImages && imageUrl.startsWith('http')) {
                 try {
-                  const uploadedImage = await this.downloadAndUploadImage(imageUrl, item);
+                  const uploadedImage = await this.downloadAndUploadImage(imageUrl, item, storeId);
                   if (uploadedImage) {
                     imageUrl = uploadedImage.url;
                   }
@@ -530,15 +530,12 @@ class AkeneoMapping {
   /**
    * Download image from Akeneo and upload to storage system
    */
-  async downloadAndUploadImage(imageUrl, imageItem) {
+  async downloadAndUploadImage(imageUrl, imageItem, storeId = null) {
     const fetch = require('node-fetch');
-    const FormData = require('form-data');
-    const fs = require('fs');
-    const path = require('path');
-    const os = require('os');
-
+    const storageManager = require('./storage-manager');
+    
     try {
-      console.log(`📥 Downloading image: ${imageUrl}`);
+      console.log(`📥 Downloading image from Akeneo: ${imageUrl}`);
       
       // Download the image
       const response = await fetch(imageUrl);
@@ -550,24 +547,63 @@ class AkeneoMapping {
       const contentType = response.headers.get('content-type') || 'image/jpeg';
       const extension = contentType.split('/')[1] || 'jpg';
       
-      // Create temporary file
-      const tempFileName = `akeneo_image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
-      const tempFilePath = path.join(os.tmpdir(), tempFileName);
-      
-      // Save to temporary file
+      // Get image buffer
       const buffer = await response.buffer();
+      console.log(`💾 Downloaded image: ${buffer.length} bytes, type: ${contentType}`);
+      
+      // Create mock file object for storage upload
+      const fileName = `akeneo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
+      const mockFile = {
+        originalname: fileName,
+        mimetype: contentType,
+        buffer: buffer,
+        size: buffer.length
+      };
+
+      // Upload using unified storage manager (will handle provider selection and fallbacks)
+      if (storeId) {
+        try {
+          console.log(`☁️ Uploading via storage manager for store: ${storeId}`);
+          const uploadResult = await storageManager.uploadImage(storeId, mockFile, {
+            folder: 'akeneo-imports',
+            public: true
+          });
+          
+          if (uploadResult.success) {
+            console.log(`✅ Image uploaded via ${uploadResult.provider}: ${uploadResult.url}`);
+            return {
+              url: uploadResult.url,
+              originalUrl: imageUrl,
+              filename: uploadResult.filename,
+              size: buffer.length,
+              contentType: contentType,
+              uploadedTo: uploadResult.provider,
+              fallbackUsed: uploadResult.fallbackUsed || false
+            };
+          }
+        } catch (storageError) {
+          console.log(`⚠️ Storage manager upload failed, trying local fallback: ${storageError.message}`);
+        }
+      }
+
+      // Last resort fallback to local upload via API if storage manager fails
+      const FormData = require('form-data');
+      const fs = require('fs');
+      const path = require('path');
+      const os = require('os');
+
+      // Create temporary file for fallback
+      const tempFilePath = path.join(os.tmpdir(), fileName);
       fs.writeFileSync(tempFilePath, buffer);
       
-      console.log(`💾 Saved temporary file: ${tempFilePath} (${buffer.length} bytes)`);
-      
-      // Create form data for file upload
+      // Create form data for local upload
       const formData = new FormData();
       formData.append('file', fs.createReadStream(tempFilePath), {
-        filename: tempFileName,
+        filename: fileName,
         contentType: contentType
       });
       
-      // Upload to the file upload service
+      // Upload to local file service
       const uploadResponse = await fetch('http://localhost:5000/api/upload', {
         method: 'POST',
         body: formData
@@ -581,18 +617,19 @@ class AkeneoMapping {
       }
       
       if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: HTTP ${uploadResponse.status}`);
+        throw new Error(`Local upload failed: HTTP ${uploadResponse.status}`);
       }
       
       const uploadResult = await uploadResponse.json();
-      console.log(`✅ Image uploaded successfully: ${uploadResult.file_url}`);
+      console.log(`✅ Image uploaded locally via API: ${uploadResult.file_url}`);
       
       return {
         url: uploadResult.file_url,
         originalUrl: imageUrl,
-        filename: uploadResult.filename || tempFileName,
+        filename: uploadResult.filename || fileName,
         size: buffer.length,
-        contentType: contentType
+        contentType: contentType,
+        uploadedTo: 'local-api'
       };
       
     } catch (error) {

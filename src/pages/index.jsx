@@ -40,6 +40,8 @@ import PluginHowToIconTest from "./PluginHowToIconTest";
 
 import PluginBuilder from "./PluginBuilder";
 
+import TemplateEditor from "./TemplateEditor";
+
 import SimpleTest from "./SimpleTest";
 
 import Storefront from "./Storefront";
@@ -295,6 +297,7 @@ function _getCurrentPage(url) {
         'integrations': 'Integrations',
         'plugin-how-to': 'PluginHowToFixed',
         'plugin-builder': 'PluginBuilder',
+        'template-editor': 'TemplateEditor',
         'create-plugin': 'PluginBuilder',
         'plugin-test': 'PluginHowToTest',
         'heatmaps': 'HeatMaps',

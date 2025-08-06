@@ -312,6 +312,11 @@ class ApiClient {
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add store ID to headers if provided
+    if (additionalData.store_id) {
+      headers['x-store-id'] = additionalData.store_id;
+    }
 
     try {
       const response = await fetch(url, {

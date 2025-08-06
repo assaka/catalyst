@@ -31,10 +31,28 @@ import {
   Eye,
   Settings,
   X,
-  Book
+  Book,
+  Layout,
+  Wand2,
+  Database,
+  Webhook,
+  Palette,
+  Layers,
+  Globe,
+  Smartphone,
+  Monitor,
+  ShoppingCart,
+  Package,
+  Users,
+  Mail,
+  BarChart3,
+  Search,
+  Filter,
+  Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
+import Editor from '@monaco-editor/react';
 
 const PluginBuilder = () => {
   const navigate = useNavigate();
@@ -593,43 +611,90 @@ module.exports = SocialMediaPlugin;`
       
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <div className="container mx-auto py-8 px-4 max-w-5xl">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Plugin Builder</h1>
-              <p className="text-gray-600">
-                Create custom plugins for your store using multiple methods
-              </p>
-            </div>
-            <div className="flex space-x-2">
-              {!showFileExplorer && (
+        <div className="container mx-auto py-8 px-4 max-w-6xl">
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Code className="w-8 h-8 text-blue-600" />
+                  Advanced Plugin Builder
+                </h1>
+                <p className="text-gray-600">
+                  Create powerful plugins, customize templates, and extend your store with advanced features
+                </p>
+              </div>
+              <div className="flex space-x-2">
                 <Button
                   variant="outline"
-                  onClick={() => setShowFileExplorer(true)}
+                  onClick={() => navigate('/admin/template-editor')}
                 >
-                  <Folder className="mr-2 h-4 w-4" />
-                  Show Explorer
+                  <Layout className="mr-2 h-4 w-4" />
+                  Template Editor
                 </Button>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => navigate('/admin/plugin-how-to')}
-              >
-                <Book className="mr-2 h-4 w-4" />
-                Documentation
+                {!showFileExplorer && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowFileExplorer(true)}
+                  >
+                    <Folder className="mr-2 h-4 w-4" />
+                    Show Explorer
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/admin/plugin-how-to')}
+                >
+                  <Book className="mr-2 h-4 w-4" />
+                  Documentation
               </Button>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-4 text-center">
+                  <Palette className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                  <h3 className="font-medium">Visual Builder</h3>
+                  <p className="text-xs text-gray-500">Drag & drop interface</p>
+                </CardContent>
+              </Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-4 text-center">
+                  <Brain className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+                  <h3 className="font-medium">AI Assistant</h3>
+                  <p className="text-xs text-gray-500">Generate with AI</p>
+                </CardContent>
+              </Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardContent className="p-4 text-center">
+                  <Zap className="w-8 h-8 mx-auto mb-2 text-yellow-600" />
+                  <h3 className="font-medium">Advanced</h3>
+                  <p className="text-xs text-gray-500">Custom code & APIs</p>
+                </CardContent>
+              </Card>
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin/template-editor')}>
+                <CardContent className="p-4 text-center">
+                  <Layout className="w-8 h-8 mx-auto mb-2 text-green-600" />
+                  <h3 className="font-medium">Templates</h3>
+                  <p className="text-xs text-gray-500">Page customization</p>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
       <Tabs defaultValue="visual" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="visual" className="flex items-center space-x-2">
-            <FileCode className="w-4 h-4" />
+            <Palette className="w-4 h-4" />
             <span>Visual Builder</span>
           </TabsTrigger>
           <TabsTrigger value="code" className="flex items-center space-x-2">
             <Code className="w-4 h-4" />
             <span>Code Editor</span>
+          </TabsTrigger>
+          <TabsTrigger value="advanced" className="flex items-center space-x-2">
+            <Zap className="w-4 h-4" />
+            <span>Advanced</span>
           </TabsTrigger>
           <TabsTrigger value="upload" className="flex items-center space-x-2">
             <Upload className="w-4 h-4" />
@@ -889,6 +954,231 @@ module.exports = SocialMediaPlugin;`
                       Create Plugin
                     </>
                   )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Advanced Tab */}
+        <TabsContent value="advanced" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Advanced Plugin Development</CardTitle>
+              <CardDescription>
+                Create powerful plugins with database access, API hooks, and advanced features
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Database className="w-5 h-5" />
+                    Database Integration
+                  </h3>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label>Direct Database Access</Label>
+                          <Badge variant="outline">Pro</Badge>
+                        </div>
+                        <p className="text-sm text-gray-600">Access store database for advanced queries and data manipulation</p>
+                        <Button size="sm" variant="outline" className="w-full">
+                          <Database className="w-4 h-4 mr-2" />
+                          Configure Database Access
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label>Custom Models</Label>
+                          <Badge variant="outline">Pro</Badge>
+                        </div>
+                        <p className="text-sm text-gray-600">Create custom database models and relationships</p>
+                        <Button size="sm" variant="outline" className="w-full">
+                          <Package className="w-4 h-4 mr-2" />
+                          Model Generator
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Webhook className="w-5 h-5" />
+                    API & Webhooks
+                  </h3>
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label>Custom API Endpoints</Label>
+                          <Badge variant="outline">Pro</Badge>
+                        </div>
+                        <p className="text-sm text-gray-600">Create custom REST API endpoints for your plugin</p>
+                        <Button size="sm" variant="outline" className="w-full">
+                          <Webhook className="w-4 h-4 mr-2" />
+                          API Builder
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Label>Webhook Integration</Label>
+                          <Badge variant="outline">Pro</Badge>
+                        </div>
+                        <p className="text-sm text-gray-600">React to store events and external webhooks</p>
+                        <Button size="sm" variant="outline" className="w-full">
+                          <Zap className="w-4 h-4 mr-2" />
+                          Webhook Manager
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <Globe className="w-5 h-5" />
+                  External Integrations
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 text-center">
+                      <Mail className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                      <h4 className="font-medium">Email Services</h4>
+                      <p className="text-xs text-gray-500">SendGrid, Mailgun, etc.</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 text-center">
+                      <BarChart3 className="w-8 h-8 mx-auto mb-2 text-green-600" />
+                      <h4 className="font-medium">Analytics</h4>
+                      <p className="text-xs text-gray-500">Google Analytics, Mixpanel</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="cursor-pointer hover:shadow-md transition-shadow">
+                    <CardContent className="p-4 text-center">
+                      <ShoppingCart className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+                      <h4 className="font-medium">Payment Gateways</h4>
+                      <p className="text-xs text-gray-500">Stripe, PayPal, Square</p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Advanced Plugin Code</h3>
+                <div className="border rounded-lg overflow-hidden">
+                  <Editor
+                    height="400px"
+                    language="javascript"
+                    theme="vs-dark"
+                    value={`// Advanced Plugin Example
+class AdvancedPlugin {
+  constructor() {
+    this.name = 'Advanced Plugin';
+    this.version = '1.0.0';
+    this.apiEndpoints = [];
+    this.webhookListeners = [];
+  }
+
+  // Database access
+  async getCustomData(query) {
+    const { sequelize } = require('./database/connection');
+    return await sequelize.query(query);
+  }
+
+  // Custom API endpoint
+  registerAPIEndpoint(path, handler) {
+    this.apiEndpoints.push({ path, handler });
+  }
+
+  // Webhook listener
+  onWebhook(event, callback) {
+    this.webhookListeners.push({ event, callback });
+  }
+
+  // Advanced rendering with data
+  async renderAdvancedContent(config, context) {
+    const data = await this.getCustomData(
+      'SELECT * FROM custom_data WHERE store_id = ?',
+      [context.store.id]
+    );
+    
+    return \`
+      <div class="advanced-plugin">
+        <h2>\${config.title}</h2>
+        <div class="data-display">
+          \${data.map(item => \`
+            <div class="item">
+              <h3>\${item.name}</h3>
+              <p>\${item.description}</p>
+            </div>
+          \`).join('')}
+        </div>
+      </div>
+    \`;
+  }
+
+  // Plugin lifecycle hooks
+  async onInstall() {
+    // Run installation scripts
+    await this.createCustomTables();
+    await this.setupWebhooks();
+  }
+
+  async onUninstall() {
+    // Cleanup
+    await this.removeCustomTables();
+    await this.removeWebhooks();
+  }
+}`}
+                    onChange={(value) => setPluginData({ ...pluginData, code: value })}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 14,
+                      wordWrap: 'on',
+                      scrollBeyondLastLine: false
+                    }}
+                  />
+                </div>
+              </div>
+
+              <Alert>
+                <Zap className="h-4 w-4" />
+                <AlertDescription>
+                  Advanced features require a Pro subscription and additional permissions. 
+                  <Button variant="link" className="p-0 h-auto ml-2">
+                    Upgrade to Pro →
+                  </Button>
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex justify-between">
+                <Button variant="outline">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Configure Permissions
+                </Button>
+                <Button onClick={handleCreatePlugin} disabled={loading}>
+                  {loading && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />}
+                  <Save className="w-4 h-4 mr-2" />
+                  Create Advanced Plugin
                 </Button>
               </div>
             </CardContent>

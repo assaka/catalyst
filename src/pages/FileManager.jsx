@@ -96,7 +96,7 @@ export default function FileManager() {
     setUploading(true);
     setFlashMessage(null);
     try {
-      const uploadResult = await retryApiCall(() => UploadFile({ file }));
+      const uploadResult = await retryApiCall(() => UploadFile(file, { store_id: storeId }));
       if (uploadResult && uploadResult.file_url) {
         const newAsset = {
           name: file.name,
@@ -156,9 +156,9 @@ export default function FileManager() {
 
         <Alert className="mb-8 bg-blue-50 border-blue-200">
           <Info className="h-4 w-4 text-blue-700" />
-          <AlertTitle className="text-blue-800">Managed Cloud Storage</AlertTitle>
+          <AlertTitle className="text-blue-800">Unified Cloud Storage</AlertTitle>
           <AlertDescription className="text-blue-700">
-            Your images are uploaded to a secure, managed cloud storage provider. There is no need to configure credentials for AWS S3 or Google Cloud. The platform handles all storage infrastructure automatically.
+            Your images are uploaded using our unified storage system that supports multiple providers including Supabase, Google Cloud Storage, AWS S3, and local storage. The system automatically selects the best available provider based on your store configuration with intelligent fallback support.
           </AlertDescription>
         </Alert>
 

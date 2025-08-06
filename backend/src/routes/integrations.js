@@ -1106,4 +1106,104 @@ router.post('/akeneo/save-config',
   }
 });
 
+// ======================
+// File Upload Integration
+// ======================
+
+const multer = require('multer');
+const storageManager = require('../services/storage-manager');
+
+// Configure multer for general file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+    files: 1 // Single file upload for file manager
+  },
+  fileFilter: (req, file, cb) => {
+    // Allow images for file manager
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+/**
+ * Universal file upload endpoint for File Manager
+ * POST /api/integrations/upload
+ */
+router.post('/upload', 
+  auth,
+  upload.single('file'),
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No file provided'
+        });
+      }
+
+      // Get store ID from various sources
+      const storeId = req.headers['x-store-id'] || 
+                     req.body.store_id || 
+                     req.query.store_id;
+
+      if (!storeId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Store ID is required. Please provide store_id in headers (x-store-id), body, or query parameters.'
+        });
+      }
+
+      console.log(`📤 File Manager upload: ${req.file.originalname} for store ${storeId}`);
+
+      // Upload options for file manager
+      const options = {
+        folder: 'file-manager',
+        public: true,
+        metadata: {
+          store_id: storeId,
+          uploaded_by: req.user.id,
+          upload_type: 'file_manager',
+          original_name: req.file.originalname,
+          upload_source: 'file_manager'
+        }
+      };
+
+      // Use unified storage manager
+      const uploadResult = await storageManager.uploadImage(storeId, req.file, options);
+
+      if (!uploadResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to upload file',
+          error: uploadResult.error
+        });
+      }
+
+      // Return format expected by File Manager
+      res.json({
+        success: true,
+        message: 'File uploaded successfully',
+        file_url: uploadResult.url,
+        filename: uploadResult.filename,
+        size: uploadResult.size,
+        provider: uploadResult.provider,
+        fallback_used: uploadResult.fallbackUsed || false,
+        upload_details: uploadResult
+      });
+
+    } catch (error) {
+      console.error('File upload error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+);
+
 module.exports = router;

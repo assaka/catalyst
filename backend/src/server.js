@@ -87,6 +87,10 @@ const cloudflareOAuthRoutes = require('./routes/cloudflare-oauth');
 const pluginRoutes = require('./routes/plugins');
 const pluginCreationRoutes = require('./routes/plugin-creation');
 const pluginRenderRoutes = require('./routes/plugin-render');
+const storageRoutes = require('./routes/storage');
+const productImageRoutes = require('./routes/product-images');
+const categoryImageRoutes = require('./routes/category-images');
+const templateRoutes = require('./routes/templates');
 
 const app = express();
 
@@ -1497,6 +1501,10 @@ app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
 app.use('/api/plugins', pluginRoutes);
 app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
 app.use('/api/stores/:store_id/plugins', pluginRenderRoutes);
+app.use('/api/stores/:store_id/storage', storageRoutes);
+app.use('/api/stores/:store_id/products', productImageRoutes);
+app.use('/api/stores/:store_id/categories', categoryImageRoutes);
+app.use('/api/stores/:store_id/templates', authMiddleware, templateRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
