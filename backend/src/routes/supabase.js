@@ -738,4 +738,60 @@ router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (
   }
 });
 
+// Get storage buckets
+router.get('/storage/buckets', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+  try {
+    const result = await supabaseStorage.listBuckets(req.storeId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error fetching buckets:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Create storage bucket
+router.post('/storage/buckets', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+  try {
+    const { name, public: isPublic } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Bucket name is required'
+      });
+    }
+    
+    const result = await supabaseStorage.createBucket(req.storeId, name, {
+      public: isPublic === true || isPublic === 'true'
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error creating bucket:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Delete storage bucket
+router.delete('/storage/buckets/:bucketId', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+  try {
+    const { bucketId } = req.params;
+    
+    const result = await supabaseStorage.deleteBucket(req.storeId, bucketId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error deleting bucket:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 module.exports = router;

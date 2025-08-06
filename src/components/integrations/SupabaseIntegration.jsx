@@ -22,6 +22,13 @@ const SupabaseIntegration = ({ storeId }) => {
   const [serviceRoleKey, setServiceRoleKey] = useState('');
   const [savingKeys, setSavingKeys] = useState(false);
   const [showServiceRole, setShowServiceRole] = useState(false);
+  const [buckets, setBuckets] = useState([]);
+  const [loadingBuckets, setLoadingBuckets] = useState(false);
+  const [showCreateBucket, setShowCreateBucket] = useState(false);
+  const [newBucketName, setNewBucketName] = useState('');
+  const [newBucketPublic, setNewBucketPublic] = useState(false);
+  const [creatingBucket, setCreatingBucket] = useState(false);
+  const [deletingBucket, setDeletingBucket] = useState(null);
 
   // Check for and clear logout flags on component mount
   useEffect(() => {
@@ -421,6 +428,102 @@ const SupabaseIntegration = ({ storeId }) => {
       setSavingKeys(false);
     }
   };
+
+  const loadBuckets = async () => {
+    if (!status?.connected) return;
+    
+    setLoadingBuckets(true);
+    try {
+      const response = await apiClient.get('/supabase/storage/buckets', {
+        'x-store-id': storeId
+      });
+
+      if (response.success) {
+        setBuckets(response.buckets || []);
+        if (response.limited) {
+          toast.info('Showing default buckets. Service role key required for full bucket management.');
+        }
+      } else {
+        throw new Error(response.message || 'Failed to load buckets');
+      }
+    } catch (error) {
+      console.error('Error loading buckets:', error);
+      toast.error('Failed to load storage buckets');
+    } finally {
+      setLoadingBuckets(false);
+    }
+  };
+
+  const handleCreateBucket = async () => {
+    if (!newBucketName.trim()) {
+      toast.error('Please enter a bucket name');
+      return;
+    }
+
+    // Validate bucket name
+    const validBucketName = /^[a-z0-9][a-z0-9-_]*[a-z0-9]$/;
+    if (!validBucketName.test(newBucketName)) {
+      toast.error('Bucket name must start and end with alphanumeric characters and can only contain lowercase letters, numbers, hyphens, and underscores');
+      return;
+    }
+
+    setCreatingBucket(true);
+    try {
+      const response = await apiClient.post('/supabase/storage/buckets', {
+        name: newBucketName,
+        public: newBucketPublic
+      }, {
+        'x-store-id': storeId
+      });
+
+      if (response.success) {
+        toast.success(response.message || `Bucket "${newBucketName}" created successfully`);
+        setNewBucketName('');
+        setNewBucketPublic(false);
+        setShowCreateBucket(false);
+        await loadBuckets(); // Reload buckets list
+      } else {
+        throw new Error(response.message || 'Failed to create bucket');
+      }
+    } catch (error) {
+      console.error('Error creating bucket:', error);
+      toast.error(error.message || 'Failed to create bucket');
+    } finally {
+      setCreatingBucket(false);
+    }
+  };
+
+  const handleDeleteBucket = async (bucketId) => {
+    if (!confirm(`Are you sure you want to delete the bucket "${bucketId}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingBucket(bucketId);
+    try {
+      const response = await apiClient.delete(`/supabase/storage/buckets/${bucketId}`, {
+        'x-store-id': storeId
+      });
+
+      if (response.success) {
+        toast.success(response.message || `Bucket "${bucketId}" deleted successfully`);
+        await loadBuckets(); // Reload buckets list
+      } else {
+        throw new Error(response.message || 'Failed to delete bucket');
+      }
+    } catch (error) {
+      console.error('Error deleting bucket:', error);
+      toast.error(error.message || 'Failed to delete bucket');
+    } finally {
+      setDeletingBucket(null);
+    }
+  };
+
+  // Load buckets when component is connected
+  useEffect(() => {
+    if (status?.connected && !status.authorizationRevoked) {
+      loadBuckets();
+    }
+  }, [status?.connected, status?.authorizationRevoked]);
 
   if (loading) {
     return (
@@ -940,6 +1043,148 @@ const SupabaseIntegration = ({ storeId }) => {
               </div>
             </div>
           )}
+
+          {/* Storage Buckets Management */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <Cloud className="w-5 h-5 text-gray-600" />
+                <h4 className="text-sm font-medium text-gray-900">Storage Buckets</h4>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={loadBuckets}
+                  disabled={loadingBuckets}
+                  className="text-gray-600 hover:text-gray-800 disabled:opacity-50"
+                  title="Refresh buckets"
+                >
+                  <svg className={`w-4 h-4 ${loadingBuckets ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setShowCreateBucket(true)}
+                  className="text-sm px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Create Bucket
+                </button>
+              </div>
+            </div>
+
+            {/* Buckets List */}
+            {loadingBuckets ? (
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mx-auto"></div>
+                <p className="text-sm text-gray-600 mt-2">Loading buckets...</p>
+              </div>
+            ) : buckets.length > 0 ? (
+              <div className="space-y-2">
+                {buckets.map((bucket) => (
+                  <div key={bucket.id || bucket.name} className="flex items-center justify-between p-3 bg-white rounded border border-gray-200">
+                    <div className="flex items-center space-x-3">
+                      <Cloud className="w-4 h-4 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{bucket.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {bucket.public ? 'Public' : 'Private'} bucket
+                          {bucket.created_at && ` • Created ${new Date(bucket.created_at).toLocaleDateString()}`}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteBucket(bucket.id || bucket.name)}
+                      disabled={deletingBucket === (bucket.id || bucket.name)}
+                      className="text-red-600 hover:text-red-800 disabled:opacity-50"
+                      title="Delete bucket"
+                    >
+                      {deletingBucket === (bucket.id || bucket.name) ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-600">No buckets found</p>
+                <p className="text-xs text-gray-500 mt-1">Create your first bucket to start storing files</p>
+              </div>
+            )}
+
+            {/* Create Bucket Modal */}
+            {showCreateBucket && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                  <h3 className="text-lg font-semibold mb-4">Create New Bucket</h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Bucket Name
+                      </label>
+                      <input
+                        type="text"
+                        value={newBucketName}
+                        onChange={(e) => setNewBucketName(e.target.value.toLowerCase())}
+                        placeholder="my-bucket-name"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={creatingBucket}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Use lowercase letters, numbers, hyphens, and underscores only
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={newBucketPublic}
+                          onChange={(e) => setNewBucketPublic(e.target.checked)}
+                          disabled={creatingBucket}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700">Make bucket publicly accessible</span>
+                      </label>
+                      <p className="text-xs text-gray-500 mt-1 ml-6">
+                        Public buckets allow direct access to files via URLs
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 mt-6">
+                    <button
+                      onClick={() => {
+                        setShowCreateBucket(false);
+                        setNewBucketName('');
+                        setNewBucketPublic(false);
+                      }}
+                      disabled={creatingBucket}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleCreateBucket}
+                      disabled={creatingBucket || !newBucketName.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                    >
+                      {creatingBucket ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Creating...
+                        </>
+                      ) : (
+                        'Create Bucket'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Actions */}
           <div className="flex flex-wrap gap-3">

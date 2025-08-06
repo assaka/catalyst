@@ -555,6 +555,194 @@ class SupabaseStorageService {
   }
 
   /**
+   * List all storage buckets
+   */
+  async listBuckets(storeId) {
+    try {
+      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+      
+      // Check if we have service role key for full access
+      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
+      const hasServiceRoleKey = tokenInfo?.service_role_key && 
+                                tokenInfo.service_role_key !== 'pending_configuration' &&
+                                tokenInfo.service_role_key !== '';
+      
+      if (!hasServiceRoleKey) {
+        // Try with regular client if no service role key
+        const regularClient = await supabaseIntegration.getSupabaseClient(storeId);
+        
+        // For non-admin clients, we can still try to list buckets
+        // but may get limited results
+        try {
+          const { data: buckets, error } = await regularClient.storage.listBuckets();
+          
+          if (error) {
+            console.log('Could not list buckets with regular client:', error);
+            // Return default buckets that should exist
+            return {
+              success: true,
+              buckets: [
+                { 
+                  id: this.bucketName,
+                  name: this.bucketName,
+                  public: true,
+                  created_at: null,
+                  updated_at: null
+                },
+                {
+                  id: this.publicBucketName,
+                  name: this.publicBucketName,
+                  public: true,
+                  created_at: null,
+                  updated_at: null
+                }
+              ],
+              limited: true,
+              message: 'Showing default buckets. Service role key required for full bucket list.'
+            };
+          }
+          
+          return {
+            success: true,
+            buckets: buckets || []
+          };
+        } catch (err) {
+          console.log('Error listing buckets:', err);
+          // Return default buckets
+          return {
+            success: true,
+            buckets: [
+              { 
+                id: this.bucketName,
+                name: this.bucketName,
+                public: true
+              },
+              {
+                id: this.publicBucketName,
+                name: this.publicBucketName,
+                public: true
+              }
+            ],
+            limited: true
+          };
+        }
+      }
+      
+      // Use admin client if we have service role key
+      const { data: buckets, error } = await client.storage.listBuckets();
+      
+      if (error) {
+        throw error;
+      }
+      
+      return {
+        success: true,
+        buckets: buckets || []
+      };
+    } catch (error) {
+      console.error('Error listing buckets:', error);
+      throw new Error('Failed to list storage buckets: ' + error.message);
+    }
+  }
+
+  /**
+   * Create a new storage bucket
+   */
+  async createBucket(storeId, bucketName, options = {}) {
+    try {
+      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+      
+      // Validate bucket name
+      if (!bucketName || bucketName.length < 3) {
+        throw new Error('Bucket name must be at least 3 characters long');
+      }
+      
+      // Bucket name validation (Supabase requirements)
+      const validBucketName = /^[a-z0-9][a-z0-9-_]*[a-z0-9]$/;
+      if (!validBucketName.test(bucketName)) {
+        throw new Error('Bucket name must start and end with alphanumeric characters and can only contain lowercase letters, numbers, hyphens, and underscores');
+      }
+      
+      const bucketOptions = {
+        public: options.public || false,
+        fileSizeLimit: options.fileSizeLimit || 10485760, // Default 10MB
+        allowedMimeTypes: options.allowedMimeTypes || [
+          'image/jpeg',
+          'image/png', 
+          'image/gif',
+          'image/webp',
+          'image/svg+xml'
+        ]
+      };
+      
+      const { data, error } = await client.storage.createBucket(bucketName, bucketOptions);
+      
+      if (error) {
+        if (error.message.includes('already exists')) {
+          throw new Error(`Bucket "${bucketName}" already exists`);
+        }
+        throw error;
+      }
+      
+      return {
+        success: true,
+        bucket: data,
+        message: `Bucket "${bucketName}" created successfully`
+      };
+    } catch (error) {
+      console.error('Error creating bucket:', error);
+      throw new Error('Failed to create bucket: ' + error.message);
+    }
+  }
+
+  /**
+   * Delete a storage bucket
+   */
+  async deleteBucket(storeId, bucketId) {
+    try {
+      const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
+      
+      // First, empty the bucket (Supabase requires buckets to be empty before deletion)
+      const { data: files } = await client.storage.from(bucketId).list('', {
+        limit: 1000
+      });
+      
+      if (files && files.length > 0) {
+        // Delete all files in the bucket
+        const filePaths = files.map(file => file.name);
+        const { error: deleteFilesError } = await client.storage
+          .from(bucketId)
+          .remove(filePaths);
+          
+        if (deleteFilesError) {
+          console.error('Error deleting files from bucket:', deleteFilesError);
+        }
+      }
+      
+      // Now delete the bucket
+      const { error } = await client.storage.deleteBucket(bucketId);
+      
+      if (error) {
+        if (error.message.includes('not found')) {
+          throw new Error(`Bucket "${bucketId}" not found`);
+        }
+        if (error.message.includes('not empty')) {
+          throw new Error(`Bucket "${bucketId}" is not empty. Please delete all files first.`);
+        }
+        throw error;
+      }
+      
+      return {
+        success: true,
+        message: `Bucket "${bucketId}" deleted successfully`
+      };
+    } catch (error) {
+      console.error('Error deleting bucket:', error);
+      throw new Error('Failed to delete bucket: ' + error.message);
+    }
+  }
+
+  /**
    * Get storage usage statistics
    */
   async getStorageStats(storeId) {
