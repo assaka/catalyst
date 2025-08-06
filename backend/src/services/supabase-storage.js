@@ -323,6 +323,24 @@ class SupabaseStorageService {
    */
   async getStorageStats(storeId) {
     try {
+      // First check if we have proper credentials
+      const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
+      
+      if (!connectionStatus.connected || !connectionStatus.hasAnonKey) {
+        return {
+          success: false,
+          message: 'Storage statistics unavailable. Please configure your Supabase project with API keys.',
+          requiresConfiguration: true,
+          stats: {
+            totalFiles: 0,
+            totalSize: 0,
+            totalSizeMB: '0.00',
+            totalSizeGB: '0.00',
+            buckets: []
+          }
+        };
+      }
+      
       // Try to get admin client first, fall back to regular client
       let client;
       let canListBuckets = true;
@@ -331,8 +349,23 @@ class SupabaseStorageService {
         client = await supabaseIntegration.getSupabaseAdminClient(storeId);
       } catch (adminError) {
         console.log('Admin client not available, using regular client for stats');
-        client = await supabaseIntegration.getSupabaseClient(storeId);
-        canListBuckets = false; // Regular client can't list all buckets
+        try {
+          client = await supabaseIntegration.getSupabaseClient(storeId);
+          canListBuckets = false; // Regular client can't list all buckets
+        } catch (clientError) {
+          // If we can't get any client, return graceful error
+          return {
+            success: false,
+            message: 'Unable to access storage. Please check your Supabase configuration.',
+            stats: {
+              totalFiles: 0,
+              totalSize: 0,
+              totalSizeMB: '0.00',
+              totalSizeGB: '0.00',
+              buckets: []
+            }
+          };
+        }
       }
       
       // Get bucket sizes

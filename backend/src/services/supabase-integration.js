@@ -792,6 +792,7 @@ class SupabaseIntegration {
       let serviceRoleKey = null;
 
       try {
+        console.log(`Fetching API keys for project ${projectId}...`);
         const apiKeysResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}/config/secrets/project-api-keys`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -799,16 +800,48 @@ class SupabaseIntegration {
           }
         });
 
+        console.log('API keys response structure:', JSON.stringify(apiKeysResponse.data, null, 2));
+
         if (apiKeysResponse.data && Array.isArray(apiKeysResponse.data)) {
           const anonKeyObj = apiKeysResponse.data.find(key => key.name === 'anon' || key.name === 'anon_key');
           const serviceKeyObj = apiKeysResponse.data.find(key => key.name === 'service_role' || key.name === 'service_role_key');
           
           anonKey = anonKeyObj?.api_key || 'pending_configuration';
           serviceRoleKey = serviceKeyObj?.api_key || null;
+          
+          console.log('Found API keys:', {
+            anon: anonKey ? 'present' : 'missing',
+            service_role: serviceRoleKey ? 'present' : 'missing'
+          });
+        } else if (apiKeysResponse.data && typeof apiKeysResponse.data === 'object') {
+          // Handle different response format
+          anonKey = apiKeysResponse.data.anon || apiKeysResponse.data.anon_key || 'pending_configuration';
+          serviceRoleKey = apiKeysResponse.data.service_role || apiKeysResponse.data.service_role_key || null;
         }
       } catch (apiKeysError) {
-        console.error('Error fetching API keys for new project:', apiKeysError.message);
-        // Continue without API keys
+        console.error('Error fetching API keys for new project:', apiKeysError.response?.data || apiKeysError.message);
+        
+        // Try alternative endpoint for project configuration
+        try {
+          console.log('Trying alternative endpoint for project config...');
+          const configResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}/config`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (configResponse.data?.api?.anon_key) {
+            anonKey = configResponse.data.api.anon_key;
+            console.log('Found anon key from config endpoint');
+          }
+          if (configResponse.data?.api?.service_role_key) {
+            serviceRoleKey = configResponse.data.api.service_role_key;
+            console.log('Found service role key from config endpoint');
+          }
+        } catch (configError) {
+          console.error('Alternative config endpoint also failed:', configError.message);
+        }
       }
 
       // Update token with new project details
@@ -1014,6 +1047,16 @@ class SupabaseIntegration {
       const hasLimitedScope = token.project_url === 'https://pending-configuration.supabase.co' || 
                               token.project_url === 'pending_configuration';
 
+      // If anon key is missing, try to fetch it
+      if ((!token.anon_key || token.anon_key === 'pending_configuration') && !hasLimitedScope) {
+        console.log('Anon key missing, attempting to fetch from Supabase API...');
+        const keyFetchResult = await this.fetchAndUpdateApiKeys(storeId);
+        if (keyFetchResult.updated) {
+          // Reload token to get updated keys
+          await token.reload();
+        }
+      }
+
       return {
         connected: true,
         projectUrl: token.project_url,
@@ -1034,6 +1077,93 @@ class SupabaseIntegration {
         error: error.message,
         connectionStatus: 'error'
       };
+    }
+  }
+
+  /**
+   * Try to fetch and update API keys for the current project
+   */
+  async fetchAndUpdateApiKeys(storeId) {
+    try {
+      const token = await SupabaseOAuthToken.findByStore(storeId);
+      if (!token || !token.project_url || token.project_url === 'pending_configuration') {
+        return { success: false, message: 'No project configured' };
+      }
+
+      // Extract project ID from URL
+      const projectIdMatch = token.project_url.match(/https:\/\/([^.]+)\.supabase\.co/);
+      if (!projectIdMatch) {
+        return { success: false, message: 'Invalid project URL format' };
+      }
+      const projectId = projectIdMatch[1];
+
+      // Get valid access token
+      const accessToken = await this.getValidToken(storeId);
+
+      let anonKey = null;
+      let serviceRoleKey = null;
+      let updated = false;
+
+      // Try to fetch API keys
+      try {
+        console.log(`Attempting to fetch API keys for project ${projectId}...`);
+        const apiKeysResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}/config/secrets/project-api-keys`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (apiKeysResponse.data && Array.isArray(apiKeysResponse.data)) {
+          const anonKeyObj = apiKeysResponse.data.find(key => key.name === 'anon' || key.name === 'anon_key');
+          const serviceKeyObj = apiKeysResponse.data.find(key => key.name === 'service_role' || key.name === 'service_role_key');
+          
+          anonKey = anonKeyObj?.api_key;
+          serviceRoleKey = serviceKeyObj?.api_key;
+        }
+      } catch (error) {
+        console.log('Primary API keys endpoint failed, trying alternative...');
+        
+        // Try alternative endpoint
+        try {
+          const configResponse = await axios.get(`https://api.supabase.com/v1/projects/${projectId}/config`, {
+            headers: {
+              'Authorization': `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (configResponse.data?.api) {
+            anonKey = configResponse.data.api.anon_key;
+            serviceRoleKey = configResponse.data.api.service_role_key;
+          }
+        } catch (altError) {
+          console.log('Alternative endpoint also failed');
+        }
+      }
+
+      // Update if we found new keys
+      if (anonKey && anonKey !== token.anon_key) {
+        await token.update({ anon_key: anonKey });
+        updated = true;
+        console.log('Updated anon key for project');
+      }
+      
+      if (serviceRoleKey && serviceRoleKey !== token.service_role_key) {
+        await token.update({ service_role_key: serviceRoleKey });
+        updated = true;
+        console.log('Updated service role key for project');
+      }
+
+      return {
+        success: true,
+        updated,
+        hasAnonKey: !!anonKey,
+        hasServiceRoleKey: !!serviceRoleKey
+      };
+    } catch (error) {
+      console.error('Error fetching API keys:', error);
+      return { success: false, message: error.message };
     }
   }
 

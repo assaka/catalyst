@@ -844,6 +844,23 @@ export default function Settings() {
                     <SelectContent>
                       <SelectItem value="none">No Root Category</SelectItem>
                       {(() => {
+                        console.log('🔍 Root Category Dropdown Debug:', {
+                          totalCategories: categories.length,
+                          categoriesArray: categories,
+                          firstCategory: categories[0],
+                          categoriesWithParentInfo: categories.slice(0, 5).map(c => ({
+                            id: c.id,
+                            name: c.name,
+                            parent_id: c.parent_id,
+                            parent_id_type: typeof c.parent_id,
+                            parent_id_value: c.parent_id,
+                            isNull: c.parent_id === null,
+                            isUndefined: c.parent_id === undefined,
+                            isEmpty: c.parent_id === '',
+                            level: c.level
+                          }))
+                        });
+                        
                         const rootCategories = categories.filter(cat => {
                           // More comprehensive check for root categories
                           const parentId = cat.parent_id;
@@ -853,17 +870,46 @@ export default function Settings() {
                           const isEmptyString = parentId === '' || parentId === 'null' || parentId === 'undefined';
                           const isFalsy = !parentId && parentId !== 0; // Exclude 0 as a valid parent ID
                           
-                          const isRoot = isNullish || isEmptyString || isFalsy;
+                          // Also check level - root categories usually have level 0 or 1
+                          const isRootByLevel = cat.level === 0 || cat.level === 1;
+                          
+                          const isRoot = isNullish || isEmptyString || isFalsy || (isRootByLevel && !parentId);
+                          
+                          if (cat.name && cat.name.toLowerCase().includes('root')) {
+                            console.log(`🎯 Potential root category "${cat.name}":`, {
+                              parent_id: parentId,
+                              level: cat.level,
+                              isNullish,
+                              isEmptyString,
+                              isFalsy,
+                              isRootByLevel,
+                              isRoot
+                            });
+                          }
                           
                           return isRoot;
                         });
                         
-                        if (rootCategories.length === 0) {
-                          console.warn('⚠️ No root categories found! All categories:', categories.map(c => ({
+                        console.log('🌳 Root categories found:', {
+                          count: rootCategories.length,
+                          rootCategories: rootCategories.map(c => ({
+                            id: c.id,
                             name: c.name,
                             parent_id: c.parent_id,
-                            parent_id_type: typeof c.parent_id
-                          })));
+                            level: c.level
+                          }))
+                        });
+                        
+                        if (rootCategories.length === 0) {
+                          console.warn('⚠️ No root categories found! Showing ALL categories as fallback');
+                          // As a fallback, show all categories if no root categories found
+                          return categories
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map((category) => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name} {category.parent_id ? '(Sub)' : '(Root?)'}
+                              </SelectItem>
+                            ));
                         }
                         
                         return rootCategories

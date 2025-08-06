@@ -632,6 +632,28 @@ router.get('/storage/stats', auth, extractStoreId, checkStoreOwnership, async (r
   }
 });
 
+// Fetch and update API keys for current project
+router.post('/fetch-api-keys', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+  try {
+    console.log('Fetching API keys for store:', req.storeId);
+    const result = await supabaseIntegration.fetchAndUpdateApiKeys(req.storeId);
+    
+    // Get updated status
+    const status = await supabaseIntegration.getConnectionStatus(req.storeId);
+    
+    res.json({
+      ...result,
+      connectionStatus: status
+    });
+  } catch (error) {
+    console.error('Error fetching API keys:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
 // Manually update project configuration (for limited scope connections)
 router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
