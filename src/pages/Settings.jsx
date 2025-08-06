@@ -133,48 +133,78 @@ export default function Settings() {
       try {
         console.log('🔍 Loading categories for store:', storeData.id);
         
-        // Use direct API call with authentication
-        const response = await apiClient.get(`categories?store_id=${storeData.id}&limit=10000`);
-        
+        // First, try to get ALL categories including root categories
         let allCategories = [];
+        let currentPage = 1;
+        let hasMore = true;
         
-        // Handle different response formats
-        if (response && response.success && response.data) {
-          // Handle structured API response
-          if (response.data.categories) {
-            allCategories = response.data.categories;
-          } else if (Array.isArray(response.data)) {
-            allCategories = response.data;
+        // Load categories page by page to ensure we get all of them
+        while (hasMore) {
+          try {
+            const response = await apiClient.get(`categories?store_id=${storeData.id}&page=${currentPage}&limit=100`);
+            
+            console.log(`📄 Page ${currentPage} response:`, response);
+            
+            if (response && response.success && response.data && response.data.categories) {
+              const pageCategories = response.data.categories;
+              allCategories = allCategories.concat(pageCategories);
+              
+              // Check if there are more pages
+              const pagination = response.data.pagination;
+              hasMore = currentPage < (pagination?.total_pages || 1);
+              currentPage++;
+              
+              console.log(`✅ Loaded ${pageCategories.length} categories from page ${currentPage - 1}`);
+            } else {
+              console.warn('Unexpected response format:', response);
+              hasMore = false;
+            }
+          } catch (pageError) {
+            console.error(`Error loading page ${currentPage}:`, pageError);
+            hasMore = false;
           }
-        } else if (Array.isArray(response)) {
-          // Handle direct array response
-          allCategories = response;
         }
         
-        console.log('✅ Categories loaded:', allCategories.length);
-        console.log('📋 Sample categories:', allCategories.slice(0, 3).map(cat => ({
-          name: cat.name,
-          parent_id: cat.parent_id,
-          id: cat.id
-        })));
+        console.log('✅ Total categories loaded:', allCategories.length);
+        
+        // Debug: Show all categories with parent_id info
+        console.log('📋 All categories with parent info:');
+        allCategories.forEach(cat => {
+          console.log(`  - ${cat.name} (ID: ${cat.id}, Parent: ${cat.parent_id || 'NULL'})`);
+        });
+        
+        // Debug: Show root categories specifically
+        const rootCats = allCategories.filter(cat => 
+          cat.parent_id === null || 
+          cat.parent_id === undefined || 
+          cat.parent_id === '' || 
+          cat.parent_id === 'null'
+        );
+        console.log('🌳 Root categories found:', rootCats.length);
+        rootCats.forEach(cat => {
+          console.log(`  - ${cat.name} (ID: ${cat.id})`);
+        });
         
         setCategories(allCategories);
       } catch (error) {
-        console.warn('❌ Failed to load categories:', error.message);
-        console.warn('   Error details:', error);
-        setCategories([]);
+        console.error('❌ Failed to load categories:', error);
+        console.error('   Full error:', error.response || error);
         
-        // Try fallback to public API as last resort
+        // Try fallback: get categories directly from database
         try {
-          console.log('🔄 Trying fallback to public categories API...');
-          const publicResponse = await apiClient.publicRequest('GET', `public/categories?store_id=${storeData.id}&limit=10000`);
+          console.log('🔄 Trying direct database query fallback...');
           
-          if (Array.isArray(publicResponse)) {
-            console.log('✅ Public categories loaded:', publicResponse.length);
-            setCategories(publicResponse);
+          // Use the Store entity to get fresh data with categories
+          const storeWithCategories = await Store.findById(storeData.id);
+          if (storeWithCategories && storeWithCategories.categories) {
+            console.log('✅ Got categories from store data:', storeWithCategories.categories.length);
+            setCategories(storeWithCategories.categories);
+          } else {
+            setCategories([]);
           }
         } catch (fallbackError) {
-          console.warn('❌ Public API fallback also failed:', fallbackError.message);
+          console.error('❌ Fallback also failed:', fallbackError);
+          setCategories([]);
         }
       }
       
