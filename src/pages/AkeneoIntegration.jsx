@@ -133,6 +133,12 @@ const AkeneoIntegration = () => {
   try {
     console.log('🚀 AkeneoIntegration component starting...');
     
+    // Debug environment on component mount
+    if (import.meta.env.PROD) {
+      console.log('🔍 Production environment debug:');
+      debugEnvironment();
+    }
+    
     let storeSlugData;
     console.log('📞 Calling useStoreSlug hook...');
     try {
