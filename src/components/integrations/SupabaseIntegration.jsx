@@ -885,9 +885,22 @@ const SupabaseIntegration = ({ storeId }) => {
               <div className="flex items-start space-x-3">
                 <Key className="w-5 h-5 text-amber-600 mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="text-sm font-medium text-amber-900 mb-2">
-                    Configure Service Role Key
-                  </h4>
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-sm font-medium text-amber-900">
+                      Configure Service Role Key
+                    </h4>
+                    {showKeyConfig && status.hasServiceRoleKey && (
+                      <button
+                        onClick={() => setShowKeyConfig(false)}
+                        className="text-amber-600 hover:text-amber-700"
+                        title="Close"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                   <p className="text-sm text-amber-700 mb-4">
                     Supabase Storage requires the service role key for full access. Copy it from your Supabase dashboard.
                   </p>
@@ -976,8 +989,8 @@ const SupabaseIntegration = ({ storeId }) => {
             </div>
           )}
           
-          {/* Key Requirements Info */}
-          {status.connected && !showKeyConfig && (
+          {/* Key Requirements Info - Only show if service role key is not configured */}
+          {status.connected && !showKeyConfig && !status.hasServiceRoleKey && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
               <h4 className="text-sm font-medium text-blue-900 mb-2">Storage Configuration:</h4>
               <ul className="text-sm text-blue-800 space-y-1">
