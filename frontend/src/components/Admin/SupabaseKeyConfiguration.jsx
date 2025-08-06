@@ -11,7 +11,7 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-const SupabaseKeyConfiguration = ({ storeId, onConfigured }) => {
+const SupabaseKeyConfiguration = ({ storeId, projectId, onConfigured }) => {
   const [anonKey, setAnonKey] = useState('');
   const [serviceRoleKey, setServiceRoleKey] = useState('');
   const [loading, setLoading] = useState(false);
@@ -145,13 +145,15 @@ const SupabaseKeyConfiguration = ({ storeId, onConfigured }) => {
         </h3>
 
         {/* Current Project Info */}
-        {projectUrl && (
+        {(projectUrl || projectId) && (
           <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-600 mb-2">Current Project:</p>
+            <p className="text-sm text-gray-600 mb-2">Configuring Project:</p>
             <div className="flex items-center justify-between">
-              <code className="text-sm bg-white px-2 py-1 rounded border">{projectId}</code>
+              <code className="text-sm bg-white px-2 py-1 rounded border">
+                {projectId || extractProjectId(projectUrl)}
+              </code>
               <a
-                href={`https://supabase.com/dashboard/project/${projectId}/settings/api`}
+                href={`https://supabase.com/dashboard/project/${projectId || extractProjectId(projectUrl)}/settings/api`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center text-blue-600 hover:text-blue-700 text-sm"
