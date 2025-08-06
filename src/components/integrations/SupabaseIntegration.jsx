@@ -187,14 +187,43 @@ const SupabaseIntegration = ({ storeId }) => {
       });
 
       if (response.success) {
-        toast.success('Connection test successful!');
+        // Check if connection has limited scope
+        if (response.limitedScope) {
+          toast.warning('Connection successful but with limited scope. Please reconnect for full features.', {
+            duration: 8000
+          });
+        } else {
+          toast.success('Connection test successful!');
+        }
         loadStatus(); // Reload status
       } else {
         throw new Error(response.message || 'Connection test failed');
       }
     } catch (error) {
       console.error('Error testing connection:', error);
-      toast.error(error.message || 'Connection test failed');
+      
+      // Check for scope-related errors
+      if (error.message?.includes('OAuth token requires') || error.message?.includes('scope')) {
+        toast.error('Your connection needs to be updated with new permissions.', {
+          duration: 10000,
+          description: 'Please disconnect and reconnect to Supabase to enable all features.',
+          action: {
+            label: 'Disconnect Now',
+            onClick: () => handleDisconnect()
+          }
+        });
+      } else if (error.message?.includes('revoked')) {
+        toast.error('Your authorization has been revoked.', {
+          duration: 8000,
+          description: 'Please reconnect to Supabase.',
+          action: {
+            label: 'Reconnect',
+            onClick: () => handleConnect()
+          }
+        });
+      } else {
+        toast.error(error.message || 'Connection test failed');
+      }
     } finally {
       setTesting(false);
     }
@@ -325,6 +354,31 @@ const SupabaseIntegration = ({ storeId }) => {
         </div>
       ) : status?.connected ? (
         <div className="space-y-6">
+          {/* Scope Warning */}
+          {(status.projectUrl === 'https://pending-configuration.supabase.co' || 
+            status.projectUrl === 'pending_configuration' ||
+            status.limitedScope) && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+              <div className="flex items-start space-x-3">
+                <Cloud className="w-5 h-5 text-yellow-600 mt-0.5" />
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-yellow-900 mb-1">
+                    Connection Needs Update
+                  </h4>
+                  <p className="text-sm text-yellow-700 mb-2">
+                    Your connection was created with older permissions. Please reconnect to enable all features including project management and API key configuration.
+                  </p>
+                  <button
+                    onClick={handleDisconnect}
+                    className="text-sm font-medium text-yellow-900 underline hover:text-yellow-800"
+                  >
+                    Disconnect and Reconnect
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Connection Details */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">

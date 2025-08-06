@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Store, Category } from '@/api/entities';
 import { User } from '@/api/entities';
+import apiClient from '@/api/client';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -130,52 +131,51 @@ export default function Settings() {
       
       // Load categories for the root category selector
       try {
+        console.log('🔍 Loading categories for store:', storeData.id);
         
-        // First try to get all categories without limits
+        // Use direct API call with authentication
+        const response = await apiClient.get(`categories?store_id=${storeData.id}&limit=10000`);
+        
         let allCategories = [];
-        try {
-          // Use a large limit to get all categories
-          const categoryData = await retryApiCall(() => Category.findAll({ 
-            store_id: storeData.id,
-            limit: 10000, // Large limit to get all categories
-            order_by: "name" // Order by name for easier debugging
-          }));
-          allCategories = Array.isArray(categoryData) ? categoryData : [];
-        } catch (error) {
-          console.warn('Failed to load all categories with limit, trying paginated approach:', error);
-          
-          // Fallback: Load categories in batches using pagination
-          let currentPage = 1;
-          let hasMore = true;
-          const batchSize = 100;
-          
-          while (hasMore) {
-            try {
-              const batch = await retryApiCall(() => Category.findPaginated(currentPage, batchSize, { 
-                store_id: storeData.id,
-                order_by: "name"
-              }));
-              
-              if (batch && batch.data && batch.data.length > 0) {
-                allCategories = allCategories.concat(batch.data);
-                
-                // Check if we have more pages
-                hasMore = currentPage < (batch.pagination?.total_pages || 1);
-                currentPage++;
-              } else {
-                hasMore = false;
-              }
-            } catch (batchError) {
-              console.error(`Error loading batch ${currentPage}:`, batchError);
-              hasMore = false;
-            }
+        
+        // Handle different response formats
+        if (response && response.success && response.data) {
+          // Handle structured API response
+          if (response.data.categories) {
+            allCategories = response.data.categories;
+          } else if (Array.isArray(response.data)) {
+            allCategories = response.data;
           }
+        } else if (Array.isArray(response)) {
+          // Handle direct array response
+          allCategories = response;
         }
+        
+        console.log('✅ Categories loaded:', allCategories.length);
+        console.log('📋 Sample categories:', allCategories.slice(0, 3).map(cat => ({
+          name: cat.name,
+          parent_id: cat.parent_id,
+          id: cat.id
+        })));
         
         setCategories(allCategories);
       } catch (error) {
-        console.warn('Failed to load categories:', error);
+        console.warn('❌ Failed to load categories:', error.message);
+        console.warn('   Error details:', error);
         setCategories([]);
+        
+        // Try fallback to public API as last resort
+        try {
+          console.log('🔄 Trying fallback to public categories API...');
+          const publicResponse = await apiClient.publicRequest('GET', `public/categories?store_id=${storeData.id}&limit=10000`);
+          
+          if (Array.isArray(publicResponse)) {
+            console.log('✅ Public categories loaded:', publicResponse.length);
+            setCategories(publicResponse);
+          }
+        } catch (fallbackError) {
+          console.warn('❌ Public API fallback also failed:', fallbackError.message);
+        }
       }
       
       const settings = storeData.settings || {};
