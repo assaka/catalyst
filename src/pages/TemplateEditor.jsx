@@ -453,7 +453,7 @@ const TemplateEditor = () => {
 
   return (
     <DndProvider backend={HTML5Backend}>
-      <div className="p-6 max-w-[1600px] mx-auto">
+      <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-gray-50 relative z-0 overflow-auto">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div>
