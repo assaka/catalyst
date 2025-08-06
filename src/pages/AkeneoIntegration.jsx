@@ -231,10 +231,29 @@ const AkeneoIntegration = () => {
         ...responseData,
         stats: {
           ...responseData.stats,
-          failedItems: responseData.details.errors.slice(0, 10).map(item => ({
-            code: item.akeneo_identifier || item.akeneo_code || item.code || `Item ${Math.random().toString(36).substr(2, 5)}`,
-            error: Array.isArray(item.errors) ? item.errors.join(', ') : (item.error || item.message || 'Unknown error')
-          })),
+          failedItems: responseData.details.errors.slice(0, 10).map(item => {
+            let errorMessage = 'Unknown error';
+            
+            // Handle different error formats
+            if (Array.isArray(item.errors) && item.errors.length > 0) {
+              // Validation errors array: ["Product name is required", "Product SKU is required"]
+              errorMessage = item.errors.join(', ');
+            } else if (item.error) {
+              // Single error message
+              errorMessage = item.error;
+            } else if (item.message) {
+              // Alternative error message field
+              errorMessage = item.message;
+            } else if (typeof item === 'string') {
+              // Direct string error
+              errorMessage = item;
+            }
+            
+            return {
+              code: item.akeneo_identifier || item.akeneo_code || item.code || `Item ${Math.random().toString(36).substr(2, 5)}`,
+              error: errorMessage
+            };
+          }),
           timestamp: new Date().toISOString()
         }
       };
