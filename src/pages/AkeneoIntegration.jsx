@@ -325,29 +325,25 @@ const AkeneoIntegration = () => {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
       const response = await apiClient.get('/integrations/akeneo/stats', {
-        'x-store-id': storeId
-      }, {
-        signal: controller.signal
+        'x-store-id': storeId,
+        'x-skip-transform': 'true'  // Don't transform this response
       });
       
       clearTimeout(timeoutId);
       console.log('📥 Stats API response:', response);
 
-      // Check if response has data property or is the direct response
-      const responseData = response.data || response;
-      
-      if (responseData?.success) {
-        console.log('✅ Stats loaded successfully:', responseData.stats);
-        // Ensure stats is always an object, never null or undefined
-        const newStats = responseData.stats || {};
-        setStats(prevStats => ({
-          categories: newStats.categories ?? prevStats?.categories ?? 0,
-          attributes: newStats.attributes ?? prevStats?.attributes ?? 0,
-          families: newStats.families ?? prevStats?.families ?? 0,
-          products: newStats.products ?? prevStats?.products ?? 0
-        }));
+      // With x-skip-transform, we get the raw response
+      if (response?.success && response?.stats) {
+        console.log('✅ Stats loaded successfully:', response.stats);
+        // Set stats directly from the response
+        setStats({
+          categories: response.stats.categories ?? 0,
+          attributes: response.stats.attributes ?? 0,
+          families: response.stats.families ?? 0,
+          products: response.stats.products ?? 0
+        });
       } else {
-        console.log('❌ Stats API returned unsuccessful response:', responseData);
+        console.log('❌ Stats API returned invalid response:', response);
         // Keep existing stats on error instead of resetting
         console.log('⚠️ Keeping existing stats on error');
       }

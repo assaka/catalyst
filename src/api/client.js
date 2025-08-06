@@ -179,6 +179,10 @@ class ApiClient {
     
     const url = this.buildUrl(endpoint);
     const headers = this.getHeaders(customHeaders);
+    
+    // Extract options from headers (if passed as a special header)
+    const skipTransform = customHeaders['x-skip-transform'] === 'true';
+    delete customHeaders['x-skip-transform'];
 
     const config = {
       method,
@@ -221,7 +225,20 @@ class ApiClient {
       }
 
       // Handle wrapped API responses - extract the actual data array
-      if (result && typeof result === 'object' && result.success && result.data) {
+      // Skip transformation if explicitly requested
+      if (skipTransform) {
+        return result;
+      }
+      
+      // ONLY transform responses for known list endpoints
+      const isListEndpoint = endpoint.includes('/list') || 
+                            endpoint.endsWith('s') && !endpoint.includes('/stats') && 
+                            !endpoint.includes('/status') && 
+                            !endpoint.includes('/config') &&
+                            !endpoint.includes('/test') &&
+                            !endpoint.includes('/save');
+      
+      if (isListEndpoint && result && typeof result === 'object' && result.success && result.data) {
         // If data is already an array, return it directly (for list responses)
         if (Array.isArray(result.data)) {
           return result.data;
