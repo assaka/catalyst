@@ -7,7 +7,6 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAlertTypes } from '@/hooks/useAlert';
 import SupabaseStorage from './SupabaseStorage';
 import {
@@ -42,7 +41,6 @@ const MediaStorage = () => {
   const [configTest, setConfigTest] = useState(null);
   const [productStatus, setProductStatus] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
   
   // Processing options
   const [batchSize, setBatchSize] = useState(50);
@@ -280,9 +278,9 @@ const MediaStorage = () => {
         {provider.status === 'available' ? (
           <Button 
             className="w-full" 
-            onClick={() => setActiveTab(provider.id)}
+            disabled={provider.id !== 'supabase'}
           >
-            Configure {provider.name}
+            {provider.id === 'supabase' ? 'Configured Above' : `Configure ${provider.name}`}
           </Button>
         ) : (
           <Button className="w-full" disabled>
@@ -324,298 +322,269 @@ const MediaStorage = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="supabase">Supabase</TabsTrigger>
-          <TabsTrigger value="processing">Processing</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          {/* Statistics Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Total Products</p>
-                    <p className="text-2xl font-bold">{stats?.total_products || 0}</p>
-                  </div>
-                  <BarChart3 className="w-8 h-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">With Images</p>
-                    <p className="text-2xl font-bold">{stats?.products_with_images || 0}</p>
-                  </div>
-                  <Image className="w-8 h-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Processed</p>
-                    <p className="text-2xl font-bold">{stats?.processed_images || 0}</p>
-                  </div>
-                  <CheckCircle className="w-8 h-8 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Processing Rate</p>
-                    <p className="text-2xl font-bold">{getProcessingRate().toFixed(1)}%</p>
-                  </div>
-                  <div className="w-8 h-8 flex items-center justify-center">
-                    <Progress value={getProcessingRate()} className="w-6 h-2" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* CDN Providers */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Cloud className="w-5 h-5" />
-                CDN Providers
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {cdnProviders.map((provider) => (
-                  <CDNProviderCard key={provider.id} provider={provider} />
-                ))}
+      {/* Statistics Overview - Without Total Products and With Images */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Processed</p>
+                <p className="text-2xl font-bold">{stats?.processed_images || 0}</p>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Credit System Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info className="w-5 h-5" />
-                Credit System
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-medium text-blue-900 mb-2">Storage Options</h4>
-                <ul className="text-blue-800 text-sm space-y-1">
-                  <li>• <strong>Supabase Storage (Available):</strong> Completely free - included with your Supabase project</li>
-                  <li>• <strong>Coming Soon:</strong> Cloudflare CDN, Google Cloud Storage, and AWS S3</li>
-                  <li>• Future paid options will cost 1 credit per day when active</li>
-                  <li>• Credits will only be consumed on days when the service processes images</li>
-                  <li>• You'll be able to switch between providers anytime</li>
-                  <li>• Free tier will include 30 credits per month for paid options</li>
-                </ul>
+              <CheckCircle className="w-8 h-8 text-purple-500" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Processing Rate</p>
+                <p className="text-2xl font-bold">{getProcessingRate().toFixed(1)}%</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+              <div className="w-8 h-8 flex items-center justify-center">
+                <Progress value={getProcessingRate()} className="w-6 h-2" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="supabase">
+      {/* Supabase Storage */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="w-5 h-5" />
+            Supabase Storage Configuration
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           <SupabaseStorage />
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="processing" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Configuration Test */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Configuration Test
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="testUrl">Test Image URL (optional)</Label>
-                  <Input
-                    id="testUrl"
-                    value={testImageUrl}
-                    onChange={(e) => setTestImageUrl(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                  />
+      {/* Processing Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Configuration Test */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Configuration Test
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="testUrl">Test Image URL (optional)</Label>
+              <Input
+                id="testUrl"
+                value={testImageUrl}
+                onChange={(e) => setTestImageUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+            
+            <Button
+              onClick={testConfiguration}
+              disabled={testingConfig}
+              className="w-full"
+            >
+              {testingConfig ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Testing Configuration...
+                </>
+              ) : (
+                <>
+                  <PlayCircle className="w-4 h-4 mr-2" />
+                  Test Configuration
+                </>
+              )}
+            </Button>
+            
+            {configTest && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  {getStatusIcon(configTest.success ? 'connected' : 'error')}
+                  <span className="font-medium">
+                    {configTest.success ? 'Configuration Valid' : 'Configuration Error'}
+                  </span>
                 </div>
                 
-                <Button
-                  onClick={testConfiguration}
-                  disabled={testingConfig}
-                  className="w-full"
-                >
-                  {testingConfig ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Testing Configuration...
-                    </>
-                  ) : (
-                    <>
-                      <PlayCircle className="w-4 h-4 mr-2" />
-                      Test Configuration
-                    </>
-                  )}
-                </Button>
-                
-                {configTest && (
-                  <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      {getStatusIcon(configTest.success ? 'connected' : 'error')}
-                      <span className="font-medium">
-                        {configTest.success ? 'Configuration Valid' : 'Configuration Error'}
-                      </span>
-                    </div>
-                    
-                    {!configTest.success && (
-                      <p className="text-red-600 text-sm mt-2">{configTest.error}</p>
-                    )}
-                  </div>
+                {!configTest.success && (
+                  <p className="text-red-600 text-sm mt-2">{configTest.error}</p>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-            {/* Processing Controls */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="w-5 h-5" />
-                  Process Images
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="batchSize">Batch Size</Label>
-                    <Input
-                      id="batchSize"
-                      type="number"
-                      value={batchSize}
-                      onChange={(e) => setBatchSize(parseInt(e.target.value))}
-                      min="1"
-                      max="200"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="concurrency">Concurrency</Label>
-                    <Input
-                      id="concurrency"
-                      type="number"
-                      value={concurrency}
-                      onChange={(e) => setConcurrency(parseInt(e.target.value))}
-                      min="1"
-                      max="5"
-                    />
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="forceReprocess"
-                    checked={forceReprocess}
-                    onChange={(e) => setForceReprocess(e.target.checked)}
-                    className="rounded"
-                  />
-                  <Label htmlFor="forceReprocess">Force reprocess existing images</Label>
-                </div>
-                
-                <Button
-                  onClick={processImages}
-                  disabled={processing}
-                  className="w-full"
-                  variant={processing ? "secondary" : "default"}
-                >
-                  {processing ? (
-                    <>
-                      <Pause className="w-4 h-4 mr-2" />
-                      Processing Images...
-                    </>
-                  ) : (
-                    <>
-                      <PlayCircle className="w-4 h-4 mr-2" />
-                      Start Processing
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+        {/* Processing Controls */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Process Images
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="batchSize">Batch Size</Label>
+                <Input
+                  id="batchSize"
+                  type="number"
+                  value={batchSize}
+                  onChange={(e) => setBatchSize(parseInt(e.target.value))}
+                  min="1"
+                  max="200"
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="concurrency">Concurrency</Label>
+                <Input
+                  id="concurrency"
+                  type="number"
+                  value={concurrency}
+                  onChange={(e) => setConcurrency(parseInt(e.target.value))}
+                  min="1"
+                  max="5"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="forceReprocess"
+                checked={forceReprocess}
+                onChange={(e) => setForceReprocess(e.target.checked)}
+                className="rounded"
+              />
+              <Label htmlFor="forceReprocess">Force reprocess existing images</Label>
+            </div>
+            
+            <Button
+              onClick={processImages}
+              disabled={processing}
+              className="w-full"
+              variant={processing ? "secondary" : "default"}
+            >
+              {processing ? (
+                <>
+                  <Pause className="w-4 h-4 mr-2" />
+                  Processing Images...
+                </>
+              ) : (
+                <>
+                  <PlayCircle className="w-4 h-4 mr-2" />
+                  Start Processing
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* CDN Providers */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Cloud className="w-5 h-5" />
+            CDN Providers
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {cdnProviders.map((provider) => (
+              <CDNProviderCard key={provider.id} provider={provider} />
+            ))}
           </div>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="analytics" className="space-y-6">
-          {/* Recent Products Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Products Status</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {productStatus.map((product) => (
-                  <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <h4 className="font-medium">{product.name}</h4>
-                      <p className="text-sm text-gray-600">SKU: {product.sku}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{product.image_count} images</p>
-                        <div className="flex gap-2">
-                          {product.processed_images > 0 && (
-                            <Badge variant="secondary">
-                              {product.processed_images} processed
-                            </Badge>
-                          )}
-                          {product.cloudflare_images > 0 && (
-                            <Badge variant="default">
-                              {product.cloudflare_images} Cloudflare
-                            </Badge>
-                          )}
-                          {product.fallback_images > 0 && (
-                            <Badge variant="outline">
-                              {product.fallback_images} fallback
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {product.has_images ? (
-                        product.processed_images > 0 ? (
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <Clock className="w-5 h-5 text-amber-500" />
-                        )
-                      ) : (
-                        <XCircle className="w-5 h-5 text-gray-400" />
+      {/* Credit System Info */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="w-5 h-5" />
+            Credit System
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Storage Options</h4>
+            <ul className="text-blue-800 text-sm space-y-1">
+              <li>• <strong>Supabase Storage (Available):</strong> Completely free - included with your Supabase project</li>
+              <li>• <strong>Coming Soon:</strong> Cloudflare CDN, Google Cloud Storage, and AWS S3</li>
+              <li>• Future paid options will cost 1 credit per day when active</li>
+              <li>• Credits will only be consumed on days when the service processes images</li>
+              <li>• You'll be able to switch between providers anytime</li>
+              <li>• Free tier will include 30 credits per month for paid options</li>
+            </ul>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Products Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Products Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {productStatus.map((product) => (
+              <div key={product.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <h4 className="font-medium">{product.name}</h4>
+                  <p className="text-sm text-gray-600">SKU: {product.sku}</p>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="text-right">
+                    <p className="text-sm font-medium">{product.image_count} images</p>
+                    <div className="flex gap-2">
+                      {product.processed_images > 0 && (
+                        <Badge variant="secondary">
+                          {product.processed_images} processed
+                        </Badge>
+                      )}
+                      {product.cloudflare_images > 0 && (
+                        <Badge variant="default">
+                          {product.cloudflare_images} Cloudflare
+                        </Badge>
+                      )}
+                      {product.fallback_images > 0 && (
+                        <Badge variant="outline">
+                          {product.fallback_images} fallback
+                        </Badge>
                       )}
                     </div>
                   </div>
-                ))}
-                
-                {productStatus.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    No products found or still loading...
-                  </div>
-                )}
+                  
+                  {product.has_images ? (
+                    product.processed_images > 0 ? (
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    ) : (
+                      <Clock className="w-5 h-5 text-amber-500" />
+                    )
+                  ) : (
+                    <XCircle className="w-5 h-5 text-gray-400" />
+                  )}
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            ))}
+            
+            {productStatus.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No products found or still loading...
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <AlertComponent />
     </div>
