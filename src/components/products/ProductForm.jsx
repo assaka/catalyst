@@ -60,8 +60,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     weight: "",
     dimensions: { length: "", width: "", height: "" },
     category_ids: [],
-    images: [],
-    image_url: "",
+    images: [], // JSON array of {attribute_code, filepath, filesize}
     status: "active",
     visibility: "visible",
     manage_stock: true,
@@ -90,10 +89,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [currentAttributeCode, setCurrentAttributeCode] = useState(null);
   
-  // Product image system state
-  const [savingBaseImage, setSavingBaseImage] = useState(false);
-  const [additionalImages, setAdditionalImages] = useState({});
-  const baseImageInputRef = useRef(null);
+  // Simplified product image system state
+  const imageInputRef = useRef(null);
 
   useEffect(() => {
     if (product) {
@@ -116,7 +113,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         dimensions: product.dimensions || { length: "", width: "", height: "" },
         category_ids: Array.isArray(product.category_ids) ? product.category_ids : [],
         images: Array.isArray(product.images) ? product.images : [],
-        image_url: product.image_url || "",
         status: product.status || "active",
         visibility: product.visibility || "visible",
         manage_stock: product.manage_stock !== undefined ? product.manage_stock : true,
@@ -141,19 +137,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       });
       
       // Initialize additional images from product data
-      const additionalImagesData = {};
-      for (let i = 0; i < 9; i++) {
-        const imageKey = `image_${i}`;
-        if (product[imageKey]) {
-          additionalImagesData[imageKey] = {
-            url: product[imageKey],
-            label: `Image ${i + 1}`,
-            inputRef: React.createRef(),
-            saving: false
-          };
-        }
-      }
-      setAdditionalImages(additionalImagesData);
+      // Additional images initialization removed - now using simplified images array
       
       // Set original URL key for slug change detection
       setOriginalUrlKey(product.seo?.url_key || product.slug || "");
@@ -336,222 +320,98 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     }));
   };
 
+
+  // Product Image System Handlers - Simplified unified system
+  const generateImagePath = (filename) => {
+    // Create hierarchical path: first_char/second_char/filename
+    const cleanFilename = filename.toLowerCase().replace(/[^a-zA-Z0-9.-]/g, '');
+    const firstChar = cleanFilename.charAt(0) || 'a';
+    const secondChar = cleanFilename.charAt(1) || 'a';
+    return `${firstChar}/${secondChar}/${cleanFilename}`;
+  };
+
   const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     setUploadingImage(true);
     try {
-      const { file_url } = await UploadFile({ file: file });
-      setFormData(prev => ({ ...prev, images: [...prev.images, file_url] }));
-      setFlashMessage({ type: 'success', message: 'Image uploaded successfully!' });
-      event.target.value = '';
+      const storeId = getSelectedStoreId();
+      
+      // Generate hierarchical path
+      const hierarchicalPath = generateImagePath(file.name);
+      
+      const response = await apiClient.uploadFile('/storage/upload', file, {
+        folder: `product/images/${hierarchicalPath}`,
+        public: 'true',
+        store_id: storeId
+      });
+
+      if (response.success) {
+        const newImage = {
+          attribute_code: `image_${formData.images.length}`,
+          filepath: hierarchicalPath,
+          filesize: file.size,
+          url: response.data.url
+        };
+        
+        setFormData(prev => ({ 
+          ...prev, 
+          images: [...prev.images, newImage]
+        }));
+        
+        // Auto-save if editing existing product
+        if (product && product.id) {
+          await saveProductImages([...formData.images, newImage]);
+        }
+        
+        toast.success('Image uploaded successfully');
+      } else {
+        toast.error('Failed to upload image');
+      }
     } catch (error) {
-      console.error("Error uploading image:", error);
-      setFlashMessage({ type: 'error', message: 'Failed to upload image' });
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
     } finally {
       setUploadingImage(false);
     }
   };
 
-  const handleImageRemove = (index) => {
-    setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
-  };
-
-  // Product Image System Handlers
-  const handleBaseImageUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setSavingBaseImage(true);
-    try {
-      const storeId = getSelectedStoreId();
-      const response = await apiClient.uploadFile('/storage/upload', file, {
-        folder: 'product/images',
-        public: 'true',
-        store_id: storeId
-      });
-
-      if (response.success) {
-        const newImageUrl = response.data.url;
-        setFormData(prev => ({ ...prev, image_url: newImageUrl }));
-        
-        // Auto-save if editing existing product
-        if (product && product.id) {
-          await saveProductImage('image_url', newImageUrl);
-        }
-        
-        toast.success('Base image uploaded successfully');
-      } else {
-        toast.error('Failed to upload base image');
-      }
-    } catch (error) {
-      console.error('Error uploading base image:', error);
-      toast.error('Failed to upload base image');
-    } finally {
-      setSavingBaseImage(false);
-    }
-  };
-
-  const handleRemoveBaseImage = async () => {
-    const oldImageUrl = formData.image_url;
-    setFormData(prev => ({ ...prev, image_url: '' }));
+  const handleImageRemove = async (index) => {
+    const oldImages = [...formData.images];
+    const newImages = formData.images.filter((_, i) => i !== index);
+    
+    setFormData(prev => ({ ...prev, images: newImages }));
     
     // Auto-save if editing existing product
     if (product && product.id) {
       try {
-        await saveProductImage('image_url', '');
-        toast.success('Base image removed');
+        await saveProductImages(newImages);
+        toast.success('Image removed successfully');
       } catch (error) {
-        console.error('Error removing base image:', error);
-        setFormData(prev => ({ ...prev, image_url: oldImageUrl }));
-        toast.error('Failed to remove base image');
-      }
-    }
-  };
-
-  const handleAddNewImage = () => {
-    const existingKeys = Object.keys(additionalImages);
-    let nextIndex = 0;
-    
-    // Find the next available image slot (image_0, image_1, etc.)
-    while (existingKeys.includes(`image_${nextIndex}`) && nextIndex < 9) {
-      nextIndex++;
-    }
-    
-    if (nextIndex >= 9) {
-      toast.error('Maximum 9 additional images allowed');
-      return;
-    }
-    
-    const imageKey = `image_${nextIndex}`;
-    setAdditionalImages(prev => ({
-      ...prev,
-      [imageKey]: {
-        url: '',
-        label: `Image ${nextIndex + 1}`,
-        inputRef: React.createRef(),
-        saving: false
-      }
-    }));
-  };
-
-  const handleAdditionalImageUrlChange = (imageKey, url) => {
-    setAdditionalImages(prev => ({
-      ...prev,
-      [imageKey]: {
-        ...prev[imageKey],
-        url
-      }
-    }));
-  };
-
-  const handleAdditionalImageUpload = async (imageKey, event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    setAdditionalImages(prev => ({
-      ...prev,
-      [imageKey]: {
-        ...prev[imageKey],
-        saving: true
-      }
-    }));
-
-    try {
-      const storeId = getSelectedStoreId();
-      const response = await apiClient.uploadFile('/storage/upload', file, {
-        folder: 'product/images',
-        public: 'true',
-        store_id: storeId
-      });
-
-      if (response.success) {
-        const newImageUrl = response.data.url;
-        setAdditionalImages(prev => ({
-          ...prev,
-          [imageKey]: {
-            ...prev[imageKey],
-            url: newImageUrl,
-            saving: false
-          }
-        }));
-        
-        // Auto-save if editing existing product
-        if (product && product.id) {
-          await saveProductImage(imageKey, newImageUrl);
-        }
-        
-        toast.success(`${additionalImages[imageKey].label} uploaded successfully`);
-      } else {
-        toast.error(`Failed to upload ${additionalImages[imageKey].label}`);
-      }
-    } catch (error) {
-      console.error(`Error uploading ${imageKey}:`, error);
-      toast.error(`Failed to upload ${additionalImages[imageKey].label}`);
-    } finally {
-      setAdditionalImages(prev => ({
-        ...prev,
-        [imageKey]: {
-          ...prev[imageKey],
-          saving: false
-        }
-      }));
-    }
-  };
-
-  const handleRemoveAdditionalImage = async (imageKey) => {
-    const oldImageUrl = additionalImages[imageKey]?.url;
-    
-    setAdditionalImages(prev => {
-      const newImages = { ...prev };
-      delete newImages[imageKey];
-      return newImages;
-    });
-    
-    // Auto-save if editing existing product
-    if (product && product.id && oldImageUrl) {
-      try {
-        await saveProductImage(imageKey, '');
-        toast.success(`${additionalImages[imageKey]?.label || 'Image'} removed`);
-      } catch (error) {
-        console.error(`Error removing ${imageKey}:`, error);
-        // Restore the image on failure
-        setAdditionalImages(prev => ({
-          ...prev,
-          [imageKey]: {
-            url: oldImageUrl,
-            label: `Image ${imageKey.replace('image_', '')} ${parseInt(imageKey.replace('image_', '')) + 1}`,
-            inputRef: React.createRef(),
-            saving: false
-          }
-        }));
+        console.error('Error removing image:', error);
+        setFormData(prev => ({ ...prev, images: oldImages }));
         toast.error('Failed to remove image');
       }
     }
   };
 
-  const saveProductImage = async (field, value) => {
+  const saveProductImages = async (imagesArray) => {
     if (!product || !product.id) return;
     
     try {
       const storeId = getSelectedStoreId();
       const updateData = {
         ...formData,
-        [field]: value
+        images: imagesArray
       };
-      
-      // Also include additional images data
-      Object.entries(additionalImages).forEach(([key, imageData]) => {
-        updateData[key] = imageData.url || '';
-      });
       
       const response = await apiClient.put(`/products/${product.id}`, updateData, {
         'x-store-id': storeId
       });
       
       if (!response.success) {
-        throw new Error('Failed to save product image');
+        throw new Error('Failed to save product images');
       }
     } catch (error) {
       console.error('Error saving product image:', error);
@@ -657,18 +517,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           width: formData.dimensions.width ? parseFloat(formData.dimensions.width) : null,
           height: formData.dimensions.height ? parseFloat(formData.dimensions.height) : null
         },
+        // Product images - unified system (JSON array with attribute_code, filepath, filesize)
         images: Array.isArray(formData.images) ? formData.images : [],
-        // Product image system - base image and additional images
-        image_url: formData.image_url || null,
-        image_0: additionalImages.image_0 || null,
-        image_1: additionalImages.image_1 || null,
-        image_2: additionalImages.image_2 || null,
-        image_3: additionalImages.image_3 || null,
-        image_4: additionalImages.image_4 || null,
-        image_5: additionalImages.image_5 || null,
-        image_6: additionalImages.image_6 || null,
-        image_7: additionalImages.image_7 || null,
-        image_8: additionalImages.image_8 || null,
         category_ids: Array.isArray(formData.category_ids) ? formData.category_ids : [],
         status: formData.status,
         visibility: formData.visibility,
@@ -868,338 +718,81 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </Card>
         </div>
 
-        {/* Product Images - Direct Storage System */}
+        {/* Product Images - Unified Storage System */}
         <Card>
           <CardHeader>
             <CardTitle>Product Images</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Base Image Section */}
-            <div>
-              <Label className="text-base font-medium">Base Image</Label>
-              <p className="text-sm text-gray-500 mb-3">Main product image displayed in listings and product pages</p>
-              
-              <div className="flex gap-4 items-start">
-                <div className="flex-1">
-                  <Input
-                    value={formData.image_url || ''}
-                    onChange={(e) => handleInputChange("image_url", e.target.value)}
-                    placeholder="Enter image URL or upload an image"
-                    disabled={loading}
-                  />
-                </div>
-                
-                <input
-                  type="file"
-                  ref={baseImageInputRef}
-                  onChange={handleBaseImageUpload}
-                  accept="image/*"
-                  className="hidden"
-                  disabled={loading || savingBaseImage}
-                />
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => baseImageInputRef.current?.click()}
-                  disabled={loading || savingBaseImage}
-                  className="flex items-center gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  {savingBaseImage ? 'Uploading...' : 'Upload'}
-                </Button>
-              </div>
-              
-              {/* Base Image Preview */}
-              {formData.image_url && (
-                <div className="mt-3 relative inline-block">
+            
+            {/* Images Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {formData.images.map((image, index) => (
+                <div key={image.attribute_code || index} className="relative group border rounded-lg overflow-hidden">
                   <img 
-                    src={formData.image_url} 
-                    alt="Base product image" 
-                    className={`w-32 h-32 object-cover rounded-lg border ${savingBaseImage ? 'opacity-50' : ''}`}
+                    src={image.url} 
+                    alt={`Product image ${index + 1}`}
+                    className="w-full h-32 object-cover"
                   />
-                  {savingBaseImage && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded-lg">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                    </div>
-                  )}
                   <Button
                     type="button"
                     variant="destructive"
                     size="icon"
-                    className="absolute -top-2 -right-2 h-6 w-6"
-                    onClick={() => handleRemoveBaseImage()}
-                    disabled={loading || savingBaseImage}
+                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => handleImageRemove(index)}
+                    disabled={loading || uploadingImage}
                   >
                     <X className="h-4 w-4" />
                   </Button>
-                  {savingBaseImage && (
-                    <p className="text-xs text-blue-600 mt-1">Saving image...</p>
+                  
+                  {/* Image info */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2">
+                    <p className="truncate">{image.filepath}</p>
+                    <p>{(image.filesize / 1024).toFixed(1)} KB</p>
+                  </div>
+                </div>
+              ))}
+              
+              {/* Add Image Button - Always on the right */}
+              <div className="relative border-2 border-dashed border-gray-300 rounded-lg hover:border-gray-400 transition-colors">
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  disabled={loading || uploadingImage}
+                />
+                <div className="h-32 flex flex-col items-center justify-center text-gray-500 hover:text-gray-700">
+                  {uploadingImage ? (
+                    <>
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mb-2"></div>
+                      <span className="text-xs">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-8 h-8 mb-2" />
+                      <span className="text-sm font-medium">Add Image</span>
+                    </>
                   )}
                 </div>
-              )}
-            </div>
-
-            <Separator />
-
-            {/* Additional Images Section */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <Label className="text-base font-medium">Additional Images</Label>
-                  <p className="text-sm text-gray-500">Extra product images for gallery and detailed views</p>
-                </div>
-                
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAddNewImage}
-                  disabled={loading || Object.keys(additionalImages).length >= 9}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Image
-                </Button>
-              </div>
-
-              {/* Additional Images List */}
-              <div className="space-y-4">
-                {Object.entries(additionalImages).map(([key, imageData]) => (
-                  <div key={key} className="flex gap-4 items-start p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <Label className="text-sm font-medium">{imageData.label}</Label>
-                      <div className="flex gap-2 mt-1">
-                        <Input
-                          value={imageData.url || ''}
-                          onChange={(e) => handleAdditionalImageUrlChange(key, e.target.value)}
-                          placeholder="Enter image URL or upload an image"
-                          disabled={loading}
-                          className="flex-1"
-                        />
-                        
-                        <input
-                          type="file"
-                          ref={imageData.inputRef}
-                          onChange={(e) => handleAdditionalImageUpload(key, e)}
-                          accept="image/*"
-                          className="hidden"
-                          disabled={loading || imageData.saving}
-                        />
-                        
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => imageData.inputRef.current?.click()}
-                          disabled={loading || imageData.saving}
-                        >
-                          <Upload className="w-4 h-4" />
-                        </Button>
-                        
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleRemoveAdditionalImage(key)}
-                          disabled={loading || imageData.saving}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                      
-                      {imageData.saving && (
-                        <p className="text-xs text-blue-600 mt-1">Saving image...</p>
-                      )}
-                    </div>
-                    
-                    {/* Image Preview */}
-                    {imageData.url && (
-                      <div className="relative">
-                        <img 
-                          src={imageData.url} 
-                          alt={`Additional product image ${key}`}
-                          className={`w-20 h-20 object-cover rounded border ${imageData.saving ? 'opacity-50' : ''}`}
-                        />
-                        {imageData.saving && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                
-                {Object.keys(additionalImages).length === 0 && (
-                  <div className="text-center text-gray-500 py-8 border border-dashed rounded-lg">
-                    <ImageIcon className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No additional images added</p>
-                    <p className="text-xs">Click "Add Image" to add more product images</p>
-                  </div>
-                )}
               </div>
             </div>
+            
+            {/* Empty state */}
+            {formData.images.length === 0 && (
+              <div className="text-center text-gray-500 py-12 border border-dashed rounded-lg">
+                <ImageIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">No product images</p>
+                <p className="text-sm">Click "Add Image" to upload your first product image</p>
+              </div>
+            )}
+            
+            <p className="text-xs text-gray-500">
+              Images will be stored with hierarchical paths (e.g., /h/a/hamid.png) and saved instantly when uploaded.
+            </p>
           </CardContent>
         </Card>
-
-        {/* Product Image Attributes - Grouped above Inventory & Stock */}
-        {selectedAttributes.length > 0 && (() => {
-          const imageAttributes = selectedAttributes.filter(attr => 
-            attr.type === 'image' || (
-              attr.type === 'file' && 
-              attr.file_settings?.allowed_extensions?.some(ext => 
-                ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
-              )
-            )
-          );
-          
-          if (imageAttributes.length === 0) return null;
-          
-          const attributesWithImages = imageAttributes.filter(attr => {
-            const value = formData.attributes[attr.code];
-            return value && (typeof value === 'object' ? value.url : value);
-          });
-          const attributesWithoutImages = imageAttributes.filter(attr => {
-            const value = formData.attributes[attr.code];
-            return !value || !(typeof value === 'object' ? value.url : value);
-          });
-
-          return (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <span className="mr-2">🖼️</span>
-                  Product Image Attributes
-                  <Badge variant="outline" className="ml-2">
-                    {attributesWithImages.length}/{imageAttributes.length} with images
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Attributes with images */}
-                {attributesWithImages.length > 0 && (
-                  <div className="space-y-4">
-                    <h5 className="font-medium text-green-700">Images Added ({attributesWithImages.length})</h5>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {attributesWithImages.map(attribute => {
-                        const attributeValue = formData.attributes[attribute.code];
-                        const imageUrl = typeof attributeValue === 'object' ? attributeValue.url : attributeValue;
-                        
-                        return (
-                          <div key={attribute.id} className="border rounded-lg p-4 bg-green-50">
-                            <div className="flex items-start justify-between mb-3">
-                              <Label className="font-medium text-green-800">{attribute.name}</Label>
-                              <button
-                                type="button"
-                                onClick={() => handleAttributeValueChange(attribute.code, null)}
-                                className="text-red-500 hover:text-red-700 p-1"
-                                title="Remove image"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                            
-                            {imageUrl && (
-                              <div className="mb-3">
-                                <img 
-                                  src={imageUrl} 
-                                  alt={attribute.name}
-                                  className="w-full h-32 object-cover rounded border"
-                                />
-                              </div>
-                            )}
-                            
-                            <div className="space-y-2">
-                              <div className="flex gap-2">
-                                <input
-                                  type="file"
-                                  id={`img_attr_${attribute.code}`}
-                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
-                                  accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',') || 'image/*'}
-                                  className="block flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                  disabled={uploadingImage}
-                                />
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    setCurrentAttributeCode(attribute.code);
-                                    setShowMediaBrowser(true);
-                                  }}
-                                  className="flex items-center gap-2"
-                                >
-                                  <ImageIcon className="w-4 h-4" />
-                                  Library
-                                </Button>
-                              </div>
-                              {attribute.file_settings && (
-                                <p className="text-xs text-gray-500">
-                                  Max: {attribute.file_settings.max_file_size}MB • 
-                                  Allowed: {attribute.file_settings.allowed_extensions?.join(', ')}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Attributes without images */}
-                {attributesWithoutImages.length > 0 && (
-                  <div className="space-y-4">
-                    <h5 className="font-medium text-gray-700">Upload Images ({attributesWithoutImages.length})</h5>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {attributesWithoutImages.map(attribute => (
-                        <div key={attribute.id} className="border rounded-lg p-4 bg-gray-50">
-                          <Label htmlFor={`img_attr_${attribute.code}`} className="font-medium mb-2 block">
-                            {attribute.name}
-                          </Label>
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <input
-                                type="file"
-                                id={`img_attr_${attribute.code}`}
-                                onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
-                                accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',') || 'image/*'}
-                                className="block flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                disabled={uploadingImage}
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setCurrentAttributeCode(attribute.code);
-                                  setShowMediaBrowser(true);
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <ImageIcon className="w-4 h-4" />
-                                Library
-                              </Button>
-                            </div>
-                            {uploadingImage && (
-                              <p className="text-sm text-blue-600">Uploading image...</p>
-                            )}
-                            {attribute.file_settings && (
-                              <p className="text-xs text-gray-500">
-                                Max: {attribute.file_settings.max_file_size}MB • 
-                                Allowed: {attribute.file_settings.allowed_extensions?.join(', ')}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })()}
 
         <Card>
           <CardHeader><CardTitle>Inventory & Stock</CardTitle></CardHeader>
