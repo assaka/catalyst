@@ -410,7 +410,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
         { name: "Media Storage", path: "media-storage", icon: Image },
-        { name: "Database", path: "database-integrations", icon: Database, isPremium: true },
+        { name: "Database", path: "database-integrations", icon: Database },
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "STORES", icon: Building2 },
         ] : []),
