@@ -44,6 +44,9 @@ const DatabaseIntegrations = () => {
       
       setDefaultProvider(provider);
       toast.success(`${provider} set as default database provider`);
+      
+      // Refresh the default provider status
+      await fetchDefaultProvider();
     } catch (error) {
       console.error('Error setting default database provider:', error);
       toast.error('Failed to set as default database provider');

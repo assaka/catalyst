@@ -73,14 +73,26 @@ router.post('/stores/:storeId/default-database-provider',
         default_database_provider_updated_at: new Date().toISOString()
       };
       
+      console.log('Current settings before update:', currentSettings);
       console.log('Updating store settings with:', updatedSettings);
       
-      // Use update method to ensure the JSON field is properly saved
-      await store.update({
-        settings: updatedSettings
-      });
+      // Use raw query to ensure the JSON field is properly updated
+      const { sequelize } = require('../database/connection');
+      await sequelize.query(
+        `UPDATE stores 
+         SET settings = :settings,
+             updated_at = NOW()
+         WHERE id = :storeId`,
+        {
+          replacements: {
+            settings: JSON.stringify(updatedSettings),
+            storeId: storeId
+          },
+          type: sequelize.QueryTypes.UPDATE
+        }
+      );
       
-      // Verify the update
+      // Reload the store to get the updated data
       await store.reload();
       console.log('Settings after save:', store.settings);
       
@@ -121,10 +133,21 @@ router.delete('/stores/:storeId/default-database-provider',
       delete updatedSettings.default_database_provider;
       delete updatedSettings.default_database_provider_updated_at;
       
-      // Use update method to ensure the JSON field is properly saved
-      await store.update({
-        settings: updatedSettings
-      });
+      // Use raw query to ensure the JSON field is properly updated
+      const { sequelize } = require('../database/connection');
+      await sequelize.query(
+        `UPDATE stores 
+         SET settings = :settings,
+             updated_at = NOW()
+         WHERE id = :storeId`,
+        {
+          replacements: {
+            settings: JSON.stringify(updatedSettings),
+            storeId: storeId
+          },
+          type: sequelize.QueryTypes.UPDATE
+        }
+      );
       
       res.json({
         success: true,

@@ -69,6 +69,9 @@ const SupabasePage = () => {
       
       setIsDefault(true);
       toast.success('Supabase set as default database provider');
+      
+      // Refresh the default status to ensure consistency
+      await checkIfDefault();
     } catch (error) {
       console.error('Error setting default database provider:', error);
       toast.error('Failed to set as default database provider');
