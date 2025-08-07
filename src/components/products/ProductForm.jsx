@@ -597,9 +597,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid md:grid-cols-2 gap-6">
-          <Card>
+          <Card className="flex flex-col">
             <CardHeader><CardTitle>Basic Information</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="flex-1 flex flex-col space-y-4">
               <div>
                 <Label htmlFor="name">Product Name *</Label>
                 <Input
@@ -632,16 +632,17 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   id="short_description"
                   value={formData.short_description}
                   onChange={(e) => handleInputChange("short_description", e.target.value)}
-                  rows={3}
+                  rows={2}
+                  className="resize-none"
                 />
               </div>
-              <div>
+              <div className="flex-1 flex flex-col">
                 <Label htmlFor="description">Full Description</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleInputChange("description", e.target.value)}
-                  rows={6}
+                  className="flex-1 min-h-[200px] resize-none"
                 />
               </div>
             </CardContent>
@@ -717,26 +718,28 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 </CardContent>
               </Card>
 
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(v) => handleInputChange("status", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="visibility">Visibility</Label>
-                <Select value={formData.visibility} onValueChange={(v) => handleInputChange("visibility", v)}>
-                  <SelectTrigger><SelectValue placeholder="Select visibility" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="visible">Visible</SelectItem>
-                    <SelectItem value="hidden">Hidden</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={formData.status} onValueChange={(v) => handleInputChange("status", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="inactive">Inactive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="visibility">Visibility</Label>
+                  <Select value={formData.visibility} onValueChange={(v) => handleInputChange("visibility", v)}>
+                    <SelectTrigger><SelectValue placeholder="Select visibility" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="visible">Visible</SelectItem>
+                      <SelectItem value="hidden">Hidden</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <Separator className="my-4" />

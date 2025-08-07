@@ -74,7 +74,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 
 export default function Products() {
   const navigate = useNavigate();
-  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId, availableStores } = useStoreSelection();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [taxes, setTaxes] = useState([]);
@@ -941,8 +941,31 @@ export default function Products() {
                                 <DropdownMenuContent>
                                   <DropdownMenuItem
                                     onClick={() => {
-                                      const storeCode = selectedStore?.slug;
+                                      // Get store info - try selectedStore first, then find from availableStores
+                                      let storeInfo = selectedStore;
+                                      
+                                      // If selectedStore doesn't have slug, try to find the full store data
+                                      if (!storeInfo?.slug && product.store_id) {
+                                        storeInfo = availableStores?.find(s => s.id === product.store_id);
+                                      }
+                                      
+                                      // If still no store info, try using the first available store
+                                      if (!storeInfo?.slug && availableStores?.length > 0) {
+                                        storeInfo = availableStores[0];
+                                      }
+                                      
+                                      const storeCode = storeInfo?.slug;
                                       const productSlug = product.seo?.url_key || product.slug || product.id;
+                                      
+                                      console.log('View button debug:', {
+                                        selectedStore,
+                                        storeInfo,
+                                        availableStores,
+                                        productStoreId: product.store_id,
+                                        storeCode,
+                                        productSlug
+                                      });
+                                      
                                       if (storeCode && productSlug) {
                                         // Open in new tab to view the storefront product page
                                         const url = `/public/${storeCode}/product/${productSlug}`;
@@ -951,7 +974,10 @@ export default function Products() {
                                         console.error('Missing store slug or product slug:', { 
                                           storeSlug: storeCode, 
                                           productSlug,
-                                          selectedStore
+                                          selectedStore,
+                                          storeInfo,
+                                          availableStores,
+                                          productStoreId: product.store_id
                                         });
                                       }
                                     }}

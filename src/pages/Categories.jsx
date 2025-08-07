@@ -49,7 +49,7 @@ import { Label } from "@/components/ui/label";
 import CategoryForm from "../components/categories/CategoryForm";
 
 export default function Categories() {
-  const { selectedStore, getSelectedStoreId } = useStoreSelection();
+  const { selectedStore, getSelectedStoreId, availableStores } = useStoreSelection();
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -525,8 +525,22 @@ export default function Categories() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
                       onClick={() => {
-                        const storeCode = selectedStore?.slug;
+                        // Get store info - try selectedStore first, then find from availableStores
+                        let storeInfo = selectedStore;
+                        
+                        // If selectedStore doesn't have slug, try to find the full store data
+                        if (!storeInfo?.slug && category.store_id) {
+                          storeInfo = availableStores?.find(s => s.id === category.store_id);
+                        }
+                        
+                        // If still no store info, try using the first available store
+                        if (!storeInfo?.slug && availableStores?.length > 0) {
+                          storeInfo = availableStores[0];
+                        }
+                        
+                        const storeCode = storeInfo?.slug;
                         const categorySlug = category.seo?.url_key || category.slug || category.id;
+                        
                         if (storeCode && categorySlug) {
                           // Open in new tab to view the storefront category page
                           const url = `/public/${storeCode}/category/${categorySlug}`;
@@ -535,7 +549,10 @@ export default function Categories() {
                           console.error('Missing store slug or category slug:', { 
                             storeSlug: storeCode, 
                             categorySlug,
-                            selectedStore
+                            selectedStore,
+                            storeInfo,
+                            availableStores,
+                            categoryStoreId: category.store_id
                           });
                         }
                       }}
@@ -938,18 +955,35 @@ export default function Categories() {
                         <DropdownMenuContent>
                           <DropdownMenuItem
                             onClick={() => {
-                              const storeCode = selectedStore?.slug;
+                              // Get store info - try selectedStore first, then find from availableStores
+                              let storeInfo = selectedStore;
+                              
+                              // If selectedStore doesn't have slug, try to find the full store data
+                              if (!storeInfo?.slug && category.store_id) {
+                                storeInfo = availableStores?.find(s => s.id === category.store_id);
+                              }
+                              
+                              // If still no store info, try using the first available store
+                              if (!storeInfo?.slug && availableStores?.length > 0) {
+                                storeInfo = availableStores[0];
+                              }
+                              
+                              const storeCode = storeInfo?.slug;
                               const categorySlug = category.seo?.url_key || category.slug || category.id;
+                              
                               if (storeCode && categorySlug) {
                                 // Open in new tab to view the storefront category page
                                 const url = `/public/${storeCode}/category/${categorySlug}`;
                                 window.open(url, '_blank');
                               } else {
                                 console.error('Missing store slug or category slug:', { 
-                            storeSlug: storeCode, 
-                            categorySlug,
-                            selectedStore
-                          });
+                                  storeSlug: storeCode, 
+                                  categorySlug,
+                                  selectedStore,
+                                  storeInfo,
+                                  availableStores,
+                                  categoryStoreId: category.store_id
+                                });
                               }
                             }}
                           >
