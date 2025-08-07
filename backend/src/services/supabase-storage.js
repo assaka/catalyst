@@ -1069,6 +1069,54 @@ class SupabaseStorageService {
       throw new Error('Failed to get storage statistics: ' + error.message);
     }
   }
+
+  /**
+   * Recursively traverse a folder and collect all files
+   * @param {Object} client - Supabase client
+   * @param {string} bucketName - Name of the bucket
+   * @param {string} folderPath - Current folder path
+   * @param {Array} allFiles - Array to collect files into
+   * @param {number} currentDepth - Current recursion depth
+   * @param {number} maxDepth - Maximum recursion depth
+   */
+  async traverseFolderRecursively(client, bucketName, folderPath, allFiles, currentDepth = 0, maxDepth = 3) {
+    // Prevent infinite recursion
+    if (currentDepth >= maxDepth) {
+      console.log(`Max depth ${maxDepth} reached for folder: ${folderPath}`);
+      return;
+    }
+
+    try {
+      const { data: folderContents, error: folderError } = await client.storage
+        .from(bucketName)
+        .list(folderPath, { limit: 1000 });
+      
+      if (folderError) {
+        console.log(`Error accessing folder ${folderPath}:`, folderError.message);
+        return;
+      }
+
+      if (folderContents && folderContents.length > 0) {
+        // Add files directly in this folder (files have 'id' property)
+        const directFiles = folderContents.filter(f => f.id && f.name);
+        allFiles.push(...directFiles);
+        console.log(`Found ${directFiles.length} files in ${folderPath}/`);
+        
+        // Recursively check subdirectories (folders don't have 'id' property)
+        const subdirs = folderContents.filter(f => !f.id && f.name);
+        console.log(`Found ${subdirs.length} subdirectories in ${folderPath}/: ${subdirs.map(f => f.name).join(', ')}`);
+        
+        for (const subdir of subdirs) {
+          const subPath = `${folderPath}/${subdir.name}`;
+          await this.traverseFolderRecursively(client, bucketName, subPath, allFiles, currentDepth + 1, maxDepth);
+        }
+      } else {
+        console.log(`Folder ${folderPath}/ is empty`);
+      }
+    } catch (err) {
+      console.log(`Error traversing folder ${folderPath}:`, err.message);
+    }
+  }
 }
 
 module.exports = new SupabaseStorageService();
