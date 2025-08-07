@@ -351,7 +351,7 @@ const SupabaseStorage = () => {
               <div className="p-4 bg-purple-50 rounded-lg">
                 <p className="text-sm text-purple-600">Total Size</p>
                 <p className="text-2xl font-bold text-purple-900">
-                  {storageStats.totalSizeMB ? `${storageStats.totalSizeMB.toFixed(2)} MB` : '0 MB'}
+                  {storageStats.totalSizeMB ? `${Number(storageStats.totalSizeMB).toFixed(2)} MB` : '0 MB'}
                 </p>
               </div>
               <div className="p-4 bg-green-50 rounded-lg">
