@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useAlertTypes } from '@/hooks/useAlert';
 import SupabaseStorage from './SupabaseStorage';
+import apiClient from '@/lib/api-client';
 import {
   Image,
   Upload,
@@ -105,8 +106,7 @@ const MediaStorage = () => {
     try {
       setLoadingStats(true);
       const storeId = getSelectedStoreId();
-      const response = await fetch(`/api/images/stats/${storeId}`);
-      const data = await response.json();
+      const data = await apiClient.get(`/images/stats/${storeId}`);
       
       if (data.success) {
         setStats(data.stats);
@@ -123,8 +123,7 @@ const MediaStorage = () => {
   const loadProductStatus = async () => {
     try {
       const storeId = getSelectedStoreId();
-      const response = await fetch(`/api/images/product-status/${storeId}?limit=10`);
-      const data = await response.json();
+      const data = await apiClient.get(`/images/product-status/${storeId}?limit=10`);
       
       if (data.success) {
         setProductStatus(data.products);
@@ -139,18 +138,11 @@ const MediaStorage = () => {
       setTestingConfig(true);
       const storeId = getSelectedStoreId();
       
-      const response = await fetch('/api/images/test-config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          store_id: storeId,
-          test_url: testImageUrl || undefined
-        })
+      const data = await apiClient.post('/images/test-config', {
+        store_id: storeId,
+        test_url: testImageUrl || undefined
       });
       
-      const data = await response.json();
       setConfigTest(data);
       
       if (data.success) {
@@ -171,20 +163,12 @@ const MediaStorage = () => {
       setProcessing(true);
       const storeId = getSelectedStoreId();
       
-      const response = await fetch('/api/images/process-products', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          store_id: storeId,
-          limit: batchSize,
-          force_reprocess: forceReprocess,
-          concurrency: concurrency
-        })
+      const data = await apiClient.post('/images/process-products', {
+        store_id: storeId,
+        limit: batchSize,
+        force_reprocess: forceReprocess,
+        concurrency: concurrency
       });
-      
-      const data = await response.json();
       
       if (data.success) {
         showSuccess(`Successfully processed ${data.processed} out of ${data.total} products`);
