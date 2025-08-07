@@ -12,7 +12,7 @@ import Products from "./Products";
 
 import Categories from "./Categories";
 
-import MediaStorage from "../components/admin/MediaStorage";
+import MediaStorage from "./MediaStorage";
 import SupabasePage from "./SupabasePage";
 
 import Settings from "./Settings";
