@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
 import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
 import SupabaseStorage from '../components/admin/SupabaseStorage';
-import apiClient from '../lib/api-client';
 import { Database } from 'lucide-react';
 
 const SupabasePage = () => {
@@ -21,12 +20,16 @@ const SupabasePage = () => {
   const loadConnectionStatus = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/supabase/status', {
-        'x-store-id': storeId
+      const response = await fetch('/api/supabase/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'x-store-id': storeId
+        }
       });
 
-      if (response.success) {
-        setConnectionStatus(response);
+      const data = await response.json();
+      if (data.success) {
+        setConnectionStatus(data);
       }
     } catch (error) {
       console.error('Error loading Supabase status:', error);
