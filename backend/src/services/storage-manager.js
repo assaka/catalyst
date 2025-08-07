@@ -108,7 +108,38 @@ class StorageManager {
    * @returns {Promise<Object>} Provider info with type and instance
    */
   async getStorageProvider(storeId) {
-    // Check if Supabase is configured for this store
+    // First check if store has a default database provider configured
+    try {
+      const { Store } = require('../models');
+      const store = await Store.findByPk(storeId);
+      
+      if (store && store.settings?.default_database_provider) {
+        const defaultProvider = store.settings.default_database_provider;
+        console.log(`Store ${storeId} has default provider: ${defaultProvider}`);
+        
+        // Check if it's Supabase and configured
+        if (defaultProvider === 'supabase' && this.providers.has('supabase')) {
+          try {
+            const supabaseIntegration = require('./supabase-integration');
+            const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
+            
+            if (connectionStatus.connected) {
+              return {
+                type: 'supabase',
+                provider: this.providers.get('supabase'),
+                name: 'Supabase Storage'
+              };
+            }
+          } catch (error) {
+            console.log(`Supabase configured but not connected for store ${storeId}:`, error.message);
+          }
+        }
+      }
+    } catch (error) {
+      console.log(`Could not check store default provider:`, error.message);
+    }
+    
+    // Check if Supabase is configured for this store (fallback to direct check)
     if (this.providers.has('supabase')) {
       try {
         const supabaseIntegration = require('./supabase-integration');
@@ -130,7 +161,17 @@ class StorageManager {
     const preferenceOrder = ['s3', 'gcs', 'local'];
     for (const providerType of preferenceOrder) {
       if (this.providers.has(providerType)) {
-        // For now, assume other providers are available if registered
+        // For local storage, always return it as available
+        if (providerType === 'local') {
+          console.log(`Using local storage as fallback for store ${storeId}`);
+          return {
+            type: 'local',
+            provider: this.providers.get('local'),
+            name: 'Local Storage'
+          };
+        }
+        
+        // For cloud providers, check store-specific configuration
         // TODO: Add store-specific configuration checks for S3, GCS, etc.
         return {
           type: providerType,
@@ -140,7 +181,7 @@ class StorageManager {
       }
     }
 
-    // No providers available
+    // No providers available (this should rarely happen)
     throw new Error('No storage providers are available for this store. Please configure a storage provider.');
   }
 
