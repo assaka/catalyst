@@ -13,7 +13,8 @@ import {
   Zap,
   Info,
   Clock,
-  Lock
+  Lock,
+  CheckCircle
 } from 'lucide-react';
 
 const MediaStorage = () => {
@@ -21,6 +22,7 @@ const MediaStorage = () => {
   const [activeTab, setActiveTab] = useState('supabase');
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [bucketsEnsured, setBucketsEnsured] = useState(false);
   
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
 
@@ -43,12 +45,45 @@ const MediaStorage = () => {
       const data = await response.json();
       if (data.success) {
         setConnectionStatus(data);
+        
+        // If connected and has service role key, automatically ensure buckets exist
+        if (data.connected && data.hasServiceRoleKey && !bucketsEnsured) {
+          await ensureBuckets();
+        }
       }
     } catch (error) {
       console.error('Error loading Supabase status:', error);
       setConnectionStatus({ connected: false });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const ensureBuckets = async () => {
+    try {
+      const response = await fetch('/api/supabase/storage/ensure-buckets', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'x-store-id': storeId,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setBucketsEnsured(true);
+        
+        // Log bucket creation results for transparency
+        if (data.bucketsCreated && data.bucketsCreated.length > 0) {
+          console.log('Created buckets:', data.bucketsCreated.join(', '));
+        } else if (data.message) {
+          console.log('Bucket status:', data.message);
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring buckets:', error);
     }
   };
 
@@ -174,6 +209,16 @@ const MediaStorage = () => {
               {/* Show storage management if connected */}
               {connectionStatus?.connected && (
                 <div className="space-y-6">
+                  {/* Bucket creation notification */}
+                  {bucketsEnsured && (
+                    <Alert className="border-green-200 bg-green-50">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertDescription className="text-green-800">
+                        Storage buckets have been automatically checked and ensured. The <strong>suprshop-images</strong> and <strong>suprshop-assets</strong> buckets are ready for use.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
                   {/* Connection Management */}
                   <SupabaseIntegration storeId={storeId} />
                   

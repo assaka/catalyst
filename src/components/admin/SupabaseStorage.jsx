@@ -37,6 +37,7 @@ const SupabaseStorage = () => {
   const [testing, setTesting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+  const [bucketsAutoChecked, setBucketsAutoChecked] = useState(false);
 
   useEffect(() => {
     if (selectedStore) {
@@ -59,6 +60,12 @@ const SupabaseStorage = () => {
         
         // Load buckets if connected
         if (response.connected && response.hasServiceRoleKey) {
+          // Automatically ensure buckets exist on first load
+          if (!bucketsAutoChecked) {
+            await ensureBucketsQuietly();
+            setBucketsAutoChecked(true);
+          }
+          
           await loadBuckets();
           await loadStorageStats();
         }
@@ -68,6 +75,24 @@ const SupabaseStorage = () => {
       showError('Failed to load Supabase status');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const ensureBucketsQuietly = async () => {
+    try {
+      const storeId = getSelectedStoreId();
+      
+      const response = await apiClient.post('/supabase/storage/ensure-buckets', {}, {
+        'x-store-id': storeId
+      });
+
+      if (response.success) {
+        if (response.bucketsCreated && response.bucketsCreated.length > 0) {
+          showInfo(`Automatically created buckets: ${response.bucketsCreated.join(', ')}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring buckets:', error);
     }
   };
 
@@ -321,9 +346,9 @@ const SupabaseStorage = () => {
             ) : (
               <div className="p-8 text-center bg-gray-50 rounded-lg">
                 <Cloud className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">No buckets found</p>
+                <p className="text-gray-600">Checking storage buckets...</p>
                 <p className="text-sm text-gray-500 mt-1">
-                  Click "Ensure Buckets" to create the required storage buckets
+                  Buckets are being automatically created. Click "Refresh" if this persists.
                 </p>
               </div>
             )}

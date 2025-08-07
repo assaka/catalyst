@@ -2,6 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 const { SupabaseOAuthToken, IntegrationConfig } = require('../models');
 const SupabaseProjectKeys = require('../models/SupabaseProjectKeys');
+const supabaseStorage = require('./supabase-storage');
 
 class SupabaseIntegration {
   constructor() {
@@ -250,6 +251,26 @@ class SupabaseIntegration {
       }
       
       console.log('✅ Integration config saved successfully with connected status');
+
+      // Automatically create storage buckets after successful authentication
+      try {
+        console.log('🪣 Creating default storage buckets...');
+        const bucketResult = await supabaseStorage.ensureBucketsExist(storeId);
+        
+        if (bucketResult.success) {
+          if (bucketResult.bucketsCreated && bucketResult.bucketsCreated.length > 0) {
+            console.log('✅ Created buckets:', bucketResult.bucketsCreated.join(', '));
+          } else {
+            console.log('✅ All required buckets already exist');
+          }
+        } else {
+          console.log('⚠️ Could not create buckets automatically:', bucketResult.message);
+          // Don't fail the OAuth flow, just log the warning
+        }
+      } catch (bucketError) {
+        console.error('⚠️ Error creating buckets (non-blocking):', bucketError.message);
+        // Don't fail the OAuth flow if bucket creation fails
+      }
 
       return { 
         success: true, 
