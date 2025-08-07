@@ -27,16 +27,13 @@ const SupabasePage = () => {
   const loadConnectionStatus = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/supabase/status', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId
-        }
+      // Use apiClient which handles authentication correctly
+      const response = await apiClient.get('/supabase/status', {
+        'x-store-id': storeId
       });
-
-      const data = await response.json();
-      if (data.success) {
-        setConnectionStatus(data);
+      
+      if (response.data.success) {
+        setConnectionStatus(response.data);
       }
     } catch (error) {
       console.error('Error loading Supabase status:', error);
