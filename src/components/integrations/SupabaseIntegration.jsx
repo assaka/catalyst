@@ -1091,9 +1091,9 @@ const SupabaseIntegration = ({ storeId }) => {
                         </div>
                       </div>
                       {bucketStats && (
-                        <p className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 text-right ml-auto">
                           {bucketStats.fileCount || 0} files • {formatStorageSize(bucketStats.totalSizeMB || 0)}
-                        </p>
+                        </div>
                       )}
                     </div>
                   );
