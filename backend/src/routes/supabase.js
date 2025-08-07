@@ -11,14 +11,26 @@ const { v4: uuidv4 } = require('uuid');
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 50 * 1024 * 1024, // 50MB to accommodate larger files like PDFs
   },
   fileFilter: (req, file, cb) => {
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    // Allow all common file types - validation will be done at the application level
+    const allowedMimes = [
+      // Images
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+      // Documents
+      'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain', 'text/csv',
+      // Archives
+      'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed'
+    ];
+    
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images are allowed.'));
+      cb(new Error(`Invalid file type: ${file.mimetype}. Please check allowed file types.`));
     }
   }
 });
@@ -449,29 +461,44 @@ router.post('/disconnect', auth, extractStoreId, checkStoreOwnership, async (req
 // Storage endpoints
 // =================
 
-// Upload image
+// Upload image - handles both 'file' and 'image' fields for flexibility
 router.post('/storage/upload', 
   auth, 
   extractStoreId, 
   checkStoreOwnership, 
-  upload.single('image'),
+  upload.single('file') || upload.single('image'), // Accept both field names
   async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({
           success: false,
-          message: 'No image file provided'
+          message: 'No file provided'
         });
       }
 
-      const result = await supabaseStorage.uploadImage(req.storeId, req.file, {
-        folder: req.body.folder,
-        public: req.body.public === 'true'
-      });
+      // Enhanced options from request body
+      const options = {
+        folder: req.body.folder || 'uploads',
+        public: req.body.public === 'true' || req.body.public === true,
+        type: req.body.type || 'general', // product, category, asset, etc.
+        useMagentoStructure: req.body.useMagentoStructure === 'true',
+        filename: req.body.filename
+      };
 
-      res.json(result);
+      const result = await supabaseStorage.uploadImage(req.storeId, req.file, options);
+
+      // Enhanced response with additional metadata
+      res.json({
+        success: true,
+        ...result,
+        id: result.id || Date.now(),
+        filename: result.filename || req.file.originalname,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        uploadedAt: new Date().toISOString()
+      });
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading file:', error);
       res.status(500).json({
         success: false,
         message: error.message

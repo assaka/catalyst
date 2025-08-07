@@ -28,15 +28,27 @@ const storage = multer.memoryStorage();
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB limit to accommodate larger files like PDFs
     files: 10 // Maximum 10 files at once
   },
   fileFilter: (req, file, cb) => {
-    // Check if file is an image
-    if (file.mimetype.startsWith('image/')) {
+    // Allow all common file types - validation will be done at the application level
+    const allowedMimes = [
+      // Images
+      'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+      // Documents
+      'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain', 'text/csv',
+      // Archives
+      'application/zip', 'application/x-rar-compressed', 'application/x-7z-compressed'
+    ];
+    
+    if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'), false);
+      cb(new Error(`Invalid file type: ${file.mimetype}. Please check allowed file types.`));
     }
   }
 });
@@ -48,7 +60,7 @@ router.use(checkStoreOwnership);
 
 /**
  * POST /api/storage/upload
- * Upload single image via unified storage manager
+ * Upload single file via unified storage manager
  */
 router.post('/upload', upload.single('image'), async (req, res) => {
   try {
@@ -57,11 +69,11 @@ router.post('/upload', upload.single('image'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        error: 'No image file provided'
+        error: 'No file provided'
       });
     }
 
-    console.log(`📤 Uploading image for store ${storeId}:`, {
+    console.log(`📤 Uploading file for store ${storeId}:`, {
       filename: req.file.originalname,
       size: req.file.size,
       mimetype: req.file.mimetype
@@ -78,7 +90,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
 
     res.json({
       success: true,
-      message: 'Image uploaded successfully',
+      message: 'File uploaded successfully',
       data: result,
       provider: result.provider,
       fallbackUsed: result.fallbackUsed || false

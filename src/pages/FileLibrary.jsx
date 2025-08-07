@@ -39,51 +39,133 @@ const FileLibrary = () => {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
-  // Load files
+  // Load files from current storage provider
   const loadFiles = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/file-library');
-      setFiles(response.files || []);
-      setStorageProvider(response.storageProvider);
+      
+      // Get files using the provider-agnostic storage API
+      const response = await apiClient.get('/storage/list', {
+        'x-store-id': selectedStore?.id,
+        folder: 'uploads'
+      });
+      
+      // Check if we have valid storage data
+      if (response.success && response.data) {
+        // Set provider name based on response data
+        const providerName = response.data.provider || response.provider || 'Storage Provider';
+        setStorageProvider(providerName);
+        
+        // Transform response to FileLibrary format
+        const transformedFiles = (response.data.files || []).map(file => ({
+          id: file.id || file.name,
+          name: file.name,
+          url: file.url,
+          size: file.metadata?.size || file.size || 0,
+          mimeType: file.metadata?.mimetype || file.mimetype || 'application/octet-stream',
+          uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
+        }));
+        
+        setFiles(transformedFiles);
+      } else {
+        setFiles([]);
+        setStorageProvider(null);
+      }
     } catch (error) {
       console.error('Error loading files:', error);
-      toast.error('Failed to load files');
+      // Fallback behavior for different error types
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        console.log('Storage API not available, showing empty state');
+        setFiles([]);
+        setStorageProvider(null);
+      } else {
+        toast.error('Failed to load files');
+        setFiles([]);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadFiles();
-  }, []);
+    if (selectedStore?.id) {
+      loadFiles();
+    }
+  }, [selectedStore?.id]);
 
-  // Handle file upload
+  // Handle file upload using provider-agnostic storage API
   const handleFileUpload = async (filesArray) => {
     if (!storageProvider) {
       toast.error("Please configure a storage provider in Media Storage settings first");
       return;
     }
 
-    setUploading(true);
-    const formData = new FormData();
-    
-    for (let file of filesArray) {
-      formData.append('files', file);
+    if (filesArray.length === 0) {
+      toast.error("No files selected");
+      return;
     }
 
+    setUploading(true);
+    
     try {
-      const response = await apiClient.post('/file-library/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      // Upload files using the provider-agnostic storage API
+      if (filesArray.length === 1) {
+        // Single file upload
+        const formData = new FormData();
+        formData.append('image', filesArray[0]);
+        formData.append('folder', 'uploads');
+        formData.append('public', 'true');
 
-      toast.success(`${response.uploadedFiles?.length || filesArray.length} file(s) uploaded successfully`);
+        const response = await apiClient.uploadFile('/storage/upload', filesArray[0], {
+          folder: 'uploads',
+          public: 'true',
+          store_id: selectedStore?.id
+        });
+
+        if (response.success) {
+          toast.success("File uploaded successfully");
+        } else {
+          toast.error("Failed to upload file");
+        }
+      } else {
+        // Multiple files upload
+        const formData = new FormData();
+        filesArray.forEach((file) => {
+          formData.append('images', file);
+        });
+        formData.append('folder', 'uploads');
+        formData.append('public', 'true');
+
+        const response = await fetch('/api/storage/upload-multiple', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiClient.getToken()}`,
+            'x-store-id': selectedStore?.id
+          },
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          toast.success(`${result.data.totalUploaded} file(s) uploaded successfully`);
+          if (result.data.totalFailed > 0) {
+            toast.error(`${result.data.totalFailed} file(s) failed to upload`);
+          }
+        } else {
+          toast.error(result.error || "Failed to upload files");
+        }
+      }
+
+      // Reload files to show the new uploads
       await loadFiles();
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(error.message || "Failed to upload files");
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        toast.error("Storage API not available. Please configure a storage provider in Media Storage settings.");
+      } else {
+        toast.error(error.message || "Failed to upload files");
+      }
     } finally {
       setUploading(false);
     }
@@ -122,16 +204,53 @@ const FileLibrary = () => {
     }
   };
 
-  // Delete file
+  // Delete file using provider-agnostic storage API
   const deleteFile = async (fileId) => {
     if (!window.confirm('Are you sure you want to delete this file?')) return;
 
     try {
-      await apiClient.delete(`/file-library/${fileId}`);
-      toast.success("File deleted successfully");
-      await loadFiles();
+      // Find the file to get its path
+      const file = files.find(f => f.id === fileId);
+      if (!file) {
+        toast.error("File not found");
+        return;
+      }
+
+      // Extract file path from the file name/URL
+      const filePath = `uploads/${file.name}`;
+
+      // Use fetch directly for DELETE request with body (apiClient doesn't support body in DELETE)
+      const response = await fetch('/api/storage/delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiClient.getToken()}`,
+          'x-store-id': selectedStore?.id
+        },
+        body: JSON.stringify({
+          imagePath: filePath
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete file');
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success("File deleted successfully");
+        await loadFiles();
+      } else {
+        toast.error(result.error || "Failed to delete file");
+      }
     } catch (error) {
-      toast.error("Failed to delete file");
+      console.error('Delete error:', error);
+      if (error.message?.includes('404') || error.message?.includes('not found')) {
+        toast.error("Storage API not available. Cannot delete files.");
+      } else {
+        toast.error(error.message || "Failed to delete file");
+      }
     }
   };
 
@@ -233,7 +352,12 @@ const FileLibrary = () => {
           <p className="text-gray-500">No files found</p>
           {!storageProvider && (
             <p className="text-sm text-gray-400 mt-2">
-              Configure a storage provider in Media Storage settings to start uploading files
+              <a 
+                href="/admin/media-storage" 
+                className="text-blue-500 hover:text-blue-600 underline"
+              >
+                Configure a storage provider in Media Storage settings
+              </a> to start uploading files
             </p>
           )}
         </div>

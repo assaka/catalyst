@@ -291,169 +291,276 @@ const SupabaseStorage = () => {
       {/* Storage Overview - Combined Stats and Buckets */}
       {connectionStatus?.connected && connectionStatus?.hasServiceRoleKey && (
         <>
-          {/* Storage Usage Summary */}
-          {storageStats && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-              <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-blue-600 mb-1">Total Files</p>
-                      <p className="text-3xl font-bold text-blue-900">
-                        {storageStats.totalFiles || 0}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-blue-100 rounded-full">
-                      <FolderOpen className="w-6 h-6 text-blue-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-purple-600 mb-1">Storage Used</p>
-                      <p className="text-3xl font-bold text-purple-900">
-                        {storageStats.totalSizeMB ? Number(storageStats.totalSizeMB).toFixed(2) : '0.00'}
-                      </p>
-                      <p className="text-xs text-purple-600 mt-1">MB</p>
-                    </div>
-                    <div className="p-3 bg-purple-100 rounded-full">
-                      <Cloud className="w-6 h-6 text-purple-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-green-200 bg-gradient-to-br from-green-50 to-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-600 mb-1">Active Buckets</p>
-                      <p className="text-3xl font-bold text-green-900">
-                        {buckets.length}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-green-100 rounded-full">
-                      <Database className="w-6 h-6 text-green-600" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Storage Usage Overview */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">Storage Overview</h2>
+                <p className="text-gray-600">Monitor your Supabase storage usage and performance metrics</p>
+              </div>
+              <Badge className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
+                <Zap className="w-3 h-3 mr-1" />
+                Real-time
+              </Badge>
             </div>
-          )}
+
+            {storageStats && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Total Files Card */}
+                <Card className="relative overflow-hidden border-0 shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700"></div>
+                  <CardContent className="relative p-6 text-white">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <FolderOpen className="w-4 h-4 text-blue-100" />
+                          <p className="text-sm font-medium text-blue-100">Total Files</p>
+                        </div>
+                        <p className="text-3xl font-bold mb-1">
+                          {storageStats.totalFiles || 0}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-blue-100">
+                          <CheckCircle className="w-3 h-3" />
+                          <span>All formats supported</span>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-sm">
+                        <FolderOpen className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Storage Used Card */}
+                <Card className="relative overflow-hidden border-0 shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700"></div>
+                  <CardContent className="relative p-6 text-white">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Cloud className="w-4 h-4 text-purple-100" />
+                          <p className="text-sm font-medium text-purple-100">Storage Used</p>
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <p className="text-3xl font-bold">
+                            {storageStats.totalSizeMB ? Number(storageStats.totalSizeMB).toFixed(1) : '0.0'}
+                          </p>
+                          <span className="text-lg font-medium text-purple-100">MB</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-purple-100 mt-1">
+                          <Zap className="w-3 h-3" />
+                          <span>Optimized compression</span>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-sm">
+                        <Cloud className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Active Buckets Card */}
+                <Card className="relative overflow-hidden border-0 shadow-lg">
+                  <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700"></div>
+                  <CardContent className="relative p-6 text-white">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Database className="w-4 h-4 text-emerald-100" />
+                          <p className="text-sm font-medium text-emerald-100">Active Buckets</p>
+                        </div>
+                        <p className="text-3xl font-bold mb-1">
+                          {buckets.length}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-emerald-100">
+                          <Shield className="w-3 h-3" />
+                          <span>Secure & scalable</span>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-white/10 rounded-2xl backdrop-blur-sm">
+                        <Database className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
 
           {/* Storage Buckets */}
-          <Card>
-            <CardHeader className="border-b bg-gray-50/50">
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <FolderOpen className="w-5 h-5" />
-                  Storage Buckets
-                </CardTitle>
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Cloud className="w-4 h-4" />
-                  {buckets.length} bucket{buckets.length !== 1 ? 's' : ''} configured
-                </div>
+          <div className="space-y-6">
+            {/* Section Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">Storage Buckets</h2>
+                <p className="text-gray-600">Manage your organized storage containers</p>
               </div>
-            </CardHeader>
-            <CardContent className="pt-6">
-              {buckets.length > 0 ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {buckets.map((bucket) => {
-                    // Find the corresponding stats for this bucket
-                    const bucketStats = storageStats?.buckets?.find(
-                      stat => stat.bucket === bucket.name
-                    );
-                    
-                    return (
-                      <div
-                        key={bucket.id}
-                        className="group relative border-2 rounded-xl hover:border-blue-400 hover:shadow-lg transition-all duration-200 overflow-hidden"
-                      >
-                        {/* Bucket Header */}
-                        <div className="bg-gradient-to-r from-gray-50 to-white px-5 py-4 border-b">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
-                                <FolderOpen className="w-5 h-5 text-blue-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-gray-900">{bucket.name}</h4>
-                                <p className="text-xs text-gray-500 mt-0.5">
-                                  Created {new Date(bucket.created_at).toLocaleDateString()}
-                                </p>
+              <div className="flex items-center gap-3">
+                <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1">
+                  <Database className="w-3 h-3 mr-1" />
+                  {buckets.length} Active
+                </Badge>
+              </div>
+            </div>
+
+            {buckets.length > 0 ? (
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                {buckets.map((bucket) => {
+                  // Find the corresponding stats for this bucket
+                  const bucketStats = storageStats?.buckets?.find(
+                    stat => stat.bucket === bucket.name
+                  );
+                  
+                  // Determine bucket color scheme based on type
+                  const isImageBucket = bucket.name.includes('images');
+                  const colorScheme = isImageBucket 
+                    ? { 
+                        bg: 'from-violet-500 to-purple-600', 
+                        accent: 'violet',
+                        light: 'violet-50',
+                        text: 'violet-700'
+                      }
+                    : { 
+                        bg: 'from-blue-500 to-indigo-600', 
+                        accent: 'blue',
+                        light: 'blue-50',
+                        text: 'blue-700'
+                      };
+                  
+                  return (
+                    <Card key={bucket.id} className="group relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                      {/* Gradient Background */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${colorScheme.bg} opacity-5`}></div>
+                      
+                      {/* Bucket Header */}
+                      <CardHeader className="relative border-b border-gray-100 pb-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3 bg-gradient-to-br ${colorScheme.bg} rounded-2xl shadow-lg`}>
+                              <FolderOpen className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-gray-900 mb-1">{bucket.name}</h3>
+                              <div className="flex items-center gap-2 text-sm text-gray-500">
+                                <span>Created {new Date(bucket.created_at).toLocaleDateString()}</span>
                               </div>
                             </div>
+                          </div>
+                          
+                          <div className="flex flex-col items-end gap-2">
                             {bucket.public ? (
-                              <Badge className="bg-green-100 text-green-700 border-green-200">
+                              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
                                 <Globe className="w-3 h-3 mr-1" />
-                                Public
+                                Public Access
                               </Badge>
                             ) : (
-                              <Badge className="bg-gray-100 text-gray-700 border-gray-200">
+                              <Badge className="bg-slate-100 text-slate-700 border-slate-200">
                                 <Shield className="w-3 h-3 mr-1" />
                                 Private
                               </Badge>
                             )}
                           </div>
                         </div>
-                        
-                        {/* Bucket Stats */}
-                        <div className="p-5">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-blue-50 rounded-lg p-3">
-                              <div className="flex items-center gap-2 mb-1">
-                                <FolderOpen className="w-4 h-4 text-blue-600" />
-                                <p className="text-xs font-medium text-blue-600">Files</p>
+                      </CardHeader>
+                      
+                      {/* Bucket Statistics */}
+                      <CardContent className="relative pt-6">
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                          {/* Files Count */}
+                          <div className={`bg-${colorScheme.light} border border-${colorScheme.text}/20 rounded-xl p-4`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <FolderOpen className={`w-4 h-4 text-${colorScheme.text}`} />
+                                <p className={`text-xs font-semibold text-${colorScheme.text} uppercase tracking-wide`}>Files</p>
                               </div>
-                              <p className="text-2xl font-bold text-blue-900">
-                                {bucketStats?.fileCount || 0}
-                              </p>
+                              <Badge className={`bg-${colorScheme.text}/10 text-${colorScheme.text} text-xs`}>
+                                {bucketStats?.fileCount === 1 ? 'item' : 'items'}
+                              </Badge>
                             </div>
-                            <div className="bg-purple-50 rounded-lg p-3">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Cloud className="w-4 h-4 text-purple-600" />
-                                <p className="text-xs font-medium text-purple-600">Size</p>
-                              </div>
-                              <p className="text-2xl font-bold text-purple-900">
-                                {bucketStats?.totalSizeMB || '0.00'}
-                                <span className="text-xs font-normal ml-1">MB</span>
-                              </p>
-                            </div>
+                            <p className={`text-3xl font-bold text-${colorScheme.text}`}>
+                              {bucketStats?.fileCount || 0}
+                            </p>
                           </div>
                           
-                          {/* Bucket ID */}
-                          <div className="mt-4 pt-3 border-t border-gray-100">
-                            <p className="text-xs text-gray-500 font-mono">
-                              ID: {bucket.id}
+                          {/* Storage Size */}
+                          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <Cloud className="w-4 h-4 text-amber-600" />
+                                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Size</p>
+                              </div>
+                              <Badge className="bg-amber-100 text-amber-700 text-xs">
+                                MB
+                              </Badge>
+                            </div>
+                            <p className="text-3xl font-bold text-amber-700">
+                              {bucketStats?.totalSizeMB || '0.00'}
                             </p>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                        
+                        {/* Bucket Details */}
+                        <div className="bg-gray-50 rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-sm font-semibold text-gray-700">Bucket Details</h4>
+                            <Badge className="bg-gray-200 text-gray-600 text-xs font-mono">
+                              ID
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-gray-600 font-mono break-all">
+                            {bucket.id}
+                          </p>
+                          
+                          {/* Usage Indicator */}
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-500">Usage Status</span>
+                              <div className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+                                <span className="text-emerald-600 font-medium">Active</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
-              <div className="p-12 text-center bg-gradient-to-br from-gray-50 to-white rounded-xl border-2 border-dashed border-gray-200">
-                <div className="max-w-sm mx-auto">
-                  <div className="p-4 bg-blue-50 rounded-full w-fit mx-auto mb-4">
-                    <Cloud className="w-8 h-8 text-blue-400" />
+              <Card className="border-2 border-dashed border-gray-200">
+                <CardContent className="p-16 text-center">
+                  <div className="max-w-md mx-auto">
+                    <div className="relative mb-6">
+                      <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-full w-fit mx-auto">
+                        <Cloud className="w-12 h-12 text-blue-500" />
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center">
+                        <Zap className="w-3 h-3 text-white" />
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-3">Configuring Storage Buckets</h3>
+                    <p className="text-gray-600 mb-4">
+                      We're automatically setting up your storage buckets with optimal configurations for your store.
+                    </p>
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                      <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                      <span>This process typically completes within seconds</span>
+                    </div>
+                    <Button
+                      onClick={loadStatus}
+                      variant="outline"
+                      size="sm"
+                      className="mt-6"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Check Status
+                    </Button>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Setting up storage buckets</h3>
-                  <p className="text-gray-600 mb-3">
-                    Your storage buckets are being automatically configured for optimal performance.
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    This usually takes a few seconds. Click "Refresh" if this persists.
-                  </p>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )}
-          </CardContent>
-        </Card>
+          </div>
         </>
       )}
 
