@@ -1030,22 +1030,6 @@ const SupabaseIntegration = ({ storeId }) => {
                   <p className="text-xs text-blue-500 mt-1">Upload files to see storage usage</p>
                 </div>
               )}
-
-              {storageStats && storageStats.buckets && storageStats.buckets.length > 0 && (
-                <div className="mt-4">
-                  <h5 className="text-xs font-medium text-blue-800 mb-2">By Bucket:</h5>
-                  <div className="space-y-1">
-                    {storageStats.buckets.map((bucket) => (
-                      <div key={bucket.bucket} className="flex items-center justify-between text-xs">
-                        <span className="text-blue-700">{bucket.bucket}</span>
-                        <span className="text-blue-600">
-                          {bucket.fileCount || 0} files • {formatStorageSize(bucket.totalSizeMB)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
           
@@ -1100,6 +1084,11 @@ const SupabaseIntegration = ({ storeId }) => {
                           {bucket.public ? 'Public' : 'Private'} bucket
                           {bucket.created_at && ` • Created ${new Date(bucket.created_at).toLocaleDateString()}`}
                         </p>
+                        {storageStats && storageStats.buckets && storageStats.buckets.length > 0 && (
+                          <p>
+                            {bucket.fileCount || 0} files • {formatStorageSize(bucket.totalSizeMB)}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
