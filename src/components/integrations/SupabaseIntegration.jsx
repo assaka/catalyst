@@ -1084,12 +1084,12 @@ const SupabaseIntegration = ({ storeId }) => {
                           {bucket.public ? 'Public' : 'Private'} bucket
                           {bucket.created_at && ` • Created ${new Date(bucket.created_at).toLocaleDateString()}`}
                         </p>
-                        {storageStats && storageStats.buckets && storageStats.buckets.length > 0 && (
+                      </div>
+                      {storageStats && storageStats.buckets && storageStats.buckets.length > 0 && (
                           <p>
                             {bucket.fileCount || 0} files • {formatStorageSize(bucket.totalSizeMB)}
                           </p>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
                 ))}
