@@ -6,7 +6,6 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Get default database provider for a store
 router.get('/stores/:storeId/default-database-provider', 
-  authMiddleware, 
   checkStoreOwnership,
   async (req, res) => {
     try {
@@ -40,7 +39,6 @@ router.get('/stores/:storeId/default-database-provider',
 
 // Set default database provider for a store
 router.post('/stores/:storeId/default-database-provider', 
-  authMiddleware, 
   checkStoreOwnership,
   async (req, res) => {
     try {
@@ -92,7 +90,6 @@ router.post('/stores/:storeId/default-database-provider',
 
 // Clear default database provider for a store
 router.delete('/stores/:storeId/default-database-provider', 
-  authMiddleware, 
   checkStoreOwnership,
   async (req, res) => {
     try {
