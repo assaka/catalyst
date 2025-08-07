@@ -542,8 +542,34 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucketName = options.bucket || this.assetsBucketName;
-      const folderPath = folder || `store-${storeId}`;
+      
+      // Determine which bucket and folder to use based on the requested folder
+      let bucketName;
+      let folderPath;
+      
+      if (folder === 'library') {
+        // Library files are in suprshop-assets bucket
+        bucketName = this.assetsBucketName;
+        folderPath = 'library';
+      } else if (folder && folder.startsWith('product')) {
+        // Product files are in suprshop-catalog bucket
+        bucketName = this.catalogBucketName;
+        folderPath = folder; // e.g., 'product/images' or 'product/files'
+      } else if (folder && folder.startsWith('category')) {
+        // Category files are in suprshop-catalog bucket
+        bucketName = this.catalogBucketName;
+        folderPath = folder; // e.g., 'category/images'
+      } else if (options.bucket) {
+        // Use specified bucket and folder
+        bucketName = options.bucket;
+        folderPath = folder || '';
+      } else {
+        // Default to assets bucket with library folder for File Library
+        bucketName = this.assetsBucketName;
+        folderPath = 'library';
+      }
+
+      console.log(`📂 Listing files from ${bucketName}/${folderPath}`);
 
       const { data, error } = await client.storage
         .from(bucketName)
@@ -557,23 +583,28 @@ class SupabaseStorageService {
         throw error;
       }
 
-      // Add public URLs to each file
-      const filesWithUrls = data.map(file => {
+      // Filter out directories (items without id) and add public URLs
+      const files = data ? data.filter(item => item.id) : [];
+      
+      const filesWithUrls = files.map(file => {
+        const fullPath = folderPath ? `${folderPath}/${file.name}` : file.name;
         const { data: urlData } = client.storage
           .from(bucketName)
-          .getPublicUrl(`${folderPath}/${file.name}`);
+          .getPublicUrl(fullPath);
 
         return {
           ...file,
+          url: urlData.publicUrl,  // Add url field for FileLibrary component
           publicUrl: urlData.publicUrl,
-          fullPath: `${folderPath}/${file.name}`
+          fullPath: fullPath
         };
       });
 
       return {
         success: true,
         files: filesWithUrls,
-        total: filesWithUrls.length
+        total: filesWithUrls.length,
+        provider: 'supabase'
       };
     } catch (error) {
       console.error('Error listing images:', error);

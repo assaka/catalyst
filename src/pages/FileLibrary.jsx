@@ -74,10 +74,16 @@ const FileLibrary = () => {
     try {
       setLoading(true);
       
+      console.log('🔍 FileLibrary: Loading files for store:', selectedStore?.id);
+      console.log('🔐 FileLibrary: Auth token present:', !!apiClient.getToken());
+      console.log('🔐 FileLibrary: User role:', apiClient.getCurrentUserRole());
+      
       // Get files using the provider-agnostic storage API
       const response = await apiClient.get('/storage/list?folder=library', {
         'x-store-id': selectedStore?.id
       });
+      
+      console.log('📡 FileLibrary: API response:', response);
       
       // Check if we have valid storage data
       if (response.success && response.data) {
@@ -88,7 +94,10 @@ const FileLibrary = () => {
         }
         
         // Transform response to FileLibrary format
-        const transformedFiles = (response.data.files || []).map(file => ({
+        const rawFiles = response.data.files || [];
+        console.log('📋 FileLibrary: Raw files from API:', rawFiles);
+        
+        const transformedFiles = rawFiles.map(file => ({
           id: file.id || file.name,
           name: file.name,
           url: file.url,
@@ -97,19 +106,24 @@ const FileLibrary = () => {
           uploadedAt: file.created_at || file.updated_at || new Date().toISOString()
         }));
         
+        console.log('✨ FileLibrary: Transformed files:', transformedFiles);
+        
         setFiles(transformedFiles);
       } else {
         setFiles([]);
         // Don't clear storage provider if it was already set from default
       }
     } catch (error) {
-      console.error('Error loading files:', error);
+      console.error('❌ FileLibrary: Error loading files:', error);
+      console.error('❌ FileLibrary: Error status:', error.status);
+      console.error('❌ FileLibrary: Error message:', error.message);
+      
       // Fallback behavior for different error types
       if (error.message?.includes('404') || error.message?.includes('not found')) {
         console.log('Storage API not available, showing empty state');
         setFiles([]);
       } else {
-        toast.error('Failed to load files');
+        toast.error('Failed to load files: ' + error.message);
         setFiles([]);
       }
     } finally {

@@ -48,7 +48,8 @@ class ApiClient {
                           currentPath.includes('/dashboard') || 
                           currentPath.includes('/products') || 
                           currentPath.includes('/categories') || 
-                          currentPath.includes('/settings');
+                          currentPath.includes('/settings') ||
+                          currentPath.includes('/file-library');
     
     // Customer context: /public/* routes and legacy customer routes
     const isCustomerContext = currentPath.startsWith('/public/') ||
