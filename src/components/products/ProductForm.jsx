@@ -362,10 +362,17 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         
         // Auto-save if editing existing product
         if (product && product.id) {
-          await saveProductImages([...formData.images, newImage]);
+          try {
+            await saveProductImages([...formData.images, newImage]);
+            toast.success('Image uploaded and saved successfully');
+          } catch (saveError) {
+            console.error('Failed to auto-save image:', saveError);
+            toast.warning('Image uploaded but not yet saved. Click "Update Product" to save.');
+          }
+        } else {
+          // For new products, just show upload success
+          toast.success('Image uploaded successfully. Click "Create Product" to save.');
         }
-        
-        toast.success('Image uploaded successfully');
       } else {
         toast.error('Failed to upload image');
       }
@@ -401,20 +408,37 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
     
     try {
       const storeId = getSelectedStoreId();
+      // Only send the images field for instant save
       const updateData = {
-        ...formData,
         images: imagesArray
       };
+      
+      console.log('🔄 Auto-saving product images:', {
+        productId: product.id,
+        storeId,
+        imagesCount: imagesArray.length,
+        images: imagesArray
+      });
       
       const response = await apiClient.put(`/products/${product.id}`, updateData, {
         'x-store-id': storeId
       });
       
+      console.log('✅ Auto-save response:', response);
+      
       if (!response.success) {
         throw new Error('Failed to save product images');
       }
+      
+      // Update local state with saved data to ensure consistency
+      if (response.data && response.data.images) {
+        setFormData(prev => ({ 
+          ...prev, 
+          images: response.data.images
+        }));
+      }
     } catch (error) {
-      console.error('Error saving product image:', error);
+      console.error('❌ Error saving product image:', error);
       throw error;
     }
   };
