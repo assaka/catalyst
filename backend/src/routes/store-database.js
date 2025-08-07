@@ -22,6 +22,9 @@ router.get('/stores/:storeId/default-database-provider',
       // Get the default database provider from store settings
       const defaultProvider = store.settings?.default_database_provider || null;
       
+      console.log('Store settings:', store.settings);
+      console.log('Default provider:', defaultProvider);
+      
       res.json({
         success: true,
         provider: defaultProvider,
@@ -64,13 +67,22 @@ router.post('/stores/:storeId/default-database-provider',
 
       // Update store settings with default database provider
       const currentSettings = store.settings || {};
-      store.settings = {
+      const updatedSettings = {
         ...currentSettings,
         default_database_provider: provider,
-        default_database_provider_updated_at: new Date()
+        default_database_provider_updated_at: new Date().toISOString()
       };
       
-      await store.save();
+      console.log('Updating store settings with:', updatedSettings);
+      
+      // Use update method to ensure the JSON field is properly saved
+      await store.update({
+        settings: updatedSettings
+      });
+      
+      // Verify the update
+      await store.reload();
+      console.log('Settings after save:', store.settings);
       
       res.json({
         success: true,
@@ -105,11 +117,14 @@ router.delete('/stores/:storeId/default-database-provider',
 
       // Remove default database provider from store settings
       const currentSettings = store.settings || {};
-      delete currentSettings.default_database_provider;
-      delete currentSettings.default_database_provider_updated_at;
-      store.settings = currentSettings;
+      const updatedSettings = { ...currentSettings };
+      delete updatedSettings.default_database_provider;
+      delete updatedSettings.default_database_provider_updated_at;
       
-      await store.save();
+      // Use update method to ensure the JSON field is properly saved
+      await store.update({
+        settings: updatedSettings
+      });
       
       res.json({
         success: true,
