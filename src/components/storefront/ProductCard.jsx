@@ -9,6 +9,7 @@ import ProductLabelComponent from '@/components/storefront/ProductLabel';
 import { formatDisplayPrice } from '@/utils/priceUtils';
 import cartService from '@/services/cartService';
 import { ShoppingCart } from 'lucide-react';
+import { getPrimaryImageUrl } from '@/utils/imageUtils';
 
 const ProductCard = ({ product, settings, className = "" }) => {
   const { productLabels, store, taxes, selectedCountry } = useStore();
@@ -156,7 +157,7 @@ const ProductCard = ({ product, settings, className = "" }) => {
         <Link to={createProductUrl(store.slug, product.slug)}>
           <div className="relative">
             <img
-              src={product.images?.[0] || 'https://placehold.co/400x400?text=No+Image'}
+              src={getPrimaryImageUrl(product.images) || 'https://placehold.co/400x400?text=No+Image'}
               alt={product.name}
               className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
             />

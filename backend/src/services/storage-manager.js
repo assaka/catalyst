@@ -102,6 +102,90 @@ class StorageManager {
   }
 
   /**
+   * Get storage provider for a specific store (store-aware)
+   * Checks store configuration to determine best available provider
+   * @param {string} storeId - Store identifier
+   * @returns {Promise<Object>} Provider info with type and instance
+   */
+  async getStorageProvider(storeId) {
+    // Check if Supabase is configured for this store
+    if (this.providers.has('supabase')) {
+      try {
+        const supabaseIntegration = require('./supabase-integration');
+        const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
+        
+        if (connectionStatus.connected) {
+          return {
+            type: 'supabase',
+            provider: this.providers.get('supabase'),
+            name: 'Supabase Storage'
+          };
+        }
+      } catch (error) {
+        console.log(`Supabase not available for store ${storeId}:`, error.message);
+      }
+    }
+
+    // Check other providers in order of preference
+    const preferenceOrder = ['s3', 'gcs', 'local'];
+    for (const providerType of preferenceOrder) {
+      if (this.providers.has(providerType)) {
+        // For now, assume other providers are available if registered
+        // TODO: Add store-specific configuration checks for S3, GCS, etc.
+        return {
+          type: providerType,
+          provider: this.providers.get(providerType),
+          name: this.getProviderDisplayName(providerType)
+        };
+      }
+    }
+
+    // No providers available
+    throw new Error('No storage providers are available for this store. Please configure a storage provider.');
+  }
+
+  /**
+   * Check if a provider is available for a specific store
+   * @param {string} providerType - Provider type to check
+   * @param {string} storeId - Store identifier
+   * @returns {Promise<boolean>} True if provider is available
+   */
+  async isProviderAvailable(providerType, storeId) {
+    if (!this.providers.has(providerType)) {
+      return false;
+    }
+
+    if (providerType === 'supabase') {
+      try {
+        const supabaseIntegration = require('./supabase-integration');
+        const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
+        return connectionStatus.connected;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    // For other providers, assume available if registered
+    // TODO: Add proper configuration checks
+    return true;
+  }
+
+  /**
+   * Get display name for provider
+   * @param {string} providerType - Provider type
+   * @returns {string} Display name
+   */
+  getProviderDisplayName(providerType) {
+    const names = {
+      'supabase': 'Supabase Storage',
+      'gcs': 'Google Cloud Storage', 
+      's3': 'Amazon S3',
+      'local': 'Local Storage'
+    };
+    return names[providerType] || providerType;
+  }
+
+  /**
    * Get list of available providers
    * @returns {Array<string>} Provider names
    */
@@ -110,7 +194,7 @@ class StorageManager {
   }
 
   /**
-   * Upload a file using the current provider with fallback support
+   * Upload a file using the store-configured provider with fallback support
    * @param {string} storeId - Store identifier
    * @param {Object} file - File object
    * @param {Object} options - Upload options
@@ -118,19 +202,19 @@ class StorageManager {
    */
   async uploadFile(storeId, file, options = {}) {
     try {
-      const provider = this.getCurrentProvider();
-      const result = await provider.uploadFile(storeId, file, options);
+      const storeProvider = await this.getStorageProvider(storeId);
+      const result = await storeProvider.provider.uploadFile(storeId, file, options);
       
       return {
         ...result,
-        provider: provider.getProviderName(),
+        provider: storeProvider.type,
         fallbackUsed: false
       };
     } catch (error) {
-      console.error(`Primary provider (${this.currentProvider?.getProviderName()}) failed:`, error.message);
+      console.error(`Store provider (${error.message}) failed for store ${storeId}:`, error.message);
       
       // Try fallback provider if available
-      if (this.fallbackProvider && this.fallbackProvider !== this.currentProvider) {
+      if (this.fallbackProvider) {
         console.log(`🔄 Attempting fallback to ${this.fallbackProvider.getProviderName()}...`);
         try {
           const result = await this.fallbackProvider.uploadFile(storeId, file, options);
@@ -141,7 +225,7 @@ class StorageManager {
           };
         } catch (fallbackError) {
           console.error(`Fallback provider also failed:`, fallbackError.message);
-          throw new Error(`Both primary and fallback storage providers failed. Primary: ${error.message}, Fallback: ${fallbackError.message}`);
+          throw new Error(`Both store provider and fallback storage providers failed. Store: ${error.message}, Fallback: ${fallbackError.message}`);
         }
       }
       
@@ -157,8 +241,8 @@ class StorageManager {
    * @returns {Promise<Object>} Upload results
    */
   async uploadMultipleFiles(storeId, files, options = {}) {
-    const provider = this.getCurrentProvider();
-    return await provider.uploadMultipleFiles(storeId, files, options);
+    const storeProvider = await this.getStorageProvider(storeId);
+    return await storeProvider.provider.uploadMultipleFiles(storeId, files, options);
   }
 
   /**
@@ -169,8 +253,8 @@ class StorageManager {
    * @returns {Promise<Object>} Deletion result
    */
   async deleteFile(storeId, filePath, bucket = null) {
-    const provider = this.getCurrentProvider();
-    return await provider.deleteFile(storeId, filePath, bucket);
+    const storeProvider = await this.getStorageProvider(storeId);
+    return await storeProvider.provider.deleteFile(storeId, filePath, bucket);
   }
 
   /**
@@ -181,8 +265,14 @@ class StorageManager {
    * @returns {Promise<Object>} File list
    */
   async listFiles(storeId, folder = null, options = {}) {
-    const provider = this.getCurrentProvider();
-    return await provider.listFiles(storeId, folder, options);
+    const storeProvider = await this.getStorageProvider(storeId);
+    const result = await storeProvider.provider.listFiles(storeId, folder, options);
+    
+    // Add provider info to the response
+    return {
+      ...result,
+      provider: storeProvider.type
+    };
   }
 
   /**
@@ -191,8 +281,8 @@ class StorageManager {
    * @returns {Promise<Object>} Storage stats
    */
   async getStorageStats(storeId) {
-    const provider = this.getCurrentProvider();
-    return await provider.getStorageStats(storeId);
+    const storeProvider = await this.getStorageProvider(storeId);
+    return await storeProvider.provider.getStorageStats(storeId);
   }
 
   /**
@@ -237,13 +327,13 @@ class StorageManager {
   }
 
   /**
-   * Test connection to current provider
+   * Test connection to store's configured provider
    * @param {string} storeId - Store identifier  
    * @returns {Promise<Object>} Connection test result
    */
   async testConnection(storeId) {
-    const provider = this.getCurrentProvider();
-    return await provider.testConnection(storeId);
+    const storeProvider = await this.getStorageProvider(storeId);
+    return await storeProvider.provider.testConnection(storeId);
   }
 
   /**

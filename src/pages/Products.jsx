@@ -7,6 +7,7 @@ import { Attribute } from "@/api/entities";
 import { AttributeSet } from "@/api/entities";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext.jsx";
 import NoStoreSelected from "@/components/admin/NoStoreSelected";
+import { getPrimaryImageUrl } from "@/utils/imageUtils";
 import {
   Package,
   Plus,
@@ -883,9 +884,12 @@ export default function Products() {
                               <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                                 {product.images && product.images.length > 0 ? (
                                   <img
-                                    src={product.images[0]}
+                                    src={getPrimaryImageUrl(product.images)}
                                     alt={product.name}
                                     className="w-full h-full object-cover rounded-lg"
+                                    onError={(e) => {
+                                      e.target.src = '/api/placeholder/48/48?text=' + encodeURIComponent(product.name.charAt(0));
+                                    }}
                                   />
                                 ) : (
                                   <Package className="w-6 h-6 text-gray-400" />

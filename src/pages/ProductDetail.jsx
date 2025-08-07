@@ -10,6 +10,7 @@ import cartService from "@/services/cartService";
 // ProductLabel entity is no longer imported directly as its data is now provided via useStore.
 import { useStore, cachedApiCall } from "@/components/storefront/StoreProvider";
 import { formatDisplayPrice, calculateDisplayPrice } from "@/utils/priceUtils";
+import { getImageUrlByIndex, getPrimaryImageUrl } from "@/utils/imageUtils";
 import {
   ShoppingCart, Star, ChevronLeft, ChevronRight, Minus, Plus, Heart, Download, Eye
 } from "lucide-react";
@@ -562,7 +563,7 @@ export default function ProductDetail() {
         <div className="space-y-4">
           <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
             <img
-              src={product.images?.[activeImage] || product.images?.[0] || 'https://placehold.co/600x600?text=No+Image'}
+              src={getImageUrlByIndex(product.images, activeImage) || getPrimaryImageUrl(product.images) || 'https://placehold.co/600x600?text=No+Image'}
               alt={product.name}
               className="w-full h-full object-cover"
             />
@@ -670,7 +671,11 @@ export default function ProductDetail() {
                     activeImage === index ? 'border-blue-500' : 'border-gray-300'
                   }`}
                 >
-                  <img src={image} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
+                  <img 
+                    src={getImageUrlByIndex(product.images, index)} 
+                    alt={`${product.name} ${index + 1}`} 
+                    className="w-full h-full object-cover" 
+                  />
                 </button>
               ))}
             </div>

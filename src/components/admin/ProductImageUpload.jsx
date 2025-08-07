@@ -363,7 +363,11 @@ const ProductImageUpload = ({
               onDragLeave={!disabled ? handleDragLeave : undefined}
               onDragOver={!disabled ? handleDragOver : undefined}
               onDrop={!disabled ? handleDrop : undefined}
-              onClick={!disabled && !uploading ? () => fileInputRef.current?.click() : undefined}
+              onClick={!disabled && !uploading ? (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInputRef.current?.click();
+              } : undefined}
             >
               <input
                 ref={fileInputRef}
