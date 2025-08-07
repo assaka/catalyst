@@ -77,7 +77,7 @@ const FileLibrary = () => {
       // Get files using the provider-agnostic storage API
       const response = await apiClient.get('/storage/list', {
         'x-store-id': selectedStore?.id,
-        folder: 'uploads'
+        folder: 'library'
       });
       
       // Check if we have valid storage data
@@ -146,7 +146,7 @@ const FileLibrary = () => {
       if (filesArray.length === 1) {
         // Single file upload
         const response = await apiClient.uploadFile('/storage/upload', filesArray[0], {
-          folder: 'uploads',
+          folder: 'library',
           public: 'true',
           store_id: selectedStore?.id
         });
@@ -162,7 +162,7 @@ const FileLibrary = () => {
         filesArray.forEach((file) => {
           formData.append('images', file);
         });
-        formData.append('folder', 'uploads');
+        formData.append('folder', 'library');
         formData.append('public', 'true');
 
         const response = await fetch('/api/storage/upload-multiple', {
@@ -246,7 +246,7 @@ const FileLibrary = () => {
       }
 
       // Extract file path from the file name/URL
-      const filePath = `uploads/${file.name}`;
+      const filePath = `library/${file.name}`;
 
       // Use fetch directly for DELETE request with body (apiClient doesn't support body in DELETE)
       const response = await fetch('/api/storage/delete', {

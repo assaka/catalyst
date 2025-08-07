@@ -1,5 +1,6 @@
 const StorageInterface = require('./storage-interface');
 const { v4: uuidv4 } = require('uuid');
+const { MediaAsset } = require('../models');
 
 /**
  * Flexible Storage Manager
@@ -248,6 +249,21 @@ class StorageManager {
     try {
       const storeProvider = await this.getStorageProvider(storeId);
       const result = await storeProvider.provider.uploadFile(storeId, file, options);
+      
+      // Track file in media_assets table if it's a library upload
+      if (options.folder === 'library' || (!options.type && !options.folder)) {
+        try {
+          await MediaAsset.createFromUpload(storeId, {
+            ...result,
+            folder: options.folder || 'library',
+            originalname: file.originalname,
+            provider: storeProvider.type
+          }, options.userId);
+        } catch (dbError) {
+          console.error('Failed to track media asset in database:', dbError.message);
+          // Don't fail the upload if database tracking fails
+        }
+      }
       
       return {
         ...result,

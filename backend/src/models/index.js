@@ -36,6 +36,7 @@ const Plugin = require('./Plugin');
 const PluginConfiguration = require('./PluginConfiguration');
 const SupabaseOAuthToken = require('./SupabaseOAuthToken');
 const ShopifyOAuthToken = require('./ShopifyOAuthToken');
+const MediaAsset = require('./MediaAsset');
 
 // Define associations
 const defineAssociations = () => {
@@ -255,5 +256,6 @@ module.exports = {
   Plugin,
   PluginConfiguration,
   SupabaseOAuthToken,
-  ShopifyOAuthToken
+  ShopifyOAuthToken,
+  MediaAsset
 };

@@ -5,12 +5,15 @@ const axios = require('axios');
 
 class SupabaseStorageService {
   constructor() {
-    this.bucketName = 'suprshop-images';
-    this.publicBucketName = 'suprshop-assets';
+    this.catalogBucketName = 'suprshop-catalog'; // Renamed from suprshop-images
+    this.assetsBucketName = 'suprshop-assets'; // General assets bucket
+    
+    // Legacy bucket name for backward compatibility during migration
+    this.legacyBucketName = 'suprshop-images';
   }
 
   /**
-   * Ensure required storage buckets exist (auto-creates suprshop-images and suprshop-assets)
+   * Ensure required storage buckets exist (auto-creates suprshop-catalog and suprshop-assets)
    */
   async ensureBucketsExist(storeId) {
     try {
@@ -32,41 +35,41 @@ class SupabaseStorageService {
         return { success: false, error: listError.message };
       }
       
-      const productBucketExists = buckets?.some(b => b.name === this.bucketName);
-      const publicBucketExists = buckets?.some(b => b.name === this.publicBucketName);
+      const catalogBucketExists = buckets?.some(b => b.name === this.catalogBucketName);
+      const assetsBucketExists = buckets?.some(b => b.name === this.assetsBucketName);
       
       let bucketsCreated = [];
 
-      // Create suprshop-images bucket if it doesn't exist
-      if (!productBucketExists) {
-        console.log(`Creating ${this.bucketName} bucket...`);
-        const { error: createError } = await client.storage.createBucket(this.bucketName, {
+      // Create suprshop-catalog bucket if it doesn't exist
+      if (!catalogBucketExists) {
+        console.log(`Creating ${this.catalogBucketName} bucket...`);
+        const { error: createError } = await client.storage.createBucket(this.catalogBucketName, {
           public: true,
           fileSizeLimit: 10485760, // 10MB
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'application/pdf']
         });
 
         if (createError && !createError.message.includes('already exists')) {
-          console.error(`Error creating ${this.bucketName}:`, createError);
+          console.error(`Error creating ${this.catalogBucketName}:`, createError);
         } else {
-          console.log(`✅ Created ${this.bucketName} bucket`);
-          bucketsCreated.push(this.bucketName);
+          console.log(`✅ Created ${this.catalogBucketName} bucket`);
+          bucketsCreated.push(this.catalogBucketName);
         }
       }
 
       // Create suprshop-assets bucket if it doesn't exist
-      if (!publicBucketExists) {
-        console.log(`Creating ${this.publicBucketName} bucket...`);
-        const { error: createError } = await client.storage.createBucket(this.publicBucketName, {
+      if (!assetsBucketExists) {
+        console.log(`Creating ${this.assetsBucketName} bucket...`);
+        const { error: createError } = await client.storage.createBucket(this.assetsBucketName, {
           public: true,
-          fileSizeLimit: 10485760, // 10MB
+          fileSizeLimit: 50485760, // 50MB for general assets
         });
 
         if (createError && !createError.message.includes('already exists')) {
-          console.error(`Error creating ${this.publicBucketName}:`, createError);
+          console.error(`Error creating ${this.assetsBucketName}:`, createError);
         } else {
-          console.log(`✅ Created ${this.publicBucketName} bucket`);
-          bucketsCreated.push(this.publicBucketName);
+          console.log(`✅ Created ${this.assetsBucketName} bucket`);
+          bucketsCreated.push(this.assetsBucketName);
         }
       }
 
@@ -218,37 +221,36 @@ class SupabaseStorageService {
         throw new Error('No valid API key available for storage operations. Please reconnect with full permissions.');
       }
 
-      // Generate filename based on options
+      // Generate filename and path based on options
       const fileExt = path.extname(file.originalname || file.name || '');
-      let fileName, filePath;
+      let fileName, filePath, bucketName;
       
-      if (options.useMagentoStructure) {
-        // Use original filename with Magento-style path
+      // Determine bucket and path based on upload type
+      if (options.type === 'product') {
+        // Product files go to suprshop-catalog bucket
+        bucketName = this.catalogBucketName;
         fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-        const magentoPath = this.generateMagentoPath(fileName);
         
-        // Determine base folder based on type
-        let baseFolder = '';
-        if (options.type === 'category') {
-          baseFolder = 'categories';
-        } else if (options.type === 'product') {
-          baseFolder = 'products';
-        } else if (options.type === 'asset') {
-          baseFolder = 'assets';
-        } else {
-          baseFolder = options.folder || `store-${storeId}`;
-        }
+        // Determine subfolder based on file type
+        const isImage = file.mimetype && file.mimetype.startsWith('image/');
+        const subfolder = isImage ? 'product/images' : 'product/files';
+        filePath = `${subfolder}/${fileName}`;
         
-        filePath = `${baseFolder}/${magentoPath}`;
+      } else if (options.type === 'category') {
+        // Category images go to suprshop-catalog bucket
+        bucketName = this.catalogBucketName;
+        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
+        filePath = `category/images/${fileName}`;
+        
       } else {
-        // Legacy path structure (for backward compatibility)
-        fileName = `${uuidv4()}${fileExt}`;
-        const folder = options.folder || `store-${storeId}`;
+        // General assets go to suprshop-assets bucket
+        bucketName = this.assetsBucketName;
+        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
+        
+        // Use 'library' folder instead of 'uploads' for general assets
+        const folder = options.folder === 'uploads' ? 'library' : (options.folder || 'library');
         filePath = `${folder}/${fileName}`;
       }
-      
-      // Determine bucket based on options
-      const bucketName = options.public ? this.publicBucketName : this.bucketName;
 
       // Extract project ID from URL
       const projectUrl = tokenInfo.project_url;
@@ -377,34 +379,34 @@ class SupabaseStorageService {
 
       // Generate filename and path based on options
       const fileExt = path.extname(file.originalname || file.name || '');
-      let fileName, filePath;
+      let fileName, filePath, bucketName;
       
-      if (options.useMagentoStructure) {
-        // Use original filename with Magento-style path
+      // Determine bucket and path based on upload type
+      if (options.type === 'product') {
+        // Product files go to suprshop-catalog bucket
+        bucketName = this.catalogBucketName;
         fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-        const magentoPath = this.generateMagentoPath(fileName);
         
-        // Determine base folder based on type
-        let baseFolder = '';
-        if (options.type === 'category') {
-          baseFolder = 'categories';
-        } else if (options.type === 'product') {
-          baseFolder = 'products';
-        } else if (options.type === 'asset') {
-          baseFolder = 'assets';
-        } else {
-          baseFolder = options.folder || `store-${storeId}`;
-        }
+        // Determine subfolder based on file type
+        const isImage = file.mimetype && file.mimetype.startsWith('image/');
+        const subfolder = isImage ? 'product/images' : 'product/files';
+        filePath = `${subfolder}/${fileName}`;
         
-        filePath = `${baseFolder}/${magentoPath}`;
+      } else if (options.type === 'category') {
+        // Category images go to suprshop-catalog bucket
+        bucketName = this.catalogBucketName;
+        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
+        filePath = `category/images/${fileName}`;
+        
       } else {
-        // Legacy path structure (for backward compatibility)
-        fileName = `${uuidv4()}${fileExt}`;
-        const folder = options.folder || `store-${storeId}`;
+        // General assets go to suprshop-assets bucket
+        bucketName = this.assetsBucketName;
+        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
+        
+        // Use 'library' folder instead of 'uploads' for general assets
+        const folder = options.folder === 'uploads' ? 'library' : (options.folder || 'library');
         filePath = `${folder}/${fileName}`;
       }
-      
-      const bucketName = options.public ? this.publicBucketName : this.bucketName;
 
       console.log('Upload details:', {
         bucketName,
