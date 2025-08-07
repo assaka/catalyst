@@ -525,14 +525,18 @@ export default function Categories() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
                       onClick={() => {
-                        const storeCode = selectedStore?.code || selectedStore?.slug || selectedStore?.domain;
+                        const storeCode = selectedStore?.slug;
                         const categorySlug = category.seo?.url_key || category.slug || category.id;
                         if (storeCode && categorySlug) {
                           // Open in new tab to view the storefront category page
                           const url = `/public/${storeCode}/category/${categorySlug}`;
                           window.open(url, '_blank');
                         } else {
-                          console.error('Missing store code or category slug:', { storeCode, categorySlug });
+                          console.error('Missing store slug or category slug:', { 
+                            storeSlug: storeCode, 
+                            categorySlug,
+                            selectedStore
+                          });
                         }
                       }}
                     >
@@ -934,14 +938,18 @@ export default function Categories() {
                         <DropdownMenuContent>
                           <DropdownMenuItem
                             onClick={() => {
-                              const storeCode = selectedStore?.code || selectedStore?.slug || selectedStore?.domain;
+                              const storeCode = selectedStore?.slug;
                               const categorySlug = category.seo?.url_key || category.slug || category.id;
                               if (storeCode && categorySlug) {
                                 // Open in new tab to view the storefront category page
                                 const url = `/public/${storeCode}/category/${categorySlug}`;
                                 window.open(url, '_blank');
                               } else {
-                                console.error('Missing store code or category slug:', { storeCode, categorySlug });
+                                console.error('Missing store slug or category slug:', { 
+                            storeSlug: storeCode, 
+                            categorySlug,
+                            selectedStore
+                          });
                               }
                             }}
                           >

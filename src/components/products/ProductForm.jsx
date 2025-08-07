@@ -738,6 +738,76 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </SelectContent>
                 </Select>
               </div>
+
+              <Separator className="my-4" />
+              
+              {/* Compact Inventory & Stock Section */}
+              <div className="space-y-4">
+                <h4 className="font-medium">Inventory & Stock</h4>
+                
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="manage_stock"
+                      checked={formData.manage_stock}
+                      onCheckedChange={(checked) => handleInputChange("manage_stock", checked)}
+                    />
+                    <Label htmlFor="manage_stock" className="text-sm cursor-pointer">Manage Stock</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="infinite_stock"
+                      checked={formData.infinite_stock}
+                      onCheckedChange={(checked) => handleInputChange("infinite_stock", checked)}
+                      disabled={!formData.manage_stock}
+                    />
+                    <Label htmlFor="infinite_stock" className={`text-sm cursor-pointer ${!formData.manage_stock ? 'text-gray-400' : ''}`}>
+                      Infinite Stock
+                    </Label>
+                  </div>
+                </div>
+
+                {formData.manage_stock && !formData.infinite_stock && (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label htmlFor="stock_quantity" className="text-sm">Stock Quantity</Label>
+                        <Input
+                          id="stock_quantity"
+                          type="number"
+                          value={formData.stock_quantity}
+                          onChange={(e) => handleInputChange("stock_quantity", e.target.value)}
+                          min="0"
+                          className="h-9"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="low_stock_threshold" className="text-sm">Low Stock Alert</Label>
+                        <Input
+                          id="low_stock_threshold"
+                          type="number"
+                          value={formData.low_stock_threshold}
+                          onChange={(e) => handleInputChange("low_stock_threshold", e.target.value)}
+                          min="0"
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="allow_backorders"
+                        checked={formData.allow_backorders}
+                        onCheckedChange={(checked) => handleInputChange("allow_backorders", checked)}
+                      />
+                      <Label htmlFor="allow_backorders" className="text-sm cursor-pointer">
+                        Allow Backorders
+                      </Label>
+                    </div>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -815,76 +885,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             <p className="text-xs text-gray-500">
               Images will be stored with hierarchical paths (e.g., /h/a/hamid.png) and saved instantly when uploaded.
             </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle>Inventory & Stock</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center space-x-2 p-3 border rounded-lg">
-              <Switch
-                id="manage_stock"
-                checked={formData.manage_stock}
-                onCheckedChange={(checked) => handleInputChange("manage_stock", checked)}
-              />
-              <div>
-                <Label htmlFor="manage_stock" className="font-medium">Manage Stock</Label>
-                <p className="text-sm text-gray-500">Automatically track inventory quantity</p>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 p-3 border rounded-lg">
-              <Switch
-                id="infinite_stock"
-                checked={formData.infinite_stock}
-                onCheckedChange={(checked) => handleInputChange("infinite_stock", checked)}
-              />
-              <div>
-                <Label htmlFor="infinite_stock" className="font-medium">Infinite Stock</Label>
-                <p className="text-sm text-gray-500">Product will never go out of stock</p>
-              </div>
-            </div>
-
-            {formData.manage_stock && !formData.infinite_stock && (
-              <div>
-                <Label htmlFor="stock_quantity">Stock Quantity</Label>
-                <Input
-                  id="stock_quantity"
-                  type="number"
-                  value={formData.stock_quantity}
-                  onChange={(e) => handleInputChange("stock_quantity", e.target.value)}
-                  min="0"
-                />
-              </div>
-            )}
-
-            {formData.manage_stock && !formData.infinite_stock && (
-              <div className="flex items-center space-x-2 p-3 border rounded-lg">
-                <Switch
-                  id="allow_backorders"
-                  checked={formData.allow_backorders}
-                  onCheckedChange={(checked) => handleInputChange("allow_backorders", checked)}
-                />
-                <div>
-                  <Label htmlFor="allow_backorders" className="font-medium">Allow Backorders</Label>
-                  <p className="text-sm text-gray-500">Customers can order when out of stock</p>
-                </div>
-              </div>
-            )}
-
-            {formData.manage_stock && !formData.infinite_stock && (
-              <div>
-                <Label htmlFor="low_stock_threshold">Low Stock Threshold</Label>
-                <Input
-                  id="low_stock_threshold"
-                  type="number"
-                  value={formData.low_stock_threshold}
-                  onChange={(e) => handleInputChange("low_stock_threshold", e.target.value)}
-                  min="0"
-                />
-                <p className="text-sm text-gray-500 mt-1">Receive alerts when stock falls below this number</p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
