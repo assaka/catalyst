@@ -13,6 +13,7 @@ import Products from "./Products";
 import Categories from "./Categories";
 
 import MediaStorage from "../components/admin/MediaStorage";
+import SupabasePage from "./SupabasePage";
 
 import Settings from "./Settings";
 
@@ -133,6 +134,8 @@ const PAGES = {
     Categories: Categories,
     
     MediaStorage: MediaStorage,
+    
+    SupabasePage: SupabasePage,
     
     Settings: Settings,
     
