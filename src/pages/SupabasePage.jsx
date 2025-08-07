@@ -3,6 +3,7 @@ import { useStoreSelection } from '../contexts/StoreSelectionContext';
 import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
 import SupabaseStorage from '../components/admin/SupabaseStorage';
 import { Database } from 'lucide-react';
+// Force rebuild - removed api-client import
 
 const SupabasePage = () => {
   const { selectedStore } = useStoreSelection();
