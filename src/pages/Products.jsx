@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Product } from "@/api/entities";
 import { Category } from "@/api/entities";
 import { Tax } from "@/api/entities";
@@ -72,6 +73,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function Products() {
+  const navigate = useNavigate();
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -948,6 +950,12 @@ export default function Products() {
                                   >
                                     <EyeOff className="w-4 h-4 mr-2" />
                                     Deactivate
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => navigate(`/products/${product.id}`)}
+                                  >
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    View
                                   </DropdownMenuItem>
                                   <DropdownMenuItem
                                     onClick={() => {
