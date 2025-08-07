@@ -20,7 +20,10 @@ import {
   Package,
   Clock,
   AlertCircle,
-  Loader2
+  Loader2,
+  Settings,
+  Key,
+  Shield
 } from 'lucide-react';
 
 const ShopifyIntegration = () => {
@@ -34,13 +37,106 @@ const ShopifyIntegration = () => {
   const [importProgress, setImportProgress] = useState(null);
   const [message, setMessage] = useState(null);
   const [shopInfo, setShopInfo] = useState(null);
+  const [appConfigured, setAppConfigured] = useState(false);
+  const [showAppConfig, setShowAppConfig] = useState(false);
+  const [appCredentials, setAppCredentials] = useState({
+    client_id: '',
+    client_secret: '',
+    redirect_uri: ''
+  });
 
   useEffect(() => {
     if (storeId) {
+      checkAppConfiguration();
       checkConnectionStatus();
       fetchImportStats();
     }
   }, [storeId]);
+
+  const checkAppConfiguration = async () => {
+    try {
+      const response = await fetch('/api/shopify/app-configured', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'x-store-id': storeId
+        }
+      });
+      const data = await response.json();
+      setAppConfigured(data.configured || data.has_global_config);
+      
+      // Set default redirect URI if available
+      if (data.redirect_uri) {
+        setAppCredentials(prev => ({
+          ...prev,
+          redirect_uri: data.redirect_uri
+        }));
+      } else {
+        // Set default redirect URI based on current backend URL
+        const backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com';
+        setAppCredentials(prev => ({
+          ...prev,
+          redirect_uri: `${backendUrl}/api/shopify/callback`
+        }));
+      }
+    } catch (error) {
+      console.error('Error checking app configuration:', error);
+    }
+  };
+
+  const saveAppCredentials = async () => {
+    if (!appCredentials.client_id || !appCredentials.client_secret || !appCredentials.redirect_uri) {
+      setMessage({
+        type: 'error',
+        text: 'Please fill in all required fields'
+      });
+      return;
+    }
+
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/shopify/configure-app', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+          'x-store-id': storeId
+        },
+        body: JSON.stringify(appCredentials)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage({
+          type: 'success',
+          text: 'Shopify app credentials saved successfully!'
+        });
+        setAppConfigured(true);
+        setShowAppConfig(false);
+        
+        // Clear sensitive data from state
+        setAppCredentials(prev => ({
+          ...prev,
+          client_secret: ''
+        }));
+      } else {
+        setMessage({
+          type: 'error',
+          text: data.message || 'Failed to save app credentials'
+        });
+      }
+    } catch (error) {
+      console.error('Error saving app credentials:', error);
+      setMessage({
+        type: 'error',
+        text: 'Failed to save app credentials'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkConnectionStatus = async () => {
     try {

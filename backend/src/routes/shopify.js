@@ -45,6 +45,98 @@ const storeAuth = (req, res, next) => {
 router.use(auth);
 
 /**
+ * @route POST /api/shopify/configure-app
+ * @desc Save Shopify app credentials for store
+ * @access Private
+ */
+router.post('/configure-app',
+  storeAuth,
+  [
+    body('client_id')
+      .notEmpty()
+      .withMessage('Client ID is required')
+      .isLength({ min: 20 })
+      .withMessage('Invalid Client ID format'),
+    body('client_secret')
+      .notEmpty()
+      .withMessage('Client Secret is required')
+      .isLength({ min: 32 })
+      .withMessage('Invalid Client Secret format'),
+    body('redirect_uri')
+      .notEmpty()
+      .withMessage('Redirect URI is required')
+      .isURL()
+      .withMessage('Invalid Redirect URI format')
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const { client_id, client_secret, redirect_uri } = req.body;
+      const storeId = req.storeId;
+
+      const result = await shopifyIntegration.saveAppCredentials(
+        storeId,
+        client_id,
+        client_secret,
+        redirect_uri
+      );
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Shopify app credentials saved successfully'
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error || 'Failed to save app credentials'
+        });
+      }
+
+    } catch (error) {
+      console.error('Failed to save Shopify app credentials:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+);
+
+/**
+ * @route GET /api/shopify/app-configured
+ * @desc Check if Shopify app is configured for store
+ * @access Private
+ */
+router.get('/app-configured', storeAuth, async (req, res) => {
+  try {
+    const credentials = await shopifyIntegration.getAppCredentials(req.storeId);
+    
+    res.json({
+      success: true,
+      configured: !!credentials,
+      has_global_config: shopifyIntegration.oauthConfigured,
+      redirect_uri: credentials?.redirect_uri || null
+    });
+
+  } catch (error) {
+    console.error('Error checking app configuration:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
  * @route GET /api/shopify/auth
  * @desc Generate Shopify OAuth URL
  * @access Private
@@ -58,7 +150,7 @@ router.get('/auth',
       .matches(/^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/)
       .withMessage('Invalid Shopify domain format. Must be in format: your-shop.myshopify.com')
   ],
-  (req, res) => {
+  async (req, res) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -72,7 +164,7 @@ router.get('/auth',
       const { shop_domain } = req.query;
       const storeId = req.storeId;
 
-      const authUrl = shopifyIntegration.getAuthorizationUrl(storeId, shop_domain);
+      const authUrl = await shopifyIntegration.getAuthorizationUrl(storeId, shop_domain);
 
       res.json({
         success: true,
@@ -166,9 +258,21 @@ router.get('/callback', async (req, res) => {
       });
     }
 
+    // Extract storeId from state to verify HMAC with correct credentials
+    let storeId = null;
+    try {
+      const stateData = shopifyIntegration.verifyState(state);
+      storeId = stateData.storeId;
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid state parameter'
+      });
+    }
+
     // Verify HMAC if present (recommended for production)
     if (hmac) {
-      const isValidHmac = shopifyIntegration.verifyHmac(req.query, hmac);
+      const isValidHmac = await shopifyIntegration.verifyHmac(req.query, hmac, storeId);
       if (!isValidHmac) {
         return res.status(400).json({
           success: false,

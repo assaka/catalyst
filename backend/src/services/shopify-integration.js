@@ -40,11 +40,89 @@ class ShopifyIntegration {
   }
 
   /**
+   * Save Shopify app credentials for a store
+   */
+  async saveAppCredentials(storeId, clientId, clientSecret, redirectUri) {
+    try {
+      // Check if a record exists
+      let tokenRecord = await ShopifyOAuthToken.findByStore(storeId);
+      
+      if (tokenRecord) {
+        // Update existing record with credentials
+        tokenRecord.client_id = clientId;
+        tokenRecord.client_secret = clientSecret;
+        tokenRecord.redirect_uri = redirectUri;
+        await tokenRecord.save();
+      } else {
+        // Create new record with just credentials (no token yet)
+        await ShopifyOAuthToken.create({
+          store_id: storeId,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          shop_domain: 'pending', // Will be updated during OAuth
+          access_token: 'pending', // Will be updated during OAuth
+          scope: 'pending' // Will be updated during OAuth
+        });
+      }
+
+      // Also save to integration config
+      await IntegrationConfig.createOrUpdate(
+        storeId,
+        'shopify',
+        {
+          app_configured: true,
+          client_id: clientId,
+          redirect_uri: redirectUri
+        }
+      );
+
+      return { success: true, message: 'App credentials saved successfully' };
+    } catch (error) {
+      console.error('Error saving app credentials:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get app credentials for a store
+   */
+  async getAppCredentials(storeId) {
+    try {
+      const tokenRecord = await ShopifyOAuthToken.findByStore(storeId);
+      if (tokenRecord && tokenRecord.client_id) {
+        return {
+          client_id: tokenRecord.client_id,
+          client_secret: tokenRecord.client_secret,
+          redirect_uri: tokenRecord.redirect_uri
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting app credentials:', error);
+      return null;
+    }
+  }
+
+  /**
    * Generate OAuth authorization URL for Shopify
    */
-  getAuthorizationUrl(storeId, shopDomain) {
-    if (!this.oauthConfigured) {
-      throw new Error('Shopify OAuth is not configured. Please add SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET environment variables.');
+  async getAuthorizationUrl(storeId, shopDomain) {
+    // First try to get store-specific credentials
+    const credentials = await this.getAppCredentials(storeId);
+    
+    let clientId, redirectUri;
+    
+    if (credentials && credentials.client_id) {
+      // Use store-specific credentials
+      clientId = credentials.client_id;
+      redirectUri = credentials.redirect_uri;
+    } else if (this.oauthConfigured) {
+      // Fall back to environment variables if available
+      clientId = this.clientId;
+      redirectUri = this.redirectUri;
+    } else {
+      throw new Error('Shopify app is not configured. Please configure your Shopify app credentials first.');
     }
 
     if (!shopDomain || !shopDomain.includes('.myshopify.com')) {
@@ -53,9 +131,9 @@ class ShopifyIntegration {
 
     const state = this.generateState(storeId);
     const params = new URLSearchParams({
-      client_id: this.clientId,
+      client_id: clientId,
       scope: this.scopes,
-      redirect_uri: this.redirectUri,
+      redirect_uri: redirectUri,
       state: state,
       'grant_options[]': 'per-user'
     });
@@ -96,15 +174,30 @@ class ShopifyIntegration {
   /**
    * Verify HMAC signature from Shopify
    */
-  verifyHmac(query, hmac) {
+  async verifyHmac(query, hmac, storeId = null) {
     const message = Object.keys(query)
       .filter(key => key !== 'hmac' && key !== 'signature')
       .sort()
       .map(key => `${key}=${query[key]}`)
       .join('&');
 
+    let clientSecret = this.clientSecret;
+    
+    // If storeId is provided, try to get store-specific secret
+    if (storeId) {
+      const credentials = await this.getAppCredentials(storeId);
+      if (credentials && credentials.client_secret) {
+        clientSecret = credentials.client_secret;
+      }
+    }
+
+    if (!clientSecret) {
+      console.error('No client secret available for HMAC verification');
+      return false;
+    }
+
     const computedHmac = crypto
-      .createHmac('sha256', this.clientSecret)
+      .createHmac('sha256', clientSecret)
       .update(message)
       .digest('hex');
 
@@ -119,25 +212,38 @@ class ShopifyIntegration {
    */
   async exchangeCodeForToken(code, shopDomain, stateParam) {
     try {
-      if (!this.oauthConfigured) {
-        throw new Error('Shopify OAuth is not configured');
-      }
-
       // Verify state parameter
       const stateData = this.verifyState(stateParam);
       const storeId = stateData.storeId;
+
+      // Get store-specific credentials
+      const credentials = await this.getAppCredentials(storeId);
+      
+      let clientId, clientSecret;
+      
+      if (credentials && credentials.client_id) {
+        // Use store-specific credentials
+        clientId = credentials.client_id;
+        clientSecret = credentials.client_secret;
+      } else if (this.oauthConfigured) {
+        // Fall back to environment variables
+        clientId = this.clientId;
+        clientSecret = this.clientSecret;
+      } else {
+        throw new Error('Shopify OAuth is not configured. Please configure your Shopify app credentials first.');
+      }
 
       console.log('Exchanging code for token:', {
         code: code.substring(0, 10) + '...',
         shopDomain,
         storeId,
-        clientId: this.clientId
+        clientId: clientId.substring(0, 10) + '...'
       });
 
       // Exchange code for access token
       const tokenResponse = await axios.post(`https://${shopDomain}/admin/oauth/access_token`, {
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
+        client_id: clientId,
+        client_secret: clientSecret,
         code: code
       });
 

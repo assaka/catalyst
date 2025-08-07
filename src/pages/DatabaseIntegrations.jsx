@@ -35,7 +35,21 @@ const DatabaseIntegrations = () => {
         </TabsList>
 
         <TabsContent value="supabase" className="space-y-6">
-          <SupabasePage />
+          {/* Render the Supabase page content directly without wrapper */}
+          {storeId ? (
+            <>
+              {/* Show the unified Supabase interface */}
+              <SupabasePage />
+            </>
+          ) : (
+            <Card>
+              <CardContent className="py-8">
+                <p className="text-center text-gray-600">
+                  Please select a store from the dropdown above to manage database integrations.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="aiven" className="space-y-6">
