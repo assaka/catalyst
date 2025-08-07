@@ -1036,13 +1036,24 @@ class SupabaseIntegration {
 
       const isExpired = SupabaseOAuthToken.isTokenExpired(token);
       
-      // If token is expired or connection test recently failed, show as disconnected
-      if (isExpired || (config && config.connection_status === 'failed')) {
+      // If token is expired and we don't have a service role key, show as disconnected
+      // Service role keys don't expire, so we can still use Supabase even if OAuth token expires
+      if (isExpired && !token.service_role_key) {
         return {
           connected: false,
-          message: isExpired ? 'Supabase connection expired' : 'Supabase connection failed - please reconnect',
+          message: 'Supabase connection expired',
           oauthConfigured: true,
           tokenExpired: isExpired,
+          connectionStatus: 'failed'
+        };
+      }
+      
+      // If connection test recently failed, show as disconnected
+      if (config && config.connection_status === 'failed') {
+        return {
+          connected: false,
+          message: 'Supabase connection failed - please reconnect',
+          oauthConfigured: true,
           connectionStatus: 'failed'
         };
       }
