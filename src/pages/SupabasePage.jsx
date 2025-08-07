@@ -2,19 +2,25 @@ import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
 import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
 import SupabaseStorage from '../components/admin/SupabaseStorage';
-import { Database } from 'lucide-react';
+import { Database, Check, Star } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { toast } from 'sonner';
+import apiClient from '../api/client';
 // Force rebuild - removed api-client import
 
 const SupabasePage = () => {
   const { selectedStore } = useStoreSelection();
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isDefault, setIsDefault] = useState(false);
+  const [settingDefault, setSettingDefault] = useState(false);
   
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
       loadConnectionStatus();
+      checkIfDefault();
     }
   }, [storeId]);
 
@@ -37,6 +43,37 @@ const SupabasePage = () => {
       setConnectionStatus({ connected: false });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const checkIfDefault = async () => {
+    try {
+      const response = await apiClient.get(`/stores/${storeId}/default-database-provider`);
+      setIsDefault(response.data?.provider === 'supabase');
+    } catch (error) {
+      console.error('Error checking default database provider:', error);
+    }
+  };
+
+  const handleSetAsDefault = async () => {
+    if (!storeId) {
+      toast.error('Please select a store first');
+      return;
+    }
+
+    setSettingDefault(true);
+    try {
+      await apiClient.post(`/stores/${storeId}/default-database-provider`, {
+        provider: 'supabase'
+      });
+      
+      setIsDefault(true);
+      toast.success('Supabase set as default database provider');
+    } catch (error) {
+      console.error('Error setting default database provider:', error);
+      toast.error('Failed to set as default database provider');
+    } finally {
+      setSettingDefault(false);
     }
   };
 
@@ -71,6 +108,25 @@ const SupabasePage = () => {
               : 'Connect your Supabase account for database and storage management'}
           </p>
         </div>
+        <Button
+          onClick={handleSetAsDefault}
+          disabled={settingDefault || isDefault}
+          variant={isDefault ? "secondary" : "default"}
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          {isDefault ? (
+            <>
+              <Check className="h-4 w-4" />
+              <span>Default Database</span>
+            </>
+          ) : (
+            <>
+              <Star className="h-4 w-4" />
+              <span>Set as Default</span>
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Show SupabaseIntegration for connection management */}

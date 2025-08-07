@@ -93,6 +93,7 @@ const productImageRoutes = require('./routes/product-images');
 const categoryImageRoutes = require('./routes/category-images');
 const fileManagerRoutes = require('./routes/file-manager');
 const templateRoutes = require('./routes/templates');
+const storeDatabaseRoutes = require('./routes/store-database');
 
 const app = express();
 
@@ -1509,6 +1510,7 @@ app.use('/api/stores/:store_id/products', productImageRoutes);
 app.use('/api/stores/:store_id/categories', categoryImageRoutes);
 app.use('/api/file-manager', fileManagerRoutes);
 app.use('/api/stores/:store_id/templates', authMiddleware, templateRoutes);
+app.use('/api', storeDatabaseRoutes); // Add store database routes
 
 // 404 handler
 app.use('*', (req, res) => {
