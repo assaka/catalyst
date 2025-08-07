@@ -91,6 +91,66 @@ router.get('/auth',
 );
 
 /**
+ * @route POST /api/shopify/direct-access
+ * @desc Setup direct access with access token (for custom/private apps)
+ * @access Private
+ */
+router.post('/direct-access',
+  storeAuth,
+  [
+    body('shop_domain')
+      .notEmpty()
+      .withMessage('Shop domain is required')
+      .matches(/^[a-zA-Z0-9][a-zA-Z0-9\-]*\.myshopify\.com$/)
+      .withMessage('Invalid Shopify domain format'),
+    body('access_token')
+      .notEmpty()
+      .withMessage('Access token is required')
+  ],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const { shop_domain, access_token } = req.body;
+      const storeId = req.storeId;
+
+      const result = await shopifyIntegration.setupDirectAccess(
+        storeId,
+        shop_domain,
+        access_token
+      );
+
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Direct access connection established successfully',
+          data: result.data
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: result.error || 'Failed to establish direct access connection'
+        });
+      }
+
+    } catch (error) {
+      console.error('Direct access setup failed:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  }
+);
+
+/**
  * @route GET /api/shopify/callback
  * @desc Handle Shopify OAuth callback
  * @access Public (no auth required for OAuth callback)
