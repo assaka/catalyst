@@ -175,13 +175,15 @@ class StorageManager {
       }
     }
     
-    // Check if local storage is available as last resort (only in development)
-    if (this.providers.has('local') && process.env.NODE_ENV !== 'production') {
-      console.log(`Using local storage in development mode for store ${storeId}`);
+    // Check if local storage is available as last resort
+    if (this.providers.has('local')) {
+      // Allow local storage as fallback in production with a warning
+      console.warn(`⚠️ Using local storage fallback for store ${storeId}. This is not recommended for production. Please configure Supabase, AWS S3, or Google Cloud Storage.`);
       return {
         type: 'local',
         provider: this.providers.get('local'),
-        name: 'Local Storage'
+        name: 'Local Storage (Fallback)',
+        fallbackUsed: true
       };
     }
 

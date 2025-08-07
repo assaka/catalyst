@@ -11,7 +11,9 @@ class LocalStorageProvider extends StorageInterface {
   constructor() {
     super();
     this.baseUploadPath = path.join(process.cwd(), 'uploads');
-    this.basePublicUrl = process.env.BACKEND_URL || process.env.BASE_URL || 'http://localhost:5000';
+    // Ensure we use the correct backend URL for production
+    this.basePublicUrl = process.env.BACKEND_URL || process.env.BASE_URL || 
+                        (process.env.NODE_ENV === 'production' ? 'https://catalyst-backend-fzhu.onrender.com' : 'http://localhost:5000');
     this.initialized = false;
     
     // Ensure base upload directory exists on initialization
