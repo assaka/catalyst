@@ -35,6 +35,7 @@ const ImportStatistic = require('./ImportStatistic');
 const Plugin = require('./Plugin');
 const PluginConfiguration = require('./PluginConfiguration');
 const SupabaseOAuthToken = require('./SupabaseOAuthToken');
+const ShopifyOAuthToken = require('./ShopifyOAuthToken');
 
 // Define associations
 const defineAssociations = () => {
@@ -207,6 +208,10 @@ const defineAssociations = () => {
   // SupabaseOAuthToken associations
   SupabaseOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasOne(SupabaseOAuthToken, { foreignKey: 'store_id' });
+  
+  // ShopifyOAuthToken associations
+  ShopifyOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasOne(ShopifyOAuthToken, { foreignKey: 'store_id' });
 };
 
 // Initialize associations
@@ -249,5 +254,6 @@ module.exports = {
   ImportStatistic,
   Plugin,
   PluginConfiguration,
-  SupabaseOAuthToken
+  SupabaseOAuthToken,
+  ShopifyOAuthToken
 };
