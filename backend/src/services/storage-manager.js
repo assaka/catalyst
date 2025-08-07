@@ -108,14 +108,17 @@ class StorageManager {
    * @returns {Promise<Object>} Provider info with type and instance
    */
   async getStorageProvider(storeId) {
-    // First check if store has a default database provider configured
+    // First check if store has a default media storage provider configured
     try {
       const { Store } = require('../models');
       const store = await Store.findByPk(storeId);
       
-      if (store && store.settings?.default_database_provider) {
-        const defaultProvider = store.settings.default_database_provider;
-        console.log(`Store ${storeId} has default provider: ${defaultProvider}`);
+      // Check for default_mediastorage_provider first, then fall back to default_database_provider
+      const defaultProvider = store?.settings?.default_mediastorage_provider || 
+                             store?.settings?.default_database_provider;
+      
+      if (defaultProvider) {
+        console.log(`Store ${storeId} has default storage provider: ${defaultProvider}`);
         
         // Check if it's Supabase and configured
         if (defaultProvider === 'supabase' && this.providers.has('supabase')) {

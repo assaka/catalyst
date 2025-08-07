@@ -42,7 +42,8 @@ const FileLibrary = () => {
   // Check for default storage provider
   const checkStorageProvider = async () => {
     try {
-      const response = await apiClient.get(`/stores/${selectedStore?.id}/default-database-provider`, {
+      // Try media storage provider first
+      const response = await apiClient.get(`/stores/${selectedStore?.id}/default-mediastorage-provider`, {
         'x-store-id': selectedStore?.id
       });
       
@@ -51,7 +52,19 @@ const FileLibrary = () => {
         return response.provider;
       }
     } catch (error) {
-      console.error('Error checking storage provider:', error);
+      // Fall back to database provider for backward compatibility
+      try {
+        const fallbackResponse = await apiClient.get(`/stores/${selectedStore?.id}/default-database-provider`, {
+          'x-store-id': selectedStore?.id
+        });
+        
+        if (fallbackResponse.success && fallbackResponse.provider) {
+          setStorageProvider(fallbackResponse.provider);
+          return fallbackResponse.provider;
+        }
+      } catch (fallbackError) {
+        console.error('Error checking storage provider:', fallbackError);
+      }
     }
     return null;
   };
