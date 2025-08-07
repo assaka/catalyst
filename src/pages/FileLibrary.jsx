@@ -75,9 +75,8 @@ const FileLibrary = () => {
       setLoading(true);
       
       // Get files using the provider-agnostic storage API
-      const response = await apiClient.get('/storage/list', {
-        'x-store-id': selectedStore?.id,
-        folder: 'library'
+      const response = await apiClient.get('/storage/list?folder=library', {
+        'x-store-id': selectedStore?.id
       });
       
       // Check if we have valid storage data
