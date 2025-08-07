@@ -28,8 +28,8 @@ const ShopifyIntegration = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-4 mb-4">
+        <div className="mb-6">
+          <div className="flex items-center space-x-4">
             <div className="p-3 bg-green-100 rounded-lg">
               <ShoppingBag className="w-8 h-8 text-green-600" />
             </div>
@@ -43,7 +43,9 @@ const ShopifyIntegration = () => {
         </div>
 
         {/* Main Content */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Card className="material-elevation-1 border-0">
+          <CardContent className="p-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="connection" className="flex items-center space-x-2">
               <Link className="w-4 h-4" />
@@ -566,6 +568,8 @@ SHOPIFY_CLIENT_SECRET=your_app_client_secret_here
             </Card>
           </TabsContent>
         </Tabs>
+          </CardContent>
+        </Card>
       </div>
   );
 };

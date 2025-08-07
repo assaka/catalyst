@@ -1,6 +1,6 @@
 import React from 'react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
-import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
+import SupabasePage from './SupabasePage';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Database, Server, Cloud } from 'lucide-react';
@@ -35,17 +35,7 @@ const DatabaseIntegrations = () => {
         </TabsList>
 
         <TabsContent value="supabase" className="space-y-6">
-          {storeId ? (
-            <SupabaseIntegration storeId={storeId} />
-          ) : (
-            <Card>
-              <CardContent className="py-8">
-                <p className="text-center text-gray-600">
-                  Please select a store from the dropdown above to manage database integrations.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          <SupabasePage />
         </TabsContent>
 
         <TabsContent value="aiven" className="space-y-6">

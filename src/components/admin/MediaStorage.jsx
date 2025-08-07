@@ -1,26 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { useAlertTypes } from '@/hooks/useAlert';
-import SupabaseStorage from './SupabaseStorage';
-import apiClient from '@/lib/api-client';
-import {
-  Image,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  Clock,
-  Cloud,
-  DollarSign,
-  Crown,
-  Zap,
-  Server,
-  Database,
-  Info
-} from 'lucide-react';
+import React from 'react';
+import SupabasePage from '@/pages/SupabasePage';
 
 const MediaStorage = () => {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
