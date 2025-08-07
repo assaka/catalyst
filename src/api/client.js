@@ -239,6 +239,11 @@ class ApiClient {
                             !endpoint.includes('/test') &&
                             !endpoint.includes('/save');
       
+      // Special handling for storage endpoints - don't transform, return full response
+      if (endpoint.includes('/storage/')) {
+        return result;
+      }
+      
       if (isListEndpoint && result && typeof result === 'object' && result.success && result.data) {
         // If data is already an array, return it directly (for list responses)
         if (Array.isArray(result.data)) {
