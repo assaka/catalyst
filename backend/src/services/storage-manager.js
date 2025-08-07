@@ -158,19 +158,9 @@ class StorageManager {
     }
 
     // Check other providers in order of preference
-    const preferenceOrder = ['s3', 'gcs', 'local'];
+    const preferenceOrder = ['s3', 'gcs'];
     for (const providerType of preferenceOrder) {
       if (this.providers.has(providerType)) {
-        // For local storage, always return it as available
-        if (providerType === 'local') {
-          console.log(`Using local storage as fallback for store ${storeId}`);
-          return {
-            type: 'local',
-            provider: this.providers.get('local'),
-            name: 'Local Storage'
-          };
-        }
-        
         // For cloud providers, check store-specific configuration
         // TODO: Add store-specific configuration checks for S3, GCS, etc.
         return {
@@ -180,9 +170,19 @@ class StorageManager {
         };
       }
     }
+    
+    // Check if local storage is available as last resort (only in development)
+    if (this.providers.has('local') && process.env.NODE_ENV !== 'production') {
+      console.log(`Using local storage in development mode for store ${storeId}`);
+      return {
+        type: 'local',
+        provider: this.providers.get('local'),
+        name: 'Local Storage'
+      };
+    }
 
-    // No providers available (this should rarely happen)
-    throw new Error('No storage providers are available for this store. Please configure a storage provider.');
+    // No providers available - provide a helpful error message
+    throw new Error('No storage provider is configured for this store. Please connect Supabase, AWS S3, or Google Cloud Storage in the integrations settings.');
   }
 
   /**
@@ -252,10 +252,15 @@ class StorageManager {
         fallbackUsed: false
       };
     } catch (error) {
-      console.error(`Store provider (${error.message}) failed for store ${storeId}:`, error.message);
+      console.error(`Storage provider error for store ${storeId}:`, error.message);
       
-      // Try fallback provider if available
-      if (this.fallbackProvider) {
+      // In production, if no storage provider is configured, throw a clear error
+      if (error.message.includes('No storage provider is configured')) {
+        throw new Error('No storage provider is configured. Please connect a storage provider (Supabase, AWS S3, or Google Cloud Storage) in the integrations settings.');
+      }
+      
+      // Try fallback provider if available and not in production
+      if (this.fallbackProvider && process.env.NODE_ENV !== 'production') {
         console.log(`🔄 Attempting fallback to ${this.fallbackProvider.getProviderName()}...`);
         try {
           const result = await this.fallbackProvider.uploadFile(storeId, file, options);

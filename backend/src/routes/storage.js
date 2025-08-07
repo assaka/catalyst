@@ -98,9 +98,14 @@ router.post('/upload', upload.single('image'), async (req, res) => {
 
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({
+    
+    // Return 400 for configuration issues, 500 for server errors
+    const statusCode = error.message.includes('No storage provider') ? 400 : 500;
+    
+    res.status(statusCode).json({
       success: false,
-      error: error.message
+      error: error.message,
+      requiresConfiguration: error.message.includes('No storage provider')
     });
   }
 });
@@ -139,9 +144,14 @@ router.post('/upload-multiple', upload.array('images', 10), async (req, res) => 
 
   } catch (error) {
     console.error('Multiple upload error:', error);
-    res.status(500).json({
+    
+    // Return 400 for configuration issues, 500 for server errors
+    const statusCode = error.message.includes('No storage provider') ? 400 : 500;
+    
+    res.status(statusCode).json({
       success: false,
-      error: error.message
+      error: error.message,
+      requiresConfiguration: error.message.includes('No storage provider')
     });
   }
 });
@@ -167,6 +177,21 @@ router.get('/list', async (req, res) => {
 
   } catch (error) {
     console.error('List images error:', error);
+    
+    // If no storage provider is configured, return empty list with info
+    if (error.message.includes('No storage provider')) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          files: [],
+          total: 0,
+          provider: null
+        },
+        requiresConfiguration: true,
+        message: 'No storage provider configured. Please connect a storage provider in the integrations settings.'
+      });
+    }
+    
     res.status(500).json({
       success: false,
       error: error.message

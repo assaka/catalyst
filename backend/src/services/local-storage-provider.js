@@ -12,6 +12,7 @@ class LocalStorageProvider extends StorageInterface {
     super();
     this.baseUploadPath = path.join(process.cwd(), 'uploads');
     this.basePublicUrl = process.env.BACKEND_URL || process.env.BASE_URL || 'http://localhost:5000';
+    this.initialized = false;
     
     // Ensure base upload directory exists on initialization
     this.initializeStorage();
@@ -21,11 +22,15 @@ class LocalStorageProvider extends StorageInterface {
    * Initialize storage by ensuring base directory exists
    */
   async initializeStorage() {
+    if (this.initialized) return;
+    
     try {
       await this.ensureDirectoryExists(this.baseUploadPath);
+      this.initialized = true;
       console.log(`📁 Local storage initialized at: ${this.baseUploadPath}`);
     } catch (error) {
       console.error(`Failed to initialize local storage at ${this.baseUploadPath}:`, error.message);
+      throw error;
     }
   }
 
