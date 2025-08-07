@@ -48,12 +48,16 @@ router.post('/stores/:storeId/default-database-provider',
       const { storeId } = req.params;
       const { provider } = req.body;
       
-      // Validate provider
-      const validProviders = ['supabase', 'aiven', 'aws-rds', 'google-cloud-sql', 'azure-database', 'planetscale'];
-      if (!validProviders.includes(provider)) {
+      // Validate provider - includes both database and storage providers
+      const validDatabaseProviders = ['supabase', 'aiven', 'aws-rds', 'google-cloud-sql', 'azure-database', 'planetscale'];
+      // Storage providers - match the frontend values
+      const validStorageProviders = ['supabase', 'cloudflare', 'aws-s3', 'google-storage', 'azure-blob', 's3', 'gcs', 'local'];
+      const allValidProviders = [...new Set([...validDatabaseProviders, ...validStorageProviders])];
+      
+      if (!allValidProviders.includes(provider)) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Invalid database provider' 
+          message: `Invalid database/storage provider: ${provider}` 
         });
       }
       
