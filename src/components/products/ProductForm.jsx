@@ -865,14 +865,29 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                 <Label className="font-medium text-amber-800 mb-3 block">{attribute.name}</Label>
                                 
                                 <div className="space-y-2">
-                                  <input
-                                    type="file"
-                                    id={`attr_${attribute.code}`}
-                                    onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
-                                    accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
-                                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
-                                    disabled={uploadingImage}
-                                  />
+                                  <div className="flex gap-2">
+                                    <input
+                                      type="file"
+                                      id={`attr_${attribute.code}`}
+                                      onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
+                                      accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                      className="block flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
+                                      disabled={uploadingImage}
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => {
+                                        setCurrentAttributeCode(attribute.code);
+                                        setShowMediaBrowser(true);
+                                      }}
+                                      className="flex items-center gap-2"
+                                    >
+                                      <ImageIcon className="w-4 h-4" />
+                                      Library
+                                    </Button>
+                                  </div>
                                   
                                   {uploadingImage && (
                                     <p className="text-sm text-blue-600">Uploading image...</p>
@@ -940,14 +955,29 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                               </div>
                             ) : (attribute.type === 'file' || attribute.type === 'image') ? (
                               <div className="space-y-2">
-                                <input
-                                  type="file"
-                                  id={`attr_${attribute.code}`}
-                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
-                                  accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
-                                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                  disabled={uploadingImage}
-                                />
+                                <div className="flex gap-2">
+                                  <input
+                                    type="file"
+                                    id={`attr_${attribute.code}`}
+                                    onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
+                                    accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                    className="block flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                    disabled={uploadingImage}
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setCurrentAttributeCode(attribute.code);
+                                      setShowMediaBrowser(true);
+                                    }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <ImageIcon className="w-4 h-4" />
+                                    Library
+                                  </Button>
+                                </div>
                                 {uploadingImage && (
                                   <p className="text-sm text-blue-600">Uploading file...</p>
                                 )}
@@ -1212,6 +1242,15 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           <Button type="submit" disabled={loading}>{loading ? "Saving..." : (product ? "Update Product" : "Create Product")}</Button>
         </div>
       </form>
+      
+      {/* Media Browser Dialog */}
+      <MediaBrowser
+        isOpen={showMediaBrowser}
+        onClose={() => setShowMediaBrowser(false)}
+        onInsert={handleMediaInsert}
+        allowMultiple={false}
+        uploadFolder="product"
+      />
     </div>
   );
 }

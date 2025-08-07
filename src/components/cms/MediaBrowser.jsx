@@ -20,7 +20,7 @@ import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
 import apiClient from '@/api/client';
 
-const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false }) => {
+const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, uploadFolder = 'library' }) => {
   const { selectedStore } = useStoreSelection();
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +55,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false }) => {
   const loadFiles = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/storage/list?folder=library', {
+      const response = await apiClient.get(`/storage/list?folder=${uploadFolder}`, {
         'x-store-id': selectedStore?.id
       });
       
@@ -86,7 +86,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false }) => {
     if (isOpen && selectedStore?.id) {
       loadFiles();
     }
-  }, [isOpen, selectedStore?.id]);
+  }, [isOpen, selectedStore?.id, uploadFolder]);
 
   // Handle file upload
   const handleFileUpload = async (filesArray) => {
@@ -97,7 +97,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false }) => {
     try {
       for (const file of filesArray) {
         const response = await apiClient.uploadFile('/storage/upload', file, {
-          folder: 'library',
+          folder: uploadFolder,
           public: 'true',
           store_id: selectedStore?.id
         });
