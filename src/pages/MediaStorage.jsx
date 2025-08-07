@@ -16,6 +16,7 @@ import {
   Lock,
   CheckCircle
 } from 'lucide-react';
+import apiClient from '../api/client';
 
 const MediaStorage = () => {
   const { selectedStore } = useStoreSelection();
@@ -35,19 +36,17 @@ const MediaStorage = () => {
   const loadConnectionStatus = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/supabase/status', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId
-        }
+      // Use apiClient which handles authentication correctly
+      const response = await apiClient.get('/supabase/status', {
+        'x-store-id': storeId
       });
 
-      const data = await response.json();
-      if (data.success) {
-        setConnectionStatus(data);
+      // apiClient returns the response directly, not wrapped in .data
+      if (response && response.success) {
+        setConnectionStatus(response);
         
         // If connected and has service role key, automatically ensure buckets exist
-        if (data.connected && data.hasServiceRoleKey && !bucketsEnsured) {
+        if (response.connected && response.hasServiceRoleKey && !bucketsEnsured) {
           await ensureBuckets();
         }
       }
@@ -61,25 +60,20 @@ const MediaStorage = () => {
 
   const ensureBuckets = async () => {
     try {
-      const response = await fetch('/api/supabase/storage/ensure-buckets', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({})
+      // Use apiClient for consistency and proper authentication
+      const response = await apiClient.post('/supabase/storage/ensure-buckets', {}, {
+        'x-store-id': storeId
       });
 
-      const data = await response.json();
-      if (data.success) {
+      // apiClient returns the response directly
+      if (response && response.success) {
         setBucketsEnsured(true);
         
         // Log bucket creation results for transparency
-        if (data.bucketsCreated && data.bucketsCreated.length > 0) {
-          console.log('Created buckets:', data.bucketsCreated.join(', '));
-        } else if (data.message) {
-          console.log('Bucket status:', data.message);
+        if (response.bucketsCreated && response.bucketsCreated.length > 0) {
+          console.log('Created buckets:', response.bucketsCreated.join(', '));
+        } else if (response.message) {
+          console.log('Bucket status:', response.message);
         }
       }
     } catch (error) {
