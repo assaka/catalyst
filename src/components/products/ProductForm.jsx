@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { X, Upload, Search, AlertTriangle } from "lucide-react"; // Added Search icon
+import { X, Upload, Search, AlertTriangle, ImageIcon } from "lucide-react"; // Added Search and ImageIcon
 import { UploadFile } from "@/api/integrations";
 import FlashMessage from "../storefront/FlashMessage";
 import ProductImageUpload from "../admin/ProductImageUpload";
+import MediaBrowser from "@/components/cms/MediaBrowser";
 import {
   Accordion,
   AccordionContent,
@@ -84,6 +85,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
+  const [currentAttributeCode, setCurrentAttributeCode] = useState(null);
 
   useEffect(() => {
     if (product) {
@@ -256,6 +259,38 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           [attributeCode]: value
         }
       }));
+    }
+  };
+
+  const handleMediaInsert = (htmlContent) => {
+    if (currentAttributeCode) {
+      // Extract URL from HTML content
+      const urlMatch = htmlContent.match(/src="([^"]+)"/);
+      if (urlMatch && urlMatch[1]) {
+        const url = urlMatch[1];
+        // Extract filename from URL
+        const filename = url.split('/').pop().split('?')[0];
+        
+        // Create file data object similar to uploaded files
+        const fileData = {
+          name: filename,
+          url: url,
+          size: 0, // Size unknown for library items
+          type: 'image'
+        };
+        
+        setFormData(prev => ({
+          ...prev,
+          attributes: {
+            ...prev.attributes,
+            [currentAttributeCode]: fileData
+          }
+        }));
+        
+        setFlashMessage({ type: 'success', message: 'Image selected from library!' });
+      }
+      setShowMediaBrowser(false);
+      setCurrentAttributeCode(null);
     }
   };
 
@@ -702,19 +737,15 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
             {selectedAttributes.length > 0 && (
               <div className="space-y-6">
-                {/* Image Attributes Section removed - all images handled in top Images section */}
-                {false && (() => {
+                {/* Image Attributes Section - for attributes with type 'image' */}
+                {(() => {
                   const imageAttributes = selectedAttributes.filter(attr => 
-                    attr.type === 'file' && 
-                    attr.file_settings?.allowed_extensions?.some(ext => 
-                      ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
-                    ) &&
-                    // Exclude image attributes handled in the separate Product Images section above
-                    !(attr.name && (
-                      attr.name.toLowerCase().includes('image gallery') ||
-                      attr.name.toLowerCase().includes('image schade') ||
-                      attr.type === 'image'
-                    ))
+                    attr.type === 'image' || (
+                      attr.type === 'file' && 
+                      attr.file_settings?.allowed_extensions?.some(ext => 
+                        ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+                      )
+                    )
                   );
                   const attributesWithImages = imageAttributes.filter(attr => {
                     const value = formData.attributes[attr.code];
@@ -771,14 +802,29 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   )}
                                   
                                   <div className="space-y-2">
-                                    <input
-                                      type="file"
-                                      id={`attr_${attribute.code}`}
-                                      onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
-                                      accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
-                                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-                                      disabled={uploadingImage}
-                                    />
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="file"
+                                        id={`attr_${attribute.code}`}
+                                        onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
+                                        accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',')}
+                                        className="block flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                                        disabled={uploadingImage}
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                          setCurrentAttributeCode(attribute.code);
+                                          setShowMediaBrowser(true);
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <ImageIcon className="w-4 h-4" />
+                                        Library
+                                      </Button>
+                                    </div>
                                     
                                     {uploadingImage && (
                                       <p className="text-sm text-blue-600">Uploading image...</p>
@@ -1125,7 +1171,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                 </p>
               </div>
 
-              {showSlugChangeWarning && hasManuallyEditedUrlKey && (
+              {showSlugChangeWarning && hasManuallyEditedUrlKey && isEditingUrlKey && (
                 <Alert className="border-amber-200 bg-amber-50">
                   <AlertTriangle className="h-4 w-4 text-amber-600" />
                   <AlertDescription className="text-amber-800">

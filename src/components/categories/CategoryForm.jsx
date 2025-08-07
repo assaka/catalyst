@@ -13,7 +13,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Search, AlertTriangle } from "lucide-react";
+import { Upload, Search, AlertTriangle, Image as ImageIcon, X } from "lucide-react";
+import MediaBrowser from '@/components/cms/MediaBrowser';
 import {
   Accordion,
   AccordionContent,
@@ -46,6 +47,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
   const [createRedirect, setCreateRedirect] = useState(true);
   const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
+  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
 
   useEffect(() => {
     if (category) {
@@ -103,6 +105,16 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       
       return newState;
     });
+  };
+
+  const handleMediaInsert = (htmlContent) => {
+    // For category image, we expect a single image
+    // Extract the URL from the HTML content
+    const urlMatch = htmlContent.match(/src="([^"]+)"/);
+    if (urlMatch && urlMatch[1]) {
+      setFormData(prev => ({ ...prev, image_url: urlMatch[1] }));
+    }
+    setShowMediaBrowser(false);
   };
 
   const createRedirectForSlugChange = async () => {
@@ -283,7 +295,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         </div>
       </div>
 
-      {showSlugChangeWarning && hasManuallyEditedSlug && (
+      {showSlugChangeWarning && hasManuallyEditedSlug && isEditingSlug && (
         <Alert className="border-amber-200 bg-amber-50">
           <AlertTriangle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-amber-800">
@@ -329,23 +341,49 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       </div>
 
       <div>
-        <Label htmlFor="image_url">Category Image URL</Label>
+        <Label htmlFor="image_url">Category Image</Label>
+        
+        {/* Image preview if URL exists */}
+        {formData.image_url && (
+          <div className="mb-3 relative inline-block">
+            <img 
+              src={formData.image_url} 
+              alt="Category" 
+              className="w-32 h-32 object-cover rounded-lg border"
+            />
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 h-6 w-6"
+              onClick={() => setFormData(prev => ({ ...prev, image_url: "" }))}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+        
         <div className="flex gap-2">
           <Input
             id="image_url"
             name="image_url"
             value={formData.image_url || ''}
             onChange={handleInputChange}
-            placeholder="https://example.com/image.jpg"
+            placeholder="Enter URL or select from library"
           />
           <Button
             type="button"
             variant="outline"
-            onClick={() => setFormData(prev => ({ ...prev, image_url: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop" }))}
+            onClick={() => setShowMediaBrowser(true)}
+            className="flex items-center gap-2"
           >
-            <Upload className="w-4 h-4" />
+            <ImageIcon className="w-4 h-4" />
+            Select Image
           </Button>
         </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Select an image from the media library or enter an external URL
+        </p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
@@ -503,6 +541,15 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
           {loading ? "Saving..." : (category ? "Update Category" : "Create Category")}
         </Button>
       </div>
+
+      {/* Media Browser Dialog */}
+      <MediaBrowser
+        isOpen={showMediaBrowser}
+        onClose={() => setShowMediaBrowser(false)}
+        onInsert={handleMediaInsert}
+        allowMultiple={false}
+        uploadFolder="category"
+      />
     </form>
   );
 }
