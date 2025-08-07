@@ -106,6 +106,8 @@ import TeamPage from "./TeamPage";
 
 import AkeneoIntegration from "./AkeneoIntegration";
 
+import ShopifyIntegration from "../components/integrations/ShopifyIntegration";
+
 import Integrations from "./Integrations";
 
 import DatabaseIntegrations from "./DatabaseIntegrations";
@@ -680,6 +682,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
 
+                <Route path="/admin/shopify-integration" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ShopifyIntegration />
+                    </RoleProtectedRoute>
+                } />
+
                 <Route path="/admin/integrations" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Integrations />
@@ -1014,6 +1022,12 @@ function PagesContent() {
                 <Route path="/admin/akeneo-integration" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <AkeneoIntegration />
+                    </RoleProtectedRoute>
+                } />
+
+                <Route path="/admin/shopify-integration" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ShopifyIntegration />
                     </RoleProtectedRoute>
                 } />
 
