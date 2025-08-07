@@ -74,7 +74,7 @@ router.post('/upload', upload.single('image'), async (req, res) => {
       ...(req.body.metadata && { metadata: JSON.parse(req.body.metadata) })
     };
 
-    const result = await storageManager.uploadImage(storeId, req.file, options);
+    const result = await storageManager.uploadFile(storeId, req.file, options);
 
     res.json({
       success: true,
@@ -143,7 +143,7 @@ router.get('/list', async (req, res) => {
     const { storeId } = req;
     const { folder, limit = 50, offset = 0 } = req.query;
 
-    const result = await storageManager.listImages(storeId, folder, {
+    const result = await storageManager.listFiles(storeId, folder, {
       limit: parseInt(limit),
       offset: parseInt(offset)
     });
@@ -178,7 +178,7 @@ router.delete('/delete', async (req, res) => {
       });
     }
 
-    const result = await storageManager.deleteImage(storeId, imagePath, provider);
+    const result = await storageManager.deleteFile(storeId, imagePath, provider);
 
     res.json({
       success: true,
@@ -338,14 +338,14 @@ router.post('/test', async (req, res) => {
     };
 
     // Upload test image
-    const uploadResult = await storageManager.uploadImage(storeId, mockFile, {
+    const uploadResult = await storageManager.uploadFile(storeId, mockFile, {
       folder: 'storage-tests',
       public: true
     });
 
     // Clean up test image immediately
     try {
-      await storageManager.deleteImage(storeId, uploadResult.path, uploadResult.provider);
+      await storageManager.deleteFile(storeId, uploadResult.path, uploadResult.provider);
     } catch (deleteError) {
       console.warn('Could not clean up test image:', deleteError.message);
     }

@@ -4,6 +4,16 @@ import apiClient from '../../api/client';
 import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive } from 'lucide-react';
 
 const SupabaseIntegration = ({ storeId }) => {
+  // Helper function to format storage sizes (handles both string and number values)
+  const formatStorageSize = (sizeValue, unit = 'MB') => {
+    if (!sizeValue) return `0 ${unit}`;
+    if (typeof sizeValue === 'number') {
+      return `${sizeValue.toFixed(2)} ${unit}`;
+    }
+    // Already formatted string
+    return `${sizeValue} ${unit}`;
+  };
+
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
@@ -997,7 +1007,7 @@ const SupabaseIntegration = ({ storeId }) => {
                       <div>
                         <p className="text-xs text-gray-500">Storage Used</p>
                         <p className="text-lg font-semibold text-gray-900">
-                          {storageStats.totalSizeMB ? `${storageStats.totalSizeMB.toFixed(2)} MB` : '0 MB'}
+                          {formatStorageSize(storageStats.totalSizeMB)}
                         </p>
                       </div>
                     </div>
@@ -1008,7 +1018,7 @@ const SupabaseIntegration = ({ storeId }) => {
                       <div>
                         <p className="text-xs text-gray-500">Storage Left</p>
                         <p className="text-lg font-semibold text-gray-900">
-                          {storageStats.storageLeft ? `${storageStats.storageLeft.toFixed(2)} MB` : 'Unlimited'}
+                          {storageStats.storageLeft ? formatStorageSize(storageStats.storageLeft) : 'Unlimited'}
                         </p>
                       </div>
                     </div>
@@ -1029,7 +1039,7 @@ const SupabaseIntegration = ({ storeId }) => {
                       <div key={bucket.bucket} className="flex items-center justify-between text-xs">
                         <span className="text-blue-700">{bucket.bucket}</span>
                         <span className="text-blue-600">
-                          {bucket.fileCount || 0} files • {bucket.totalSizeMB ? `${bucket.totalSizeMB.toFixed(2)} MB` : '0 MB'}
+                          {bucket.fileCount || 0} files • {formatStorageSize(bucket.totalSizeMB)}
                         </span>
                       </div>
                     ))}

@@ -12,7 +12,7 @@ import Products from "./Products";
 
 import Categories from "./Categories";
 
-import FileProcessing from "../components/admin/FileProcessing";
+import MediaStorage from "../components/admin/MediaStorage";
 
 import Settings from "./Settings";
 
@@ -128,7 +128,7 @@ const PAGES = {
     
     Categories: Categories,
     
-    FileProcessing: FileProcessing,
+    MediaStorage: MediaStorage,
     
     Settings: Settings,
     
@@ -245,7 +245,7 @@ function _getCurrentPage(url) {
         'product-tabs': 'ProductTabs',
         'product-labels': 'ProductLabels', 
         'custom-option-rules': 'CustomOptionRules',
-        'file-processing': 'FileProcessing',
+        'media-storage': 'MediaStorage',
         'shipping-methods': 'ShippingMethods',
         'payment-methods': 'PaymentMethods',
         'delivery-settings': 'DeliverySettings',
@@ -342,9 +342,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/file-processing" element={
+                {/* Redirect old route to new route */}
+                <Route path="/admin/file-processing" element={<Navigate to="/admin/media-storage" replace />} />
+                
+                <Route path="/admin/media-storage" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <FileProcessing />
+                        <MediaStorage />
                     </RoleProtectedRoute>
                 } />
                 
@@ -766,9 +769,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/file-processing" element={
+                {/* Redirect old route to new route */}
+                <Route path="/admin/file-processing" element={<Navigate to="/admin/media-storage" replace />} />
+                
+                <Route path="/admin/media-storage" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <FileProcessing />
+                        <MediaStorage />
                     </RoleProtectedRoute>
                 } />
                 

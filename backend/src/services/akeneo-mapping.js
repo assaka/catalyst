@@ -564,7 +564,7 @@ class AkeneoMapping {
       if (storeId) {
         try {
           console.log(`☁️ Uploading via storage manager for store: ${storeId}`);
-          const uploadResult = await storageManager.uploadImage(storeId, mockFile, {
+          const uploadResult = await storageManager.uploadFile(storeId, mockFile, {
             folder: 'akeneo-imports',
             public: true
           });

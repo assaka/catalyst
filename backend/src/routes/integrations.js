@@ -1174,7 +1174,7 @@ router.post('/upload',
       };
 
       // Use unified storage manager
-      const uploadResult = await storageManager.uploadImage(storeId, req.file, options);
+      const uploadResult = await storageManager.uploadFile(storeId, req.file, options);
 
       if (!uploadResult.success) {
         return res.status(500).json({

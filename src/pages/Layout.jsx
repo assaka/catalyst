@@ -408,7 +408,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Settings", path: "SETTINGS", icon: SettingsIcon },
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
-        { name: "File Processing", path: "file-processing", icon: Image },
+        { name: "Media Storage", path: "media-storage", icon: Image },
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "STORES", icon: Building2 },
         ] : []),
