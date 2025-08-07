@@ -203,7 +203,7 @@ router.get('/list', async (req, res) => {
 
 /**
  * DELETE /api/storage/delete
- * Delete image from storage
+ * Delete image from storage and database
  */
 router.delete('/delete', async (req, res) => {
   try {
@@ -217,16 +217,35 @@ router.delete('/delete', async (req, res) => {
       });
     }
 
+    console.log(`🗑️ Deleting file for store ${storeId}: ${imagePath}`);
+
+    // Delete from storage provider
     const result = await storageManager.deleteFile(storeId, imagePath, provider);
+    console.log('✅ File deleted from storage:', result);
+
+    // Delete from database (MediaAsset table)
+    const { MediaAsset } = require('../models');
+    try {
+      const deletedCount = await MediaAsset.destroy({
+        where: {
+          store_id: storeId,
+          file_path: imagePath
+        }
+      });
+      console.log(`📊 Deleted ${deletedCount} database record(s) for ${imagePath}`);
+    } catch (dbError) {
+      console.warn('Database cleanup error (file still deleted from storage):', dbError.message);
+      // Don't fail the request if storage deletion succeeded but DB cleanup failed
+    }
 
     res.json({
       success: true,
-      message: 'Image deleted successfully',
+      message: 'File deleted successfully',
       data: result
     });
 
   } catch (error) {
-    console.error('Delete image error:', error);
+    console.error('Delete file error:', error);
     res.status(500).json({
       success: false,
       error: error.message
