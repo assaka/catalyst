@@ -19,6 +19,8 @@ const extractStoreId = (req, res, next) => {
   }
   
   req.storeId = storeId;
+  // Also set it in params for checkStoreOwnership middleware
+  req.params.store_id = storeId;
   next();
 };
 const storageManager = require('../services/storage-manager');
@@ -134,7 +136,7 @@ router.post('/upload-multiple', upload.array('images', 10), async (req, res) => 
       ...(req.body.metadata && { metadata: JSON.parse(req.body.metadata) })
     };
 
-    const result = await storageManager.uploadMultipleImages(storeId, req.files, options);
+    const result = await storageManager.uploadMultipleFiles(storeId, req.files, options);
 
     res.json({
       success: true,
