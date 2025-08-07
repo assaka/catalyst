@@ -14,9 +14,13 @@ import {
   Info,
   Clock,
   Lock,
-  CheckCircle
+  CheckCircle,
+  Check,
+  Star
 } from 'lucide-react';
 import apiClient from '../api/client';
+import { Button } from '../components/ui/button';
+import { toast } from 'sonner';
 
 const MediaStorage = () => {
   const { selectedStore } = useStoreSelection();
@@ -24,12 +28,15 @@ const MediaStorage = () => {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bucketsEnsured, setBucketsEnsured] = useState(false);
+  const [isDefault, setIsDefault] = useState(false);
+  const [settingDefault, setSettingDefault] = useState(false);
   
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
       loadConnectionStatus();
+      checkIfDefault();
     }
   }, [storeId]);
 
@@ -78,6 +85,41 @@ const MediaStorage = () => {
       }
     } catch (error) {
       console.error('Error ensuring buckets:', error);
+    }
+  };
+
+  const checkIfDefault = async () => {
+    try {
+      const response = await apiClient.get(`/stores/${storeId}/default-database-provider`);
+      // apiClient returns the response directly, not wrapped in .data
+      setIsDefault(response?.provider === 'supabase');
+    } catch (error) {
+      console.error('Error checking default database provider:', error);
+    }
+  };
+
+  const handleSetAsDefault = async () => {
+    if (!storeId) {
+      toast.error('Please select a store first');
+      return;
+    }
+
+    setSettingDefault(true);
+    try {
+      await apiClient.post(`/stores/${storeId}/default-database-provider`, {
+        provider: 'supabase'
+      });
+      
+      setIsDefault(true);
+      toast.success('Supabase set as default storage provider');
+      
+      // Refresh the default status to ensure consistency
+      await checkIfDefault();
+    } catch (error) {
+      console.error('Error setting default storage provider:', error);
+      toast.error('Failed to set as default storage provider');
+    } finally {
+      setSettingDefault(false);
     }
   };
 
@@ -150,6 +192,25 @@ const MediaStorage = () => {
               : 'Manage your store\'s media files across multiple cloud storage providers'}
           </p>
         </div>
+        <Button
+          onClick={handleSetAsDefault}
+          disabled={settingDefault || isDefault}
+          variant={isDefault ? "secondary" : "default"}
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          {isDefault ? (
+            <>
+              <Check className="h-4 w-4" />
+              <span>Default Storage</span>
+            </>
+          ) : (
+            <>
+              <Star className="h-4 w-4" />
+              <span>Set as Default</span>
+            </>
+          )}
+        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
