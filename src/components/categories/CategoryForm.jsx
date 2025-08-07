@@ -269,7 +269,24 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
               <Checkbox
                 id="edit-slug"
                 checked={isEditingSlug}
-                onCheckedChange={setIsEditingSlug}
+                onCheckedChange={(checked) => {
+                  setIsEditingSlug(checked);
+                  if (!checked) {
+                    // Revert to original slug or auto-generate from name
+                    if (category && originalSlug) {
+                      // Editing existing category - revert to original
+                      setFormData(prev => ({ ...prev, slug: originalSlug }));
+                    } else {
+                      // New category - regenerate from name
+                      const generatedSlug = formData.name.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)/g, '');
+                      setFormData(prev => ({ ...prev, slug: generatedSlug }));
+                    }
+                    setHasManuallyEditedSlug(false);
+                    setShowSlugChangeWarning(false);
+                  }
+                }}
               />
               <Label htmlFor="edit-slug" className="text-sm">
                 Enable editing

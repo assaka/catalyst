@@ -269,7 +269,24 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
               <Switch
                 id="edit-slug"
                 checked={isEditingSlug}
-                onCheckedChange={setIsEditingSlug}
+                onCheckedChange={(checked) => {
+                  setIsEditingSlug(checked);
+                  if (!checked) {
+                    // Revert to original slug or auto-generate from title
+                    if (page && originalSlug) {
+                      // Editing existing page - revert to original
+                      setFormData(prev => ({ ...prev, slug: originalSlug }));
+                    } else {
+                      // New page - regenerate from title
+                      const generatedSlug = formData.title.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                      setFormData(prev => ({ ...prev, slug: generatedSlug }));
+                    }
+                    setHasManuallyEditedSlug(false);
+                    setShowSlugChangeWarning(false);
+                  }
+                }}
               />
               <Label htmlFor="edit-slug" className="text-sm">
                 Enable editing

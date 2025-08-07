@@ -10,8 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { X, Upload, Search, AlertTriangle, ImageIcon } from "lucide-react"; // Added Search and ImageIcon
-import { UploadFile } from "@/api/integrations";
 import FlashMessage from "../storefront/FlashMessage";
+import apiClient from "@/api/client";
 import ProductImageUpload from "../admin/ProductImageUpload";
 import MediaBrowser from "@/components/cms/MediaBrowser";
 import {
@@ -230,24 +230,34 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
       const file = value.target.files[0];
       setUploadingImage(true);
       try {
-        const { file_url } = await UploadFile({ file: file });
-        const fileData = {
-          name: file.name,
-          url: file_url,
-          size: file.size,
-          type: file.type
-        };
-        setFormData(prev => ({
-          ...prev,
-          attributes: {
-            ...prev.attributes,
-            [attributeCode]: fileData
-          }
-        }));
-        setFlashMessage({ type: 'success', message: 'File uploaded successfully!' });
+        const storeId = getSelectedStoreId();
+        const response = await apiClient.uploadFile('/storage/upload', file, {
+          folder: 'products',
+          public: 'true',
+          store_id: storeId
+        });
+        
+        if (response.success) {
+          const fileData = {
+            name: file.name,
+            url: response.data?.publicUrl || response.data?.url,
+            size: file.size,
+            type: file.type
+          };
+          setFormData(prev => ({
+            ...prev,
+            attributes: {
+              ...prev.attributes,
+              [attributeCode]: fileData
+            }
+          }));
+          setFlashMessage({ type: 'success', message: 'File uploaded successfully!' });
+        } else {
+          throw new Error(response.message || 'Upload failed');
+        }
       } catch (error) {
         console.error("Error uploading file:", error);
-        setFlashMessage({ type: 'error', message: 'Failed to upload file' });
+        setFlashMessage({ type: 'error', message: error.message || 'Failed to upload file' });
       } finally {
         setUploadingImage(false);
       }
@@ -623,6 +633,184 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </Card>
         </div>
 
+        {/* Product Images Gallery - Moved above Inventory & Stock */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Product Images Gallery</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProductImageUpload
+              images={formData.images}
+              onImagesChange={(newImages) => handleInputChange("images", newImages)}
+              maxImages={10}
+              maxFileSizeMB={10}
+              allowedTypes={['jpg', 'jpeg', 'png', 'webp', 'gif']}
+              showPreview={true}
+              enableReordering={true}
+              disabled={loading}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Product Image Attributes - Grouped above Inventory & Stock */}
+        {selectedAttributes.length > 0 && (() => {
+          const imageAttributes = selectedAttributes.filter(attr => 
+            attr.type === 'image' || (
+              attr.type === 'file' && 
+              attr.file_settings?.allowed_extensions?.some(ext => 
+                ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+              )
+            )
+          );
+          
+          if (imageAttributes.length === 0) return null;
+          
+          const attributesWithImages = imageAttributes.filter(attr => {
+            const value = formData.attributes[attr.code];
+            return value && (typeof value === 'object' ? value.url : value);
+          });
+          const attributesWithoutImages = imageAttributes.filter(attr => {
+            const value = formData.attributes[attr.code];
+            return !value || !(typeof value === 'object' ? value.url : value);
+          });
+
+          return (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <span className="mr-2">🖼️</span>
+                  Product Image Attributes
+                  <Badge variant="outline" className="ml-2">
+                    {attributesWithImages.length}/{imageAttributes.length} with images
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Attributes with images */}
+                {attributesWithImages.length > 0 && (
+                  <div className="space-y-4">
+                    <h5 className="font-medium text-green-700">Images Added ({attributesWithImages.length})</h5>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {attributesWithImages.map(attribute => {
+                        const attributeValue = formData.attributes[attribute.code];
+                        const imageUrl = typeof attributeValue === 'object' ? attributeValue.url : attributeValue;
+                        
+                        return (
+                          <div key={attribute.id} className="border rounded-lg p-4 bg-green-50">
+                            <div className="flex items-start justify-between mb-3">
+                              <Label className="font-medium text-green-800">{attribute.name}</Label>
+                              <button
+                                type="button"
+                                onClick={() => handleAttributeValueChange(attribute.code, null)}
+                                className="text-red-500 hover:text-red-700 p-1"
+                                title="Remove image"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                            
+                            {imageUrl && (
+                              <div className="mb-3">
+                                <img 
+                                  src={imageUrl} 
+                                  alt={attribute.name}
+                                  className="w-full h-32 object-cover rounded border"
+                                />
+                              </div>
+                            )}
+                            
+                            <div className="space-y-2">
+                              <div className="flex gap-2">
+                                <input
+                                  type="file"
+                                  id={`img_attr_${attribute.code}`}
+                                  onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
+                                  accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',') || 'image/*'}
+                                  className="block flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                  disabled={uploadingImage}
+                                />
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setCurrentAttributeCode(attribute.code);
+                                    setShowMediaBrowser(true);
+                                  }}
+                                  className="flex items-center gap-2"
+                                >
+                                  <ImageIcon className="w-4 h-4" />
+                                  Library
+                                </Button>
+                              </div>
+                              {attribute.file_settings && (
+                                <p className="text-xs text-gray-500">
+                                  Max: {attribute.file_settings.max_file_size}MB • 
+                                  Allowed: {attribute.file_settings.allowed_extensions?.join(', ')}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Attributes without images */}
+                {attributesWithoutImages.length > 0 && (
+                  <div className="space-y-4">
+                    <h5 className="font-medium text-gray-700">Upload Images ({attributesWithoutImages.length})</h5>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {attributesWithoutImages.map(attribute => (
+                        <div key={attribute.id} className="border rounded-lg p-4 bg-gray-50">
+                          <Label htmlFor={`img_attr_${attribute.code}`} className="font-medium mb-2 block">
+                            {attribute.name}
+                          </Label>
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <input
+                                type="file"
+                                id={`img_attr_${attribute.code}`}
+                                onChange={(e) => handleAttributeValueChange(attribute.code, e, attribute.type)}
+                                accept={attribute.file_settings?.allowed_extensions?.map(ext => `.${ext}`).join(',') || 'image/*'}
+                                className="block flex-1 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                disabled={uploadingImage}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setCurrentAttributeCode(attribute.code);
+                                  setShowMediaBrowser(true);
+                                }}
+                                className="flex items-center gap-2"
+                              >
+                                <ImageIcon className="w-4 h-4" />
+                                Library
+                              </Button>
+                            </div>
+                            {uploadingImage && (
+                              <p className="text-sm text-blue-600">Uploading image...</p>
+                            )}
+                            {attribute.file_settings && (
+                              <p className="text-xs text-gray-500">
+                                Max: {attribute.file_settings.max_file_size}MB • 
+                                Allowed: {attribute.file_settings.allowed_extensions?.join(', ')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         <Card>
           <CardHeader><CardTitle>Inventory & Stock</CardTitle></CardHeader>
           <CardContent className="space-y-4">
@@ -692,19 +880,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
             )}
           </CardContent>
         </Card>
-
-
-        {/* Product Images Section */}
-        <ProductImageUpload
-          images={formData.images}
-          onImagesChange={(newImages) => handleInputChange("images", newImages)}
-          maxImages={10}
-          maxFileSizeMB={10}
-          allowedTypes={['jpg', 'jpeg', 'png', 'webp', 'gif']}
-          showPreview={true}
-          enableReordering={true}
-          disabled={loading}
-        />
 
         <Card>
           <CardHeader><CardTitle>Attributes</CardTitle></CardHeader>
@@ -953,7 +1128,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   onCheckedChange={(checked) => handleAttributeValueChange(attribute.code, checked)}
                                 />
                               </div>
-                            ) : (attribute.type === 'file' || attribute.type === 'image') ? (
+                            ) : attribute.type === 'file' ? (
                               <div className="space-y-2">
                                 <div className="flex gap-2">
                                   <input
@@ -1177,7 +1352,28 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                     <Switch
                       id="edit-url-key"
                       checked={isEditingUrlKey}
-                      onCheckedChange={setIsEditingUrlKey}
+                      onCheckedChange={(checked) => {
+                        setIsEditingUrlKey(checked);
+                        if (!checked) {
+                          // Revert to original URL key or auto-generate from name
+                          if (product && originalUrlKey) {
+                            // Editing existing product - revert to original
+                            setFormData(prev => ({
+                              ...prev,
+                              seo: { ...prev.seo, url_key: originalUrlKey }
+                            }));
+                          } else {
+                            // New product - regenerate from name
+                            const generatedUrlKey = slugify(formData.name);
+                            setFormData(prev => ({
+                              ...prev,
+                              seo: { ...prev.seo, url_key: generatedUrlKey }
+                            }));
+                          }
+                          setHasManuallyEditedUrlKey(false);
+                          setShowSlugChangeWarning(false);
+                        }
+                      }}
                     />
                     <Label htmlFor="edit-url-key" className="text-sm">
                       Enable editing
