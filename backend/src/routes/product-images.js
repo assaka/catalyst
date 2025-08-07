@@ -23,7 +23,6 @@ const extractStoreId = (req, res, next) => {
 };
 const { Product } = require('../models');
 const storageManager = require('../services/storage-manager');
-const supabaseStorage = require('../services/supabase-storage');
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -81,10 +80,10 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
 
     console.log(`📤 Uploading ${req.files.length} images for product ${productId} in store ${storeId}`);
 
-    // Upload options with Magento-style directory structure
+    // Upload options with organized directory structure  
     const uploadPromises = req.files.map(file => {
       const options = {
-        useMagentoStructure: true,
+        useOrganizedStructure: true,
         type: 'product',
         filename: file.originalname,
         public: true,
@@ -96,7 +95,7 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
         }
       };
       
-      return supabaseStorage.uploadImage(storeId, file, options);
+      return storageManager.uploadFile(storeId, file, options);
     });
 
     // Upload all images in parallel
@@ -128,18 +127,20 @@ router.post('/:productId/images', upload.array('images', 10), async (req, res) =
     const currentImages = product.images || [];
     const newImages = uploadResult.uploaded.map((upload, index) => ({
       id: `img_${Date.now()}_${index}`,
-      url: upload.url,
+      url: upload.publicUrl || upload.url,
       alt: req.body.alt?.[index] || `${product.name} image`,
       sort_order: currentImages.length + index,
       variants: {
-        thumbnail: upload.url,
-        medium: upload.url,
-        large: upload.url
+        thumbnail: upload.publicUrl || upload.url,
+        medium: upload.publicUrl || upload.url,
+        large: upload.publicUrl || upload.url
       },
       metadata: {
         filename: upload.filename,
+        path: upload.path,
+        bucket: upload.bucket,
         size: upload.size,
-        provider: upload.provider,
+        provider: 'supabase',
         uploaded_at: new Date().toISOString(),
         original_name: req.files[index].originalname
       }
@@ -283,25 +284,39 @@ router.delete('/:productId/images/:imageId', async (req, res) => {
 
     const imageToDelete = images[imageIndex];
 
-    // Try to delete from storage (extract path from URL)
+    // Try to delete from Supabase storage
     try {
       let imagePath = null;
       
-      // Extract path based on provider
-      if (imageToDelete.metadata?.filename) {
-        imagePath = `products/${productId}/${imageToDelete.metadata.filename}`;
-      } else {
-        // Try to extract from URL
+      // Extract path from Supabase URL or use metadata
+      if (imageToDelete.metadata?.path) {
+        imagePath = imageToDelete.metadata.path;
+      } else if (imageToDelete.url && imageToDelete.url.includes('supabase')) {
+        // Extract path from Supabase URL structure
         const url = new URL(imageToDelete.url);
-        imagePath = url.pathname.substring(1); // Remove leading slash
+        const pathParts = url.pathname.split('/');
+        // Supabase URLs: /storage/v1/object/public/bucket/path
+        if (pathParts.includes('public') && pathParts.length > pathParts.indexOf('public') + 2) {
+          const bucketIndex = pathParts.indexOf('public') + 1;
+          imagePath = pathParts.slice(bucketIndex + 1).join('/');
+        }
+      } else if (imageToDelete.metadata?.filename) {
+        // Fallback: construct organized path for products
+        const nameWithoutExt = imageToDelete.metadata.filename.substring(0, imageToDelete.metadata.filename.lastIndexOf('.')) || imageToDelete.metadata.filename;
+        const cleanName = nameWithoutExt.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (cleanName.length >= 2) {
+          imagePath = `products/${cleanName[0]}/${cleanName[1]}/${imageToDelete.metadata.filename}`;
+        } else {
+          imagePath = `products/misc/${imageToDelete.metadata.filename}`;
+        }
       }
 
       if (imagePath) {
-        await storageManager.deleteImage(storeId, imagePath, imageToDelete.metadata?.provider);
+        await storageManager.deleteFile(storeId, imagePath, imageToDelete.metadata?.bucket);
         console.log(`✅ Deleted image from storage: ${imagePath}`);
       }
     } catch (deleteError) {
-      console.warn('Could not delete image from storage:', deleteError.message);
+      console.warn('Could not delete image from Supabase storage:', deleteError.message);
       // Continue with database deletion even if storage deletion fails
     }
 

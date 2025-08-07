@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const supabaseStorage = require('../services/supabase-storage');
+const storageManager = require('../services/storage-manager');
 const { Category } = require('../models');
 const authMiddleware = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
@@ -39,8 +39,6 @@ const extractStoreId = (req, res, next) => {
   req.storeId = storeId;
   next();
 };
-
-const storageManager = require('../services/storage-manager');
 
 // All routes require authentication and store ownership
 router.use(authMiddleware);
@@ -80,9 +78,9 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
 
     console.log(`📤 Uploading main image for category ${categoryId} in store ${storeId}`);
 
-    // Upload options with Magento-style directory structure
+    // Upload options with organized directory structure
     const options = {
-      useMagentoStructure: true,
+      useOrganizedStructure: true,
       type: 'category',
       filename: req.file.originalname,
       public: true,
@@ -95,8 +93,8 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
       }
     };
 
-    // Use supabaseStorage instead of storageManager for Supabase integration
-    const uploadResult = await supabaseStorage.uploadImage(storeId, req.file, options);
+    // Use flexible storage manager - easily switch between different providers!
+    const uploadResult = await storageManager.uploadFile(storeId, req.file, options);
 
     if (!uploadResult.success) {
       return res.status(500).json({
@@ -107,15 +105,16 @@ router.post('/:categoryId/image', upload.single('image'), async (req, res) => {
 
     // Update category image_url
     await category.update({ 
-      image_url: uploadResult.url,
+      image_url: uploadResult.publicUrl || uploadResult.url,
       // Store additional metadata in a separate field if needed
       image_metadata: {
         filename: uploadResult.filename,
+        path: uploadResult.path,
+        bucket: uploadResult.bucket,
         size: uploadResult.size,
-        provider: uploadResult.provider,
+        provider: 'supabase',
         uploaded_at: new Date().toISOString(),
-        original_name: req.file.originalname,
-        fallback_used: uploadResult.fallbackUsed || false
+        original_name: req.file.originalname
       }
     });
 
@@ -174,8 +173,9 @@ router.post('/:categoryId/banner', upload.single('banner'), async (req, res) => 
 
     console.log(`📤 Uploading banner image for category ${categoryId} in store ${storeId}`);
 
-    // Upload options - organize by category
+    // Upload options - use custom folder for banners (not organized structure)
     const options = {
+      useOrganizedStructure: false,
       folder: `categories/${categoryId}/banners`,
       public: true,
       metadata: {
@@ -187,7 +187,7 @@ router.post('/:categoryId/banner', upload.single('banner'), async (req, res) => 
       }
     };
 
-    const uploadResult = await storageManager.uploadImage(storeId, req.file, options);
+    const uploadResult = await storageManager.uploadFile(storeId, req.file, options);
 
     if (!uploadResult.success) {
       return res.status(500).json({
@@ -202,13 +202,15 @@ router.post('/:categoryId/banner', upload.single('banner'), async (req, res) => 
     // Add new banner image
     const newBanner = {
       id: `banner_${Date.now()}`,
-      url: uploadResult.url,
+      url: uploadResult.publicUrl || uploadResult.url,
       alt: req.body.alt || `${category.name} banner`,
       sort_order: bannerImages.length,
       metadata: {
         filename: uploadResult.filename,
+        path: uploadResult.path,
+        bucket: uploadResult.bucket,
         size: uploadResult.size,
-        provider: uploadResult.provider,
+        provider: 'supabase',
         uploaded_at: new Date().toISOString(),
         original_name: req.file.originalname
       }
@@ -324,25 +326,39 @@ router.delete('/:categoryId/image', async (req, res) => {
       });
     }
 
-    // Try to delete from storage
+    // Try to delete from Supabase storage
     try {
       let imagePath = null;
       
-      // Extract path based on provider
-      if (category.image_metadata?.filename) {
-        imagePath = `categories/${categoryId}/${category.image_metadata.filename}`;
-      } else {
-        // Try to extract from URL
+      // Extract path from Supabase URL or use metadata
+      if (category.image_metadata?.path) {
+        imagePath = category.image_metadata.path;
+      } else if (category.image_url && category.image_url.includes('supabase')) {
+        // Extract path from Supabase URL structure
         const url = new URL(category.image_url);
-        imagePath = url.pathname.substring(1); // Remove leading slash
+        const pathParts = url.pathname.split('/');
+        // Supabase URLs: /storage/v1/object/public/bucket/path
+        if (pathParts.includes('public') && pathParts.length > pathParts.indexOf('public') + 2) {
+          const bucketIndex = pathParts.indexOf('public') + 1;
+          imagePath = pathParts.slice(bucketIndex + 1).join('/');
+        }
+      } else if (category.image_metadata?.filename) {
+        // Fallback: construct organized path
+        const nameWithoutExt = category.image_metadata.filename.substring(0, category.image_metadata.filename.lastIndexOf('.')) || category.image_metadata.filename;
+        const cleanName = nameWithoutExt.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (cleanName.length >= 2) {
+          imagePath = `categories/${cleanName[0]}/${cleanName[1]}/${category.image_metadata.filename}`;
+        } else {
+          imagePath = `categories/misc/${category.image_metadata.filename}`;
+        }
       }
 
       if (imagePath) {
-        await storageManager.deleteImage(storeId, imagePath, category.image_metadata?.provider);
+        await storageManager.deleteFile(storeId, imagePath, category.image_metadata?.bucket);
         console.log(`✅ Deleted main image from storage: ${imagePath}`);
       }
     } catch (deleteError) {
-      console.warn('Could not delete main image from storage:', deleteError.message);
+      console.warn('Could not delete main image from Supabase storage:', deleteError.message);
       // Continue with database deletion even if storage deletion fails
     }
 
@@ -405,25 +421,33 @@ router.delete('/:categoryId/banners/:bannerId', async (req, res) => {
 
     const bannerToDelete = banners[bannerIndex];
 
-    // Try to delete from storage
+    // Try to delete from Supabase storage
     try {
       let imagePath = null;
       
-      // Extract path based on provider
-      if (bannerToDelete.metadata?.filename) {
-        imagePath = `categories/${categoryId}/banners/${bannerToDelete.metadata.filename}`;
-      } else {
-        // Try to extract from URL
+      // Extract path from Supabase URL or use metadata
+      if (bannerToDelete.metadata?.path) {
+        imagePath = bannerToDelete.metadata.path;
+      } else if (bannerToDelete.url && bannerToDelete.url.includes('supabase')) {
+        // Extract path from Supabase URL structure
         const url = new URL(bannerToDelete.url);
-        imagePath = url.pathname.substring(1); // Remove leading slash
+        const pathParts = url.pathname.split('/');
+        // Supabase URLs: /storage/v1/object/public/bucket/path
+        if (pathParts.includes('public') && pathParts.length > pathParts.indexOf('public') + 2) {
+          const bucketIndex = pathParts.indexOf('public') + 1;
+          imagePath = pathParts.slice(bucketIndex + 1).join('/');
+        }
+      } else if (bannerToDelete.metadata?.filename) {
+        // For banners uploaded to custom folder
+        imagePath = `categories/${categoryId}/banners/${bannerToDelete.metadata.filename}`;
       }
 
       if (imagePath) {
-        await storageManager.deleteImage(storeId, imagePath, bannerToDelete.metadata?.provider);
+        await storageManager.deleteFile(storeId, imagePath, bannerToDelete.metadata?.bucket);
         console.log(`✅ Deleted banner from storage: ${imagePath}`);
       }
     } catch (deleteError) {
-      console.warn('Could not delete banner from storage:', deleteError.message);
+      console.warn('Could not delete banner from Supabase storage:', deleteError.message);
       // Continue with database deletion even if storage deletion fails
     }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import apiClient from '../../api/client';
-import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight } from 'lucide-react';
+import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive } from 'lucide-react';
 
 const SupabaseIntegration = ({ storeId }) => {
   const [status, setStatus] = useState(null);
@@ -844,40 +844,6 @@ const SupabaseIntegration = ({ storeId }) => {
             </div>
           </div>
 
-          {/* Storage Statistics */}
-          {storageStats && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-start space-x-3">
-                <Image className="w-5 h-5 text-blue-600 mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="text-sm font-medium text-blue-900 mb-2">
-                    Storage Usage
-                  </h4>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <p className="text-blue-700 font-medium">{storageStats.totalFiles}</p>
-                      <p className="text-blue-600">Total Files</p>
-                    </div>
-                    <div>
-                      <p className="text-blue-700 font-medium">{storageStats.totalSizeMB} MB</p>
-                      <p className="text-blue-600">Storage Used</p>
-                    </div>
-                    <div>
-                      <p className="text-blue-700 font-medium">{storageStats.totalSizeGB} GB</p>
-                      <p className="text-blue-600">Total Size</p>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={loadStorageStats}
-                  disabled={loadingStats}
-                  className="text-blue-600 hover:text-blue-800 disabled:opacity-50"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* API Key Configuration */}
           {(!status.hasServiceRoleKey || showKeyConfig) && (
@@ -986,6 +952,90 @@ const SupabaseIntegration = ({ storeId }) => {
                   Reconfigure Keys
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Storage Usage - Show when connected and has service role key */}
+          {status.connected && status.hasServiceRoleKey && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  <h4 className="text-sm font-medium text-blue-900">Storage Usage</h4>
+                </div>
+                <button
+                  onClick={loadStorageStats}
+                  disabled={loadingStats}
+                  className="text-blue-600 hover:text-blue-700 disabled:opacity-50"
+                  title="Refresh storage stats"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loadingStats ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {loadingStats ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="text-sm text-blue-600 mt-2">Loading storage statistics...</p>
+                </div>
+              ) : storageStats ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white rounded-lg p-3 border">
+                    <div className="flex items-center space-x-2">
+                      <FileText className="w-4 h-4 text-green-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">Total Files</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {storageStats.totalFiles || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border">
+                    <div className="flex items-center space-x-2">
+                      <Database className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">Storage Used</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {storageStats.totalSizeMB ? `${storageStats.totalSizeMB.toFixed(2)} MB` : '0 MB'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border">
+                    <div className="flex items-center space-x-2">
+                      <HardDrive className="w-4 h-4 text-purple-600" />
+                      <div>
+                        <p className="text-xs text-gray-500">Storage Left</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {storageStats.storageLeft ? `${storageStats.storageLeft.toFixed(2)} MB` : 'Unlimited'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-sm text-blue-600">No storage statistics available</p>
+                  <p className="text-xs text-blue-500 mt-1">Upload files to see storage usage</p>
+                </div>
+              )}
+
+              {storageStats && storageStats.buckets && storageStats.buckets.length > 0 && (
+                <div className="mt-4">
+                  <h5 className="text-xs font-medium text-blue-800 mb-2">By Bucket:</h5>
+                  <div className="space-y-1">
+                    {storageStats.buckets.map((bucket) => (
+                      <div key={bucket.bucket} className="flex items-center justify-between text-xs">
+                        <span className="text-blue-700">{bucket.bucket}</span>
+                        <span className="text-blue-600">
+                          {bucket.fileCount || 0} files • {bucket.totalSizeMB ? `${bucket.totalSizeMB.toFixed(2)} MB` : '0 MB'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
           

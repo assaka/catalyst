@@ -4,18 +4,21 @@
 Successfully implemented category, product, and file manager image/file uploads using Supabase storage with Magento-style directory structure.
 
 ## Directory Structure
-The system now uses Magento-style paths based on the first two characters of the filename:
+The system uses Magento-style paths within Supabase Storage buckets based on the first two characters of the filename:
 - `testimage.png` → `t/e/testimage.png`
 - `product.jpg` → `p/r/product.jpg`
 - `a.png` → `a/a/a.png`
 - Files with non-alphanumeric names → `misc/filename.ext`
 
-## Buckets Configuration
+## Supabase Storage Configuration
 - **suprshop-images**: Main image storage bucket
-  - `/categories/` - Category images
-  - `/products/` - Product images
+  - `/categories/` - Category images with Magento-style paths
+  - `/products/` - Product images with Magento-style paths
 - **suprshop-assets**: Public assets bucket
-  - `/assets/` - General assets and files
+  - `/assets/` - General assets and files with Magento-style paths
+
+All files are stored in Supabase Storage and return public URLs in the format:
+`https://[project-id].supabase.co/storage/v1/object/public/[bucket]/[path]`
 
 ## Implementation Details
 

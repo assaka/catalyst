@@ -105,6 +105,63 @@ class SupabaseStorageService {
   }
 
   /**
+   * Extract storage path from Supabase URL or metadata
+   * @param {string} url - Supabase public URL
+   * @param {object} metadata - File metadata
+   * @param {string} type - File type (category, product, asset)
+   * @param {string} fallbackFilename - Fallback filename for path generation
+   * @returns {string|null} - Extracted storage path
+   */
+  extractStoragePath(url, metadata = {}, type = null, fallbackFilename = null) {
+    // First priority: use stored path from metadata
+    if (metadata.path) {
+      return metadata.path;
+    }
+    
+    // Second priority: extract from Supabase URL
+    if (url && url.includes('supabase')) {
+      try {
+        const urlObj = new URL(url);
+        const pathParts = urlObj.pathname.split('/');
+        // Supabase URLs: /storage/v1/object/public/bucket/path
+        if (pathParts.includes('public') && pathParts.length > pathParts.indexOf('public') + 2) {
+          const bucketIndex = pathParts.indexOf('public') + 1;
+          return pathParts.slice(bucketIndex + 1).join('/');
+        }
+      } catch (e) {
+        console.warn('Failed to parse Supabase URL:', url);
+      }
+    }
+    
+    // Third priority: construct from metadata filename
+    const filename = metadata.filename || fallbackFilename;
+    if (filename && type) {
+      const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.')) || filename;
+      const cleanName = nameWithoutExt.toLowerCase().replace(/[^a-z0-9]/g, '');
+      
+      let magentoPath;
+      if (cleanName.length >= 2) {
+        magentoPath = `${cleanName[0]}/${cleanName[1]}/${filename}`;
+      } else if (cleanName.length === 1) {
+        magentoPath = `${cleanName[0]}/${cleanName[0]}/${filename}`;
+      } else {
+        magentoPath = `misc/${filename}`;
+      }
+      
+      // Add type prefix for Magento structure
+      if (type === 'category') {
+        return `categories/${magentoPath}`;
+      } else if (type === 'product') {
+        return `products/${magentoPath}`;
+      } else if (type === 'asset') {
+        return `assets/${magentoPath}`;
+      }
+    }
+    
+    return null;
+  }
+
+  /**
    * Upload image using direct API call with OAuth token
    * Note: This requires anon key or service role key. OAuth token alone is not sufficient for Storage API.
    */
@@ -931,14 +988,40 @@ class SupabaseStorageService {
       const totalSize = stats.reduce((sum, stat) => sum + stat.totalSize, 0);
       const totalFiles = stats.reduce((sum, stat) => sum + stat.fileCount, 0);
 
+      // Calculate storage quotas
+      // Note: Supabase Free tier = 1GB, Pro tier = 8GB, Pro+ = 100GB
+      // Since we can't easily determine the plan, we'll use a conservative estimate
+      const totalSizeGB = totalSize / (1024 * 1024 * 1024);
+      
+      let storageQuotaGB = 1; // Default to free tier
+      let storageQuotaMB = 1024;
+      
+      // Try to infer plan based on usage patterns or make a reasonable assumption
+      // For now, assume 1GB quota (free tier) unless usage suggests otherwise
+      if (totalSizeGB > 1) {
+        storageQuotaGB = 8; // Assume Pro tier if they're using more than 1GB
+        storageQuotaMB = 8192;
+      }
+      
+      const storageLeftMB = Math.max(0, storageQuotaMB - (totalSize / (1024 * 1024)));
+      const storageUsedPercentage = ((totalSize / (1024 * 1024)) / storageQuotaMB * 100).toFixed(1);
+
       return {
         success: true,
         stats,
+        buckets: stats, // Also provide as buckets for backward compatibility
         summary: {
           totalFiles,
           totalSize,
           totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
-          totalSizeGB: (totalSize / (1024 * 1024 * 1024)).toFixed(2)
+          totalSizeGB: totalSizeGB.toFixed(2),
+          storageQuotaMB: storageQuotaMB,
+          storageQuotaGB: storageQuotaGB,
+          storageLeft: storageLeftMB,
+          storageLeftMB: storageLeftMB.toFixed(2),
+          storageLeftGB: (storageLeftMB / 1024).toFixed(2),
+          storageUsedPercentage: parseFloat(storageUsedPercentage),
+          buckets: stats
         }
       };
     } catch (error) {

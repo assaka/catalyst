@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const supabaseStorage = require('../services/supabase-storage');
+const storageManager = require('../services/storage-manager');
 const auth = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const path = require('path');
@@ -50,7 +50,7 @@ const extractStoreId = (req, res, next) => {
   next();
 };
 
-// Upload file with Magento structure
+// Upload file with organized structure
 router.post('/upload',
   auth,
   extractStoreId,
@@ -70,7 +70,7 @@ router.post('/upload',
 
       // Determine upload options based on type
       let uploadOptions = {
-        useMagentoStructure: true,
+        useOrganizedStructure: true,
         filename: req.file.originalname,
         public: true
       };
@@ -83,8 +83,8 @@ router.post('/upload',
       } else if (type === 'asset') {
         uploadOptions.type = 'asset';
       } else if (folder) {
-        // Custom folder without Magento structure
-        uploadOptions.useMagentoStructure = false;
+        // Custom folder without organized structure
+        uploadOptions.useOrganizedStructure = false;
         uploadOptions.folder = folder;
       } else {
         // Default to assets
@@ -93,7 +93,7 @@ router.post('/upload',
 
       console.log('📤 Uploading file with options:', uploadOptions);
 
-      const result = await supabaseStorage.uploadImage(storeId, req.file, uploadOptions);
+      const result = await storageManager.uploadFile(storeId, req.file, uploadOptions);
 
       res.json({
         success: true,
@@ -138,7 +138,7 @@ router.post('/upload-multiple',
       // Upload all files
       const uploadPromises = req.files.map(file => {
         let uploadOptions = {
-          useMagentoStructure: true,
+          useOrganizedStructure: true,
           filename: file.originalname,
           public: true
         };
@@ -150,13 +150,13 @@ router.post('/upload-multiple',
         } else if (type === 'asset') {
           uploadOptions.type = 'asset';
         } else if (folder) {
-          uploadOptions.useMagentoStructure = false;
+          uploadOptions.useOrganizedStructure = false;
           uploadOptions.folder = folder;
         } else {
           uploadOptions.type = 'asset';
         }
 
-        return supabaseStorage.uploadImage(storeId, file, uploadOptions);
+        return storageManager.uploadFile(storeId, file, uploadOptions);
       });
 
       const results = await Promise.allSettled(uploadPromises);
@@ -219,7 +219,7 @@ router.get('/list',
         listFolder = 'assets';
       }
 
-      const result = await supabaseStorage.listImages(storeId, listFolder, {
+      const result = await storageManager.listFiles(storeId, listFolder, {
         limit: parseInt(req.query.limit) || 100,
         offset: parseInt(req.query.offset) || 0,
         bucket: bucket || undefined
@@ -257,7 +257,7 @@ router.delete('/delete',
         });
       }
 
-      const result = await supabaseStorage.deleteImage(storeId, path, bucket);
+      const result = await storageManager.deleteFile(storeId, path, bucket);
 
       res.json({
         success: true,
@@ -282,7 +282,7 @@ router.get('/stats',
     try {
       const { storeId } = req;
       
-      const stats = await supabaseStorage.getStorageStats(storeId);
+      const stats = await storageManager.getStorageStats(storeId);
 
       res.json({
         success: true,

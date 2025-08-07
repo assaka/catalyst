@@ -67,9 +67,17 @@ async function testFileManagerUpload() {
 
       if (response.data.success) {
         console.log(`   ✅ Upload successful!`);
-        console.log(`   📍 Path: ${response.data.file.path}`);
-        console.log(`   🔗 URL: ${response.data.file.url}`);
+        console.log(`   📍 Supabase Path: ${response.data.file.path}`);
+        console.log(`   🔗 Public URL: ${response.data.file.url}`);
         console.log(`   📦 Bucket: ${response.data.file.bucket}`);
+        console.log(`   🏪 Storage: Supabase`);
+        
+        // Verify URL is a Supabase URL
+        if (response.data.file.url && response.data.file.url.includes('supabase')) {
+          console.log(`   ✅ Confirmed: Using Supabase storage URL`);
+        } else {
+          console.log(`   ⚠️  Warning: URL may not be from Supabase storage`);
+        }
       } else {
         console.log(`   ❌ Upload failed: ${response.data.message}`);
       }
