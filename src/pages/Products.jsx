@@ -940,19 +940,14 @@ export default function Products() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
                                   <DropdownMenuItem
-                                    onClick={() => handleStatusChange(product, 'active')}
-                                  >
-                                    <Eye className="w-4 h-4 mr-2" />
-                                    Activate
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleStatusChange(product, 'inactive')}
-                                  >
-                                    <EyeOff className="w-4 h-4 mr-2" />
-                                    Deactivate
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => navigate(`/products/${product.id}`)}
+                                    onClick={() => {
+                                      const storeSlug = selectedStore?.slug || selectedStore?.domain;
+                                      const productSlug = product.seo?.url_key || product.slug || product.id;
+                                      if (storeSlug) {
+                                        // Open in new tab to view the storefront product page
+                                        window.open(`/public/${storeSlug}/product/${productSlug}`, '_blank');
+                                      }
+                                    }}
                                   >
                                     <Eye className="w-4 h-4 mr-2" />
                                     View
@@ -966,6 +961,21 @@ export default function Products() {
                                     <Edit className="w-4 h-4 mr-2" />
                                     Edit
                                   </DropdownMenuItem>
+                                  {product.status === 'active' ? (
+                                    <DropdownMenuItem
+                                      onClick={() => handleStatusChange(product, 'inactive')}
+                                    >
+                                      <EyeOff className="w-4 h-4 mr-2" />
+                                      Deactivate
+                                    </DropdownMenuItem>
+                                  ) : (
+                                    <DropdownMenuItem
+                                      onClick={() => handleStatusChange(product, 'active')}
+                                    >
+                                      <Eye className="w-4 h-4 mr-2" />
+                                      Activate
+                                    </DropdownMenuItem>
+                                  )}
                                   <DropdownMenuItem
                                     onClick={() => handleDeleteProduct(product.id)}
                                     className="text-red-600"
@@ -1023,7 +1033,7 @@ export default function Products() {
               categories={categories}
               stores={[]}
               taxes={taxes}
-              attributes={attributes}
+              attributes={attributes.filter(attr => attr.type !== 'image')}
               attributeSets={attributeSets}
               onSubmit={selectedProduct ? handleUpdateProduct : handleCreateProduct}
               onCancel={() => {
