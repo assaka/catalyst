@@ -4,8 +4,8 @@ const { Store } = require('../models');
 const authMiddleware = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
-// Get default database provider for a store
-router.get('/stores/:storeId/default-database-provider', 
+// Get default media storage provider for a store
+router.get('/stores/:storeId/default-mediastorage-provider', 
   checkStoreOwnership,
   async (req, res) => {
     try {
@@ -19,11 +19,11 @@ router.get('/stores/:storeId/default-database-provider',
         });
       }
 
-      // Get the default database provider from store settings
-      const defaultProvider = store.settings?.default_database_provider || null;
+      // Get the default media storage provider from store settings
+      const defaultProvider = store.settings?.default_mediastorage_provider || null;
       
       console.log('Store settings:', store.settings);
-      console.log('Default provider:', defaultProvider);
+      console.log('Default media storage provider:', defaultProvider);
       
       res.json({
         success: true,
@@ -31,33 +31,30 @@ router.get('/stores/:storeId/default-database-provider',
         store_id: storeId
       });
     } catch (error) {
-      console.error('Error fetching default database provider:', error);
+      console.error('Error fetching default media storage provider:', error);
       res.status(500).json({ 
         success: false, 
-        message: 'Failed to fetch default database provider' 
+        message: 'Failed to fetch default media storage provider' 
       });
     }
   }
 );
 
-// Set default database provider for a store
-router.post('/stores/:storeId/default-database-provider', 
+// Set default media storage provider for a store
+router.post('/stores/:storeId/default-mediastorage-provider', 
   checkStoreOwnership,
   async (req, res) => {
     try {
       const { storeId } = req.params;
       const { provider } = req.body;
       
-      // Validate provider - includes both database and storage providers
-      const validDatabaseProviders = ['supabase', 'aiven', 'aws-rds', 'google-cloud-sql', 'azure-database', 'planetscale'];
-      // Storage providers - match the frontend values exactly
-      const validStorageProviders = ['supabase', 'cloudflare', 'aws-s3', 'google-storage', 'azure-blob'];
-      const allValidProviders = [...new Set([...validDatabaseProviders, ...validStorageProviders])];
+      // Validate provider - storage providers only
+      const validStorageProviders = ['supabase', 'cloudflare', 'aws-s3', 'google-storage', 'azure-blob', 's3', 'gcs', 'local'];
       
-      if (!allValidProviders.includes(provider)) {
+      if (!validStorageProviders.includes(provider)) {
         return res.status(400).json({ 
           success: false, 
-          message: `Invalid database/storage provider: ${provider}` 
+          message: `Invalid media storage provider: ${provider}` 
         });
       }
       
@@ -69,12 +66,12 @@ router.post('/stores/:storeId/default-database-provider',
         });
       }
 
-      // Update store settings with default database provider
+      // Update store settings with default media storage provider
       const currentSettings = store.settings || {};
       const updatedSettings = {
         ...currentSettings,
-        default_database_provider: provider,
-        default_database_provider_updated_at: new Date().toISOString()
+        default_mediastorage_provider: provider,
+        default_mediastorage_provider_updated_at: new Date().toISOString()
       };
       
       console.log('Current settings before update:', currentSettings);
@@ -102,22 +99,22 @@ router.post('/stores/:storeId/default-database-provider',
       
       res.json({
         success: true,
-        message: `${provider} set as default database provider`,
+        message: `${provider} set as default media storage provider`,
         provider: provider,
         store_id: storeId
       });
     } catch (error) {
-      console.error('Error setting default database provider:', error);
+      console.error('Error setting default media storage provider:', error);
       res.status(500).json({ 
         success: false, 
-        message: 'Failed to set default database provider' 
+        message: 'Failed to set default media storage provider' 
       });
     }
   }
 );
 
-// Clear default database provider for a store
-router.delete('/stores/:storeId/default-database-provider', 
+// Clear default media storage provider for a store
+router.delete('/stores/:storeId/default-mediastorage-provider', 
   checkStoreOwnership,
   async (req, res) => {
     try {
@@ -131,11 +128,11 @@ router.delete('/stores/:storeId/default-database-provider',
         });
       }
 
-      // Remove default database provider from store settings
+      // Remove default media storage provider from store settings
       const currentSettings = store.settings || {};
       const updatedSettings = { ...currentSettings };
-      delete updatedSettings.default_database_provider;
-      delete updatedSettings.default_database_provider_updated_at;
+      delete updatedSettings.default_mediastorage_provider;
+      delete updatedSettings.default_mediastorage_provider_updated_at;
       
       // Use raw query to ensure the JSON field is properly updated
       const { sequelize } = require('../database/connection');
@@ -155,14 +152,14 @@ router.delete('/stores/:storeId/default-database-provider',
       
       res.json({
         success: true,
-        message: 'Default database provider cleared',
+        message: 'Default media storage provider cleared',
         store_id: storeId
       });
     } catch (error) {
-      console.error('Error clearing default database provider:', error);
+      console.error('Error clearing default media storage provider:', error);
       res.status(500).json({ 
         success: false, 
-        message: 'Failed to clear default database provider' 
+        message: 'Failed to clear default media storage provider' 
       });
     }
   }

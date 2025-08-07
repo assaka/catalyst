@@ -94,6 +94,7 @@ const categoryImageRoutes = require('./routes/category-images');
 const fileManagerRoutes = require('./routes/file-manager');
 const templateRoutes = require('./routes/templates');
 const storeDatabaseRoutes = require('./routes/store-database');
+const storeMediastorageRoutes = require('./routes/store-mediastorage');
 
 const app = express();
 
