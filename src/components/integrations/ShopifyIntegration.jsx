@@ -25,6 +25,7 @@ import {
   Key,
   Shield
 } from 'lucide-react';
+import FlashMessage from "@/components/storefront/FlashMessage.jsx";
 
 const ShopifyIntegration = () => {
   const { selectedStore } = useStoreSelection();
@@ -365,7 +366,17 @@ const ShopifyIntegration = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Delivery Settings for {store?.name || 'Your Store'}</h1>
+              <p className="text-gray-600 mt-1">Configure delivery date options for your customers</p>
+            </div>
+          </div>
+          <div className="space-y-6">
       {/* Connection Status Card */}
       <Card>
         <CardHeader>
@@ -811,6 +822,8 @@ const ShopifyIntegration = () => {
         </Card>
       )}
     </div>
+        </div>
+      </div>
   );
 };
 

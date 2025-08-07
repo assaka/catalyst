@@ -79,7 +79,7 @@ export default function GoogleTagManager() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
         <div className="mb-8 flex justify-between items-center">
           <div>
