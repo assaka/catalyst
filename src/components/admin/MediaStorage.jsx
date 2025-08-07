@@ -322,35 +322,6 @@ const MediaStorage = () => {
         </div>
       </div>
 
-      {/* Statistics Overview - Without Total Products and With Images */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Processed</p>
-                <p className="text-2xl font-bold">{stats?.processed_images || 0}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-purple-500" />
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Processing Rate</p>
-                <p className="text-2xl font-bold">{getProcessingRate().toFixed(1)}%</p>
-              </div>
-              <div className="w-8 h-8 flex items-center justify-center">
-                <Progress value={getProcessingRate()} className="w-6 h-2" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Supabase Storage */}
       <Card>
         <CardHeader>
