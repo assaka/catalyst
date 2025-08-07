@@ -1096,17 +1096,32 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
                 {/* Non-Image Attributes Section */}
                 {(() => {
-                  const nonImageAttributes = selectedAttributes.filter(attr => 
+                  const nonImageAttributes = selectedAttributes.filter(attr => {
                     // Exclude ALL image-related attributes (handled in top Images section)
-                    !(
-                      attr.type === 'image' || 
-                      (attr.type === 'file' && 
+                    
+                    // Check if it's explicitly an image type
+                    if (attr.type === 'image') return false;
+                    
+                    // Check if it's a file type with image extensions
+                    if (attr.type === 'file' && 
                         attr.file_settings?.allowed_extensions?.some(ext => 
-                          ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext.toLowerCase())
+                          ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tiff', 'tif'].includes(ext.toLowerCase())
                         )
-                      )
-                    )
-                  );
+                    ) return false;
+                    
+                    // Check if the attribute code or name contains image-related keywords
+                    const lowerCode = (attr.code || '').toLowerCase();
+                    const lowerName = (attr.name || '').toLowerCase();
+                    const imageKeywords = ['image', 'gallery', 'picture', 'photo', 'thumbnail', 'thumb', 'banner', 'logo'];
+                    
+                    if (imageKeywords.some(keyword => 
+                      lowerCode.includes(keyword) || lowerName.includes(keyword)
+                    )) {
+                      return false;
+                    }
+                    
+                    return true;
+                  });
 
                   if (nonImageAttributes.length === 0) return null;
 

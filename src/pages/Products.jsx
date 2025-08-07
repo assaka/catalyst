@@ -957,15 +957,6 @@ export default function Products() {
                                       const storeCode = storeInfo?.slug;
                                       const productSlug = product.seo?.url_key || product.slug || product.id;
                                       
-                                      console.log('View button debug:', {
-                                        selectedStore,
-                                        storeInfo,
-                                        availableStores,
-                                        productStoreId: product.store_id,
-                                        storeCode,
-                                        productSlug
-                                      });
-                                      
                                       if (storeCode && productSlug) {
                                         // Open in new tab to view the storefront product page
                                         const url = `/public/${storeCode}/product/${productSlug}`;
@@ -973,11 +964,7 @@ export default function Products() {
                                       } else {
                                         console.error('Missing store slug or product slug:', { 
                                           storeSlug: storeCode, 
-                                          productSlug,
-                                          selectedStore,
-                                          storeInfo,
-                                          availableStores,
-                                          productStoreId: product.store_id
+                                          productSlug
                                         });
                                       }
                                     }}

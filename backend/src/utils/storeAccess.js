@@ -15,6 +15,7 @@ async function getUserStoresForDropdown(userId) {
       SELECT DISTINCT
           s.id,
           s.name,
+          s.slug,
           s.logo_url,
           s.created_at,
           s.updated_at,

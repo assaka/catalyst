@@ -55,7 +55,6 @@ export default function Settings() {
   const [flashMessage, setFlashMessage] = useState(null); // New state for flash messages
   const [connectingDomain, setConnectingDomain] = useState(false);
   const [savingStripe, setSavingStripe] = useState(false); // This state was in original, kept it.
-  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     if (selectedStore) {
@@ -139,27 +138,6 @@ export default function Settings() {
       });
       
       const storeData = freshStoreData || selectedStore;
-      
-      // Load categories for the root category selector
-      try {
-        // Make sure we have a valid store ID
-        if (!storeData || !storeData.id) {
-          console.error('❌ No valid store data available for loading categories');
-          setCategories([]);
-          return;
-        }
-        
-        console.log('🔍 Loading categories for store:', storeData.id);
-        
-        // First, try to get ALL categories including root categories
-        let allCategories = [];
-        let currentPage = 1;
-        let hasMore = true;
-        
-        // Load categories page by page to ensure we get all of them
-        while (hasMore) {
-          try {
-            const response = await apiClient.get(`categories?store_id=${storeData.id}&page=${currentPage}&limit=100`);
             
             console.log(`📄 Page ${currentPage} response:`, response);
             
@@ -819,151 +797,6 @@ export default function Settings() {
                     This timezone will be used for order timestamps, scheduling, and reports
                   </p>
                 </div>
-
-                <div>
-                  <Label htmlFor="root_category_id">Root Category</Label>
-                  {(() => {
-                    const currentValue = store?.settings?.rootCategoryId ? store.settings.rootCategoryId : "none";
-                    console.log('🎯 Root category form value:', {
-                      rootCategoryId: store?.settings?.rootCategoryId,
-                      currentValue,
-                      storeSettingsExists: !!store?.settings,
-                      storeExists: !!store
-                    });
-                    return null;
-                  })()}
-                  <Select 
-                    value={store?.settings?.rootCategoryId ? store.settings.rootCategoryId : "none"} 
-                    onValueChange={(value) => {
-                      handleSettingsChange('rootCategoryId', value === "none" ? null : value);
-                    }}
-                  >
-                    <SelectTrigger id="root_category_id">
-                      <SelectValue placeholder="Select root category (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No Root Category</SelectItem>
-                      {(() => {
-                        console.log('🔍 Root Category Dropdown Debug:', {
-                          totalCategories: categories.length,
-                          categoriesArray: categories,
-                          firstCategory: categories[0],
-                          categoriesWithParentInfo: categories.slice(0, 5).map(c => ({
-                            id: c.id,
-                            name: c.name,
-                            parent_id: c.parent_id,
-                            parent_id_type: typeof c.parent_id,
-                            parent_id_value: c.parent_id,
-                            isNull: c.parent_id === null,
-                            isUndefined: c.parent_id === undefined,
-                            isEmpty: c.parent_id === '',
-                            level: c.level
-                          }))
-                        });
-                        
-                        const rootCategories = categories.filter(cat => {
-                          // More comprehensive check for root categories
-                          const parentId = cat.parent_id;
-                          
-                          // Check for various representations of "no parent"
-                          const isNullish = parentId === null || parentId === undefined;
-                          const isEmptyString = parentId === '' || parentId === 'null' || parentId === 'undefined';
-                          const isFalsy = !parentId && parentId !== 0; // Exclude 0 as a valid parent ID
-                          
-                          // Also check level - root categories usually have level 0 or 1
-                          const isRootByLevel = cat.level === 0 || cat.level === 1;
-                          
-                          const isRoot = isNullish || isEmptyString || isFalsy || (isRootByLevel && !parentId);
-                          
-                          if (cat.name && cat.name.toLowerCase().includes('root')) {
-                            console.log(`🎯 Potential root category "${cat.name}":`, {
-                              parent_id: parentId,
-                              level: cat.level,
-                              isNullish,
-                              isEmptyString,
-                              isFalsy,
-                              isRootByLevel,
-                              isRoot
-                            });
-                          }
-                          
-                          return isRoot;
-                        });
-                        
-                        console.log('🌳 Root categories found:', {
-                          count: rootCategories.length,
-                          rootCategories: rootCategories.map(c => ({
-                            id: c.id,
-                            name: c.name,
-                            parent_id: c.parent_id,
-                            level: c.level
-                          }))
-                        });
-                        
-                        if (rootCategories.length === 0) {
-                          console.warn('⚠️ No root categories found! Showing ALL categories as fallback');
-                          // As a fallback, show all categories if no root categories found
-                          return categories
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .map((category) => (
-                              <SelectItem key={category.id} value={category.id}>
-                                {category.name} {category.parent_id ? '(Sub)' : '(Root?)'}
-                              </SelectItem>
-                            ));
-                        }
-                        
-                        return rootCategories
-                          .sort((a, b) => a.name.localeCompare(b.name))
-                          .map((category) => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ));
-                      })()}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Select a root category to limit your store's navigation to its subcategories. Leave blank to show all categories.
-                  </p>
-                </div>
-
-                {store?.settings?.rootCategoryId && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <Label htmlFor="exclude_root_from_menu" className="font-medium">Exclude Root Category from Navigation</Label>
-                        <p className="text-sm text-gray-500">Hide the root category itself from navigation menus, showing only its children</p>
-                      </div>
-                      {(() => {
-                        const isChecked = store?.settings?.excludeRootFromMenu || false;
-                        return null;
-                      })()}
-                      <Switch 
-                        id="exclude_root_from_menu" 
-                        checked={store?.settings?.excludeRootFromMenu || false} 
-                        onCheckedChange={(checked) => {
-                          console.log('🔄 Exclude root changed to:', checked);
-                          handleSettingsChange('excludeRootFromMenu', checked);
-                        }} 
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between p-3 border rounded-lg">
-                      <div>
-                        <Label htmlFor="expand_all_menu_items" className="font-medium">Always Show All Subcategories</Label>
-                        <p className="text-sm text-gray-500">Display all subcategories without requiring hover or click to expand</p>
-                      </div>
-                      <Switch 
-                        id="expand_all_menu_items" 
-                        checked={store?.settings?.expandAllMenuItems || false} 
-                        onCheckedChange={(checked) => {
-                          console.log('🔄 Expand all menu items changed to:', checked);
-                          handleSettingsChange('expandAllMenuItems', checked);
-                        }} 
-                      />
-                    </div>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </TabsContent>

@@ -45,6 +45,7 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 import CategoryForm from "../components/categories/CategoryForm";
 
@@ -548,11 +549,7 @@ export default function Categories() {
                         } else {
                           console.error('Missing store slug or category slug:', { 
                             storeSlug: storeCode, 
-                            categorySlug,
-                            selectedStore,
-                            storeInfo,
-                            availableStores,
-                            categoryStoreId: category.store_id
+                            categorySlug
                           });
                         }
                       }}
@@ -780,26 +777,30 @@ export default function Categories() {
         <Card className="material-elevation-1 border-0 mb-6">
           <CardContent className="p-6">
             <div className="space-y-4">
-              {/* Root Category Selection */}
-              <div className="flex flex-col md:flex-row gap-4 items-start">
-                <div className="flex-1">
-                  <Label htmlFor="root-category" className="text-sm font-medium mb-2 flex items-center gap-2">
-                    <TreePine className="w-4 h-4" />
-                    Root Category Filter
+              {/* Store-wide Category Settings */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Category Navigation Settings
+                </h3>
+                
+                {/* Root Category Selection */}
+                <div className="mb-4">
+                  <Label htmlFor="store-root-category" className="text-sm font-medium mb-2 block">
+                    Root Category
                   </Label>
                   <Select
-                    value={selectedRootCategory || "all"}
+                    value={storeSettings.rootCategoryId || "none"}
                     onValueChange={(value) => {
-                      const newValue = value === "all" ? "" : value;
-                      setSelectedRootCategory(newValue);
-                      saveStoreSettings({ rootCategoryId: newValue });
+                      const newValue = value === "none" ? null : value;
+                      saveStoreSettings({ ...storeSettings, rootCategoryId: newValue });
                     }}
                   >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select root category to filter" />
+                    <SelectTrigger id="store-root-category" className="w-full">
+                      <SelectValue placeholder="Select root category (optional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Show All Categories</SelectItem>
+                      <SelectItem value="none">No Root Category</SelectItem>
                       {rootCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
@@ -807,6 +808,84 @@ export default function Categories() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Set a default root category for your store's navigation
+                  </p>
+                </div>
+
+                {/* Navigation Settings - Only show if root category is selected */}
+                {storeSettings.rootCategoryId && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <Label htmlFor="exclude_root_from_menu" className="font-medium">
+                          Exclude Root Category from Navigation
+                        </Label>
+                        <p className="text-sm text-gray-500">
+                          Hide the root category itself from navigation menus, showing only its children
+                        </p>
+                      </div>
+                      <Switch
+                        id="exclude_root_from_menu"
+                        checked={storeSettings.excludeRootFromMenu || false}
+                        onCheckedChange={(checked) => {
+                          saveStoreSettings({ ...storeSettings, excludeRootFromMenu: checked });
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <Label htmlFor="expand_all_menu_items" className="font-medium">
+                          Always Show All Subcategories
+                        </Label>
+                        <p className="text-sm text-gray-500">
+                          Display all subcategories without requiring hover or click to expand
+                        </p>
+                      </div>
+                      <Switch
+                        id="expand_all_menu_items"
+                        checked={storeSettings.expandAllMenuItems || false}
+                        onCheckedChange={(checked) => {
+                          saveStoreSettings({ ...storeSettings, expandAllMenuItems: checked });
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t pt-4">
+                {/* Root Category Filter */}
+                <div className="flex flex-col md:flex-row gap-4 items-start">
+                  <div className="flex-1">
+                    <Label htmlFor="root-category" className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <TreePine className="w-4 h-4" />
+                      Root Category Filter
+                    </Label>
+                    <Select
+                      value={selectedRootCategory || "all"}
+                      onValueChange={(value) => {
+                        const newValue = value === "all" ? "" : value;
+                        setSelectedRootCategory(newValue);
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select root category to filter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Show All Categories</SelectItem>
+                        {rootCategories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Filter the category list view below
+                    </p>
+                  </div>
                 </div>
               </div>
               
@@ -978,11 +1057,7 @@ export default function Categories() {
                               } else {
                                 console.error('Missing store slug or category slug:', { 
                                   storeSlug: storeCode, 
-                                  categorySlug,
-                                  selectedStore,
-                                  storeInfo,
-                                  availableStores,
-                                  categoryStoreId: category.store_id
+                                  categorySlug
                                 });
                               }
                             }}
