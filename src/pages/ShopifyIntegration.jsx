@@ -385,26 +385,86 @@ const ShopifyIntegration = () => {
                   </div>
                 </div>
 
-                {/* Step 4: Environment Variables */}
+                {/* Step 4: Configure App in SuprShop */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Step 4: Set Environment Variables</h3>
-                  <p className="text-gray-600 mb-3">Add these variables to your backend <code>.env</code> file:</p>
-                  <div className="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto">
-                    <pre className="text-sm">
-{`# Shopify OAuth Configuration
-SHOPIFY_CLIENT_ID=your_app_client_id_here
-SHOPIFY_CLIENT_SECRET=your_app_client_secret_here
-
-# Optional - defaults to backend URL + /api/shopify/callback
-# SHOPIFY_REDIRECT_URI=https://custom-domain.com/api/shopify/callback`}
-                    </pre>
-                  </div>
+                  <h3 className="text-lg font-semibold mb-3">Step 4: Configure App Credentials in SuprShop</h3>
+                  <p className="text-gray-600 mb-3">After creating your Shopify app, configure it in SuprShop:</p>
+                  <ol className="space-y-3 text-sm">
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">1.</span>
+                      <div>
+                        Go to the <strong>Connection</strong> tab on this page
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">2.</span>
+                      <div>
+                        Click <strong>"Configure App Credentials"</strong>
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">3.</span>
+                      <div>
+                        Enter your <strong>Client ID</strong> from Shopify Partner Dashboard
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">4.</span>
+                      <div>
+                        Enter your <strong>Client Secret</strong> (keep this secure!)
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">5.</span>
+                      <div>
+                        Verify the <strong>Redirect URI</strong> matches what you added in Shopify
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">6.</span>
+                      <div>
+                        Click <strong>"Save Credentials"</strong>
+                      </div>
+                    </li>
+                  </ol>
                   <Alert className="mt-3">
                     <Shield className="h-4 w-4" />
                     <AlertDescription>
-                      You can find your Client ID and Client Secret in your Shopify app's "Client credentials" section.
+                      Your credentials are encrypted and stored securely per store. Each store can have its own Shopify app configuration.
                     </AlertDescription>
                   </Alert>
+                </div>
+
+                {/* Step 5: Connect Your Store */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-3">Step 5: Connect Your Shopify Store</h3>
+                  <p className="text-gray-600 mb-3">Once your app credentials are configured:</p>
+                  <ol className="space-y-3 text-sm">
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">1.</span>
+                      <div>
+                        Enter your Shopify store domain (e.g., <code>your-store.myshopify.com</code>)
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">2.</span>
+                      <div>
+                        Click <strong>"Connect"</strong> to initiate OAuth
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">3.</span>
+                      <div>
+                        Authorize the app in Shopify when prompted
+                      </div>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="font-medium mr-2">4.</span>
+                      <div>
+                        You'll be redirected back to SuprShop once connected
+                      </div>
+                    </li>
+                  </ol>
                 </div>
 
                 {/* Security Note */}
@@ -431,6 +491,16 @@ SHOPIFY_CLIENT_SECRET=your_app_client_secret_here
               <CardContent className="space-y-6">
                 {/* FAQ Items */}
                 <div className="space-y-4">
+                  <div className="border-b pb-4">
+                    <h4 className="font-medium mb-2">Q: Do I need server access to configure Shopify integration?</h4>
+                    <p className="text-gray-600 text-sm">
+                      No! Each store owner can configure their own Shopify app credentials directly in the SuprShop 
+                      admin panel. You don't need access to server environment variables or configuration files. 
+                      Simply create a Shopify app in your Partner Dashboard and enter the credentials in the 
+                      Connection tab.
+                    </p>
+                  </div>
+
                   <div className="border-b pb-4">
                     <h4 className="font-medium mb-2">Q: Can I test the integration without affecting my live store?</h4>
                     <p className="text-gray-600 text-sm">
@@ -495,9 +565,9 @@ SHOPIFY_CLIENT_SECRET=your_app_client_secret_here
                     <Alert className="border-red-200">
                       <XCircle className="h-4 w-4 text-red-600" />
                       <AlertDescription>
-                        <strong>Error: "OAuth configuration not found"</strong><br />
-                        Check that SHOPIFY_CLIENT_ID and SHOPIFY_CLIENT_SECRET environment variables are set 
-                        and restart your backend server.
+                        <strong>Error: "Shopify app not configured"</strong><br />
+                        You need to configure your Shopify app credentials first. Go to the Connection tab 
+                        and click "Configure App Credentials" to enter your Client ID and Client Secret.
                       </AlertDescription>
                     </Alert>
 

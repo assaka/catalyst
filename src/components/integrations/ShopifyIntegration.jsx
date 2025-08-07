@@ -401,33 +401,159 @@ const ShopifyIntegration = () => {
 
           {!connectionStatus?.connected ? (
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="shop-domain">Shopify Store Domain</Label>
-                <div className="flex space-x-2 mt-1">
-                  <Input
-                    id="shop-domain"
-                    type="text"
-                    placeholder="your-store.myshopify.com"
-                    value={shopDomain}
-                    onChange={(e) => setShopDomain(e.target.value)}
-                    disabled={loading}
-                  />
-                  <Button
-                    onClick={initiateOAuth}
-                    disabled={loading || !shopDomain}
-                  >
-                    {loading ? (
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    ) : (
-                      <Link className="w-4 h-4 mr-2" />
-                    )}
-                    Connect
-                  </Button>
+              {/* App Configuration Section */}
+              {!appConfigured && (
+                <Alert className="border-yellow-200 bg-yellow-50">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    <strong>Shopify app not configured.</strong> You need to configure your Shopify app credentials before connecting.
+                    <Button
+                      variant="link"
+                      className="ml-2 text-yellow-800 underline p-0 h-auto"
+                      onClick={() => setShowAppConfig(!showAppConfig)}
+                    >
+                      {showAppConfig ? 'Hide' : 'Configure'} App Credentials
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {showAppConfig && (
+                <Card className="border-blue-200 bg-blue-50/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center">
+                      <Key className="w-5 h-5 mr-2" />
+                      Configure Shopify App Credentials
+                    </CardTitle>
+                    <CardDescription>
+                      Enter your Shopify app's Client ID and Client Secret. You can find these in your Shopify Partner Dashboard.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="client-id">Client ID</Label>
+                      <Input
+                        id="client-id"
+                        type="text"
+                        placeholder="e.g., 7f4e5d3c2b1a0987654321"
+                        value={appCredentials.client_id}
+                        onChange={(e) => setAppCredentials({...appCredentials, client_id: e.target.value})}
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Found in your Shopify app's "Client credentials" section
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="client-secret">Client Secret</Label>
+                      <Input
+                        id="client-secret"
+                        type="password"
+                        placeholder="e.g., shpss_1234567890abcdef..."
+                        value={appCredentials.client_secret}
+                        onChange={(e) => setAppCredentials({...appCredentials, client_secret: e.target.value})}
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Keep this secret! Never share or commit to version control
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="redirect-uri">Redirect URI</Label>
+                      <Input
+                        id="redirect-uri"
+                        type="text"
+                        value={appCredentials.redirect_uri}
+                        onChange={(e) => setAppCredentials({...appCredentials, redirect_uri: e.target.value})}
+                        disabled={loading}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Add this exact URL to your Shopify app's "Allowed redirection URLs"
+                      </p>
+                    </div>
+
+                    <Alert className="border-blue-200">
+                      <Shield className="h-4 w-4 text-blue-600" />
+                      <AlertDescription className="text-blue-800 text-sm">
+                        Your credentials are encrypted and stored securely. They are never exposed in the frontend or API responses.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowAppConfig(false);
+                          setAppCredentials({...appCredentials, client_secret: ''});
+                        }}
+                        disabled={loading}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={saveAppCredentials}
+                        disabled={loading || !appCredentials.client_id || !appCredentials.client_secret}
+                      >
+                        {loading ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                        )}
+                        Save Credentials
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Connection Section (only show if app is configured) */}
+              {appConfigured && (
+                <div>
+                  <Label htmlFor="shop-domain">Shopify Store Domain</Label>
+                  <div className="flex space-x-2 mt-1">
+                    <Input
+                      id="shop-domain"
+                      type="text"
+                      placeholder="your-store.myshopify.com"
+                      value={shopDomain}
+                      onChange={(e) => setShopDomain(e.target.value)}
+                      disabled={loading}
+                    />
+                    <Button
+                      onClick={initiateOAuth}
+                      disabled={loading || !shopDomain}
+                    >
+                      {loading ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Link className="w-4 h-4 mr-2" />
+                      )}
+                      Connect
+                    </Button>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Enter your Shopify store domain (e.g., my-store.myshopify.com)
+                  </p>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
-                  Enter your Shopify store domain (e.g., my-store.myshopify.com)
-                </p>
-              </div>
+              )}
+
+              {appConfigured && (
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    <strong>App configured!</strong> You can now connect your Shopify store.
+                    <Button
+                      variant="link"
+                      className="ml-2 text-green-800 underline p-0 h-auto"
+                      onClick={() => setShowAppConfig(true)}
+                    >
+                      Update Credentials
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
