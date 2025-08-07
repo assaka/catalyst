@@ -949,26 +949,113 @@ class SupabaseStorageService {
       const stats = await Promise.all(
         buckets.map(async (bucket) => {
           try {
-            const { data: files, error } = await client.storage
-              .from(bucket.name)
-              .list(`store-${storeId}`, { limit: 1000 });
-
-            if (error) {
-              console.log(`Could not access bucket ${bucket.name}:`, error.message);
-              return {
-                bucket: bucket.name,
-                fileCount: 0,
-                totalSize: 0,
-                totalSizeMB: '0.00',
-                error: 'Access denied or bucket not found'
-              };
+            // Try multiple approaches to get all files for this store
+            let allFiles = [];
+            let totalSize = 0;
+            let fileCount = 0;
+            
+            // Method 1: Check legacy store-specific folder
+            try {
+              const { data: legacyFiles, error: legacyError } = await client.storage
+                .from(bucket.name)
+                .list(`store-${storeId}`, { limit: 1000 });
+              
+              if (!legacyError && legacyFiles) {
+                allFiles = allFiles.concat(legacyFiles);
+                console.log(`Found ${legacyFiles.length} files in legacy store-${storeId} folder for bucket ${bucket.name}`);
+              }
+            } catch (legacyErr) {
+              console.log(`Legacy folder check failed for ${bucket.name}:`, legacyErr.message);
             }
-
-            const totalSize = files?.reduce((sum, file) => sum + (file.metadata?.size || 0), 0) || 0;
+            
+            // Method 2: Check Magento-style structure (categories/, products/, assets/)
+            const magentoFolders = ['categories', 'products', 'assets'];
+            for (const folder of magentoFolders) {
+              try {
+                const { data: folderFiles, error: folderError } = await client.storage
+                  .from(bucket.name)
+                  .list(folder, { limit: 1000 });
+                
+                if (!folderError && folderFiles) {
+                  // Add files directly in the main folder (files have 'id' property)
+                  const directFiles = folderFiles.filter(f => f.id && f.name);
+                  allFiles = allFiles.concat(directFiles);
+                  console.log(`Found ${directFiles.length} files directly in ${folder}/ folder`);
+                  
+                  // Check subdirectories (folders don't have 'id' property)
+                  const subdirs = folderFiles.filter(f => !f.id && f.name);
+                  for (const subdir of subdirs) {
+                    try {
+                      const { data: subFiles, error: subError } = await client.storage
+                        .from(bucket.name)
+                        .list(`${folder}/${subdir.name}`, { limit: 1000 });
+                      
+                      if (!subError && subFiles) {
+                        // Add files in subdirectory
+                        const subDirectFiles = subFiles.filter(f => f.id && f.name);
+                        allFiles = allFiles.concat(subDirectFiles);
+                        console.log(`Found ${subDirectFiles.length} files in ${folder}/${subdir.name}/`);
+                        
+                        // Check second level subdirectories
+                        const deepSubdirs = subFiles.filter(f => !f.id && f.name);
+                        for (const deepSubdir of deepSubdirs) {
+                          try {
+                            const { data: deepFiles, error: deepError } = await client.storage
+                              .from(bucket.name)
+                              .list(`${folder}/${subdir.name}/${deepSubdir.name}`, { limit: 1000 });
+                            
+                            if (!deepError && deepFiles) {
+                              const deepDirectFiles = deepFiles.filter(f => f.id && f.name);
+                              allFiles = allFiles.concat(deepDirectFiles);
+                              console.log(`Found ${deepDirectFiles.length} files in ${folder}/${subdir.name}/${deepSubdir.name}/`);
+                            }
+                          } catch (deepErr) {
+                            console.log(`Deep folder check failed for ${folder}/${subdir.name}/${deepSubdir.name}:`, deepErr.message);
+                          }
+                        }
+                      }
+                    } catch (subErr) {
+                      console.log(`Subfolder check failed for ${folder}/${subdir.name}:`, subErr.message);
+                    }
+                  }
+                }
+              } catch (folderErr) {
+                console.log(`Folder check failed for ${folder}:`, folderErr.message);
+              }
+            }
+            
+            // Method 3: List all files in bucket root (fallback)
+            try {
+              const { data: rootFiles, error: rootError } = await client.storage
+                .from(bucket.name)
+                .list('', { limit: 1000 });
+              
+              if (!rootError && rootFiles) {
+                // Add direct root files (files have 'id' property)
+                const rootDirectFiles = rootFiles.filter(f => f.id && f.name);
+                allFiles = allFiles.concat(rootDirectFiles);
+                console.log(`Found ${rootDirectFiles.length} files in root of bucket ${bucket.name}`);
+              }
+            } catch (rootErr) {
+              console.log(`Root folder check failed for ${bucket.name}:`, rootErr.message);
+            }
+            
+            // Remove duplicates and calculate stats
+            const uniqueFiles = allFiles.filter((file, index, self) => 
+              index === self.findIndex(f => f.name === file.name && f.id === file.id)
+            );
+            
+            fileCount = uniqueFiles.length;
+            totalSize = uniqueFiles.reduce((sum, file) => {
+              const size = file.metadata?.size || 0;
+              return sum + size;
+            }, 0);
+            
+            console.log(`Bucket ${bucket.name}: Found ${fileCount} unique files, total size: ${totalSize} bytes`);
 
             return {
               bucket: bucket.name,
-              fileCount: files?.length || 0,
+              fileCount,
               totalSize,
               totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2)
             };
