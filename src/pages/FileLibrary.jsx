@@ -39,6 +39,23 @@ const FileLibrary = () => {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
+  // Check for default storage provider
+  const checkStorageProvider = async () => {
+    try {
+      const response = await apiClient.get(`/stores/${selectedStore?.id}/default-database-provider`, {
+        'x-store-id': selectedStore?.id
+      });
+      
+      if (response.success && response.provider) {
+        setStorageProvider(response.provider);
+        return response.provider;
+      }
+    } catch (error) {
+      console.error('Error checking storage provider:', error);
+    }
+    return null;
+  };
+
   // Load files from current storage provider
   const loadFiles = async () => {
     try {
@@ -53,8 +70,10 @@ const FileLibrary = () => {
       // Check if we have valid storage data
       if (response.success && response.data) {
         // Set provider name based on response data
-        const providerName = response.data.provider || response.provider || 'Storage Provider';
-        setStorageProvider(providerName);
+        const providerName = response.data.provider || response.provider || storageProvider || 'Storage Provider';
+        if (!storageProvider && providerName !== 'Storage Provider') {
+          setStorageProvider(providerName);
+        }
         
         // Transform response to FileLibrary format
         const transformedFiles = (response.data.files || []).map(file => ({
@@ -69,7 +88,7 @@ const FileLibrary = () => {
         setFiles(transformedFiles);
       } else {
         setFiles([]);
-        setStorageProvider(null);
+        // Don't clear storage provider if it was already set from default
       }
     } catch (error) {
       console.error('Error loading files:', error);
@@ -77,7 +96,6 @@ const FileLibrary = () => {
       if (error.message?.includes('404') || error.message?.includes('not found')) {
         console.log('Storage API not available, showing empty state');
         setFiles([]);
-        setStorageProvider(null);
       } else {
         toast.error('Failed to load files');
         setFiles([]);
@@ -89,7 +107,10 @@ const FileLibrary = () => {
 
   useEffect(() => {
     if (selectedStore?.id) {
-      loadFiles();
+      // First check for storage provider, then load files
+      checkStorageProvider().then(() => {
+        loadFiles();
+      });
     }
   }, [selectedStore?.id]);
 
