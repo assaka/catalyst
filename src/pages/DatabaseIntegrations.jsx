@@ -24,7 +24,8 @@ const DatabaseIntegrations = () => {
   const fetchDefaultProvider = async () => {
     try {
       const response = await apiClient.get(`/stores/${storeId}/default-database-provider`);
-      setDefaultProvider(response.data?.provider);
+      // apiClient returns the response directly, not wrapped in .data
+      setDefaultProvider(response?.provider);
     } catch (error) {
       console.error('Error fetching default database provider:', error);
     }

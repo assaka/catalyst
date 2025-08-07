@@ -32,8 +32,9 @@ const SupabasePage = () => {
         'x-store-id': storeId
       });
       
-      if (response.data.success) {
-        setConnectionStatus(response.data);
+      // apiClient returns the response directly, not wrapped in .data
+      if (response && response.success) {
+        setConnectionStatus(response);
       }
     } catch (error) {
       console.error('Error loading Supabase status:', error);
@@ -46,7 +47,8 @@ const SupabasePage = () => {
   const checkIfDefault = async () => {
     try {
       const response = await apiClient.get(`/stores/${storeId}/default-database-provider`);
-      setIsDefault(response.data?.provider === 'supabase');
+      // apiClient returns the response directly, not wrapped in .data
+      setIsDefault(response?.provider === 'supabase');
     } catch (error) {
       console.error('Error checking default database provider:', error);
     }
