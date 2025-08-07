@@ -240,19 +240,28 @@ class StorageManager {
       const storeProvider = await this.getStorageProvider(storeId);
       const result = await storeProvider.provider.uploadFile(storeId, file, options);
       
-      // Track file in media_assets table if it's a library upload
-      if (options.folder === 'library' || (!options.type && !options.folder)) {
-        try {
-          await MediaAsset.createFromUpload(storeId, {
-            ...result,
-            folder: options.folder || 'library',
-            originalname: file.originalname,
-            provider: storeProvider.type
-          }, options.userId);
-        } catch (dbError) {
-          console.error('Failed to track media asset in database:', dbError.message);
-          // Don't fail the upload if database tracking fails
+      // Track file in media_assets table for all uploads
+      // This ensures category, product, and library uploads all appear in Media Library
+      try {
+        // Determine the folder based on upload type
+        let folder = 'library';
+        if (options.folder === 'category' || options.type === 'category') {
+          folder = 'category';
+        } else if (options.folder === 'product' || options.folder === 'products' || options.type === 'product') {
+          folder = 'product';
+        } else if (options.folder) {
+          folder = options.folder;
         }
+        
+        await MediaAsset.createFromUpload(storeId, {
+          ...result,
+          folder: folder,
+          originalname: file.originalname,
+          provider: storeProvider.type
+        }, options.userId);
+      } catch (dbError) {
+        console.error('Failed to track media asset in database:', dbError.message);
+        // Don't fail the upload if database tracking fails
       }
       
       return {

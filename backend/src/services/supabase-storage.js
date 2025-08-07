@@ -545,7 +545,118 @@ class SupabaseStorageService {
         throw new Error('Storage operations require API keys to be configured');
       }
       
-      // Determine which bucket and folder to use based on the requested folder
+      // If no folder specified, list all files from all buckets for Media Library
+      if (!folder) {
+        const allFiles = [];
+        
+        // List files from assets bucket (library folder)
+        try {
+          const { data: assetsData } = await client.storage
+            .from(this.assetsBucketName)
+            .list('library', {
+              limit: options.limit || 100,
+              offset: 0,
+              sortBy: { column: 'created_at', order: 'desc' }
+            });
+          
+          if (assetsData) {
+            const libraryFiles = assetsData.filter(item => item.id).map(file => {
+              const fullPath = `library/${file.name}`;
+              const { data: urlData } = client.storage
+                .from(this.assetsBucketName)
+                .getPublicUrl(fullPath);
+              
+              return {
+                ...file,
+                url: urlData.publicUrl,
+                publicUrl: urlData.publicUrl,
+                fullPath: fullPath,
+                folder: 'library'
+              };
+            });
+            allFiles.push(...libraryFiles);
+          }
+        } catch (error) {
+          console.log('Error listing library files:', error.message);
+        }
+        
+        // List files from catalog bucket (category/images folder)
+        try {
+          const { data: categoryData } = await client.storage
+            .from(this.catalogBucketName)
+            .list('category/images', {
+              limit: options.limit || 100,
+              offset: 0,
+              sortBy: { column: 'created_at', order: 'desc' }
+            });
+          
+          if (categoryData) {
+            const categoryFiles = categoryData.filter(item => item.id).map(file => {
+              const fullPath = `category/images/${file.name}`;
+              const { data: urlData } = client.storage
+                .from(this.catalogBucketName)
+                .getPublicUrl(fullPath);
+              
+              return {
+                ...file,
+                url: urlData.publicUrl,
+                publicUrl: urlData.publicUrl,
+                fullPath: fullPath,
+                folder: 'category'
+              };
+            });
+            allFiles.push(...categoryFiles);
+          }
+        } catch (error) {
+          console.log('Error listing category files:', error.message);
+        }
+        
+        // List files from catalog bucket (product/images folder)
+        try {
+          const { data: productImagesData } = await client.storage
+            .from(this.catalogBucketName)
+            .list('product/images', {
+              limit: options.limit || 100,
+              offset: 0,
+              sortBy: { column: 'created_at', order: 'desc' }
+            });
+          
+          if (productImagesData) {
+            const productImageFiles = productImagesData.filter(item => item.id).map(file => {
+              const fullPath = `product/images/${file.name}`;
+              const { data: urlData } = client.storage
+                .from(this.catalogBucketName)
+                .getPublicUrl(fullPath);
+              
+              return {
+                ...file,
+                url: urlData.publicUrl,
+                publicUrl: urlData.publicUrl,
+                fullPath: fullPath,
+                folder: 'product'
+              };
+            });
+            allFiles.push(...productImageFiles);
+          }
+        } catch (error) {
+          console.log('Error listing product image files:', error.message);
+        }
+        
+        // Sort all files by created_at
+        allFiles.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
+        // Apply limit if specified
+        const limitedFiles = options.limit ? allFiles.slice(0, options.limit) : allFiles;
+        
+        return {
+          success: true,
+          files: limitedFiles,
+          total: limitedFiles.length,
+          provider: 'supabase'
+        };
+      }
+      
+      // Original logic for specific folder
       let bucketName;
       let folderPath;
       

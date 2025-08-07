@@ -387,11 +387,28 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
             value={formData.image_url || ''}
             onChange={handleInputChange}
             placeholder="Enter URL or select from library"
+            className="flex-1"
           />
           <Button
             type="button"
             variant="outline"
-            onClick={() => setShowMediaBrowser(true)}
+            onClick={() => {
+              setShowMediaBrowser(true);
+              // Set a flag to show upload by default
+              sessionStorage.setItem('mediaBrowserShowUpload', 'true');
+            }}
+            className="flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Upload
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setShowMediaBrowser(true);
+              sessionStorage.removeItem('mediaBrowserShowUpload');
+            }}
             className="flex items-center gap-2"
           >
             <ImageIcon className="w-4 h-4" />

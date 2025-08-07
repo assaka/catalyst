@@ -28,6 +28,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [viewMode, setViewMode] = useState('grid');
   const [uploading, setUploading] = useState(false);
+  const [showUploadOnOpen, setShowUploadOnOpen] = useState(false);
 
   // File type icons
   const getFileIcon = (mimeType) => {
@@ -55,7 +56,9 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
   const loadFiles = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(`/storage/list?folder=${uploadFolder}`, {
+      // When browsing, show all files from all folders for selection
+      // The uploadFolder prop is only used for determining where to upload new files
+      const response = await apiClient.get('/storage/list', {
         'x-store-id': selectedStore?.id
       });
       
@@ -85,8 +88,23 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
   useEffect(() => {
     if (isOpen && selectedStore?.id) {
       loadFiles();
+      
+      // Check if we should show upload interface by default
+      const shouldShowUpload = sessionStorage.getItem('mediaBrowserShowUpload');
+      if (shouldShowUpload === 'true') {
+        setShowUploadOnOpen(true);
+        // Auto-click the upload button after a brief delay to open file picker
+        setTimeout(() => {
+          const uploadInput = document.getElementById('media-upload');
+          if (uploadInput) {
+            uploadInput.click();
+          }
+        }, 100);
+        // Clear the flag
+        sessionStorage.removeItem('mediaBrowserShowUpload');
+      }
     }
-  }, [isOpen, selectedStore?.id, uploadFolder]);
+  }, [isOpen, selectedStore?.id]);
 
   // Handle file upload
   const handleFileUpload = async (filesArray) => {
