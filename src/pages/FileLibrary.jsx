@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
-import { useToast } from '../hooks/useToast';
-import { api } from '../services/api';
+import { useStoreSelection } from '../contexts/StoreSelectionContext';
+import { toast } from 'sonner';
+import apiClient from '../api/client';
 
 const FileLibrary = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const { selectedStore } = useStoreSelection();
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -44,16 +43,12 @@ const FileLibrary = () => {
   const loadFiles = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/api/file-library');
-      setFiles(response.data.files || []);
-      setStorageProvider(response.data.storageProvider);
+      const response = await apiClient.get('/file-library');
+      setFiles(response.files || []);
+      setStorageProvider(response.storageProvider);
     } catch (error) {
       console.error('Error loading files:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load files",
-        variant: "destructive"
-      });
+      toast.error('Failed to load files');
     } finally {
       setLoading(false);
     }
@@ -66,11 +61,7 @@ const FileLibrary = () => {
   // Handle file upload
   const handleFileUpload = async (filesArray) => {
     if (!storageProvider) {
-      toast({
-        title: "Configuration Required",
-        description: "Please configure a storage provider in Media Storage settings first",
-        variant: "destructive"
-      });
+      toast.error("Please configure a storage provider in Media Storage settings first");
       return;
     }
 
@@ -82,25 +73,17 @@ const FileLibrary = () => {
     }
 
     try {
-      const response = await api.post('/api/file-library/upload', formData, {
+      const response = await apiClient.post('/file-library/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
 
-      toast({
-        title: "Success",
-        description: `${response.data.uploadedFiles.length} file(s) uploaded successfully`
-      });
-
+      toast.success(`${response.uploadedFiles?.length || filesArray.length} file(s) uploaded successfully`);
       await loadFiles();
     } catch (error) {
       console.error('Upload error:', error);
-      toast({
-        title: "Upload Failed",
-        description: error.response?.data?.message || "Failed to upload files",
-        variant: "destructive"
-      });
+      toast.error(error.message || "Failed to upload files");
     } finally {
       setUploading(false);
     }
@@ -132,17 +115,10 @@ const FileLibrary = () => {
     try {
       await navigator.clipboard.writeText(url);
       setCopiedUrl(fileId);
-      toast({
-        title: "Copied!",
-        description: "File URL copied to clipboard"
-      });
+      toast.success("File URL copied to clipboard");
       setTimeout(() => setCopiedUrl(null), 2000);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to copy URL",
-        variant: "destructive"
-      });
+      toast.error("Failed to copy URL");
     }
   };
 
@@ -151,18 +127,11 @@ const FileLibrary = () => {
     if (!window.confirm('Are you sure you want to delete this file?')) return;
 
     try {
-      await api.delete(`/api/file-library/${fileId}`);
-      toast({
-        title: "Success",
-        description: "File deleted successfully"
-      });
+      await apiClient.delete(`/file-library/${fileId}`);
+      toast.success("File deleted successfully");
       await loadFiles();
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to delete file",
-        variant: "destructive"
-      });
+      toast.error("Failed to delete file");
     }
   };
 
