@@ -360,26 +360,6 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
       <div>
         <Label htmlFor="image_url">Category Image</Label>
         
-        {/* Image preview if URL exists */}
-        {formData.image_url && (
-          <div className="mb-3 relative inline-block">
-            <img 
-              src={formData.image_url} 
-              alt="Category" 
-              className="w-32 h-32 object-cover rounded-lg border"
-            />
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              className="absolute -top-2 -right-2 h-6 w-6"
-              onClick={() => setFormData(prev => ({ ...prev, image_url: "" }))}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-        
         <div className="flex gap-2">
           <Input
             id="image_url"
@@ -407,6 +387,26 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
         <p className="text-xs text-gray-500 mt-1">
           Select an image from the media library or enter an external URL
         </p>
+        
+        {/* Image preview if URL exists */}
+        {formData.image_url && (
+          <div className="mt-3 relative inline-block">
+            <img 
+              src={formData.image_url} 
+              alt="Category" 
+              className="w-32 h-32 object-cover rounded-lg border"
+            />
+            <Button
+              type="button"
+              variant="destructive"
+              size="icon"
+              className="absolute -top-2 -right-2 h-6 w-6"
+              onClick={() => setFormData(prev => ({ ...prev, image_url: "" }))}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
