@@ -14,6 +14,7 @@ import Categories from "./Categories";
 
 import MediaStorage from "./MediaStorage";
 import SupabasePage from "./SupabasePage";
+import FileLibrary from "./FileLibrary";
 
 import Settings from "./Settings";
 
@@ -136,6 +137,8 @@ const PAGES = {
     MediaStorage: MediaStorage,
     
     SupabasePage: SupabasePage,
+    
+    FileLibrary: FileLibrary,
     
     Settings: Settings,
     
@@ -262,6 +265,7 @@ function _getCurrentPage(url) {
         'delivery-settings': 'DeliverySettings',
         'cms-blocks': 'CmsBlocks',
         'cms-pages': 'CmsPages',
+        'file-library': 'FileLibrary',
         'cookie-consent': 'CookieConsent',
         'customer-activity': 'CustomerActivity',
         'marketplace-export': 'MarketplaceExport',
@@ -534,6 +538,12 @@ function PagesContent() {
                 <Route path="/admin/cms-pages" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <CmsPages />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/file-library" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <FileLibrary />
                     </RoleProtectedRoute>
                 } />
                 
@@ -883,6 +893,12 @@ function PagesContent() {
                 <Route path="/admin/cms-pages" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <CmsPages />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/file-library" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <FileLibrary />
                     </RoleProtectedRoute>
                 } />
                 

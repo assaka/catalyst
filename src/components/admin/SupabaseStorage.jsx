@@ -288,106 +288,173 @@ const SupabaseStorage = () => {
         </CardContent>
       </Card>
 
-      {/* Storage Buckets */}
+      {/* Storage Overview - Combined Stats and Buckets */}
       {connectionStatus?.connected && connectionStatus?.hasServiceRoleKey && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Cloud className="w-5 h-5" />
-              Storage Buckets
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {buckets.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {buckets.map((bucket) => {
-                  // Find the corresponding stats for this bucket
-                  const bucketStats = storageStats?.buckets?.find(
-                    stat => stat.bucket === bucket.name
-                  );
-                  
-                  return (
-                    <div
-                      key={bucket.id}
-                      className="p-4 border rounded-lg hover:border-blue-400 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium">{bucket.name}</h4>
-                        {bucket.public ? (
-                          <Badge className="bg-green-100 text-green-700">
-                            <Globe className="w-3 h-3 mr-1" />
-                            Public
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-gray-100 text-gray-700">
-                            <Shield className="w-3 h-3 mr-1" />
-                            Private
-                          </Badge>
-                        )}
-                      </div>
-                      
-                      {/* Add bucket-specific file count and size */}
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <div className="bg-blue-50 rounded-md p-2 text-center">
-                          <p className="text-sm font-semibold text-blue-900">
-                            {bucketStats?.fileCount || 0} {bucketStats?.fileCount === 1 ? 'file' : 'files'} • {bucketStats?.totalSizeMB || '0.00'} MB
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm text-gray-600 mt-3">ID: {bucket.id}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Created: {new Date(bucket.created_at).toLocaleDateString()}
+        <>
+          {/* Storage Usage Summary */}
+          {storageStats && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-blue-600 mb-1">Total Files</p>
+                      <p className="text-3xl font-bold text-blue-900">
+                        {storageStats.totalFiles || 0}
                       </p>
                     </div>
-                  );
-                })}
+                    <div className="p-3 bg-blue-100 rounded-full">
+                      <FolderOpen className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-purple-600 mb-1">Storage Used</p>
+                      <p className="text-3xl font-bold text-purple-900">
+                        {storageStats.totalSizeMB ? Number(storageStats.totalSizeMB).toFixed(2) : '0.00'}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-1">MB</p>
+                    </div>
+                    <div className="p-3 bg-purple-100 rounded-full">
+                      <Cloud className="w-6 h-6 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-green-200 bg-gradient-to-br from-green-50 to-white">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-green-600 mb-1">Active Buckets</p>
+                      <p className="text-3xl font-bold text-green-900">
+                        {buckets.length}
+                      </p>
+                    </div>
+                    <div className="p-3 bg-green-100 rounded-full">
+                      <Database className="w-6 h-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Storage Buckets */}
+          <Card>
+            <CardHeader className="border-b bg-gray-50/50">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FolderOpen className="w-5 h-5" />
+                  Storage Buckets
+                </CardTitle>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Cloud className="w-4 h-4" />
+                  {buckets.length} bucket{buckets.length !== 1 ? 's' : ''} configured
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {buckets.length > 0 ? (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {buckets.map((bucket) => {
+                    // Find the corresponding stats for this bucket
+                    const bucketStats = storageStats?.buckets?.find(
+                      stat => stat.bucket === bucket.name
+                    );
+                    
+                    return (
+                      <div
+                        key={bucket.id}
+                        className="group relative border-2 rounded-xl hover:border-blue-400 hover:shadow-lg transition-all duration-200 overflow-hidden"
+                      >
+                        {/* Bucket Header */}
+                        <div className="bg-gradient-to-r from-gray-50 to-white px-5 py-4 border-b">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-white rounded-lg shadow-sm group-hover:shadow-md transition-shadow">
+                                <FolderOpen className="w-5 h-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-900">{bucket.name}</h4>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  Created {new Date(bucket.created_at).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            {bucket.public ? (
+                              <Badge className="bg-green-100 text-green-700 border-green-200">
+                                <Globe className="w-3 h-3 mr-1" />
+                                Public
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-gray-100 text-gray-700 border-gray-200">
+                                <Shield className="w-3 h-3 mr-1" />
+                                Private
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {/* Bucket Stats */}
+                        <div className="p-5">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-blue-50 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <FolderOpen className="w-4 h-4 text-blue-600" />
+                                <p className="text-xs font-medium text-blue-600">Files</p>
+                              </div>
+                              <p className="text-2xl font-bold text-blue-900">
+                                {bucketStats?.fileCount || 0}
+                              </p>
+                            </div>
+                            <div className="bg-purple-50 rounded-lg p-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Cloud className="w-4 h-4 text-purple-600" />
+                                <p className="text-xs font-medium text-purple-600">Size</p>
+                              </div>
+                              <p className="text-2xl font-bold text-purple-900">
+                                {bucketStats?.totalSizeMB || '0.00'}
+                                <span className="text-xs font-normal ml-1">MB</span>
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Bucket ID */}
+                          <div className="mt-4 pt-3 border-t border-gray-100">
+                            <p className="text-xs text-gray-500 font-mono">
+                              ID: {bucket.id}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             ) : (
-              <div className="p-8 text-center bg-gray-50 rounded-lg">
-                <Cloud className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600">Checking storage buckets...</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Buckets are being automatically created. Click "Refresh" if this persists.
-                </p>
+              <div className="p-12 text-center bg-gradient-to-br from-gray-50 to-white rounded-xl border-2 border-dashed border-gray-200">
+                <div className="max-w-sm mx-auto">
+                  <div className="p-4 bg-blue-50 rounded-full w-fit mx-auto mb-4">
+                    <Cloud className="w-8 h-8 text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Setting up storage buckets</h3>
+                  <p className="text-gray-600 mb-3">
+                    Your storage buckets are being automatically configured for optimal performance.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    This usually takes a few seconds. Click "Refresh" if this persists.
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>
         </Card>
-      )}
-
-      {/* Storage Statistics */}
-      {storageStats && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="w-5 h-5" />
-              Storage Statistics
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <p className="text-sm text-blue-600">Total Files</p>
-                <p className="text-2xl font-bold text-blue-900">
-                  {storageStats.totalFiles || 0}
-                </p>
-              </div>
-              <div className="p-4 bg-purple-50 rounded-lg">
-                <p className="text-sm text-purple-600">Total Size</p>
-                <p className="text-2xl font-bold text-purple-900">
-                  {storageStats.totalSizeMB ? `${Number(storageStats.totalSizeMB).toFixed(2)} MB` : '0 MB'}
-                </p>
-              </div>
-              <div className="p-4 bg-green-50 rounded-lg">
-                <p className="text-sm text-green-600">Active Buckets</p>
-                <p className="text-2xl font-bold text-green-900">
-                  {buckets.length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        </>
       )}
 
       {/* Test Upload Result */}

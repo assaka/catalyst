@@ -366,7 +366,7 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "CMS Blocks", path: "CMS_BLOCKS", icon: FileText },
         { name: "CMS Pages", path: "CMS_PAGES", icon: FileText },
-        { name: "Media Storage", path: "media-storage", icon: Camera },
+        { name: "File Library", path: "file-library", icon: Camera },
       ]
     },
     {
