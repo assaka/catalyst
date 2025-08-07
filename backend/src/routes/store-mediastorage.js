@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Get default media storage provider for a store
-router.get('/stores/:storeId/default-mediastorage-provider', 
+router.get('/stores/:storeId/default-media-storage-provider', 
   checkStoreOwnership,
   async (req, res) => {
     try {
@@ -20,7 +20,10 @@ router.get('/stores/:storeId/default-mediastorage-provider',
       }
 
       // Get the default media storage provider from store settings
-      const defaultProvider = store.settings?.default_mediastorage_provider || null;
+      // Fall back to database provider if media storage provider not set
+      const defaultProvider = store.settings?.default_mediastorage_provider || 
+                            store.settings?.default_database_provider || 
+                            null;
       
       console.log('Store settings:', store.settings);
       console.log('Default media storage provider:', defaultProvider);
@@ -41,15 +44,15 @@ router.get('/stores/:storeId/default-mediastorage-provider',
 );
 
 // Set default media storage provider for a store
-router.post('/stores/:storeId/default-mediastorage-provider', 
+router.post('/stores/:storeId/default-media-storage-provider', 
   checkStoreOwnership,
   async (req, res) => {
     try {
       const { storeId } = req.params;
       const { provider } = req.body;
       
-      // Validate provider - storage providers only (match frontend values exactly)
-      const validStorageProviders = ['supabase', 'cloudflare', 'aws-s3', 'google-storage', 'azure-blob'];
+      // Valid storage providers
+      const validStorageProviders = ['supabase', 'cloudflare', 'aws-s3', 'google-storage', 'azure-blob', 'local'];
       
       if (!validStorageProviders.includes(provider)) {
         return res.status(400).json({ 
@@ -114,7 +117,7 @@ router.post('/stores/:storeId/default-mediastorage-provider',
 );
 
 // Clear default media storage provider for a store
-router.delete('/stores/:storeId/default-mediastorage-provider', 
+router.delete('/stores/:storeId/default-media-storage-provider', 
   checkStoreOwnership,
   async (req, res) => {
     try {

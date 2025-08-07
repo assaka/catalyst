@@ -70,12 +70,20 @@ router.post('/stores/:storeId/default-database-provider',
       }
 
       // Update store settings with default database provider
+      // Also set as media storage provider if it's a storage-capable provider
       const currentSettings = store.settings || {};
       const updatedSettings = {
         ...currentSettings,
         default_database_provider: provider,
         default_database_provider_updated_at: new Date().toISOString()
       };
+      
+      // If the provider supports storage (like Supabase), also set it as media storage provider
+      const storageCapableProviders = ['supabase', 'aws-s3', 'google-storage', 'azure-blob', 'cloudflare'];
+      if (storageCapableProviders.includes(provider)) {
+        updatedSettings.default_mediastorage_provider = provider;
+        updatedSettings.default_mediastorage_provider_updated_at = new Date().toISOString();
+      }
       
       console.log('Current settings before update:', currentSettings);
       console.log('Updating store settings with:', updatedSettings);

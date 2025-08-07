@@ -62,18 +62,19 @@ const SupabasePage = () => {
 
     setSettingDefault(true);
     try {
+      // Set as default database provider (this will also set media storage provider)
       await apiClient.post(`/stores/${storeId}/default-database-provider`, {
         provider: 'supabase'
       });
       
       setIsDefault(true);
-      toast.success('Supabase set as default database provider');
+      toast.success('Supabase set as default database and media storage provider');
       
       // Refresh the default status to ensure consistency
       await checkIfDefault();
     } catch (error) {
-      console.error('Error setting default database provider:', error);
-      toast.error('Failed to set as default database provider');
+      console.error('Error setting default provider:', error);
+      toast.error('Failed to set as default provider');
     } finally {
       setSettingDefault(false);
     }
