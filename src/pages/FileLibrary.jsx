@@ -145,11 +145,6 @@ const FileLibrary = () => {
       // Upload files using the provider-agnostic storage API
       if (filesArray.length === 1) {
         // Single file upload
-        const formData = new FormData();
-        formData.append('image', filesArray[0]);
-        formData.append('folder', 'uploads');
-        formData.append('public', 'true');
-
         const response = await apiClient.uploadFile('/storage/upload', filesArray[0], {
           folder: 'uploads',
           public: 'true',
