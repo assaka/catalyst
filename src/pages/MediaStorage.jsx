@@ -90,11 +90,11 @@ const MediaStorage = () => {
 
   const fetchDefaultProvider = async () => {
     try {
-      const response = await apiClient.get(`/stores/${storeId}/default-database-provider`);
+      const response = await apiClient.get(`/stores/${storeId}/default-mediastorage-provider`);
       // apiClient returns the response directly, not wrapped in .data
       setDefaultProvider(response?.provider);
     } catch (error) {
-      console.error('Error fetching default database provider:', error);
+      console.error('Error fetching default media storage provider:', error);
     }
   };
 
@@ -106,18 +106,18 @@ const MediaStorage = () => {
 
     setSettingDefault(true);
     try {
-      await apiClient.post(`/stores/${storeId}/default-database-provider`, {
+      await apiClient.post(`/stores/${storeId}/default-mediastorage-provider`, {
         provider: provider
       });
       
       setDefaultProvider(provider);
-      toast.success(`${provider} set as default storage provider`);
+      toast.success(`${provider} set as default media storage provider`);
       
       // Refresh the default provider status
       await fetchDefaultProvider();
     } catch (error) {
-      console.error('Error setting default storage provider:', error);
-      toast.error('Failed to set as default storage provider');
+      console.error('Error setting default media storage provider:', error);
+      toast.error('Failed to set as default media storage provider');
     } finally {
       setSettingDefault(false);
     }
@@ -244,7 +244,7 @@ const MediaStorage = () => {
                   {defaultProvider === 'supabase' ? (
                     <>
                       <Check className="h-4 w-4" />
-                      <span>Default Database</span>
+                      <span>Default Media Storage</span>
                     </>
                   ) : (
                     <>
@@ -312,7 +312,7 @@ const MediaStorage = () => {
               {defaultProvider === 'cloudflare' ? (
                 <>
                   <Check className="h-4 w-4" />
-                  <span>Default Database</span>
+                  <span>Default Media Storage</span>
                 </>
               ) : (
                 <>
@@ -352,7 +352,7 @@ const MediaStorage = () => {
               {defaultProvider === 'google-storage' ? (
                 <>
                   <Check className="h-4 w-4" />
-                  <span>Default Database</span>
+                  <span>Default Media Storage</span>
                 </>
               ) : (
                 <>
@@ -392,7 +392,7 @@ const MediaStorage = () => {
               {defaultProvider === 'aws-s3' ? (
                 <>
                   <Check className="h-4 w-4" />
-                  <span>Default Database</span>
+                  <span>Default Media Storage</span>
                 </>
               ) : (
                 <>

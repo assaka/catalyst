@@ -48,8 +48,8 @@ router.post('/stores/:storeId/default-mediastorage-provider',
       const { storeId } = req.params;
       const { provider } = req.body;
       
-      // Validate provider - storage providers only
-      const validStorageProviders = ['supabase', 'cloudflare', 'aws-s3', 'google-storage', 'azure-blob', 's3', 'gcs', 'local'];
+      // Validate provider - storage providers only (match frontend values exactly)
+      const validStorageProviders = ['supabase', 'cloudflare', 'aws-s3', 'google-storage', 'azure-blob'];
       
       if (!validStorageProviders.includes(provider)) {
         return res.status(400).json({ 
