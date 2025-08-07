@@ -941,11 +941,14 @@ export default function Products() {
                                 <DropdownMenuContent>
                                   <DropdownMenuItem
                                     onClick={() => {
-                                      const storeSlug = selectedStore?.slug || selectedStore?.domain;
+                                      const storeCode = selectedStore?.code || selectedStore?.slug || selectedStore?.domain;
                                       const productSlug = product.seo?.url_key || product.slug || product.id;
-                                      if (storeSlug) {
+                                      if (storeCode && productSlug) {
                                         // Open in new tab to view the storefront product page
-                                        window.open(`/public/${storeSlug}/product/${productSlug}`, '_blank');
+                                        const url = `/public/${storeCode}/product/${productSlug}`;
+                                        window.open(url, '_blank');
+                                      } else {
+                                        console.error('Missing store code or product slug:', { storeCode, productSlug });
                                       }
                                     }}
                                   >

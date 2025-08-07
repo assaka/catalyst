@@ -525,6 +525,22 @@ export default function Categories() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
                       onClick={() => {
+                        const storeCode = selectedStore?.code || selectedStore?.slug || selectedStore?.domain;
+                        const categorySlug = category.seo?.url_key || category.slug || category.id;
+                        if (storeCode && categorySlug) {
+                          // Open in new tab to view the storefront category page
+                          const url = `/public/${storeCode}/category/${categorySlug}`;
+                          window.open(url, '_blank');
+                        } else {
+                          console.error('Missing store code or category slug:', { storeCode, categorySlug });
+                        }
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      View
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
                         setSelectedCategory(category);
                         setShowCategoryForm(true);
                       }}
@@ -532,36 +548,36 @@ export default function Categories() {
                       <Edit className="w-4 h-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleToggleStatus(category)}
-                    >
-                      {category.is_active ? (
-                        <>
-                          <EyeOff className="w-4 h-4 mr-2" />
-                          Deactivate
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Activate
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleToggleMenuVisibility(category)}
-                    >
-                      {category.hide_in_menu ? (
-                        <>
-                          <Eye className="w-4 h-4 mr-2" />
-                          Show in Menu
-                        </>
-                      ) : (
-                        <>
-                          <EyeOff className="w-4 h-4 mr-2" />
-                          Hide from Menu
-                        </>
-                      )}
-                    </DropdownMenuItem>
+                    {category.is_active ? (
+                      <DropdownMenuItem
+                        onClick={() => handleToggleStatus(category)}
+                      >
+                        <EyeOff className="w-4 h-4 mr-2" />
+                        Deactivate
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => handleToggleStatus(category)}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Activate
+                      </DropdownMenuItem>
+                    )}
+                    {category.hide_in_menu ? (
+                      <DropdownMenuItem
+                        onClick={() => handleToggleMenuVisibility(category)}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Show in Menu
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => handleToggleMenuVisibility(category)}
+                      >
+                        <EyeOff className="w-4 h-4 mr-2" />
+                        Hide from Menu
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={() => handleDeleteCategory(category.id)}
                       className="text-red-600"
@@ -918,6 +934,22 @@ export default function Categories() {
                         <DropdownMenuContent>
                           <DropdownMenuItem
                             onClick={() => {
+                              const storeCode = selectedStore?.code || selectedStore?.slug || selectedStore?.domain;
+                              const categorySlug = category.seo?.url_key || category.slug || category.id;
+                              if (storeCode && categorySlug) {
+                                // Open in new tab to view the storefront category page
+                                const url = `/public/${storeCode}/category/${categorySlug}`;
+                                window.open(url, '_blank');
+                              } else {
+                                console.error('Missing store code or category slug:', { storeCode, categorySlug });
+                              }
+                            }}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
                               setSelectedCategory(category);
                               setShowCategoryForm(true);
                             }}
@@ -925,36 +957,36 @@ export default function Categories() {
                             <Edit className="w-4 h-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleToggleStatus(category)}
-                          >
-                            {category.is_active ? (
-                              <>
-                                <EyeOff className="w-4 h-4 mr-2" />
-                                Deactivate
-                              </>
-                            ) : (
-                              <>
-                                <Eye className="w-4 h-4 mr-2" />
-                                Activate
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleToggleMenuVisibility(category)}
-                          >
-                            {category.hide_in_menu ? (
-                              <>
-                                <Eye className="w-4 h-4 mr-2" />
-                                Show in Menu
-                              </>
-                            ) : (
-                              <>
-                                <EyeOff className="w-4 h-4 mr-2" />
-                                Hide from Menu
-                              </>
-                            )}
-                          </DropdownMenuItem>
+                          {category.is_active ? (
+                            <DropdownMenuItem
+                              onClick={() => handleToggleStatus(category)}
+                            >
+                              <EyeOff className="w-4 h-4 mr-2" />
+                              Deactivate
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => handleToggleStatus(category)}
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Activate
+                            </DropdownMenuItem>
+                          )}
+                          {category.hide_in_menu ? (
+                            <DropdownMenuItem
+                              onClick={() => handleToggleMenuVisibility(category)}
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Show in Menu
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              onClick={() => handleToggleMenuVisibility(category)}
+                            >
+                              <EyeOff className="w-4 h-4 mr-2" />
+                              Hide from Menu
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem
                             onClick={() => handleDeleteCategory(category.id)}
                             className="text-red-600"
