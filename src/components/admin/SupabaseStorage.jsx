@@ -275,31 +275,48 @@ const SupabaseStorage = () => {
           <CardContent>
             {buckets.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {buckets.map((bucket) => (
-                  <div
-                    key={bucket.id}
-                    className="p-4 border rounded-lg hover:border-blue-400 transition-colors"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">{bucket.name}</h4>
-                      {bucket.public ? (
-                        <Badge className="bg-green-100 text-green-700">
-                          <Globe className="w-3 h-3 mr-1" />
-                          Public
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-gray-100 text-gray-700">
-                          <Shield className="w-3 h-3 mr-1" />
-                          Private
-                        </Badge>
-                      )}
+                {buckets.map((bucket) => {
+                  // Find the corresponding stats for this bucket
+                  const bucketStats = storageStats?.buckets?.find(
+                    stat => stat.bucket === bucket.name
+                  );
+                  
+                  return (
+                    <div
+                      key={bucket.id}
+                      className="p-4 border rounded-lg hover:border-blue-400 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="font-medium">{bucket.name}</h4>
+                        {bucket.public ? (
+                          <Badge className="bg-green-100 text-green-700">
+                            <Globe className="w-3 h-3 mr-1" />
+                            Public
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-gray-100 text-gray-700">
+                            <Shield className="w-3 h-3 mr-1" />
+                            Private
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {/* Add bucket-specific file count and size */}
+                      <div className="mt-3 pt-3 border-t border-gray-100">
+                        <div className="bg-blue-50 rounded-md p-2 text-center">
+                          <p className="text-sm font-semibold text-blue-900">
+                            {bucketStats?.fileCount || 0} {bucketStats?.fileCount === 1 ? 'file' : 'files'} • {bucketStats?.totalSizeMB || '0.00'} MB
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <p className="text-sm text-gray-600 mt-3">ID: {bucket.id}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Created: {new Date(bucket.created_at).toLocaleDateString()}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600">ID: {bucket.id}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Created: {new Date(bucket.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="p-8 text-center bg-gray-50 rounded-lg">

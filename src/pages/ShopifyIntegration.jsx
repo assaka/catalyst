@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Layout from './Layout';
 import ShopifyIntegrationComponent from '../components/integrations/ShopifyIntegration';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -27,8 +26,7 @@ const ShopifyIntegration = () => {
   const [activeTab, setActiveTab] = useState('connection');
 
   return (
-    <Layout>
-      <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">
@@ -569,7 +567,6 @@ SHOPIFY_CLIENT_SECRET=your_app_client_secret_here
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
   );
 };
 

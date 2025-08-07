@@ -10,6 +10,10 @@ class ShopifyIntegration {
     this.redirectUri = process.env.SHOPIFY_REDIRECT_URI || 
                       `${process.env.BACKEND_URL || 'https://catalyst-backend-fzhu.onrender.com'}/api/shopify/callback`;
     
+    // Direct access token support (for custom/private apps)
+    this.directAccessToken = process.env.SHOPIFY_ACCESS_TOKEN;
+    this.directShopDomain = process.env.SHOPIFY_SHOP_DOMAIN;
+    
     // Required scopes for data import
     this.scopes = [
       'read_products',
@@ -30,8 +34,9 @@ class ShopifyIntegration {
       'read_shopify_payments_payouts'
     ].join(',');
     
-    // Check if OAuth is properly configured
+    // Check if OAuth is properly configured OR direct access token is available
     this.oauthConfigured = !!(this.clientId && this.clientSecret);
+    this.directAccessConfigured = !!(this.directAccessToken && this.directShopDomain);
   }
 
   /**
@@ -215,6 +220,58 @@ class ShopifyIntegration {
     } catch (error) {
       console.error('Error fetching shop info:', error.response?.data || error.message);
       throw new Error('Failed to fetch shop information from Shopify');
+    }
+  }
+
+  /**
+   * Setup direct access token connection (for custom/private apps)
+   * This bypasses OAuth and directly saves the token
+   */
+  async setupDirectAccess(storeId, shopDomain, accessToken) {
+    try {
+      // Test the token by fetching shop info
+      const shopInfo = await this.getShopInfo(shopDomain, accessToken);
+      
+      // Save the token to database
+      await ShopifyOAuthToken.createOrUpdate({
+        store_id: storeId,
+        shop_domain: shopDomain,
+        access_token: accessToken,
+        scope: 'custom_app_full_access', // Custom apps have full access based on configuration
+        shop_id: shopInfo.id,
+        shop_name: shopInfo.name,
+        shop_email: shopInfo.email,
+        shop_country: shopInfo.country_code,
+        shop_currency: shopInfo.currency,
+        shop_timezone: shopInfo.timezone,
+        plan_name: shopInfo.plan_name
+      });
+
+      // Also save to integration config
+      await IntegrationConfig.createOrUpdate(
+        storeId,
+        'shopify',
+        {
+          shop_domain: shopDomain,
+          shop_name: shopInfo.name,
+          connected: true,
+          connection_type: 'direct_access'
+        }
+      );
+
+      return {
+        success: true,
+        data: {
+          shop: shopInfo,
+          connection_type: 'direct_access'
+        }
+      };
+    } catch (error) {
+      console.error('Error setting up direct access:', error);
+      return {
+        success: false,
+        error: error.message
+      };
     }
   }
 
