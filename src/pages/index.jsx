@@ -221,6 +221,8 @@ const PAGES = {
     
     AkeneoIntegration: AkeneoIntegration,
     
+    ShopifyIntegration: ShopifyIntegration,
+    
     Integrations: Integrations,
     
     DatabaseIntegrations: DatabaseIntegrations,
@@ -268,6 +270,7 @@ function _getCurrentPage(url) {
         'stock-settings': 'StockSettings',
         'google-tag-manager': 'GoogleTagManager',
         'akeneo-integration': 'AkeneoIntegration',
+        'shopify-integration': 'ShopifyIntegration',
         'integrations': 'Integrations',
         'database-integrations': 'DatabaseIntegrations',
         'plugin-how-to': 'PluginHowToFixed',
@@ -693,6 +696,12 @@ function PagesContent() {
                         <Integrations />
                     </RoleProtectedRoute>
                 } />
+
+                <Route path="/admin/database-integrations" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <DatabaseIntegrations />
+                    </RoleProtectedRoute>
+                } />
                 
                 <Route path="/admin/heatmaps" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
@@ -1034,6 +1043,12 @@ function PagesContent() {
                 <Route path="/admin/integrations" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Integrations />
+                    </RoleProtectedRoute>
+                } />
+
+                <Route path="/admin/database-integrations" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <DatabaseIntegrations />
                     </RoleProtectedRoute>
                 } />
                 

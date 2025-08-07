@@ -968,77 +968,30 @@ class SupabaseStorageService {
               console.log(`Legacy folder check failed for ${bucket.name}:`, legacyErr.message);
             }
             
-            // Method 2: Check Magento-style structure (categories/, products/, assets/)
-            const magentoFolders = ['categories', 'products', 'assets'];
-            for (const folder of magentoFolders) {
-              try {
-                const { data: folderFiles, error: folderError } = await client.storage
-                  .from(bucket.name)
-                  .list(folder, { limit: 1000 });
-                
-                if (!folderError && folderFiles) {
-                  // Add files directly in the main folder (files have 'id' property)
-                  const directFiles = folderFiles.filter(f => f.id && f.name);
-                  allFiles = allFiles.concat(directFiles);
-                  console.log(`Found ${directFiles.length} files directly in ${folder}/ folder`);
-                  
-                  // Check subdirectories (folders don't have 'id' property)
-                  const subdirs = folderFiles.filter(f => !f.id && f.name);
-                  for (const subdir of subdirs) {
-                    try {
-                      const { data: subFiles, error: subError } = await client.storage
-                        .from(bucket.name)
-                        .list(`${folder}/${subdir.name}`, { limit: 1000 });
-                      
-                      if (!subError && subFiles) {
-                        // Add files in subdirectory
-                        const subDirectFiles = subFiles.filter(f => f.id && f.name);
-                        allFiles = allFiles.concat(subDirectFiles);
-                        console.log(`Found ${subDirectFiles.length} files in ${folder}/${subdir.name}/`);
-                        
-                        // Check second level subdirectories
-                        const deepSubdirs = subFiles.filter(f => !f.id && f.name);
-                        for (const deepSubdir of deepSubdirs) {
-                          try {
-                            const { data: deepFiles, error: deepError } = await client.storage
-                              .from(bucket.name)
-                              .list(`${folder}/${subdir.name}/${deepSubdir.name}`, { limit: 1000 });
-                            
-                            if (!deepError && deepFiles) {
-                              const deepDirectFiles = deepFiles.filter(f => f.id && f.name);
-                              allFiles = allFiles.concat(deepDirectFiles);
-                              console.log(`Found ${deepDirectFiles.length} files in ${folder}/${subdir.name}/${deepSubdir.name}/`);
-                            }
-                          } catch (deepErr) {
-                            console.log(`Deep folder check failed for ${folder}/${subdir.name}/${deepSubdir.name}:`, deepErr.message);
-                          }
-                        }
-                      }
-                    } catch (subErr) {
-                      console.log(`Subfolder check failed for ${folder}/${subdir.name}:`, subErr.message);
-                    }
-                  }
-                }
-              } catch (folderErr) {
-                console.log(`Folder check failed for ${folder}:`, folderErr.message);
-              }
-            }
-            
-            // Method 3: List all files in bucket root (fallback)
+            // Method 2: Comprehensive folder traversal - check ALL folders at root level
             try {
-              const { data: rootFiles, error: rootError } = await client.storage
+              const { data: allRootItems, error: rootListError } = await client.storage
                 .from(bucket.name)
                 .list('', { limit: 1000 });
               
-              if (!rootError && rootFiles) {
-                // Add direct root files (files have 'id' property)
-                const rootDirectFiles = rootFiles.filter(f => f.id && f.name);
+              if (!rootListError && allRootItems) {
+                // Add direct root files first (files have 'id' property)
+                const rootDirectFiles = allRootItems.filter(f => f.id && f.name);
                 allFiles = allFiles.concat(rootDirectFiles);
-                console.log(`Found ${rootDirectFiles.length} files in root of bucket ${bucket.name}`);
+                console.log(`Found ${rootDirectFiles.length} files at root of bucket ${bucket.name}`);
+                
+                // Now traverse ALL folders found at root level (folders don't have 'id' property)
+                const allRootFolders = allRootItems.filter(f => !f.id && f.name);
+                console.log(`Found ${allRootFolders.length} folders at root: ${allRootFolders.map(f => f.name).join(', ')}`);
+                
+                for (const rootFolder of allRootFolders) {
+                  await this.traverseFolderRecursively(client, bucket.name, rootFolder.name, allFiles, 0, 3); // Max 3 levels deep
+                }
               }
-            } catch (rootErr) {
-              console.log(`Root folder check failed for ${bucket.name}:`, rootErr.message);
+            } catch (rootListErr) {
+              console.log(`Root folder listing failed for ${bucket.name}:`, rootListErr.message);
             }
+            
             
             // Remove duplicates and calculate stats
             const uniqueFiles = allFiles.filter((file, index, self) => 
