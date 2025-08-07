@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import { toast } from 'sonner';
+import apiClient from '@/api/client';
 
 export default function CategoryForm({ category, onSubmit, onCancel, parentCategories }) {
   const { getSelectedStoreId } = useStoreSelection();
@@ -48,6 +50,7 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
   const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
   const [showMediaBrowser, setShowMediaBrowser] = useState(false);
+  const [savingImage, setSavingImage] = useState(false);
 
   useEffect(() => {
     if (category) {
@@ -107,12 +110,44 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
     });
   };
 
-  const handleMediaInsert = (htmlContent) => {
+  const handleMediaInsert = async (htmlContent) => {
     // For category image, we expect a single image
     // Extract the URL from the HTML content
     const urlMatch = htmlContent.match(/src="([^"]+)"/);
     if (urlMatch && urlMatch[1]) {
-      setFormData(prev => ({ ...prev, image_url: urlMatch[1] }));
+      const newImageUrl = urlMatch[1];
+      setFormData(prev => ({ ...prev, image_url: newImageUrl }));
+      
+      // If editing an existing category, auto-save the image
+      if (category && category.id) {
+        setSavingImage(true);
+        try {
+          const storeId = getSelectedStoreId();
+          const response = await apiClient.put(`/categories/${category.id}`, {
+            ...formData,
+            image_url: newImageUrl,
+            parent_id: formData.parent_id || null,
+            sort_order: parseInt(formData.sort_order) || 0
+          }, {
+            'x-store-id': storeId
+          });
+          
+          if (response.success) {
+            toast.success('Category image updated successfully');
+          } else {
+            toast.error('Failed to update category image');
+            // Revert the image URL on failure
+            setFormData(prev => ({ ...prev, image_url: formData.image_url }));
+          }
+        } catch (error) {
+          console.error('Error saving category image:', error);
+          toast.error('Failed to update category image');
+          // Revert the image URL on failure
+          setFormData(prev => ({ ...prev, image_url: formData.image_url }));
+        } finally {
+          setSavingImage(false);
+        }
+      }
     }
     setShowMediaBrowser(false);
   };
@@ -394,17 +429,26 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
             <img 
               src={formData.image_url} 
               alt="Category" 
-              className="w-32 h-32 object-cover rounded-lg border"
+              className={`w-32 h-32 object-cover rounded-lg border ${savingImage ? 'opacity-50' : ''}`}
             />
+            {savingImage && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded-lg">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+              </div>
+            )}
             <Button
               type="button"
               variant="destructive"
               size="icon"
               className="absolute -top-2 -right-2 h-6 w-6"
               onClick={() => setFormData(prev => ({ ...prev, image_url: "" }))}
+              disabled={savingImage}
             >
               <X className="h-4 w-4" />
             </Button>
+            {savingImage && (
+              <p className="text-xs text-blue-600 mt-1">Saving image...</p>
+            )}
           </div>
         )}
       </div>
