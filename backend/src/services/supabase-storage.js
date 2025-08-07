@@ -468,7 +468,7 @@ class SupabaseStorageService {
   /**
    * Delete image from Supabase Storage
    */
-  async deleteImage(storeId, imagePath, bucketName = null) {
+  async deleteImage(storeId, imagePath) {
     try {
       // Try to get client - prefer OAuth client which works without anon key
       let client;
@@ -478,7 +478,7 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucket = bucketName || this.assetsBucketName;
+      const bucket = this.assetsBucketName;
 
       const { error } = await client.storage
         .from(bucket)
@@ -570,8 +570,8 @@ class SupabaseStorageService {
         };
       }
       
-      // All files are now in suprshop-assets bucket with organized folder structure
-      let bucketName = this.assetsBucketName;
+      // All files are in suprshop-assets bucket with organized folder structure
+      const bucketName = this.assetsBucketName;
       let folderPath;
       
       if (folder === 'library') {
@@ -585,10 +585,6 @@ class SupabaseStorageService {
       } else if (folder && folder.startsWith('category')) {
         // Use specific category folder: 'category/images'
         folderPath = folder;
-      } else if (options.bucket) {
-        // Use specified bucket and folder (for backward compatibility)
-        bucketName = options.bucket;
-        folderPath = folder || '';
       } else {
         // Default to library folder for File Library
         folderPath = 'library';
@@ -640,7 +636,7 @@ class SupabaseStorageService {
   /**
    * Move image to different folder
    */
-  async moveImage(storeId, fromPath, toPath, bucketName = null) {
+  async moveImage(storeId, fromPath, toPath) {
     try {
       // Try to get client - prefer OAuth client which works without anon key
       let client;
@@ -650,7 +646,7 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucket = bucketName || this.assetsBucketName;
+      const bucket = this.assetsBucketName;
 
       const { error: moveError } = await client.storage
         .from(bucket)
@@ -679,7 +675,7 @@ class SupabaseStorageService {
   /**
    * Copy image
    */
-  async copyImage(storeId, fromPath, toPath, bucketName = null) {
+  async copyImage(storeId, fromPath, toPath) {
     try {
       // Try to get client - prefer OAuth client which works without anon key
       let client;
@@ -689,7 +685,7 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucket = bucketName || this.assetsBucketName;
+      const bucket = this.assetsBucketName;
 
       const { error: copyError } = await client.storage
         .from(bucket)
@@ -718,7 +714,7 @@ class SupabaseStorageService {
   /**
    * Get signed URL for temporary access
    */
-  async getSignedUrl(storeId, filePath, expiresIn = 3600, bucketName = null) {
+  async getSignedUrl(storeId, filePath, expiresIn = 3600) {
     try {
       // Try to get client - prefer OAuth client which works without anon key
       let client;
@@ -728,7 +724,7 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucket = bucketName || this.assetsBucketName;
+      const bucket = this.assetsBucketName;
 
       const { data, error } = await client.storage
         .from(bucket)
@@ -991,47 +987,44 @@ class SupabaseStorageService {
       const stats = await Promise.all(
         buckets.map(async (bucket) => {
           try {
-            // Try multiple approaches to get all files for this store
+            // Get all files from organized folder structure
             let allFiles = [];
             let totalSize = 0;
             let fileCount = 0;
             
-            // Method 1: Check legacy store-specific folder
-            try {
-              const { data: legacyFiles, error: legacyError } = await client.storage
-                .from(bucket.name)
-                .list(`store-${storeId}`, { limit: 1000 });
-              
-              if (!legacyError && legacyFiles) {
-                allFiles = allFiles.concat(legacyFiles);
-                console.log(`Found ${legacyFiles.length} files in legacy store-${storeId} folder for bucket ${bucket.name}`);
+            // Check organized folders: library, category/images, product/images, product/files
+            const organizedFolders = ['library', 'category/images', 'product/images', 'product/files'];
+            
+            for (const folderPath of organizedFolders) {
+              try {
+                const { data: folderFiles, error: folderError } = await client.storage
+                  .from(bucket.name)
+                  .list(folderPath, { limit: 1000 });
+                
+                if (!folderError && folderFiles) {
+                  // Filter files only (items with 'id' property)
+                  const files = folderFiles.filter(f => f.id && f.name);
+                  allFiles = allFiles.concat(files);
+                  console.log(`Found ${files.length} files in ${bucket.name}/${folderPath}`);
+                }
+              } catch (folderErr) {
+                console.log(`Error accessing folder ${folderPath} in bucket ${bucket.name}:`, folderErr.message);
               }
-            } catch (legacyErr) {
-              console.log(`Legacy folder check failed for ${bucket.name}:`, legacyErr.message);
             }
             
-            // Method 2: Comprehensive folder traversal - check ALL folders at root level
+            // Also check root level files
             try {
-              const { data: allRootItems, error: rootListError } = await client.storage
+              const { data: rootFiles, error: rootError } = await client.storage
                 .from(bucket.name)
                 .list('', { limit: 1000 });
               
-              if (!rootListError && allRootItems) {
-                // Add direct root files first (files have 'id' property)
-                const rootDirectFiles = allRootItems.filter(f => f.id && f.name);
-                allFiles = allFiles.concat(rootDirectFiles);
-                console.log(`Found ${rootDirectFiles.length} files at root of bucket ${bucket.name}`);
-                
-                // Now traverse ALL folders found at root level (folders don't have 'id' property)
-                const allRootFolders = allRootItems.filter(f => !f.id && f.name);
-                console.log(`Found ${allRootFolders.length} folders at root: ${allRootFolders.map(f => f.name).join(', ')}`);
-                
-                for (const rootFolder of allRootFolders) {
-                  await this.traverseFolderRecursively(client, bucket.name, rootFolder.name, allFiles, 0, 3); // Max 3 levels deep
-                }
+              if (!rootError && rootFiles) {
+                const directRootFiles = rootFiles.filter(f => f.id && f.name);
+                allFiles = allFiles.concat(directRootFiles);
+                console.log(`Found ${directRootFiles.length} files at root of bucket ${bucket.name}`);
               }
-            } catch (rootListErr) {
-              console.log(`Root folder listing failed for ${bucket.name}:`, rootListErr.message);
+            } catch (rootErr) {
+              console.log(`Error accessing root of bucket ${bucket.name}:`, rootErr.message);
             }
             
             
@@ -1112,53 +1105,6 @@ class SupabaseStorageService {
     }
   }
 
-  /**
-   * Recursively traverse a folder and collect all files
-   * @param {Object} client - Supabase client
-   * @param {string} bucketName - Name of the bucket
-   * @param {string} folderPath - Current folder path
-   * @param {Array} allFiles - Array to collect files into
-   * @param {number} currentDepth - Current recursion depth
-   * @param {number} maxDepth - Maximum recursion depth
-   */
-  async traverseFolderRecursively(client, bucketName, folderPath, allFiles, currentDepth = 0, maxDepth = 3) {
-    // Prevent infinite recursion
-    if (currentDepth >= maxDepth) {
-      console.log(`Max depth ${maxDepth} reached for folder: ${folderPath}`);
-      return;
-    }
-
-    try {
-      const { data: folderContents, error: folderError } = await client.storage
-        .from(bucketName)
-        .list(folderPath, { limit: 1000 });
-      
-      if (folderError) {
-        console.log(`Error accessing folder ${folderPath}:`, folderError.message);
-        return;
-      }
-
-      if (folderContents && folderContents.length > 0) {
-        // Add files directly in this folder (files have 'id' property)
-        const directFiles = folderContents.filter(f => f.id && f.name);
-        allFiles.push(...directFiles);
-        console.log(`Found ${directFiles.length} files in ${folderPath}/`);
-        
-        // Recursively check subdirectories (folders don't have 'id' property)
-        const subdirs = folderContents.filter(f => !f.id && f.name);
-        console.log(`Found ${subdirs.length} subdirectories in ${folderPath}/: ${subdirs.map(f => f.name).join(', ')}`);
-        
-        for (const subdir of subdirs) {
-          const subPath = `${folderPath}/${subdir.name}`;
-          await this.traverseFolderRecursively(client, bucketName, subPath, allFiles, currentDepth + 1, maxDepth);
-        }
-      } else {
-        console.log(`Folder ${folderPath}/ is empty`);
-      }
-    } catch (err) {
-      console.log(`Error traversing folder ${folderPath}:`, err.message);
-    }
-  }
 }
 
 module.exports = new SupabaseStorageService();

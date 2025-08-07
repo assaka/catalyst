@@ -313,12 +313,11 @@ class StorageManager {
    * Delete a file
    * @param {string} storeId - Store identifier
    * @param {string} filePath - Path to file
-   * @param {string} bucket - Bucket/container name (optional)
    * @returns {Promise<Object>} Deletion result
    */
-  async deleteFile(storeId, filePath, bucket = null) {
+  async deleteFile(storeId, filePath) {
     const storeProvider = await this.getStorageProvider(storeId);
-    return await storeProvider.provider.deleteFile(storeId, filePath, bucket);
+    return await storeProvider.provider.deleteFile(storeId, filePath);
   }
 
   /**

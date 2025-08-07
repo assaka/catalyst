@@ -22,8 +22,8 @@ class SupabaseStorageProvider extends StorageInterface {
   /**
    * Delete a file
    */
-  async deleteFile(storeId, filePath, bucket = null) {
-    return await this.supabaseService.deleteImage(storeId, filePath, bucket);
+  async deleteFile(storeId, filePath) {
+    return await this.supabaseService.deleteImage(storeId, filePath);
   }
 
   /**
@@ -146,15 +146,15 @@ class SupabaseStorageProvider extends StorageInterface {
   /**
    * Move a file to a different location
    */
-  async moveFile(storeId, fromPath, toPath, bucket = null) {
-    return await this.supabaseService.moveImage(storeId, fromPath, toPath, bucket);
+  async moveFile(storeId, fromPath, toPath) {
+    return await this.supabaseService.moveImage(storeId, fromPath, toPath);
   }
 
   /**
    * Copy a file
    */
-  async copyFile(storeId, fromPath, toPath, bucket = null) {
-    return await this.supabaseService.copyImage(storeId, fromPath, toPath, bucket);
+  async copyFile(storeId, fromPath, toPath) {
+    return await this.supabaseService.copyImage(storeId, fromPath, toPath);
   }
 
   /**
@@ -167,8 +167,8 @@ class SupabaseStorageProvider extends StorageInterface {
   /**
    * Get signed/temporary URL for file access
    */
-  async getSignedUrl(storeId, filePath, expiresIn = 3600, bucket = null) {
-    return await this.supabaseService.getSignedUrl(storeId, filePath, expiresIn, bucket);
+  async getSignedUrl(storeId, filePath, expiresIn = 3600) {
+    return await this.supabaseService.getSignedUrl(storeId, filePath, expiresIn);
   }
 
   /**
