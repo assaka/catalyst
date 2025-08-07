@@ -51,38 +51,33 @@ const SupabasePage = () => {
     );
   }
 
-  // If not connected, show the SupabaseIntegration component for OAuth flow
-  if (!connectionStatus?.connected) {
+  if (loading) {
     return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Supabase Integration</h1>
-            <p className="text-gray-600 mt-1">Connect your Supabase account for database and storage management</p>
-          </div>
-        </div>
-        
-        {/* Show SupabaseIntegration for connection setup */}
-        <SupabaseIntegration storeId={storeId} />
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  // If connected, show the SupabaseStorage component with Storage Buckets and Statistics
+  // Always show both components - SupabaseIntegration handles connection state internally
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Supabase Integration</h1>
-          <p className="text-gray-600 mt-1">Manage your Supabase database and storage services</p>
+          <p className="text-gray-600 mt-1">
+            {connectionStatus?.connected 
+              ? 'Manage your Supabase database and storage services'
+              : 'Connect your Supabase account for database and storage management'}
+          </p>
         </div>
       </div>
 
-      {/* Show SupabaseIntegration at the top for connection management */}
+      {/* Show SupabaseIntegration for connection management */}
       <SupabaseIntegration storeId={storeId} />
       
-      {/* Show SupabaseStorage below for storage management */}
-      <SupabaseStorage />
+      {/* Show SupabaseStorage only when connected */}
+      {connectionStatus?.connected && <SupabaseStorage />}
     </div>
   );
 };

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
+import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
 import SupabaseStorage from '../components/admin/SupabaseStorage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -18,6 +19,38 @@ import {
 const MediaStorage = () => {
   const { selectedStore } = useStoreSelection();
   const [activeTab, setActiveTab] = useState('supabase');
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+
+  useEffect(() => {
+    if (storeId && storeId !== 'undefined') {
+      loadConnectionStatus();
+    }
+  }, [storeId]);
+
+  const loadConnectionStatus = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/supabase/status', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'x-store-id': storeId
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setConnectionStatus(data);
+      }
+    } catch (error) {
+      console.error('Error loading Supabase status:', error);
+      setConnectionStatus({ connected: false });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!selectedStore) {
     return (
@@ -83,7 +116,9 @@ const MediaStorage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Media Storage</h1>
           <p className="text-gray-600 mt-1">
-            Manage your store's media files across multiple cloud storage providers
+            {activeTab === 'supabase' && connectionStatus?.connected
+              ? 'View storage statistics, manage buckets, and upload media files'
+              : 'Manage your store\'s media files across multiple cloud storage providers'}
           </p>
         </div>
       </div>
@@ -110,7 +145,44 @@ const MediaStorage = () => {
 
         {/* Supabase Tab */}
         <TabsContent value="supabase" className="space-y-6">
-          <SupabaseStorage />
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            <>
+              {/* Show connection/integration component if not connected */}
+              {!connectionStatus?.connected && (
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Database className="w-5 h-5" />
+                        Connect Supabase for Storage
+                      </CardTitle>
+                      <CardDescription>
+                        Connect your Supabase project to enable cloud storage for your media files
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <SupabaseIntegration storeId={storeId} />
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+              
+              {/* Show storage management if connected */}
+              {connectionStatus?.connected && (
+                <div className="space-y-6">
+                  {/* Connection Management */}
+                  <SupabaseIntegration storeId={storeId} />
+                  
+                  {/* Storage Statistics and Buckets */}
+                  <SupabaseStorage />
+                </div>
+              )}
+            </>
+          )}
         </TabsContent>
 
         {/* Cloudflare Tab */}
