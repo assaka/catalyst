@@ -28,7 +28,7 @@ const MediaStorage = () => {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [bucketsEnsured, setBucketsEnsured] = useState(false);
-  const [isDefault, setIsDefault] = useState(false);
+  const [defaultProvider, setDefaultProvider] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
   
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
@@ -36,7 +36,7 @@ const MediaStorage = () => {
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
       loadConnectionStatus();
-      checkIfDefault();
+      fetchDefaultProvider();
     }
   }, [storeId]);
 
@@ -88,17 +88,17 @@ const MediaStorage = () => {
     }
   };
 
-  const checkIfDefault = async () => {
+  const fetchDefaultProvider = async () => {
     try {
       const response = await apiClient.get(`/stores/${storeId}/default-database-provider`);
       // apiClient returns the response directly, not wrapped in .data
-      setIsDefault(response?.provider === 'supabase');
+      setDefaultProvider(response?.provider);
     } catch (error) {
-      console.error('Error checking default database provider:', error);
+      console.error('Error fetching default database provider:', error);
     }
   };
 
-  const handleSetAsDefault = async () => {
+  const handleSetAsDefault = async (provider) => {
     if (!storeId) {
       toast.error('Please select a store first');
       return;
@@ -107,14 +107,14 @@ const MediaStorage = () => {
     setSettingDefault(true);
     try {
       await apiClient.post(`/stores/${storeId}/default-database-provider`, {
-        provider: 'supabase'
+        provider: provider
       });
       
-      setIsDefault(true);
-      toast.success('Supabase set as default storage provider');
+      setDefaultProvider(provider);
+      toast.success(`${provider} set as default storage provider`);
       
-      // Refresh the default status to ensure consistency
-      await checkIfDefault();
+      // Refresh the default provider status
+      await fetchDefaultProvider();
     } catch (error) {
       console.error('Error setting default storage provider:', error);
       toast.error('Failed to set as default storage provider');
@@ -183,53 +183,44 @@ const MediaStorage = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Media Storage</h1>
-          <p className="text-gray-600 mt-1">
-            {activeTab === 'supabase' && connectionStatus?.connected
-              ? 'View storage statistics, manage buckets, and upload media files'
-              : 'Manage your store\'s media files across multiple cloud storage providers'}
-          </p>
-        </div>
-        <Button
-          onClick={handleSetAsDefault}
-          disabled={settingDefault || isDefault}
-          variant={isDefault ? "secondary" : "default"}
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          {isDefault ? (
-            <>
-              <Check className="h-4 w-4" />
-              <span>Default Storage</span>
-            </>
-          ) : (
-            <>
-              <Star className="h-4 w-4" />
-              <span>Set as Default</span>
-            </>
-          )}
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900">Media Storage</h1>
+        <p className="text-gray-600 mt-1">
+          {activeTab === 'supabase' && connectionStatus?.connected
+            ? 'View storage statistics, manage buckets, and upload media files'
+            : 'Manage your store\'s media files across multiple cloud storage providers'}
+        </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="supabase" className="flex items-center space-x-2">
+          <TabsTrigger value="supabase" className="flex items-center space-x-2 relative">
             <Database className="w-4 h-4" />
             <span>Supabase</span>
+            {defaultProvider === 'supabase' && (
+              <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+            )}
           </TabsTrigger>
-          <TabsTrigger value="cloudflare" className="flex items-center space-x-2">
+          <TabsTrigger value="cloudflare" className="flex items-center space-x-2 relative">
             <Cloud className="w-4 h-4" />
             <span>Cloudflare</span>
+            {defaultProvider === 'cloudflare' && (
+              <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+            )}
           </TabsTrigger>
-          <TabsTrigger value="google" className="flex items-center space-x-2">
+          <TabsTrigger value="google" className="flex items-center space-x-2 relative">
             <Cloud className="w-4 h-4" />
             <span>Google Storage</span>
+            {defaultProvider === 'google-storage' && (
+              <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+            )}
           </TabsTrigger>
-          <TabsTrigger value="aws" className="flex items-center space-x-2">
+          <TabsTrigger value="aws" className="flex items-center space-x-2 relative">
             <Package className="w-4 h-4" />
             <span>AWS S3</span>
+            {defaultProvider === 'aws-s3' && (
+              <Badge variant="secondary" className="ml-2 text-xs">Default</Badge>
+            )}
           </TabsTrigger>
         </TabsList>
 
@@ -241,6 +232,29 @@ const MediaStorage = () => {
             </div>
           ) : (
             <>
+              {/* Set as Default button at the top */}
+              <div className="flex justify-end">
+                <Button
+                  onClick={() => handleSetAsDefault('supabase')}
+                  disabled={settingDefault || defaultProvider === 'supabase'}
+                  variant={defaultProvider === 'supabase' ? "secondary" : "default"}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  {defaultProvider === 'supabase' ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Default Database</span>
+                    </>
+                  ) : (
+                    <>
+                      <Star className="h-4 w-4" />
+                      <span>Set as Default</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+
               {/* Show connection/integration component if not connected */}
               {!connectionStatus?.connected && (
                 <div className="space-y-6">
@@ -287,6 +301,27 @@ const MediaStorage = () => {
 
         {/* Cloudflare Tab */}
         <TabsContent value="cloudflare" className="space-y-6">
+          <div className="flex justify-end">
+            <Button
+              onClick={() => handleSetAsDefault('cloudflare')}
+              disabled={settingDefault || defaultProvider === 'cloudflare'}
+              variant={defaultProvider === 'cloudflare' ? "secondary" : "default"}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              {defaultProvider === 'cloudflare' ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  <span>Default Database</span>
+                </>
+              ) : (
+                <>
+                  <Star className="h-4 w-4" />
+                  <span>Set as Default</span>
+                </>
+              )}
+            </Button>
+          </div>
           <ComingSoonCard
             provider="Cloudflare R2"
             icon={Cloud}
@@ -306,6 +341,27 @@ const MediaStorage = () => {
 
         {/* Google Storage Tab */}
         <TabsContent value="google" className="space-y-6">
+          <div className="flex justify-end">
+            <Button
+              onClick={() => handleSetAsDefault('google-storage')}
+              disabled={settingDefault || defaultProvider === 'google-storage'}
+              variant={defaultProvider === 'google-storage' ? "secondary" : "default"}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              {defaultProvider === 'google-storage' ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  <span>Default Database</span>
+                </>
+              ) : (
+                <>
+                  <Star className="h-4 w-4" />
+                  <span>Set as Default</span>
+                </>
+              )}
+            </Button>
+          </div>
           <ComingSoonCard
             provider="Google Cloud Storage"
             icon={Cloud}
@@ -325,6 +381,27 @@ const MediaStorage = () => {
 
         {/* AWS S3 Tab */}
         <TabsContent value="aws" className="space-y-6">
+          <div className="flex justify-end">
+            <Button
+              onClick={() => handleSetAsDefault('aws-s3')}
+              disabled={settingDefault || defaultProvider === 'aws-s3'}
+              variant={defaultProvider === 'aws-s3' ? "secondary" : "default"}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              {defaultProvider === 'aws-s3' ? (
+                <>
+                  <Check className="h-4 w-4" />
+                  <span>Default Database</span>
+                </>
+              ) : (
+                <>
+                  <Star className="h-4 w-4" />
+                  <span>Set as Default</span>
+                </>
+              )}
+            </Button>
+          </div>
           <ComingSoonCard
             provider="AWS S3"
             icon={Package}
