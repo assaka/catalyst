@@ -243,7 +243,7 @@ class StorageManager {
       // Track file in media_assets table for all uploads
       // This ensures category, product, and library uploads all appear in Media Library
       try {
-        // Determine the folder based on upload type
+        // Determine the folder based on upload type with new consolidated structure
         let folder = 'library';
         if (options.folder === 'category' || options.type === 'category') {
           folder = 'category';

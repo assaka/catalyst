@@ -5,12 +5,11 @@ const axios = require('axios');
 
 class SupabaseStorageService {
   constructor() {
-    this.catalogBucketName = 'suprshop-catalog';
-    this.assetsBucketName = 'suprshop-assets'; // General assets bucket
+    this.assetsBucketName = 'suprshop-assets'; // Single bucket for all assets
   }
 
   /**
-   * Ensure required storage buckets exist (auto-creates suprshop-catalog and suprshop-assets)
+   * Ensure required storage bucket exists (auto-creates suprshop-assets)
    */
   async ensureBucketsExist(storeId) {
     try {
@@ -32,34 +31,17 @@ class SupabaseStorageService {
         return { success: false, error: listError.message };
       }
       
-      const catalogBucketExists = buckets?.some(b => b.name === this.catalogBucketName);
       const assetsBucketExists = buckets?.some(b => b.name === this.assetsBucketName);
       
       let bucketsCreated = [];
-
-      // Create suprshop-catalog bucket if it doesn't exist
-      if (!catalogBucketExists) {
-        console.log(`Creating ${this.catalogBucketName} bucket...`);
-        const { error: createError } = await client.storage.createBucket(this.catalogBucketName, {
-          public: true,
-          fileSizeLimit: 10485760, // 10MB
-          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'application/pdf']
-        });
-
-        if (createError && !createError.message.includes('already exists')) {
-          console.error(`Error creating ${this.catalogBucketName}:`, createError);
-        } else {
-          console.log(`✅ Created ${this.catalogBucketName} bucket`);
-          bucketsCreated.push(this.catalogBucketName);
-        }
-      }
 
       // Create suprshop-assets bucket if it doesn't exist
       if (!assetsBucketExists) {
         console.log(`Creating ${this.assetsBucketName} bucket...`);
         const { error: createError } = await client.storage.createBucket(this.assetsBucketName, {
           public: true,
-          fileSizeLimit: 50485760, // 50MB for general assets
+          fileSizeLimit: 50485760, // 50MB for all assets
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'application/pdf']
         });
 
         if (createError && !createError.message.includes('already exists')) {
@@ -222,33 +204,24 @@ class SupabaseStorageService {
       const fileExt = path.extname(file.originalname || file.name || '');
       let fileName, filePath, bucketName;
       
-      // Determine bucket and path based on upload type or folder
-      // Check both options.type and options.folder for backwards compatibility
+      // All files go to suprshop-assets bucket with organized folder structure
+      bucketName = this.assetsBucketName;
+      fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
+      
+      // Determine folder based on upload type
+      let folder = 'library'; // Default folder
+      
       if (options.type === 'product' || options.folder === 'product' || options.folder === 'products') {
-        // Product files go to suprshop-catalog bucket
-        bucketName = this.catalogBucketName;
-        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-        
         // Determine subfolder based on file type
         const isImage = file.mimetype && file.mimetype.startsWith('image/');
-        const subfolder = isImage ? 'product/images' : 'product/files';
-        filePath = `${subfolder}/${fileName}`;
-        
+        folder = isImage ? 'product/images' : 'product/files';
       } else if (options.type === 'category' || options.folder === 'category' || options.folder === 'categories') {
-        // Category images go to suprshop-catalog bucket
-        bucketName = this.catalogBucketName;
-        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-        filePath = `category/images/${fileName}`;
-        
-      } else {
-        // General assets go to suprshop-assets bucket
-        bucketName = this.assetsBucketName;
-        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-        
-        // Use 'library' folder instead of 'uploads' for general assets
-        const folder = options.folder === 'uploads' ? 'library' : (options.folder || 'library');
-        filePath = `${folder}/${fileName}`;
+        folder = 'category/images';
+      } else if (options.folder && options.folder !== 'uploads') {
+        folder = options.folder;
       }
+      
+      filePath = `${folder}/${fileName}`;
 
       // Extract project ID from URL
       const projectUrl = tokenInfo.project_url;
@@ -379,33 +352,24 @@ class SupabaseStorageService {
       const fileExt = path.extname(file.originalname || file.name || '');
       let fileName, filePath, bucketName;
       
-      // Determine bucket and path based on upload type or folder
-      // Check both options.type and options.folder for backwards compatibility
+      // All files go to suprshop-assets bucket with organized folder structure
+      bucketName = this.assetsBucketName;
+      fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
+      
+      // Determine folder based on upload type
+      let folder = 'library'; // Default folder
+      
       if (options.type === 'product' || options.folder === 'product' || options.folder === 'products') {
-        // Product files go to suprshop-catalog bucket
-        bucketName = this.catalogBucketName;
-        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-        
         // Determine subfolder based on file type
         const isImage = file.mimetype && file.mimetype.startsWith('image/');
-        const subfolder = isImage ? 'product/images' : 'product/files';
-        filePath = `${subfolder}/${fileName}`;
-        
+        folder = isImage ? 'product/images' : 'product/files';
       } else if (options.type === 'category' || options.folder === 'category' || options.folder === 'categories') {
-        // Category images go to suprshop-catalog bucket
-        bucketName = this.catalogBucketName;
-        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-        filePath = `category/images/${fileName}`;
-        
-      } else {
-        // General assets go to suprshop-assets bucket
-        bucketName = this.assetsBucketName;
-        fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
-        
-        // Use 'library' folder instead of 'uploads' for general assets
-        const folder = options.folder === 'uploads' ? 'library' : (options.folder || 'library');
-        filePath = `${folder}/${fileName}`;
+        folder = 'category/images';
+      } else if (options.folder && options.folder !== 'uploads') {
+        folder = options.folder;
       }
+      
+      filePath = `${folder}/${fileName}`;
 
       console.log('Upload details:', {
         bucketName,
@@ -545,101 +509,51 @@ class SupabaseStorageService {
         throw new Error('Storage operations require API keys to be configured');
       }
       
-      // If no folder specified, list all files from all buckets for Media Library
+      // If no folder specified, list all files from all folders in suprshop-assets bucket
       if (!folder) {
         const allFiles = [];
         
-        // List files from assets bucket (library folder)
-        try {
-          const { data: assetsData } = await client.storage
-            .from(this.assetsBucketName)
-            .list('library', {
-              limit: options.limit || 100,
-              offset: 0,
-              sortBy: { column: 'created_at', order: 'desc' }
-            });
-          
-          if (assetsData) {
-            const libraryFiles = assetsData.filter(item => item.id).map(file => {
-              const fullPath = `library/${file.name}`;
-              const { data: urlData } = client.storage
-                .from(this.assetsBucketName)
-                .getPublicUrl(fullPath);
-              
-              return {
-                ...file,
-                url: urlData.publicUrl,
-                publicUrl: urlData.publicUrl,
-                fullPath: fullPath,
-                folder: 'library'
-              };
-            });
-            allFiles.push(...libraryFiles);
-          }
-        } catch (error) {
-          console.log('Error listing library files:', error.message);
-        }
+        // List files from all organized folders in assets bucket
+        const foldersToCheck = ['library', 'category/images', 'product/images', 'product/files'];
         
-        // List files from catalog bucket (category/images folder)
-        try {
-          const { data: categoryData } = await client.storage
-            .from(this.catalogBucketName)
-            .list('category/images', {
-              limit: options.limit || 100,
-              offset: 0,
-              sortBy: { column: 'created_at', order: 'desc' }
-            });
-          
-          if (categoryData) {
-            const categoryFiles = categoryData.filter(item => item.id).map(file => {
-              const fullPath = `category/images/${file.name}`;
-              const { data: urlData } = client.storage
-                .from(this.catalogBucketName)
-                .getPublicUrl(fullPath);
-              
-              return {
-                ...file,
-                url: urlData.publicUrl,
-                publicUrl: urlData.publicUrl,
-                fullPath: fullPath,
-                folder: 'category'
-              };
-            });
-            allFiles.push(...categoryFiles);
+        for (const folderPath of foldersToCheck) {
+          try {
+            const { data: folderData } = await client.storage
+              .from(this.assetsBucketName)
+              .list(folderPath, {
+                limit: options.limit || 100,
+                offset: 0,
+                sortBy: { column: 'created_at', order: 'desc' }
+              });
+            
+            if (folderData) {
+              const folderFiles = folderData.filter(item => item.id).map(file => {
+                const fullPath = `${folderPath}/${file.name}`;
+                const { data: urlData } = client.storage
+                  .from(this.assetsBucketName)
+                  .getPublicUrl(fullPath);
+                
+                // Determine folder type for filtering
+                let folder = 'library';
+                if (folderPath.startsWith('category')) {
+                  folder = 'category';
+                } else if (folderPath.startsWith('product')) {
+                  folder = 'product';
+                }
+                
+                return {
+                  ...file,
+                  url: urlData.publicUrl,
+                  publicUrl: urlData.publicUrl,
+                  fullPath: fullPath,
+                  folder: folder
+                };
+              });
+              allFiles.push(...folderFiles);
+            }
+          } catch (error) {
+            console.log(`Error listing ${folderPath} files:`, error.message);
           }
-        } catch (error) {
-          console.log('Error listing category files:', error.message);
-        }
-        
-        // List files from catalog bucket (product/images folder)
-        try {
-          const { data: productImagesData } = await client.storage
-            .from(this.catalogBucketName)
-            .list('product/images', {
-              limit: options.limit || 100,
-              offset: 0,
-              sortBy: { column: 'created_at', order: 'desc' }
-            });
-          
-          if (productImagesData) {
-            const productImageFiles = productImagesData.filter(item => item.id).map(file => {
-              const fullPath = `product/images/${file.name}`;
-              const { data: urlData } = client.storage
-                .from(this.catalogBucketName)
-                .getPublicUrl(fullPath);
-              
-              return {
-                ...file,
-                url: urlData.publicUrl,
-                publicUrl: urlData.publicUrl,
-                fullPath: fullPath,
-                folder: 'product'
-              };
-            });
-            allFiles.push(...productImageFiles);
-          }
-        } catch (error) {
-          console.log('Error listing product image files:', error.message);
         }
         
         // Sort all files by created_at
@@ -656,30 +570,27 @@ class SupabaseStorageService {
         };
       }
       
-      // Original logic for specific folder
-      let bucketName;
+      // All files are now in suprshop-assets bucket with organized folder structure
+      let bucketName = this.assetsBucketName;
       let folderPath;
       
       if (folder === 'library') {
-        // Library files are in suprshop-assets bucket
-        bucketName = this.assetsBucketName;
         folderPath = 'library';
       } else if (folder && folder.startsWith('product')) {
-        // Product files are in suprshop-catalog bucket
-        bucketName = this.catalogBucketName;
-        folderPath = folder; // e.g., 'product/images' or 'product/files'
-      } else if (folder === 'category' || (folder && folder.startsWith('category'))) {
-        // Category files are in suprshop-catalog bucket
-        bucketName = this.catalogBucketName;
-        // If just 'category' is passed, default to 'category/images'
-        folderPath = folder === 'category' ? 'category/images' : folder;
+        // Maintain folder structure: 'product/images' or 'product/files'
+        folderPath = folder;
+      } else if (folder === 'category') {
+        // Default to category images
+        folderPath = 'category/images';
+      } else if (folder && folder.startsWith('category')) {
+        // Use specific category folder: 'category/images'
+        folderPath = folder;
       } else if (options.bucket) {
-        // Use specified bucket and folder
+        // Use specified bucket and folder (for backward compatibility)
         bucketName = options.bucket;
         folderPath = folder || '';
       } else {
-        // Default to assets bucket with library folder for File Library
-        bucketName = this.assetsBucketName;
+        // Default to library folder for File Library
         folderPath = 'library';
       }
 
@@ -862,17 +773,10 @@ class SupabaseStorageService {
           
           if (error) {
             console.log('Could not list buckets with regular client:', error);
-            // Return default buckets that should exist
+            // Return default bucket that should exist
             return {
               success: true,
               buckets: [
-                { 
-                  id: this.catalogBucketName,
-                  name: this.catalogBucketName,
-                  public: true,
-                  created_at: null,
-                  updated_at: null
-                },
                 {
                   id: this.assetsBucketName,
                   name: this.assetsBucketName,
@@ -882,7 +786,7 @@ class SupabaseStorageService {
                 }
               ],
               limited: true,
-              message: 'Showing default buckets. Service role key required for full bucket list.'
+              message: 'Showing default bucket. Service role key required for full bucket list.'
             };
           }
           
@@ -892,15 +796,10 @@ class SupabaseStorageService {
           };
         } catch (err) {
           console.log('Error listing buckets:', err);
-          // Return default buckets
+          // Return default bucket
           return {
             success: true,
             buckets: [
-              { 
-                id: this.catalogBucketName,
-                name: this.catalogBucketName,
-                public: true
-              },
               {
                 id: this.assetsBucketName,
                 name: this.assetsBucketName,
@@ -1083,9 +982,8 @@ class SupabaseStorageService {
         const { data: bucketList } = await client.storage.listBuckets();
         buckets = bucketList || [];
       } else {
-        // For regular client, just check known buckets
+        // For regular client, just check known bucket
         buckets = [
-          { name: this.catalogBucketName },
           { name: this.assetsBucketName }
         ];
       }
