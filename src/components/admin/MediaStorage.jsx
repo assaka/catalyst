@@ -4,24 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { useAlertTypes } from '@/hooks/useAlert';
 import SupabaseStorage from './SupabaseStorage';
 import apiClient from '@/lib/api-client';
 import {
   Image,
-  Upload,
   RefreshCw,
-  Settings,
   CheckCircle,
   XCircle,
   Clock,
-  BarChart3,
-  PlayCircle,
-  Pause,
-  AlertTriangle,
   Cloud,
   DollarSign,
   Crown,
@@ -37,17 +28,8 @@ const MediaStorage = () => {
   
   // State management
   const [stats, setStats] = useState(null);
-  const [processing, setProcessing] = useState(false);
-  const [testingConfig, setTestingConfig] = useState(false);
-  const [configTest, setConfigTest] = useState(null);
   const [productStatus, setProductStatus] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
-  
-  // Processing options
-  const [batchSize, setBatchSize] = useState(50);
-  const [concurrency, setConcurrency] = useState(2);
-  const [forceReprocess, setForceReprocess] = useState(false);
-  const [testImageUrl, setTestImageUrl] = useState('');
 
   // CDN Providers data
   const cdnProviders = [
@@ -133,71 +115,10 @@ const MediaStorage = () => {
     }
   };
 
-  const testConfiguration = async () => {
-    try {
-      setTestingConfig(true);
-      const storeId = getSelectedStoreId();
-      
-      const data = await apiClient.post('/images/test-config', {
-        store_id: storeId,
-        test_url: testImageUrl || undefined
-      });
-      
-      setConfigTest(data);
-      
-      if (data.success) {
-        showSuccess('Configuration test completed successfully!');
-      } else {
-        showError('Configuration test failed: ' + data.error);
-      }
-    } catch (error) {
-      showError('Error testing configuration: ' + error.message);
-      setConfigTest({ success: false, error: error.message });
-    } finally {
-      setTestingConfig(false);
-    }
-  };
-
-  const processImages = async () => {
-    try {
-      setProcessing(true);
-      const storeId = getSelectedStoreId();
-      
-      const data = await apiClient.post('/images/process-products', {
-        store_id: storeId,
-        limit: batchSize,
-        force_reprocess: forceReprocess,
-        concurrency: concurrency
-      });
-      
-      if (data.success) {
-        showSuccess(`Successfully processed ${data.processed} out of ${data.total} products`);
-        loadStats();
-        loadProductStatus();
-      } else {
-        showError('Image processing failed: ' + data.error);
-      }
-    } catch (error) {
-      showError('Error processing images: ' + error.message);
-    } finally {
-      setProcessing(false);
-    }
-  };
 
   const getProcessingRate = () => {
     if (!stats) return 0;
     return stats.total_products > 0 ? (stats.processed_images / stats.total_products * 100) : 0;
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'connected':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'error':
-        return <XCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-400" />;
-    }
   };
 
   const CDNProviderCard = ({ provider }) => (
@@ -318,130 +239,6 @@ const MediaStorage = () => {
           <SupabaseStorage />
         </CardContent>
       </Card>
-
-      {/* Processing Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Configuration Test */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Settings className="w-5 h-5" />
-              Configuration Test
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="testUrl">Test Image URL (optional)</Label>
-              <Input
-                id="testUrl"
-                value={testImageUrl}
-                onChange={(e) => setTestImageUrl(e.target.value)}
-                placeholder="https://example.com/image.jpg"
-              />
-            </div>
-            
-            <Button
-              onClick={testConfiguration}
-              disabled={testingConfig}
-              className="w-full"
-            >
-              {testingConfig ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Testing Configuration...
-                </>
-              ) : (
-                <>
-                  <PlayCircle className="w-4 h-4 mr-2" />
-                  Test Configuration
-                </>
-              )}
-            </Button>
-            
-            {configTest && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  {getStatusIcon(configTest.success ? 'connected' : 'error')}
-                  <span className="font-medium">
-                    {configTest.success ? 'Configuration Valid' : 'Configuration Error'}
-                  </span>
-                </div>
-                
-                {!configTest.success && (
-                  <p className="text-red-600 text-sm mt-2">{configTest.error}</p>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Processing Controls */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5" />
-              Process Images
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="batchSize">Batch Size</Label>
-                <Input
-                  id="batchSize"
-                  type="number"
-                  value={batchSize}
-                  onChange={(e) => setBatchSize(parseInt(e.target.value))}
-                  min="1"
-                  max="200"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="concurrency">Concurrency</Label>
-                <Input
-                  id="concurrency"
-                  type="number"
-                  value={concurrency}
-                  onChange={(e) => setConcurrency(parseInt(e.target.value))}
-                  min="1"
-                  max="5"
-                />
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="forceReprocess"
-                checked={forceReprocess}
-                onChange={(e) => setForceReprocess(e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="forceReprocess">Force reprocess existing images</Label>
-            </div>
-            
-            <Button
-              onClick={processImages}
-              disabled={processing}
-              className="w-full"
-              variant={processing ? "secondary" : "default"}
-            >
-              {processing ? (
-                <>
-                  <Pause className="w-4 h-4 mr-2" />
-                  Processing Images...
-                </>
-              ) : (
-                <>
-                  <PlayCircle className="w-4 h-4 mr-2" />
-                  Start Processing
-                </>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
 
       {/* CDN Providers */}
       <Card>
