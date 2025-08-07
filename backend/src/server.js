@@ -1505,7 +1505,8 @@ app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
 app.use('/api/plugins', pluginRoutes);
 app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
 app.use('/api/stores/:store_id/plugins', pluginRenderRoutes);
-app.use('/api/stores/:store_id/storage', storageRoutes);
+app.use('/api/storage', storageRoutes); // Main storage routes for File Library
+app.use('/api/stores/:store_id/storage', storageRoutes); // Store-specific storage routes (kept for backwards compatibility)
 app.use('/api/stores/:store_id/products', productImageRoutes);
 app.use('/api/stores/:store_id/categories', categoryImageRoutes);
 app.use('/api/file-manager', fileManagerRoutes);
