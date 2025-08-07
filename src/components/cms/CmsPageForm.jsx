@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
-import { X, Plus, Search, AlertTriangle } from "lucide-react"; // Added Search icon
+import { X, Plus, Search, AlertTriangle, ImagePlus } from "lucide-react"; // Added ImagePlus icon
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion, // Added Accordion components
@@ -22,15 +22,18 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import MediaBrowser from './MediaBrowser';
 
 // Ensure 'products' is part of the props as it's used in the component
 export default function CmsPageForm({ page, stores, products, onSubmit, onCancel }) {
   const { getSelectedStoreId } = useStoreSelection();
+  const contentTextareaRef = useRef(null);
   const [originalSlug, setOriginalSlug] = useState("");
   const [showSlugChangeWarning, setShowSlugChangeWarning] = useState(false);
   const [createRedirect, setCreateRedirect] = useState(true);
   const [isEditingSlug, setIsEditingSlug] = useState(false);
   const [hasManuallyEditedSlug, setHasManuallyEditedSlug] = useState(false);
+  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -142,6 +145,29 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
         : [...prev.related_product_ids, productId];
       return { ...prev, related_product_ids };
     });
+  };
+
+  const handleMediaInsert = (htmlContent) => {
+    if (contentTextareaRef.current) {
+      const textarea = contentTextareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentContent = formData.content || '';
+      
+      // Insert HTML at cursor position or replace selection
+      const newContent = 
+        currentContent.substring(0, start) + 
+        htmlContent + 
+        currentContent.substring(end);
+      
+      setFormData(prev => ({ ...prev, content: newContent }));
+      
+      // Set cursor position after inserted content
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + htmlContent.length;
+        textarea.focus();
+      }, 0);
+    }
   };
 
   const createRedirectForSlugChange = async () => {
@@ -303,8 +329,21 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
       )}
 
       <div>
-        <Label htmlFor="content">Content (HTML)</Label>
+        <div className="flex items-center justify-between mb-2">
+          <Label htmlFor="content">Content (HTML)</Label>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowMediaBrowser(true)}
+            className="flex items-center gap-2"
+          >
+            <ImagePlus className="w-4 h-4" />
+            Insert Media
+          </Button>
+        </div>
         <Textarea
+          ref={contentTextareaRef}
           id="content"
           name="content" // Added name prop for consistency
           value={formData.content}
@@ -418,6 +457,14 @@ export default function CmsPageForm({ page, stores, products, onSubmit, onCancel
           {page ? "Update Page" : "Create Page"}
         </Button>
       </div>
+
+      {/* Media Browser Dialog */}
+      <MediaBrowser
+        isOpen={showMediaBrowser}
+        onClose={() => setShowMediaBrowser(false)}
+        onInsert={handleMediaInsert}
+        allowMultiple={true}
+      />
     </form>
   );
 }

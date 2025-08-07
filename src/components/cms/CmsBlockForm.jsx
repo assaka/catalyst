@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,11 +7,14 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // Simple collapsible components if not available in UI library
-import { ChevronDown, ChevronRight, MapPin, Home, ShoppingCart, Package, CreditCard, Layout } from 'lucide-react';
+import { ChevronDown, ChevronRight, MapPin, Home, ShoppingCart, Package, CreditCard, Layout, ImagePlus } from 'lucide-react';
+import MediaBrowser from './MediaBrowser';
 
 import { useAlertTypes } from '@/hooks/useAlert';
 export default function CmsBlockForm({ block, onSubmit, onCancel }) {
   const { showError, showWarning, showInfo, showSuccess, AlertComponent } = useAlertTypes();
+  const contentTextareaRef = useRef(null);
+  const [showMediaBrowser, setShowMediaBrowser] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     identifier: '',
@@ -59,6 +62,29 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  const handleMediaInsert = (htmlContent) => {
+    if (contentTextareaRef.current) {
+      const textarea = contentTextareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const currentContent = formData.content || '';
+      
+      // Insert HTML at cursor position or replace selection
+      const newContent = 
+        currentContent.substring(0, start) + 
+        htmlContent + 
+        currentContent.substring(end);
+      
+      setFormData(prev => ({ ...prev, content: newContent }));
+      
+      // Set cursor position after inserted content
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + htmlContent.length;
+        textarea.focus();
+      }, 0);
+    }
   };
 
   const placementSections = {
@@ -178,8 +204,21 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
           </div>
 
           <div>
-            <Label htmlFor="content">Content</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="content">Content</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMediaBrowser(true)}
+                className="flex items-center gap-2"
+              >
+                <ImagePlus className="w-4 h-4" />
+                Insert Media
+              </Button>
+            </div>
             <Textarea
+              ref={contentTextareaRef}
               id="content"
               value={formData.content}
               onChange={(e) => handleInputChange('content', e.target.value)}
@@ -298,6 +337,14 @@ export default function CmsBlockForm({ block, onSubmit, onCancel }) {
           {block ? 'Update' : 'Create'} Block
         </Button>
       </div>
+
+      {/* Media Browser Dialog */}
+      <MediaBrowser
+        isOpen={showMediaBrowser}
+        onClose={() => setShowMediaBrowser(false)}
+        onInsert={handleMediaInsert}
+        allowMultiple={true}
+      />
     </form>
   );
 }
