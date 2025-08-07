@@ -222,8 +222,9 @@ class SupabaseStorageService {
       const fileExt = path.extname(file.originalname || file.name || '');
       let fileName, filePath, bucketName;
       
-      // Determine bucket and path based on upload type
-      if (options.type === 'product') {
+      // Determine bucket and path based on upload type or folder
+      // Check both options.type and options.folder for backwards compatibility
+      if (options.type === 'product' || options.folder === 'product' || options.folder === 'products') {
         // Product files go to suprshop-catalog bucket
         bucketName = this.catalogBucketName;
         fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
@@ -233,7 +234,7 @@ class SupabaseStorageService {
         const subfolder = isImage ? 'product/images' : 'product/files';
         filePath = `${subfolder}/${fileName}`;
         
-      } else if (options.type === 'category') {
+      } else if (options.type === 'category' || options.folder === 'category' || options.folder === 'categories') {
         // Category images go to suprshop-catalog bucket
         bucketName = this.catalogBucketName;
         fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
@@ -378,8 +379,9 @@ class SupabaseStorageService {
       const fileExt = path.extname(file.originalname || file.name || '');
       let fileName, filePath, bucketName;
       
-      // Determine bucket and path based on upload type
-      if (options.type === 'product') {
+      // Determine bucket and path based on upload type or folder
+      // Check both options.type and options.folder for backwards compatibility
+      if (options.type === 'product' || options.folder === 'product' || options.folder === 'products') {
         // Product files go to suprshop-catalog bucket
         bucketName = this.catalogBucketName;
         fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;
@@ -389,7 +391,7 @@ class SupabaseStorageService {
         const subfolder = isImage ? 'product/images' : 'product/files';
         filePath = `${subfolder}/${fileName}`;
         
-      } else if (options.type === 'category') {
+      } else if (options.type === 'category' || options.folder === 'category' || options.folder === 'categories') {
         // Category images go to suprshop-catalog bucket
         bucketName = this.catalogBucketName;
         fileName = options.filename || file.originalname || `${uuidv4()}${fileExt}`;

@@ -175,18 +175,6 @@ class StorageManager {
       }
     }
     
-    // Check if local storage is available as last resort
-    if (this.providers.has('local')) {
-      // Allow local storage as fallback in production with a warning
-      console.warn(`⚠️ Using local storage fallback for store ${storeId}. This is not recommended for production. Please configure Supabase, AWS S3, or Google Cloud Storage.`);
-      return {
-        type: 'local',
-        provider: this.providers.get('local'),
-        name: 'Local Storage (Fallback)',
-        fallbackUsed: true
-      };
-    }
-
     // No providers available - provide a helpful error message
     throw new Error('No storage provider is configured for this store. Please connect Supabase, AWS S3, or Google Cloud Storage in the integrations settings.');
   }

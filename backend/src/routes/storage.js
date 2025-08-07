@@ -101,13 +101,21 @@ router.post('/upload', upload.single('file'), async (req, res) => {
   } catch (error) {
     console.error('Upload error:', error);
     
-    // Return 400 for configuration issues, 500 for server errors
-    const statusCode = error.message.includes('No storage provider') ? 400 : 500;
+    // Check if it's a storage configuration issue
+    if (error.message.includes('No storage provider')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Storage not configured. Please connect Supabase, AWS S3, or Google Cloud Storage in Settings > Integrations.',
+        requiresConfiguration: true,
+        configurationUrl: '/admin/integrations'
+      });
+    }
     
-    res.status(statusCode).json({
+    // Other server errors
+    res.status(500).json({
       success: false,
       error: error.message,
-      requiresConfiguration: error.message.includes('No storage provider')
+      requiresConfiguration: false
     });
   }
 });
