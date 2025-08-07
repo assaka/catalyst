@@ -365,37 +365,42 @@ const ShopifyIntegration = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      {/* Flash Message */}
-      {message && (
-        <Alert className={message.type === 'error' ? 'border-red-200' : message.type === 'success' ? 'border-green-200' : 'border-blue-200'}>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{message.text}</AlertDescription>
-        </Alert>
-      )}
-      
-      {/* Connection Status Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <ShoppingBag className="w-5 h-5" />
-              <span>Shopify Connection</span>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Shopify Integration</h1>
+              <p className="text-muted-foreground">
+                Connect your Shopify store to import products and sync inventory
+              </p>
             </div>
-            {connectionStatus?.connected ? (
+            {connectionStatus?.connected && (
               <Badge className="bg-green-100 text-green-800">
-                <CheckCircle className="w-3 h-3 mr-1" />
+                <CheckCircle className="w-4 h-4 mr-1" />
                 Connected
               </Badge>
-            ) : (
-              <Badge variant="secondary">
-                <XCircle className="w-3 h-3 mr-1" />
-                Not Connected
-              </Badge>
             )}
+          </div>
+
+          {/* Flash Message */}
+          {message && (
+            <Alert className={message.type === 'error' ? 'border-red-200' : message.type === 'success' ? 'border-green-200' : 'border-blue-200'}>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{message.text}</AlertDescription>
+            </Alert>
+          )}
+          
+          {/* Connection Status Card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <ShoppingBag className="w-5 h-5" />
+            <span>Connection Settings</span>
           </CardTitle>
           <CardDescription>
-            Connect your Shopify store to import products, collections, and more.
+            Manage your Shopify store connection and import settings
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -818,6 +823,8 @@ const ShopifyIntegration = () => {
           </CardContent>
         </Card>
       )}
+        </div>
+      </div>
     </div>
   );
 };
