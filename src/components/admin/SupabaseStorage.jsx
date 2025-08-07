@@ -638,7 +638,7 @@ const SupabaseStorage = () => {
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-start gap-2">
                   <FolderOpen className="w-4 h-4 text-blue-500 mt-0.5" />
-                  <span><strong>suprshop-images:</strong> Product images</span>
+                  <span><strong>suprshop-catalog:</strong> Product and Category assets</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <FolderOpen className="w-4 h-4 text-blue-500 mt-0.5" />

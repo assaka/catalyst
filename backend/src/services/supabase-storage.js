@@ -5,11 +5,8 @@ const axios = require('axios');
 
 class SupabaseStorageService {
   constructor() {
-    this.catalogBucketName = 'suprshop-catalog'; // Renamed from suprshop-images
+    this.catalogBucketName = 'suprshop-catalog';
     this.assetsBucketName = 'suprshop-assets'; // General assets bucket
-    
-    // Legacy bucket name for backward compatibility during migration
-    this.legacyBucketName = 'suprshop-images';
   }
 
   /**
@@ -515,7 +512,7 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucket = bucketName || this.bucketName;
+      const bucket = bucketName || this.assetsBucketName;
 
       const { error } = await client.storage
         .from(bucket)
@@ -545,7 +542,7 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucketName = options.bucket || this.bucketName;
+      const bucketName = options.bucket || this.assetsBucketName;
       const folderPath = folder || `store-${storeId}`;
 
       const { data, error } = await client.storage
@@ -597,7 +594,7 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucket = bucketName || this.bucketName;
+      const bucket = bucketName || this.assetsBucketName;
 
       const { error: moveError } = await client.storage
         .from(bucket)
@@ -636,7 +633,7 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucket = bucketName || this.bucketName;
+      const bucket = bucketName || this.assetsBucketName;
 
       const { error: copyError } = await client.storage
         .from(bucket)
@@ -675,7 +672,7 @@ class SupabaseStorageService {
         console.log('Regular client failed:', error.message);
         throw new Error('Storage operations require API keys to be configured');
       }
-      const bucket = bucketName || this.bucketName;
+      const bucket = bucketName || this.assetsBucketName;
 
       const { data, error } = await client.storage
         .from(bucket)
@@ -725,15 +722,15 @@ class SupabaseStorageService {
               success: true,
               buckets: [
                 { 
-                  id: this.bucketName,
-                  name: this.bucketName,
+                  id: this.catalogBucketName,
+                  name: this.catalogBucketName,
                   public: true,
                   created_at: null,
                   updated_at: null
                 },
                 {
-                  id: this.publicBucketName,
-                  name: this.publicBucketName,
+                  id: this.assetsBucketName,
+                  name: this.assetsBucketName,
                   public: true,
                   created_at: null,
                   updated_at: null
@@ -755,13 +752,13 @@ class SupabaseStorageService {
             success: true,
             buckets: [
               { 
-                id: this.bucketName,
-                name: this.bucketName,
+                id: this.catalogBucketName,
+                name: this.catalogBucketName,
                 public: true
               },
               {
-                id: this.publicBucketName,
-                name: this.publicBucketName,
+                id: this.assetsBucketName,
+                name: this.assetsBucketName,
                 public: true
               }
             ],
@@ -943,8 +940,8 @@ class SupabaseStorageService {
       } else {
         // For regular client, just check known buckets
         buckets = [
-          { name: this.bucketName },
-          { name: this.publicBucketName }
+          { name: this.catalogBucketName },
+          { name: this.assetsBucketName }
         ];
       }
       

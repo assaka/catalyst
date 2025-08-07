@@ -11,7 +11,7 @@ The system uses Magento-style paths within Supabase Storage buckets based on the
 - Files with non-alphanumeric names → `misc/filename.ext`
 
 ## Supabase Storage Configuration
-- **suprshop-images**: Main image storage bucket
+- **suprshop-catalog**: Main image storage bucket
   - `/categories/` - Category images with Magento-style paths
   - `/products/` - Product images with Magento-style paths
 - **suprshop-assets**: Public assets bucket
@@ -67,8 +67,8 @@ All files are stored in Supabase Storage and return public URLs in the format:
 
 #### Path Examples
 ```
-/suprshop-images/categories/t/e/test-category.png
-/suprshop-images/products/p/r/product-image.jpg
+/suprshop-catalog/categories/t/e/test-category.png
+/suprshop-catalogproducts/p/r/product-image.jpg
 /suprshop-assets/assets/d/o/document.pdf
 ```
 
@@ -105,7 +105,7 @@ curl -X POST http://localhost:5000/api/stores/157d4590-49bf-4b0b-bd77-abe1319095
 ### Supabase Setup
 1. Service role key must be configured
 2. Buckets will be auto-created on first use:
-   - `suprshop-images` (public, 10MB limit)
+   - `suprshop-catalog` (public, 10MB limit)
    - `suprshop-assets` (public, 10MB limit)
 
 ### Environment Variables

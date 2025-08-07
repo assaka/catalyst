@@ -283,7 +283,7 @@ const MediaStorage = () => {
                     <Alert className="border-green-200 bg-green-50">
                       <CheckCircle className="h-4 w-4 text-green-600" />
                       <AlertDescription className="text-green-800">
-                        Storage buckets have been automatically checked and ensured. The <strong>suprshop-images</strong> and <strong>suprshop-assets</strong> buckets are ready for use.
+                        Storage buckets have been automatically checked and ensured. The <strong>suprshop-catalog</strong> and <strong>suprshop-assets</strong> buckets are ready for use.
                       </AlertDescription>
                     </Alert>
                   )}

@@ -13,10 +13,9 @@ const STORE_ID = '157d4590-49bf-4b0b-bd77-abe131909528';
     
     if (statusResult.success) {
       console.log('Current buckets:', statusResult.status.buckets);
-      console.log('Has legacy bucket (suprshop-images):', statusResult.status.hasLegacyBucket);
       console.log('Has catalog bucket (suprshop-catalog):', statusResult.status.hasCatalogBucket);
       console.log('Has assets bucket (suprshop-assets):', statusResult.status.hasAssetsBucket);
-      console.log('Needs migration:', statusResult.needsMigration);
+      console.log('Needs setup:', statusResult.needsSetup);
     } else {
       console.error('Failed to check bucket status:', statusResult.error);
     }
@@ -36,18 +35,6 @@ const STORE_ID = '157d4590-49bf-4b0b-bd77-abe131909528';
       process.exit(1);
     }
     
-    // 3. Optional: Migrate existing files
-    if (statusResult.success && statusResult.status.hasLegacyBucket) {
-      console.log('\n🔄 Do you want to migrate files from suprshop-images to the new structure?');
-      console.log('(Skipping automatic migration - run manually if needed)');
-      // Uncomment to enable migration:
-      // const migrateResult = await bucketMigration.migrateFiles(STORE_ID);
-      // if (migrateResult.success) {
-      //   console.log('✅', migrateResult.message);
-      // } else {
-      //   console.error('❌ Migration failed:', migrateResult.error);
-      // }
-    }
     
     console.log('\n✅ Bucket structure setup complete!');
     console.log('\n📋 New storage structure:');

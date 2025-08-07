@@ -1041,7 +1041,7 @@ const SupabaseIntegration = ({ storeId }) => {
                 <li>• <strong>Service Role Key:</strong> Required for all storage operations (bypasses RLS policies)</li>
                 <li className="text-xs text-blue-600 mt-2">
                   Note: The service role key is automatically configured when you connect Supabase. 
-                  Storage buckets (suprshop-images, suprshop-assets) are created automatically when the key is present.
+                  Storage buckets (suprshop-catalog, suprshop-assets) are created automatically when the key is present.
                 </li>
               </ul>
             </div>

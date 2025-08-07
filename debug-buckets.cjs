@@ -6,7 +6,7 @@ const storeId = '157d4590-49bf-4b0b-bd77-abe131909528';
     console.log('🔍 Deep investigation of Supabase buckets...');
     
     const client = await supabaseIntegration.getSupabaseAdminClient(storeId);
-    const buckets = ['suprshop-images', 'suprshop-assets'];
+    const buckets = ['suprshop-catalog', 'suprshop-assets'];
     
     for (const bucketName of buckets) {
       console.log('\n📦 Analyzing bucket:', bucketName);
