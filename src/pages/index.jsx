@@ -108,6 +108,8 @@ import AkeneoIntegration from "./AkeneoIntegration";
 
 import Integrations from "./Integrations";
 
+import DatabaseIntegrations from "./DatabaseIntegrations";
+
 import HeatMaps from "./HeatMaps";
 
 import ABTesting from "./ABTesting";
@@ -219,6 +221,8 @@ const PAGES = {
     
     Integrations: Integrations,
     
+    DatabaseIntegrations: DatabaseIntegrations,
+    
     HeatMaps: HeatMaps,
     
     ABTesting: ABTesting,
@@ -263,6 +267,7 @@ function _getCurrentPage(url) {
         'google-tag-manager': 'GoogleTagManager',
         'akeneo-integration': 'AkeneoIntegration',
         'integrations': 'Integrations',
+        'database-integrations': 'DatabaseIntegrations',
         'plugin-how-to': 'PluginHowToFixed',
         'plugin-builder': 'PluginBuilder',
         'template-editor': 'TemplateEditor',
