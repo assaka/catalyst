@@ -1074,25 +1074,30 @@ const SupabaseIntegration = ({ storeId }) => {
               </div>
             ) : buckets.length > 0 ? (
               <div className="space-y-2">
-                {buckets.map((bucket) => (
-                  <div key={bucket.id || bucket.name} className="flex items-center justify-between p-3 bg-white rounded border border-gray-200">
-                    <div className="flex items-center space-x-3">
-                      <Cloud className="w-4 h-4 text-gray-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{bucket.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {bucket.public ? 'Public' : 'Private'} bucket
-                          {bucket.created_at && ` • Created ${new Date(bucket.created_at).toLocaleDateString()}`}
-                        </p>
-                      </div>
-                      {storageStats && storageStats.buckets && storageStats.buckets.length > 0 && (
-                          <p>
-                            {bucket.fileCount || 0} files • {formatStorageSize(bucket.totalSizeMB)}
+                {buckets.map((bucket) => {
+                  // Find the matching bucket stats
+                  const bucketStats = storageStats?.buckets?.find(b => b.bucket === bucket.name);
+                  
+                  return (
+                    <div key={bucket.id || bucket.name} className="flex items-center justify-between p-3 bg-white rounded border border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <Cloud className="w-4 h-4 text-gray-500" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{bucket.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {bucket.public ? 'Public' : 'Private'} bucket
+                            {bucket.created_at && ` • Created ${new Date(bucket.created_at).toLocaleDateString()}`}
                           </p>
+                        </div>
+                      </div>
+                      {bucketStats && (
+                        <p className="text-sm text-gray-600">
+                          {bucketStats.fileCount || 0} files • {formatStorageSize(bucketStats.totalSizeMB || 0)}
+                        </p>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center py-4">
