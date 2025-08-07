@@ -668,10 +668,11 @@ class SupabaseStorageService {
         // Product files are in suprshop-catalog bucket
         bucketName = this.catalogBucketName;
         folderPath = folder; // e.g., 'product/images' or 'product/files'
-      } else if (folder && folder.startsWith('category')) {
+      } else if (folder === 'category' || (folder && folder.startsWith('category'))) {
         // Category files are in suprshop-catalog bucket
         bucketName = this.catalogBucketName;
-        folderPath = folder; // e.g., 'category/images'
+        // If just 'category' is passed, default to 'category/images'
+        folderPath = folder === 'category' ? 'category/images' : folder;
       } else if (options.bucket) {
         // Use specified bucket and folder
         bucketName = options.bucket;

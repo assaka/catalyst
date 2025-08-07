@@ -56,11 +56,20 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
   const loadFiles = async () => {
     try {
       setLoading(true);
-      // When browsing, show all files from all folders for selection
-      // The uploadFolder prop is only used for determining where to upload new files
-      const response = await apiClient.get('/storage/list', {
+      
+      // When uploadFolder is 'category', only show category images
+      // Otherwise show all files for general media library
+      let requestUrl = '/storage/list';
+      let params = {
         'x-store-id': selectedStore?.id
-      });
+      };
+      
+      if (uploadFolder === 'category') {
+        // Only show images from the category folder in suprshop-catalog bucket
+        params.folder = 'category';
+      }
+      
+      const response = await apiClient.get(requestUrl, params);
       
       if (response.success && response.data) {
         const rawFiles = response.data.files || [];
@@ -189,7 +198,9 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[80vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle>Media Library</DialogTitle>
+          <DialogTitle>
+            {uploadFolder === 'category' ? 'Category Images' : 'Media Library'}
+          </DialogTitle>
         </DialogHeader>
 
         {/* Toolbar */}

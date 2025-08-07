@@ -28,9 +28,119 @@ class SupabaseStorageProvider extends StorageInterface {
 
   /**
    * List files in a directory
+   * First checks media_assets table, then falls back to direct Supabase query
    */
   async listFiles(storeId, folder = null, options = {}) {
-    return await this.supabaseService.listImages(storeId, folder, options);
+    try {
+      // First try to get files from media_assets table
+      const { MediaAsset } = require('../models');
+      
+      const where = { store_id: storeId };
+      
+      // Filter by folder if specified
+      if (folder) {
+        where.folder = folder;
+      }
+      
+      // Get files from database
+      const mediaAssets = await MediaAsset.findAll({
+        where,
+        order: [['created_at', 'DESC']],
+        limit: options.limit || 100,
+        offset: options.offset || 0
+      });
+      
+      // If we have results from database, use those
+      if (mediaAssets && mediaAssets.length > 0) {
+        const files = mediaAssets.map(asset => ({
+          id: asset.id,
+          name: asset.file_name,
+          url: asset.file_url,
+          publicUrl: asset.file_url,
+          fullPath: asset.file_path,
+          size: parseInt(asset.file_size) || 0,
+          metadata: {
+            size: parseInt(asset.file_size) || 0,
+            mimetype: asset.mime_type
+          },
+          mimetype: asset.mime_type,
+          created_at: asset.created_at,
+          updated_at: asset.updated_at,
+          folder: asset.folder
+        }));
+        
+        return {
+          success: true,
+          files,
+          total: files.length,
+          provider: 'supabase',
+          source: 'database'
+        };
+      }
+      
+      // If no results from database, fall back to direct Supabase query
+      // This ensures backward compatibility and handles files not yet in media_assets
+      console.log('No files found in media_assets table, querying Supabase directly');
+      const supabaseResult = await this.supabaseService.listImages(storeId, folder, options);
+      
+      // Optionally sync these files to media_assets table for future queries
+      if (supabaseResult.success && supabaseResult.files && supabaseResult.files.length > 0) {
+        this.syncFilesToDatabase(storeId, supabaseResult.files, folder).catch(err => {
+          console.error('Failed to sync files to database:', err);
+        });
+      }
+      
+      return {
+        ...supabaseResult,
+        source: 'supabase'
+      };
+    } catch (error) {
+      console.error('Error in listFiles:', error);
+      // Fall back to direct Supabase query if database query fails
+      return await this.supabaseService.listImages(storeId, folder, options);
+    }
+  }
+  
+  /**
+   * Sync files from Supabase to media_assets table
+   */
+  async syncFilesToDatabase(storeId, files, folder = 'library') {
+    const { MediaAsset } = require('../models');
+    
+    for (const file of files) {
+      try {
+        // Check if file already exists in database
+        const existing = await MediaAsset.findOne({
+          where: {
+            store_id: storeId,
+            file_path: file.fullPath || file.name
+          }
+        });
+        
+        if (!existing) {
+          // Create new media asset record
+          await MediaAsset.create({
+            store_id: storeId,
+            file_name: file.name,
+            original_name: file.name,
+            file_path: file.fullPath || file.name,
+            file_url: file.url || file.publicUrl,
+            mime_type: file.mimetype || file.metadata?.mimetype,
+            file_size: file.size || file.metadata?.size || 0,
+            folder: folder,
+            metadata: {
+              bucket: file.bucket || 'suprshop-assets',
+              provider: 'supabase',
+              synced_from_storage: true,
+              synced_at: new Date()
+            }
+          });
+          console.log(`Synced file to database: ${file.name}`);
+        }
+      } catch (err) {
+        console.error(`Failed to sync file ${file.name}:`, err.message);
+      }
+    }
   }
 
   /**

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Upload, Search, AlertTriangle, Image as ImageIcon, X } from "lucide-react";
+import { Search, AlertTriangle, Image as ImageIcon, X } from "lucide-react";
 import MediaBrowser from '@/components/cms/MediaBrowser';
 import {
   Accordion,
@@ -389,19 +389,8 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
             placeholder="Enter URL or select from library"
             className="flex-1"
           />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              setShowMediaBrowser(true);
-              // Set a flag to show upload by default
-              sessionStorage.setItem('mediaBrowserShowUpload', 'true');
-            }}
-            className="flex items-center gap-2"
-          >
-            <Upload className="w-4 h-4" />
-            Upload
-          </Button>
+          
+          {/* Select Image button - opens Media Library */}
           <Button
             type="button"
             variant="outline"
