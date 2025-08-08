@@ -65,7 +65,6 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
       };
       
       if (uploadFolder === 'category') {
-        // Only show images from the category folder in suprshop-catalog bucket
         params.folder = 'category';
       }
       
