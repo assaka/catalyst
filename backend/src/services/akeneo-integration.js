@@ -435,7 +435,7 @@ class AkeneoIntegration {
             // Handle stock inclusion setting
             if (!enhancedSettings.includeStock) {
               catalystProduct.stock_quantity = 0;
-              catalystProduct.manage_stock = false;
+              catalystProduct.manage_stock = true;
               catalystProduct.infinite_stock = false;
               if (catalystProduct.stock_data) {
                 delete catalystProduct.stock_data;
