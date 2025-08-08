@@ -815,8 +815,8 @@ export default function Categories() {
               {/* Store-wide Category Settings */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Filter className="w-5 h-5" />
-                  Category Filters
+                  <Settings className="w-5 h-5" />
+                  Category Navigation Settings
                 </h3>
                 
                 {/* Root Category Selection */}
