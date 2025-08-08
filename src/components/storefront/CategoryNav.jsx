@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
@@ -22,14 +22,6 @@ export default function CategoryNav({ categories }) {
 
     // Check if all menu items should be expanded by default
     const expandAllMenuItems = store?.settings?.expandAllMenuItems || false;
-    
-    // Reset expanded categories when expandAllMenuItems setting changes
-    useEffect(() => {
-        if (!expandAllMenuItems) {
-            // Clear all expanded categories when the setting is disabled
-            setExpandedCategories(new Set());
-        }
-    }, [expandAllMenuItems]);
     
     const toggleCategory = (categoryId) => {
         setExpandedCategories(prev => {
@@ -82,6 +74,13 @@ export default function CategoryNav({ categories }) {
             }
         }
 
+        console.log('👀 Visible categories after filtering:', visibleCategories.map(c => ({
+            id: c.id,
+            name: c.name,
+            parent_id: c.parent_id,
+            hide_in_menu: c.hide_in_menu
+        })));
+
         // Create a map of all visible categories
         visibleCategories.forEach(category => {
             categoryMap.set(category.id, { ...category, children: [] });
@@ -94,9 +93,11 @@ export default function CategoryNav({ categories }) {
                 // This category has a parent, add it to parent's children
                 const parent = categoryMap.get(category.parent_id);
                 parent.children.push(categoryNode);
+                console.log(`📎 Added child "${category.name}" to parent "${parent.name}"`);
             } else {
                 // This is a root category
                 rootCategories.push(categoryNode);
+                console.log(`🌱 Added root category "${category.name}"`);
             }
         });
 
@@ -104,41 +105,43 @@ export default function CategoryNav({ categories }) {
     };
 
     const rootCategories = buildCategoryTree(categories);
+    
+    // Debug logging for navigation
+    console.log('🔧 CategoryNav debug:', {
+        totalCategories: categories.length,
+        rootCategoryId: store?.settings?.rootCategoryId,
+        excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
+        rootCategoriesCount: rootCategories.length,
+        rootCategories: rootCategories.map(c => ({
+            id: c.id,
+            name: c.name,
+            childrenCount: c.children?.length || 0,
+            hasChildren: !!(c.children && c.children.length > 0),
+            children: c.children?.map(child => ({ id: child.id, name: child.name })) || []
+        }))
+    });
 
     // Render all descendants of a category with proper indentation
-    const renderCategoryDescendants = (category, depth = 0, isDropdown = true) => {
+    const renderCategoryDescendants = (category, depth = 0) => {
         const items = [];
         
         // Add the category itself
-        if (isDropdown) {
-            items.push(
-                <DropdownMenuItem key={category.id} asChild>
-                    <Link 
-                        to={createCategoryUrl(store.slug, category.slug)}
-                        className="w-full text-gray-700"
-                        style={{ paddingLeft: `${depth * 16 + 12}px` }}
-                    >
-                        {depth > 0 && '→ '}{category.name}
-                    </Link>
-                </DropdownMenuItem>
-            );
-        } else {
-            items.push(
+        items.push(
+            <DropdownMenuItem key={category.id} asChild>
                 <Link 
-                    key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="block w-full text-gray-700 hover:bg-gray-100 px-3 py-2 text-sm"
+                    className="w-full text-gray-700"
                     style={{ paddingLeft: `${depth * 16 + 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
                 </Link>
-            );
-        }
+            </DropdownMenuItem>
+        );
         
         // Add all children recursively
         if (category.children && category.children.length > 0) {
             category.children.forEach(child => {
-                items.push(...renderCategoryDescendants(child, depth + 1, isDropdown));
+                items.push(...renderCategoryDescendants(child, depth + 1));
             });
         }
         
@@ -152,14 +155,7 @@ export default function CategoryNav({ categories }) {
         
         return (
             <div key={category.id} className="block">
-                <div className="flex items-center justify-between">
-                    <Link 
-                        to={createCategoryUrl(store.slug, category.slug)}
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md flex-1 touch-manipulation"
-                        style={{ marginLeft: `${depth * 16}px` }}
-                    >
-                        {category.name}
-                    </Link>
+                <div className="flex items-center">
                     {hasChildren && (
                         <Button
                             variant="ghost"
@@ -169,7 +165,7 @@ export default function CategoryNav({ categories }) {
                                 e.preventDefault();
                                 toggleCategory(category.id);
                             }}
-                            className="p-1 h-auto ml-1 hover:bg-gray-100 touch-manipulation float-right"
+                            className="p-1 h-auto mr-1 hover:bg-gray-100 touch-manipulation"
                             aria-label={isExpanded ? `Collapse ${category.name}` : `Expand ${category.name}`}
                         >
                             {isExpanded ? (
@@ -179,6 +175,13 @@ export default function CategoryNav({ categories }) {
                             )}
                         </Button>
                     )}
+                    <Link 
+                        to={createCategoryUrl(store.slug, category.slug)}
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block touch-manipulation"
+                        style={{ marginLeft: `${depth * 16}px` }}
+                    >
+                        {category.name}
+                    </Link>
                 </div>
                 {hasChildren && isExpanded && (
                     <div className="ml-4">
@@ -197,10 +200,10 @@ export default function CategoryNav({ categories }) {
                     <DropdownMenuTrigger asChild>
                         <Button 
                             variant="ghost" 
-                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center whitespace-nowrap"
+                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center space-x-1"
                         >
                             <span>{category.name}</span>
-                            <ChevronDown className="w-3 h-3 ml-1" />
+                            <ChevronDown className="w-3 h-3" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto">
@@ -222,7 +225,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)} 
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md"
                 >
                     {category.name}
                 </Link>
@@ -231,73 +234,25 @@ export default function CategoryNav({ categories }) {
     };
 
     if (expandAllMenuItems) {
-        // Always-expanded mode: Keep horizontal layout for first level, show all subcategories on hover
+        // Always-expanded mode: Show all subcategories in a vertical tree (mobile-friendly)
         return (
-            <>
-                {/* Mobile view - vertical layout */}
-                <nav className="block md:hidden space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <Link 
-                        to={createPublicUrl(store.slug, 'STOREFRONT')} 
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation whitespace-nowrap"
-                    >
-                        Home
-                    </Link>
-                    <div className="space-y-1">
-                        {rootCategories.map(category => renderExpandedCategory(category))}
-                    </div>
-                </nav>
-                
-                {/* Desktop view - horizontal layout with always-visible dropdowns */}
-                <nav className="hidden md:block">
-                    <div className="flex items-center space-x-2">
-                        <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
-                            Home
-                        </Link>
-                    {rootCategories.map(category => {
-                        if (category.children && category.children.length > 0) {
-                            return (
-                                <div key={category.id} className="relative group">
-                                    <Link 
-                                        to={createCategoryUrl(store.slug, category.slug)}
-                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
-                                    >
-                                        {category.name}
-                                        <ChevronDown className="w-3 h-3 ml-1" />
-                                    </Link>
-                                    {/* Submenu visible on hover */}
-                                    <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
-                                        <div className="py-1">
-                                            {category.children.map(child => (
-                                                <div key={child.id}>
-                                                    {renderCategoryDescendants(child, 0, false)}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </div>
-                            );
-                        } else {
-                            // Regular category without children
-                            return (
-                                <Link 
-                                    key={category.id}
-                                    to={createCategoryUrl(store.slug, category.slug)} 
-                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
-                                >
-                                    {category.name}
-                                </Link>
-                            );
-                        }
-                        })}
-                    </div>
-                </nav>
-            </>
+            <nav className="block space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm md:max-w-xs">
+                <Link 
+                    to={createPublicUrl(store.slug, 'STOREFRONT')} 
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation"
+                >
+                    Home
+                </Link>
+                <div className="space-y-1">
+                    {rootCategories.map(category => renderExpandedCategory(category))}
+                </div>
+            </nav>
         );
     } else {
-        // Collapsible mode: Hover/click to expand submenus (desktop only, hidden on mobile)
+        // Collapsible mode: Hover/click to expand submenus (desktop only)
         return (
             <nav className="hidden md:flex items-center space-x-2">
-                <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
+                <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md">
                     Home
                 </Link>
                 {rootCategories.map(category => renderCategoryWithChildren(category))}
