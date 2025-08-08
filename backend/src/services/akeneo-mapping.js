@@ -156,18 +156,21 @@ class AkeneoMapping {
       _originalSlug: this.generateSlug(slugSource)
     };
 
-    // Apply custom attribute mappings
+    // Apply comprehensive custom attribute mappings
     if (customMappings.attributes && Array.isArray(customMappings.attributes)) {
-      customMappings.attributes.forEach(mapping => {
-        if (mapping.enabled && mapping.akeneoField && mapping.catalystField) {
-          const akeneoValue = this.extractProductValue(values, mapping.akeneoField, locale);
-          if (akeneoValue !== null && akeneoValue !== undefined) {
-            // Map to the specified Catalyst field
-            this.applyCustomMapping(catalystProduct, mapping.catalystField, akeneoValue, mapping.akeneoField);
-          }
-        }
-      });
+      const customAttributes = this.applyCustomAttributeMappings(akeneoProduct, customMappings.attributes, locale);
+      Object.assign(catalystProduct, customAttributes);
     }
+
+    // Extract common e-commerce attributes with enhanced fallbacks
+    const commonAttributes = this.extractCommonAttributes(values, locale);
+    
+    // Merge common attributes without overwriting existing values
+    Object.keys(commonAttributes).forEach(key => {
+      if (catalystProduct[key] === null || catalystProduct[key] === undefined) {
+        catalystProduct[key] = commonAttributes[key];
+      }
+    });
 
     // Apply custom image mappings
     if (customMappings.images && Array.isArray(customMappings.images)) {
@@ -1111,6 +1114,161 @@ class AkeneoMapping {
     }
 
     return errors;
+  }
+
+  /**
+   * Comprehensive attribute mapping system for any Akeneo attribute
+   * Allows flexible mapping of Akeneo attributes to Catalyst product fields
+   */
+  mapAkeneoAttribute(akeneoProduct, attributeMapping, locale = 'en_US') {
+    const { values } = akeneoProduct;
+    const { 
+      akeneoAttribute, 
+      catalystField, 
+      dataType = 'string', 
+      fallbacks = [], 
+      transform = null,
+      defaultValue = null 
+    } = attributeMapping;
+    
+    console.log(`🗺️ Mapping Akeneo attribute '${akeneoAttribute}' to Catalyst field '${catalystField}'`);
+    
+    // Try primary attribute first
+    let value = this.extractProductValue(values, akeneoAttribute, locale);
+    
+    // Try fallback attributes if primary value is null/empty
+    if ((value === null || value === undefined || value === '') && fallbacks.length > 0) {
+      for (const fallbackAttr of fallbacks) {
+        console.log(`🔄 Trying fallback attribute: ${fallbackAttr}`);
+        value = this.extractProductValue(values, fallbackAttr, locale);
+        if (value !== null && value !== undefined && value !== '') {
+          console.log(`✅ Found value in fallback attribute '${fallbackAttr}': ${value}`);
+          break;
+        }
+      }
+    }
+    
+    // Apply data type conversion
+    if (value !== null && value !== undefined && value !== '') {
+      switch (dataType) {
+        case 'number':
+        case 'numeric':
+          value = this.extractNumericValue(values, akeneoAttribute, locale);
+          break;
+        case 'boolean':
+          value = this.extractBooleanValue(values, akeneoAttribute, locale);
+          break;
+        case 'array':
+          if (!Array.isArray(value)) {
+            value = [value];
+          }
+          break;
+        case 'string':
+        default:
+          // Keep as string (already handled by extractProductValue)
+          break;
+      }
+    }
+    
+    // Apply custom transformation function if provided
+    if (transform && typeof transform === 'function') {
+      try {
+        value = transform(value, akeneoProduct, locale);
+        console.log(`🔧 Applied custom transformation to '${akeneoAttribute}'`);
+      } catch (transformError) {
+        console.warn(`⚠️ Transform function failed for '${akeneoAttribute}':`, transformError.message);
+      }
+    }
+    
+    // Use default value if still null/empty
+    if ((value === null || value === undefined || value === '') && defaultValue !== null) {
+      value = defaultValue;
+      console.log(`🎯 Using default value for '${catalystField}': ${defaultValue}`);
+    }
+    
+    return { [catalystField]: value };
+  }
+
+  /**
+   * Apply multiple attribute mappings to an Akeneo product
+   */
+  applyCustomAttributeMappings(akeneoProduct, mappings = [], locale = 'en_US') {
+    const customAttributes = {};
+    
+    if (!Array.isArray(mappings) || mappings.length === 0) {
+      return customAttributes;
+    }
+    
+    console.log(`🎯 Applying ${mappings.length} custom attribute mappings`);
+    
+    mappings.forEach(mapping => {
+      if (!mapping.enabled || !mapping.akeneoAttribute || !mapping.catalystField) {
+        return;
+      }
+      
+      try {
+        const mappedValue = this.mapAkeneoAttribute(akeneoProduct, mapping, locale);
+        Object.assign(customAttributes, mappedValue);
+        console.log(`✅ Mapped '${mapping.akeneoAttribute}' → '${mapping.catalystField}':`, mappedValue[mapping.catalystField]);
+      } catch (mappingError) {
+        console.error(`❌ Failed to map '${mapping.akeneoAttribute}' → '${mapping.catalystField}':`, mappingError.message);
+      }
+    });
+    
+    return customAttributes;
+  }
+
+  /**
+   * Enhanced attribute extraction for common e-commerce fields
+   */
+  extractCommonAttributes(values, locale = 'en_US') {
+    const commonAttributes = {};
+    
+    // Price-related attributes with multiple fallbacks
+    commonAttributes.price = this.extractNumericValue(values, 'price', locale) ||
+                             this.extractNumericValue(values, 'base_price', locale) ||
+                             this.extractNumericValue(values, 'unit_price', locale);
+    
+    commonAttributes.sale_price = this.extractNumericValue(values, 'sale_price', locale) ||
+                                  this.extractNumericValue(values, 'special_price', locale) ||
+                                  this.extractNumericValue(values, 'discounted_price', locale) ||
+                                  this.extractNumericValue(values, 'promo_price', locale);
+    
+    commonAttributes.compare_price = this.extractNumericValue(values, 'compare_price', locale) ||
+                                     this.extractNumericValue(values, 'msrp', locale) ||
+                                     this.extractNumericValue(values, 'regular_price', locale) ||
+                                     this.extractNumericValue(values, 'list_price', locale);
+    
+    // Brand and manufacturer
+    commonAttributes.brand = this.extractProductValue(values, 'brand', locale) ||
+                            this.extractProductValue(values, 'manufacturer', locale) ||
+                            this.extractProductValue(values, 'supplier', locale);
+    
+    // Material and composition
+    commonAttributes.material = this.extractProductValue(values, 'material', locale) ||
+                               this.extractProductValue(values, 'composition', locale) ||
+                               this.extractProductValue(values, 'fabric', locale);
+    
+    // Color variations
+    commonAttributes.color = this.extractProductValue(values, 'color', locale) ||
+                            this.extractProductValue(values, 'colour', locale) ||
+                            this.extractProductValue(values, 'main_color', locale);
+    
+    // Size information
+    commonAttributes.size = this.extractProductValue(values, 'size', locale) ||
+                           this.extractProductValue(values, 'clothing_size', locale) ||
+                           this.extractProductValue(values, 'shoe_size', locale);
+    
+    // Warranty and care instructions
+    commonAttributes.warranty = this.extractProductValue(values, 'warranty', locale) ||
+                               this.extractProductValue(values, 'warranty_period', locale) ||
+                               this.extractProductValue(values, 'guarantee', locale);
+    
+    commonAttributes.care_instructions = this.extractProductValue(values, 'care_instructions', locale) ||
+                                         this.extractProductValue(values, 'care_guide', locale) ||
+                                         this.extractProductValue(values, 'maintenance', locale);
+    
+    return commonAttributes;
   }
 }
 
