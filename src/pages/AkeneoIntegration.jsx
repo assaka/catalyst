@@ -210,6 +210,14 @@ const AkeneoIntegration = () => {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingFamilies, setLoadingFamilies] = useState(false);
   
+  // Progress tracking for import operations
+  const [importProgress, setImportProgress] = useState({
+    categories: { current: 0, total: 0, isActive: false },
+    attributes: { current: 0, total: 0, isActive: false },
+    families: { current: 0, total: 0, isActive: false },
+    products: { current: 0, total: 0, isActive: false }
+  });
+  
   // Store current state globally for error debugging (moved after state declarations)
   if (typeof window !== 'undefined') {
     window.__currentAkeneoState = {
@@ -1323,6 +1331,12 @@ const AkeneoIntegration = () => {
 
     setImporting(true);
     setImportResults(null);
+    
+    // Initialize progress tracking for categories
+    setImportProgress(prev => ({
+      ...prev,
+      categories: { current: 0, total: 0, isActive: true }
+    }));
 
     try {
       console.log('📡 Making API call to import-categories...');
@@ -1409,6 +1423,13 @@ const AkeneoIntegration = () => {
       toast.error(`Import failed: ${message}`);
     } finally {
       console.log('🏁 Categories import completed');
+      
+      // Reset progress tracking for categories
+      setImportProgress(prev => ({
+        ...prev,
+        categories: { current: 0, total: 0, isActive: false }
+      }));
+      
       setImporting(false);
     }
     } catch (unexpectedError) {
@@ -1472,6 +1493,12 @@ const AkeneoIntegration = () => {
 
     setImporting(true);
     setImportResults(null);
+    
+    // Initialize progress tracking for attributes
+    setImportProgress(prev => ({
+      ...prev,
+      attributes: { current: 0, total: 0, isActive: true }
+    }));
 
     try {
       console.log('📡 Making API call to import-attributes...');
@@ -1574,6 +1601,12 @@ const AkeneoIntegration = () => {
     } finally {
       console.log('🏁 Attributes import completed');
       setImporting(false);
+      
+      // Reset progress tracking for attributes
+      setImportProgress(prev => ({
+        ...prev,
+        attributes: { current: 0, total: 0, isActive: false }
+      }));
     }
   };
 
@@ -1599,6 +1632,12 @@ const AkeneoIntegration = () => {
 
     setImporting(true);
     setImportResults(null);
+    
+    // Initialize progress tracking for families
+    setImportProgress(prev => ({
+      ...prev,
+      families: { current: 0, total: 0, isActive: true }
+    }));
 
     try {
       console.log('📡 Making API call to import-families...');
@@ -1660,6 +1699,12 @@ const AkeneoIntegration = () => {
     } finally {
       console.log('🏁 Families import completed');
       setImporting(false);
+      
+      // Reset progress tracking for families
+      setImportProgress(prev => ({
+        ...prev,
+        families: { current: 0, total: 0, isActive: false }
+      }));
     }
   };
 
@@ -1692,6 +1737,12 @@ const AkeneoIntegration = () => {
 
     setImporting(true);
     setImportResults(null);
+    
+    // Initialize progress tracking for products
+    setImportProgress(prev => ({
+      ...prev,
+      products: { current: 0, total: 0, isActive: true }
+    }));
 
     try {
       const requestPayload = {
@@ -1828,6 +1879,13 @@ const AkeneoIntegration = () => {
         statsLoaded: stats ? 'yes' : 'no',
         importing: importing ? 'yes' : 'no'
       });
+      
+      // Reset progress tracking for products
+      setImportProgress(prev => ({
+        ...prev,
+        products: { current: 0, total: 0, isActive: false }
+      }));
+      
       setImporting(false);
       console.log('🏁 setImporting(false) completed');
     }
@@ -2699,7 +2757,11 @@ const AkeneoIntegration = () => {
                   ) : (
                     <Download className="h-4 w-4" />
                   )}
-                  {importing ? 'Importing...' : 'Import Attributes'}
+                  {importing ? (
+                    importProgress.attributes.isActive && importProgress.attributes.total > 0 
+                      ? `Importing... ${importProgress.attributes.current}/${importProgress.attributes.total}`
+                      : 'Importing...'
+                  ) : 'Import Attributes'}
                 </Button>
               </div>
 
@@ -2791,7 +2853,11 @@ const AkeneoIntegration = () => {
                   ) : (
                     <Download className="h-4 w-4" />
                   )}
-                  {importing ? 'Importing...' : 'Import Families'}
+                  {importing ? (
+                    importProgress.families.isActive && importProgress.families.total > 0 
+                      ? `Importing... ${importProgress.families.current}/${importProgress.families.total}`
+                      : 'Importing...'
+                  ) : 'Import Families'}
                 </Button>
               </div>
 
@@ -2982,7 +3048,11 @@ const AkeneoIntegration = () => {
                     ) : (
                       <Download className="h-4 w-4" />
                     )}
-                    {importing ? 'Importing...' : 'Import Categories'}
+                    {importing ? (
+                      importProgress.categories.isActive && importProgress.categories.total > 0 
+                        ? `Importing... ${importProgress.categories.current}/${importProgress.categories.total}`
+                        : 'Importing...'
+                    ) : 'Import Categories'}
                   </Button>
 
                   {availableCategories.length > 0 && !loadingCategories && (
@@ -3462,7 +3532,11 @@ const AkeneoIntegration = () => {
                   ) : (
                     <Download className="h-4 w-4" />
                   )}
-                  {importing ? 'Importing...' : 'Import Products'}
+                  {importing ? (
+                    importProgress.products.isActive && importProgress.products.total > 0 
+                      ? `Importing... ${importProgress.products.current}/${importProgress.products.total}`
+                      : 'Importing...'
+                  ) : 'Import Products'}
                 </Button>
               </div>
 
