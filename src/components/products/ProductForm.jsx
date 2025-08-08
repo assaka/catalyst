@@ -1479,26 +1479,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </CardContent>
         </Card>
 
-        {categories && categories.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle>Categories</CardTitle></CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <Badge
-                    key={category.id}
-                    variant={formData.category_ids.includes(category.id) ? "default" : "outline"}
-                    className="cursor-pointer"
-                    onClick={() => handleCategoryToggle(category.id)}
-                  >
-                    {category.name}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="seo">
             <AccordionTrigger>
