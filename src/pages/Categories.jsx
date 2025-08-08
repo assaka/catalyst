@@ -888,15 +888,24 @@ export default function Categories() {
                   </div>
                 )}
               </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="material-elevation-1 border-0 mb-6">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              {/* Store-wide Category Settings */}
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Category Navigation Settings
+                </h3>
 
-              <div className="border-t pt-4">
-                {/* Root Category Filter */}
-                <div className="flex flex-col md:flex-row gap-4 items-start">
-                  <div className="flex-1">
-                    <Label htmlFor="root-category" className="text-sm font-medium mb-2 flex items-center gap-2">
-                      <TreePine className="w-4 h-4" />
-                      Root Category Filter
-                    </Label>
+                {/* Root Category Selection */}
+                <div className="mb-4">
+                  {/* All Filters and View Toggle in One Line */}
+                  <div className="flex flex-wrap items-center gap-3 pt-4 border-t">
+                    {/* Root Category Filter */}
                     <Select
                       value={selectedRootCategory || "all"}
                       onValueChange={(value) => {
@@ -904,11 +913,12 @@ export default function Categories() {
                         setSelectedRootCategory(newValue);
                       }}
                     >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select root category to filter" />
+                      <SelectTrigger className="w-[180px]">
+                        <TreePine className="w-4 h-4 mr-2" />
+                        <SelectValue placeholder="Root Category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Show All Categories</SelectItem>
+                        <SelectItem value="all">All Categories</SelectItem>
                         {rootCategories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
@@ -916,73 +926,61 @@ export default function Categories() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Filter the category list view below
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Filter and View Toggle */}
-              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                <div className="flex flex-col md:flex-row gap-4 flex-1">
-                  <div className="flex-1 max-w-md">
-                    <Label htmlFor="category-filter" className="text-sm font-medium mb-2 block">
-                      Filter by Status
-                    </Label>
+
+                    {/* Status Filter */}
                     <Select
                       value={searchQuery || "all"}
                       onValueChange={(value) => setSearchQuery(value === "all" ? "" : value)}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All categories" />
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Filter Status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
+                        <SelectItem value="all">All Status</SelectItem>
                         <SelectItem value="active">Active Only</SelectItem>
                         <SelectItem value="inactive">Inactive Only</SelectItem>
                         <SelectItem value="hidden">Hidden from Menu</SelectItem>
                         <SelectItem value="visible">Visible in Menu</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  
-                  <div className="flex-1 max-w-md">
-                    <Label htmlFor="name-filter" className="text-sm font-medium mb-2 block">
-                      Filter by Name
-                    </Label>
-                    <div className="relative">
+
+                    {/* Name Filter */}
+                    <div className="relative flex-1 min-w-[200px] max-w-[300px]">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        id="name-filter"
-                        placeholder="Search categories..."
+                        placeholder="Filter by name..."
                         value={nameFilter}
                         onChange={(e) => setNameFilter(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 h-9"
                         disabled={!canAddCategory && categories.length === 0}
                       />
                     </div>
+
+                    {/* Spacer */}
+                    <div className="flex-1"></div>
+
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center rounded-lg border">
+                      <Button
+                        variant={viewMode === 'hierarchical' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('hierarchical')}
+                        className="rounded-r-none border-0"
+                      >
+                        <Folder className="w-4 h-4 mr-1" />
+                        Tree
+                      </Button>
+                      <Button
+                        variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('grid')}
+                        className="rounded-l-none border-0 border-l"
+                      >
+                        <LayoutGrid className="w-4 h-4 mr-1" />
+                        Grid
+                      </Button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant={viewMode === 'hierarchical' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('hierarchical')}
-                    className="flex items-center space-x-2"
-                  >
-                    <Folder className="w-4 h-4" />
-                    <span>Tree View</span>
-                  </Button>
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className="flex items-center space-x-2"
-                  >
-                    <LayoutGrid className="w-4 h-4" />
-                    <span>Grid View</span>
-                  </Button>
                 </div>
               </div>
             </div>

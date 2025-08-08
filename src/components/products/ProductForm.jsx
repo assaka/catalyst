@@ -815,6 +815,96 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           </Card>
         </div>
 
+        {/* Categories Selection */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Categories</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="categories">Product Categories</Label>
+              <div className="space-y-2 mt-2">
+                {categories && categories.length > 0 ? (
+                  <div className="border rounded-lg p-3 max-h-64 overflow-y-auto">
+                    {(() => {
+                      // Build hierarchical structure for better display
+                      const categoryMap = new Map();
+                      const rootCategories = [];
+                      
+                      // Create a map of all categories
+                      categories.forEach(cat => {
+                        categoryMap.set(cat.id, { ...cat, children: [] });
+                      });
+                      
+                      // Build tree structure
+                      categories.forEach(cat => {
+                        const catNode = categoryMap.get(cat.id);
+                        if (cat.parent_id && categoryMap.has(cat.parent_id)) {
+                          categoryMap.get(cat.parent_id).children.push(catNode);
+                        } else {
+                          rootCategories.push(catNode);
+                        }
+                      });
+                      
+                      // Render categories hierarchically
+                      const renderCategories = (cats, level = 0) => {
+                        return cats.map(category => (
+                          <React.Fragment key={category.id}>
+                            <div 
+                              className="flex items-center space-x-2 py-1 hover:bg-gray-50 rounded"
+                              style={{ paddingLeft: `${level * 20}px` }}
+                            >
+                              <input
+                                type="checkbox"
+                                id={`category-${category.id}`}
+                                checked={formData.category_ids.includes(category.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    handleInputChange("category_ids", [...formData.category_ids, category.id]);
+                                  } else {
+                                    handleInputChange("category_ids", formData.category_ids.filter(id => id !== category.id));
+                                  }
+                                }}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <Label 
+                                htmlFor={`category-${category.id}`} 
+                                className="flex-1 cursor-pointer text-sm font-normal flex items-center"
+                              >
+                                {level > 0 && <span className="text-gray-400 mr-1">└</span>}
+                                {category.name}
+                                {category.is_active === false && (
+                                  <Badge variant="secondary" className="ml-2 text-xs">Inactive</Badge>
+                                )}
+                              </Label>
+                            </div>
+                            {category.children && category.children.length > 0 && 
+                              renderCategories(category.children, level + 1)}
+                          </React.Fragment>
+                        ));
+                      };
+                      
+                      return renderCategories(rootCategories);
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border rounded-lg bg-gray-50">
+                    <p className="text-sm text-gray-500">No categories available</p>
+                    <p className="text-xs text-gray-400 mt-1">Create categories first to assign products to them</p>
+                  </div>
+                )}
+              </div>
+              {formData.category_ids.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm text-gray-600">
+                    Selected: {formData.category_ids.length} {formData.category_ids.length === 1 ? 'category' : 'categories'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Product Images - Unified Storage System */}
         <Card>
           <CardHeader>
