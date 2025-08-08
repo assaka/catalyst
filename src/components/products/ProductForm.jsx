@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2 } from "lucide-react";
+import { X, Upload, Search, AlertTriangle, ImageIcon, Plus, Trash2, ChevronRight, ChevronDown } from "lucide-react";
 import FlashMessage from "../storefront/FlashMessage";
 import apiClient from "@/api/client";
 import MediaBrowser from "@/components/cms/MediaBrowser";
@@ -47,6 +47,8 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
   const [createRedirect, setCreateRedirect] = useState(true);
   const [isEditingUrlKey, setIsEditingUrlKey] = useState(false);
   const [hasManuallyEditedUrlKey, setHasManuallyEditedUrlKey] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState(new Set());
+  const [initialExpansionDone, setInitialExpansionDone] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -177,6 +179,30 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         });
     }
   }, [product, passedAttributeSets]);
+
+  // Auto-expand categories that contain selected items
+  useEffect(() => {
+    if (categories && categories.length > 0 && formData.category_ids.length > 0 && !initialExpansionDone) {
+      const categoriesToExpand = new Set();
+      
+      // For each selected category, find and expand all its parent categories
+      formData.category_ids.forEach(selectedId => {
+        const findParents = (categoryId) => {
+          const category = categories.find(c => c.id === categoryId);
+          if (category && category.parent_id) {
+            categoriesToExpand.add(category.parent_id);
+            findParents(category.parent_id);
+          }
+        };
+        findParents(selectedId);
+      });
+      
+      if (categoriesToExpand.size > 0) {
+        setExpandedCategories(categoriesToExpand);
+        setInitialExpansionDone(true);
+      }
+    }
+  }, [categories, formData.category_ids, initialExpansionDone]);
 
   const slugify = (text) => {
     if (!text) return '';
@@ -853,7 +879,34 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
               
               <div className="space-y-2 mt-2">
                 {categories && categories.length > 0 ? (
-                  <div className="border rounded-lg p-3 max-h-64 overflow-y-auto">
+                  <>
+                    <div className="flex justify-end gap-2 mb-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          // Expand all categories that have children
+                          const allParentIds = categories
+                            .filter(cat => categories.some(c => c.parent_id === cat.id))
+                            .map(cat => cat.id);
+                          setExpandedCategories(new Set(allParentIds));
+                        }}
+                        className="text-xs"
+                      >
+                        Expand All
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setExpandedCategories(new Set())}
+                        className="text-xs"
+                      >
+                        Collapse All
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg p-3 max-h-64 overflow-y-auto">
                     {(() => {
                       // Build hierarchical structure for better display
                       const categoryMap = new Map();
@@ -874,47 +927,78 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                         }
                       });
                       
-                      // Render categories hierarchically
+                      // Toggle category expansion
+                      const toggleCategory = (categoryId) => {
+                        setExpandedCategories(prev => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(categoryId)) {
+                            newSet.delete(categoryId);
+                          } else {
+                            newSet.add(categoryId);
+                          }
+                          return newSet;
+                        });
+                      };
+
+                      // Render categories hierarchically with collapse/expand
                       const renderCategories = (cats, level = 0) => {
-                        return cats.map(category => (
-                          <React.Fragment key={category.id}>
-                            <div 
-                              className="flex items-center space-x-2 py-1 hover:bg-gray-50 rounded"
-                              style={{ paddingLeft: `${level * 20}px` }}
-                            >
-                              <input
-                                type="checkbox"
-                                id={`category-${category.id}`}
-                                checked={formData.category_ids.includes(category.id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    handleInputChange("category_ids", [...formData.category_ids, category.id]);
-                                  } else {
-                                    handleInputChange("category_ids", formData.category_ids.filter(id => id !== category.id));
-                                  }
-                                }}
-                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <Label 
-                                htmlFor={`category-${category.id}`} 
-                                className="flex-1 cursor-pointer text-sm font-normal flex items-center"
+                        return cats.map(category => {
+                          const hasChildren = category.children && category.children.length > 0;
+                          const isExpanded = expandedCategories.has(category.id);
+                          
+                          return (
+                            <React.Fragment key={category.id}>
+                              <div 
+                                className="flex items-center space-x-2 py-1 hover:bg-gray-50 rounded"
+                                style={{ paddingLeft: `${level * 20 + (hasChildren ? 0 : 20)}px` }}
                               >
-                                {level > 0 && <span className="text-gray-400 mr-1">└</span>}
-                                {category.name}
-                                {category.is_active === false && (
-                                  <Badge variant="secondary" className="ml-2 text-xs">Inactive</Badge>
+                                {hasChildren && (
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleCategory(category.id)}
+                                    className="p-0.5 hover:bg-gray-200 rounded transition-colors"
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronDown className="w-4 h-4 text-gray-600" />
+                                    ) : (
+                                      <ChevronRight className="w-4 h-4 text-gray-600" />
+                                    )}
+                                  </button>
                                 )}
-                              </Label>
-                            </div>
-                            {category.children && category.children.length > 0 && 
-                              renderCategories(category.children, level + 1)}
-                          </React.Fragment>
-                        ));
+                                <input
+                                  type="checkbox"
+                                  id={`category-${category.id}`}
+                                  checked={formData.category_ids.includes(category.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      handleInputChange("category_ids", [...formData.category_ids, category.id]);
+                                    } else {
+                                      handleInputChange("category_ids", formData.category_ids.filter(id => id !== category.id));
+                                    }
+                                  }}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <Label 
+                                  htmlFor={`category-${category.id}`} 
+                                  className="flex-1 cursor-pointer text-sm font-normal flex items-center"
+                                >
+                                  {category.name}
+                                  {category.is_active === false && (
+                                    <Badge variant="secondary" className="ml-2 text-xs">Inactive</Badge>
+                                  )}
+                                </Label>
+                              </div>
+                              {hasChildren && isExpanded && 
+                                renderCategories(category.children, level + 1)}
+                            </React.Fragment>
+                          );
+                        });
                       };
                       
                       return renderCategories(rootCategories);
                     })()}
                   </div>
+                  </>
                 ) : (
                   <div className="text-center py-8 border rounded-lg bg-gray-50">
                     <p className="text-sm text-gray-500">No categories available</p>

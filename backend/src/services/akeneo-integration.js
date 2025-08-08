@@ -315,6 +315,16 @@ class AkeneoIntegration {
   async importProducts(storeId, options = {}) {
     const { locale = 'en_US', dryRun = false, batchSize = 50, filters = {}, settings = {}, customMappings = {} } = options;
     
+    // Ensure downloadImages is enabled by default in settings
+    const enhancedSettings = {
+      includeImages: true,
+      downloadImages: true,
+      includeFiles: true,
+      includeStock: true,
+      akeneoBaseUrl: this.config.baseUrl,
+      ...settings
+    };
+    
     try {
       console.log('🚀 Starting product import from Akeneo...');
       console.log(`📍 Store ID: ${storeId}`);
@@ -337,7 +347,7 @@ class AkeneoIntegration {
       
       console.log(`📦 Found ${akeneoProducts.length} products in Akeneo`);
       console.log(`🎯 Product filters:`, filters);
-      console.log(`⚙️ Product settings:`, settings);
+      console.log(`⚙️ Product settings:`, enhancedSettings);
       console.log(`🗺️ Custom mappings:`, customMappings);
       
       // Apply product filters
@@ -401,29 +411,29 @@ class AkeneoIntegration {
             }
             
             // Transform product to Catalyst format (now async)
-            const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, settings);
+            const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings);
             
             // Apply product settings
-            if (settings.status === 'disabled') {
+            if (enhancedSettings.status === 'disabled') {
               catalystProduct.status = 'inactive';
-            } else if (settings.status === 'enabled') {
+            } else if (enhancedSettings.status === 'enabled') {
               catalystProduct.status = 'active';
             }
             
             // Handle image inclusion setting
-            if (!settings.includeImages) {
+            if (!enhancedSettings.includeImages) {
               catalystProduct.images = [];
             }
             
             // Handle file inclusion setting (if implemented in transformProduct)
-            if (!settings.includeFiles) {
+            if (!enhancedSettings.includeFiles) {
               if (catalystProduct.files) {
                 catalystProduct.files = [];
               }
             }
             
             // Handle stock inclusion setting
-            if (!settings.includeStock) {
+            if (!enhancedSettings.includeStock) {
               catalystProduct.stock_quantity = 0;
               catalystProduct.manage_stock = false;
               catalystProduct.infinite_stock = false;
