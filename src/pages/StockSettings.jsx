@@ -262,7 +262,7 @@ export default function StockSettings() {
                       onChange={(e) => handleSettingsChange('in_stock_label', e.target.value)}
                     />
                     <p className="text-sm text-gray-500 mt-1">
-                      Text to display when a product is in stock. Use <code>{'{quantity}'}</code> to show the stock amount.
+                      Text to display when a product is in stock. Use <code>{'{quantity}'}</code> to show the stock amount or conditional <code>{'{({quantity})}'}</code>
                     </p>
                   </div>
                   <div>
