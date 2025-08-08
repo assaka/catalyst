@@ -584,15 +584,73 @@ class AkeneoMapping {
       'assets', 'media', 'media_files', 'product_media'
     ];
     
-    console.log(`🖼️ Extracting images from Akeneo product (downloadImages: ${downloadImages})`);
-    console.log(`🔍 Available attributes: ${Object.keys(values).join(', ')}`);
+    console.log(`\n🖼️ ===== EXTRACTING IMAGES FROM AKENEO PRODUCT =====`);
+    console.log(`📊 Settings:`);
+    console.log(`  - Download images: ${downloadImages}`);
+    console.log(`  - AkeneoClient available: ${!!akeneoClient}`);
+    console.log(`  - Store ID: ${storeId}`);
+    console.log(`  - Base URL: ${baseUrl}`);
+    console.log(`\n🔍 Product values structure:`);
+    console.log(`  - Total attributes: ${Object.keys(values).length}`);
+    console.log(`  - Attribute names: ${Object.keys(values).join(', ')}`);
     
+    // Debug: Check if ANY attributes contain potential image data
+    console.log(`\n🔎 Scanning ALL attributes for potential image data...`);
+    let potentialImageAttrs = [];
+    for (const [key, value] of Object.entries(values)) {
+      if (value && Array.isArray(value) && value.length > 0) {
+        const firstItem = value[0];
+        if (firstItem && firstItem.data) {
+          const dataType = typeof firstItem.data;
+          const dataPreview = dataType === 'string' 
+            ? firstItem.data.substring(0, 100) 
+            : JSON.stringify(firstItem.data).substring(0, 100);
+          
+          // Check if this could be an image attribute
+          if (dataType === 'string') {
+            const data = firstItem.data;
+            const looksLikeImage = data.includes('.jpg') || data.includes('.png') || 
+                                  data.includes('.jpeg') || data.includes('.gif') || 
+                                  data.includes('.webp') || data.includes('image') ||
+                                  data.includes('media') || data.includes('asset') ||
+                                  (!data.includes('/') && !data.startsWith('http') && data.length < 50);
+            
+            if (looksLikeImage) {
+              potentialImageAttrs.push(key);
+              console.log(`  📌 "${key}": ${value.length} item(s), data type: ${dataType}`);
+              console.log(`     Preview: ${dataPreview}${dataPreview.length >= 100 ? '...' : ''}`);
+              if (!imageAttributes.includes(key)) {
+                console.log(`     ⚠️ POTENTIAL IMAGE ATTRIBUTE NOT IN LIST!`);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    if (potentialImageAttrs.length === 0) {
+      console.log(`  ❌ No potential image attributes found in product data!`);
+    } else {
+      console.log(`  ✅ Found ${potentialImageAttrs.length} potential image attributes: ${potentialImageAttrs.join(', ')}`);
+    }
+    
+    console.log(`\n🔍 Checking known image attributes...`);
+    for (const key of Object.keys(values)) {
+      if (imageAttributes.includes(key)) {
+        console.log(`📊 Found known image attribute '${key}':`, JSON.stringify(values[key], null, 2));
+      }
+    }
+    
+    console.log(`\n🔄 Processing image attributes...`);
     for (const attrName of imageAttributes) {
       const imageData = values[attrName];
       if (imageData && Array.isArray(imageData)) {
-        console.log(`📸 Found ${imageData.length} item(s) in attribute '${attrName}'`);
+        console.log(`\n📸 Found attribute '${attrName}' with ${imageData.length} item(s)`);
+        console.log(`  Full data:`, JSON.stringify(imageData, null, 2));
         
-        for (const item of imageData) {
+        for (let i = 0; i < imageData.length; i++) {
+          const item = imageData[i];
+          console.log(`\n  🔍 Processing item ${i + 1}/${imageData.length}:`, JSON.stringify(item, null, 2));
           if (item && item.data) {
             let imageUrl = null;
             let isMediaCode = false;
@@ -600,10 +658,16 @@ class AkeneoMapping {
             
             // Handle different Akeneo image data structures
             if (typeof item.data === 'string') {
-              // Check if it's a media file code (no URL patterns)
-              if (!item.data.includes('/') && !item.data.startsWith('http')) {
-                // This might be a media file code or asset code
-                console.log(`🔑 Detected potential media/asset code: ${item.data}`);
+              // Check if it's a media file code or path
+              // Media file paths look like: e/b/2/c/eb2c09153411547fcdf9918e23c4593313ab8f16_04w0485_8525.webp
+              // These are NOT URLs but media file codes that need API access
+              const isAkeneoMediaPath = item.data.match(/^[a-f0-9]\/[a-f0-9]\/[a-f0-9]\/[a-f0-9]\/.+$/i);
+              const isHttpUrl = item.data.startsWith('http://') || item.data.startsWith('https://');
+              const isSingleCode = !item.data.includes('/') && !item.data.includes('.');
+              
+              if ((isAkeneoMediaPath || isSingleCode) && !isHttpUrl) {
+                // This is a media file code/path that needs API access
+                console.log(`🔑 Detected media file code/path: ${item.data}`);
                 
                 // Try to fetch media file or asset details
                 if (akeneoClient) {
@@ -619,31 +683,49 @@ class AkeneoMapping {
                   } catch (mediaError) {
                     console.log(`❌ Not a media file: ${mediaError.message}`);
                     
-                    // Try as asset
-                    try {
-                      console.log(`📦 Attempting to fetch asset: ${item.data}`);
-                      const asset = await akeneoClient.getAsset(item.data);
-                      if (asset && asset.reference_files && asset.reference_files.length > 0) {
-                        // Get the first reference file
-                        const refFile = asset.reference_files[0];
-                        if (refFile._links?.download?.href) {
-                          imageUrl = refFile._links.download.href;
-                          isAssetCode = true;
-                          console.log(`✅ Found asset download URL: ${imageUrl}`);
+                    // Try as asset (only for single codes, not paths)
+                    if (isSingleCode) {
+                      try {
+                        console.log(`📦 Attempting to fetch asset: ${item.data}`);
+                        const asset = await akeneoClient.getAsset(item.data);
+                        if (asset && asset.reference_files && asset.reference_files.length > 0) {
+                          // Get the first reference file
+                          const refFile = asset.reference_files[0];
+                          if (refFile._links?.download?.href) {
+                            imageUrl = refFile._links.download.href;
+                            isAssetCode = true;
+                            console.log(`✅ Found asset download URL: ${imageUrl}`);
+                          }
+                        }
+                      } catch (assetError) {
+                        console.log(`❌ Not an asset either: ${assetError.message}`);
+                        // For media paths, we can't use them as direct URLs
+                        if (isAkeneoMediaPath) {
+                          console.log(`⚠️ Media file path cannot be used as direct URL, skipping`);
+                          imageUrl = null;
+                        } else {
+                          imageUrl = item.data;
                         }
                       }
-                    } catch (assetError) {
-                      console.log(`❌ Not an asset either: ${assetError.message}`);
-                      // Use the original value as URL
+                    } else if (isAkeneoMediaPath) {
+                      // For media paths that failed API lookup, we can't use them as URLs
+                      console.log(`⚠️ Media file path cannot be used as direct URL, skipping`);
+                      imageUrl = null;
+                    } else {
                       imageUrl = item.data;
                     }
                   }
                 } else {
-                  // No client available, treat as URL
-                  imageUrl = item.data;
+                  // No client available
+                  if (isAkeneoMediaPath) {
+                    console.log(`⚠️ No Akeneo client available to fetch media file, skipping`);
+                    imageUrl = null;
+                  } else {
+                    imageUrl = item.data;
+                  }
                 }
               } else {
-                // It's already a URL
+                // It's already a URL or a regular path
                 imageUrl = item.data;
               }
             } else if (typeof item.data === 'object') {
@@ -661,12 +743,20 @@ class AkeneoMapping {
               imageUrl = imageUrl.trim();
               console.log(`📷 Processing image URL: ${imageUrl}`);
               
-              // Make sure URL is absolute
+              // Make sure URL is absolute (but only if it's not already a full URL)
               if (!imageUrl.startsWith('http') && baseUrl) {
-                const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
-                const cleanImageUrl = imageUrl.replace(/^\/+/, '');
-                imageUrl = `${cleanBaseUrl}/${cleanImageUrl}`;
-                console.log(`🔗 Constructed absolute URL: ${imageUrl}`);
+                // Check if it's an API path that needs the base URL
+                if (imageUrl.startsWith('/api/')) {
+                  const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
+                  imageUrl = `${cleanBaseUrl}${imageUrl}`;
+                  console.log(`🔗 Constructed API URL: ${imageUrl}`);
+                } else if (!isMediaCode && !isAssetCode) {
+                  // Only construct URLs for non-media/asset paths
+                  const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
+                  const cleanImageUrl = imageUrl.replace(/^\/+/, '');
+                  imageUrl = `${cleanBaseUrl}/${cleanImageUrl}`;
+                  console.log(`🔗 Constructed absolute URL: ${imageUrl}`);
+                }
               }
               
               let finalImageUrl = imageUrl;
@@ -732,7 +822,22 @@ class AkeneoMapping {
       }
     }
 
-    console.log(`🎯 Image extraction complete: Found ${foundImageCount} images total`);
+    console.log(`\n🎯 ===== IMAGE EXTRACTION COMPLETE =====`);
+    console.log(`  Total images found: ${images.length}`);
+    console.log(`  Found image count tracker: ${foundImageCount}`);
+    if (images.length > 0) {
+      console.log(`  Images extracted:`);
+      images.forEach((img, idx) => {
+        console.log(`    ${idx + 1}. URL: ${img.url}`);
+        console.log(`       Original: ${img.metadata?.original_url || 'N/A'}`);
+        console.log(`       Downloaded: ${img.metadata?.downloaded || false}`);
+        console.log(`       From attribute: ${img.metadata?.attribute || 'unknown'}`);
+      });
+    } else {
+      console.log(`  ❌ NO IMAGES EXTRACTED!`);
+    }
+    console.log(`========================================\n`);
+    
     return images;
   }
 
