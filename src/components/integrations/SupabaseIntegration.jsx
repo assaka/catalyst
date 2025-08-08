@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import apiClient from '../../api/client';
-import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive } from 'lucide-react';
+import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload } from 'lucide-react';
 
 const SupabaseIntegration = ({ storeId }) => {
   // Helper function to format storage sizes (handles both string and number values)
