@@ -92,9 +92,18 @@ export default function Categories() {
     if (!storeId) return;
 
     try {
+      // Get the proper authentication token (same logic as apiClient)
+      const token = localStorage.getItem('store_owner_auth_token') ||
+                   localStorage.getItem('customer_auth_token') ||
+                   localStorage.getItem('auth_token') ||
+                   localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   sessionStorage.getItem('token') ||
+                   sessionStorage.getItem('authToken');
+
       const response = await fetch(`/api/stores/${storeId}/settings`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -103,6 +112,8 @@ export default function Categories() {
         setStoreSettings(data.settings || {});
         setSelectedRootCategory(data.settings?.rootCategoryId || '');
         setExcludeRootFromMenu(data.settings?.excludeRootFromMenu || false);
+      } else if (response.status === 401) {
+        console.error('Authentication error loading settings - token may be expired');
       }
     } catch (error) {
       console.error('Error loading store settings:', error);
@@ -114,11 +125,26 @@ export default function Categories() {
     if (!storeId) return;
 
     try {
+      // Get the proper authentication token (same logic as apiClient)
+      const token = localStorage.getItem('store_owner_auth_token') ||
+                   localStorage.getItem('customer_auth_token') ||
+                   localStorage.getItem('auth_token') ||
+                   localStorage.getItem('token') ||
+                   localStorage.getItem('authToken') ||
+                   sessionStorage.getItem('token') ||
+                   sessionStorage.getItem('authToken');
+      
+      if (!token) {
+        console.error('No authentication token found');
+        toast.error('Authentication required. Please log in again.');
+        return;
+      }
+
       const response = await fetch(`/api/stores/${storeId}/settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ settings: { ...storeSettings, ...newSettings } })
       });
@@ -127,11 +153,19 @@ export default function Categories() {
         setStoreSettings(prev => ({ ...prev, ...newSettings }));
         // Clear cache to update navigation menus
         clearCategoriesCache(storeId);
+        toast.success('Settings updated successfully');
       } else {
-        console.error('Failed to save store settings');
+        const errorText = await response.text();
+        console.error('Failed to save settings:', response.status, errorText);
+        if (response.status === 401) {
+          toast.error('Authentication expired. Please log in again.');
+        } else {
+          toast.error('Failed to update settings');
+        }
       }
     } catch (error) {
       console.error('Error saving store settings:', error);
+      toast.error('Failed to update settings');
     }
   };
 

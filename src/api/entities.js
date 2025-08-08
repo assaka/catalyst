@@ -452,6 +452,18 @@ class StoreService extends BaseEntity {
       return [];
     }
   }
+
+  // Update store settings specifically
+  async updateSettings(id, settingsData) {
+    try {
+      // Use the specific settings endpoint
+      const response = await apiClient.put(`stores/${id}/settings`, settingsData);
+      return response;
+    } catch (error) {
+      console.error(`StoreService.updateSettings() error:`, error.message);
+      throw error;
+    }
+  }
 }
 
 // Product service with additional methods

@@ -1,0 +1,2 @@
+- always use git to push to repo
+- when debugging always check remote supabase, vercel and render

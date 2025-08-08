@@ -449,7 +449,8 @@ export default function Settings() {
         payload.settings = JSON.parse(payload.settings);
       }
       
-      const apiResult = await retryApiCall(() => Store.update(store.id, payload));
+      // Use the specific settings endpoint for updating store settings
+      const apiResult = await retryApiCall(() => Store.updateSettings(store.id, payload));
       
       // Handle array response from API client
       const result = Array.isArray(apiResult) ? apiResult[0] : apiResult;
