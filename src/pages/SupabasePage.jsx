@@ -131,8 +131,8 @@ const SupabasePage = () => {
         </div>
       </div>
 
-      {/* Show SupabaseIntegration component which handles everything */}
-      <SupabaseIntegration storeId={storeId} />
+      {/* Show SupabaseIntegration component in database context */}
+      <SupabaseIntegration storeId={storeId} context="database" />
     </div>
   );
 };

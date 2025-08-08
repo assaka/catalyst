@@ -1579,6 +1579,7 @@ const AkeneoIntegration = () => {
 
   const importFamilies = async () => {
     console.log('📦 Starting families import...');
+    const storeId = localStorage.getItem('selectedStoreId');
     
     if (!connectionStatus?.success) {
       console.error('❌ Connection not tested or failed');

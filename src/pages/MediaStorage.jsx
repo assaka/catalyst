@@ -268,7 +268,7 @@ const MediaStorage = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <SupabaseIntegration storeId={storeId} />
+                      <SupabaseIntegration storeId={storeId} context="storage" />
                     </CardContent>
                   </Card>
                 </div>
@@ -287,8 +287,8 @@ const MediaStorage = () => {
                     </Alert>
                   )}
                   
-                  {/* Supabase Integration - handles both connection and storage */}
-                  <SupabaseIntegration storeId={storeId} />
+                  {/* Supabase Integration - handles storage features */}
+                  <SupabaseIntegration storeId={storeId} context="storage" />
                 </div>
               )}
             </>
