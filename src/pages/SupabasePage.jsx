@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
 import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
-import SupabaseStorage from '../components/admin/SupabaseStorage';
-import { Database, Check, Star } from 'lucide-react';
+import { Database, Check, HardDrive } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import apiClient from '../api/client';
-// Force rebuild - removed api-client import
 
 const SupabasePage = () => {
   const { selectedStore } = useStoreSelection();
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isDefault, setIsDefault] = useState(false);
-  const [settingDefault, setSettingDefault] = useState(false);
+  const [isDefaultDatabase, setIsDefaultDatabase] = useState(false);
+  const [isDefaultStorage, setIsDefaultStorage] = useState(false);
+  const [settingDefaultDatabase, setSettingDefaultDatabase] = useState(false);
+  const [settingDefaultStorage, setSettingDefaultStorage] = useState(false);
   
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
       loadConnectionStatus();
-      checkIfDefault();
+      checkDefaults();
     }
   }, [storeId]);
 
@@ -44,39 +44,67 @@ const SupabasePage = () => {
     }
   };
 
-  const checkIfDefault = async () => {
+  const checkDefaults = async () => {
     try {
-      const response = await apiClient.get(`/stores/${storeId}/default-database-provider`);
-      // apiClient returns the response directly, not wrapped in .data
-      setIsDefault(response?.provider === 'supabase');
+      // Check default database provider
+      const dbResponse = await apiClient.get(`/stores/${storeId}/default-database-provider`);
+      setIsDefaultDatabase(dbResponse?.provider === 'supabase');
+      
+      // Check default media storage provider
+      const storageResponse = await apiClient.get(`/stores/${storeId}/default-mediastorage-provider`);
+      setIsDefaultStorage(storageResponse?.provider === 'supabase');
     } catch (error) {
-      console.error('Error checking default database provider:', error);
+      console.error('Error checking default providers:', error);
     }
   };
 
-  const handleSetAsDefault = async () => {
+  const handleSetAsDefaultDatabase = async () => {
     if (!storeId) {
       toast.error('Please select a store first');
       return;
     }
 
-    setSettingDefault(true);
+    setSettingDefaultDatabase(true);
     try {
-      // Set as default database provider (this will also set media storage provider)
       await apiClient.post(`/stores/${storeId}/default-database-provider`, {
         provider: 'supabase'
       });
       
-      setIsDefault(true);
-      toast.success('Supabase set as default database and media storage provider');
+      setIsDefaultDatabase(true);
+      toast.success('Supabase set as default database provider');
       
-      // Refresh the default status to ensure consistency
-      await checkIfDefault();
+      // Refresh the default status
+      await checkDefaults();
     } catch (error) {
-      console.error('Error setting default provider:', error);
-      toast.error('Failed to set as default provider');
+      console.error('Error setting default database provider:', error);
+      toast.error('Failed to set as default database provider');
     } finally {
-      setSettingDefault(false);
+      setSettingDefaultDatabase(false);
+    }
+  };
+
+  const handleSetAsDefaultStorage = async () => {
+    if (!storeId) {
+      toast.error('Please select a store first');
+      return;
+    }
+
+    setSettingDefaultStorage(true);
+    try {
+      await apiClient.post(`/stores/${storeId}/default-mediastorage-provider`, {
+        provider: 'supabase'
+      });
+      
+      setIsDefaultStorage(true);
+      toast.success('Supabase set as default media storage provider');
+      
+      // Refresh the default status
+      await checkDefaults();
+    } catch (error) {
+      console.error('Error setting default storage provider:', error);
+      toast.error('Failed to set as default storage provider');
+    } finally {
+      setSettingDefaultStorage(false);
     }
   };
 
@@ -99,7 +127,7 @@ const SupabasePage = () => {
     );
   }
 
-  // Always show both components - SupabaseIntegration handles connection state internally
+  // Show the main Supabase integration page with both database and storage features
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -111,32 +139,50 @@ const SupabasePage = () => {
               : 'Connect your Supabase account for database and storage management'}
           </p>
         </div>
-        <Button
-          onClick={handleSetAsDefault}
-          disabled={settingDefault || isDefault}
-          variant={isDefault ? "secondary" : "default"}
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          {isDefault ? (
-            <>
-              <Check className="h-4 w-4" />
-              <span>Default Database</span>
-            </>
-          ) : (
-            <>
-              <Star className="h-4 w-4" />
-              <span>Set as Default</span>
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleSetAsDefaultDatabase}
+            disabled={settingDefaultDatabase || isDefaultDatabase || !connectionStatus?.connected}
+            variant={isDefaultDatabase ? "secondary" : "default"}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            {isDefaultDatabase ? (
+              <>
+                <Check className="h-4 w-4" />
+                <span>Default Database</span>
+              </>
+            ) : (
+              <>
+                <Database className="h-4 w-4" />
+                <span>Set as Default Database</span>
+              </>
+            )}
+          </Button>
+          <Button
+            onClick={handleSetAsDefaultStorage}
+            disabled={settingDefaultStorage || isDefaultStorage || !connectionStatus?.connected}
+            variant={isDefaultStorage ? "secondary" : "default"}
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            {isDefaultStorage ? (
+              <>
+                <Check className="h-4 w-4" />
+                <span>Default Storage</span>
+              </>
+            ) : (
+              <>
+                <HardDrive className="h-4 w-4" />
+                <span>Set as Default Storage</span>
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
-      {/* Show SupabaseIntegration for connection management */}
+      {/* Show SupabaseIntegration component which handles everything */}
       <SupabaseIntegration storeId={storeId} />
-      
-      {/* Show SupabaseStorage only when connected */}
-      {connectionStatus?.connected && <SupabaseStorage />}
     </div>
   );
 };

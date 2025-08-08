@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
 import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
-import SupabaseStorage from '../components/admin/SupabaseStorage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
@@ -288,11 +287,8 @@ const MediaStorage = () => {
                     </Alert>
                   )}
                   
-                  {/* Connection Management */}
+                  {/* Supabase Integration - handles both connection and storage */}
                   <SupabaseIntegration storeId={storeId} />
-                  
-                  {/* Storage Statistics and Buckets */}
-                  <SupabaseStorage />
                 </div>
               )}
             </>
