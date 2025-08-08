@@ -687,18 +687,6 @@ export default function ProductDetail() {
           <div>
             <CmsBlockRenderer position="product_above_title" />
             <h1 className="text-3xl font-bold mb-2">{product?.name}</h1>
-            {product && product.attributes && Object.keys(product.attributes).length > 0 && (
-              <div className="mb-3">
-                {(() => {
-                  const autoName = generateProductName(product);
-                  return autoName && autoName !== product.name ? (
-                    <p className="text-lg text-gray-600 italic">
-                      Auto-generated: {autoName}
-                    </p>
-                  ) : null;
-                })()}
-              </div>
-            )}
             <CmsBlockRenderer position="product_below_title" />
             <CmsBlockRenderer position="product_above_price" />
             <div className="flex items-center space-x-4 mb-4">
