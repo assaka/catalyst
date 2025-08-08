@@ -35,7 +35,7 @@ const Product = sequelize.define('Product', {
   },
   price: {
     type: DataTypes.DECIMAL(10, 2),
-    allowNull: false
+    allowNull: true
   },
   compare_price: {
     type: DataTypes.DECIMAL(10, 2),
