@@ -475,9 +475,12 @@ export default function ProductDetail() {
         return label.replace(/\{\(\{quantity\}\)\}|\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
       }
       // Replace {quantity} or ({quantity}) with actual number - handle both formats
-      // Updated to handle {({quantity})} pattern
+      // Updated to handle {({quantity})} pattern and ({quantity}) pattern
       return label.replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
         if (match === '{({quantity})}') {
+          return `(${product.stock_quantity})`;
+        }
+        if (match === '({quantity})') {
           return `(${product.stock_quantity})`;
         }
         return match.includes('(') ? `(${product.stock_quantity})` : product.stock_quantity.toString();
@@ -492,9 +495,12 @@ export default function ProductDetail() {
       return label.replace(/\{\(\{quantity\}\)\}|\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
     }
     // Replace {quantity} or ({quantity}) with actual number - handle both formats
-    // Updated to handle {({quantity})} pattern
+    // Updated to handle {({quantity})} pattern and ({quantity}) pattern
     return label.replace(/\{\(\{quantity\}\)\}|\(\{quantity\}\)|\{quantity\}/g, (match) => {
       if (match === '{({quantity})}') {
+        return `(${product.stock_quantity})`;
+      }
+      if (match === '({quantity})') {
         return `(${product.stock_quantity})`;
       }
       return match.includes('(') ? `(${product.stock_quantity})` : product.stock_quantity.toString();
