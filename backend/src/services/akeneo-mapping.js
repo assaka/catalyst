@@ -687,11 +687,13 @@ class AkeneoMapping {
    * Download image from Akeneo and upload to storage system
    */
   async downloadAndUploadImage(imageUrl, imageItem, storeId = null) {
-    const fetch = require('node-fetch');
     const storageManager = require('./storage-manager');
     
     try {
       console.log(`📥 Downloading image from Akeneo: ${imageUrl}`);
+      
+      // Dynamic import for ES Module compatibility
+      const fetch = (await import('node-fetch')).default;
       
       // Download the image
       const response = await fetch(imageUrl);
