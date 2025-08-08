@@ -155,6 +155,9 @@ export default function Products() {
         }),
         retryApiCall(() => Category.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
           console.error('❌ Category.filter failed:', error);
+          if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Access denied')) {
+            console.error('🔐 Authentication required to load categories. Please log in.');
+          }
           return [];
         }),
         retryApiCall(() => Tax.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
@@ -175,9 +178,6 @@ export default function Products() {
       console.log('📦 First batch:', firstProductBatch.data?.length || 0, 'products');
 
       // Set other data immediately
-      console.log('📋 Categories data received:', categoriesData);
-      console.log('📋 Categories array check:', Array.isArray(categoriesData));
-      console.log('📋 Categories length:', categoriesData?.length || 0);
       
       setCategories(Array.isArray(categoriesData) ? categoriesData : []);
       setTaxes(Array.isArray(taxesData) ? taxesData : []);
@@ -718,13 +718,6 @@ export default function Products() {
                 setFilters={setFilters}
                 categories={categories}
               />
-              {/* Debug info */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-2 text-xs text-gray-500">
-                  Categories loaded: {categories.length} 
-                  {categories.length > 0 && ` (${categories.map(c => c.name).join(', ')})`}
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
