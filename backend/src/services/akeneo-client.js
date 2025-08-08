@@ -487,6 +487,31 @@ class AkeneoClient {
   }
 
   /**
+   * Get attribute options for a specific attribute
+   * @param {string} attributeCode - The attribute code to get options for
+   * @returns {Promise<Array>} Array of attribute options
+   */
+  async getAttributeOptions(attributeCode) {
+    const allOptions = [];
+    let nextUrl = null;
+
+    do {
+      const params = nextUrl ? {} : { limit: 100 };
+      const endpoint = nextUrl ? nextUrl.replace(this.baseUrl, '') : `/api/rest/v1/attributes/${attributeCode}/options`;
+      
+      const response = await this.makeRequest('GET', endpoint, null, nextUrl ? null : params);
+
+      if (response._embedded && response._embedded.items) {
+        allOptions.push(...response._embedded.items);
+      }
+
+      nextUrl = response._links && response._links.next ? response._links.next.href : null;
+    } while (nextUrl);
+
+    return allOptions;
+  }
+
+  /**
    * Get media file download URL with authentication
    * @param {string} code - Media file code
    * @returns {Promise<object>} Media file info with download URL

@@ -1210,10 +1210,10 @@ class AkeneoMapping {
   /**
    * Transform Akeneo attribute to Catalyst Attribute format
    */
-  transformAttribute(akeneoAttribute, storeId) {
+  transformAttribute(akeneoAttribute, storeId, locale = 'en_US', fetchedOptions = null) {
     const catalystAttribute = {
       store_id: storeId,
-      name: this.extractLocalizedValue(akeneoAttribute.labels) || akeneoAttribute.code,
+      name: this.extractLocalizedValue(akeneoAttribute.labels, locale) || akeneoAttribute.code,
       code: akeneoAttribute.code,
       type: this.mapAttributeType(akeneoAttribute.type),
       is_required: akeneoAttribute.required || false,
@@ -1221,7 +1221,7 @@ class AkeneoMapping {
       is_searchable: akeneoAttribute.searchable || false,
       is_usable_in_conditions: akeneoAttribute.useable_as_grid_filter || false,
       filter_type: this.mapFilterType(akeneoAttribute.type),
-      options: this.extractAttributeOptions(akeneoAttribute),
+      options: this.extractAttributeOptions(akeneoAttribute, fetchedOptions),
       file_settings: this.extractFileSettings(akeneoAttribute),
       sort_order: akeneoAttribute.sort_order || 0,
       // Keep original Akeneo data for reference
@@ -1271,9 +1271,21 @@ class AkeneoMapping {
   /**
    * Extract attribute options from Akeneo attribute
    */
-  extractAttributeOptions(akeneoAttribute) {
+  extractAttributeOptions(akeneoAttribute, fetchedOptions = null) {
+    // If we have fetched options from the API, use those first
+    if (fetchedOptions && Array.isArray(fetchedOptions) && fetchedOptions.length > 0) {
+      console.log(`🔗 Using ${fetchedOptions.length} fetched options for attribute: ${akeneoAttribute.code}`);
+      return fetchedOptions.map((option, index) => ({
+        code: option.code,
+        label: this.extractLocalizedValue(option.labels) || option.code,
+        sort_order: option.sort_order || index
+      }));
+    }
+
+    // Fallback to embedded options in attribute object (legacy)
     if (!akeneoAttribute.options) return [];
 
+    console.log(`📦 Using embedded options for attribute: ${akeneoAttribute.code}`);
     return Object.keys(akeneoAttribute.options).map(optionCode => ({
       code: optionCode,
       label: this.extractLocalizedValue(akeneoAttribute.options[optionCode].labels) || optionCode,

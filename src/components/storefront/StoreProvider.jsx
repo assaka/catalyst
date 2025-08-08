@@ -258,23 +258,67 @@ export const StoreProvider = ({ children }) => {
       console.log('🔍 [StoreProvider] expandAllMenuItems:', selectedStore.settings?.expandAllMenuItems);
       
       // Set store with merged settings
+      // IMPORTANT: Spread store settings FIRST, then apply defaults only for missing properties
       const mergedSettings = {
-        enable_inventory: true,
-        enable_reviews: true,
-        allow_guest_checkout: true,
-        require_shipping_address: true,
-        hide_currency_category: false,
-        hide_currency_product: false,
-        hide_header_cart: false,
-        hide_header_checkout: false,
-        hide_quantity_selector: false,
-        hide_stock_quantity: false,
-        show_stock_label: true,
-        show_permanent_search: true,
-        currency_code: selectedStore.currency || 'USD',
-        currency_symbol: getCurrencySymbol(selectedStore.currency || 'USD'),
-        show_category_in_breadcrumb: true,
-        theme: {
+        // Spread existing store settings first to preserve saved values
+        ...(selectedStore.settings || {}),
+        
+        // Then set defaults ONLY for properties that don't exist in store settings
+        // Stock settings - preserve saved values
+        enable_inventory: selectedStore.settings?.enable_inventory !== undefined 
+          ? selectedStore.settings.enable_inventory 
+          : true,
+        display_out_of_stock: selectedStore.settings?.display_out_of_stock !== undefined
+          ? selectedStore.settings.display_out_of_stock
+          : true,
+        hide_stock_quantity: selectedStore.settings?.hide_stock_quantity !== undefined
+          ? selectedStore.settings.hide_stock_quantity
+          : false,
+        display_low_stock_threshold: selectedStore.settings?.display_low_stock_threshold !== undefined
+          ? selectedStore.settings.display_low_stock_threshold
+          : 0,
+        show_stock_label: selectedStore.settings?.stock_settings?.show_stock_label !== undefined
+          ? selectedStore.settings.stock_settings.show_stock_label
+          : true,
+        
+        // Other settings with proper defaults
+        enable_reviews: selectedStore.settings?.enable_reviews !== undefined 
+          ? selectedStore.settings.enable_reviews 
+          : true,
+        allow_guest_checkout: selectedStore.settings?.allow_guest_checkout !== undefined
+          ? selectedStore.settings.allow_guest_checkout
+          : true,
+        require_shipping_address: selectedStore.settings?.require_shipping_address !== undefined
+          ? selectedStore.settings.require_shipping_address
+          : true,
+        hide_currency_category: selectedStore.settings?.hide_currency_category !== undefined
+          ? selectedStore.settings.hide_currency_category
+          : false,
+        hide_currency_product: selectedStore.settings?.hide_currency_product !== undefined
+          ? selectedStore.settings.hide_currency_product
+          : false,
+        hide_header_cart: selectedStore.settings?.hide_header_cart !== undefined
+          ? selectedStore.settings.hide_header_cart
+          : false,
+        hide_header_checkout: selectedStore.settings?.hide_header_checkout !== undefined
+          ? selectedStore.settings.hide_header_checkout
+          : false,
+        hide_quantity_selector: selectedStore.settings?.hide_quantity_selector !== undefined
+          ? selectedStore.settings.hide_quantity_selector
+          : false,
+        show_permanent_search: selectedStore.settings?.show_permanent_search !== undefined
+          ? selectedStore.settings.show_permanent_search
+          : true,
+        show_category_in_breadcrumb: selectedStore.settings?.show_category_in_breadcrumb !== undefined
+          ? selectedStore.settings.show_category_in_breadcrumb
+          : true,
+        
+        // Currency settings
+        currency_code: selectedStore.settings?.currency_code || selectedStore.currency || 'USD',
+        currency_symbol: selectedStore.settings?.currency_symbol || getCurrencySymbol(selectedStore.currency || 'USD'),
+        
+        // Theme defaults (only if not already defined)
+        theme: selectedStore.settings?.theme || {
           primary_button_color: '#007bff',
           secondary_button_color: '#6c757d',
           add_to_cart_button_color: '#28a745',
@@ -283,14 +327,16 @@ export const StoreProvider = ({ children }) => {
           place_order_button_color: '#28a745',
           font_family: 'Inter'
         },
-        cookie_consent: {
+        
+        // Cookie consent defaults (only if not already defined)
+        cookie_consent: selectedStore.settings?.cookie_consent || {
           enabled: false
         },
-        // Merge store settings first, then set defaults only for missing properties
-        ...(selectedStore.settings || {}),
+        
         // Ensure boolean values for navigation settings are properly handled
         excludeRootFromMenu: selectedStore.settings?.excludeRootFromMenu === true,
         expandAllMenuItems: selectedStore.settings?.expandAllMenuItems === true,
+        
         // Only set default allowed_countries if not already defined in store settings
         allowed_countries: (selectedStore.settings && selectedStore.settings.allowed_countries) 
           ? selectedStore.settings.allowed_countries 

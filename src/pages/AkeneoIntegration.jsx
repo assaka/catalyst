@@ -326,7 +326,8 @@ const AkeneoIntegration = () => {
   
   const [attributeSettings, setAttributeSettings] = useState({
     updatedInterval: 0, // hours
-    selectedFamilies: []
+    selectedFamilies: [],
+    includeAttributeOptions: true // Default to true for importing attribute options
   });
 
   // Custom mapping configurations
@@ -2723,6 +2724,22 @@ const AkeneoIntegration = () => {
                     />
                     <p className="text-xs text-gray-500">Only import attributes updated within this timeframe</p>
                   </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="includeAttributeOptions"
+                      checked={attributeSettings.includeAttributeOptions}
+                      onCheckedChange={(checked) =>
+                        setAttributeSettings(prev => ({ ...prev, includeAttributeOptions: checked }))
+                      }
+                    />
+                    <Label htmlFor="includeAttributeOptions" className="text-sm">
+                      Include Attribute options
+                    </Label>
+                  </div>
+                  <p className="text-xs text-gray-500 ml-6">
+                    Import option values for select and multiselect attributes
+                  </p>
 
                   {familyOptions.length > 0 && (
                     <div className="space-y-2">

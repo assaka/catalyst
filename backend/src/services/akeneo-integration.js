@@ -675,9 +675,33 @@ class AkeneoIntegration {
 
       // Transform attributes to Catalyst format
       console.log('🔄 Transforming attributes to Catalyst format...');
-      const catalystAttributes = akeneoAttributes.map(akeneoAttribute => 
-        this.mapping.transformAttribute(akeneoAttribute, storeId)
-      );
+      const catalystAttributes = [];
+      
+      // Check if attribute options should be included (default: true)
+      const includeAttributeOptions = settings.includeAttributeOptions !== false;
+      console.log(`🎯 Include attribute options: ${includeAttributeOptions}`);
+      
+      for (const akeneoAttribute of akeneoAttributes) {
+        let attributeOptions = null;
+        
+        // Fetch attribute options for select/multiselect types if enabled
+        if (includeAttributeOptions && 
+            (akeneoAttribute.type === 'pim_catalog_simpleselect' || 
+             akeneoAttribute.type === 'pim_catalog_multiselect')) {
+          try {
+            console.log(`📋 Fetching options for ${akeneoAttribute.type} attribute: ${akeneoAttribute.code}`);
+            attributeOptions = await this.client.getAttributeOptions(akeneoAttribute.code);
+            console.log(`✅ Found ${attributeOptions.length} options for ${akeneoAttribute.code}`);
+          } catch (error) {
+            console.error(`❌ Failed to fetch options for attribute ${akeneoAttribute.code}:`, error.message);
+            // Continue with transformation without options
+          }
+        }
+        
+        // Transform the attribute with fetched options
+        const transformedAttribute = this.mapping.transformAttribute(akeneoAttribute, storeId, 'en_US', attributeOptions);
+        catalystAttributes.push(transformedAttribute);
+      }
 
       console.log(`✅ Transformed ${catalystAttributes.length} attributes`);
 

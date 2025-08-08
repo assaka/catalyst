@@ -156,7 +156,24 @@ export default function Storefront() {
   };
   
   const filteredProducts = useMemo(() => {
-    const currentProducts = isHomepage ? featuredProducts : products;
+    let currentProducts = isHomepage ? featuredProducts : products;
+    
+    // First apply stock filtering based on display_out_of_stock setting
+    // When display_out_of_stock is false, hide products with stock_quantity = 0
+    if (settings?.enable_inventory && !settings?.display_out_of_stock) {
+      currentProducts = currentProducts.filter(product => {
+        // If inventory is enabled and we should hide out of stock products
+        // Keep products that have stock > 0 or no stock_quantity property
+        // (no stock_quantity means unlimited stock)
+        if (product.stock_quantity !== undefined && product.stock_quantity !== null) {
+          return product.stock_quantity > 0;
+        }
+        // Products without stock_quantity property are always shown (unlimited stock)
+        return true;
+      });
+    }
+    
+    // Then apply user filters
     if (Object.keys(activeFilters).length === 0) return currentProducts;
 
     return currentProducts.filter(product => {
@@ -216,7 +233,7 @@ export default function Storefront() {
       }
       return true;
     });
-  }, [products, featuredProducts, activeFilters, isHomepage]);
+  }, [products, featuredProducts, activeFilters, isHomepage, settings]);
 
 
   if (storeLoading) {
