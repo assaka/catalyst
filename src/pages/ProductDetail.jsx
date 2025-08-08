@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import { createCategoryUrl } from "@/utils/urlUtils";
 // Redirect handling moved to global RedirectHandler component
 import { useNotFound } from "@/utils/notFoundUtils";
 import { StorefrontProduct } from "@/api/storefront-entities";
@@ -523,11 +524,11 @@ export default function ProductDetail() {
           }
         }
         
-        // Add category items to breadcrumb
+        // Add category items to breadcrumb with correct URL format
         categoryChain.forEach(cat => {
           items.push({
             name: cat.name,
-            url: createPageUrl(`Storefront?category=${cat.slug}`)
+            url: createCategoryUrl(store?.slug || store?.code, cat.slug)
           });
         });
       }

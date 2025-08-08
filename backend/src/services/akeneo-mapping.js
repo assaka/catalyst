@@ -127,7 +127,7 @@ class AkeneoMapping {
       weight: this.extractNumericValue(values, 'weight', locale) || 
               this.extractNumericValue(values, 'weight_kg', locale),
       dimensions: this.extractDimensions(values, locale),
-      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient),
+      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient, akeneoProduct.identifier),
       status: akeneoProduct.enabled ? 'active' : 'inactive',
       visibility: 'visible',
       manage_stock: this.extractBooleanValue(values, 'manage_stock', locale) ?? true,
@@ -552,7 +552,7 @@ class AkeneoMapping {
   /**
    * Extract images from product attributes (enhanced)
    */
-  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null, storeId = null, akeneoClient = null) {
+  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null, storeId = null, akeneoClient = null, productIdentifier = null) {
     // If we have processed images from Cloudflare, use those
     if (processedImages && processedImages.length > 0) {
       return processedImages.map((img, index) => ({
@@ -768,10 +768,15 @@ class AkeneoMapping {
                   console.log(`⬇️ Attempting to download image: ${imageUrl}`);
                   // Use authenticated download for media files and assets
                   const needsAuth = isMediaCode || isAssetCode || imageUrl.includes('/api/rest/');
-                  uploadResult = await this.downloadAndUploadImage(imageUrl, item, storeId, needsAuth ? akeneoClient : null);
+                  uploadResult = await this.downloadAndUploadImage(imageUrl, item, storeId, needsAuth ? akeneoClient : null, productIdentifier);
                   if (uploadResult && uploadResult.url) {
                     finalImageUrl = uploadResult.url;
-                    console.log(`✅ Image uploaded successfully: ${finalImageUrl}`);
+                    console.log(`✅ Image uploaded successfully to Supabase!`);
+                    console.log(`   Original Akeneo URL: ${imageUrl}`);
+                    console.log(`   New Supabase URL: ${finalImageUrl}`);
+                    console.log(`   Upload provider: ${uploadResult.uploadedTo || 'unknown'}`);
+                  } else {
+                    console.warn(`⚠️ Upload result missing URL, keeping original: ${imageUrl}`);
                   }
                 } catch (error) {
                   console.warn(`⚠️ Failed to download/upload image ${imageUrl}:`, error.message);
@@ -815,7 +820,11 @@ class AkeneoMapping {
               
               images.push(imageObject);
               foundImageCount++;
-              console.log(`📁 Added image ${foundImageCount}: ${finalImageUrl.substring(0, 80)}...`);
+              console.log(`📁 Added image ${foundImageCount}:`);
+              console.log(`   Final URL being saved: ${finalImageUrl}`);
+              console.log(`   Is Supabase URL: ${finalImageUrl.includes('supabase.co')}`);
+              console.log(`   Is Akeneo URL: ${finalImageUrl.includes('akeneo')}`);
+              console.log(`   Was downloaded/uploaded: ${!!uploadResult}`);
             }
           }
         }
@@ -844,7 +853,7 @@ class AkeneoMapping {
   /**
    * Download image from Akeneo and upload to storage system
    */
-  async downloadAndUploadImage(imageUrl, imageItem, storeId = null, akeneoClient = null) {
+  async downloadAndUploadImage(imageUrl, imageItem, storeId = null, akeneoClient = null, productIdentifier = null) {
     const storageManager = require('./storage-manager');
     const StoragePathUtility = require('./storage-path-utility');
     
@@ -906,6 +915,19 @@ class AkeneoMapping {
         originalFileName = `${originalFileName}.${extension}`;
       }
       
+      // Add product identifier to filename to make it unique
+      if (productIdentifier) {
+        // Get the base name and extension
+        const lastDotIndex = originalFileName.lastIndexOf('.');
+        const baseName = lastDotIndex !== -1 ? originalFileName.substring(0, lastDotIndex) : originalFileName;
+        const fileExt = lastDotIndex !== -1 ? originalFileName.substring(lastDotIndex) : `.${extension}`;
+        
+        // Create new filename with product identifier
+        // Example: image.jpg becomes image_SKU123.jpg
+        originalFileName = `${baseName}_${productIdentifier}${fileExt}`;
+        console.log(`🏷️ Added product identifier to filename: ${originalFileName}`);
+      }
+      
       // Generate uniform path structure using StoragePathUtility
       const pathInfo = StoragePathUtility.generatePath(originalFileName, 'product');
       console.log(`🗂️  Generated uniform path: ${pathInfo.fullPath}`);
@@ -960,17 +982,17 @@ class AkeneoMapping {
       // Last resort fallback to local upload via API if storage manager fails
       const FormData = require('form-data');
       const fs = require('fs');
-      const path = require('path');
+      const pathModule = require('path');
       const os = require('os');
 
       // Create temporary file for fallback
-      const tempFilePath = path.join(os.tmpdir(), fileName);
+      const tempFilePath = pathModule.join(os.tmpdir(), pathInfo.filename);
       fs.writeFileSync(tempFilePath, buffer);
       
       // Create form data for local upload
       const formData = new FormData();
       formData.append('file', fs.createReadStream(tempFilePath), {
-        filename: fileName,
+        filename: pathInfo.filename,
         contentType: contentType
       });
       

@@ -252,6 +252,11 @@ export const StoreProvider = ({ children }) => {
       }
 
       
+      // DEBUG: Log the raw settings from the API
+      console.log('🔍 [StoreProvider] Raw selectedStore.settings from API:', selectedStore.settings);
+      console.log('🔍 [StoreProvider] excludeRootFromMenu:', selectedStore.settings?.excludeRootFromMenu);
+      console.log('🔍 [StoreProvider] expandAllMenuItems:', selectedStore.settings?.expandAllMenuItems);
+      
       // Set store with merged settings
       const mergedSettings = {
         enable_inventory: true,
@@ -289,7 +294,13 @@ export const StoreProvider = ({ children }) => {
           : ['US', 'CA', 'GB', 'DE', 'FR']
       };
       
+      // DEBUG: Log the merged settings
+      console.log('🔍 [StoreProvider] Merged settings:', mergedSettings);
+      console.log('🔍 [StoreProvider] Merged excludeRootFromMenu:', mergedSettings.excludeRootFromMenu);
+      console.log('🔍 [StoreProvider] Merged expandAllMenuItems:', mergedSettings.expandAllMenuItems);
+      
       setStore({ ...selectedStore, settings: mergedSettings });
+      console.log('🔍 [StoreProvider] Store set with settings:', { ...selectedStore, settings: mergedSettings });
       
       
       // Only set country if user hasn't selected one, or if current selection is not in allowed countries

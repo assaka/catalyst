@@ -286,6 +286,27 @@ class SupabaseStorageService extends StorageInterface {
     } catch (error) {
       console.error('Direct upload error:', error.response?.data || error.message);
       
+      // Handle duplicate file error (409) - return existing file URL
+      if (error.response?.status === 409 || error.response?.data?.error === 'Duplicate' || error.response?.data?.message?.includes('already exists')) {
+        console.log('🔄 File already exists in storage (direct API), returning existing URL for:', filePath);
+        
+        // Construct the public URL for the existing file
+        const publicUrl = `${tokenInfo.project_url}/storage/v1/object/public/${bucketName}/${filePath}`;
+        console.log('✅ Existing file URL (direct):', publicUrl);
+        
+        return {
+          success: true,
+          url: publicUrl,
+          publicUrl: publicUrl,
+          path: filePath,
+          bucket: bucketName,
+          size: file.size,
+          mimetype: file.mimetype,
+          filename: fileName,
+          alreadyExists: true
+        };
+      }
+      
       // Check if it's an authentication error
       if (error.response?.status === 403 || error.response?.status === 401) {
         throw new Error('Authentication failed. Please reconnect to Supabase with full permissions to enable storage operations.');
@@ -389,6 +410,31 @@ class SupabaseStorageService extends StorageInterface {
 
       if (error) {
         console.error('Storage upload error:', error);
+        
+        // Handle duplicate file error (409) - return existing file URL
+        if (error.statusCode === '409' || error.message?.includes('already exists') || error.message?.includes('Duplicate')) {
+          console.log('🔄 File already exists in storage, returning existing URL for:', filePath);
+          
+          // Get the public URL of the existing file
+          const { data: urlData } = client.storage
+            .from(bucketName)
+            .getPublicUrl(filePath);
+          
+          console.log('✅ Existing file URL:', urlData.publicUrl);
+          
+          return {
+            success: true,
+            url: urlData.publicUrl,
+            publicUrl: urlData.publicUrl,
+            path: filePath,
+            bucket: bucketName,
+            size: file.size,
+            mimetype: file.mimetype,
+            filename: fileName,
+            alreadyExists: true
+          };
+        }
+        
         // If it's a JWT error, retry with direct API
         if (error.message && (error.message.includes('JWT') || error.message.includes('JWS'))) {
           console.log('JWT error detected, retrying with direct API upload');

@@ -240,6 +240,10 @@ class StorageManager {
       const storeProvider = await this.getStorageProvider(storeId);
       const result = await storeProvider.provider.uploadFile(storeId, file, options);
       
+      console.log(`📦 Storage Manager: Upload completed via ${storeProvider.type}`);
+      console.log(`   Result URL: ${result.url}`);
+      console.log(`   Result bucket: ${result.bucket}`);
+      
       // Track file in media_assets table for all uploads
       // This ensures category, product, and library uploads all appear in Media Library
       try {
