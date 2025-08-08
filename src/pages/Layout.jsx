@@ -393,8 +393,13 @@ export default function Layout({ children, currentPageName }) {
         { name: "Template Editor", path: "template-editor", icon: FileCode },
         { name: "How-To Guide", path: "plugin-how-to", icon: Book },
         { name: "Integrations", path: "integrations", icon: RefreshCw, isPremium: true },
-        { name: "Akeneo Integration", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
-        { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
+      ]
+    },
+    {
+      name: "Import & Export",
+      items: [
+        { name: "Akeneo Connector", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
+        { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload }
       ]
     },
     {
