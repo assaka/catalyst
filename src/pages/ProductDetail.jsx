@@ -750,9 +750,6 @@ export default function ProductDetail() {
             )}
           </div>
 
-          {product?.short_description && (
-            <p className="text-gray-700 text-lg">{product.short_description}</p>
-          )}
 
           {/* Custom Options Display - Now handled by the CustomOptions component */}
           <CustomOptions
