@@ -480,6 +480,13 @@ class AkeneoIntegration {
               });
 
               if (existingProduct) {
+                // Log image data for debugging
+                if (catalystProduct.images && catalystProduct.images.length > 0) {
+                  console.log(`[Akeneo] Images for product ${catalystProduct.sku}:`, catalystProduct.images);
+                } else {
+                  console.log(`[Akeneo] No images for product ${catalystProduct.sku}`);
+                }
+                
                 // Prepare update data
                 const updateData = {
                   name: catalystProduct.name,

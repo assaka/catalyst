@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigation Settings Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Navigation Settings Test</h1>
+    
+    <div class="test-result info">
+        <h2>Test Plan</h2>
+        <p>This test verifies that the navigation settings are working correctly:</p>
+        <ol>
+            <li><strong>Exclude Root Category:</strong> When enabled, the root category should not appear in the navigation menu</li>
+            <li><strong>Expand All Menu Items (Collapse Subcategories):</strong> When disabled, subcategories should be collapsed by default</li>
+        </ol>
+    </div>
+    
+    <div class="test-result info">
+        <h2>Current Database Settings</h2>
+        <pre>
+excludeRootFromMenu: true
+expandAllMenuItems: false
+        </pre>
+        <p>With these settings:</p>
+        <ul>
+            <li>✅ Root category should NOT appear in the menu</li>
+            <li>✅ Subcategories should be COLLAPSED by default</li>
+        </ul>
+    </div>
+    
+    <div class="test-result success">
+        <h2>✅ Fixes Applied</h2>
+        <p>The following fixes have been implemented:</p>
+        <ol>
+            <li><strong>Categories.jsx:</strong> Fixed <code>loadStoreSettings()</code> to ensure boolean conversion</li>
+            <li><strong>Settings.jsx:</strong> Fixed settings initialization with explicit boolean conversion</li>
+            <li><strong>StoreProvider.jsx:</strong> Fixed <code>mergedSettings</code> to properly handle boolean navigation settings</li>
+        </ol>
+    </div>
+    
+    <div class="test-result info">
+        <h2>Manual Testing Steps</h2>
+        <ol>
+            <li>Navigate to the storefront at <code>/public/hamid2/storefront</code></li>
+            <li>Check the navigation menu:
+                <ul>
+                    <li>Verify that the root category "Welhof" is NOT displayed (excludeRootFromMenu = true)</li>
+                    <li>Verify that subcategories are collapsed by default (expandAllMenuItems = false)</li>
+                </ul>
+            </li>
+            <li>Navigate to the Categories admin page</li>
+            <li>Check that the Switch components show the correct state:
+                <ul>
+                    <li>"Exclude Root Category" should be ON</li>
+                    <li>"Expand All Categories" should be OFF</li>
+                </ul>
+            </li>
+            <li>Toggle the settings and verify they persist after page reload</li>
+        </ol>
+    </div>
+    
+    <div class="test-result success">
+        <h2>✅ Issue Resolution Summary</h2>
+        <p>The core issue was that settings were being stored correctly in the database but not properly initialized as booleans when loaded. The fix ensures that:</p>
+        <ul>
+            <li>Settings are explicitly converted to booleans using <code>=== true</code> comparison</li>
+            <li>This conversion happens at all critical points: loading, merging, and initializing</li>
+            <li>The Switch components and navigation logic now receive proper boolean values</li>
+        </ul>
+    </div>
+</body>
+</html>

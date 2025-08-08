@@ -943,7 +943,15 @@ class AkeneoMapping {
       // Upload using unified storage manager with specific path
       if (storeId) {
         try {
-          console.log(`☁️ Uploading via storage manager for store: ${storeId}`);
+          console.log(`☁️ [Akeneo] Uploading via storage manager for store: ${storeId}`);
+          console.log(`[Akeneo] Upload options:`, {
+            useOrganizedStructure: true,
+            type: 'product',
+            filename: pathInfo.filename,
+            customPath: pathInfo.fullPath,
+            public: true
+          });
+          
           const uploadResult = await storageManager.uploadFile(storeId, mockFile, {
             useOrganizedStructure: true,
             type: 'product',
@@ -959,9 +967,11 @@ class AkeneoMapping {
             }
           });
           
-          if (uploadResult.success) {
-            console.log(`✅ Image uploaded via ${uploadResult.provider}: ${uploadResult.url}`);
-            console.log(`📍 Relative path: ${pathInfo.fullPath}`);
+          console.log(`[Akeneo] Upload result:`, uploadResult);
+          
+          if (uploadResult && (uploadResult.success || uploadResult.url)) {
+            console.log(`✅ [Akeneo] Image uploaded via ${uploadResult.provider}: ${uploadResult.url}`);
+            console.log(`📍 [Akeneo] Relative path: ${pathInfo.fullPath}`);
             
             return {
               url: uploadResult.url,
@@ -973,6 +983,9 @@ class AkeneoMapping {
               uploadedTo: uploadResult.provider,
               fallbackUsed: uploadResult.fallbackUsed || false
             };
+          } else {
+            console.error(`❌ [Akeneo] Upload failed - no URL returned`);
+            console.error(`[Akeneo] Full upload result:`, JSON.stringify(uploadResult, null, 2));
           }
         } catch (storageError) {
           console.log(`⚠️ Storage manager upload failed, trying local fallback: ${storageError.message}`);

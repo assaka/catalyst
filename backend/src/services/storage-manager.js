@@ -236,11 +236,23 @@ class StorageManager {
    * @returns {Promise<Object>} Upload result with provider info
    */
   async uploadFile(storeId, file, options = {}) {
+    console.log(`[StorageManager] Starting upload for store: ${storeId}`);
+    console.log(`[StorageManager] File details:`, {
+      originalname: file.originalname,
+      mimetype: file.mimetype,
+      size: file.size,
+      hasBuffer: !!file.buffer
+    });
+    console.log(`[StorageManager] Options:`, options);
+    
     try {
       const storeProvider = await this.getStorageProvider(storeId);
+      console.log(`[StorageManager] Using provider: ${storeProvider.type}`);
+      
       const result = await storeProvider.provider.uploadFile(storeId, file, options);
       
       console.log(`📦 Storage Manager: Upload completed via ${storeProvider.type}`);
+      console.log(`[StorageManager] Full result:`, result);
       console.log(`   Result URL: ${result.url}`);
       console.log(`   Result bucket: ${result.bucket}`);
       

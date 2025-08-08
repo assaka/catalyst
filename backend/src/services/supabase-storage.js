@@ -321,12 +321,14 @@ class SupabaseStorageService extends StorageInterface {
    */
   async uploadImage(storeId, file, options = {}) {
     try {
-      console.log('Starting image upload for store:', storeId);
-      console.log('File info:', {
+      console.log('[SupabaseStorage] Starting image upload for store:', storeId);
+      console.log('[SupabaseStorage] File info:', {
         name: file.originalname || file.name,
         size: file.size,
-        type: file.mimetype
+        type: file.mimetype,
+        hasBuffer: !!file.buffer
       });
+      console.log('[SupabaseStorage] Upload options:', options);
 
       // Check if we should use direct API
       const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
@@ -400,6 +402,10 @@ class SupabaseStorageService extends StorageInterface {
       });
 
       // Upload file
+      console.log(`[SupabaseStorage] Uploading to bucket: ${bucketName}`);
+      console.log(`[SupabaseStorage] File path: ${filePath}`);
+      console.log(`[SupabaseStorage] Content type: ${file.mimetype || 'image/jpeg'}`);
+      
       const { data, error } = await client.storage
         .from(bucketName)
         .upload(filePath, file.buffer || file, {
@@ -409,7 +415,12 @@ class SupabaseStorageService extends StorageInterface {
         });
 
       if (error) {
-        console.error('Storage upload error:', error);
+        console.error('[SupabaseStorage] Storage upload error:', error);
+        console.error('[SupabaseStorage] Error details:', {
+          statusCode: error.statusCode,
+          message: error.message,
+          error: error
+        });
         
         // Handle duplicate file error (409) - return existing file URL
         if (error.statusCode === '409' || error.message?.includes('already exists') || error.message?.includes('Duplicate')) {

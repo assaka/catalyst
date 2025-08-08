@@ -288,6 +288,9 @@ export const StoreProvider = ({ children }) => {
         },
         // Merge store settings first, then set defaults only for missing properties
         ...(selectedStore.settings || {}),
+        // Ensure boolean values for navigation settings are properly handled
+        excludeRootFromMenu: selectedStore.settings?.excludeRootFromMenu === true,
+        expandAllMenuItems: selectedStore.settings?.expandAllMenuItems === true,
         // Only set default allowed_countries if not already defined in store settings
         allowed_countries: (selectedStore.settings && selectedStore.settings.allowed_countries) 
           ? selectedStore.settings.allowed_countries 

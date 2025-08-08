@@ -110,9 +110,23 @@ export default function Categories() {
       
       if (response.ok) {
         const data = await response.json();
-        setStoreSettings(data.settings || {});
-        setSelectedRootCategory(data.settings?.rootCategoryId || '');
-        setExcludeRootFromMenu(data.settings?.excludeRootFromMenu || false);
+        const settings = data.settings || {};
+        
+        // Debug log to see what we're receiving
+        console.log('Loading store settings:', settings);
+        console.log('excludeRootFromMenu:', settings.excludeRootFromMenu);
+        console.log('expandAllMenuItems:', settings.expandAllMenuItems);
+        
+        // Ensure boolean values are properly set
+        const updatedSettings = {
+          ...settings,
+          excludeRootFromMenu: settings.excludeRootFromMenu === true,
+          expandAllMenuItems: settings.expandAllMenuItems === true
+        };
+        
+        setStoreSettings(updatedSettings);
+        setSelectedRootCategory(settings.rootCategoryId || '');
+        setExcludeRootFromMenu(settings.excludeRootFromMenu === true);
       } else if (response.status === 401) {
         console.error('Authentication error loading settings - token may be expired');
       }

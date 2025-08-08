@@ -229,10 +229,10 @@ export default function Settings() {
           hide_stock_quantity: settings.hasOwnProperty('hide_stock_quantity') ? settings.hide_stock_quantity : false, // New
           display_low_stock_threshold: settings.hasOwnProperty('display_low_stock_threshold') ? settings.display_low_stock_threshold : 0, // New
           
-          // Root category settings
+          // Root category settings - ensure boolean values are properly handled
           rootCategoryId: settings.rootCategoryId || storeData.root_category_id || null,
-          excludeRootFromMenu: settings.hasOwnProperty('excludeRootFromMenu') ? settings.excludeRootFromMenu : false,
-          expandAllMenuItems: settings.hasOwnProperty('expandAllMenuItems') ? settings.expandAllMenuItems : false,
+          excludeRootFromMenu: settings.excludeRootFromMenu === true,
+          expandAllMenuItems: settings.expandAllMenuItems === true,
         }
       });
       
@@ -381,10 +381,10 @@ export default function Settings() {
         hide_stock_quantity: store.settings.hide_stock_quantity,
         display_low_stock_threshold: store.settings.display_low_stock_threshold,
         
-        // Root category settings
+        // Root category settings - ensure boolean values are explicitly set
         rootCategoryId: store.settings.rootCategoryId || store.root_category_id,
-        excludeRootFromMenu: store.settings.excludeRootFromMenu || false,
-        expandAllMenuItems: store.settings.expandAllMenuItems || false,
+        excludeRootFromMenu: store.settings.excludeRootFromMenu === true,
+        expandAllMenuItems: store.settings.expandAllMenuItems === true,
         
         seo_settings: {
           meta_title_suffix: store.settings.seo_settings?.meta_title_suffix || '',
