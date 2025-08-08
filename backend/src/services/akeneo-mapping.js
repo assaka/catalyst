@@ -1275,22 +1275,30 @@ class AkeneoMapping {
     // If we have fetched options from the API, use those first
     if (fetchedOptions && Array.isArray(fetchedOptions) && fetchedOptions.length > 0) {
       console.log(`🔗 Using ${fetchedOptions.length} fetched options for attribute: ${akeneoAttribute.code}`);
-      return fetchedOptions.map((option, index) => ({
-        code: option.code,
-        label: this.extractLocalizedValue(option.labels) || option.code,
-        sort_order: option.sort_order || index
-      }));
+      return fetchedOptions.map((option, index) => {
+        const label = this.extractLocalizedValue(option.labels) || option.code;
+        return {
+          code: option.code,
+          label: label,
+          value: label, // Set value same as label for consistency
+          sort_order: option.sort_order || index
+        };
+      });
     }
 
     // Fallback to embedded options in attribute object (legacy)
     if (!akeneoAttribute.options) return [];
 
     console.log(`📦 Using embedded options for attribute: ${akeneoAttribute.code}`);
-    return Object.keys(akeneoAttribute.options).map(optionCode => ({
-      code: optionCode,
-      label: this.extractLocalizedValue(akeneoAttribute.options[optionCode].labels) || optionCode,
-      sort_order: akeneoAttribute.options[optionCode].sort_order || 0
-    }));
+    return Object.keys(akeneoAttribute.options).map(optionCode => {
+      const label = this.extractLocalizedValue(akeneoAttribute.options[optionCode].labels) || optionCode;
+      return {
+        code: optionCode,
+        label: label,
+        value: label, // Set value same as label for consistency
+        sort_order: akeneoAttribute.options[optionCode].sort_order || 0
+      };
+    });
   }
 
   /**
