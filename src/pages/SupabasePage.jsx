@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
 import SupabaseIntegration from '../components/integrations/SupabaseIntegration';
-import { Database, Check, HardDrive } from 'lucide-react';
+import { Database, Check } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
 import apiClient from '../api/client';
@@ -11,9 +11,7 @@ const SupabasePage = () => {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isDefaultDatabase, setIsDefaultDatabase] = useState(false);
-  const [isDefaultStorage, setIsDefaultStorage] = useState(false);
   const [settingDefaultDatabase, setSettingDefaultDatabase] = useState(false);
-  const [settingDefaultStorage, setSettingDefaultStorage] = useState(false);
   
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
 
@@ -49,10 +47,6 @@ const SupabasePage = () => {
       // Check default database provider
       const dbResponse = await apiClient.get(`/stores/${storeId}/default-database-provider`);
       setIsDefaultDatabase(dbResponse?.provider === 'supabase');
-      
-      // Check default media storage provider
-      const storageResponse = await apiClient.get(`/stores/${storeId}/default-mediastorage-provider`);
-      setIsDefaultStorage(storageResponse?.provider === 'supabase');
     } catch (error) {
       console.error('Error checking default providers:', error);
     }
@@ -80,31 +74,6 @@ const SupabasePage = () => {
       toast.error('Failed to set as default database provider');
     } finally {
       setSettingDefaultDatabase(false);
-    }
-  };
-
-  const handleSetAsDefaultStorage = async () => {
-    if (!storeId) {
-      toast.error('Please select a store first');
-      return;
-    }
-
-    setSettingDefaultStorage(true);
-    try {
-      await apiClient.post(`/stores/${storeId}/default-mediastorage-provider`, {
-        provider: 'supabase'
-      });
-      
-      setIsDefaultStorage(true);
-      toast.success('Supabase set as default media storage provider');
-      
-      // Refresh the default status
-      await checkDefaults();
-    } catch (error) {
-      console.error('Error setting default storage provider:', error);
-      toast.error('Failed to set as default storage provider');
-    } finally {
-      setSettingDefaultStorage(false);
     }
   };
 
@@ -156,25 +125,6 @@ const SupabasePage = () => {
               <>
                 <Database className="h-4 w-4" />
                 <span>Set as Default Database</span>
-              </>
-            )}
-          </Button>
-          <Button
-            onClick={handleSetAsDefaultStorage}
-            disabled={settingDefaultStorage || isDefaultStorage || !connectionStatus?.connected}
-            variant={isDefaultStorage ? "secondary" : "default"}
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            {isDefaultStorage ? (
-              <>
-                <Check className="h-4 w-4" />
-                <span>Default Storage</span>
-              </>
-            ) : (
-              <>
-                <HardDrive className="h-4 w-4" />
-                <span>Set as Default Storage</span>
               </>
             )}
           </Button>
