@@ -453,7 +453,7 @@ export default function ProductDetail() {
     if (product.infinite_stock) {
       const label = stockSettings.in_stock_label || "In Stock";
       // Remove quantity placeholder if present, as it's not applicable
-      return label.replace(/ \{quantity\}| \({quantity}\)|\({quantity}\)/g, '');
+      return label.replace(/\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
     }
     
     // Handle out of stock
@@ -469,19 +469,25 @@ export default function ProductDetail() {
     if (lowStockThreshold > 0 && product.stock_quantity <= lowStockThreshold) {
       const label = stockSettings.low_stock_label || "Low stock, just {quantity} left";
       if (hideStockQuantity) {
-        // Remove quantity placeholder when hiding stock quantity
-        return label.replace(/ \{quantity\}| \({quantity}\)|\({quantity}\)/g, '');
+        // Remove quantity placeholder and any parentheses with numbers when hiding stock quantity
+        return label.replace(/\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
       }
-      return label.replace('{quantity}', product.stock_quantity.toString());
+      // Replace {quantity} or ({quantity}) with actual number - handle both formats
+      return label.replace(/\(\{quantity\}\)|\{quantity\}/g, (match) => {
+        return match.includes('(') ? `(${product.stock_quantity})` : product.stock_quantity.toString();
+      });
     }
     
     // Handle regular in stock
     const label = stockSettings.in_stock_label || "In Stock";
     if (hideStockQuantity) {
-      // Remove quantity placeholder when hiding stock quantity
-      return label.replace(/ \{quantity\}| \({quantity}\)|\({quantity}\)/g, '');
+      // Remove quantity placeholder and any parentheses with numbers when hiding stock quantity
+      return label.replace(/\s*\{quantity\}|\s*\(\{quantity\}\)|\s*\(quantity\)|\s*\(\d+\)/g, '').trim();
     }
-    return label.replace('{quantity}', product.stock_quantity.toString());
+    // Replace {quantity} or ({quantity}) with actual number - handle both formats
+    return label.replace(/\(\{quantity\}\)|\{quantity\}/g, (match) => {
+      return match.includes('(') ? `(${product.stock_quantity})` : product.stock_quantity.toString();
+    });
   };
 
   // Helper function to get stock variant (for styling)

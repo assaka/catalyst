@@ -221,7 +221,7 @@ export default function Settings() {
           display_tax_inclusive_prices: settings.hasOwnProperty('display_tax_inclusive_prices') ? settings.display_tax_inclusive_prices : false,
           calculate_tax_after_discount: settings.hasOwnProperty('calculate_tax_after_discount') ? settings.calculate_tax_after_discount : true,
           display_out_of_stock: settings.hasOwnProperty('display_out_of_stock') ? settings.display_out_of_stock : true,
-          enable_product_filters: settings.hasOwnProperty('enable_product_filters') ? settings.enable_product_filters : false,
+          enable_product_filters: settings.hasOwnProperty('enable_product_filters') ? settings.enable_product_filters : true,
           product_filter_attributes: settings.product_filter_attributes || [], // New: initialize as array
           enable_credit_updates: settings.hasOwnProperty('enable_credit_updates') ? settings.enable_credit_updates : false,
           enable_coupon_rules: settings.hasOwnProperty('enable_coupon_rules') ? settings.enable_coupon_rules : false, // New
@@ -1035,7 +1035,7 @@ export default function Settings() {
                       </div>
                       <Switch 
                         id="enable_product_filters" 
-                        checked={store?.settings?.enable_product_filters !== undefined ? store.settings.enable_product_filters : false} 
+                        checked={store?.settings?.enable_product_filters !== undefined ? store.settings.enable_product_filters : true} 
                         onCheckedChange={(checked) => handleSettingsChange('enable_product_filters', checked)} 
                       />
                     </div>

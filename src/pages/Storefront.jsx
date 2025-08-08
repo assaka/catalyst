@@ -351,7 +351,7 @@ export default function Storefront() {
 
           <div className={`grid ${(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-8 max-w-7xl mx-auto`}>
             {(settings?.enable_product_filters !== false && filterableAttributes?.length > 0) && (
-              <div className="lg:col-span-1">
+              <div className="lg:col-span-1 lg:sticky lg:top-4 lg:h-[calc(100vh-2rem)] lg:overflow-y-auto">
                 <CmsBlockRenderer position="category_above_filters" />
                 <LayeredNavigation
                   products={products}
