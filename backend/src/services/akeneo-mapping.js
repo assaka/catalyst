@@ -846,6 +846,7 @@ class AkeneoMapping {
    */
   async downloadAndUploadImage(imageUrl, imageItem, storeId = null, akeneoClient = null) {
     const storageManager = require('./storage-manager');
+    const StoragePathUtility = require('./storage-path-utility');
     
     try {
       console.log(`📥 Downloading image from Akeneo: ${imageUrl}`);
@@ -894,38 +895,57 @@ class AkeneoMapping {
       
       console.log(`💾 Downloaded image: ${buffer.length} bytes, type: ${contentType}`);
       
+      // Extract original filename from URL and clean it
+      let originalFileName = imageUrl.split('/').pop().split('?')[0];
+      if (!originalFileName || originalFileName === '') {
+        originalFileName = `image_${Date.now()}.${extension}`;
+      }
+      
+      // Ensure proper extension
+      if (!originalFileName.includes('.')) {
+        originalFileName = `${originalFileName}.${extension}`;
+      }
+      
+      // Generate uniform path structure using StoragePathUtility
+      const pathInfo = StoragePathUtility.generatePath(originalFileName, 'product');
+      console.log(`🗂️  Generated uniform path: ${pathInfo.fullPath}`);
+      
       // Create mock file object for storage upload
-      const fileName = `akeneo_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${extension}`;
       const mockFile = {
-        originalname: fileName,
+        originalname: pathInfo.filename,
         mimetype: contentType,
         buffer: buffer,
         size: buffer.length
       };
 
-      // Upload using unified storage manager (will handle provider selection and fallbacks)
+      // Upload using unified storage manager with specific path
       if (storeId) {
         try {
           console.log(`☁️ Uploading via storage manager for store: ${storeId}`);
           const uploadResult = await storageManager.uploadFile(storeId, mockFile, {
             useOrganizedStructure: true,
             type: 'product',
-            filename: fileName,
+            filename: pathInfo.filename,
+            customPath: pathInfo.fullPath, // Use the uniform path structure
             public: true,
             metadata: {
               store_id: storeId,
               upload_type: 'akeneo_product_image',
               source: 'akeneo_import',
-              original_url: imageUrl
+              original_url: imageUrl,
+              relative_path: pathInfo.fullPath // Store relative path for database
             }
           });
           
           if (uploadResult.success) {
             console.log(`✅ Image uploaded via ${uploadResult.provider}: ${uploadResult.url}`);
+            console.log(`📍 Relative path: ${pathInfo.fullPath}`);
+            
             return {
               url: uploadResult.url,
               originalUrl: imageUrl,
-              filename: uploadResult.filename,
+              filename: pathInfo.filename,
+              relativePath: pathInfo.fullPath, // Add relative path for database storage
               size: buffer.length,
               contentType: contentType,
               uploadedTo: uploadResult.provider,

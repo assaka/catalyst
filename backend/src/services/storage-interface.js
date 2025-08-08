@@ -141,43 +141,6 @@ class StorageInterface {
     }
   }
 
-  /**
-   * Extract storage path from URL or metadata
-   * @param {string} url - File URL
-   * @param {Object} metadata - File metadata
-   * @param {string} type - File type (category, product, asset)
-   * @param {string} fallbackFilename - Fallback filename
-   * @returns {string|null} Extracted path
-   */
-  extractStoragePath(url, metadata = {}, type = null, fallbackFilename = null) {
-    // First priority: use stored path from metadata
-    if (metadata.path) {
-      return metadata.path;
-    }
-    
-    // Second priority: extract from provider-specific URL format
-    const extractedPath = this.extractPathFromUrl(url);
-    if (extractedPath) {
-      return extractedPath;
-    }
-    
-    // Third priority: construct from metadata filename
-    const filename = metadata.filename || fallbackFilename;
-    if (filename && type) {
-      const organizedPath = this.generateOrganizedPath(filename);
-      
-      // Add type prefix
-      if (type === 'category') {
-        return `categories/${organizedPath}`;
-      } else if (type === 'product') {
-        return `products/${organizedPath}`;
-      } else if (type === 'asset') {
-        return `assets/${organizedPath}`;
-      }
-    }
-    
-    return null;
-  }
 
   /**
    * Extract file path from provider-specific URL format
