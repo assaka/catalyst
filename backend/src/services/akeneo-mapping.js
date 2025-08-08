@@ -114,7 +114,7 @@ class AkeneoMapping {
                this.extractProductValue(values, 'barcode', locale),
       description: this.extractProductValue(values, 'description', locale),
       short_description: this.extractProductValue(values, 'short_description', locale),
-      price: this.extractNumericValue(values, 'price', locale) || 0,
+      price: this.extractNumericValue(values, 'price', locale),
       compare_price: this.extractNumericValue(values, 'compare_price', locale) || 
                      this.extractNumericValue(values, 'msrp', locale),
       cost_price: this.extractNumericValue(values, 'cost_price', locale) || 
@@ -122,7 +122,7 @@ class AkeneoMapping {
       weight: this.extractNumericValue(values, 'weight', locale) || 
               this.extractNumericValue(values, 'weight_kg', locale),
       dimensions: this.extractDimensions(values, locale),
-      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl),
+      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId),
       status: akeneoProduct.enabled ? 'active' : 'inactive',
       visibility: 'visible',
       manage_stock: true,
@@ -451,7 +451,7 @@ class AkeneoMapping {
   /**
    * Extract images from product attributes (enhanced)
    */
-  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null) {
+  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null, storeId = null) {
     // If we have processed images from Cloudflare, use those
     if (processedImages && processedImages.length > 0) {
       return processedImages.map((img, index) => ({
@@ -565,8 +565,16 @@ class AkeneoMapping {
         try {
           console.log(`☁️ Uploading via storage manager for store: ${storeId}`);
           const uploadResult = await storageManager.uploadFile(storeId, mockFile, {
-            folder: 'akeneo-imports',
-            public: true
+            useOrganizedStructure: true,
+            type: 'product',
+            filename: fileName,
+            public: true,
+            metadata: {
+              store_id: storeId,
+              upload_type: 'akeneo_product_image',
+              source: 'akeneo_import',
+              original_url: imageUrl
+            }
           });
           
           if (uploadResult.success) {
