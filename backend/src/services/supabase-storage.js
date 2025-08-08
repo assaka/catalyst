@@ -1,10 +1,12 @@
 const supabaseIntegration = require('./supabase-integration');
+const StorageInterface = require('./storage-interface');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
 
-class SupabaseStorageService {
+class SupabaseStorageService extends StorageInterface {
   constructor() {
+    super();
     this.assetsBucketName = 'suprshop-assets'; // Single bucket for all assets
   }
 
@@ -65,6 +67,69 @@ class SupabaseStorageService {
     }
   }
 
+  /**
+   * Recursively list files in organized directory structure
+   * @param {Object} client - Supabase client
+   * @param {string} bucketName - Bucket name
+   * @param {string} folderPath - Base folder path
+   * @param {number} limit - Maximum files to return
+   * @returns {Array} Array of file objects with URLs
+   */
+  async listFilesRecursively(client, bucketName, folderPath, limit = 100) {
+    const allFiles = [];
+    
+    try {
+      // First, list direct files in the folder
+      const { data: directFiles, error: directError } = await client.storage
+        .from(bucketName)
+        .list(folderPath, { limit: 1000 });
+      
+      if (!directError && directFiles) {
+        // Add direct files (items with id property)
+        const files = directFiles.filter(item => item.id);
+        for (const file of files) {
+          const fullPath = `${folderPath}/${file.name}`;
+          const { data: urlData } = client.storage
+            .from(bucketName)
+            .getPublicUrl(fullPath);
+          
+          allFiles.push({
+            ...file,
+            url: urlData.publicUrl,
+            publicUrl: urlData.publicUrl,
+            fullPath: fullPath
+          });
+          
+          if (allFiles.length >= limit) break;
+        }
+        
+        // Get subdirectories for organized structure (a, b, c, etc.)
+        const subdirs = directFiles.filter(item => !item.id && item.name);
+        
+        // Recursively check subdirectories if we haven't hit the limit
+        for (const subdir of subdirs) {
+          if (allFiles.length >= limit) break;
+          
+          const subdirPath = `${folderPath}/${subdir.name}`;
+          try {
+            const subdirFiles = await this.listFilesRecursively(
+              client, 
+              bucketName, 
+              subdirPath, 
+              limit - allFiles.length
+            );
+            allFiles.push(...subdirFiles);
+          } catch (subdirError) {
+            console.log(`Error accessing subdirectory ${subdirPath}:`, subdirError.message);
+          }
+        }
+      }
+    } catch (error) {
+      console.log(`Error listing files in ${folderPath}:`, error.message);
+    }
+    
+    return allFiles;
+  }
 
   /**
    * Upload image using direct API call with OAuth token
@@ -144,7 +209,13 @@ class SupabaseStorageService {
         folder = options.folder;
       }
       
-      filePath = `${folder}/${fileName}`;
+      // Use generateOrganizedPath for better directory structure
+      if (options.useOrganizedStructure !== false) {
+        const organizedPath = this.generateOrganizedPath(fileName);
+        filePath = `${folder}/${organizedPath}`;
+      } else {
+        filePath = `${folder}/${fileName}`;
+      }
 
       // Extract project ID from URL
       const projectUrl = tokenInfo.project_url;
@@ -292,12 +363,19 @@ class SupabaseStorageService {
         folder = options.folder;
       }
       
-      filePath = `${folder}/${fileName}`;
+      // Use generateOrganizedPath for better directory structure
+      if (options.useOrganizedStructure !== false) {
+        const organizedPath = this.generateOrganizedPath(fileName);
+        filePath = `${folder}/${organizedPath}`;
+      } else {
+        filePath = `${folder}/${fileName}`;
+      }
 
       console.log('Upload details:', {
         bucketName,
         filePath,
-        fileName
+        fileName,
+        organizedStructure: options.useOrganizedStructure !== false
       });
 
       // Upload file
@@ -441,39 +519,25 @@ class SupabaseStorageService {
         
         for (const folderPath of foldersToCheck) {
           try {
-            const { data: folderData } = await client.storage
-              .from(this.assetsBucketName)
-              .list(folderPath, {
-                limit: options.limit || 100,
-                offset: 0,
-                sortBy: { column: 'created_at', order: 'desc' }
-              });
+            // Get files from organized subfolders within each main folder
+            const files = await this.listFilesRecursively(client, this.assetsBucketName, folderPath, options.limit || 100);
             
-            if (folderData) {
-              const folderFiles = folderData.filter(item => item.id).map(file => {
-                const fullPath = `${folderPath}/${file.name}`;
-                const { data: urlData } = client.storage
-                  .from(this.assetsBucketName)
-                  .getPublicUrl(fullPath);
-                
-                // Determine folder type for filtering
-                let folder = 'library';
-                if (folderPath.startsWith('category')) {
-                  folder = 'category';
-                } else if (folderPath.startsWith('product')) {
-                  folder = 'product';
-                }
-                
-                return {
-                  ...file,
-                  url: urlData.publicUrl,
-                  publicUrl: urlData.publicUrl,
-                  fullPath: fullPath,
-                  folder: folder
-                };
-              });
-              allFiles.push(...folderFiles);
-            }
+            // Add folder information and process each file
+            const folderFiles = files.map(file => {
+              // Determine folder type for filtering
+              let folder = 'library';
+              if (folderPath.startsWith('category')) {
+                folder = 'category';
+              } else if (folderPath.startsWith('product')) {
+                folder = 'product';
+              }
+              
+              return {
+                ...file,
+                folder: folder
+              };
+            });
+            allFiles.push(...folderFiles);
           } catch (error) {
             console.log(`Error listing ${folderPath} files:`, error.message);
           }

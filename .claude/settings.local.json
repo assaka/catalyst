@@ -365,7 +365,8 @@
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-akeneo-image-import.js)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node -e \"\nconst AkeneoIntegration = require(''./src/services/akeneo-integration.js'');\n\n// Test with a minimal product import to see the debug output\n(async () => {\n  try {\n    console.log(''🧪 Testing Akeneo product import with image debugging...'');\n    \n    const integration = new AkeneoIntegration();\n    const storeId = ''157d4590-49bf-4b0b-bd77-abe131909528'';\n    \n    // Initialize the integration\n    await integration.initialize(storeId);\n    \n    // Import just one product to see the debug output\n    const result = await integration.importProducts({ \n      storeId, \n      limit: 1,\n      downloadImages: true \n    });\n    \n    console.log(''\\n📊 Import Result:'', result);\n  } catch (error) {\n    console.error(''❌ Test failed:'', error.message);\n  }\n})();\n\")",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-akeneo-image-debug.js)",
-      "Bash(set DATABASE_URL=postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres)"
+      "Bash(set DATABASE_URL=postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-uniform-directory-structure.js)"
     ],
     "deny": []
   }
