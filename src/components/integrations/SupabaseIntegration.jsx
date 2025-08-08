@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import apiClient from '../../api/client';
 import { ExternalLink, Trash2, Cloud, Image, BarChart3, Key, AlertCircle, Info, Copy, ArrowRight, RefreshCw, FileText, Database, HardDrive, Upload } from 'lucide-react';
 
-const SupabaseIntegration = ({ storeId }) => {
+const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   // Helper function to format storage sizes (handles both string and number values)
   const formatStorageSize = (sizeValue, unit = 'MB') => {
     if (!sizeValue) return `0 ${unit}`;
@@ -134,17 +134,20 @@ const SupabaseIntegration = ({ storeId }) => {
 
   useEffect(() => {
     if (status?.connected) {
-      loadStorageStats();
+      // Only load storage stats and buckets if context allows it
+      if (context === 'full' || context === 'storage') {
+        loadStorageStats();
+        // Auto-create buckets if we have service role key
+        if (status.hasServiceRoleKey) {
+          ensureBucketsExist();
+        }
+      }
       // Load projects if we have proper permissions
       if (!status.limitedScope && status.projectUrl !== 'https://pending-configuration.supabase.co') {
         loadProjects();
       }
-      // Auto-create buckets if we have service role key
-      if (status.hasServiceRoleKey) {
-        ensureBucketsExist();
-      }
     }
-  }, [status?.connected, status?.hasServiceRoleKey]);
+  }, [status?.connected, status?.hasServiceRoleKey, context]);
 
   const loadProjects = async () => {
     try {
@@ -485,12 +488,12 @@ const SupabaseIntegration = ({ storeId }) => {
 
   // Removed handleDeleteBucket - buckets are auto-generated
 
-  // Load buckets when component is connected
+  // Load buckets when component is connected and context allows storage features
   useEffect(() => {
-    if (status?.connected && !status.authorizationRevoked) {
+    if (status?.connected && !status.authorizationRevoked && (context === 'full' || context === 'storage')) {
       loadBuckets();
     }
-  }, [status?.connected, status?.authorizationRevoked]);
+  }, [status?.connected, status?.authorizationRevoked, context]);
 
   if (loading) {
     return (
@@ -965,144 +968,170 @@ const SupabaseIntegration = ({ storeId }) => {
             </div>
           )}
 
-          {/* Features */}
-          <div className="border-t pt-6">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Available Features</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Image className="w-4 h-4 text-green-500" />
-                <span>Image Storage & CDN</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Cloud className="w-4 h-4 text-green-500" />
-                <span>Database Management</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <BarChart3 className="w-4 h-4 text-green-500" />
-                <span>Storage Analytics</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <ExternalLink className="w-4 h-4 text-green-500" />
-                <span>Project Dashboard Access</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Storage Statistics */}
-          {status.hasServiceRoleKey && (
+          {/* Storage Management - Only show in full or storage context */}
+          {status.hasServiceRoleKey && (context === 'full' || context === 'storage') && (
             <div className="border-t pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-sm font-medium text-gray-900">Storage Statistics</h4>
-                <button
-                  onClick={loadStorageStats}
-                  disabled={loadingStats}
-                  className="text-sm text-blue-600 hover:text-blue-700 flex items-center"
-                >
-                  {loadingStats ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2" />
-                      Refreshing...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-3 h-3 mr-1" />
-                      Refresh
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {loadingStats && !storageStats ? (
-                <div className="flex justify-center py-4">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-              ) : storageStats ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-500 mb-1">Total Files</p>
-                      <p className="text-lg font-semibold text-gray-900">{storageStats.totalFiles || 0}</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-lg p-3">
-                      <p className="text-xs text-gray-500 mb-1">Total Size</p>
-                      <p className="text-lg font-semibold text-gray-900">{storageStats.totalSizeMB || '0.00'} MB</p>
-                    </div>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900 mb-1">Storage Management</h4>
+                    <p className="text-sm text-gray-600">Manage your Supabase storage buckets and files</p>
                   </div>
+                  <button
+                    onClick={loadStorageStats}
+                    disabled={loadingStats}
+                    className="inline-flex items-center px-3 py-2 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
+                  >
+                    {loadingStats ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2" />
+                        Refreshing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Refresh Stats
+                      </>
+                    )}
+                  </button>
+                </div>
 
-                  {storageStats.buckets && storageStats.buckets.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs text-gray-500 font-medium">Buckets:</p>
-                      {storageStats.buckets.map((bucket, index) => (
-                        <div key={index} className="bg-blue-50 rounded p-2 text-sm">
-                          <div className="flex justify-between items-center">
-                            <span className="font-medium text-blue-900">{bucket.bucket}</span>
-                            <span className="text-blue-600">{bucket.fileCount} files • {bucket.totalSizeMB} MB</span>
+                {loadingStats && !storageStats ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  </div>
+                ) : storageStats ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Storage Overview */}
+                    <div className="space-y-4">
+                      <h5 className="font-medium text-gray-900">Storage Overview</h5>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                          <div className="flex items-center">
+                            <FileText className="w-5 h-5 text-blue-500 mr-2" />
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Files</p>
+                              <p className="text-2xl font-bold text-gray-900">{storageStats.totalFiles || 0}</p>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                          <div className="flex items-center">
+                            <HardDrive className="w-5 h-5 text-green-500 mr-2" />
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Size</p>
+                              <p className="text-2xl font-bold text-gray-900">{storageStats.totalSizeMB || '0.00'} MB</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">Storage Used</span>
-                      <span className="font-medium text-gray-900">{storageStats.storageUsedPercentage || 0}%</span>
+                      {/* Storage Usage Bar */}
+                      <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-gray-700">Storage Usage</span>
+                          <span className="text-sm font-semibold text-gray-900">{storageStats.storageUsedPercentage || 0}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div 
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+                            style={{ width: `${Math.min(storageStats.storageUsedPercentage || 0, 100)}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Buckets */}
+                      {storageStats.buckets && storageStats.buckets.length > 0 && (
+                        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                          <h6 className="text-sm font-medium text-gray-700 mb-3">Storage Buckets</h6>
+                          <div className="space-y-2">
+                            {storageStats.buckets.map((bucket, index) => (
+                              <div key={index} className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center">
+                                  <Cloud className="w-4 h-4 text-gray-400 mr-2" />
+                                  <span className="text-sm font-medium text-gray-900">{bucket.bucket}</span>
+                                </div>
+                                <span className="text-xs text-gray-600 bg-white px-2 py-1 rounded">
+                                  {bucket.fileCount} files • {bucket.totalSizeMB} MB
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${Math.min(storageStats.storageUsedPercentage || 0, 100)}%` }}
-                      />
+
+                    {/* Test Upload Section */}
+                    <div className="space-y-4">
+                      <h5 className="font-medium text-gray-900">Test Storage</h5>
+                      <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                        <p className="text-sm text-gray-600 mb-4">Upload a test image to verify your storage configuration</p>
+                        <button
+                          onClick={handleTestUpload}
+                          disabled={testingUpload}
+                          className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all"
+                        >
+                          {testingUpload ? (
+                            <>
+                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3" />
+                              Uploading Test Image...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="w-5 h-5 mr-2" />
+                              Upload Test Image
+                            </>
+                          )}
+                        </button>
+
+                        {uploadResult && uploadResult.success && (
+                          <div className="mt-4 bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div className="flex items-center mb-3">
+                              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-2">
+                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                              <p className="text-sm font-semibold text-green-800">Upload successful!</p>
+                            </div>
+                            {uploadResult.fileUrl && (
+                              <div className="space-y-3">
+                                <div className="relative">
+                                  <img 
+                                    src={uploadResult.fileUrl} 
+                                    alt="Test upload" 
+                                    className="w-full h-40 object-cover rounded-lg border border-green-300"
+                                  />
+                                  <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded px-2 py-1">
+                                    <span className="text-xs text-gray-600">Test Image</span>
+                                  </div>
+                                </div>
+                                <div className="bg-white rounded p-3 border border-green-200">
+                                  <p className="text-xs text-gray-600 mb-1">Filename:</p>
+                                  <p className="text-sm font-mono text-green-700 break-all">{uploadResult.fileName}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center py-4 text-sm text-gray-500">
-                  Click refresh to load storage statistics
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Test Upload */}
-          {status.hasServiceRoleKey && (
-            <div className="border-t pt-6">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Test Storage</h4>
-              <button
-                onClick={handleTestUpload}
-                disabled={testingUpload}
-                className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {testingUpload ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-700 mr-2" />
-                    Uploading Test Image...
-                  </>
                 ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Test Image
-                  </>
+                  <div className="text-center py-8">
+                    <Cloud className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 mb-4">No storage statistics available</p>
+                    <button
+                      onClick={loadStorageStats}
+                      className="inline-flex items-center px-4 py-2 border border-blue-300 rounded-lg text-sm font-medium text-blue-700 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Load Storage Stats
+                    </button>
+                  </div>
                 )}
-              </button>
-
-              {uploadResult && uploadResult.success && (
-                <div className="mt-3 bg-green-50 border border-green-200 rounded-lg p-3">
-                  <p className="text-sm text-green-800 font-medium mb-2">✓ Test upload successful!</p>
-                  {uploadResult.fileUrl && (
-                    <div className="space-y-2">
-                      <img 
-                        src={uploadResult.fileUrl} 
-                        alt="Test upload" 
-                        className="w-full h-32 object-cover rounded border border-green-300"
-                      />
-                      <p className="text-xs text-green-600 break-all">
-                        File: {uploadResult.fileName}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+              </div>
             </div>
           )}
         </div>
