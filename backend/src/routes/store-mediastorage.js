@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Get default media storage provider for a store
-router.get('/stores/:storeId/default-media-storage-provider', 
+router.get('/stores/:storeId/default-mediastorage-provider', 
   checkStoreOwnership,
   async (req, res) => {
     try {
@@ -44,7 +44,7 @@ router.get('/stores/:storeId/default-media-storage-provider',
 );
 
 // Set default media storage provider for a store
-router.post('/stores/:storeId/default-media-storage-provider', 
+router.post('/stores/:storeId/default-mediastorage-provider', 
   checkStoreOwnership,
   async (req, res) => {
     try {
@@ -117,7 +117,7 @@ router.post('/stores/:storeId/default-media-storage-provider',
 );
 
 // Clear default media storage provider for a store
-router.delete('/stores/:storeId/default-media-storage-provider', 
+router.delete('/stores/:storeId/default-mediastorage-provider', 
   checkStoreOwnership,
   async (req, res) => {
     try {
