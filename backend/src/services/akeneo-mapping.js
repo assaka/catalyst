@@ -115,21 +115,26 @@ class AkeneoMapping {
       description: this.extractProductValue(values, 'description', locale),
       short_description: this.extractProductValue(values, 'short_description', locale),
       price: this.extractNumericValue(values, 'price', locale),
+      sale_price: this.extractNumericValue(values, 'sale_price', locale) || 
+                  this.extractNumericValue(values, 'special_price', locale) ||
+                  this.extractNumericValue(values, 'discounted_price', locale),
       compare_price: this.extractNumericValue(values, 'compare_price', locale) || 
-                     this.extractNumericValue(values, 'msrp', locale),
+                     this.extractNumericValue(values, 'msrp', locale) ||
+                     this.extractNumericValue(values, 'regular_price', locale),
       cost_price: this.extractNumericValue(values, 'cost_price', locale) || 
-                  this.extractNumericValue(values, 'cost', locale),
+                  this.extractNumericValue(values, 'cost', locale) ||
+                  this.extractNumericValue(values, 'wholesale_price', locale),
       weight: this.extractNumericValue(values, 'weight', locale) || 
               this.extractNumericValue(values, 'weight_kg', locale),
       dimensions: this.extractDimensions(values, locale),
       images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId),
       status: akeneoProduct.enabled ? 'active' : 'inactive',
       visibility: 'visible',
-      manage_stock: true,
-      stock_quantity: 0, // Will need separate inventory import
-      allow_backorders: false,
-      low_stock_threshold: 5,
-      infinite_stock: false,
+      manage_stock: this.extractBooleanValue(values, 'manage_stock', locale) ?? true,
+      stock_quantity: this.extractStockQuantity(values, locale, akeneoProduct),
+      allow_backorders: this.extractBooleanValue(values, 'allow_backorders', locale) || false,
+      low_stock_threshold: this.extractNumericValue(values, 'low_stock_threshold', locale) || 5,
+      infinite_stock: this.extractBooleanValue(values, 'infinite_stock', locale) || false,
       is_custom_option: false,
       is_coupon_eligible: true,
       featured: this.extractBooleanValue(values, 'featured', locale) || false,
@@ -410,6 +415,84 @@ class AkeneoMapping {
   }
 
   /**
+   * Extract stock quantity from Akeneo product data
+   * Handles various Akeneo inventory structures and fallbacks
+   */
+  extractStockQuantity(values, locale = 'en_US', akeneoProduct = {}) {
+    // Try common Akeneo inventory attribute names
+    const stockAttributes = [
+      'stock_quantity', 'quantity', 'inventory', 'stock', 
+      'available_quantity', 'qty', 'in_stock_quantity',
+      'warehouse_quantity', 'on_hand_quantity'
+    ];
+    
+    // First, try to extract from product values (attribute-based inventory)
+    for (const attrName of stockAttributes) {
+      const stockValue = this.extractNumericValue(values, attrName, locale);
+      if (stockValue !== null && stockValue >= 0) {
+        console.log(`📦 Found stock from attribute '${attrName}': ${stockValue}`);
+        return Math.floor(stockValue); // Ensure integer
+      }
+    }
+    
+    // Check if there's quantified associations (Akeneo Enterprise feature)
+    if (akeneoProduct.quantified_associations) {
+      let totalQuantity = 0;
+      Object.values(akeneoProduct.quantified_associations).forEach(association => {
+        if (association.products) {
+          association.products.forEach(product => {
+            if (product.quantity && typeof product.quantity === 'number') {
+              totalQuantity += product.quantity;
+            }
+          });
+        }
+      });
+      
+      if (totalQuantity > 0) {
+        console.log(`📦 Found stock from quantified associations: ${totalQuantity}`);
+        return Math.floor(totalQuantity);
+      }
+    }
+    
+    // Check product completeness data (might contain inventory flags)
+    if (akeneoProduct.completeness) {
+      // Some Akeneo setups use completeness to track availability
+      const hasCompleteInventory = Object.values(akeneoProduct.completeness).some(
+        channel => channel.data && channel.data.inventory_complete === true
+      );
+      
+      if (hasCompleteInventory) {
+        // Default to 1 if inventory is marked as complete but no quantity found
+        console.log(`📦 Product marked as inventory complete, defaulting to stock: 1`);
+        return 1;
+      }
+    }
+    
+    // Check if product is enabled - if disabled, assume out of stock
+    if (!akeneoProduct.enabled) {
+      console.log(`📦 Product disabled in Akeneo, setting stock to: 0`);
+      return 0;
+    }
+    
+    // Final fallback: check boolean stock status attributes
+    const inStockValue = this.extractBooleanValue(values, 'in_stock', locale) || 
+                        this.extractBooleanValue(values, 'is_in_stock', locale) ||
+                        this.extractBooleanValue(values, 'available', locale);
+    
+    if (inStockValue === true) {
+      console.log(`📦 Product marked as in stock, defaulting to stock: 10`);
+      return 10; // Default available quantity
+    } else if (inStockValue === false) {
+      console.log(`📦 Product marked as out of stock: 0`);
+      return 0;
+    }
+    
+    // Ultimate fallback for enabled products with no inventory data
+    console.log(`📦 No inventory data found, using default stock for enabled product: 5`);
+    return 5; // Conservative default for enabled products
+  }
+
+  /**
    * Extract numeric value from product attributes
    */
   extractNumericValue(values, attributeCode, locale = 'en_US') {
@@ -484,61 +567,116 @@ class AkeneoMapping {
     
     // Fallback to original extraction logic
     const images = [];
+    let foundImageCount = 0;
     
-    // Check common image attribute names
-    const imageAttributes = ['image', 'images', 'picture', 'pictures', 'photo', 'photos', 'main_image', 'product_image'];
+    // Enhanced list of common Akeneo image attribute names
+    const imageAttributes = [
+      'image', 'images', 'picture', 'pictures', 'photo', 'photos',
+      'main_image', 'product_image', 'product_images', 'gallery',
+      'gallery_image', 'gallery_images', 'base_image', 'small_image',
+      'thumbnail', 'thumbnail_image', 'media_gallery', 'media_image',
+      // Akeneo-specific attribute patterns
+      'pim_catalog_image', 'catalog_image', 'asset_image', 'variation_image'
+    ];
+    
+    console.log(`🖼️ Extracting images from Akeneo product (downloadImages: ${downloadImages})`);
+    console.log(`🔍 Available attributes: ${Object.keys(values).join(', ')}`);
     
     for (const attrName of imageAttributes) {
       const imageData = values[attrName];
       if (imageData && Array.isArray(imageData)) {
+        console.log(`📸 Found ${imageData.length} image(s) in attribute '${attrName}'`);
+        
         for (const item of imageData) {
-          if (item.data) {
-            let imageUrl = typeof item.data === 'string' ? item.data : 
-                          (item.data.url || item.data.path || item.data.href);
+          if (item && item.data) {
+            let imageUrl = null;
             
-            if (imageUrl) {
+            // Handle different Akeneo image data structures
+            if (typeof item.data === 'string') {
+              imageUrl = item.data;
+            } else if (typeof item.data === 'object') {
+              // Handle asset or reference structure
+              imageUrl = item.data.url || item.data.path || item.data.href || 
+                        item.data.download_link || item.data.reference_files?.[0]?.download_link;
+              
+              // Handle Akeneo asset structure
+              if (item.data._links?.download?.href) {
+                imageUrl = item.data._links.download.href;
+              }
+            }
+            
+            if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim()) {
+              imageUrl = imageUrl.trim();
+              console.log(`📷 Processing image URL: ${imageUrl}`);
+              
               // Make sure URL is absolute
               if (!imageUrl.startsWith('http') && baseUrl) {
-                imageUrl = `${baseUrl.replace(/\/+$/, '')}/${imageUrl.replace(/^\/+/, '')}`;
+                const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
+                const cleanImageUrl = imageUrl.replace(/^\/+/, '');
+                imageUrl = `${cleanBaseUrl}/${cleanImageUrl}`;
+                console.log(`🔗 Constructed absolute URL: ${imageUrl}`);
               }
+              
+              let finalImageUrl = imageUrl;
+              let uploadResult = null;
               
               // Download and upload image if enabled
               if (downloadImages && imageUrl.startsWith('http')) {
                 try {
-                  const uploadedImage = await this.downloadAndUploadImage(imageUrl, item, storeId);
-                  if (uploadedImage) {
-                    imageUrl = uploadedImage.url;
+                  console.log(`⬇️ Attempting to download image: ${imageUrl}`);
+                  uploadResult = await this.downloadAndUploadImage(imageUrl, item, storeId);
+                  if (uploadResult && uploadResult.url) {
+                    finalImageUrl = uploadResult.url;
+                    console.log(`✅ Image uploaded successfully: ${finalImageUrl}`);
                   }
                 } catch (error) {
-                  console.warn(`⚠️ Failed to download image ${imageUrl}:`, error.message);
+                  console.warn(`⚠️ Failed to download/upload image ${imageUrl}:`, error.message);
+                  console.warn(`📋 Error details:`, error.stack);
                   // Continue with original URL as fallback
                 }
               }
               
-              images.push({
-                url: imageUrl,
-                alt: item.data.alt || '',
+              // Extract alt text from various sources
+              const altText = (item.data && typeof item.data === 'object' ? item.data.alt : '') ||
+                            (item.alt) ||
+                            (item.data?.title) ||
+                            (item.data?.name) ||
+                            '';
+              
+              const imageObject = {
+                url: finalImageUrl,
+                alt: altText,
                 sort_order: images.length,
                 variants: {
-                  thumbnail: imageUrl,
-                  medium: imageUrl, 
-                  large: imageUrl
+                  thumbnail: finalImageUrl,
+                  medium: finalImageUrl, 
+                  large: finalImageUrl
                 },
                 metadata: {
                   attribute: attrName,
                   scope: item.scope,
                   locale: item.locale,
-                  original_url: typeof item.data === 'string' ? item.data : 
-                               (item.data.url || item.data.path || item.data.href),
-                  downloaded: downloadImages
+                  original_url: imageUrl,
+                  downloaded: !!uploadResult,
+                  upload_result: uploadResult ? {
+                    provider: uploadResult.uploadedTo,
+                    filename: uploadResult.filename,
+                    size: uploadResult.size,
+                    fallback_used: uploadResult.fallbackUsed
+                  } : null
                 }
-              });
+              };
+              
+              images.push(imageObject);
+              foundImageCount++;
+              console.log(`📁 Added image ${foundImageCount}: ${finalImageUrl.substring(0, 80)}...`);
             }
           }
         }
       }
     }
 
+    console.log(`🎯 Image extraction complete: Found ${foundImageCount} images total`);
     return images;
   }
 

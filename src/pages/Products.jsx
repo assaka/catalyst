@@ -153,11 +153,8 @@ export default function Products() {
           console.error('❌ Product.findPaginated failed:', error);
           return { data: [], pagination: { total: 0, total_pages: 0, current_page: 1 } };
         }),
-        retryApiCall(() => Category.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
-          console.error('❌ Category.filter failed:', error);
-          if (error.message?.includes('401') || error.message?.includes('unauthorized') || error.message?.includes('Access denied')) {
-            console.error('🔐 Authentication required to load categories. Please log in.');
-          }
+        retryApiCall(() => Category.findAll({ store_id: storeId, limit: 1000 })).catch((error) => {
+          console.error('❌ Category.findAll failed:', error);
           return [];
         }),
         retryApiCall(() => Tax.filter({ store_id: storeId, limit: 1000 })).catch((error) => {
