@@ -19,7 +19,8 @@ import {
   FolderOpen,
   LayoutGrid,
   Settings,
-  TreePine
+  TreePine,
+  Filter
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -814,8 +815,8 @@ export default function Categories() {
               {/* Store-wide Category Settings */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Category Navigation Settings
+                  <Filter className="w-5 h-5" />
+                  Category Filters
                 </h3>
                 
                 {/* Root Category Selection */}
@@ -897,8 +898,8 @@ export default function Categories() {
               {/* Store-wide Category Settings */}
               <div>
                 <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Category Navigation Settings
+                  <Filter className="w-5 h-5" />
+                  Category Filters
                 </h3>
 
                 {/* Root Category Selection */}
