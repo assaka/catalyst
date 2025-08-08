@@ -416,8 +416,23 @@ class AkeneoMapping {
     const value = this.extractProductValue(values, attributeCode, locale);
     if (value === null || value === undefined) return null;
     
-    const numericValue = parseFloat(value);
-    return isNaN(numericValue) ? null : numericValue;
+    // Handle Akeneo price collection format: [{ amount: "29.99", currency: "USD" }]
+    if (Array.isArray(value) && value.length > 0) {
+      // For price collections, get the first price's amount
+      const firstPrice = value[0];
+      if (firstPrice && typeof firstPrice === 'object' && firstPrice.amount !== undefined) {
+        const numericValue = parseFloat(firstPrice.amount);
+        return isNaN(numericValue) ? null : numericValue;
+      }
+    }
+    
+    // Handle simple numeric values (string or number)
+    if (typeof value === 'string' || typeof value === 'number') {
+      const numericValue = parseFloat(value);
+      return isNaN(numericValue) ? null : numericValue;
+    }
+    
+    return null;
   }
 
   /**
