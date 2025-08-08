@@ -119,7 +119,6 @@ export default function Layout({ children, currentPageName }) {
   const [isLoading, setIsLoading] = useState(true);
   const [gtmConfig, setGtmConfig] = useState(null);
   const [openGroups, setOpenGroups] = useState({
-    "Overview": true,
     "Catalog": false,
     "Sales": false,
     "Content": false,
@@ -331,12 +330,6 @@ export default function Layout({ children, currentPageName }) {
   }
 
   const navigationGroups = [
-    {
-      name: "Overview",
-      items: [
-        { name: "Dashboard", path: "Dashboard", icon: Home },
-      ]
-    },
     {
       name: "Catalog",
       items: [
@@ -652,6 +645,21 @@ export default function Layout({ children, currentPageName }) {
           </div>
 
           <nav className="flex-1 overflow-y-auto px-6 pb-6 space-y-1">
+            {/* Dashboard as direct menu item */}
+            <Link
+              to={createAdminUrl("Dashboard")}
+              className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-4 ${
+                currentPageName === 'Dashboard'
+                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+              onClick={() => setSidebarOpen(false)}
+            >
+              <Home className="w-5 h-5" />
+              <span className="flex-1">Dashboard</span>
+              {currentPageName === 'Dashboard' && <ChevronRight className="w-4 h-4 ml-auto" />}
+            </Link>
+
             {navigationGroups.map((group) => (
               <Collapsible key={group.name} open={openGroups[group.name]} onOpenChange={() => toggleGroup(group.name)}>
                 <CollapsibleTrigger asChild>
