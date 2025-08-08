@@ -823,6 +823,34 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="categories">Product Categories</Label>
+              
+              {/* Selected Categories as Labels */}
+              {formData.category_ids.length > 0 && (
+                <div className="mt-2 mb-3 flex flex-wrap gap-2">
+                  {formData.category_ids.map(categoryId => {
+                    const category = categories.find(c => c.id === categoryId);
+                    if (!category) return null;
+                    return (
+                      <Badge 
+                        key={categoryId} 
+                        variant="secondary" 
+                        className="px-2 py-1 flex items-center gap-1 hover:bg-gray-200 transition-colors"
+                      >
+                        <span>{category.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleInputChange("category_ids", formData.category_ids.filter(id => id !== categoryId))}
+                          className="ml-1 hover:text-red-600 transition-colors"
+                          aria-label={`Remove ${category.name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+              
               <div className="space-y-2 mt-2">
                 {categories && categories.length > 0 ? (
                   <div className="border rounded-lg p-3 max-h-64 overflow-y-auto">
@@ -894,13 +922,6 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                   </div>
                 )}
               </div>
-              {formData.category_ids.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-sm text-gray-600">
-                    Selected: {formData.category_ids.length} {formData.category_ids.length === 1 ? 'category' : 'categories'}
-                  </p>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
