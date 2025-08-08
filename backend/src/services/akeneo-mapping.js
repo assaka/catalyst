@@ -86,7 +86,7 @@ class AkeneoMapping {
   /**
    * Transform Akeneo product to Catalyst product format
    */
-  async transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}) {
+  async transformProduct(akeneoProduct, storeId, locale = 'en_US', processedImages = null, customMappings = {}, settings = {}, akeneoClient = null) {
     const values = akeneoProduct.values || {};
     
     // Extract product name
@@ -127,7 +127,7 @@ class AkeneoMapping {
       weight: this.extractNumericValue(values, 'weight', locale) || 
               this.extractNumericValue(values, 'weight_kg', locale),
       dimensions: this.extractDimensions(values, locale),
-      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId),
+      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient),
       status: akeneoProduct.enabled ? 'active' : 'inactive',
       visibility: 'visible',
       manage_stock: this.extractBooleanValue(values, 'manage_stock', locale) ?? true,
@@ -552,7 +552,7 @@ class AkeneoMapping {
   /**
    * Extract images from product attributes (enhanced)
    */
-  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null, storeId = null) {
+  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null, storeId = null, akeneoClient = null) {
     // If we have processed images from Cloudflare, use those
     if (processedImages && processedImages.length > 0) {
       return processedImages.map((img, index) => ({
@@ -579,7 +579,9 @@ class AkeneoMapping {
       'gallery_image', 'gallery_images', 'base_image', 'small_image',
       'thumbnail', 'thumbnail_image', 'media_gallery', 'media_image',
       // Akeneo-specific attribute patterns
-      'pim_catalog_image', 'catalog_image', 'asset_image', 'variation_image'
+      'pim_catalog_image', 'catalog_image', 'asset_image', 'variation_image',
+      // Additional Akeneo asset/media patterns
+      'assets', 'media', 'media_files', 'product_media'
     ];
     
     console.log(`🖼️ Extracting images from Akeneo product (downloadImages: ${downloadImages})`);
@@ -588,15 +590,62 @@ class AkeneoMapping {
     for (const attrName of imageAttributes) {
       const imageData = values[attrName];
       if (imageData && Array.isArray(imageData)) {
-        console.log(`📸 Found ${imageData.length} image(s) in attribute '${attrName}'`);
+        console.log(`📸 Found ${imageData.length} item(s) in attribute '${attrName}'`);
         
         for (const item of imageData) {
           if (item && item.data) {
             let imageUrl = null;
+            let isMediaCode = false;
+            let isAssetCode = false;
             
             // Handle different Akeneo image data structures
             if (typeof item.data === 'string') {
-              imageUrl = item.data;
+              // Check if it's a media file code (no URL patterns)
+              if (!item.data.includes('/') && !item.data.startsWith('http')) {
+                // This might be a media file code or asset code
+                console.log(`🔑 Detected potential media/asset code: ${item.data}`);
+                
+                // Try to fetch media file or asset details
+                if (akeneoClient) {
+                  try {
+                    // First try as media file
+                    console.log(`📂 Attempting to fetch media file: ${item.data}`);
+                    const mediaFile = await akeneoClient.getMediaFile(item.data);
+                    if (mediaFile && mediaFile._links?.download?.href) {
+                      imageUrl = mediaFile._links.download.href;
+                      isMediaCode = true;
+                      console.log(`✅ Found media file download URL: ${imageUrl}`);
+                    }
+                  } catch (mediaError) {
+                    console.log(`❌ Not a media file: ${mediaError.message}`);
+                    
+                    // Try as asset
+                    try {
+                      console.log(`📦 Attempting to fetch asset: ${item.data}`);
+                      const asset = await akeneoClient.getAsset(item.data);
+                      if (asset && asset.reference_files && asset.reference_files.length > 0) {
+                        // Get the first reference file
+                        const refFile = asset.reference_files[0];
+                        if (refFile._links?.download?.href) {
+                          imageUrl = refFile._links.download.href;
+                          isAssetCode = true;
+                          console.log(`✅ Found asset download URL: ${imageUrl}`);
+                        }
+                      }
+                    } catch (assetError) {
+                      console.log(`❌ Not an asset either: ${assetError.message}`);
+                      // Use the original value as URL
+                      imageUrl = item.data;
+                    }
+                  }
+                } else {
+                  // No client available, treat as URL
+                  imageUrl = item.data;
+                }
+              } else {
+                // It's already a URL
+                imageUrl = item.data;
+              }
             } else if (typeof item.data === 'object') {
               // Handle asset or reference structure
               imageUrl = item.data.url || item.data.path || item.data.href || 
@@ -627,7 +676,9 @@ class AkeneoMapping {
               if (downloadImages && imageUrl.startsWith('http')) {
                 try {
                   console.log(`⬇️ Attempting to download image: ${imageUrl}`);
-                  uploadResult = await this.downloadAndUploadImage(imageUrl, item, storeId);
+                  // Use authenticated download for media files and assets
+                  const needsAuth = isMediaCode || isAssetCode || imageUrl.includes('/api/rest/');
+                  uploadResult = await this.downloadAndUploadImage(imageUrl, item, storeId, needsAuth ? akeneoClient : null);
                   if (uploadResult && uploadResult.url) {
                     finalImageUrl = uploadResult.url;
                     console.log(`✅ Image uploaded successfully: ${finalImageUrl}`);
@@ -661,6 +712,8 @@ class AkeneoMapping {
                   locale: item.locale,
                   original_url: imageUrl,
                   downloaded: !!uploadResult,
+                  is_media_code: isMediaCode,
+                  is_asset_code: isAssetCode,
                   upload_result: uploadResult ? {
                     provider: uploadResult.uploadedTo,
                     filename: uploadResult.filename,
@@ -686,27 +739,54 @@ class AkeneoMapping {
   /**
    * Download image from Akeneo and upload to storage system
    */
-  async downloadAndUploadImage(imageUrl, imageItem, storeId = null) {
+  async downloadAndUploadImage(imageUrl, imageItem, storeId = null, akeneoClient = null) {
     const storageManager = require('./storage-manager');
     
     try {
       console.log(`📥 Downloading image from Akeneo: ${imageUrl}`);
       
-      // Dynamic import for ES Module compatibility
-      const fetch = (await import('node-fetch')).default;
+      let buffer;
+      let contentType = 'image/jpeg';
       
-      // Download the image
-      const response = await fetch(imageUrl);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      // Check if we need authenticated download
+      if (akeneoClient && (imageUrl.includes('/api/rest/') || imageUrl.includes('/media/'))) {
+        console.log(`🔐 Using authenticated download for: ${imageUrl}`);
+        try {
+          // Use the authenticated download method
+          buffer = await akeneoClient.downloadAuthenticatedFile(imageUrl);
+          console.log(`✅ Authenticated download successful: ${buffer.length} bytes`);
+          
+          // Try to determine content type from URL or default to jpeg
+          if (imageUrl.includes('.png')) contentType = 'image/png';
+          else if (imageUrl.includes('.gif')) contentType = 'image/gif';
+          else if (imageUrl.includes('.webp')) contentType = 'image/webp';
+          else if (imageUrl.includes('.svg')) contentType = 'image/svg+xml';
+        } catch (authError) {
+          console.warn(`⚠️ Authenticated download failed, trying regular download: ${authError.message}`);
+          // Fall back to regular download
+          const fetch = (await import('node-fetch')).default;
+          const response = await fetch(imageUrl);
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          buffer = await response.buffer();
+          contentType = response.headers.get('content-type') || 'image/jpeg';
+        }
+      } else {
+        // Regular download without authentication
+        console.log(`📥 Using regular download for: ${imageUrl}`);
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        buffer = await response.buffer();
+        contentType = response.headers.get('content-type') || 'image/jpeg';
       }
-
-      // Get the image content type and determine file extension
-      const contentType = response.headers.get('content-type') || 'image/jpeg';
-      const extension = contentType.split('/')[1] || 'jpg';
       
-      // Get image buffer
-      const buffer = await response.buffer();
+      // Get the file extension from content type
+      const extension = contentType.split('/')[1]?.replace('+xml', '') || 'jpg';
+      
       console.log(`💾 Downloaded image: ${buffer.length} bytes, type: ${contentType}`);
       
       // Create mock file object for storage upload

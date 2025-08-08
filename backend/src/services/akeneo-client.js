@@ -487,6 +487,67 @@ class AkeneoClient {
   }
 
   /**
+   * Get media file download URL with authentication
+   * @param {string} code - Media file code
+   * @returns {Promise<object>} Media file info with download URL
+   */
+  async getMediaFile(code) {
+    try {
+      await this.ensureValidToken();
+      const response = await this.makeRequest('GET', `/api/rest/v1/media-files/${code}`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to get media file ${code}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get asset (Asset Manager) information
+   * @param {string} assetCode - Asset code
+   * @returns {Promise<object>} Asset info with reference files
+   */
+  async getAsset(assetCode) {
+    try {
+      await this.ensureValidToken();
+      const response = await this.makeRequest('GET', `/api/rest/v1/assets/${assetCode}`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to get asset ${assetCode}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Download file with authentication
+   * @param {string} url - URL to download
+   * @returns {Promise<Buffer>} File buffer
+   */
+  async downloadAuthenticatedFile(url) {
+    try {
+      await this.ensureValidToken();
+      
+      // If it's a relative URL, make it absolute
+      if (!url.startsWith('http')) {
+        url = `${this.baseUrl}${url.startsWith('/') ? '' : '/'}${url}`;
+      }
+      
+      const response = await axios.get(url, {
+        headers: {
+          'Authorization': `Bearer ${this.accessToken}`,
+          'Accept': '*/*'
+        },
+        responseType: 'arraybuffer'
+      });
+      
+      return Buffer.from(response.data);
+    } catch (error) {
+      console.error(`Failed to download authenticated file from ${url}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
    * Test connection to Akeneo PIM
    */
   async testConnection() {

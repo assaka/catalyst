@@ -411,7 +411,7 @@ class AkeneoIntegration {
             }
             
             // Transform product to Catalyst format (now async)
-            const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings);
+            const catalystProduct = await this.mapping.transformProduct(akeneoProduct, storeId, locale, null, customMappings, enhancedSettings, this.client);
             
             // Apply product settings
             if (enhancedSettings.status === 'disabled') {
