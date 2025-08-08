@@ -10,6 +10,10 @@ import {
 } from "@/components/ui/select";
 
 export default function ProductFilters({ filters, setFilters, categories }) {
+  // Debug logging
+  console.log('🔍 ProductFilters: Categories received:', categories);
+  console.log('🔍 ProductFilters: Categories length:', categories?.length || 0);
+  
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
       ...prev,
