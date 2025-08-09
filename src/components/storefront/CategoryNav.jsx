@@ -13,14 +13,30 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function CategoryNav({ categories }) {
+    console.log('🎯 CategoryNav COMPONENT CALLED:', { 
+        categories: categories?.length, 
+        categoriesType: typeof categories,
+        categoriesArray: Array.isArray(categories)
+    });
+    
     const { store } = useStore();
     
-    console.log('🎯 CategoryNav START:', { categories: categories?.length, hasStore: !!store });
+    console.log('🎯 CategoryNav AFTER useStore:', { 
+        categories: categories?.length, 
+        hasStore: !!store,
+        storeId: store?.id,
+        storeName: store?.name
+    });
+    
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(false);
     
     if (!categories || categories.length === 0 || !store) {
-        console.log('🚫 CategoryNav EARLY RETURN:', { categories: categories?.length, hasStore: !!store });
+        console.log('🚫 CategoryNav EARLY RETURN:', { 
+            categories: categories?.length, 
+            hasStore: !!store,
+            reason: !categories ? 'no categories' : (categories.length === 0 ? 'empty categories' : 'no store')
+        });
         return null;
     }
 
