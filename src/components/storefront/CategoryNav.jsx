@@ -455,8 +455,13 @@ export default function CategoryNav({ categories }) {
                                             >
                                                 View All {category.name}
                                             </Link>
-                                            {/* Always show only direct children, they can further expand on their own hover */}
-                            {category.children.map(child => renderDesktopSubmenuItemSimple(child, 0))}
+                                            {expandAllMenuItems ? 
+                                // Show all children recursively with indentation when expandAllMenuItems = true
+                                category.children.map(child => renderDesktopSubmenuItem(child, 0))
+                                :
+                                // Show only direct children that can hover-expand when expandAllMenuItems = false
+                                category.children.map(child => renderDesktopSubmenuItemSimple(child, 0))
+                            }
                                         </div>
                                     </div>
                                 </div>
