@@ -37,13 +37,6 @@ export default function CategoryNav({ categories }) {
     // On mobile, always use expandAllMenuItems = false
     const expandAllMenuItems = isMobile ? false : (store?.settings?.expandAllMenuItems || false);
     
-    // DEBUG: Log the actual values
-    console.log('🔍 CategoryNav Debug:');
-    console.log('  isMobile:', isMobile);
-    console.log('  store.settings.expandAllMenuItems:', store?.settings?.expandAllMenuItems);
-    console.log('  final expandAllMenuItems:', expandAllMenuItems);
-    console.log('  Will show:', expandAllMenuItems ? 'HOVER DROPDOWNS' : 'CLICK DROPDOWNS');
-    
     // Reset expanded categories when expandAllMenuItems setting changes
     useEffect(() => {
         if (!expandAllMenuItems) {
@@ -315,12 +308,20 @@ export default function CategoryNav({ categories }) {
                     </div>
                 </nav>
             ) : (
-                // Desktop expandAllMenuItems = false: horizontal layout with click-to-expand dropdowns
-                <nav className="hidden md:flex items-center space-x-2">
-                    <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
-                        Home
-                    </Link>
-                    {rootCategories.map(category => renderCategoryWithChildren(category))}
+                // Desktop expandAllMenuItems = false: horizontal layout with mobile-style collapsible categories
+                <nav className="hidden md:block bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                    <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
+                        <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md whitespace-nowrap">
+                            Home
+                        </Link>
+                        <div className="flex flex-wrap gap-x-8 gap-y-4">
+                            {rootCategories.map(category => (
+                                <div key={category.id} className="flex flex-col">
+                                    {renderExpandedCategory(category)}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </nav>
             )}
         </>

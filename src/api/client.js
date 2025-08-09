@@ -218,6 +218,24 @@ class ApiClient {
           });
         }
         
+        // Check for authentication failures that should trigger logout
+        if (response.status === 401 || response.status === 403) {
+          const errorMessage = result.message || '';
+          
+          // Check for specific authentication error patterns
+          const isAuthError = errorMessage.includes('store_owner_auth_token') || 
+                             errorMessage.includes('Missing store_owner_auth_token') ||
+                             errorMessage.includes('Invalid token') ||
+                             errorMessage.includes('Unauthorized') ||
+                             errorMessage.includes('Authentication failed') ||
+                             errorMessage.includes('Token expired');
+          
+          if (isAuthError && !isAuthRoute) {
+            console.warn('❌ Authentication failure detected, logging out user:', errorMessage);
+            this.handleAuthenticationFailure();
+          }
+        }
+        
         // Handle API errors
         const error = new Error(result.message || `HTTP error! status: ${response.status}`);
         error.status = response.status;
@@ -389,6 +407,70 @@ class ApiClient {
     
     // Default to guest if no user data
     return 'guest';
+  }
+
+  // Handle authentication failures by automatically logging out the user
+  handleAuthenticationFailure() {
+    console.warn('🚨 Automatic logout triggered due to authentication failure');
+    
+    // Clear all authentication data
+    this.clearAllAuthData();
+    
+    // Import and use the logout utility function
+    import('../utils/auth.js').then(({ handleLogout }) => {
+      // Use handleLogout which handles role-based redirection
+      handleLogout();
+    }).catch((error) => {
+      console.error('❌ Error during automatic logout:', error);
+      // Fallback: redirect to admin auth page
+      this.redirectToAuth();
+    });
+  }
+
+  // Clear all authentication data
+  clearAllAuthData() {
+    // Clear role-specific tokens
+    localStorage.removeItem('customer_auth_token');
+    localStorage.removeItem('customer_user_data');
+    localStorage.removeItem('store_owner_auth_token');
+    localStorage.removeItem('store_owner_user_data');
+    localStorage.removeItem('selectedStoreId');
+    localStorage.removeItem('storeProviderCache');
+    localStorage.removeItem('onboarding_form_data');
+    localStorage.removeItem('guest_session_id');
+    localStorage.removeItem('cart_session_id');
+    localStorage.removeItem('session_created_at');
+    
+    // Set logout flag
+    localStorage.setItem('user_logged_out', 'true');
+    
+    // Clear API client state
+    this.token = null;
+    this.isLoggedOut = true;
+  }
+
+  // Fallback redirect to auth page
+  redirectToAuth() {
+    try {
+      // Try to determine if we're in admin or customer context
+      const currentPath = window.location.pathname.toLowerCase();
+      const isCustomerContext = currentPath.startsWith('/public/') ||
+                               currentPath.includes('/storefront') || 
+                               currentPath.includes('/cart') || 
+                               currentPath.includes('/checkout');
+      
+      if (isCustomerContext) {
+        // For customers, just reload the current page
+        window.location.reload();
+      } else {
+        // For admin users, redirect to admin auth
+        window.location.href = '/admin/auth';
+      }
+    } catch (error) {
+      console.error('❌ Error during auth redirect:', error);
+      // Ultimate fallback
+      window.location.href = '/admin/auth';
+    }
   }
 
   // Manual logout for testing

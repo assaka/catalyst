@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Auto-Logout on Authentication Failure</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .button:hover {
+            background: #0056b3;
+        }
+        .button.danger {
+            background: #dc3545;
+        }
+        .button.danger:hover {
+            background: #c82333;
+        }
+        .log {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+            white-space: pre-line;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>Auto-Logout Authentication Failure Test</h1>
+    
+    <div class="status info">
+        <strong>Test Purpose:</strong> This test simulates authentication failures to verify that the automatic logout mechanism works correctly when <code>store_owner_auth_token</code> is missing or invalid.
+    </div>
+
+    <div class="test-section">
+        <h2>Current Authentication State</h2>
+        <div id="auth-status"></div>
+        <button class="button" onclick="checkAuthStatus()">Refresh Auth Status</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Setup</h2>
+        <button class="button" onclick="setupValidAuth()">🟢 Setup Valid Auth</button>
+        <button class="button danger" onclick="setupInvalidToken()">🔴 Setup Invalid Token</button>
+        <button class="button danger" onclick="removeMissingToken()">❌ Remove Token (Missing)</button>
+        <button class="button" onclick="clearAllAuth()">🧹 Clear All Auth</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Authentication Failure</h2>
+        <p>These tests will trigger API calls that should cause authentication failures and automatic logout:</p>
+        <button class="button" onclick="testStoreCall()">📦 Test Store.findAll()</button>
+        <button class="button" onclick="testUserCall()">👤 Test User.me()</button>
+        <button class="button" onclick="testGenericApiCall()">🌐 Test Generic API Call</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Expected Behavior</h2>
+        <ul>
+            <li>When authentication fails (401/403 with auth-related error), user should be automatically logged out</li>
+            <li>All authentication data should be cleared from localStorage</li>
+            <li>User should be redirected to the authentication page</li>
+            <li>Subsequent API calls should be blocked until re-authentication</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Log</h2>
+        <div id="log" class="log">Test log will appear here...\n</div>
+        <button class="button" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script>
+        let logElement;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            logElement = document.getElementById('log');
+            log('🚀 Auto-Logout Test Page Loaded');
+            checkAuthStatus();
+            
+            // Listen for logout events
+            window.addEventListener('beforeunload', () => {
+                log('📄 Page is being unloaded (possible redirect)');
+            });
+        });
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            logElement.textContent += logMessage + '\n';
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(logMessage);
+        }
+
+        function clearLog() {
+            logElement.textContent = '';
+            log('🧹 Log cleared');
+        }
+
+        function checkAuthStatus() {
+            const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+            const storeOwnerUserData = localStorage.getItem('store_owner_user_data');
+            const customerToken = localStorage.getItem('customer_auth_token');
+            const logoutFlag = localStorage.getItem('user_logged_out');
+            
+            const statusElement = document.getElementById('auth-status');
+            statusElement.innerHTML = `
+                <strong>Store Owner Token:</strong> ${storeOwnerToken ? '✅ Present (' + storeOwnerToken.substring(0, 20) + '...)' : '❌ Missing'}<br>
+                <strong>Store Owner Data:</strong> ${storeOwnerUserData ? '✅ Present' : '❌ Missing'}<br>
+                <strong>Customer Token:</strong> ${customerToken ? '✅ Present' : '❌ Missing'}<br>
+                <strong>Logout Flag:</strong> ${logoutFlag || 'Not set'}<br>
+                <strong>ApiClient isLoggedOut:</strong> ${window.apiClient?.isLoggedOut ? 'true' : 'false'}
+            `;
+            
+            log(`📊 Auth Status: Store=${!!storeOwnerToken}, Customer=${!!customerToken}, LoggedOut=${logoutFlag}`);
+        }
+
+        function setupValidAuth() {
+            log('🟢 Setting up valid authentication...');
+            
+            // Clear any logout flags
+            localStorage.removeItem('user_logged_out');
+            if (window.apiClient) {
+                window.apiClient.isLoggedOut = false;
+            }
+            
+            // Create mock valid authentication
+            const mockToken = 'valid_token_' + Date.now();
+            const mockUser = {
+                id: 1,
+                email: 'test@example.com',
+                role: 'store_owner',
+                first_name: 'Test',
+                last_name: 'User'
+            };
+            
+            localStorage.setItem('store_owner_auth_token', mockToken);
+            localStorage.setItem('store_owner_user_data', JSON.stringify(mockUser));
+            
+            if (window.apiClient) {
+                window.apiClient.setToken(mockToken);
+            }
+            
+            log('✅ Valid auth setup completed');
+            checkAuthStatus();
+        }
+
+        function setupInvalidToken() {
+            log('🔴 Setting up invalid token...');
+            
+            // Clear logout flags
+            localStorage.removeItem('user_logged_out');
+            if (window.apiClient) {
+                window.apiClient.isLoggedOut = false;
+            }
+            
+            // Set invalid token
+            const invalidToken = 'invalid_token_expired_or_malformed';
+            const mockUser = {
+                id: 1,
+                email: 'test@example.com',
+                role: 'store_owner',
+                first_name: 'Test',
+                last_name: 'User'
+            };
+            
+            localStorage.setItem('store_owner_auth_token', invalidToken);
+            localStorage.setItem('store_owner_user_data', JSON.stringify(mockUser));
+            
+            if (window.apiClient) {
+                window.apiClient.setToken(invalidToken);
+            }
+            
+            log('✅ Invalid token setup completed');
+            checkAuthStatus();
+        }
+
+        function removeMissingToken() {
+            log('❌ Removing store_owner_auth_token (simulating missing token)...');
+            
+            // Remove token but keep user data
+            localStorage.removeItem('store_owner_auth_token');
+            localStorage.removeItem('user_logged_out');
+            
+            if (window.apiClient) {
+                window.apiClient.token = null;
+                window.apiClient.isLoggedOut = false;
+            }
+            
+            log('✅ Token removed, user data preserved');
+            checkAuthStatus();
+        }
+
+        function clearAllAuth() {
+            log('🧹 Clearing all authentication data...');
+            
+            localStorage.removeItem('store_owner_auth_token');
+            localStorage.removeItem('store_owner_user_data');
+            localStorage.removeItem('customer_auth_token');
+            localStorage.removeItem('customer_user_data');
+            localStorage.removeItem('user_logged_out');
+            localStorage.removeItem('selectedStoreId');
+            
+            if (window.apiClient) {
+                window.apiClient.token = null;
+                window.apiClient.isLoggedOut = false;
+            }
+            
+            log('✅ All auth data cleared');
+            checkAuthStatus();
+        }
+
+        async function testStoreCall() {
+            log('📦 Testing Store.findAll() - this should trigger auth failure if token is invalid...');
+            
+            try {
+                // This will likely fail and we don't have the actual Store entity in this test
+                // Instead, we'll simulate the API call directly
+                if (!window.apiClient) {
+                    log('❌ ApiClient not available in this test environment');
+                    return;
+                }
+                
+                const response = await window.apiClient.get('stores/dropdown');
+                log('✅ Store call succeeded: ' + JSON.stringify(response).substring(0, 100));
+                
+            } catch (error) {
+                log('❌ Store call failed: ' + error.message);
+                log('🔍 Checking if auto-logout was triggered...');
+                
+                setTimeout(() => {
+                    checkAuthStatus();
+                    const loggedOut = localStorage.getItem('user_logged_out');
+                    if (loggedOut === 'true') {
+                        log('✅ Auto-logout was triggered successfully!');
+                    } else {
+                        log('⚠️ Auto-logout may not have been triggered');
+                    }
+                }, 1000);
+            }
+        }
+
+        async function testUserCall() {
+            log('👤 Testing User.me() call...');
+            
+            try {
+                if (!window.apiClient) {
+                    log('❌ ApiClient not available in this test environment');
+                    return;
+                }
+                
+                const response = await window.apiClient.get('auth/me');
+                log('✅ User call succeeded: ' + JSON.stringify(response).substring(0, 100));
+                
+            } catch (error) {
+                log('❌ User call failed: ' + error.message);
+                log('🔍 Checking if auto-logout was triggered...');
+                
+                setTimeout(() => {
+                    checkAuthStatus();
+                    const loggedOut = localStorage.getItem('user_logged_out');
+                    if (loggedOut === 'true') {
+                        log('✅ Auto-logout was triggered successfully!');
+                    } else {
+                        log('⚠️ Auto-logout may not have been triggered');
+                    }
+                }, 1000);
+            }
+        }
+
+        async function testGenericApiCall() {
+            log('🌐 Testing generic authenticated API call...');
+            
+            try {
+                if (!window.apiClient) {
+                    log('❌ ApiClient not available in this test environment');
+                    return;
+                }
+                
+                const response = await window.apiClient.get('products');
+                log('✅ Generic API call succeeded');
+                
+            } catch (error) {
+                log('❌ Generic API call failed: ' + error.message);
+                log('🔍 Checking if auto-logout was triggered...');
+                
+                setTimeout(() => {
+                    checkAuthStatus();
+                    const loggedOut = localStorage.getItem('user_logged_out');
+                    if (loggedOut === 'true') {
+                        log('✅ Auto-logout was triggered successfully!');
+                    } else {
+                        log('⚠️ Auto-logout may not have been triggered');
+                    }
+                }, 1000);
+            }
+        }
+
+        // Monitor localStorage changes to detect auto-logout
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'user_logged_out' && e.newValue === 'true') {
+                log('🚨 DETECTED: Auto-logout flag set in localStorage!');
+                checkAuthStatus();
+            }
+        });
+
+        log('📋 Test instructions:');
+        log('1. Setup valid or invalid auth using the buttons above');
+        log('2. Try the API test calls to trigger authentication failures');
+        log('3. Watch for automatic logout behavior');
+        log('4. Check if you are redirected to the auth page');
+    </script>
+</body>
+</html>
