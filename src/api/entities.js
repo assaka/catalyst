@@ -513,6 +513,15 @@ class ProductService extends BaseEntity {
         response = await apiClient.publicRequest('GET', publicUrl, null);
       }
       
+      // Log the response structure for debugging
+      console.log('🔍 ProductService response structure:', {
+        isArray: Array.isArray(response),
+        hasSuccess: response?.success,
+        hasData: !!response?.data,
+        dataKeys: response?.data ? Object.keys(response.data) : [],
+        directLength: Array.isArray(response) ? response.length : 'N/A'
+      });
+      
       // Check if response has pagination structure
       if (response && response.success && response.data) {
         // Handle different entity key formats (products, etc.)
@@ -521,6 +530,7 @@ class ProductService extends BaseEntity {
         ) || 'products';
         
         if (entityKey && response.data[entityKey]) {
+          console.log(`✅ Found products under key '${entityKey}':`, response.data[entityKey].length);
           return {
             data: response.data[entityKey],
             pagination: response.data.pagination || {
@@ -531,10 +541,25 @@ class ProductService extends BaseEntity {
             }
           };
         }
+        
+        // If data structure is different, try to extract products directly
+        if (response.data.products !== undefined) {
+          console.log('✅ Found products in data.products:', response.data.products.length);
+          return {
+            data: response.data.products || [],
+            pagination: response.data.pagination || {
+              current_page: page,
+              per_page: limit,
+              total: 0,
+              total_pages: 0
+            }
+          };
+        }
       }
       
       // Handle array response (typically from public API)
       const data = Array.isArray(response) ? response : [];
+      console.log('📦 Treating response as array:', data.length, 'items');
       return {
         data: data,
         pagination: {
