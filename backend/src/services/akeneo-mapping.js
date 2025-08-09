@@ -182,11 +182,12 @@ class AkeneoMapping {
       }
     });
 
-    // Set quantity_and_stock_status with default value of 5
+    // Extract quantity_and_stock_status from Akeneo, fallback to actual stock quantity
     catalystProduct.quantity_and_stock_status = this.extractNumericValue(values, 'quantity_and_stock_status', locale) ||
                                                this.extractNumericValue(values, 'qty_and_stock_status', locale) ||
                                                this.extractNumericValue(values, 'quantity_status', locale) ||
-                                               5; // Default value as requested
+                                               this.extractNumericValue(values, 'stock_status', locale) ||
+                                               catalystProduct.stock_quantity; // Use actual stock quantity as fallback
 
     // Apply custom image mappings
     if (customMappings.images && Array.isArray(customMappings.images)) {
@@ -391,7 +392,10 @@ class AkeneoMapping {
         if (!isNaN(numericQtyStatus)) {
           catalystProduct.quantity_and_stock_status = Math.max(0, Math.floor(numericQtyStatus));
         } else {
-          catalystProduct.quantity_and_stock_status = 5; // Default value
+          // Keep existing value or use actual stock quantity (handled in main transformation)
+          if (catalystProduct.quantity_and_stock_status === undefined && catalystProduct.stock_quantity !== undefined) {
+            catalystProduct.quantity_and_stock_status = catalystProduct.stock_quantity;
+          }
         }
         break;
       
