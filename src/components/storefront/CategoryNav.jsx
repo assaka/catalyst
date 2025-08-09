@@ -245,6 +245,73 @@ export default function CategoryNav({ categories }) {
         }
     };
 
+    // Render desktop hover-based category with absolute positioned submenu
+    const renderDesktopHoverCategory = (category) => {
+        if (category.children && category.children.length > 0) {
+            return (
+                <div key={category.id} className="relative group">
+                    <Link 
+                        to={createCategoryUrl(store.slug, category.slug)}
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
+                    >
+                        {category.name}
+                        <ChevronDown className="w-3 h-3 ml-1" />
+                    </Link>
+                    
+                    {/* Submenu - absolutely positioned to avoid layout shifts */}
+                    <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                        <div className="py-1">
+                            <Link 
+                                to={createCategoryUrl(store.slug, category.slug)}
+                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                            >
+                                View All {category.name}
+                            </Link>
+                            {category.children.map(child => renderDesktopSubmenuItem(child, 0))}
+                        </div>
+                    </div>
+                </div>
+            );
+        } else {
+            // Regular category without children
+            return (
+                <Link 
+                    key={category.id}
+                    to={createCategoryUrl(store.slug, category.slug)} 
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
+                >
+                    {category.name}
+                </Link>
+            );
+        }
+    };
+
+    // Render submenu items recursively for desktop hover menus
+    const renderDesktopSubmenuItem = (category, depth = 0) => {
+        const items = [];
+        
+        // Add the category itself
+        items.push(
+            <Link 
+                key={category.id}
+                to={createCategoryUrl(store.slug, category.slug)}
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                style={{ paddingLeft: `${16 + depth * 12}px` }}
+            >
+                {depth > 0 && '→ '}{category.name}
+            </Link>
+        );
+        
+        // Add all children recursively
+        if (category.children && category.children.length > 0) {
+            category.children.forEach(child => {
+                items.push(...renderDesktopSubmenuItem(child, depth + 1));
+            });
+        }
+        
+        return items;
+    };
+
     return (
         <>
             {/* Mobile view - always collapsible with vertical layout */}
@@ -308,19 +375,13 @@ export default function CategoryNav({ categories }) {
                     </div>
                 </nav>
             ) : (
-                // Desktop expandAllMenuItems = false: horizontal layout with mobile-style collapsible categories
-                <nav className="hidden md:block bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <div className="flex flex-wrap items-start gap-x-8 gap-y-4">
-                        <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md whitespace-nowrap">
+                // Desktop expandAllMenuItems = false: horizontal layout with hover-based collapsible categories
+                <nav className="hidden md:block">
+                    <div className="flex items-center space-x-1">
+                        <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
                             Home
                         </Link>
-                        <div className="flex flex-wrap gap-x-8 gap-y-4">
-                            {rootCategories.map(category => (
-                                <div key={category.id} className="flex flex-col">
-                                    {renderExpandedCategory(category)}
-                                </div>
-                            ))}
-                        </div>
+                        {rootCategories.map(category => renderDesktopHoverCategory(category))}
                     </div>
                 </nav>
             )}
