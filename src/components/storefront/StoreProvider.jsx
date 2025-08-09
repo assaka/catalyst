@@ -250,12 +250,6 @@ export const StoreProvider = ({ children }) => {
         setLoading(false);
         return;
       }
-
-      
-      // DEBUG: Log the raw settings from the API
-      console.log('🔍 [StoreProvider] Raw selectedStore.settings from API:', selectedStore.settings);
-      console.log('🔍 [StoreProvider] excludeRootFromMenu:', selectedStore.settings?.excludeRootFromMenu);
-      console.log('🔍 [StoreProvider] expandAllMenuItems:', selectedStore.settings?.expandAllMenuItems);
       
       // Set store with merged settings
       // IMPORTANT: Spread store settings FIRST, then apply defaults only for missing properties
@@ -343,14 +337,7 @@ export const StoreProvider = ({ children }) => {
           : ['US', 'CA', 'GB', 'DE', 'FR']
       };
       
-      // DEBUG: Log the merged settings
-      console.log('🔍 [StoreProvider] Merged settings:', mergedSettings);
-      console.log('🔍 [StoreProvider] Merged excludeRootFromMenu:', mergedSettings.excludeRootFromMenu);
-      console.log('🔍 [StoreProvider] Merged expandAllMenuItems:', mergedSettings.expandAllMenuItems);
-      
       setStore({ ...selectedStore, settings: mergedSettings });
-      console.log('🔍 [StoreProvider] Store set with settings:', { ...selectedStore, settings: mergedSettings });
-      
       
       // Only set country if user hasn't selected one, or if current selection is not in allowed countries
       const currentSelectedCountry = localStorage.getItem('selectedCountry') || 'US';

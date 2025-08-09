@@ -38,11 +38,6 @@ export default function CategoryNav({ categories }) {
     // On mobile, always use expandAllMenuItems = false
     const expandAllMenuItems = isMobile ? false : (store?.settings?.expandAllMenuItems || false);
     
-    // Debug: Log the setting value
-    console.log('🔍 [CategoryNav] expandAllMenuItems:', expandAllMenuItems);
-    console.log('🔍 [CategoryNav] isMobile:', isMobile);
-    console.log('🔍 [CategoryNav] store.settings.expandAllMenuItems:', store?.settings?.expandAllMenuItems);
-    
     // Reset expanded categories when expandAllMenuItems setting changes
     useEffect(() => {
         if (!expandAllMenuItems) {
@@ -703,10 +698,7 @@ export default function CategoryNav({ categories }) {
                                                 View All {category.name}
                                             </Link>
                                             {(() => {
-                                console.log('🔍 [CategoryNav] Rendering main dropdown for:', category.name);
-                                console.log('🔍 [CategoryNav] expandAllMenuItems is:', expandAllMenuItems);
-                                console.log('🔍 [CategoryNav] Using function:', expandAllMenuItems ? 'renderDesktopSubmenuItem (ALL descendants)' : 'renderDirectChildrenOnly (with hover side menus)');
-                                
+
                                 return expandAllMenuItems ? 
                                     // Show all children recursively with indentation when expandAllMenuItems = true
                                     category.children.map(child => renderDesktopSubmenuItem(child, 0))

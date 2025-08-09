@@ -89,10 +89,7 @@ export const trackActivity = async (activityType, data = {}) => {
           apiBaseUrl: apiBaseUrl,
           finalApiUrl: apiUrl
         });
-        
-        console.log('🌐 Sending POST request to:', apiUrl);
-        console.log('📦 Request payload:', JSON.stringify(activityData, null, 2));
-        
+
         const response = await fetch(apiUrl, {
           method: 'POST',
           headers: {
@@ -101,9 +98,6 @@ export const trackActivity = async (activityType, data = {}) => {
           body: JSON.stringify(activityData),
           credentials: 'include'
         });
-        
-        console.log('📡 Response status:', response.status, response.statusText);
-        console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
           const errorText = await response.text();
