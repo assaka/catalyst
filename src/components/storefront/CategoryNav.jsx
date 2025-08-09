@@ -4,7 +4,6 @@ import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-// Force cache bust for debugging - v2
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,31 +13,12 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function CategoryNav({ categories }) {
-    console.log('🚨🚨🚨 CATEGORYNAV FUNCTION START - IF YOU SEE THIS THE COMPONENT IS BEING CALLED 🚨🚨🚨');
-    console.log('🎯 CategoryNav COMPONENT CALLED:', { 
-        categories: categories?.length, 
-        categoriesType: typeof categories,
-        categoriesArray: Array.isArray(categories)
-    });
-    
     const { store } = useStore();
-    
-    console.log('🎯 CategoryNav AFTER useStore:', { 
-        categories: categories?.length, 
-        hasStore: !!store,
-        storeId: store?.id,
-        storeName: store?.name
-    });
     
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(false);
     
     if (!categories || categories.length === 0 || !store) {
-        console.log('🚫 CategoryNav EARLY RETURN:', { 
-            categories: categories?.length, 
-            hasStore: !!store,
-            reason: !categories ? 'no categories' : (categories.length === 0 ? 'empty categories' : 'no store')
-        });
         return null;
     }
 
@@ -116,12 +96,6 @@ export default function CategoryNav({ categories }) {
             }
         }
 
-        console.log('👀 Visible categories after filtering:', visibleCategories.map(c => ({
-            id: c.id,
-            name: c.name,
-            parent_id: c.parent_id,
-            hide_in_menu: c.hide_in_menu
-        })));
 
         // Create a map of all visible categories
         visibleCategories.forEach(category => {
@@ -135,11 +109,9 @@ export default function CategoryNav({ categories }) {
                 // This category has a parent, add it to parent's children
                 const parent = categoryMap.get(category.parent_id);
                 parent.children.push(categoryNode);
-                console.log(`📎 Added child "${category.name}" to parent "${parent.name}"`);
             } else {
                 // This is a root category
                 rootCategories.push(categoryNode);
-                console.log(`🌱 Added root category "${category.name}"`);
             }
         });
 
@@ -147,24 +119,6 @@ export default function CategoryNav({ categories }) {
     };
 
     const rootCategories = buildCategoryTree(categories);
-    
-    // Debug logging for navigation
-    console.log('🔧 CategoryNav debug:', {
-        isMobile,
-        storeExpandAllMenuItems: store?.settings?.expandAllMenuItems,
-        finalExpandAllMenuItems: expandAllMenuItems,
-        totalCategories: categories.length,
-        rootCategoryId: store?.settings?.rootCategoryId,
-        excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
-        rootCategoriesCount: rootCategories.length,
-        rootCategories: rootCategories.map(c => ({
-            id: c.id,
-            name: c.name,
-            childrenCount: c.children?.length || 0,
-            hasChildren: !!(c.children && c.children.length > 0),
-            children: c.children?.map(child => ({ id: child.id, name: child.name })) || []
-        }))
-    });
 
     // Render all descendants of a category with proper indentation
     const renderCategoryDescendants = (category, depth = 0, isDropdown = true) => {
@@ -252,20 +206,13 @@ export default function CategoryNav({ categories }) {
 
     // Render category with children as dropdown (collapsible mode)
     const renderCategoryWithChildren = (category) => {
-        console.log('🔍 renderCategoryWithChildren:', {
-            categoryName: category.name,
-            hasChildren: !!(category.children && category.children.length > 0),
-            childrenCount: category.children?.length || 0,
-            children: category.children?.map(c => c.name) || []
-        });
-        
         if (category.children && category.children.length > 0) {
             return (
                 <DropdownMenu key={category.id}>
                     <DropdownMenuTrigger asChild>
                         <Button 
                             variant="ghost" 
-                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center whitespace-nowrap"
+                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center whitespace-nowrap border-2 border-red-500"
                         >
                             <span>{category.name}</span>
                             <ChevronDown className="w-3 h-3 ml-1" />
@@ -315,10 +262,6 @@ export default function CategoryNav({ categories }) {
             </nav>
             
             {/* Desktop view */}
-            {(() => {
-                console.log('🎯 Desktop render path:', expandAllMenuItems ? 'HOVER_DROPDOWNS' : 'CLICK_DROPDOWNS');
-                return null;
-            })()}
             {expandAllMenuItems ? (
                 // Desktop expandAllMenuItems = true: horizontal layout with always-visible dropdowns on hover
                 <nav className="hidden md:block">

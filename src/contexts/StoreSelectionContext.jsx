@@ -24,7 +24,6 @@ export const StoreSelectionProvider = ({ children }) => {
   // Listen for logout events and reset context
   useEffect(() => {
     const handleLogout = () => {
-      console.log('🏪 StoreSelection: User logged out, resetting context');
       setAvailableStores([]);
       setSelectedStore(null);
       setLoading(true);
@@ -38,23 +37,19 @@ export const StoreSelectionProvider = ({ children }) => {
     try {
       setLoading(true);
       const stores = await Store.findAll();
-      const storesArray = Array.isArray(stores) ? stores : [];
       
-      console.log('🏪 StoreSelection: Loaded stores:', storesArray);
+      setAvailableStores(stores);
       
-      setAvailableStores(storesArray);
-      
-      // Auto-select first store if only one exists, or load from localStorage
-      if (storesArray.length > 0) {
+      // Auto-select first store or load from localStorage
+      if (stores.length > 0) {
         const savedStoreId = localStorage.getItem('selectedStoreId');
-        const savedStore = savedStoreId ? storesArray.find(s => s.id === savedStoreId) : null;
+        const savedStore = savedStoreId ? stores.find(s => s.id === savedStoreId) : null;
         
         if (savedStore) {
           setSelectedStore(savedStore);
         } else {
-          // Default to first store
-          setSelectedStore(storesArray[0]);
-          localStorage.setItem('selectedStoreId', storesArray[0].id);
+          setSelectedStore(stores[0]);
+          localStorage.setItem('selectedStoreId', stores[0].id);
         }
       }
     } catch (error) {
@@ -66,7 +61,6 @@ export const StoreSelectionProvider = ({ children }) => {
   };
 
   const selectStore = (store) => {
-    console.log('🏪 StoreSelection: Selecting store:', store);
     setSelectedStore(store);
     localStorage.setItem('selectedStoreId', store.id);
     
@@ -82,9 +76,7 @@ export const StoreSelectionProvider = ({ children }) => {
     loading,
     selectStore,
     refreshStores: loadStores,
-    // Helper to get selected store ID for API calls
     getSelectedStoreId: () => selectedStore?.id || null,
-    // Helper to check if multiple stores exist
     hasMultipleStores: () => availableStores.length > 1
   };
 
