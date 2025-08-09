@@ -616,7 +616,9 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
 
   const selectedAttributeSet = passedAttributeSets.find(set => set && set.id === formData.attribute_set_id);
   const selectedAttributes = selectedAttributeSet && selectedAttributeSet.attribute_ids ?
-    passedAttributes.filter(attr => attr && selectedAttributeSet.attribute_ids.includes(attr.id)) : [];
+    passedAttributes.filter(attr => attr && selectedAttributeSet.attribute_ids.includes(attr.id)) :
+    // If no attribute set is selected, show all available attributes
+    passedAttributes || [];
 
   return (
     <div>

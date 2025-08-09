@@ -397,7 +397,11 @@
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node debug-attribute-processing.cjs)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-real-attribute-processing.cjs)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-complete-flow.cjs)",
-      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-attribute-import-clean.js)"
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-attribute-import-clean.js)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-attribute-import-clean.cjs)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-attribute-filter.js)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-attribute-filter.cjs)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node debug-timestamps.cjs)"
     ],
     "deny": []
   }
