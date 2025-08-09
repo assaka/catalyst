@@ -212,13 +212,13 @@ export default function CategoryNav({ categories }) {
                     <DropdownMenuTrigger asChild>
                         <Button 
                             variant="ghost" 
-                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center whitespace-nowrap border-2 border-red-500"
+                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center whitespace-nowrap"
                         >
                             <span>{category.name}</span>
                             <ChevronDown className="w-3 h-3 ml-1" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto">
+                    <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto z-50 bg-white border border-gray-200 shadow-lg">
                         <DropdownMenuItem asChild>
                             <Link 
                                 to={createCategoryUrl(store.slug, category.slug)}
