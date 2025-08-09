@@ -375,13 +375,67 @@ export default function CategoryNav({ categories }) {
                     </div>
                 </nav>
             ) : (
-                // Desktop expandAllMenuItems = false: horizontal layout with hover-based collapsible categories
+                // Desktop expandAllMenuItems = false: horizontal layout with click-to-expand collapsible categories
                 <nav className="hidden md:block">
                     <div className="flex items-center space-x-1">
                         <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
                             Home
                         </Link>
-                        {rootCategories.map(category => renderDesktopHoverCategory(category))}
+                        {rootCategories.map(category => {
+                            if (category.children && category.children.length > 0) {
+                                const isExpanded = expandedCategories.has(category.id);
+                                return (
+                                    <div key={category.id} className="relative">
+                                        <div className="flex items-center">
+                                            <Link 
+                                                to={createCategoryUrl(store.slug, category.slug)}
+                                                className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
+                                            >
+                                                {category.name}
+                                            </Link>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => toggleCategory(category.id)}
+                                                className="p-1 h-auto ml-1 hover:bg-gray-100"
+                                                aria-label={isExpanded ? `Collapse ${category.name}` : `Expand ${category.name}`}
+                                            >
+                                                {isExpanded ? (
+                                                    <ChevronDown className="w-3 h-3" />
+                                                ) : (
+                                                    <ChevronRight className="w-3 h-3" />
+                                                )}
+                                            </Button>
+                                        </div>
+                                        {/* Collapsible submenu - only show when expanded */}
+                                        {isExpanded && (
+                                            <div className="absolute left-0 top-full mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                                                <div className="py-1">
+                                                    <Link 
+                                                        to={createCategoryUrl(store.slug, category.slug)}
+                                                        className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                                                    >
+                                                        View All {category.name}
+                                                    </Link>
+                                                    {category.children.map(child => renderDesktopSubmenuItem(child, 0))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            } else {
+                                // Regular category without children
+                                return (
+                                    <Link 
+                                        key={category.id}
+                                        to={createCategoryUrl(store.slug, category.slug)} 
+                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
+                                    >
+                                        {category.name}
+                                    </Link>
+                                );
+                            }
+                        })}
                     </div>
                 </nav>
             )}
