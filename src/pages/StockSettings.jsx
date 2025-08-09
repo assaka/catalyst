@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -31,8 +32,7 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function StockSettings() {
-  const [stores, setStores] = useState([]);
-  const [selectedStore, setSelectedStore] = useState(null);
+  const { selectedStore, getSelectedStoreId, refreshStores, loading: storeLoading } = useStoreSelection();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -145,7 +145,7 @@ export default function StockSettings() {
     }
   };
 
-  if (loading) {
+  if (storeLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -153,7 +153,7 @@ export default function StockSettings() {
     );
   }
 
-  if (!settings) {
+  if (!selectedStore || !settings) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center text-gray-700">
         Error: Store data could not be loaded or initialized.
@@ -292,7 +292,7 @@ export default function StockSettings() {
         </div>
 
         <div className="flex justify-end mt-8">
-          <Button onClick={handleSave} disabled={saving || !settings?.id} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple">
+          <Button onClick={handleSave} disabled={saving || !getSelectedStoreId()} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 material-ripple">
             <Save className="w-4 h-4 mr-2" />
             {saving ? 'Saving...' : 'Save Stock Settings'}
           </Button>
