@@ -969,17 +969,20 @@ class AkeneoMapping {
         originalFileName = `${originalFileName}.${extension}`;
       }
       
-      // Add product identifier to filename to make it unique
+      // Add product identifier and unique suffix to filename to make it unique
       if (productIdentifier) {
         // Get the base name and extension
         const lastDotIndex = originalFileName.lastIndexOf('.');
         const baseName = lastDotIndex !== -1 ? originalFileName.substring(0, lastDotIndex) : originalFileName;
         const fileExt = lastDotIndex !== -1 ? originalFileName.substring(lastDotIndex) : `.${extension}`;
         
-        // Create new filename with product identifier
-        // Example: image.jpg becomes image_SKU123.jpg
-        originalFileName = `${baseName}_${productIdentifier}${fileExt}`;
-        console.log(`🏷️ Added product identifier to filename: ${originalFileName}`);
+        // Add timestamp and random suffix to prevent filename collisions between multiple images
+        const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Create new filename with product identifier and unique suffix
+        // Example: image.jpg becomes image_SKU123_1640995200000_abc123def.jpg
+        originalFileName = `${baseName}_${productIdentifier}_${uniqueSuffix}${fileExt}`;
+        console.log(`🏷️ Added unique filename with product identifier: ${originalFileName}`);
       }
       
       // Generate uniform path structure using StoragePathUtility
