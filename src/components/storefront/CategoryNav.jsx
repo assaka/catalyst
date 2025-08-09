@@ -130,26 +130,39 @@ export default function CategoryNav({ categories }) {
     });
 
     // Render all descendants of a category with proper indentation
-    const renderCategoryDescendants = (category, depth = 0) => {
+    const renderCategoryDescendants = (category, depth = 0, isDropdown = true) => {
         const items = [];
         
         // Add the category itself
-        items.push(
-            <DropdownMenuItem key={category.id} asChild>
+        if (isDropdown) {
+            items.push(
+                <DropdownMenuItem key={category.id} asChild>
+                    <Link 
+                        to={createCategoryUrl(store.slug, category.slug)}
+                        className="w-full text-gray-700"
+                        style={{ paddingLeft: `${depth * 16 + 12}px` }}
+                    >
+                        {depth > 0 && '→ '}{category.name}
+                    </Link>
+                </DropdownMenuItem>
+            );
+        } else {
+            items.push(
                 <Link 
+                    key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)}
-                    className="w-full text-gray-700"
+                    className="block w-full text-gray-700 hover:bg-gray-100 px-3 py-2 text-sm"
                     style={{ paddingLeft: `${depth * 16 + 12}px` }}
                 >
                     {depth > 0 && '→ '}{category.name}
                 </Link>
-            </DropdownMenuItem>
-        );
+            );
+        }
         
         // Add all children recursively
         if (category.children && category.children.length > 0) {
             category.children.forEach(child => {
-                items.push(...renderCategoryDescendants(child, depth + 1));
+                items.push(...renderCategoryDescendants(child, depth + 1, isDropdown));
             });
         }
         
@@ -208,10 +221,10 @@ export default function CategoryNav({ categories }) {
                     <DropdownMenuTrigger asChild>
                         <Button 
                             variant="ghost" 
-                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center justify-between w-full"
+                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md h-auto flex items-center whitespace-nowrap"
                         >
                             <span>{category.name}</span>
-                            <ChevronDown className="w-4 h-4 ml-1" />
+                            <ChevronDown className="w-3 h-3 ml-1" />
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-64 max-h-96 overflow-y-auto">
@@ -233,7 +246,7 @@ export default function CategoryNav({ categories }) {
                 <Link 
                     key={category.id}
                     to={createCategoryUrl(store.slug, category.slug)} 
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md"
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
                 >
                     {category.name}
                 </Link>
@@ -242,14 +255,14 @@ export default function CategoryNav({ categories }) {
     };
 
     if (expandAllMenuItems) {
-        // Always-expanded mode: Keep horizontal layout for first level, expand subcategories
+        // Always-expanded mode: Keep horizontal layout for first level, show all subcategories on hover
         return (
             <>
                 {/* Mobile view - vertical layout */}
                 <nav className="block md:hidden space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
                     <Link 
                         to={createPublicUrl(store.slug, 'STOREFRONT')} 
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation"
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation whitespace-nowrap"
                     >
                         Home
                     </Link>
@@ -261,7 +274,7 @@ export default function CategoryNav({ categories }) {
                 {/* Desktop view - horizontal layout with always-visible dropdowns */}
                 <nav className="hidden md:block">
                     <div className="flex items-center space-x-2">
-                        <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md">
+                        <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
                             Home
                         </Link>
                     {rootCategories.map(category => {
@@ -270,17 +283,17 @@ export default function CategoryNav({ categories }) {
                                 <div key={category.id} className="relative group">
                                     <Link 
                                         to={createCategoryUrl(store.slug, category.slug)}
-                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center"
+                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
                                     >
                                         {category.name}
                                         <ChevronDown className="w-3 h-3 ml-1" />
                                     </Link>
-                                    {/* Always visible submenu */}
-                                    <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
-                                        <div className="py-2">
+                                    {/* Submenu visible on hover */}
+                                    <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                                        <div className="py-1">
                                             {category.children.map(child => (
                                                 <div key={child.id}>
-                                                    {renderCategoryDescendants(child, 0)}
+                                                    {renderCategoryDescendants(child, 0, false)}
                                                 </div>
                                             ))}
                                         </div>
@@ -293,7 +306,7 @@ export default function CategoryNav({ categories }) {
                                 <Link 
                                     key={category.id}
                                     to={createCategoryUrl(store.slug, category.slug)} 
-                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md"
+                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
                                 >
                                     {category.name}
                                 </Link>
@@ -305,14 +318,30 @@ export default function CategoryNav({ categories }) {
             </>
         );
     } else {
-        // Collapsible mode: Hover/click to expand submenus (desktop only)
+        // Collapsible mode: Hover/click to expand submenus (with mobile support)
         return (
-            <nav className="hidden md:flex items-center space-x-2">
-                <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md">
-                    Home
-                </Link>
-                {rootCategories.map(category => renderCategoryWithChildren(category))}
-            </nav>
+            <>
+                {/* Mobile view - collapsed/collapsible navigation */}
+                <nav className="block md:hidden space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                    <Link 
+                        to={createPublicUrl(store.slug, 'STOREFRONT')} 
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation whitespace-nowrap"
+                    >
+                        Home
+                    </Link>
+                    <div className="space-y-1">
+                        {rootCategories.map(category => renderExpandedCategory(category))}
+                    </div>
+                </nav>
+                
+                {/* Desktop view - horizontal layout with hover dropdowns */}
+                <nav className="hidden md:flex items-center space-x-2">
+                    <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
+                        Home
+                    </Link>
+                    {rootCategories.map(category => renderCategoryWithChildren(category))}
+                </nav>
+            </>
         );
     }
 }
