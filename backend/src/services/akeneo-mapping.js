@@ -182,8 +182,27 @@ class AkeneoMapping {
             });
           }
         } else if (key !== 'metadata' && key !== 'files' && key !== 'custom_attributes') {
-          // Only add valid product fields
-          catalystProduct[key] = customAttributes[key];
+          // Check if this is a valid Product model field or should go to attributes
+          const productModelFields = [
+            'id', 'name', 'slug', 'sku', 'barcode', 'description', 'short_description',
+            'price', 'compare_price', 'cost_price', 'weight', 'dimensions', 'images',
+            'status', 'visibility', 'manage_stock', 'stock_quantity', 'allow_backorders',
+            'low_stock_threshold', 'infinite_stock', 'is_custom_option', 'is_coupon_eligible',
+            'featured', 'tags', 'seo', 'store_id', 'attribute_set_id', 'category_ids',
+            'related_product_ids', 'sort_order', 'view_count', 'purchase_count'
+          ];
+          
+          if (productModelFields.includes(key)) {
+            // This is a direct Product model field - set it directly
+            catalystProduct[key] = customAttributes[key];
+            console.log(`🎯 Mapped to Product field: ${key} = ${customAttributes[key]}`);
+          } else {
+            // This should be a Catalyst attribute - put it in the attributes object
+            if (!catalystProduct.attributes[key]) {
+              catalystProduct.attributes[key] = customAttributes[key];
+              console.log(`🎯 Mapped to Catalyst attribute: ${key} = ${customAttributes[key]}`);
+            }
+          }
         }
       });
     }
