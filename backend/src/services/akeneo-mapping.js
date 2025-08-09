@@ -163,8 +163,24 @@ class AkeneoMapping {
       // Merge custom attributes carefully to avoid adding invalid fields
       Object.keys(customAttributes).forEach(key => {
         if (key === 'attributes') {
-          // Merge into existing attributes field
-          catalystProduct.attributes = { ...catalystProduct.attributes, ...customAttributes.attributes };
+          // Merge attributes carefully - preserve formatted attributes (objects with label/value)
+          // and only overwrite with raw values if no formatted version exists
+          if (customAttributes.attributes) {
+            Object.keys(customAttributes.attributes).forEach(attrKey => {
+              const existingAttr = catalystProduct.attributes[attrKey];
+              const newAttr = customAttributes.attributes[attrKey];
+              
+              // If existing attribute is already formatted (has label/value), don't overwrite with raw value
+              if (existingAttr && typeof existingAttr === 'object' && existingAttr.label && existingAttr.value) {
+                console.log(`🔒 Preserving formatted attribute: ${attrKey} = {label: "${existingAttr.label}", value: "${existingAttr.value}"}`);
+                // Keep the existing formatted attribute - don't overwrite
+              } else {
+                // Either no existing attribute or it's not formatted, so use the new value
+                catalystProduct.attributes[attrKey] = newAttr;
+                console.log(`🔄 Updated attribute: ${attrKey} =`, newAttr);
+              }
+            });
+          }
         } else if (key !== 'metadata' && key !== 'files' && key !== 'custom_attributes') {
           // Only add valid product fields
           catalystProduct[key] = customAttributes[key];
@@ -1253,9 +1269,11 @@ class AkeneoMapping {
     if (attrDef.type === 'select') {
       // For single select, format as {label, value}
       if (typeof rawValue === 'string') {
-        // Find the matching option to get both label and value
+        // Find the matching option to get both label and value (case-insensitive)
         const matchingOption = attrDef.options.find(opt => 
-          opt.value === rawValue || opt.label === rawValue || opt.code === rawValue
+          (opt.value && opt.value.toLowerCase() === rawValue.toLowerCase()) ||
+          (opt.label && opt.label.toLowerCase() === rawValue.toLowerCase()) ||
+          (opt.code && opt.code.toLowerCase() === rawValue.toLowerCase())
         );
         
         if (matchingOption) {
@@ -1280,7 +1298,9 @@ class AkeneoMapping {
         return rawValue.map(val => {
           if (typeof val === 'string') {
             const matchingOption = attrDef.options.find(opt => 
-              opt.value === val || opt.label === val || opt.code === val
+              (opt.value && opt.value.toLowerCase() === val.toLowerCase()) ||
+              (opt.label && opt.label.toLowerCase() === val.toLowerCase()) ||
+              (opt.code && opt.code.toLowerCase() === val.toLowerCase())
             );
             
             if (matchingOption) {
@@ -1298,9 +1318,11 @@ class AkeneoMapping {
           return val; // Keep as-is if not string
         });
       } else if (typeof rawValue === 'string') {
-        // Single value for multiselect - convert to array
+        // Single value for multiselect - convert to array (case-insensitive matching)
         const matchingOption = attrDef.options.find(opt => 
-          opt.value === rawValue || opt.label === rawValue || opt.code === rawValue
+          (opt.value && opt.value.toLowerCase() === rawValue.toLowerCase()) ||
+          (opt.label && opt.label.toLowerCase() === rawValue.toLowerCase()) ||
+          (opt.code && opt.code.toLowerCase() === rawValue.toLowerCase())
         );
         
         if (matchingOption) {
@@ -1830,7 +1852,16 @@ class AkeneoMapping {
       });
     }
     
-    // Process all Akeneo attributes
+    // First, process all explicit mappings
+    explicitMappings.forEach((mapping, akeneoAttribute) => {
+      if (mapping.catalystField && values.hasOwnProperty(akeneoAttribute)) {
+        const mappedValue = this.mapAkeneoAttribute(akeneoProduct, mapping, locale);
+        Object.assign(customAttributes, mappedValue);
+        console.log(`✅ Applied explicit mapping: ${akeneoAttribute} -> ${mapping.catalystField}`);
+      }
+    });
+    
+    // Then, process remaining attributes that don't have explicit mappings
     Object.keys(values).forEach(akeneoAttribute => {
       // Skip if already processed in standard fields
       const standardFields = ['name', 'description', 'price', 'sku', 'weight', 'ean', 'barcode'];
@@ -1838,25 +1869,20 @@ class AkeneoMapping {
         return;
       }
       
-      // Check if there's an explicit mapping
+      // Skip if this attribute has an explicit mapping (already processed above)
       if (explicitMappings.has(akeneoAttribute)) {
-        const mapping = explicitMappings.get(akeneoAttribute);
-        if (!mapping.catalystField) return;
-        
-        const mappedValue = this.mapAkeneoAttribute(akeneoProduct, mapping, locale);
-        Object.assign(customAttributes, mappedValue);
-        console.log(`✅ Applied explicit mapping: ${akeneoAttribute} -> ${mapping.catalystField}`);
-      } else {
-        // Default behavior: map to the same field name in Catalyst
-        const value = this.extractProductValue(values, akeneoAttribute, locale);
-        if (value !== null && value !== undefined && value !== '') {
-          // Store in attributes JSON field
-          if (!customAttributes.attributes) {
-            customAttributes.attributes = {};
-          }
-          customAttributes.attributes[akeneoAttribute] = value;
-          console.log(`🔄 Auto-mapped attribute: ${akeneoAttribute} -> attributes.${akeneoAttribute}`);
+        return;
+      }
+      
+      // Default behavior: map to the same field name in Catalyst attributes
+      const value = this.extractProductValue(values, akeneoAttribute, locale);
+      if (value !== null && value !== undefined && value !== '') {
+        // Store in attributes JSON field
+        if (!customAttributes.attributes) {
+          customAttributes.attributes = {};
         }
+        customAttributes.attributes[akeneoAttribute] = value;
+        console.log(`🔄 Auto-mapped attribute: ${akeneoAttribute} -> attributes.${akeneoAttribute}`);
       }
     });
     
