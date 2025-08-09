@@ -318,30 +318,14 @@ export default function CategoryNav({ categories }) {
             </>
         );
     } else {
-        // Collapsible mode: Hover/click to expand submenus (with mobile support)
+        // Collapsible mode: Hover/click to expand submenus (desktop only)
         return (
-            <>
-                {/* Mobile view - collapsed/collapsible navigation */}
-                <nav className="block md:hidden space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <Link 
-                        to={createPublicUrl(store.slug, 'STOREFRONT')} 
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation whitespace-nowrap"
-                    >
-                        Home
-                    </Link>
-                    <div className="space-y-1">
-                        {rootCategories.map(category => renderExpandedCategory(category))}
-                    </div>
-                </nav>
-                
-                {/* Desktop view - horizontal layout with hover dropdowns */}
-                <nav className="hidden md:flex items-center space-x-2">
-                    <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
-                        Home
-                    </Link>
-                    {rootCategories.map(category => renderCategoryWithChildren(category))}
-                </nav>
-            </>
+            <nav className="hidden md:flex items-center space-x-2">
+                <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
+                    Home
+                </Link>
+                {rootCategories.map(category => renderCategoryWithChildren(category))}
+            </nav>
         );
     }
 }
