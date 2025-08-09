@@ -286,7 +286,7 @@ export default function CategoryNav({ categories }) {
         }
     };
 
-    // Render submenu items recursively for desktop hover menus
+    // Render submenu items with full flat indentation (for expandAllMenuItems = true)
     const renderDesktopSubmenuItem = (category, depth = 0) => {
         const items = [];
         
@@ -302,7 +302,7 @@ export default function CategoryNav({ categories }) {
             </Link>
         );
         
-        // Add all children recursively
+        // Add all children recursively with increased indentation
         if (category.children && category.children.length > 0) {
             category.children.forEach(child => {
                 items.push(...renderDesktopSubmenuItem(child, depth + 1));
