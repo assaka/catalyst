@@ -140,7 +140,7 @@ class AkeneoMapping {
       is_coupon_eligible: true,
       featured: this.extractBooleanValue(values, 'featured', locale) || false,
       tags: [],
-      attributes: await this.extractAllAttributes(values, locale, storeId, akeneoClient),
+      attributes: await this.extractAllAttributes(values, locale, storeId, akeneoClient, customMappings),
       seo: this.extractSeoData(values, locale),
       attribute_set_id: null, // Will be mapped from family
       category_ids: akeneoProduct.categories || [],
@@ -1147,8 +1147,18 @@ class AkeneoMapping {
    * Now async to query attribute definitions for proper select/multiselect formatting
    * Uses database attribute types and Akeneo attribute metadata when available
    */
-  async extractAllAttributes(values, locale = 'en_US', storeId = null, akeneoClient = null) {
+  async extractAllAttributes(values, locale = 'en_US', storeId = null, akeneoClient = null, customMappings = {}) {
     const attributes = {};
+    
+    // Create a set of explicitly mapped attributes to skip
+    const explicitlyMappedAttributes = new Set();
+    if (customMappings.attributes && Array.isArray(customMappings.attributes)) {
+      customMappings.attributes.forEach(mapping => {
+        if (mapping.enabled && mapping.akeneoAttribute && mapping.catalystField) {
+          explicitlyMappedAttributes.add(mapping.akeneoAttribute);
+        }
+      });
+    }
     
     // Get all attribute definitions from database for this store
     let databaseAttributeTypes = {};
@@ -1189,6 +1199,12 @@ class AkeneoMapping {
     
     // Process each attribute value
     for (const attributeCode of Object.keys(values)) {
+      // Skip attributes that have explicit custom mappings (they'll be mapped to product fields)
+      if (explicitlyMappedAttributes.has(attributeCode)) {
+        console.log(`⏭️ Skipping '${attributeCode}' - has explicit mapping to product field`);
+        continue;
+      }
+      
       // First check database for attribute type to determine extraction method
       const dbAttrDef = databaseAttributeTypes[attributeCode];
       let rawValue = null;
