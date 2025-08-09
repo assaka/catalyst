@@ -818,12 +818,12 @@ class AkeneoIntegration {
             });
 
             if (existingAttribute) {
-              // Update existing attribute
+              // Update existing attribute - preserve filterable setting for existing attributes
               await existingAttribute.update({
                 name: attribute.name,
                 type: attribute.type,
                 is_required: attribute.is_required,
-                is_filterable: attribute.is_filterable,
+                // Don't update is_filterable for existing attributes to preserve user customizations
                 is_searchable: attribute.is_searchable,
                 is_usable_in_conditions: attribute.is_usable_in_conditions,
                 filter_type: attribute.filter_type,
@@ -832,18 +832,34 @@ class AkeneoIntegration {
                 sort_order: attribute.sort_order
               });
               
-              console.log(`✅ Updated attribute: ${attribute.name} (${attribute.code})`);
+              console.log(`✅ Updated attribute: ${attribute.name} (${attribute.code}) - Preserved filterable setting`);
             } else {
+              // Define default filterable attributes for new imports only
+              const defaultFilterableAttributes = ['price', 'name', 'color', 'colour', 'brand', 'manufacturer'];
+              
+              // For new attributes, check if it should be filterable by default
+              const shouldBeFilterable = defaultFilterableAttributes.includes(attribute.code.toLowerCase()) ||
+                                       defaultFilterableAttributes.some(attr => attribute.code.toLowerCase().includes(attr));
+              
               // Remove temporary fields
               const attributeData = { ...attribute };
               delete attributeData.akeneo_code;
               delete attributeData.akeneo_type;
               delete attributeData.akeneo_group;
               
+              // Override filterable setting for new attributes
+              if (shouldBeFilterable) {
+                attributeData.is_filterable = true;
+                console.log(`🎯 Setting ${attribute.code} as filterable (matches default criteria)`);
+              } else {
+                attributeData.is_filterable = false;
+                console.log(`🚫 Setting ${attribute.code} as not filterable (not in default criteria)`);
+              }
+              
               // Create new attribute
               const newAttribute = await Attribute.create(attributeData);
               if (processed <= 10 || processed % 100 === 0) {
-                console.log(`✅ Created attribute: ${newAttribute.name} (${newAttribute.code}) - Type: ${newAttribute.type}`);
+                console.log(`✅ Created attribute: ${newAttribute.name} (${newAttribute.code}) - Type: ${newAttribute.type} - Filterable: ${newAttribute.is_filterable}`);
               }
             }
           } else {

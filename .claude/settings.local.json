@@ -385,7 +385,11 @@
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-comprehensive-attribute-fix.js)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-comprehensive-attribute-fix.cjs)",
       "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" psql $DATABASE_URL -f src/database/migrations/create-akeneo-custom-mappings-table.sql)",
-      "Bash(psql:*)"
+      "Bash(psql:*)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node run-akeneo-metadata-migration.js)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-akeneo-metadata.js)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node test-akeneo-import.js)",
+      "Bash(NODE_ENV=production DATABASE_URL=\"postgresql://postgres.jqqfjfoigtwdpnlicjmh:Lgr5ovbpji64CooD@aws-0-eu-north-1.pooler.supabase.com:6543/postgres\" node verify-akeneo-fix.js)"
     ],
     "deny": []
   }
