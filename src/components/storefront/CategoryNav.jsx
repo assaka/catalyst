@@ -36,15 +36,6 @@ export default function CategoryNav({ categories }) {
     // On mobile, always use expandAllMenuItems = false
     const expandAllMenuItems = isMobile ? false : (store?.settings?.expandAllMenuItems || false);
     
-    // Debug logging
-    console.log('🔧 CategoryNav Debug:', {
-        isMobile,
-        storeExpandAllMenuItems: store?.settings?.expandAllMenuItems,
-        finalExpandAllMenuItems: expandAllMenuItems,
-        categoriesCount: categories?.length,
-        rootCategoriesCount: rootCategories?.length
-    });
-    
     // Reset expanded categories when expandAllMenuItems setting changes
     useEffect(() => {
         if (!expandAllMenuItems) {
@@ -138,6 +129,9 @@ export default function CategoryNav({ categories }) {
     
     // Debug logging for navigation
     console.log('🔧 CategoryNav debug:', {
+        isMobile,
+        storeExpandAllMenuItems: store?.settings?.expandAllMenuItems,
+        finalExpandAllMenuItems: expandAllMenuItems,
         totalCategories: categories.length,
         rootCategoryId: store?.settings?.rootCategoryId,
         excludeRootFromMenu: store?.settings?.excludeRootFromMenu,
