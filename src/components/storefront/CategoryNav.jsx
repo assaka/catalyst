@@ -4,6 +4,7 @@ import { createPageUrl } from '@/utils';
 import { createPublicUrl, createCategoryUrl } from '@/utils/urlUtils';
 import { useStore } from '@/components/storefront/StoreProvider';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+// Force cache bust for debugging - v2
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 export default function CategoryNav({ categories }) {
+    console.log('🚨🚨🚨 CATEGORYNAV FUNCTION START - IF YOU SEE THIS THE COMPONENT IS BEING CALLED 🚨🚨🚨');
     console.log('🎯 CategoryNav COMPONENT CALLED:', { 
         categories: categories?.length, 
         categoriesType: typeof categories,
