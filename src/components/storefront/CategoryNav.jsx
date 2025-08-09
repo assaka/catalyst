@@ -254,9 +254,9 @@ export default function CategoryNav({ categories }) {
         }
     };
 
-    console.log('expandAllMenuItems', {expandAllMenuItems: expandAllMenuItems});
-
     if (expandAllMenuItems) {
+
+        console.log('expandAllMenuItems', {expandAllMenuItems: expandAllMenuItems});
         // Always-expanded mode: Keep horizontal layout for first level, show all subcategories on hover
         return (
             <>
