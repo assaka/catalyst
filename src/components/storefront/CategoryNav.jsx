@@ -312,72 +312,35 @@ export default function CategoryNav({ categories }) {
         return items;
     };
 
-    // Render submenu items with expandAllMenuItems control for second-level categories
+    // Render submenu items with expandAllMenuItems controlling second-level default visibility
     const renderDesktopSubmenuItemWithControl = (category, depth = 0) => {
+        const items = [];
         const hasChildren = category.children && category.children.length > 0;
         const isSecondLevel = depth === 0; // First level under main categories
-        const isExpanded = expandedCategories.has(category.id);
-        
-        // For second-level categories, check expandAllMenuItems setting
-        const shouldShowChildren = hasChildren && (
-            !isSecondLevel || // Always show deeper levels
-            expandAllMenuItems || // Show if setting is true
-            isExpanded // Show if user manually expanded
-        );
-        
-        const items = [];
         
         // Add the category itself
-        if (isSecondLevel && hasChildren && !expandAllMenuItems) {
-            // Second-level category with children and expandAllMenuItems = false
-            // Show with toggle button
-            items.push(
-                <div key={category.id} className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    <Link 
-                        to={createCategoryUrl(store.slug, category.slug)}
-                        className="flex-1"
-                        style={{ paddingLeft: `${depth * 12}px` }}
-                    >
-                        {depth > 0 && '→ '}{category.name}
-                    </Link>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            toggleCategory(category.id);
-                        }}
-                        className="p-1 h-auto ml-2 hover:bg-gray-200"
-                        aria-label={isExpanded ? `Collapse ${category.name}` : `Expand ${category.name}`}
-                    >
-                        {isExpanded ? (
-                            <ChevronDown className="w-3 h-3" />
-                        ) : (
-                            <ChevronRight className="w-3 h-3" />
-                        )}
-                    </Button>
-                </div>
-            );
-        } else {
-            // Regular category link
-            items.push(
-                <Link 
-                    key={category.id}
-                    to={createCategoryUrl(store.slug, category.slug)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    style={{ paddingLeft: `${16 + depth * 12}px` }}
-                >
-                    {depth > 0 && '→ '}{category.name}
-                </Link>
-            );
-        }
+        items.push(
+            <Link 
+                key={category.id}
+                to={createCategoryUrl(store.slug, category.slug)}
+                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                style={{ paddingLeft: `${16 + depth * 12}px` }}
+            >
+                {depth > 0 && '→ '}{category.name}
+            </Link>
+        );
         
-        // Add children if they should be shown
-        if (shouldShowChildren) {
-            category.children.forEach(child => {
-                items.push(...renderDesktopSubmenuItemWithControl(child, depth + 1));
-            });
+        // Add children based on expandAllMenuItems setting for second level
+        if (hasChildren) {
+            if (isSecondLevel && !expandAllMenuItems) {
+                // Second level with expandAllMenuItems = false: don't show children by default
+                // They would need to hover over this item to see its children (future enhancement)
+            } else {
+                // Show children immediately (expandAllMenuItems = true or deeper levels)
+                category.children.forEach(child => {
+                    items.push(...renderDesktopSubmenuItemWithControl(child, depth + 1));
+                });
+            }
         }
         
         return items;
