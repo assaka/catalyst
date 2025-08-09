@@ -510,10 +510,7 @@ class AkeneoIntegration {
                   stock_quantity: catalystProduct.stock_quantity,
                   allow_backorders: catalystProduct.allow_backorders,
                   low_stock_threshold: catalystProduct.low_stock_threshold,
-                  infinite_stock: catalystProduct.infinite_stock,
-                  // Include custom fields if they exist
-                  custom_attributes: catalystProduct.custom_attributes,
-                  files: catalystProduct.files
+                  infinite_stock: catalystProduct.infinite_stock
                 };
 
                 // Check if prevent URL key override is enabled
@@ -546,6 +543,9 @@ class AkeneoIntegration {
                 delete productData.akeneo_family;
                 delete productData.akeneo_groups;
                 delete productData.sale_price; // Not in Product model
+                delete productData.files; // Not in Product model
+                delete productData.metadata; // Not in Product model
+                delete productData.custom_attributes; // Not in Product model
                 
                 // Create new product
                 await Product.create(productData);
