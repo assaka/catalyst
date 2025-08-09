@@ -484,7 +484,7 @@ class ProductService extends BaseEntity {
     }
   }
 
-  // Override findPaginated to always use authenticated API for admin operations
+  // Override findPaginated to handle both authenticated and public access
   async findPaginated(page = 1, limit = 10, filters = {}) {
     try {
       const params = {
@@ -496,10 +496,22 @@ class ProductService extends BaseEntity {
       const queryString = new URLSearchParams(params).toString();
       const url = `${this.endpoint}?${queryString}`;
       
-      console.log('🔧 ProductService.findPaginated: Forcing authenticated API for admin operations');
+      console.log('🔧 ProductService.findPaginated: Checking authentication status');
       
-      // Always use authenticated endpoint for admin product management
-      const response = await apiClient.get(url);
+      // Check if we have a token
+      const token = apiClient.getToken();
+      let response;
+      
+      if (token) {
+        console.log('🔐 Using authenticated API for product fetching');
+        // Use authenticated endpoint if token is available
+        response = await apiClient.get(url);
+      } else {
+        console.log('🌐 Using public API for product fetching (no auth token)');
+        // Fall back to public endpoint if no token with proper query params
+        const publicUrl = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+        response = await apiClient.publicRequest('GET', publicUrl, null);
+      }
       
       // Check if response has pagination structure
       if (response && response.success && response.data) {
@@ -521,7 +533,7 @@ class ProductService extends BaseEntity {
         }
       }
       
-      // Fallback
+      // Handle array response (typically from public API)
       const data = Array.isArray(response) ? response : [];
       return {
         data: data,
@@ -534,6 +546,34 @@ class ProductService extends BaseEntity {
       };
     } catch (error) {
       console.error(`ProductService.findPaginated() error:`, error.message);
+      
+      // Try public API as fallback if authenticated fails
+      if (error.status === 401) {
+        console.log('🔄 Auth failed, retrying with public API');
+        try {
+          const params = {
+            page: page,
+            limit: limit,
+            ...filters
+          };
+          const queryString = new URLSearchParams(params).toString();
+          const publicUrl = queryString ? `${this.endpoint}?${queryString}` : this.endpoint;
+          const response = await apiClient.publicRequest('GET', publicUrl, null);
+          const data = Array.isArray(response) ? response : [];
+          return {
+            data: data,
+            pagination: {
+              current_page: page,
+              per_page: limit,
+              total: data.length,
+              total_pages: Math.ceil(data.length / limit)
+            }
+          };
+        } catch (publicError) {
+          console.error(`ProductService.findPaginated() public fallback error:`, publicError.message);
+        }
+      }
+      
       return {
         data: [],
         pagination: {
