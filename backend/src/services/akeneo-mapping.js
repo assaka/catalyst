@@ -128,7 +128,7 @@ class AkeneoMapping {
       weight: this.extractNumericValue(values, 'weight', locale) || 
               this.extractNumericValue(values, 'weight_kg', locale),
       dimensions: this.extractDimensions(values, locale),
-      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient, akeneoProduct.identifier),
+      images: await this.extractImages(values, processedImages, settings.downloadImages !== false, settings.akeneoBaseUrl, storeId, akeneoClient, akeneoProduct.identifier, customMappings),
       status: akeneoProduct.enabled ? 'active' : 'inactive',
       visibility: 'visible',
       manage_stock: this.extractBooleanValue(values, 'manage_stock', locale) ?? true,
@@ -554,7 +554,7 @@ class AkeneoMapping {
   /**
    * Extract images from product attributes (enhanced)
    */
-  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null, storeId = null, akeneoClient = null, productIdentifier = null) {
+  async extractImages(values, processedImages = null, downloadImages = true, baseUrl = null, storeId = null, akeneoClient = null, productIdentifier = null, customMappings = null) {
     // If we have processed images from Cloudflare, use those
     if (processedImages && processedImages.length > 0) {
       return processedImages.map((img, index) => ({
@@ -574,17 +574,39 @@ class AkeneoMapping {
     const images = [];
     let foundImageCount = 0;
     
-    // Enhanced list of common Akeneo image attribute names
-    const imageAttributes = [
-      'image', 'images', 'picture', 'pictures', 'photo', 'photos',
-      'main_image', 'product_image', 'product_images', 'gallery',
-      'gallery_image', 'gallery_images', 'base_image', 'small_image',
-      'thumbnail', 'thumbnail_image', 'media_gallery', 'media_image',
-      // Akeneo-specific attribute patterns
-      'pim_catalog_image', 'catalog_image', 'asset_image', 'variation_image',
-      // Additional Akeneo asset/media patterns
-      'assets', 'media', 'media_files', 'product_media'
-    ];
+    // Use custom image mappings if provided, otherwise use defaults
+    let imageAttributes = [];
+    
+    if (customMappings?.images && Array.isArray(customMappings.images)) {
+      // Get enabled image mappings sorted by priority
+      const enabledMappings = customMappings.images
+        .filter(m => m.enabled && m.akeneoField)
+        .sort((a, b) => (a.priority || 999) - (b.priority || 999));
+      
+      // Extract the Akeneo field names
+      imageAttributes = enabledMappings.map(m => m.akeneoField);
+      
+      console.log(`📸 Using ${imageAttributes.length} custom image mappings from configuration`);
+      console.log(`  Mapped fields in priority order: ${imageAttributes.join(', ')}`);
+    }
+    
+    // If no custom mappings or they're empty, use comprehensive defaults
+    if (imageAttributes.length === 0) {
+      imageAttributes = [
+        'image', 'images', 'picture', 'pictures', 'photo', 'photos',
+        'main_image', 'product_image', 'product_images', 'gallery',
+        'gallery_image', 'gallery_images', 'base_image', 'small_image',
+        'thumbnail', 'thumbnail_image', 'media_gallery', 'media_image',
+        // Akeneo-specific attribute patterns
+        'pim_catalog_image', 'catalog_image', 'asset_image', 'variation_image',
+        // Additional Akeneo asset/media patterns
+        'assets', 'media', 'media_files', 'product_media',
+        // Numbered image patterns
+        'image_0', 'image_1', 'image_2', 'image_3', 'image_4',
+        'image_5', 'image_6', 'image_7', 'image_8', 'image_9'
+      ];
+      console.log(`📸 No custom mappings provided, using default image attribute list`);
+    }
     
     console.log(`\n🖼️ ===== EXTRACTING IMAGES FROM AKENEO PRODUCT =====`);
     console.log(`📊 Settings:`);

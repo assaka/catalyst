@@ -56,6 +56,16 @@ const AkeneoMapping = sequelize.define('AkeneoMapping', {
   notes: {
     type: DataTypes.TEXT,
     allowNull: true
+  },
+  metadata: {
+    type: DataTypes.JSONB,
+    defaultValue: {},
+    comment: 'JSONB field for storing additional configuration'
+  },
+  sort_order: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0,
+    comment: 'Sort order for prioritizing mappings'
   }
 }, {
   tableName: 'akeneo_mappings',
@@ -167,6 +177,75 @@ AkeneoMapping.buildCategoryMapping = async function(storeId) {
   });
   
   return mapping;
+};
+
+// Static method to get or create image attribute mappings
+AkeneoMapping.getImageMappings = async function(storeId) {
+  const mappings = await this.findAll({
+    where: {
+      store_id: storeId,
+      akeneo_type: 'image_attribute',
+      is_active: true
+    },
+    order: [['sort_order', 'ASC']]
+  });
+  
+  // If no mappings exist, return default structure
+  if (mappings.length === 0) {
+    return [
+      { akeneoField: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
+      { akeneoField: 'image_0', catalystField: 'gallery_0', enabled: true, priority: 2 },
+      { akeneoField: 'image_1', catalystField: 'gallery_1', enabled: true, priority: 3 },
+      { akeneoField: 'image_2', catalystField: 'gallery_2', enabled: true, priority: 4 },
+      { akeneoField: 'image_3', catalystField: 'gallery_3', enabled: true, priority: 5 }
+    ];
+  }
+  
+  // Convert database mappings to expected format
+  return mappings.map(m => ({
+    akeneoField: m.akeneo_code,
+    catalystField: m.entity_slug,
+    enabled: m.is_active,
+    priority: m.sort_order || m.metadata?.position || 999
+  }));
+};
+
+// Static method to save image mappings
+AkeneoMapping.saveImageMappings = async function(storeId, imageMappings) {
+  // Delete existing image mappings for this store
+  await this.destroy({
+    where: {
+      store_id: storeId,
+      akeneo_type: 'image_attribute'
+    }
+  });
+  
+  // Create new mappings
+  const mappingsToCreate = imageMappings
+    .filter(m => m.enabled && m.akeneoField)
+    .map((mapping, index) => ({
+      akeneo_code: mapping.akeneoField,
+      akeneo_type: 'image_attribute',
+      entity_type: 'product_image',
+      entity_id: require('crypto').randomUUID(),
+      entity_slug: mapping.catalystField || `image_${index}`,
+      store_id: storeId,
+      is_active: true,
+      mapping_source: 'manual',
+      sort_order: mapping.priority || index,
+      metadata: {
+        position: mapping.priority || index,
+        is_primary: index === 0,
+        fallback_attributes: []
+      },
+      notes: `Image mapping: ${mapping.akeneoField} -> ${mapping.catalystField}`
+    }));
+  
+  if (mappingsToCreate.length > 0) {
+    await this.bulkCreate(mappingsToCreate);
+  }
+  
+  return mappingsToCreate.length;
 };
 
 AkeneoMapping.autoCreateCategoryMappings = async function(storeId) {

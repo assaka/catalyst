@@ -527,20 +527,21 @@ export default function CategoryNav({ categories }) {
         );
     };
 
-    // Render direct children only as simple links (with hover for direct children only)
+    // Render direct children with chevrons for items with children, and hover side menus
     const renderDirectChildrenOnly = (category, depth = 0) => {
         const hasChildren = category.children && category.children.length > 0;
         
         if (hasChildren) {
-            // Category with children - show as simple link (NO chevron) but WITH hover submenu for direct children only
+            // Category with children - show WITH chevron AND hover submenu for direct children only
             return (
                 <div key={category.id} className="relative group">
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
                         <span>{depth > 0 && '→ '}{category.name}</span>
+                        <ChevronRight className="w-3 h-3 ml-1" />
                     </Link>
                     
                     {/* Side submenu - shows ONLY this category's direct children on hover */}
@@ -567,7 +568,7 @@ export default function CategoryNav({ categories }) {
                 </div>
             );
         } else {
-            // Regular category without children - simple link
+            // Regular category without children - simple link without chevron
             return (
                 <Link 
                     key={category.id}
