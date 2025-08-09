@@ -1,12 +1,12 @@
 const express = require('express');
-const { Attribute, Store } = require('../models');
+const { Attribute, Store, AttributeSet } = require('../models');
 const { Op } = require('sequelize');
 const router = express.Router();
 
 // Basic CRUD operations for attributes
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 100, store_id, search } = req.query;
+    const { page = 1, limit = 100, store_id, search, attribute_set_id, exclude_assigned } = req.query;
     const offset = (page - 1) * limit;
     
     // Check if this is a public request
@@ -42,6 +42,39 @@ router.get('/', async (req, res) => {
         { name: { [Op.iLike]: `%${search}%` } },
         { code: { [Op.iLike]: `%${search}%` } }
       ];
+    }
+
+    // Add attribute set filtering
+    if (attribute_set_id) {
+      // Find the attribute set and filter by its attribute_ids
+      const attributeSet = await AttributeSet.findByPk(attribute_set_id);
+      if (attributeSet && Array.isArray(attributeSet.attribute_ids) && attributeSet.attribute_ids.length > 0) {
+        where.id = { [Op.in]: attributeSet.attribute_ids };
+      } else {
+        // If attribute set has no attributes, return empty result
+        where.id = { [Op.in]: [] };
+      }
+    } else if (exclude_assigned === 'true') {
+      // Get all assigned attribute IDs from all attribute sets in this store
+      const attributeSets = await AttributeSet.findAll({
+        where: { store_id: where.store_id || store_id },
+        attributes: ['attribute_ids']
+      });
+      
+      const assignedIds = [];
+      attributeSets.forEach(set => {
+        if (Array.isArray(set.attribute_ids)) {
+          assignedIds.push(...set.attribute_ids);
+        }
+      });
+      
+      // Remove duplicates
+      const uniqueAssignedIds = [...new Set(assignedIds)];
+      
+      if (uniqueAssignedIds.length > 0) {
+        where.id = { [Op.notIn]: uniqueAssignedIds };
+      }
+      // If no attributes are assigned to any set, show all attributes (no additional filter)
     }
 
     const { count, rows } = await Attribute.findAndCountAll({
