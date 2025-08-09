@@ -11,8 +11,9 @@ async function getUserStoresForDropdown(userId) {
     console.log(`🔍 Getting accessible stores for user ID: ${userId}`);
     
     // BULLETPROOF: Simple query with clear logic
+    // Note: Can't use DISTINCT with JSON columns, so we cast settings to text for comparison
     const query = `
-      SELECT DISTINCT
+      SELECT DISTINCT ON (s.id)
           s.id,
           s.name,
           s.slug,
@@ -52,7 +53,7 @@ async function getUserStoresForDropdown(userId) {
               AND st.role IN ('admin', 'editor')
           )
         )
-      ORDER BY s.name ASC
+      ORDER BY s.id, s.name ASC
     `;
 
     const stores = await sequelize.query(query, {
