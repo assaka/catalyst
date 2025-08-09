@@ -527,6 +527,44 @@ class AkeneoIntegration {
                   }
                 }
 
+                // Clean metadata from images array in update data
+                if (updateData.images && Array.isArray(updateData.images)) {
+                  updateData.images = updateData.images.map(img => {
+                    if (img && typeof img === 'object' && 'metadata' in img) {
+                      const { metadata, ...cleanImg } = img;
+                      return cleanImg;
+                    }
+                    return img;
+                  });
+                }
+                
+                // Clean any field that might have 'metadata' as a key
+                if (updateData.attributes && typeof updateData.attributes === 'object') {
+                  // Remove metadata key if it exists in attributes
+                  if ('metadata' in updateData.attributes) {
+                    delete updateData.attributes.metadata;
+                    console.log('[DEBUG] Removed metadata from attributes field in update');
+                  }
+                }
+
+                // Debug: Log what we're trying to update
+                console.log('[DEBUG] Update data keys being sent to database:', Object.keys(updateData));
+                
+                // Check if any field contains metadata
+                Object.keys(updateData).forEach(key => {
+                  if (typeof updateData[key] === 'object' && updateData[key] !== null) {
+                    if (Array.isArray(updateData[key])) {
+                      updateData[key].forEach((item, idx) => {
+                        if (item && typeof item === 'object' && 'metadata' in item) {
+                          console.log(`[DEBUG] Update field '${key}[${idx}]' contains metadata property`);
+                        }
+                      });
+                    } else if ('metadata' in updateData[key]) {
+                      console.log(`[DEBUG] Update field '${key}' contains metadata property`);
+                    }
+                  }
+                });
+
                 // Update existing product
                 await existingProduct.update(updateData);
                 
@@ -546,6 +584,44 @@ class AkeneoIntegration {
                 delete productData.files; // Not in Product model
                 delete productData.metadata; // Not in Product model
                 delete productData.custom_attributes; // Not in Product model
+                
+                // Clean metadata from images array
+                if (productData.images && Array.isArray(productData.images)) {
+                  productData.images = productData.images.map(img => {
+                    if (img && typeof img === 'object' && 'metadata' in img) {
+                      const { metadata, ...cleanImg } = img;
+                      return cleanImg;
+                    }
+                    return img;
+                  });
+                }
+                
+                // Clean any field that might have 'metadata' as a key
+                if (productData.attributes && typeof productData.attributes === 'object') {
+                  // Remove metadata key if it exists in attributes
+                  if ('metadata' in productData.attributes) {
+                    delete productData.attributes.metadata;
+                    console.log('[DEBUG] Removed metadata from attributes field');
+                  }
+                }
+                
+                // Debug: Log what we're trying to create
+                console.log('[DEBUG] Product data keys being sent to database:', Object.keys(productData));
+                
+                // Check if any field contains metadata
+                Object.keys(productData).forEach(key => {
+                  if (typeof productData[key] === 'object' && productData[key] !== null) {
+                    if (Array.isArray(productData[key])) {
+                      productData[key].forEach((item, idx) => {
+                        if (item && typeof item === 'object' && 'metadata' in item) {
+                          console.log(`[DEBUG] Field '${key}[${idx}]' contains metadata property`);
+                        }
+                      });
+                    } else if ('metadata' in productData[key]) {
+                      console.log(`[DEBUG] Field '${key}' contains metadata property`);
+                    }
+                  }
+                });
                 
                 // Create new product
                 await Product.create(productData);
