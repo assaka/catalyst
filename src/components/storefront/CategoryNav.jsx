@@ -15,13 +15,26 @@ import { Button } from '@/components/ui/button';
 export default function CategoryNav({ categories }) {
     const { store } = useStore();
     const [expandedCategories, setExpandedCategories] = useState(new Set());
+    const [isMobile, setIsMobile] = useState(false);
     
     if (!categories || categories.length === 0 || !store) {
         return null;
     }
 
+    // Detect mobile/desktop
+    useEffect(() => {
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        
+        checkIsMobile();
+        window.addEventListener('resize', checkIsMobile);
+        return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
+
     // Check if all menu items should be expanded by default
-    const expandAllMenuItems = store?.settings?.expandAllMenuItems || false;
+    // On mobile, always use expandAllMenuItems = false
+    const expandAllMenuItems = isMobile ? false : (store?.settings?.expandAllMenuItems || false);
     
     // Reset expanded categories when expandAllMenuItems setting changes
     useEffect(() => {
@@ -254,80 +267,77 @@ export default function CategoryNav({ categories }) {
         }
     };
 
-    if (expandAllMenuItems) {
+    return (
+        <>
+            {/* Mobile view - always collapsible with vertical layout */}
+            <nav className="block md:hidden space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <Link
 
-        console.log('expandAllMenuItems', {expandAllMenuItems: expandAllMenuItems});
-        // Always-expanded mode: Keep horizontal layout for first level, show all subcategories on hover
-        return (
-            <>
-                {/* Mobile view - vertical layout */}
-                <nav className="block md:hidden space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-                    <Link 
-                        to={createPublicUrl(store.slug, 'STOREFRONT')} 
-                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation whitespace-nowrap"
-                    >
-                        Home
-                    </Link>
-                    <div className="space-y-1">
-                        {rootCategories.map(category => renderExpandedCategory(category))}
-                    </div>
-                </nav>
-                
-                {/* Desktop view - horizontal layout with always-visible dropdowns */}
+                    to={createPublicUrl(store.slug, 'STOREFRONT')} 
+                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation whitespace-nowrap"
+                >
+                    Home
+                </Link>
+                <div className="space-y-1">
+                    {rootCategories.map(category => renderExpandedCategory(category))}
+                </div>
+            </nav>
+            
+            {/* Desktop view */}
+            {expandAllMenuItems ? (
+                // Desktop expandAllMenuItems = true: horizontal layout with always-visible dropdowns on hover
                 <nav className="hidden md:block">
                     <div className="flex items-center space-x-2">
                         <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
                             Home
                         </Link>
-                    {rootCategories.map(category => {
-                        if (category.children && category.children.length > 0) {
-                            return (
-                                <div key={category.id} className="relative group">
-                                    <Link 
-                                        to={createCategoryUrl(store.slug, category.slug)}
-                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
-                                    >
-                                        {category.name}
-                                        <ChevronDown className="w-3 h-3 ml-1" />
-                                    </Link>
-                                    {/* Submenu visible on hover */}
-                                    <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
-                                        <div className="py-1">
-                                            {category.children.map(child => (
-                                                <div key={child.id}>
-                                                    {renderCategoryDescendants(child, 0, false)}
-                                                </div>
-                                            ))}
+                        {rootCategories.map(category => {
+                            if (category.children && category.children.length > 0) {
+                                return (
+                                    <div key={category.id} className="relative group">
+                                        <Link 
+                                            to={createCategoryUrl(store.slug, category.slug)}
+                                            className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center whitespace-nowrap"
+                                        >
+                                            {category.name}
+                                            <ChevronDown className="w-3 h-3 ml-1" />
+                                        </Link>
+                                        {/* Submenu visible on hover */}
+                                        <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                                            <div className="py-1">
+                                                {category.children.map(child => (
+                                                    <div key={child.id}>
+                                                        {renderCategoryDescendants(child, 0, false)}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        } else {
-                            // Regular category without children
-                            return (
-                                <Link 
-                                    key={category.id}
-                                    to={createCategoryUrl(store.slug, category.slug)} 
-                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
-                                >
-                                    {category.name}
-                                </Link>
-                            );
-                        }
+                                );
+                            } else {
+                                // Regular category without children
+                                return (
+                                    <Link 
+                                        key={category.id}
+                                        to={createCategoryUrl(store.slug, category.slug)} 
+                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap"
+                                    >
+                                        {category.name}
+                                    </Link>
+                                );
+                            }
                         })}
                     </div>
                 </nav>
-            </>
-        );
-    } else {
-        // Collapsible mode: Hover/click to expand submenus (desktop only, hidden on mobile)
-        return (
-            <nav className="hidden md:flex items-center space-x-2">
-                <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
-                    Home
-                </Link>
-                {rootCategories.map(category => renderCategoryWithChildren(category))}
-            </nav>
-        );
-    }
+            ) : (
+                // Desktop expandAllMenuItems = false: horizontal layout with click-to-expand dropdowns
+                <nav className="hidden md:flex items-center space-x-2">
+                    <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
+                        Home
+                    </Link>
+                    {rootCategories.map(category => renderCategoryWithChildren(category))}
+                </nav>
+            )}
+        </>
+    );
 }
