@@ -479,16 +479,17 @@ class AkeneoMapping {
     }
     
     // Final fallback: check boolean stock status attributes
-    const inStockValue = this.extractBooleanValue(values, 'in_stock', locale) || 
-                        this.extractBooleanValue(values, 'is_in_stock', locale) ||
-                        this.extractBooleanValue(values, 'available', locale);
-    
-    if (inStockValue === true) {
-      console.log(`📦 Product marked as in stock, defaulting to stock: 10`);
-      return 10; // Default available quantity
-    } else if (inStockValue === false) {
-      console.log(`📦 Product marked as out of stock: 0`);
-      return 0;
+    const inStockAttributes = ['in_stock', 'is_in_stock', 'available'];
+    for (const attr of inStockAttributes) {
+      const stockStatus = this.extractBooleanValue(values, attr, locale);
+      if (stockStatus === true) {
+        console.log(`📦 Product marked as in stock (${attr}), defaulting to stock: 10`);
+        return 10; // Default available quantity
+      } else if (stockStatus === false) {
+        console.log(`📦 Product marked as out of stock (${attr}): 0`);
+        return 0;
+      }
+      // stockStatus === null means attribute doesn't exist, continue checking
     }
     
     // Ultimate fallback for enabled products with no inventory data
@@ -527,7 +528,7 @@ class AkeneoMapping {
    */
   extractBooleanValue(values, attributeCode, locale = 'en_US') {
     const value = this.extractProductValue(values, attributeCode, locale);
-    if (value === null || value === undefined) return false;
+    if (value === null || value === undefined) return null; // Return null for missing attributes
     
     return Boolean(value);
   }

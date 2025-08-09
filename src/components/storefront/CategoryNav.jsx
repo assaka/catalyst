@@ -14,10 +14,13 @@ import { Button } from '@/components/ui/button';
 
 export default function CategoryNav({ categories }) {
     const { store } = useStore();
+    
+    console.log('🎯 CategoryNav START:', { categories: categories?.length, hasStore: !!store });
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(false);
     
     if (!categories || categories.length === 0 || !store) {
+        console.log('🚫 CategoryNav EARLY RETURN:', { categories: categories?.length, hasStore: !!store });
         return null;
     }
 
