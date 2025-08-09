@@ -140,7 +140,7 @@ class AkeneoMapping {
       is_coupon_eligible: true,
       featured: this.extractBooleanValue(values, 'featured', locale) || false,
       tags: [],
-      attributes: await this.extractAllAttributes(values, locale, storeId),
+      attributes: await this.extractAllAttributes(values, locale, storeId, akeneoClient),
       seo: this.extractSeoData(values, locale),
       attribute_set_id: null, // Will be mapped from family
       category_ids: akeneoProduct.categories || [],
@@ -1049,118 +1049,277 @@ class AkeneoMapping {
   /**
    * Extract all attributes for the attributes JSON field
    * Now async to query attribute definitions for proper select/multiselect formatting
+   * Uses database attribute types and Akeneo attribute metadata when available
    */
-  async extractAllAttributes(values, locale = 'en_US', storeId = null) {
+  async extractAllAttributes(values, locale = 'en_US', storeId = null, akeneoClient = null) {
     const attributes = {};
     
-    // Get all attribute definitions for this store (only select/multiselect types)
-    let attributeDefinitions = {};
+    // Get all attribute definitions from database for this store
+    let databaseAttributeTypes = {};
     if (storeId) {
       try {
-        const selectAttributes = await Attribute.findAll({
+        const dbAttributes = await Attribute.findAll({
           where: {
-            store_id: storeId,
-            type: ['select', 'multiselect']
+            store_id: storeId
           },
           attributes: ['code', 'type', 'options']
         });
         
         // Create a lookup map for quick access
-        selectAttributes.forEach(attr => {
-          attributeDefinitions[attr.code] = {
+        dbAttributes.forEach(attr => {
+          databaseAttributeTypes[attr.code] = {
             type: attr.type,
             options: attr.options || []
           };
         });
       } catch (error) {
-        console.warn('Could not fetch attribute definitions:', error.message);
+        console.warn('Could not fetch attribute definitions from database:', error.message);
       }
     }
     
-    Object.keys(values).forEach(attributeCode => {
+    // Get Akeneo attribute types if client is available
+    let akeneoAttributeTypes = {};
+    if (akeneoClient) {
+      try {
+        // Fetch Akeneo attributes to get their types
+        const akeneoAttributes = await akeneoClient.getAttributes({ limit: 100 });
+        akeneoAttributes.forEach(attr => {
+          akeneoAttributeTypes[attr.code] = attr.type;
+        });
+      } catch (error) {
+        console.warn('Could not fetch Akeneo attribute types:', error.message);
+      }
+    }
+    
+    // Process each attribute value
+    for (const attributeCode of Object.keys(values)) {
       const rawValue = this.extractProductValue(values, attributeCode, locale);
       if (rawValue !== null && rawValue !== undefined) {
         
-        // Check if this is a select/multiselect attribute that needs formatting
-        const attrDef = attributeDefinitions[attributeCode];
-        if (attrDef && (attrDef.type === 'select' || attrDef.type === 'multiselect')) {
+        // First check database for attribute type
+        const dbAttrDef = databaseAttributeTypes[attributeCode];
+        
+        // Check if we have type information from database
+        if (dbAttrDef && (dbAttrDef.type === 'select' || dbAttrDef.type === 'multiselect')) {
+          // Use database definition for known attributes
+          attributes[attributeCode] = this.formatAttributeWithDefinition(rawValue, dbAttrDef);
+        } 
+        // Check if we have Akeneo type information
+        else if (akeneoAttributeTypes[attributeCode]) {
+          const akeneoType = akeneoAttributeTypes[attributeCode];
+          const mappedType = this.mapAttributeType(akeneoType);
           
-          if (attrDef.type === 'select') {
-            // For single select, format as {label, value}
-            if (typeof rawValue === 'string') {
-              // Find the matching option to get both label and value
-              const matchingOption = attrDef.options.find(opt => 
-                opt.value === rawValue || opt.label === rawValue || opt.code === rawValue
-              );
-              
-              if (matchingOption) {
-                attributes[attributeCode] = {
-                  label: matchingOption.label || rawValue,
-                  value: matchingOption.value || rawValue
-                };
-              } else {
-                // No matching option found, use raw value for both
-                attributes[attributeCode] = {
-                  label: rawValue,
-                  value: rawValue
-                };
-              }
-            } else {
-              attributes[attributeCode] = rawValue; // Keep as-is if not string
-            }
-            
-          } else if (attrDef.type === 'multiselect') {
-            // For multiselect, format as array of {label, value} objects
-            if (Array.isArray(rawValue)) {
-              attributes[attributeCode] = rawValue.map(val => {
-                if (typeof val === 'string') {
-                  const matchingOption = attrDef.options.find(opt => 
-                    opt.value === val || opt.label === val || opt.code === val
-                  );
-                  
-                  if (matchingOption) {
-                    return {
-                      label: matchingOption.label || val,
-                      value: matchingOption.value || val
-                    };
-                  } else {
-                    return {
-                      label: val,
-                      value: val
-                    };
-                  }
-                }
-                return val; // Keep as-is if not string
-              });
-            } else if (typeof rawValue === 'string') {
-              // Single value for multiselect - convert to array
-              const matchingOption = attrDef.options.find(opt => 
-                opt.value === rawValue || opt.label === rawValue || opt.code === rawValue
-              );
-              
-              if (matchingOption) {
-                attributes[attributeCode] = [{
-                  label: matchingOption.label || rawValue,
-                  value: matchingOption.value || rawValue
-                }];
-              } else {
-                attributes[attributeCode] = [{
-                  label: rawValue,
-                  value: rawValue
-                }];
-              }
-            } else {
-              attributes[attributeCode] = rawValue; // Keep as-is if not string/array
-            }
+          if (mappedType === 'select') {
+            // Format as select option
+            attributes[attributeCode] = this.formatAsSelectOption(rawValue);
+          } else if (mappedType === 'multiselect') {
+            // Format as multiselect options
+            attributes[attributeCode] = this.formatAsMultiselectOptions(rawValue);
+          } else {
+            // Keep as regular attribute
+            attributes[attributeCode] = rawValue;
           }
-        } else {
-          // Not a select/multiselect attribute, keep the raw value
-          attributes[attributeCode] = rawValue;
+        }
+        // Last resort: analyze data structure (but no hardcoded name patterns)
+        else {
+          // Only use data structure analysis, not name patterns
+          if (Array.isArray(rawValue) && rawValue.length > 0 && 
+              rawValue.every(val => typeof val === 'string' && val.length < 100)) {
+            // Multiple short string values suggest multiselect
+            attributes[attributeCode] = this.formatAsMultiselectOptions(rawValue);
+          } else if (typeof rawValue === 'string' && rawValue.length < 50 && 
+                     !rawValue.includes(' ') && !rawValue.includes('\n')) {
+            // Short single-word string might be a select option
+            // But only format if it looks like an option value (kebab-case, snake_case, or simple word)
+            if (rawValue.includes('-') || rawValue.includes('_') || /^[a-z]+$/i.test(rawValue)) {
+              attributes[attributeCode] = this.formatAsSelectOption(rawValue);
+            } else {
+              attributes[attributeCode] = rawValue;
+            }
+          } else {
+            // Keep as regular attribute
+            attributes[attributeCode] = rawValue;
+          }
         }
       }
-    });
+    }
 
     return attributes;
+  }
+
+  /**
+   * Format attribute using database definition
+   */
+  formatAttributeWithDefinition(rawValue, attrDef) {
+    if (attrDef.type === 'select') {
+      // For single select, format as {label, value}
+      if (typeof rawValue === 'string') {
+        // Find the matching option to get both label and value
+        const matchingOption = attrDef.options.find(opt => 
+          opt.value === rawValue || opt.label === rawValue || opt.code === rawValue
+        );
+        
+        if (matchingOption) {
+          return {
+            label: matchingOption.label || rawValue,
+            value: matchingOption.value || rawValue
+          };
+        } else {
+          // No matching option found, use raw value for both
+          return {
+            label: rawValue,
+            value: rawValue
+          };
+        }
+      } else {
+        return rawValue; // Keep as-is if not string
+      }
+      
+    } else if (attrDef.type === 'multiselect') {
+      // For multiselect, format as array of {label, value} objects
+      if (Array.isArray(rawValue)) {
+        return rawValue.map(val => {
+          if (typeof val === 'string') {
+            const matchingOption = attrDef.options.find(opt => 
+              opt.value === val || opt.label === val || opt.code === val
+            );
+            
+            if (matchingOption) {
+              return {
+                label: matchingOption.label || val,
+                value: matchingOption.value || val
+              };
+            } else {
+              return {
+                label: val,
+                value: val
+              };
+            }
+          }
+          return val; // Keep as-is if not string
+        });
+      } else if (typeof rawValue === 'string') {
+        // Single value for multiselect - convert to array
+        const matchingOption = attrDef.options.find(opt => 
+          opt.value === rawValue || opt.label === rawValue || opt.code === rawValue
+        );
+        
+        if (matchingOption) {
+          return [{
+            label: matchingOption.label || rawValue,
+            value: matchingOption.value || rawValue
+          }];
+        } else {
+          return [{
+            label: rawValue,
+            value: rawValue
+          }];
+        }
+      } else {
+        return rawValue; // Keep as-is if not string/array
+      }
+    }
+    
+    return rawValue;
+  }
+
+  /**
+   * Detect if an attribute should be treated as select/multiselect based on data patterns
+   * This helps process attributes that don't exist in the database yet
+   */
+  detectAttributeTypeFromData(attributeCode, rawValue, allValues) {
+    // Common select/multiselect attribute patterns in e-commerce
+    const selectPatterns = [
+      'color', 'colour', 'size', 'brand', 'material', 'style', 'category', 'type',
+      'status', 'condition', 'gender', 'age_group', 'season', 'occasion',
+      'fit', 'pattern', 'finish', 'grade', 'rating', 'level'
+    ];
+    
+    const multiselectPatterns = [
+      'tags', 'categories', 'collections', 'features', 'benefits', 'styles',
+      'colors', 'colours', 'sizes', 'materials', 'occasions', 'keywords'
+    ];
+    
+    // Check if attribute name matches known select patterns
+    const lowerCode = attributeCode.toLowerCase();
+    if (selectPatterns.some(pattern => lowerCode.includes(pattern))) {
+      // If the value is an array with multiple items, it's likely multiselect
+      if (Array.isArray(rawValue) && rawValue.length > 1) {
+        return 'multiselect';
+      }
+      return 'select';
+    }
+    
+    // Check if attribute name matches known multiselect patterns
+    if (multiselectPatterns.some(pattern => lowerCode.includes(pattern))) {
+      return 'multiselect';
+    }
+    
+    // Check data structure patterns
+    if (Array.isArray(rawValue) && rawValue.length > 0) {
+      // Multiple string values suggest multiselect
+      if (rawValue.every(val => typeof val === 'string' && val.length < 100)) {
+        return 'multiselect';
+      }
+    } else if (typeof rawValue === 'string') {
+      // Short string values that look like options
+      if (rawValue.length < 50 && !rawValue.includes(' ') && 
+          (rawValue.includes('-') || rawValue.includes('_') || /^[a-z]+$/i.test(rawValue))) {
+        return 'select';
+      }
+    }
+    
+    return 'text'; // Default to text attribute
+  }
+
+  /**
+   * Format value as select option
+   */
+  formatAsSelectOption(rawValue) {
+    if (typeof rawValue === 'string') {
+      return {
+        label: this.formatLabelFromValue(rawValue),
+        value: rawValue
+      };
+    }
+    return rawValue;
+  }
+
+  /**
+   * Format value as multiselect options
+   */
+  formatAsMultiselectOptions(rawValue) {
+    if (Array.isArray(rawValue)) {
+      return rawValue.map(val => {
+        if (typeof val === 'string') {
+          return {
+            label: this.formatLabelFromValue(val),
+            value: val
+          };
+        }
+        return val;
+      });
+    } else if (typeof rawValue === 'string') {
+      // Single value - convert to array
+      return [{
+        label: this.formatLabelFromValue(rawValue),
+        value: rawValue
+      }];
+    }
+    return rawValue;
+  }
+
+  /**
+   * Format a value into a human-readable label
+   */
+  formatLabelFromValue(value) {
+    if (typeof value !== 'string') return value;
+    
+    // Convert snake_case and kebab-case to Title Case
+    return value
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase())
+      .trim();
   }
 
   /**

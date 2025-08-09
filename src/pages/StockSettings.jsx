@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Store } from '@/api/entities';
-import { User } from '@/api/entities';
-import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -33,7 +31,8 @@ const retryApiCall = async (apiCall, maxRetries = 5, baseDelay = 3000) => {
 };
 
 export default function StockSettings() {
-  const { selectedStore, getSelectedStoreId, refreshStores } = useStoreSelection();
+  const [stores, setStores] = useState([]);
+  const [selectedStore, setSelectedStore] = useState(null);
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
