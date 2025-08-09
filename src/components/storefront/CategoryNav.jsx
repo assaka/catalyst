@@ -366,6 +366,53 @@ export default function CategoryNav({ categories }) {
         }
     };
 
+    // Render only the direct child as simple hoverable item (for main dropdown with expandAllMenuItems = false)
+    const renderDirectChildSimple = (category, depth = 0) => {
+        const hasChildren = category.children && category.children.length > 0;
+        
+        if (hasChildren) {
+            // Category with children - show with chevron, children appear only on hover in side submenu
+            return (
+                <div key={category.id} className="relative group">
+                    <Link 
+                        to={createCategoryUrl(store.slug, category.slug)}
+                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        style={{ paddingLeft: `${16 + depth * 12}px` }}
+                    >
+                        <span>{depth > 0 && '→ '}{category.name}</span>
+                        <ChevronRight className="w-3 h-3 ml-1" />
+                    </Link>
+                    
+                    {/* Side submenu - shows this category's direct children on hover */}
+                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 ml-1">
+                        <div className="py-1">
+                            <Link 
+                                to={createCategoryUrl(store.slug, category.slug)}
+                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
+                            >
+                                View All {category.name}
+                            </Link>
+                            {/* Recursively render children - they can also have their own hover submenus */}
+                            {category.children.map(child => renderDirectChildSimple(child, 0))}
+                        </div>
+                    </div>
+                </div>
+            );
+        } else {
+            // Regular category without children - simple link
+            return (
+                <Link 
+                    key={category.id}
+                    to={createCategoryUrl(store.slug, category.slug)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    style={{ paddingLeft: `${16 + depth * 12}px` }}
+                >
+                    {depth > 0 && '→ '}{category.name}
+                </Link>
+            );
+        }
+    };
+
     // Render only the direct child (for main dropdown with expandAllMenuItems = false)
     const renderDirectChildOnly = (category, depth = 0) => {
         const hasChildren = category.children && category.children.length > 0;
@@ -506,8 +553,8 @@ export default function CategoryNav({ categories }) {
                                 // Show all children recursively with indentation when expandAllMenuItems = true
                                 category.children.map(child => renderDesktopSubmenuItem(child, 0))
                                 :
-                                // Show only direct children (no grandchildren) when expandAllMenuItems = false
-                                category.children.map(child => renderDirectChildOnly(child, 0))
+                                // Show only the direct children as simple hoverable items when expandAllMenuItems = false
+                                category.children.map(child => renderDirectChildSimple(child, 0))
                             }
                                         </div>
                                     </div>
