@@ -837,9 +837,15 @@ class AkeneoIntegration {
               // Define default filterable attributes for new imports only
               const defaultFilterableAttributes = ['price', 'name', 'color', 'colour', 'brand', 'manufacturer'];
               
-              // For new attributes, check if it should be filterable by default
-              const shouldBeFilterable = defaultFilterableAttributes.includes(attribute.code.toLowerCase()) ||
-                                       defaultFilterableAttributes.some(attr => attribute.code.toLowerCase().includes(attr));
+              // Define price-related attributes that should NOT be filterable
+              const excludedPriceAttributes = [
+                'retail_price', 'minimal_price', 'price_type', 'dealer_price', 
+                'price_view', 'msrp_display_actual_price_type'
+              ];
+              
+              // For new attributes, check if it should be filterable by default (exact match only, excluding specific price attributes)
+              const shouldBeFilterable = defaultFilterableAttributes.includes(attribute.code.toLowerCase()) && 
+                                        !excludedPriceAttributes.includes(attribute.code.toLowerCase());
               
               // Remove temporary fields
               const attributeData = { ...attribute };

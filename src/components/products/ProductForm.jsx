@@ -1330,7 +1330,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                             <Label htmlFor={`attr_${attribute.code}`}>{attribute.name}</Label>
                             {attribute.type === 'select' && attribute.options ? (
                               <Select
-                                value={attributeValue || ""}
+                                value={(typeof attributeValue === 'object' && attributeValue?.value) ? attributeValue.value : (attributeValue || "")}
                                 onValueChange={(v) => handleAttributeValueChange(attribute.code, v)}
                               >
                                 <SelectTrigger><SelectValue placeholder={`Select ${attribute.name}`} /></SelectTrigger>
@@ -1340,6 +1340,55 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
                                   ))}
                                 </SelectContent>
                               </Select>
+                            ) : attribute.type === 'multiselect' && attribute.options ? (
+                              <div className="space-y-2">
+                                <div className="text-sm text-gray-600 mb-2">Select multiple options:</div>
+                                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-md p-3">
+                                  {attribute.options.filter(o => o.value !== "").map(option => {
+                                    const isSelected = Array.isArray(attributeValue) 
+                                      ? attributeValue.some(val => (typeof val === 'object' ? val.value : val) === option.value)
+                                      : (typeof attributeValue === 'object' && attributeValue?.value) 
+                                        ? attributeValue.value === option.value 
+                                        : attributeValue === option.value;
+                                    
+                                    return (
+                                      <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={isSelected}
+                                          onChange={(e) => {
+                                            const currentValues = Array.isArray(attributeValue) ? attributeValue : [];
+                                            const currentStringValues = currentValues.map(val => typeof val === 'object' ? val.value : val);
+                                            
+                                            let newValues;
+                                            if (e.target.checked) {
+                                              // Add the value if not already present
+                                              if (!currentStringValues.includes(option.value)) {
+                                                newValues = [...currentValues, option.value];
+                                              } else {
+                                                newValues = currentValues;
+                                              }
+                                            } else {
+                                              // Remove the value
+                                              newValues = currentValues.filter(val => 
+                                                (typeof val === 'object' ? val.value : val) !== option.value
+                                              );
+                                            }
+                                            handleAttributeValueChange(attribute.code, newValues);
+                                          }}
+                                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="text-sm">{option.label}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                                {Array.isArray(attributeValue) && attributeValue.length > 0 && (
+                                  <div className="text-xs text-gray-500">
+                                    {attributeValue.length} option{attributeValue.length !== 1 ? 's' : ''} selected
+                                  </div>
+                                )}
+                              </div>
                             ) : attribute.type === 'boolean' ? (
                               <div className="flex items-center space-x-2">
                                 <Switch
