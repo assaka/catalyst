@@ -337,53 +337,13 @@ const AkeneoIntegration = () => {
     includeAttributeOptions: true // Default to true for importing attribute options
   });
 
-  // Custom mapping configurations - now fully dynamic with no fixed limits
-  const [customMappings, setCustomMappings] = useState(() => {
-    // Try to load saved mappings from localStorage
-    try {
-      const saved = localStorage.getItem('akeneo_custom_mappings');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.warn('Failed to load saved custom mappings:', error);
-    }
-    
-    // Default mappings if none saved
-    return {
-      attributes: [
-        { akeneoField: 'name', catalystField: 'name', enabled: true },
-        { akeneoField: 'description', catalystField: 'description', enabled: true },
-        { akeneoField: 'price', catalystField: 'price', enabled: true },
-        { akeneoField: 'sku', catalystField: 'sku', enabled: true },
-        { akeneoField: 'brand', catalystField: 'brand', enabled: true },
-        { akeneoField: 'color', catalystField: 'color', enabled: true },
-        { akeneoField: 'size', catalystField: 'size', enabled: true },
-        { akeneoField: 'weight', catalystField: 'weight', enabled: true },
-        { akeneoField: 'material', catalystField: 'material', enabled: true },
-        { akeneoField: 'stock_quantity', catalystField: 'stock_quantity', enabled: true }
-      ],
-      images: [
-        { akeneoField: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
-        { akeneoField: 'image_0', catalystField: 'gallery_0', enabled: true, priority: 2 },
-        { akeneoField: 'image_1', catalystField: 'gallery_1', enabled: true, priority: 3 },
-        { akeneoField: 'image_2', catalystField: 'gallery_2', enabled: true, priority: 4 },
-        { akeneoField: 'image_3', catalystField: 'gallery_3', enabled: true, priority: 5 },
-        { akeneoField: 'main_image', catalystField: 'primary_image', enabled: true, priority: 6 },
-        { akeneoField: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 7 },
-        { akeneoField: 'images', catalystField: 'product_images', enabled: true, priority: 8 },
-        { akeneoField: 'product_image', catalystField: 'catalog_image', enabled: true, priority: 9 },
-        { akeneoField: 'thumbnail', catalystField: 'thumbnail_image', enabled: true, priority: 10 }
-      ],
-      files: [
-        { akeneoField: 'attachments', catalystField: 'files', enabled: true },
-        { akeneoField: 'documents', catalystField: 'downloads', enabled: true },
-        { akeneoField: 'manual', catalystField: 'product_manual', enabled: true },
-        { akeneoField: 'datasheet', catalystField: 'technical_sheet', enabled: true },
-        { akeneoField: 'specifications', catalystField: 'spec_sheet', enabled: true }
-      ]
-    };
+  // Custom mapping configurations - now stored in database
+  const [customMappings, setCustomMappings] = useState({
+    attributes: [],
+    images: [],
+    files: []
   });
+  const [mappingsLoaded, setMappingsLoaded] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [scheduleForm, setScheduleForm] = useState({
     import_type: 'attributes',
@@ -615,6 +575,76 @@ const AkeneoIntegration = () => {
       console.error('Failed to load schedules:', error);
     } finally {
       setLoadingSchedules(false);
+    }
+  };
+
+  // Load custom mappings from database
+  const loadCustomMappings = async () => {
+    if (!selectedStore?.id) return;
+    
+    try {
+      const response = await apiClient.get('/integrations/akeneo/custom-mappings', {
+        'x-store-id': selectedStore.id
+      });
+      
+      if (response.data?.success) {
+        const mappings = response.data.mappings;
+        
+        // If no mappings in database, use defaults
+        if (!mappings.attributes?.length && !mappings.images?.length && !mappings.files?.length) {
+          const defaultMappings = {
+            attributes: [
+              { akeneoField: 'name', catalystField: 'name', enabled: true },
+              { akeneoField: 'description', catalystField: 'description', enabled: true },
+              { akeneoField: 'price', catalystField: 'price', enabled: true },
+              { akeneoField: 'sku', catalystField: 'sku', enabled: true }
+            ],
+            images: [
+              { akeneoField: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
+              { akeneoField: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
+            ],
+            files: []
+          };
+          setCustomMappings(defaultMappings);
+          // Save defaults to database
+          await saveCustomMappingsToDb(defaultMappings);
+        } else {
+          setCustomMappings(mappings);
+        }
+        setMappingsLoaded(true);
+      }
+    } catch (error) {
+      console.error('Failed to load custom mappings:', error);
+      // Fall back to defaults on error
+      setCustomMappings({
+        attributes: [
+          { akeneoField: 'name', catalystField: 'name', enabled: true },
+          { akeneoField: 'description', catalystField: 'description', enabled: true },
+          { akeneoField: 'price', catalystField: 'price', enabled: true },
+          { akeneoField: 'sku', catalystField: 'sku', enabled: true }
+        ],
+        images: [
+          { akeneoField: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
+          { akeneoField: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
+        ],
+        files: []
+      });
+      setMappingsLoaded(true);
+    }
+  };
+
+  // Save custom mappings to database
+  const saveCustomMappingsToDb = async (mappings) => {
+    if (!selectedStore?.id) return;
+    
+    try {
+      await apiClient.post('/integrations/akeneo/custom-mappings', mappings, {
+        'x-store-id': selectedStore.id
+      });
+      console.log('✅ Custom mappings saved to database');
+    } catch (error) {
+      console.error('Failed to save custom mappings to database:', error);
+      toast.error('Failed to save custom mappings');
     }
   };
 
@@ -908,15 +938,8 @@ const AkeneoIntegration = () => {
         }
       }
 
-      const savedCustomMappings = localStorage.getItem('akeneo_custom_mappings');
-      if (savedCustomMappings) {
-        try {
-          const parsedMappings = JSON.parse(savedCustomMappings);
-          setCustomMappings(parsedMappings);
-        } catch (error) {
-          console.warn('⚠️ Failed to parse saved custom mappings:', error);
-        }
-      }
+      // Load custom mappings from database instead of localStorage
+      loadCustomMappings();
 
       // Load saved import results
       loadImportResults();
@@ -971,6 +994,7 @@ const AkeneoIntegration = () => {
       loadChannels();
       loadFamiliesForFilter(); // Reload to get Akeneo families if available
       loadAvailableCategories();
+      loadCustomMappings(); // Load custom mappings when connection is successful
     }
   }, [connectionStatus?.success]);
 
@@ -1004,9 +1028,16 @@ const AkeneoIntegration = () => {
     localStorage.setItem('akeneo_attribute_settings', JSON.stringify(attributeSettings));
   }, [attributeSettings]);
 
+  // Save custom mappings to database when they change (with debounce)
   useEffect(() => {
-    localStorage.setItem('akeneo_custom_mappings', JSON.stringify(customMappings));
-  }, [customMappings]);
+    if (!mappingsLoaded) return; // Don't save until initial load is complete
+    
+    const timeoutId = setTimeout(() => {
+      saveCustomMappingsToDb(customMappings);
+    }, 1000); // Debounce for 1 second
+    
+    return () => clearTimeout(timeoutId);
+  }, [customMappings, mappingsLoaded]);
 
   // Add global error handlers to catch any unhandled errors that might cause blank page
   useEffect(() => {

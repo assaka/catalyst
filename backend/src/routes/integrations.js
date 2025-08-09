@@ -1108,6 +1108,154 @@ router.post('/akeneo/save-config',
 });
 
 // ======================
+// Akeneo Custom Mappings
+// ======================
+
+const AkeneoCustomMapping = require('../models/AkeneoCustomMapping');
+
+/**
+ * Get custom mappings for a store
+ * GET /api/integrations/akeneo/custom-mappings
+ */
+router.get('/akeneo/custom-mappings', auth, storeAuth, async (req, res) => {
+  try {
+    const mappings = await AkeneoCustomMapping.getMappings(req.storeId);
+    
+    res.json({
+      success: true,
+      mappings: mappings
+    });
+  } catch (error) {
+    console.error('Error fetching custom mappings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch custom mappings',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Save custom mappings for a store
+ * POST /api/integrations/akeneo/custom-mappings
+ */
+router.post('/akeneo/custom-mappings', auth, storeAuth, async (req, res) => {
+  try {
+    const { attributes, images, files } = req.body;
+    const userId = req.user?.id || null;
+    
+    const savedMappings = await AkeneoCustomMapping.saveAllMappings(
+      req.storeId,
+      { attributes, images, files },
+      userId
+    );
+    
+    res.json({
+      success: true,
+      mappings: savedMappings,
+      message: 'Custom mappings saved successfully'
+    });
+  } catch (error) {
+    console.error('Error saving custom mappings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to save custom mappings',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Save specific mapping type for a store
+ * PUT /api/integrations/akeneo/custom-mappings/:type
+ */
+router.put('/akeneo/custom-mappings/:type', auth, storeAuth, async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { mappings } = req.body;
+    const userId = req.user?.id || null;
+    
+    if (!['attributes', 'images', 'files'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid mapping type. Must be attributes, images, or files'
+      });
+    }
+    
+    const savedMapping = await AkeneoCustomMapping.saveMappings(
+      req.storeId,
+      type,
+      mappings,
+      userId
+    );
+    
+    res.json({
+      success: true,
+      mapping: savedMapping,
+      message: `${type} mappings saved successfully`
+    });
+  } catch (error) {
+    console.error(`Error saving ${type} mappings:`, error);
+    res.status(500).json({
+      success: false,
+      message: `Failed to save ${type} mappings`,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Delete custom mappings for a store
+ * DELETE /api/integrations/akeneo/custom-mappings/:type?
+ */
+router.delete('/akeneo/custom-mappings/:type?', auth, storeAuth, async (req, res) => {
+  try {
+    const { type } = req.params;
+    
+    if (type) {
+      // Delete specific type
+      if (!['attributes', 'images', 'files'].includes(type)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid mapping type. Must be attributes, images, or files'
+        });
+      }
+      
+      await AkeneoCustomMapping.destroy({
+        where: {
+          store_id: req.storeId,
+          mapping_type: type
+        }
+      });
+      
+      res.json({
+        success: true,
+        message: `${type} mappings deleted successfully`
+      });
+    } else {
+      // Delete all mappings for the store
+      await AkeneoCustomMapping.destroy({
+        where: {
+          store_id: req.storeId
+        }
+      });
+      
+      res.json({
+        success: true,
+        message: 'All custom mappings deleted successfully'
+      });
+    }
+  } catch (error) {
+    console.error('Error deleting custom mappings:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete custom mappings',
+      error: error.message
+    });
+  }
+});
+
+// ======================
 // File Upload Integration
 // ======================
 

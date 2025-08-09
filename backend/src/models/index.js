@@ -37,6 +37,7 @@ const PluginConfiguration = require('./PluginConfiguration');
 const SupabaseOAuthToken = require('./SupabaseOAuthToken');
 const ShopifyOAuthToken = require('./ShopifyOAuthToken');
 const MediaAsset = require('./MediaAsset');
+const AkeneoCustomMapping = require('./AkeneoCustomMapping');
 
 // Define associations
 const defineAssociations = () => {
@@ -257,5 +258,6 @@ module.exports = {
   PluginConfiguration,
   SupabaseOAuthToken,
   ShopifyOAuthToken,
-  MediaAsset
+  MediaAsset,
+  AkeneoCustomMapping
 };

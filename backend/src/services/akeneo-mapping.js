@@ -419,6 +419,27 @@ class AkeneoMapping {
   }
 
   /**
+   * Extract all product attribute values for multiselect attributes
+   * Returns array of all matching values considering scope and locale
+   */
+  extractProductValues(values, attributeCode, locale = 'en_US', scope = null) {
+    const attribute = values[attributeCode];
+    if (!attribute || !Array.isArray(attribute)) return null;
+
+    // Find all values that match locale and scope criteria
+    const matchingValues = attribute.filter(item => {
+      const localeMatch = !item.locale || item.locale === locale;
+      const scopeMatch = !scope || !item.scope || item.scope === scope;
+      return localeMatch && scopeMatch;
+    });
+
+    if (matchingValues.length === 0) return null;
+
+    // Return array of data values
+    return matchingValues.map(item => item.data).filter(data => data !== null && data !== undefined);
+  }
+
+  /**
    * Extract stock quantity from Akeneo product data
    * Handles various Akeneo inventory structures and fallbacks
    */
@@ -1115,12 +1136,31 @@ class AkeneoMapping {
     
     // Process each attribute value
     for (const attributeCode of Object.keys(values)) {
-      const rawValue = this.extractProductValue(values, attributeCode, locale);
+      // First check database for attribute type to determine extraction method
+      const dbAttrDef = databaseAttributeTypes[attributeCode];
+      let rawValue = null;
+      
+      // For multiselect attributes, extract all values
+      if (dbAttrDef?.type === 'multiselect') {
+        const allValues = this.extractProductValues(values, attributeCode, locale);
+        if (allValues && allValues.length > 0) {
+          rawValue = allValues; // Array of values
+        }
+      } 
+      // Check Akeneo type for multiselect
+      else if (akeneoAttributeTypes[attributeCode] && 
+               this.mapAttributeType(akeneoAttributeTypes[attributeCode]) === 'multiselect') {
+        const allValues = this.extractProductValues(values, attributeCode, locale);
+        if (allValues && allValues.length > 0) {
+          rawValue = allValues; // Array of values
+        }
+      }
+      // For all other attributes, use single value extraction
+      else {
+        rawValue = this.extractProductValue(values, attributeCode, locale);
+      }
+      
       if (rawValue !== null && rawValue !== undefined) {
-        
-        // First check database for attribute type
-        const dbAttrDef = databaseAttributeTypes[attributeCode];
-        
         // Check if we have type information from database
         if (dbAttrDef && (dbAttrDef.type === 'select' || dbAttrDef.type === 'multiselect')) {
           // Use database definition for known attributes
@@ -1135,7 +1175,7 @@ class AkeneoMapping {
             // Format as select option
             attributes[attributeCode] = this.formatAsSelectOption(rawValue);
           } else if (mappedType === 'multiselect') {
-            // Format as multiselect options
+            // Format as multiselect options (rawValue is already an array from extraction above)
             attributes[attributeCode] = this.formatAsMultiselectOptions(rawValue);
           } else {
             // Keep as regular attribute
