@@ -512,19 +512,36 @@ export default function CategoryNav({ categories }) {
         }
     };
 
-    // Render simple child link without any hover capabilities (for main dropdown when expandAllMenuItems = false)
+    // Render simple child link with chevrons for items with children, but NO hover functionality (for main dropdown when expandAllMenuItems = false)
     const renderSimpleChildLink = (category, depth = 0) => {
-        // Always render as simple link, no chevrons, no hover menus regardless of children
-        return (
-            <Link 
-                key={category.id}
-                to={createCategoryUrl(store.slug, category.slug)}
-                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                style={{ paddingLeft: `${16 + depth * 12}px` }}
-            >
-                {depth > 0 && '→ '}{category.name}
-            </Link>
-        );
+        const hasChildren = category.children && category.children.length > 0;
+        
+        if (hasChildren) {
+            // Category with children - show with chevron but NO hover submenu
+            return (
+                <Link 
+                    key={category.id}
+                    to={createCategoryUrl(store.slug, category.slug)}
+                    className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    style={{ paddingLeft: `${16 + depth * 12}px` }}
+                >
+                    <span>{depth > 0 && '→ '}{category.name}</span>
+                    <ChevronRight className="w-3 h-3 ml-1" />
+                </Link>
+            );
+        } else {
+            // Regular category without children - simple link
+            return (
+                <Link 
+                    key={category.id}
+                    to={createCategoryUrl(store.slug, category.slug)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    style={{ paddingLeft: `${16 + depth * 12}px` }}
+                >
+                    {depth > 0 && '→ '}{category.name}
+                </Link>
+            );
+        }
     };
 
     // Render direct children with chevrons for items with children, and hover side menus
@@ -545,7 +562,7 @@ export default function CategoryNav({ categories }) {
                     </Link>
                     
                     {/* Side submenu - shows ONLY this category's direct children on hover */}
-                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 ml-1">
+                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-[60] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 ml-1">
                         <div className="py-1">
                             <Link 
                                 to={createCategoryUrl(store.slug, category.slug)}
@@ -680,7 +697,7 @@ export default function CategoryNav({ categories }) {
                                     // Show all children recursively with indentation when expandAllMenuItems = true
                                     category.children.map(child => renderDesktopSubmenuItem(child, 0))
                                     :
-                                    // Show direct children with hover side menus for their children when expandAllMenuItems = false
+                                    // Show direct children with chevrons and hover side menus when expandAllMenuItems = false
                                     category.children.map(child => renderDirectChildrenOnly(child, 0))
                             })()}
                                         </div>
