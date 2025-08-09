@@ -457,7 +457,7 @@ class AkeneoMapping {
   extractStockQuantity(values, locale = 'en_US', akeneoProduct = {}) {
     // Try common Akeneo inventory attribute names
     const stockAttributes = [
-      'stock_quantity', 'quantity', 'inventory', 'stock', 
+      'quantity_and_stock_status', 'stock_quantity', 'quantity', 'inventory', 'stock', 
       'available_quantity', 'qty', 'in_stock_quantity',
       'warehouse_quantity', 'on_hand_quantity'
     ];
