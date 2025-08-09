@@ -17,6 +17,7 @@ export default function CategoryNav({ categories }) {
     
     const [expandedCategories, setExpandedCategories] = useState(new Set());
     const [isMobile, setIsMobile] = useState(false);
+    const [hoveredSubmenuItem, setHoveredSubmenuItem] = useState(null);
     
     if (!categories || categories.length === 0 || !store) {
         return null;
@@ -544,14 +545,25 @@ export default function CategoryNav({ categories }) {
         }
     };
 
-    // Render direct children with chevrons for items with children, and hover side menus
+    // Render direct children with chevrons for items with children, and JavaScript-controlled hover side menus
     const renderDirectChildrenOnly = (category, depth = 0) => {
         const hasChildren = category.children && category.children.length > 0;
         
         if (hasChildren) {
-            // Category with children - show WITH chevron AND hover submenu for direct children only
+            // Category with children - show WITH chevron AND JavaScript-controlled hover submenu for direct children only
             return (
-                <div key={category.id} className="relative group">
+                <div 
+                    key={category.id} 
+                    className="relative"
+                    onMouseEnter={(e) => {
+                        e.stopPropagation();
+                        setHoveredSubmenuItem(category.id);
+                    }}
+                    onMouseLeave={(e) => {
+                        e.stopPropagation();
+                        setHoveredSubmenuItem(null);
+                    }}
+                >
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
                         className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -561,27 +573,29 @@ export default function CategoryNav({ categories }) {
                         <ChevronRight className="w-3 h-3 ml-1" />
                     </Link>
                     
-                    {/* Side submenu - shows ONLY this category's direct children on hover */}
-                    <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-[60] invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 ml-1">
-                        <div className="py-1">
-                            <Link 
-                                to={createCategoryUrl(store.slug, category.slug)}
-                                className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
-                            >
-                                View All {category.name}
-                            </Link>
-                            {/* Show direct children as simple links WITHOUT further hover capabilities */}
-                            {category.children.map(child => (
+                    {/* Side submenu - shows ONLY this category's direct children when hoveredSubmenuItem matches */}
+                    {hoveredSubmenuItem === category.id && (
+                        <div className="absolute left-full top-0 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-[60] ml-1">
+                            <div className="py-1">
                                 <Link 
-                                    key={child.id}
-                                    to={createCategoryUrl(store.slug, child.slug)}
-                                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    to={createCategoryUrl(store.slug, category.slug)}
+                                    className="block px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-100 border-b border-gray-200"
                                 >
-                                    {child.name}
+                                    View All {category.name}
                                 </Link>
-                            ))}
+                                {/* Show direct children as simple links WITHOUT further hover capabilities */}
+                                {category.children.map(child => (
+                                    <Link 
+                                        key={child.id}
+                                        to={createCategoryUrl(store.slug, child.slug)}
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        {child.name}
+                                    </Link>
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
             );
         } else {

@@ -1737,27 +1737,66 @@ class AkeneoMapping {
 
   /**
    * Apply multiple attribute mappings to an Akeneo product
+   * If no mapping is provided for an Akeneo attribute, it will automatically map to a Catalyst field with the same name
    */
   applyCustomAttributeMappings(akeneoProduct, mappings = [], locale = 'en_US') {
     const customAttributes = {};
+    const values = akeneoProduct.values || {};
     
-    if (!Array.isArray(mappings) || mappings.length === 0) {
-      return customAttributes;
+    // Create a map of explicit mappings for quick lookup
+    const explicitMappings = new Map();
+    if (Array.isArray(mappings) && mappings.length > 0) {
+      mappings.forEach(mapping => {
+        if (mapping.enabled && mapping.akeneoAttribute) {
+          explicitMappings.set(mapping.akeneoAttribute, mapping);
+        }
+      });
     }
     
-    console.log(`🎯 Applying ${mappings.length} custom attribute mappings`);
-    
-    mappings.forEach(mapping => {
-      if (!mapping.enabled || !mapping.akeneoAttribute || !mapping.catalystField) {
+    // Process all Akeneo attributes
+    Object.keys(values).forEach(akeneoAttribute => {
+      // Skip if already processed in standard fields
+      const standardFields = ['name', 'description', 'price', 'sku', 'weight', 'ean', 'barcode'];
+      if (standardFields.includes(akeneoAttribute)) {
         return;
       }
       
-      try {
+      // Check if there's an explicit mapping
+      if (explicitMappings.has(akeneoAttribute)) {
+        const mapping = explicitMappings.get(akeneoAttribute);
+        if (!mapping.catalystField) return;
+        
         const mappedValue = this.mapAkeneoAttribute(akeneoProduct, mapping, locale);
         Object.assign(customAttributes, mappedValue);
-        console.log(`✅ Mapped '${mapping.akeneoAttribute}' → '${mapping.catalystField}':`, mappedValue[mapping.catalystField]);
-      } catch (mappingError) {
-        console.error(`❌ Failed to map '${mapping.akeneoAttribute}' → '${mapping.catalystField}':`, mappingError.message);
+        console.log(`✅ Applied explicit mapping: ${akeneoAttribute} -> ${mapping.catalystField}`);
+      } else {
+        // Default behavior: map to the same field name in Catalyst
+        const value = this.extractProductValue(values, akeneoAttribute, locale);
+        if (value !== null && value !== undefined && value !== '') {
+          // Store in attributes JSON field
+          if (!customAttributes.attributes) {
+            customAttributes.attributes = {};
+          }
+          customAttributes.attributes[akeneoAttribute] = value;
+          console.log(`🔄 Auto-mapped attribute: ${akeneoAttribute} -> attributes.${akeneoAttribute}`);
+        }
+      }
+    });
+    
+    // Process explicit mappings for attributes not found in product values  
+    // (useful for mappings with default values)
+    explicitMappings.forEach((mapping, akeneoAttribute) => {
+      if (!values.hasOwnProperty(akeneoAttribute)) {
+        // This attribute doesn't exist in the product, but we might have a default value
+        if (mapping.defaultValue !== null && mapping.defaultValue !== undefined) {
+          try {
+            const mappedValue = this.mapAkeneoAttribute(akeneoProduct, mapping, locale);
+            Object.assign(customAttributes, mappedValue);
+            console.log(`🎯 Applied mapping with default value: ${akeneoAttribute} -> ${mapping.catalystField}`);
+          } catch (mappingError) {
+            console.error(`❌ Failed to map '${akeneoAttribute}' → '${mapping.catalystField}':`, mappingError.message);
+          }
+        }
       }
     });
     

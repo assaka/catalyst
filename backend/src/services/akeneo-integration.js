@@ -540,6 +540,12 @@ class AkeneoIntegration {
                 // Prepare product data for creation
                 const productData = { ...catalystProduct };
                 delete productData._originalSlug; // Remove temporary slug field
+                // Remove Akeneo-specific fields that don't exist in Product model
+                delete productData.akeneo_uuid;
+                delete productData.akeneo_identifier;
+                delete productData.akeneo_family;
+                delete productData.akeneo_groups;
+                delete productData.sale_price; // Not in Product model
                 
                 // Create new product
                 await Product.create(productData);
