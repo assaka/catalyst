@@ -569,6 +569,7 @@ router.post('/akeneo/import-products',
         includeImages: settings.includeImages !== undefined ? settings.includeImages : true,
         includeFiles: settings.includeFiles !== undefined ? settings.includeFiles : true,
         includeStock: settings.includeStock !== undefined ? settings.includeStock : true,
+        downloadImages: settings.downloadImages !== undefined ? settings.downloadImages : true,
         ...settings
       },
       customMappings
