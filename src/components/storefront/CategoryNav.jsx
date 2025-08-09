@@ -254,6 +254,8 @@ export default function CategoryNav({ categories }) {
         }
     };
 
+    console.log('expandAllMenuItems', {expandAllMenuItems: expandAllMenuItems});
+
     if (expandAllMenuItems) {
         // Always-expanded mode: Keep horizontal layout for first level, show all subcategories on hover
         return (
@@ -318,7 +320,7 @@ export default function CategoryNav({ categories }) {
             </>
         );
     } else {
-        // Collapsible mode: Hover/click to expand submenus (desktop only)
+        // Collapsible mode: Hover/click to expand submenus (desktop only, hidden on mobile)
         return (
             <nav className="hidden md:flex items-center space-x-2">
                 <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md whitespace-nowrap">
