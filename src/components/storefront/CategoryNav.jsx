@@ -37,6 +37,13 @@ export default function CategoryNav({ categories }) {
     // On mobile, always use expandAllMenuItems = false
     const expandAllMenuItems = isMobile ? false : (store?.settings?.expandAllMenuItems || false);
     
+    // DEBUG: Log the actual values
+    console.log('🔍 CategoryNav Debug:');
+    console.log('  isMobile:', isMobile);
+    console.log('  store.settings.expandAllMenuItems:', store?.settings?.expandAllMenuItems);
+    console.log('  final expandAllMenuItems:', expandAllMenuItems);
+    console.log('  Will show:', expandAllMenuItems ? 'HOVER DROPDOWNS' : 'CLICK DROPDOWNS');
+    
     // Reset expanded categories when expandAllMenuItems setting changes
     useEffect(() => {
         if (!expandAllMenuItems) {

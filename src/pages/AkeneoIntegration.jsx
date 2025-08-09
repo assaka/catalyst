@@ -44,6 +44,7 @@ import { Separator } from '../components/ui/separator';
 import { AlertCircle, CheckCircle, RefreshCw, Download, Settings, Database, Package, Clock, Plus, Trash2, Edit, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreSlug } from '../hooks/useStoreSlug';
+import { useStoreSelection } from '../contexts/StoreSelectionContext';
 import apiClient from '../api/client';
 import { MultiSelect } from '../components/ui/multi-select';
 import { debugEnvironment } from '../utils/env-debug';
