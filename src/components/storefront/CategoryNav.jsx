@@ -242,19 +242,67 @@ export default function CategoryNav({ categories }) {
     };
 
     if (expandAllMenuItems) {
-        // Always-expanded mode: Show all subcategories in a vertical tree (mobile-friendly)
+        // Always-expanded mode: Keep horizontal layout for first level, expand subcategories
         return (
-            <nav className="block space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm md:max-w-xs">
-                <Link 
-                    to={createPublicUrl(store.slug, 'STOREFRONT')} 
-                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation"
-                >
-                    Home
-                </Link>
-                <div className="space-y-1">
-                    {rootCategories.map(category => renderExpandedCategory(category))}
-                </div>
-            </nav>
+            <>
+                {/* Mobile view - vertical layout */}
+                <nav className="block md:hidden space-y-1 bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                    <Link 
+                        to={createPublicUrl(store.slug, 'STOREFRONT')} 
+                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-2 py-1 rounded-md block mb-2 touch-manipulation"
+                    >
+                        Home
+                    </Link>
+                    <div className="space-y-1">
+                        {rootCategories.map(category => renderExpandedCategory(category))}
+                    </div>
+                </nav>
+                
+                {/* Desktop view - horizontal layout with always-visible dropdowns */}
+                <nav className="hidden md:block">
+                    <div className="flex items-center space-x-2">
+                        <Link to={createPublicUrl(store.slug, 'STOREFRONT')} className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md">
+                            Home
+                        </Link>
+                    {rootCategories.map(category => {
+                        if (category.children && category.children.length > 0) {
+                            return (
+                                <div key={category.id} className="relative group">
+                                    <Link 
+                                        to={createCategoryUrl(store.slug, category.slug)}
+                                        className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md inline-flex items-center"
+                                    >
+                                        {category.name}
+                                        <ChevronDown className="w-3 h-3 ml-1" />
+                                    </Link>
+                                    {/* Always visible submenu */}
+                                    <div className="absolute left-0 mt-1 w-64 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                                        <div className="py-2">
+                                            {category.children.map(child => (
+                                                <div key={child.id}>
+                                                    {renderCategoryDescendants(child, 0)}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        } else {
+                            // Regular category without children
+                            return (
+                                <Link 
+                                    key={category.id}
+                                    to={createCategoryUrl(store.slug, category.slug)} 
+                                    className="text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors px-3 py-2 rounded-md"
+                                >
+                                    {category.name}
+                                </Link>
+                            );
+                        }
+                        })}
+                    </div>
+                </nav>
+            </>
         );
     } else {
         // Collapsible mode: Hover/click to expand submenus (desktop only)
