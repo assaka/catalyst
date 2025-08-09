@@ -422,7 +422,13 @@ export default function CategoryNav({ categories }) {
                                             >
                                                 View All {category.name}
                                             </Link>
-                                            {category.children.map(child => renderDesktopSubmenuItemWithControl(child, 0))}
+                                            {expandAllMenuItems ? 
+                                // Show all children recursively when expandAllMenuItems = true
+                                category.children.map(child => renderDesktopSubmenuItem(child, 0))
+                                :
+                                // Show only direct children when expandAllMenuItems = false  
+                                category.children.map(child => renderDesktopSubmenuItemSimple(child, 0))
+                            }
                                         </div>
                                     </div>
                                 </div>
