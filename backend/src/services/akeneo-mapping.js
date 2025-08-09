@@ -958,10 +958,33 @@ class AkeneoMapping {
       
       console.log(`💾 Downloaded image: ${buffer.length} bytes, type: ${contentType}`);
       
-      // Extract original filename from URL and clean it
-      let originalFileName = imageUrl.split('/').pop().split('?')[0];
-      if (!originalFileName || originalFileName === '') {
+      // Extract original filename - try multiple sources
+      let originalFileName = null;
+      
+      // 1. First try to get filename from imageItem.data (if it looks like a file path)
+      if (imageItem && imageItem.data && typeof imageItem.data === 'string') {
+        // Check if imageItem.data looks like a file path with actual filename
+        const itemDataPath = imageItem.data.split('/').pop().split('?')[0];
+        if (itemDataPath && itemDataPath.includes('.') && !itemDataPath.startsWith('http')) {
+          // Looks like a filename with extension
+          originalFileName = itemDataPath;
+          console.log(`📝 Using filename from imageItem.data: ${originalFileName}`);
+        }
+      }
+      
+      // 2. If no good filename from imageItem.data, try URL
+      if (!originalFileName) {
+        const urlFileName = imageUrl.split('/').pop().split('?')[0];
+        if (urlFileName && urlFileName.includes('.') && urlFileName !== 'download') {
+          originalFileName = urlFileName;
+          console.log(`📝 Using filename from URL: ${originalFileName}`);
+        }
+      }
+      
+      // 3. Fallback to generated filename
+      if (!originalFileName || originalFileName === '' || originalFileName === 'download') {
         originalFileName = `image_${Date.now()}.${extension}`;
+        console.log(`📝 Using generated filename: ${originalFileName}`);
       }
       
       // Ensure proper extension
