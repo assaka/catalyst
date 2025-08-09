@@ -725,9 +725,36 @@ class AkeneoIntegration {
       // Apply attribute filters
       if (filters.families && filters.families.length > 0) {
         console.log(`🔍 Filtering by families: ${filters.families.join(', ')}`);
-        // Note: This would require additional API calls to get family attributes
-        // For now, we'll log this requirement for future implementation
-        console.log(`⚠️ Family filtering for attributes requires additional implementation`);
+        
+        // Get the selected families to extract their attribute codes
+        console.log('📡 Fetching family data to get attribute codes...');
+        const selectedFamilyData = [];
+        for (const familyCode of filters.families) {
+          try {
+            const family = await this.client.getFamily(familyCode);
+            selectedFamilyData.push(family);
+            console.log(`✅ Found family ${familyCode} with ${family.attributes ? family.attributes.length : 0} attributes`);
+          } catch (error) {
+            console.warn(`⚠️ Failed to fetch family ${familyCode}:`, error.message);
+          }
+        }
+        
+        // Extract all attribute codes from selected families
+        const familyAttributeCodes = new Set();
+        selectedFamilyData.forEach(family => {
+          if (family.attributes && Array.isArray(family.attributes)) {
+            family.attributes.forEach(attrCode => familyAttributeCodes.add(attrCode));
+          }
+        });
+        
+        console.log(`📊 Found ${familyAttributeCodes.size} unique attributes across selected families`);
+        
+        // Filter attributes to only those belonging to selected families
+        akeneoAttributes = akeneoAttributes.filter(attribute => 
+          familyAttributeCodes.has(attribute.code)
+        );
+        
+        console.log(`📊 After family filtering: ${akeneoAttributes.length} attributes (filtered from ${this.importStats.attributes.total || 'unknown'})`);
       }
       
       if (filters.updatedSince) {
