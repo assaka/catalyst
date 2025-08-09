@@ -404,7 +404,7 @@ const AkeneoIntegration = () => {
   const addMapping = (type) => {
     setCustomMappings(prev => {
       const newMapping = {
-        akeneoField: '',
+        akeneoAttribute: '',
         catalystField: '',
         enabled: true
       };
@@ -594,14 +594,14 @@ const AkeneoIntegration = () => {
         if (!mappings.attributes?.length && !mappings.images?.length && !mappings.files?.length) {
           const defaultMappings = {
             attributes: [
-              { akeneoField: 'name', catalystField: 'name', enabled: true },
-              { akeneoField: 'description', catalystField: 'description', enabled: true },
-              { akeneoField: 'price', catalystField: 'price', enabled: true },
-              { akeneoField: 'sku', catalystField: 'sku', enabled: true }
+              { akeneoAttribute: 'name', catalystField: 'name', enabled: true },
+              { akeneoAttribute: 'description', catalystField: 'description', enabled: true },
+              { akeneoAttribute: 'price', catalystField: 'price', enabled: true },
+              { akeneoAttribute: 'sku', catalystField: 'sku', enabled: true }
             ],
             images: [
-              { akeneoField: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
-              { akeneoField: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
+              { akeneoAttribute: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
+              { akeneoAttribute: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
             ],
             files: []
           };
@@ -618,14 +618,14 @@ const AkeneoIntegration = () => {
       // Fall back to defaults on error
       setCustomMappings({
         attributes: [
-          { akeneoField: 'name', catalystField: 'name', enabled: true },
-          { akeneoField: 'description', catalystField: 'description', enabled: true },
-          { akeneoField: 'price', catalystField: 'price', enabled: true },
-          { akeneoField: 'sku', catalystField: 'sku', enabled: true }
+          { akeneoAttribute: 'name', catalystField: 'name', enabled: true },
+          { akeneoAttribute: 'description', catalystField: 'description', enabled: true },
+          { akeneoAttribute: 'price', catalystField: 'price', enabled: true },
+          { akeneoAttribute: 'sku', catalystField: 'sku', enabled: true }
         ],
         images: [
-          { akeneoField: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
-          { akeneoField: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
+          { akeneoAttribute: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
+          { akeneoAttribute: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
         ],
         files: []
       });
@@ -3440,10 +3440,10 @@ const AkeneoIntegration = () => {
                                 setCustomMappings(prev => ({
                                   ...prev,
                                   attributes: [
-                                    { akeneoField: 'name', catalystField: 'name', enabled: true },
-                                    { akeneoField: 'description', catalystField: 'description', enabled: true },
-                                    { akeneoField: 'price', catalystField: 'price', enabled: true },
-                                    { akeneoField: 'sku', catalystField: 'sku', enabled: true }
+                                    { akeneoAttribute: 'name', catalystField: 'name', enabled: true },
+                                    { akeneoAttribute: 'description', catalystField: 'description', enabled: true },
+                                    { akeneoAttribute: 'price', catalystField: 'price', enabled: true },
+                                    { akeneoAttribute: 'sku', catalystField: 'sku', enabled: true }
                                   ]
                                 }));
                               }
@@ -3484,8 +3484,8 @@ const AkeneoIntegration = () => {
                                 <div className="col-span-4">
                                   <Input
                                     size="sm"
-                                    value={mapping.akeneoField || ''}
-                                    onChange={(e) => updateMapping('attributes', index, 'akeneoField', e.target.value)}
+                                    value={mapping.akeneoAttribute || ''}
+                                    onChange={(e) => updateMapping('attributes', index, 'akeneoAttribute', e.target.value)}
                                     placeholder="e.g. brand, color, size"
                                     className="h-8 text-xs"
                                     disabled={!mapping.enabled}
@@ -3563,8 +3563,8 @@ const AkeneoIntegration = () => {
                                 setCustomMappings(prev => ({
                                   ...prev,
                                   images: [
-                                    { akeneoField: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
-                                    { akeneoField: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
+                                    { akeneoAttribute: 'image', catalystField: 'main_image', enabled: true, priority: 1 },
+                                    { akeneoAttribute: 'gallery', catalystField: 'image_gallery', enabled: true, priority: 2 }
                                   ]
                                 }));
                               }
@@ -3606,8 +3606,8 @@ const AkeneoIntegration = () => {
                                 <div className="col-span-3">
                                   <Input
                                     size="sm"
-                                    value={mapping.akeneoField || ''}
-                                    onChange={(e) => updateMapping('images', index, 'akeneoField', e.target.value)}
+                                    value={mapping.akeneoAttribute || ''}
+                                    onChange={(e) => updateMapping('images', index, 'akeneoAttribute', e.target.value)}
                                     placeholder="e.g. image, gallery"
                                     className="h-8 text-xs"
                                     disabled={!mapping.enabled}
@@ -3684,8 +3684,8 @@ const AkeneoIntegration = () => {
                                 setCustomMappings(prev => ({
                                   ...prev,
                                   files: [
-                                    { akeneoField: 'attachments', catalystField: 'files', enabled: true },
-                                    { akeneoField: 'documents', catalystField: 'downloads', enabled: true }
+                                    { akeneoAttribute: 'attachments', catalystField: 'files', enabled: true },
+                                    { akeneoAttribute: 'documents', catalystField: 'downloads', enabled: true }
                                   ]
                                 }));
                               }
@@ -3726,8 +3726,8 @@ const AkeneoIntegration = () => {
                                 <div className="col-span-4">
                                   <Input
                                     size="sm"
-                                    value={mapping.akeneoField || ''}
-                                    onChange={(e) => updateMapping('files', index, 'akeneoField', e.target.value)}
+                                    value={mapping.akeneoAttribute || ''}
+                                    onChange={(e) => updateMapping('files', index, 'akeneoAttribute', e.target.value)}
                                     placeholder="e.g. manual, datasheet"
                                     className="h-8 text-xs"
                                     disabled={!mapping.enabled}

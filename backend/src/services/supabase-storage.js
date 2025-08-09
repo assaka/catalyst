@@ -11,6 +11,30 @@ class SupabaseStorageService extends StorageInterface {
   }
 
   /**
+   * Get Supabase client with environment variable fallback
+   */
+  async getSupabaseClient(storeId) {
+    // First try OAuth integration
+    try {
+      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
+      if (tokenInfo && tokenInfo.project_url && (tokenInfo.service_role_key || tokenInfo.anon_key)) {
+        return await supabaseIntegration.getSupabaseAdminClient(storeId);
+      }
+    } catch (error) {
+      console.log('OAuth Supabase client failed, trying environment variables:', error.message);
+    }
+
+    // Fallback: Use environment variables (Render.com configuration)
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+      console.log('Using Supabase environment variables');
+      const { createClient } = require('@supabase/supabase-js');
+      return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+    }
+
+    throw new Error('No Supabase configuration found. Please configure via OAuth or environment variables.');
+  }
+
+  /**
    * Ensure required storage bucket exists (auto-creates suprshop-assets)
    */
   async ensureBucketsExist(storeId) {
@@ -330,32 +354,14 @@ class SupabaseStorageService extends StorageInterface {
       });
       console.log('[SupabaseStorage] Upload options:', options);
 
-      // Check if we should use direct API
-      const tokenInfo = await supabaseIntegration.getTokenInfo(storeId);
-      console.log('Token info check:', {
-        hasToken: !!tokenInfo,
-        serviceKey: tokenInfo?.service_role_key ? 'configured' : 'none',
-        projectUrl: tokenInfo?.project_url
-      });
-
-      // Check if we have service role key, if not use direct API
-      const hasValidServiceKey = tokenInfo && 
-                                tokenInfo.service_role_key && 
-                                tokenInfo.service_role_key !== 'pending_configuration' &&
-                                tokenInfo.service_role_key !== '';
-
-      if (!hasValidServiceKey) {
-        console.log('No valid service role key detected, attempting direct API upload with key fetching');
-        return await this.uploadImageDirect(storeId, file, options);
-      }
-
-      // Try to get client
+      // Try to get client (with environment variable fallback)
       let client;
       try {
-        client = await supabaseIntegration.getSupabaseClient(storeId);
+        client = await this.getSupabaseClient(storeId);
+        console.log('[SupabaseStorage] Supabase client obtained successfully');
       } catch (error) {
-        console.log('Client creation failed, using direct API:', error.message);
-        return await this.uploadImageDirect(storeId, file, options);
+        console.error('[SupabaseStorage] Failed to get Supabase client:', error.message);
+        throw new Error('Failed to connect to Supabase: ' + error.message);
       }
       
       // Try to ensure buckets exist (non-blocking)

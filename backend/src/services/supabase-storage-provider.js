@@ -203,12 +203,46 @@ class SupabaseStorageProvider extends StorageInterface {
    */
   async testConnection(storeId) {
     try {
+      // First try OAuth integration
       const supabaseIntegration = require('./supabase-integration');
       const connectionStatus = await supabaseIntegration.getConnectionStatus(storeId);
       
+      if (connectionStatus.connected) {
+        return {
+          success: true,
+          message: 'Supabase connection successful (OAuth)',
+          provider: 'supabase',
+          details: connectionStatus
+        };
+      }
+      
+      // Fallback: Check for environment variables (Render.com configuration)
+      const hasEnvConfig = process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY;
+      if (hasEnvConfig) {
+        // Test the environment variable connection
+        const { createClient } = require('@supabase/supabase-js');
+        const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+        
+        // Simple connection test
+        const { data, error } = await client.storage.listBuckets();
+        
+        if (!error) {
+          return {
+            success: true,
+            message: 'Supabase connection successful (Environment Variables)',
+            provider: 'supabase',
+            details: { 
+              connected: true, 
+              method: 'environment_variables',
+              buckets: data?.length || 0
+            }
+          };
+        }
+      }
+      
       return {
-        success: connectionStatus.connected,
-        message: connectionStatus.connected ? 'Supabase connection successful' : 'Supabase not connected',
+        success: false,
+        message: connectionStatus.message || 'Supabase not connected and no valid environment variables found',
         provider: 'supabase',
         details: connectionStatus
       };

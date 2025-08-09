@@ -551,6 +551,18 @@ router.post('/akeneo/import-products',
     console.log(`⚙️ Product settings:`, settings);
     console.log(`🗺️ Custom mappings:`, customMappings);
     
+    // Save custom mappings to database if provided and not empty
+    if (customMappings && Object.keys(customMappings).length > 0) {
+      try {
+        console.log('💾 Saving custom mappings to database during import...');
+        await AkeneoCustomMapping.saveAllMappings(storeId, customMappings, req.user?.id);
+        console.log('✅ Custom mappings saved successfully');
+      } catch (mappingError) {
+        console.warn('⚠️ Failed to save custom mappings during import:', mappingError.message);
+        // Continue with import even if saving mappings fails
+      }
+    }
+    
     // Process advanced product settings and filters
     const importOptions = {
       locale,
