@@ -160,7 +160,16 @@ class AkeneoMapping {
     // Apply comprehensive custom attribute mappings
     if (customMappings.attributes && Array.isArray(customMappings.attributes)) {
       const customAttributes = this.applyCustomAttributeMappings(akeneoProduct, customMappings.attributes, locale);
-      Object.assign(catalystProduct, customAttributes);
+      // Merge custom attributes carefully to avoid adding invalid fields
+      Object.keys(customAttributes).forEach(key => {
+        if (key === 'attributes') {
+          // Merge into existing attributes field
+          catalystProduct.attributes = { ...catalystProduct.attributes, ...customAttributes.attributes };
+        } else if (key !== 'metadata' && key !== 'files' && key !== 'custom_attributes') {
+          // Only add valid product fields
+          catalystProduct[key] = customAttributes[key];
+        }
+      });
     }
 
     // Extract common e-commerce attributes with enhanced fallbacks
