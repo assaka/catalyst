@@ -153,6 +153,11 @@ const AkeneoIntegration = () => {
     }
     
     const { storeSlug } = storeSlugData;
+
+    // Get store selection context
+    console.log('📞 Calling useStoreSelection hook...');
+    const { selectedStore } = useStoreSelection();
+    console.log('✅ useStoreSelection completed successfully:', selectedStore);
   
   // Add render debugging to track what's causing blank page
   const renderCount = React.useRef(0);
@@ -424,9 +429,9 @@ const AkeneoIntegration = () => {
     console.log('🔍 Loading statistics...');
     console.log('Store slug:', storeSlug);
     
-    // Use storeId directly instead of relying on storeSlug
-    const storeId = localStorage.getItem('selectedStoreId');
-    console.log('Store ID from localStorage:', storeId);
+    // Use storeId from context instead of localStorage
+    const storeId = selectedStore?.id;
+    console.log('Store ID from context:', storeId);
     
     if (!storeId) {
       console.log('❌ No store ID found, skipping stats load');
@@ -550,7 +555,7 @@ const AkeneoIntegration = () => {
     
     setLoadingSchedules(true);
     try {
-      const storeId = localStorage.getItem('selectedStoreId');
+      const storeId = selectedStore?.id;
       if (!storeId) return;
 
       const response = await apiClient.get('/integrations/akeneo/schedules', {
@@ -573,7 +578,7 @@ const AkeneoIntegration = () => {
     if (!connectionStatus?.success) return;
     
     try {
-      const storeId = localStorage.getItem('selectedStoreId');
+      const storeId = selectedStore?.id;
       if (!storeId) return;
 
       const response = await apiClient.get('/integrations/akeneo/channels', {
@@ -597,7 +602,7 @@ const AkeneoIntegration = () => {
     
     setLoadingCategories(true);
     try {
-      const storeId = localStorage.getItem('selectedStoreId');
+      const storeId = selectedStore?.id;
       if (!storeId) {
         console.error('❌ No store ID found');
         return;
@@ -650,11 +655,11 @@ const AkeneoIntegration = () => {
   // Load families for filtering - try local database first, then Akeneo
   const loadFamiliesForFilter = async () => {
     try {
-      const storeId = localStorage.getItem('selectedStoreId');
+      const storeId = selectedStore?.id;
       console.log('🔍 loadFamiliesForFilter called with storeId:', storeId);
       
       if (!storeId) {
-        console.warn('❌ No storeId found in localStorage');
+        console.warn('❌ No storeId found in context');
         return;
       }
 
@@ -736,7 +741,7 @@ const AkeneoIntegration = () => {
   // Save schedule
   const saveSchedule = async () => {
     try {
-      const storeId = localStorage.getItem('selectedStoreId');
+      const storeId = selectedStore?.id;
       if (!storeId) return;
 
       const response = await apiClient.post('/integrations/akeneo/schedules', scheduleForm, {
@@ -767,7 +772,7 @@ const AkeneoIntegration = () => {
   // Delete schedule
   const deleteSchedule = async (scheduleId) => {
     try {
-      const storeId = localStorage.getItem('selectedStoreId');
+      const storeId = selectedStore?.id;
       if (!storeId) return;
 
       const response = await apiClient.delete(`/integrations/akeneo/schedules/${scheduleId}`, {
@@ -995,7 +1000,7 @@ const AkeneoIntegration = () => {
     try {
       console.log('🔗 Loading saved connection status...');
       
-      const storeId = localStorage.getItem('selectedStoreId');
+      const storeId = selectedStore?.id;
       if (!storeId) {
         console.warn('⚠️ No store selected, skipping connection status load');
         return;
@@ -1038,8 +1043,8 @@ const AkeneoIntegration = () => {
     try {
       console.log('🔄 Loading Akeneo configuration status...');
       
-      // Get store_id from localStorage
-      const storeId = localStorage.getItem('selectedStoreId');
+      // Get store_id from context
+      const storeId = selectedStore?.id;
       console.log('🏪 Store ID:', storeId);
       
       if (!storeId) {
@@ -1170,8 +1175,8 @@ const AkeneoIntegration = () => {
       console.log('ℹ️ Using saved configuration with placeholder values - will use stored credentials');
     }
 
-    // Get store_id from localStorage
-    const storeId = localStorage.getItem('selectedStoreId');
+    // Get store_id from context
+    const storeId = selectedStore?.id;
     console.log('🏪 Using store ID:', storeId);
     
     if (!storeId) {
@@ -1255,8 +1260,8 @@ const AkeneoIntegration = () => {
       return;
     }
 
-    // Get store_id from localStorage
-    const storeId = localStorage.getItem('selectedStoreId');
+    // Get store_id from context
+    const storeId = selectedStore?.id;
     if (!storeId) {
       toast.error('No store selected. Please select a store first.');
       return;
@@ -1297,7 +1302,7 @@ const AkeneoIntegration = () => {
     
     // Debug authentication state
     const authToken = localStorage.getItem('store_owner_auth_token');
-    const storeId = localStorage.getItem('selectedStoreId');
+    const storeId = selectedStore?.id;
     console.log('🔐 Auth token present:', !!authToken);
     console.log('🔐 Auth token length:', authToken?.length || 0);
     console.log('🏪 Store ID:', storeId);
@@ -1468,7 +1473,7 @@ const AkeneoIntegration = () => {
     
     // Debug authentication state
     const authToken = localStorage.getItem('store_owner_auth_token');
-    const storeId = localStorage.getItem('selectedStoreId');
+    const storeId = selectedStore?.id;
     console.log('🔐 Auth token present:', !!authToken);
     console.log('🔐 Auth token length:', authToken?.length || 0);
     console.log('🏪 Store ID:', storeId);
@@ -1615,7 +1620,7 @@ const AkeneoIntegration = () => {
 
   const importFamilies = async () => {
     console.log('📦 Starting families import...');
-    const storeId = localStorage.getItem('selectedStoreId');
+    const storeId = selectedStore?.id;
     
     if (!connectionStatus?.success) {
       console.error('❌ Connection not tested or failed');
@@ -1716,7 +1721,7 @@ const AkeneoIntegration = () => {
     
     // Debug authentication state
     const authToken = localStorage.getItem('store_owner_auth_token');
-    const storeId = localStorage.getItem('selectedStoreId');
+    const storeId = selectedStore?.id;
     console.log('🔐 Auth token present:', !!authToken);
     console.log('🔐 Auth token length:', authToken?.length || 0);
     console.log('🏪 Store ID:', storeId);
@@ -1900,8 +1905,8 @@ const AkeneoIntegration = () => {
       return;
     }
 
-    // Get store_id from localStorage
-    const storeId = localStorage.getItem('selectedStoreId');
+    // Get store_id from context
+    const storeId = selectedStore?.id;
     if (!storeId) {
       toast.error('No store selected. Please select a store first.');
       return;
