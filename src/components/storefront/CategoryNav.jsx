@@ -36,6 +36,15 @@ export default function CategoryNav({ categories }) {
     // On mobile, always use expandAllMenuItems = false
     const expandAllMenuItems = isMobile ? false : (store?.settings?.expandAllMenuItems || false);
     
+    // Debug logging
+    console.log('🔧 CategoryNav Debug:', {
+        isMobile,
+        storeExpandAllMenuItems: store?.settings?.expandAllMenuItems,
+        finalExpandAllMenuItems: expandAllMenuItems,
+        categoriesCount: categories?.length,
+        rootCategoriesCount: rootCategories?.length
+    });
+    
     // Reset expanded categories when expandAllMenuItems setting changes
     useEffect(() => {
         if (!expandAllMenuItems) {
@@ -228,6 +237,13 @@ export default function CategoryNav({ categories }) {
 
     // Render category with children as dropdown (collapsible mode)
     const renderCategoryWithChildren = (category) => {
+        console.log('🔍 renderCategoryWithChildren:', {
+            categoryName: category.name,
+            hasChildren: !!(category.children && category.children.length > 0),
+            childrenCount: category.children?.length || 0,
+            children: category.children?.map(c => c.name) || []
+        });
+        
         if (category.children && category.children.length > 0) {
             return (
                 <DropdownMenu key={category.id}>
@@ -284,6 +300,10 @@ export default function CategoryNav({ categories }) {
             </nav>
             
             {/* Desktop view */}
+            {(() => {
+                console.log('🎯 Desktop render path:', expandAllMenuItems ? 'HOVER_DROPDOWNS' : 'CLICK_DROPDOWNS');
+                return null;
+            })()}
             {expandAllMenuItems ? (
                 // Desktop expandAllMenuItems = true: horizontal layout with always-visible dropdowns on hover
                 <nav className="hidden md:block">
