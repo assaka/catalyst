@@ -532,16 +532,15 @@ export default function CategoryNav({ categories }) {
         const hasChildren = category.children && category.children.length > 0;
         
         if (hasChildren) {
-            // Category with children - show with chevron AND hover submenu for direct children only
+            // Category with children - show as simple link (NO chevron) but WITH hover submenu for direct children only
             return (
                 <div key={category.id} className="relative group">
                     <Link 
                         to={createCategoryUrl(store.slug, category.slug)}
-                        className="flex items-center justify-between px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         style={{ paddingLeft: `${16 + depth * 12}px` }}
                     >
                         <span>{depth > 0 && '→ '}{category.name}</span>
-                        <ChevronRight className="w-3 h-3 ml-1" />
                     </Link>
                     
                     {/* Side submenu - shows ONLY this category's direct children on hover */}
@@ -674,14 +673,14 @@ export default function CategoryNav({ categories }) {
                                             {(() => {
                                 console.log('🔍 [CategoryNav] Rendering main dropdown for:', category.name);
                                 console.log('🔍 [CategoryNav] expandAllMenuItems is:', expandAllMenuItems);
-                                console.log('🔍 [CategoryNav] Using function:', expandAllMenuItems ? 'renderDesktopSubmenuItem (ALL descendants)' : 'renderSimpleChildLink (simple links only)');
+                                console.log('🔍 [CategoryNav] Using function:', expandAllMenuItems ? 'renderDesktopSubmenuItem (ALL descendants)' : 'renderDirectChildrenOnly (with hover side menus)');
                                 
                                 return expandAllMenuItems ? 
                                     // Show all children recursively with indentation when expandAllMenuItems = true
                                     category.children.map(child => renderDesktopSubmenuItem(child, 0))
                                     :
-                                    // Show only the direct children as simple links WITHOUT hover capabilities when expandAllMenuItems = false
-                                    category.children.map(child => renderSimpleChildLink(child, 0))
+                                    // Show direct children with hover side menus for their children when expandAllMenuItems = false
+                                    category.children.map(child => renderDirectChildrenOnly(child, 0))
                             })()}
                                         </div>
                                     </div>
