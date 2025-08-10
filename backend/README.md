@@ -1,6 +1,6 @@
 # Catalyst Backend API
 
-A comprehensive Node.js/Express backend API for the Catalyst e-commerce platform, built without the base44 SDK dependency.
+A comprehensive Node.js/Express backend API for the Catalyst e-commerce platform.
 
 ## Features
 
