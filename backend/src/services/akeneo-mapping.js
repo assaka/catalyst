@@ -185,7 +185,7 @@ class AkeneoMapping {
           // Check if this is a valid Product model field or should go to attributes
           const productModelFields = [
             'id', 'name', 'slug', 'sku', 'barcode', 'description', 'short_description',
-            'price', 'compare_price', 'cost_price', 'weight', 'dimensions', 'images',
+            'price', 'sale_price', 'special_price', 'compare_price', 'cost_price', 'weight', 'dimensions', 'images',
             'status', 'visibility', 'manage_stock', 'stock_quantity', 'allow_backorders',
             'low_stock_threshold', 'infinite_stock', 'is_custom_option', 'is_coupon_eligible',
             'featured', 'tags', 'seo', 'store_id', 'attribute_set_id', 'category_ids',
@@ -422,6 +422,14 @@ class AkeneoMapping {
         }
         break;
       
+      case 'special_price':
+        // Handle complex special price objects from Akeneo
+        const numericSpecialPrice = this.extractPriceFromValue(akeneoValue);
+        if (numericSpecialPrice !== null && !isNaN(numericSpecialPrice)) {
+          catalystProduct.special_price = numericSpecialPrice;
+        }
+        break;
+      
       
       default:
         // For any other custom fields, add to attributes object
@@ -585,6 +593,12 @@ class AkeneoMapping {
         const numericValue = parseFloat(firstPrice.amount);
         return isNaN(numericValue) ? null : numericValue;
       }
+    }
+    
+    // Handle single Akeneo price object: { amount: "29.99", currency: "USD" }
+    if (typeof value === 'object' && value !== null && !Array.isArray(value) && value.amount !== undefined) {
+      const numericValue = parseFloat(value.amount);
+      return isNaN(numericValue) ? null : numericValue;
     }
     
     // Handle simple numeric values (string or number)

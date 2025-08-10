@@ -194,6 +194,26 @@ class AkeneoMapping {
     const rawValue = this.extractLocalizedValue(valueData, locale);
     if (rawValue === null || rawValue === undefined) return null;
 
+    // Handle complex price objects from Akeneo
+    if (typeof rawValue === 'object' && rawValue !== null) {
+      // Handle price collection: [{ amount: "29.99", currency: "USD" }]
+      if (Array.isArray(rawValue) && rawValue.length > 0 && rawValue[0].amount !== undefined) {
+        const numericValue = parseFloat(rawValue[0].amount);
+        return isNaN(numericValue) ? null : numericValue;
+      }
+      
+      // Handle single price object: { amount: "29.99", currency: "USD" }
+      if (rawValue.amount !== undefined) {
+        const numericValue = parseFloat(rawValue.amount);
+        return isNaN(numericValue) ? null : numericValue;
+      }
+      
+      // If it's an object but not a price structure, return null to avoid [object Object] error
+      console.warn('⚠️ Unexpected object structure in extractNumericValue:', JSON.stringify(rawValue));
+      return null;
+    }
+
+    // Handle simple numeric strings
     const numericValue = parseFloat(rawValue);
     return isNaN(numericValue) ? null : numericValue;
   }
