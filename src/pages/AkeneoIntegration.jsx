@@ -48,6 +48,7 @@ import {
   Download,
   Settings,
   Database,
+  Info,
   Package,
   Clock,
   Plus,
@@ -2594,6 +2595,20 @@ const AkeneoIntegration = () => {
                   Configure automated imports for different data types with filtering options.
                 </CardDescription>
               </CardHeader>
+
+              {/* Credit Information */}
+              <div className="mx-6 mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-blue-900 mb-1">Credit Usage Information</h4>
+                    <p className="text-sm text-blue-800">
+                      Scheduled imports cost <strong>0.1 credits per run</strong>. Each execution will automatically deduct credits from your balance.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">Scheduled Imports</h3>

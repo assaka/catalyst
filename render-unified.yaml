@@ -1,0 +1,57 @@
+services:
+  # Unified Frontend + Backend Service
+  - type: web
+    name: catalyst-unified
+    env: node
+    buildCommand: |
+      # Install backend dependencies
+      cd backend && npm install
+      # Install frontend dependencies
+      cd .. && npm install
+      # Build frontend
+      npm run build
+      # Move frontend build to backend/public
+      mkdir -p backend/public
+      cp -r dist/* backend/public/
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      # Database Configuration
+      - key: DATABASE_URL
+        sync: false
+      # JWT Configuration  
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      # CORS Configuration (allow self)
+      - key: CORS_ORIGIN
+        value: https://catalyst-unified.onrender.com
+      # OAuth Configuration
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://catalyst-unified.onrender.com/api/auth/google/callback
+      # Session Configuration
+      - key: SESSION_SECRET
+        sync: false
+      # Stripe Configuration
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      # Supabase Configuration
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+    autoDeploy: true
