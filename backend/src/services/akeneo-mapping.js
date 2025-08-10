@@ -1914,6 +1914,14 @@ class AkeneoMapping {
       }
     }
     
+    // Auto-detect price fields and force numeric conversion even if dataType not explicitly set
+    const priceFields = [
+      'price', 'sale_price', 'special_price', 'compare_price', 'cost_price', 
+      'msrp', 'list_price', 'regular_price', 'base_price', 'unit_price',
+      'discounted_price', 'promo_price'
+    ];
+    const isPrice = priceFields.includes(akeneoAttribute) || priceFields.includes(catalystField);
+    
     // Apply data type conversion
     if (value !== null && value !== undefined && value !== '') {
       switch (dataType) {
@@ -1933,7 +1941,12 @@ class AkeneoMapping {
           break;
         case 'string':
         default:
-          // Keep as string (already handled by extractProductValue)
+          // Auto-detect price fields and convert to numeric even if dataType is 'string'
+          if (isPrice) {
+            console.log(`💰 Auto-detected price field: ${akeneoAttribute} -> ${catalystField}, applying numeric conversion`);
+            value = this.convertValueToNumeric(value);
+          }
+          // Otherwise keep as string (already handled by extractProductValue)
           break;
       }
     }
