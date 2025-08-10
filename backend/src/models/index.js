@@ -38,6 +38,7 @@ const SupabaseOAuthToken = require('./SupabaseOAuthToken');
 const ShopifyOAuthToken = require('./ShopifyOAuthToken');
 const MediaAsset = require('./MediaAsset');
 const AkeneoCustomMapping = require('./AkeneoCustomMapping');
+const AkeneoSchedule = require('./AkeneoSchedule');
 const Credit = require('./Credit');
 const CreditTransaction = require('./CreditTransaction');
 const CreditUsage = require('./CreditUsage');
@@ -245,6 +246,10 @@ const defineAssociations = () => {
 
   // JobHistory associations  
   JobHistory.belongsTo(Job, { foreignKey: 'job_id', as: 'job' });
+
+  // AkeneoSchedule associations
+  AkeneoSchedule.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(AkeneoSchedule, { foreignKey: 'store_id' });
 };
 
 // Initialize associations
@@ -291,6 +296,7 @@ module.exports = {
   ShopifyOAuthToken,
   MediaAsset,
   AkeneoCustomMapping,
+  AkeneoSchedule,
   Credit,
   CreditTransaction,
   CreditUsage,
