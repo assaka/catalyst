@@ -29,3 +29,11 @@ dist-ssr
 # Database migration script (contains sensitive data)
 migration-script.sql
 create-all-tables.sql
+
+# Testing and monitoring files
+.env.testing
+browsers/
+test-results/
+monitoring-reports/
+playwright-report/
+test-automated-*.js

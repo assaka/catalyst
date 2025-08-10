@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run linting on staged files
+CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if echo "$CHANGED_FILES" | grep -q "\.(js|jsx|ts|tsx)$"; then
+  echo "🔍 Running ESLint on changed files..."
+  npx eslint --fix $(echo "$CHANGED_FILES" | grep "\.(js|jsx|ts|tsx)$" | tr '\n' ' ')
+  
+  echo "📋 Checking for API debugging issues..."
+  node test-setup-verification.js
+fi
+
+echo "✅ Pre-commit checks passed"

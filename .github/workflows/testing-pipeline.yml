@@ -1,0 +1,508 @@
+# Comprehensive Testing Pipeline
+# Runs contract testing, monitoring, E2E tests, and error detection
+
+name: Testing Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily monitoring checks at 6 AM UTC
+    - cron: '0 6 * * *'
+
+env:
+  NODE_VERSION: '18'
+  POSTGRES_DB: catalyst_test
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+
+jobs:
+  # Contract Testing Job
+  contract-testing:
+    name: API Contract Testing
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: catalyst_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+
+      - name: Setup test database
+        run: |
+          cd backend
+          npm run migrate
+          npm run db:seed
+
+      - name: Start backend server
+        run: |
+          cd backend
+          npm start &
+          sleep 10
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/catalyst_test
+
+      - name: Run Contract Tests
+        run: |
+          node testing/api-contracts/run-contract-tests.js
+        env:
+          API_BASE_URL: http://localhost:5000
+
+      - name: Upload contract test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contract-test-results
+          path: testing/api-contracts/reports/
+
+      - name: Comment PR with contract results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const report = JSON.parse(fs.readFileSync('testing/api-contracts/reports/contract-report.json', 'utf8'));
+              const { summary } = report;
+              
+              const comment = `## 🔗 API Contract Testing Results
+              
+              **Summary:**
+              - Total validations: ${summary.total}
+              - Passed: ${summary.passed} ✅
+              - Failed: ${summary.failed} ❌
+              - Success rate: ${summary.successRate}%
+              
+              **Transformation Compliance:**
+              - Violations: ${summary.transformationViolations}
+              
+              ${summary.failed > 0 ? '⚠️ Some contract validations failed. Please review the changes.' : '✅ All contract validations passed!'}
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not read contract report:', error);
+            }
+
+  # Performance and Error Detection
+  performance-monitoring:
+    name: Performance Monitoring
+    runs-on: ubuntu-latest
+    needs: contract-testing
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: catalyst_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+
+      - name: Setup test database
+        run: |
+          cd backend
+          npm run migrate
+          npm run db:seed
+
+      - name: Start monitoring dashboard
+        run: |
+          node testing/monitoring/dashboard-server.js &
+          sleep 5
+        env:
+          NODE_ENV: test
+
+      - name: Start backend with monitoring
+        run: |
+          cd backend
+          npm start &
+          sleep 10
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/catalyst_test
+          MONITORING_ENABLED: true
+
+      - name: Run performance tests
+        run: |
+          node testing/performance/run-performance-tests.js
+        timeout-minutes: 15
+
+      - name: Run error detection
+        run: |
+          node testing/error-detection/run-error-detection.js
+
+      - name: Generate monitoring report
+        run: |
+          curl -s http://localhost:3001/api/export > monitoring-report.json
+
+      - name: Upload monitoring results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: monitoring-results
+          path: |
+            monitoring-report.json
+            testing/error-detection/reports/
+
+      - name: Check for critical issues
+        run: |
+          node -e "
+          const report = require('./monitoring-report.json');
+          const criticalAlerts = report.summary.alerts.high;
+          if (criticalAlerts > 0) {
+            console.log('❌ Critical performance issues detected:', criticalAlerts);
+            process.exit(1);
+          }
+          console.log('✅ No critical performance issues detected');
+          "
+
+  # End-to-End Testing
+  e2e-testing:
+    name: E2E Testing
+    runs-on: ubuntu-latest
+    needs: performance-monitoring
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: catalyst_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Setup test database
+        run: |
+          cd backend
+          npm run migrate
+          npm run db:seed
+
+      - name: Start backend server
+        run: |
+          cd backend
+          npm start &
+          sleep 10
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/catalyst_test
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Start frontend server
+        run: |
+          npm run preview &
+          sleep 5
+
+      - name: Run E2E tests
+        run: |
+          cd testing/e2e
+          npx playwright test
+        env:
+          BASE_URL: http://localhost:4173
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            testing/e2e/test-results/
+            testing/e2e/playwright-report/
+
+      - name: Comment PR with E2E results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const results = JSON.parse(fs.readFileSync('testing/e2e/test-results/results.json', 'utf8'));
+              const { stats } = results;
+              
+              const comment = `## 🎭 E2E Testing Results
+              
+              **Test Summary:**
+              - Total tests: ${stats.total}
+              - Passed: ${stats.expected} ✅
+              - Failed: ${stats.unexpected} ❌
+              - Flaky: ${stats.flaky} ⚠️
+              - Skipped: ${stats.skipped} ⏭️
+              
+              **Browser Coverage:**
+              - Desktop: Chrome, Firefox, Safari
+              - Mobile: Chrome Mobile, Safari Mobile
+              - Tablet: iPad Pro
+              
+              ${stats.unexpected > 0 ? '⚠️ Some E2E tests failed. Check the detailed report.' : '✅ All E2E tests passed!'}
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            } catch (error) {
+              console.log('Could not read E2E results:', error);
+            }
+
+  # Security and Code Quality
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+
+      - name: Run security audit
+        run: |
+          npm audit --audit-level high
+          cd backend && npm audit --audit-level high
+
+      - name: Check for transformation vulnerabilities
+        run: |
+          node testing/security/check-transformation-security.js
+
+      - name: Scan for hardcoded secrets
+        run: |
+          npx secretlint "**/*"
+
+  # Deployment Health Checks
+  deployment-health:
+    name: Deployment Health Checks
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: [contract-testing, performance-monitoring, e2e-testing]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Vercel deployment
+        run: |
+          curl -f https://your-vercel-app.vercel.app/health || exit 1
+
+      - name: Check Render.com backend
+        run: |
+          curl -f https://your-render-backend.onrender.com/health || exit 1
+
+      - name: Run production smoke tests
+        run: |
+          node testing/smoke-tests/production-health.js
+        env:
+          PRODUCTION_API_URL: https://your-render-backend.onrender.com
+
+      - name: Check critical API endpoints
+        run: |
+          # Test critical transformation endpoints
+          curl -f "https://your-render-backend.onrender.com/api/integrations/akeneo/custom-mappings" \
+            -H "Authorization: Bearer ${{ secrets.TEST_API_TOKEN }}" || exit 1
+
+      - name: Notify on deployment issues
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Production Deployment Health Check Failed',
+              body: `Production health checks failed on commit ${context.sha}. Please investigate immediately.`,
+              labels: ['bug', 'production', 'critical']
+            });
+
+  # Generate Combined Report
+  generate-report:
+    name: Generate Testing Report
+    runs-on: ubuntu-latest
+    needs: [contract-testing, performance-monitoring, e2e-testing]
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Generate combined report
+        run: |
+          node testing/reports/generate-combined-report.js
+        
+      - name: Upload combined report
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-testing-report
+          path: testing-report.html
+
+      - name: Deploy report to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
+          publish_branch: gh-pages
+          destination_dir: testing-reports/${{ github.sha }}
+
+      - name: Update status check
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const needs = ${{ toJSON(needs) }};
+            const allSuccess = Object.values(needs).every(job => job.result === 'success');
+            
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: allSuccess ? 'success' : 'failure',
+              description: allSuccess ? 'All tests passed' : 'Some tests failed',
+              context: 'comprehensive-testing'
+            });
+
+  # Rollback on Critical Failures
+  rollback-on-critical:
+    name: Rollback on Critical Issues
+    runs-on: ubuntu-latest
+    needs: [deployment-health]
+    if: failure() && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger rollback
+        run: |
+          echo "Critical deployment issues detected. Manual rollback required."
+          # In a real scenario, you would trigger automated rollback here
+          
+      - name: Create incident issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 CRITICAL: Production Deployment Failure',
+              body: `
+              ## Critical Production Issue Detected
+              
+              **Commit:** ${context.sha}
+              **Time:** ${new Date().toISOString()}
+              **Workflow:** ${context.workflow}
+              
+              ## Immediate Actions Required:
+              1. Investigate deployment failure
+              2. Consider rolling back to previous stable version
+              3. Check monitoring dashboard for active issues
+              4. Notify team leads immediately
+              
+              ## Testing Results:
+              - Contract Testing: ${{ needs['contract-testing'].result }}
+              - Performance Monitoring: ${{ needs['performance-monitoring'].result }}
+              - E2E Testing: ${{ needs['e2e-testing'].result }}
+              - Deployment Health: ${{ needs['deployment-health'].result }}
+              `,
+              labels: ['critical', 'production', 'incident'],
+              assignees: ['${{ github.actor }}']
+            });
+
+      - name: Send Slack notification
+        if: success()
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_MESSAGE: |
+            🚨 CRITICAL PRODUCTION DEPLOYMENT FAILURE 🚨
+            
+            Repository: ${{ github.repository }}
+            Commit: ${{ github.sha }}
+            Actor: ${{ github.actor }}
+            
+            Immediate investigation required!
