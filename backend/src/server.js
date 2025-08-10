@@ -1513,9 +1513,9 @@ app.use('/api/stores/:store_id/products', productImageRoutes);
 app.use('/api/stores/:store_id/categories', categoryImageRoutes);
 app.use('/api/file-manager', fileManagerRoutes);
 app.use('/api/stores/:store_id/templates', authMiddleware, templateRoutes);
+app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
-app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics)
 
 // 404 handler
 app.use('*', (req, res) => {
