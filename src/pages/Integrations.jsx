@@ -1,5 +1,6 @@
 import React from 'react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Database, ShoppingBag, Package } from 'lucide-react';
@@ -7,6 +8,8 @@ import { Database, ShoppingBag, Package } from 'lucide-react';
 const Integrations = () => {
   const { selectedStore } = useStoreSelection();
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  const [searchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'akeneo';
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -17,7 +20,7 @@ const Integrations = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="akeneo" className="space-y-6">
+      <Tabs value={activeTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="akeneo" className="flex items-center space-x-2">
             <Package className="w-4 h-4" />

@@ -125,6 +125,7 @@ export default function Layout({ children, currentPageName }) {
     "Marketing": false,
     "SEO": false, // Added new group for SEO
     "Plugins": false, // Added new group for Plugins
+    "Import & Categories": false, // Added new group for Import & Categories
     "Store": false,
     "Advanced": false, // Added new group for Advanced features
   });
@@ -393,14 +394,15 @@ export default function Layout({ children, currentPageName }) {
         { name: "Create Plugin", path: "plugin-builder", icon: Plus },
         { name: "Template Editor", path: "template-editor", icon: FileCode },
         { name: "How-To Guide", path: "plugin-how-to", icon: Book },
-        { name: "Integrations", path: "integrations", icon: RefreshCw, isPremium: true },
       ]
     },
     {
-      name: "Import & Export",
+      name: "Import & Categories",
       items: [
         { name: "Akeneo Connector", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
-        { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload }
+        { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
+        { name: "Ecommerce", path: "integrations?tab=ecommerce", icon: ShoppingBag },
+        { name: "CRM", path: "integrations?tab=business", icon: Users }
       ]
     },
     {
