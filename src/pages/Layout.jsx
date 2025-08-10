@@ -401,8 +401,8 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Akeneo Connector", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
         { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
-        { name: "Ecommerce", path: "integrations?tab=ecommerce", icon: ShoppingBag },
-        { name: "CRM", path: "integrations?tab=business", icon: Users }
+        { name: "Ecommerce", path: "ecommerce-integrations", icon: ShoppingBag },
+        { name: "CRM", path: "crm-integrations", icon: Users }
       ]
     },
     {

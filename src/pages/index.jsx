@@ -111,6 +111,8 @@ import AkeneoIntegration from "./AkeneoIntegration";
 import ShopifyIntegration from "../components/integrations/ShopifyIntegration";
 
 import Integrations from "./Integrations";
+import EcommerceIntegrations from "./EcommerceIntegrations";
+import CRMIntegrations from "./CRMIntegrations";
 
 import DatabaseIntegrations from "./DatabaseIntegrations";
 
@@ -715,6 +717,18 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
 
+                <Route path="/admin/ecommerce-integrations" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <EcommerceIntegrations />
+                    </RoleProtectedRoute>
+                } />
+
+                <Route path="/admin/crm-integrations" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CRMIntegrations />
+                    </RoleProtectedRoute>
+                } />
+
                 <Route path="/admin/database-integrations" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <DatabaseIntegrations />
@@ -1073,6 +1087,18 @@ function PagesContent() {
                 <Route path="/admin/integrations" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <Integrations />
+                    </RoleProtectedRoute>
+                } />
+
+                <Route path="/admin/ecommerce-integrations" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <EcommerceIntegrations />
+                    </RoleProtectedRoute>
+                } />
+
+                <Route path="/admin/crm-integrations" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <CRMIntegrations />
                     </RoleProtectedRoute>
                 } />
 
