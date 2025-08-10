@@ -565,6 +565,22 @@ class AkeneoIntegration {
                   }
                 });
 
+                // CRITICAL FIX: Check for [object Object] values in numeric fields before database update
+                const numericFields = ['price', 'compare_price', 'cost_price', 'weight'];
+                numericFields.forEach(field => {
+                  if (updateData[field] !== null && updateData[field] !== undefined) {
+                    const value = updateData[field];
+                    const stringValue = String(value);
+                    
+                    if (stringValue === '[object Object]' || stringValue.includes('[object Object]')) {
+                      console.warn(`⚠️ CRITICAL: Preventing [object Object] in field '${field}' for product ${updateData.sku || 'unknown'}`);
+                      console.warn(`   Original value:`, value);
+                      console.warn(`   String representation: "${stringValue}"`);
+                      updateData[field] = null; // Set to null to prevent database error
+                    }
+                  }
+                });
+
                 // Update existing product
                 await existingProduct.update(updateData);
                 
@@ -619,6 +635,22 @@ class AkeneoIntegration {
                       });
                     } else if ('metadata' in productData[key]) {
                       console.log(`[DEBUG] Field '${key}' contains metadata property`);
+                    }
+                  }
+                });
+                
+                // CRITICAL FIX: Check for [object Object] values in numeric fields before database insertion
+                const numericFields = ['price', 'compare_price', 'cost_price', 'weight'];
+                numericFields.forEach(field => {
+                  if (productData[field] !== null && productData[field] !== undefined) {
+                    const value = productData[field];
+                    const stringValue = String(value);
+                    
+                    if (stringValue === '[object Object]' || stringValue.includes('[object Object]')) {
+                      console.warn(`⚠️ CRITICAL: Preventing [object Object] in field '${field}' for product ${productData.sku}`);
+                      console.warn(`   Original value:`, value);
+                      console.warn(`   String representation: "${stringValue}"`);
+                      productData[field] = null; // Set to null to prevent database error
                     }
                   }
                 });
