@@ -25,6 +25,7 @@ import SeoHeadManager from './SeoHeadManager';
 import DataLayerManager from '@/components/storefront/DataLayerManager';
 import CookieConsentBanner from '@/components/storefront/CookieConsentBanner';
 import RoleSwitcher from '@/components/RoleSwitcher';
+import HeatmapTrackerComponent from '@/components/heatmap/HeatmapTracker';
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -250,6 +251,21 @@ export default function StorefrontLayout({ children }) {
             <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
                 <RoleSwitcher />
                 <DataLayerManager />
+                
+                {/* Heatmap Tracker - Track all customer interactions */}
+                <HeatmapTrackerComponent 
+                    storeId={store?.id}
+                    config={{
+                        trackClicks: true,
+                        trackHovers: true,
+                        trackScrolls: true,
+                        trackTouches: true,
+                        trackFocus: true,
+                        batchSize: 10,
+                        batchTimeout: 3000,
+                        excludeSelectors: ['.heatmap-exclude', '[data-heatmap-exclude]', '.role-switcher']
+                    }}
+                />
             {googleFontLink && (
               <link href={googleFontLink} rel="stylesheet" />
             )}
