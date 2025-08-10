@@ -1,4 +1,6 @@
 // API Client for backend communication
+import { apiDebugger } from '../utils/api-debugger.js';
+
 class ApiClient {
   constructor() {
     this.baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
@@ -9,6 +11,37 @@ class ApiClient {
     
     this.isLoggedOut = logoutFlag === 'true';
     this.token = null; // Will be set dynamically based on current context
+    
+    // Initialize debugging and register known schemas
+    this.initializeDebugging();
+  }
+
+  // Initialize debugging system
+  initializeDebugging() {
+    // Register known API schemas for validation
+    apiDebugger.registerSchema('/integrations/akeneo/custom-mappings', {
+      success: 'boolean',
+      mappings: {
+        attributes: 'array',
+        images: 'array',
+        files: 'array'
+      }
+    }, 'Akeneo custom mappings endpoint');
+
+    apiDebugger.registerSchema('/products', {
+      success: 'boolean',
+      data: 'array'
+    }, 'Products list endpoint');
+
+    apiDebugger.registerSchema('/categories', {
+      success: 'boolean', 
+      data: 'array'
+    }, 'Categories list endpoint');
+
+    // Register transformation rules
+    apiDebugger.registerTransformation('/custom-mappings', 
+      'No transformation - return raw response', 
+      'Custom mappings should not be transformed');
   }
 
   // Set auth token
@@ -177,6 +210,14 @@ class ApiClient {
 
   // Generic request method
   async request(method, endpoint, data = null, customHeaders = {}) {
+    const startTime = performance.now();
+    const debugId = apiDebugger.debugAPICall('request', {
+      endpoint,
+      method,
+      data,
+      headers: customHeaders
+    });
+
     // Check for auth routes
     const isAuthRoute = endpoint.startsWith('auth/');
     
@@ -266,39 +307,103 @@ class ApiClient {
       
       // Special handling for storage endpoints - don't transform, return full response
       if (endpoint.includes('/storage/')) {
+        const duration = performance.now() - startTime;
+        apiDebugger.debugAPICall('response', {
+          debugId,
+          endpoint,
+          method,
+          duration: Math.round(duration),
+          rawResponse: result,
+          response: result,
+          status: response.status,
+          transformed: false
+        });
         return result;
       }
       
       // Special handling for custom mappings endpoint - don't transform, return full response
       if (endpoint.includes('/custom-mappings')) {
+        const duration = performance.now() - startTime;
+        apiDebugger.debugAPICall('response', {
+          debugId,
+          endpoint,
+          method,
+          duration: Math.round(duration),
+          rawResponse: result,
+          response: result,
+          status: response.status,
+          transformed: false
+        });
         return result;
       }
       
+      let transformedResult = result;
       if (isListEndpoint && result && typeof result === 'object' && result.success && result.data) {
         // If data is already an array, return it directly (for list responses)
         if (Array.isArray(result.data)) {
-          return result.data;
+          transformedResult = result.data;
         }
-        
         // If data is an object with an 'id' field, it's a single record - wrap in array
-        if (result.data && typeof result.data === 'object' && result.data.id) {
-          return [result.data];
+        else if (result.data && typeof result.data === 'object' && result.data.id) {
+          transformedResult = [result.data];
         }
-        
         // Handle paginated responses with arrays in data properties (only for list endpoints)
-        const dataEntries = Object.entries(result.data);
-        for (const [key, value] of dataEntries) {
-          if (Array.isArray(value) && key !== 'gdpr_countries') {
-            return value;
+        else {
+          const dataEntries = Object.entries(result.data);
+          for (const [key, value] of dataEntries) {
+            if (Array.isArray(value) && key !== 'gdpr_countries') {
+              transformedResult = value;
+              break;
+            }
+          }
+          // Default: return the data object wrapped in array
+          if (transformedResult === result) {
+            transformedResult = [result.data];
           }
         }
         
-        // Default: return the data object wrapped in array
-        return [result.data];
+        // Debug transformed response
+        const duration = performance.now() - startTime;
+        apiDebugger.debugAPICall('response', {
+          debugId,
+          endpoint,
+          method,
+          duration: Math.round(duration),
+          rawResponse: result,
+          response: transformedResult,
+          status: response.status,
+          transformed: true
+        });
+        
+        return transformedResult;
       }
       
+      // Debug untransformed response (no special handling matched)
+      const duration = performance.now() - startTime;
+      apiDebugger.debugAPICall('response', {
+        debugId,
+        endpoint,
+        method,
+        duration: Math.round(duration),
+        rawResponse: result,
+        response: result,
+        status: response.status,
+        transformed: false
+      });
+
       return result;
     } catch (error) {
+      // Debug error response
+      const duration = performance.now() - startTime;
+      apiDebugger.debugAPICall('error', {
+        debugId,
+        endpoint,
+        method,
+        duration: Math.round(duration),
+        error,
+        status: error.status
+      });
+
       console.error(`API request failed: ${method} ${url}`, error);
       
       // Handle network errors
