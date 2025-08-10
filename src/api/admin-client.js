@@ -26,6 +26,13 @@ class AdminApiClient {
   // Build full URL
   buildUrl(endpoint) {
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    
+    // In development with Vite proxy, use relative URLs that get proxied
+    if (import.meta.env.DEV) {
+      return `/api/${cleanEndpoint}`;
+    }
+    
+    // In production, use the full base URL
     return `${this.baseURL}/api/${cleanEndpoint}`;
   }
 
