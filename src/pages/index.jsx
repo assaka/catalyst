@@ -289,7 +289,7 @@ function _getCurrentPage(url) {
         'template-editor': 'TemplateEditor',
         'heatmaps': 'HeatMaps',
         'ab-testing': 'ABTesting',
-        'monitoring': 'MonitoringDashboard'
+        'monitoring-dashboard': 'MonitoringDashboard'
     };
 
     // First try direct mapping for admin URLs
@@ -733,7 +733,7 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/monitoring" element={
+                <Route path="/admin/monitoring-dashboard" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <MonitoringDashboard />
                     </RoleProtectedRoute>
@@ -1094,7 +1094,7 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/monitoring" element={
+                <Route path="/admin/monitoring-dashboard" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <MonitoringDashboard />
                     </RoleProtectedRoute>
