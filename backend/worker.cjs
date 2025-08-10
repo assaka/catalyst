@@ -6,8 +6,8 @@
  */
 
 require('dotenv').config();
-const jobManager = require('./backend/src/core/BackgroundJobManager');
-const akeneoSchedulerIntegration = require('./backend/src/services/akeneo-scheduler-integration');
+const jobManager = require('./src/core/BackgroundJobManager');
+const akeneoSchedulerIntegration = require('./src/services/akeneo-scheduler-integration');
 
 console.log('🔧 Starting Background Job Worker...');
 

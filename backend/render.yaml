@@ -46,3 +46,40 @@ services:
       - key: STRIPE_PUBLISHABLE_KEY
         sync: false
     autoDeploy: true
+
+  # Dedicated Background Job Worker Service
+  - type: worker
+    name: catalyst-background-worker
+    env: node
+    buildCommand: npm install
+    startCommand: node worker.cjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Database Configuration
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      # JWT Configuration (needed for some job processing)
+      - key: JWT_SECRET
+        sync: false
+      # Akeneo Integration Configuration
+      - key: AKENEO_CLIENT_ID
+        sync: false
+      - key: AKENEO_CLIENT_SECRET
+        sync: false
+      - key: AKENEO_USERNAME
+        sync: false
+      - key: AKENEO_PASSWORD
+        sync: false
+      # Integration Encryption Key
+      - key: INTEGRATION_ENCRYPTION_KEY
+        sync: false
+    autoDeploy: true
