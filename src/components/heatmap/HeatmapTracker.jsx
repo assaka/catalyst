@@ -417,7 +417,7 @@ class HeatmapTracker {
 }
 
 // React component for heatmap tracking
-export default function HeatmapTracker({ 
+export default function HeatmapTrackerComponent({ 
   storeId, 
   config = {}, 
   children 

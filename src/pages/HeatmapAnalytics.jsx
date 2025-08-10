@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 import HeatmapVisualization from '@/components/heatmap/HeatmapVisualization';
-import HeatmapTracker from '@/components/heatmap/HeatmapTracker';
+import HeatmapTrackerComponent from '@/components/heatmap/HeatmapTracker';
 
 export default function HeatmapAnalytics() {
   const { selectedStore, getSelectedStoreId } = useStoreSelection();
@@ -171,7 +171,7 @@ export default function HeatmapAnalytics() {
   return (
     <>
       {/* Add heatmap tracking to this page */}
-      <HeatmapTracker storeId={selectedStore.id} />
+      <HeatmapTrackerComponent storeId={selectedStore.id} />
       
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
