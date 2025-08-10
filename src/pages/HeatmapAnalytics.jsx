@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 import { 
   BarChart3, 
   MousePointer, 
@@ -27,7 +28,8 @@ import {
   RefreshCw,
   Info,
   AlertCircle,
-  AlertTriangle
+  AlertTriangle,
+  Power
 } from 'lucide-react';
 
 import HeatmapVisualization from '@/components/heatmap/HeatmapVisualization';
@@ -46,6 +48,9 @@ export default function HeatmapAnalytics() {
   // Auto-refresh state
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(30); // 30 seconds
+
+  // Heatmap enable state
+  const [heatmapEnabled, setHeatmapEnabled] = useState(true); // Default enabled for alpha
 
   useEffect(() => {
     if (selectedStore) {
@@ -163,6 +168,27 @@ export default function HeatmapAnalytics() {
             </CardContent>
           </Card>
 
+          {/* Enable Toggle */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Power className={`w-5 h-5 ${heatmapEnabled ? 'text-green-600' : 'text-gray-400'}`} />
+                  <div>
+                    <Label className="text-base font-semibold">Enable Heatmap Analytics</Label>
+                    <p className="text-sm text-gray-600 mt-1">
+                      When enabled in beta, this feature will charge 1 credit per day for continuous tracking
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={heatmapEnabled}
+                  onCheckedChange={setHeatmapEnabled}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           <div className="flex items-center justify-center min-h-96">
             <div className="text-center">
               <RefreshCw className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
@@ -247,6 +273,27 @@ export default function HeatmapAnalytics() {
             </CardContent>
           </Card>
 
+          {/* Enable Toggle */}
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Power className={`w-5 h-5 ${heatmapEnabled ? 'text-green-600' : 'text-gray-400'}`} />
+                  <div>
+                    <Label className="text-base font-semibold">Enable Heatmap Analytics</Label>
+                    <p className="text-sm text-gray-600 mt-1">
+                      When enabled in beta, this feature will charge 1 credit per day for continuous tracking
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={heatmapEnabled}
+                  onCheckedChange={setHeatmapEnabled}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {error && (
             <Alert className="mb-6">
               <AlertCircle className="h-4 w-4" />
@@ -256,13 +303,14 @@ export default function HeatmapAnalytics() {
             </Alert>
           )}
 
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
-              <TabsTrigger value="pages">Top Pages</TabsTrigger>
-              <TabsTrigger value="realtime">Real-time</TabsTrigger>
-            </TabsList>
+          {heatmapEnabled ? (
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="heatmap">Heatmap</TabsTrigger>
+                <TabsTrigger value="pages">Top Pages</TabsTrigger>
+                <TabsTrigger value="realtime">Real-time</TabsTrigger>
+              </TabsList>
 
             {/* Overview Tab */}
             <TabsContent value="overview" className="space-y-6">
@@ -492,7 +540,23 @@ export default function HeatmapAnalytics() {
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          ) : (
+            <Card>
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <Power className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">Heatmap Analytics Disabled</h3>
+                  <p className="text-gray-600 mb-4">
+                    Enable heatmap analytics above to start tracking customer behavior
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Once enabled in beta, this feature will be charged at 1 credit per day for continuous tracking
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </>
