@@ -41,7 +41,22 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Separator } from '../components/ui/separator';
-import { AlertCircle, CheckCircle, RefreshCw, Download, Settings, Database, Package, Clock, Plus, Trash2, Edit, ChevronDown, Power } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  Download,
+  Settings,
+  Database,
+  Package,
+  Clock,
+  Plus,
+  Trash2,
+  Edit,
+  ChevronDown,
+  Power,
+  BarChart3
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreSlug } from '../hooks/useStoreSlug';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
@@ -2244,13 +2259,20 @@ const AkeneoIntegration = () => {
     }
     
     return (
-      <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Akeneo PIM Integration</h1>
-        <p className="text-gray-600">
-          Import categories and products from your Akeneo PIM system into Catalyst.
-        </p>
-      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <BarChart3 className="w-8 h-8 text-blue-600" />
+              Akeneo PIM Integration
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Import categories and products from your Akeneo PIM system into Catalyst.
+            </p>
+          </div>
+        </div>
 
       {/* Statistics Display */}
       <Card className="mb-6">
