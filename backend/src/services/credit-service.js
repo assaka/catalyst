@@ -5,7 +5,7 @@ const AkeneoSchedule = require('../models/AkeneoSchedule');
 
 class CreditService {
   constructor() {
-    this.AKENEO_SCHEDULE_COST = 0.1; // Default cost per Akeneo schedule run
+    // No hardcoded costs - any feature can specify its own cost
   }
 
   /**
@@ -20,6 +20,49 @@ class CreditService {
    */
   async hasEnoughCredits(userId, storeId, requiredCredits) {
     return await Credit.hasEnoughCredits(userId, storeId, requiredCredits);
+  }
+
+  /**
+   * Universal credit deduction method - any feature can use this
+   * @param {string} userId - User ID
+   * @param {string} storeId - Store ID  
+   * @param {number} amount - Amount of credits to deduct
+   * @param {string} description - Description of what the credits were used for
+   * @param {object} metadata - Optional metadata object with additional info
+   * @param {string} referenceId - Optional reference ID (e.g., schedule ID, product ID)
+   * @param {string} referenceType - Optional reference type (e.g., 'akeneo_schedule', 'product_export')
+   * @returns {object} - Deduction result with remaining balance
+   */
+  async deduct(userId, storeId, amount, description, metadata = {}, referenceId = null, referenceType = null) {
+    // Check if user has enough credits
+    const hasCredits = await this.hasEnoughCredits(userId, storeId, amount);
+    if (!hasCredits) {
+      const balance = await this.getBalance(userId, storeId);
+      throw new Error(`Insufficient credits. Required: ${amount}, Available: ${balance}`);
+    }
+
+    // Record usage with generic type
+    const usage = await CreditUsage.create({
+      user_id: userId,
+      store_id: storeId,
+      credits_used: amount,
+      usage_type: 'other', // Generic type - description tells the real story
+      reference_id: referenceId,
+      reference_type: referenceType,
+      description: description,
+      metadata: {
+        deduction_time: new Date().toISOString(),
+        ...metadata
+      }
+    });
+
+    return {
+      success: true,
+      usage_id: usage.id,
+      credits_deducted: amount,
+      remaining_balance: await this.getBalance(userId, storeId),
+      description: description
+    };
   }
 
   /**
@@ -60,10 +103,7 @@ class CreditService {
       recent_transactions: recentTransactions,
       recent_usage: recentUsage,
       monthly_stats: monthlyStats,
-      schedule_info: scheduleInfo,
-      credit_costs: {
-        akeneo_schedule: this.AKENEO_SCHEDULE_COST
-      }
+      schedule_info: scheduleInfo
     };
   }
 
@@ -79,7 +119,7 @@ class CreditService {
       throw new Error('Schedule not found');
     }
 
-    const requiredCredits = parseFloat(schedule.credit_cost) || this.AKENEO_SCHEDULE_COST;
+    const requiredCredits = parseFloat(schedule.credit_cost) || 0.1; // Default 0.1 credits
     const hasCredits = await this.hasEnoughCredits(userId, storeId, requiredCredits);
 
     return {
@@ -110,30 +150,17 @@ class CreditService {
    * Record credit usage for manual Akeneo operations
    */
   async recordManualAkeneoUsage(userId, storeId, importType, metadata = {}) {
-    const creditsUsed = this.AKENEO_SCHEDULE_COST; // Same cost as schedule
-
-    // Check if user has enough credits
-    const hasCredits = await this.hasEnoughCredits(userId, storeId, creditsUsed);
-    if (!hasCredits) {
-      const balance = await this.getBalance(userId, storeId);
-      throw new Error(`Insufficient credits. Required: ${creditsUsed}, Available: ${balance}`);
-    }
-
-    // Record usage
-    const usage = await CreditUsage.recordAkeneoManualUsage(
-      userId,
-      storeId,
-      importType,
-      creditsUsed,
-      metadata
+    const creditsUsed = 0.1; // Default cost for Akeneo operations
+    
+    return await this.deduct(
+      userId, 
+      storeId, 
+      creditsUsed, 
+      `Manual Akeneo ${importType} import`,
+      { import_type: importType, ...metadata },
+      null,
+      'manual_import'
     );
-
-    return {
-      success: true,
-      usage_id: usage.id,
-      credits_deducted: creditsUsed,
-      remaining_balance: await this.getBalance(userId, storeId)
-    };
   }
 
   /**
