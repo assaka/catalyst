@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');
 const { sequelize } = require('../database/connection');
 
 const CreditUsage = sequelize.define('CreditUsage', {
@@ -65,7 +65,33 @@ const CreditUsage = sequelize.define('CreditUsage', {
     {
       fields: ['usage_type']
     }
-  ]
+  ],
+  hooks: {
+    afterCreate: async (usage) => {
+      // Deduct credits from balance when usage is recorded
+      if (usage.credits_used > 0) {
+        const Credit = require('./Credit');
+        
+        // Initialize balance if it doesn't exist
+        await Credit.initializeBalance(usage.user_id, usage.store_id);
+        
+        // Update the balance
+        await sequelize.query(`
+          UPDATE credits 
+          SET balance = balance - :credits,
+              total_used = total_used + :credits,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = :userId AND store_id = :storeId
+        `, {
+          replacements: {
+            credits: usage.credits_used,
+            userId: usage.user_id,
+            storeId: usage.store_id
+          }
+        });
+      }
+    }
+  }
 });
 
 // Class methods for credit usage tracking
@@ -123,12 +149,12 @@ CreditUsage.getUsageStats = async function(userId, storeId, startDate = null, en
   
   if (startDate) {
     where.createdAt = where.createdAt || {};
-    where.createdAt[sequelize.Op.gte] = startDate;
+    where.createdAt[Op.gte] = startDate;
   }
   
   if (endDate) {
     where.createdAt = where.createdAt || {};
-    where.createdAt[sequelize.Op.lte] = endDate;
+    where.createdAt[Op.lte] = endDate;
   }
 
   const stats = await this.findAll({
