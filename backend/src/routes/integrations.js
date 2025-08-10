@@ -1385,4 +1385,135 @@ router.post('/upload',
   }
 );
 
+// Debug route to analyze Akeneo product attributes and identify numeric conversion issues
+router.post('/akeneo/debug-attributes', auth, storeAuth, async (req, res) => {
+  try {
+    console.log('🔍 [DEBUG] Akeneo attribute debug request for store:', req.storeId);
+    
+    const { productData, limit = 1 } = req.body;
+    
+    // If specific product data is provided, debug that
+    if (productData) {
+      console.log('🧪 [DEBUG] Analyzing provided product data...');
+      
+      const AkeneoMapping = require('../services/akeneo-mapping');
+      const mapping = new AkeneoMapping();
+      
+      const debugResult = mapping.debugProductAttributes(productData, 'en_US');
+      
+      return res.json({
+        success: true,
+        debug_type: 'single_product',
+        product_debug: debugResult,
+        recommendations: [
+          'Check problematic attributes that stringify to "[object Object]"',
+          'Review numeric attribute extraction logic',
+          'Ensure proper data type conversion before database insertion'
+        ]
+      });
+    }
+    
+    // Otherwise, fetch and debug products from Akeneo
+    console.log('🧪 [DEBUG] Fetching and analyzing products from Akeneo...');
+    
+    const akeneoConfig = await loadAkeneoConfig(req.storeId);
+    if (!akeneoConfig) {
+      return res.status(400).json({
+        success: false,
+        message: 'Akeneo configuration not found. Please configure Akeneo integration first.'
+      });
+    }
+    
+    const akeneoIntegration = new AkeneoIntegration();
+    await akeneoIntegration.initialize(req.storeId);
+    
+    // Fetch a small number of products for debugging
+    const products = await akeneoIntegration.client.getProducts({ limit });
+    
+    if (!products || products.length === 0) {
+      return res.json({
+        success: true,
+        debug_type: 'no_products',
+        message: 'No products found in Akeneo to debug',
+        products_count: 0
+      });
+    }
+    
+    const AkeneoMapping = require('../services/akeneo-mapping');
+    const mapping = new AkeneoMapping();
+    
+    const debugResults = [];
+    let totalProblematicAttributes = 0;
+    
+    // Debug each product
+    products.forEach(product => {
+      const debugResult = mapping.debugProductAttributes(product, 'en_US');
+      debugResults.push(debugResult);
+      totalProblematicAttributes += debugResult.problematicAttributes.length;
+    });
+    
+    // Compile summary
+    const summary = {
+      total_products_analyzed: products.length,
+      total_problematic_attributes: totalProblematicAttributes,
+      common_issues: [],
+      recommendations: []
+    };
+    
+    // Analyze common issues
+    const issueTypes = {};
+    debugResults.forEach(result => {
+      result.problematicAttributes.forEach(attr => {
+        const issue = attr.issue;
+        if (!issueTypes[issue]) {
+          issueTypes[issue] = [];
+        }
+        issueTypes[issue].push({
+          product: result.productId,
+          attribute: attr.attributeCode,
+          stringValue: attr.stringValue
+        });
+      });
+    });
+    
+    summary.common_issues = Object.keys(issueTypes).map(issue => ({
+      issue_type: issue,
+      count: issueTypes[issue].length,
+      examples: issueTypes[issue].slice(0, 3) // Show first 3 examples
+    }));
+    
+    // Generate recommendations
+    if (totalProblematicAttributes > 0) {
+      summary.recommendations = [
+        'Fix numeric conversion logic in AkeneoMapping class',
+        'Add proper error handling for complex objects',
+        'Implement data validation before database insertion',
+        'Consider using custom attribute mappings for problematic fields'
+      ];
+    } else {
+      summary.recommendations = [
+        'No issues detected in sampled products',
+        'Consider testing with more products or specific product identifiers'
+      ];
+    }
+    
+    res.json({
+      success: true,
+      debug_type: 'multiple_products',
+      summary,
+      detailed_results: debugResults,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ [DEBUG] Akeneo attribute debug error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to debug Akeneo attributes',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
+
 module.exports = router;

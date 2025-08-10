@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "name": "catalyst-monitoring-dashboard",
+  "builds": [
+    {
+      "src": "pages/**/*.js",
+      "use": "@vercel/next"
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "RENDER_BACKEND_URL": "@render_backend_url",
+    "VERCEL_FRONTEND_URL": "@vercel_frontend_url",
+    "MONITORING_ENABLED": "true"
+  },
+  "functions": {
+    "api/health-check.js": {
+      "maxDuration": 30
+    },
+    "api/deployment-status.js": {
+      "maxDuration": 60
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/health-check",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "catalyst-monitoring-dashboard",
+  "version": "1.0.0",
+  "description": "Real-time monitoring dashboard for Catalyst e-commerce platform deployed on Vercel",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "health-check": "node api/health-check.js",
+    "deploy": "vercel --prod",
+    "test": "node test/dashboard-test.js"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "socket.io-client": "^4.7.0",
+    "recharts": "^2.8.0",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "autoprefixer": "^10.0.0",
+    "postcss": "^8.0.0",
+    "tailwindcss": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

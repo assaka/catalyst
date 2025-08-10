@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom monitoring dashboard styles */
+.status-healthy {
+  @apply text-green-600 bg-green-100;
+}
+
+.status-degraded {
+  @apply text-yellow-600 bg-yellow-100;
+}
+
+.status-critical {
+  @apply text-red-600 bg-red-100;
+}
+
+.monitoring-card {
+  @apply bg-white shadow rounded-lg p-6 transition-all duration-200 hover:shadow-lg;
+}
+
+.alert-banner {
+  @apply border-l-4 border-red-500 bg-red-50 p-4 mb-4;
+}
+
+/* Animation for status changes */
+.status-indicator {
+  @apply transition-all duration-500 ease-in-out;
+}
+
+/* Loading spinner */
+.spinner {
+  @apply animate-spin rounded-full border-b-2 border-blue-600;
+}
+
+/* Responsive text sizing */
+@media (max-width: 640px) {
+  .status-text {
+    @apply text-sm;
+  }
+  
+  .metric-number {
+    @apply text-lg;
+  }
+}

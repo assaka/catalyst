@@ -1916,10 +1916,12 @@ class AkeneoMapping {
       switch (dataType) {
         case 'number':
         case 'numeric':
-          value = this.extractNumericValue(values, akeneoAttribute, locale);
+          // Convert the extracted value to numeric format
+          value = this.convertValueToNumeric(value);
           break;
         case 'boolean':
-          value = this.extractBooleanValue(values, akeneoAttribute, locale);
+          // Convert the extracted value to boolean
+          value = this.convertValueToBoolean(value);
           break;
         case 'array':
           if (!Array.isArray(value)) {
@@ -2075,6 +2077,258 @@ class AkeneoMapping {
                                          this.extractProductValue(values, 'maintenance', locale);
     
     return commonAttributes;
+  }
+
+  /**
+   * Convert a value to numeric format with proper error handling
+   * Handles complex Akeneo data structures that might contain nested objects
+   */
+  convertValueToNumeric(value) {
+    if (value === null || value === undefined) return null;
+    
+    // If it's already a number, return it
+    if (typeof value === 'number') {
+      return isNaN(value) ? null : value;
+    }
+    
+    // If it's a string, try to parse it
+    if (typeof value === 'string') {
+      const numericValue = parseFloat(value);
+      return isNaN(numericValue) ? null : numericValue;
+    }
+    
+    // If it's an array, try to extract numeric value from first element
+    if (Array.isArray(value) && value.length > 0) {
+      return this.convertValueToNumeric(value[0]);
+    }
+    
+    // If it's an object, try various common structures
+    if (typeof value === 'object' && value !== null) {
+      // Try common numeric object structures
+      if (value.amount !== undefined) {
+        return this.convertValueToNumeric(value.amount);
+      }
+      if (value.value !== undefined) {
+        return this.convertValueToNumeric(value.value);
+      }
+      if (value.price !== undefined) {
+        return this.convertValueToNumeric(value.price);
+      }
+      if (value.number !== undefined) {
+        return this.convertValueToNumeric(value.number);
+      }
+      
+      // Log complex objects that couldn't be converted
+      console.warn(`⚠️ Could not convert complex object to numeric:`, JSON.stringify(value));
+      return null;
+    }
+    
+    console.warn(`⚠️ Cannot convert value to numeric (type: ${typeof value}):`, value);
+    return null;
+  }
+
+  /**
+   * Convert a value to boolean format with proper error handling
+   */
+  convertValueToBoolean(value) {
+    if (value === null || value === undefined) return null;
+    
+    // Direct boolean
+    if (typeof value === 'boolean') return value;
+    
+    // String boolean values
+    if (typeof value === 'string') {
+      const lowerValue = value.toLowerCase().trim();
+      if (['true', '1', 'yes', 'on', 'enabled', 'active'].includes(lowerValue)) {
+        return true;
+      }
+      if (['false', '0', 'no', 'off', 'disabled', 'inactive'].includes(lowerValue)) {
+        return false;
+      }
+      return null;
+    }
+    
+    // Number to boolean
+    if (typeof value === 'number') {
+      return value !== 0;
+    }
+    
+    // Array - check if not empty
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    
+    // Object - try to extract boolean value
+    if (typeof value === 'object' && value !== null) {
+      if (value.value !== undefined) {
+        return this.convertValueToBoolean(value.value);
+      }
+      if (value.enabled !== undefined) {
+        return this.convertValueToBoolean(value.enabled);
+      }
+      return null;
+    }
+    
+    return Boolean(value);
+  }
+
+  /**
+   * Enhanced extractNumericValue with better error handling and logging
+   */
+  extractNumericValueWithDebug(values, attributeCode, locale = 'en_US', productIdentifier = null) {
+    console.log(`🔢 [${productIdentifier || 'Unknown'}] Extracting numeric value for attribute: ${attributeCode}`);
+    
+    const value = this.extractProductValue(values, attributeCode, locale);
+    
+    if (value === null || value === undefined) {
+      console.log(`  ℹ️ No value found for ${attributeCode}`);
+      return null;
+    }
+    
+    console.log(`  📊 Raw value for ${attributeCode}:`, JSON.stringify(value));
+    console.log(`  📋 Type: ${typeof value}`);
+    
+    let result = null;
+    
+    try {
+      // Handle Akeneo price collection format: [{ amount: "29.99", currency: "USD" }]
+      if (Array.isArray(value) && value.length > 0) {
+        console.log(`  🔄 Processing array with ${value.length} items`);
+        // For price collections, get the first price's amount
+        const firstPrice = value[0];
+        if (firstPrice && typeof firstPrice === 'object' && firstPrice.amount !== undefined) {
+          result = parseFloat(firstPrice.amount);
+          console.log(`  ✅ Extracted from price collection: ${result}`);
+        } else {
+          console.log(`  ⚠️ Array item doesn't have expected structure:`, firstPrice);
+          result = null;
+        }
+      }
+      // Handle single Akeneo price object: { amount: "29.99", currency: "USD" }
+      else if (typeof value === 'object' && value !== null && !Array.isArray(value) && value.amount !== undefined) {
+        result = parseFloat(value.amount);
+        console.log(`  ✅ Extracted from price object: ${result}`);
+      }
+      // Handle simple numeric values (string or number)
+      else if (typeof value === 'string' || typeof value === 'number') {
+        result = parseFloat(value);
+        console.log(`  ✅ Extracted from simple value: ${result}`);
+      }
+      // Handle other object structures
+      else if (typeof value === 'object' && value !== null) {
+        console.log(`  🔍 Attempting to extract from complex object...`);
+        result = this.convertValueToNumeric(value);
+        console.log(`  📊 Conversion result: ${result}`);
+      }
+      else {
+        console.log(`  ❌ Unsupported value type for numeric conversion: ${typeof value}`);
+        result = null;
+      }
+      
+      // Validate the result
+      if (result !== null && isNaN(result)) {
+        console.log(`  ❌ Conversion resulted in NaN, returning null`);
+        result = null;
+      }
+      
+      console.log(`  🎯 Final result for ${attributeCode}: ${result} (type: ${typeof result})`);
+      
+    } catch (error) {
+      console.error(`  ❌ Error extracting numeric value for ${attributeCode}:`, error.message);
+      console.error(`  📍 Raw value:`, JSON.stringify(value));
+      result = null;
+    }
+    
+    return result;
+  }
+
+  /**
+   * Debug method to analyze all product attributes and identify potential numeric conversion issues
+   */
+  debugProductAttributes(akeneoProduct, locale = 'en_US') {
+    const values = akeneoProduct.values || {};
+    const productId = akeneoProduct.identifier || 'Unknown';
+    
+    console.log(`\n🔍 ===== DEBUGGING PRODUCT ATTRIBUTES: ${productId} =====`);
+    console.log(`📊 Total attributes: ${Object.keys(values).length}`);
+    
+    const potentialNumericAttributes = [];
+    const problematicAttributes = [];
+    
+    Object.keys(values).forEach(attributeCode => {
+      const attributeData = values[attributeCode];
+      
+      // Check if this looks like a numeric attribute
+      const isNumericName = attributeCode.includes('price') || 
+                           attributeCode.includes('weight') || 
+                           attributeCode.includes('quantity') || 
+                           attributeCode.includes('threshold') ||
+                           attributeCode.includes('cost') ||
+                           attributeCode.includes('msrp') ||
+                           attributeCode.includes('number') ||
+                           attributeCode.includes('amount');
+      
+      if (isNumericName) {
+        potentialNumericAttributes.push(attributeCode);
+        
+        // Extract and analyze the value
+        const rawValue = this.extractProductValue(values, attributeCode, locale);
+        
+        console.log(`\n📋 NUMERIC ATTRIBUTE: ${attributeCode}`);
+        console.log(`  📊 Raw data:`, JSON.stringify(attributeData, null, 2));
+        console.log(`  📊 Extracted value:`, rawValue);
+        console.log(`  📊 Value type:`, typeof rawValue);
+        
+        // Test numeric conversion
+        try {
+          const numericResult = this.extractNumericValue(values, attributeCode, locale);
+          console.log(`  ✅ Numeric conversion: ${numericResult} (type: ${typeof numericResult})`);
+          
+          // Check if this would cause the "[object Object]" error
+          if (typeof rawValue === 'object' && rawValue !== null && numericResult === null) {
+            console.log(`  ⚠️ WARNING: This attribute might cause "[object Object]" error!`);
+            console.log(`  🔧 Object stringifies to: "${String(rawValue)}"`);
+            problematicAttributes.push({
+              attributeCode,
+              rawValue,
+              stringValue: String(rawValue),
+              issue: 'Complex object cannot be converted to numeric'
+            });
+          }
+        } catch (error) {
+          console.log(`  ❌ Numeric conversion error: ${error.message}`);
+          problematicAttributes.push({
+            attributeCode,
+            rawValue,
+            error: error.message,
+            issue: 'Conversion throws error'
+          });
+        }
+      }
+    });
+    
+    console.log(`\n📊 Summary for ${productId}:`);
+    console.log(`  🔢 Potential numeric attributes found: ${potentialNumericAttributes.length}`);
+    console.log(`  ⚠️ Problematic attributes: ${problematicAttributes.length}`);
+    
+    if (problematicAttributes.length > 0) {
+      console.log(`\n❌ PROBLEMATIC ATTRIBUTES THAT MIGHT CAUSE ERRORS:`);
+      problematicAttributes.forEach((attr, index) => {
+        console.log(`  ${index + 1}. ${attr.attributeCode}:`);
+        console.log(`     Issue: ${attr.issue}`);
+        console.log(`     String value: "${attr.stringValue || 'N/A'}"`);
+        if (attr.error) console.log(`     Error: ${attr.error}`);
+      });
+    }
+    
+    console.log(`===============================================\n`);
+    
+    return {
+      productId,
+      totalAttributes: Object.keys(values).length,
+      potentialNumericAttributes,
+      problematicAttributes
+    };
   }
 }
 
