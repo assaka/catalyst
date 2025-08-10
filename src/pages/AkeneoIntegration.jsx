@@ -383,6 +383,7 @@ const AkeneoIntegration = () => {
       batchSize: 50
     }
   });
+  const [scheduleValidationErrors, setScheduleValidationErrors] = useState({});
   
   // Debug dry run changes
   const handleDryRunChange = (checked) => {
@@ -837,11 +838,57 @@ const AkeneoIntegration = () => {
     }
   };
 
+  // Validate schedule form
+  const validateScheduleForm = () => {
+    const errors = {};
+    
+    if (scheduleForm.schedule_type === 'once') {
+      if (!scheduleForm.schedule_date || scheduleForm.schedule_date.trim() === '') {
+        errors.schedule_date = 'Schedule Date & Time is required for one-time schedules';
+      } else {
+        // Validate that the date is in the future
+        const scheduleDate = new Date(scheduleForm.schedule_date);
+        const now = new Date();
+        if (scheduleDate <= now) {
+          errors.schedule_date = 'Schedule Date & Time must be in the future';
+        }
+      }
+    } else {
+      if (!scheduleForm.schedule_time || scheduleForm.schedule_time.trim() === '') {
+        errors.schedule_time = 'Schedule Time is required for recurring schedules';
+      } else {
+        // Validate time format based on schedule type
+        if (scheduleForm.schedule_type === 'daily') {
+          if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(scheduleForm.schedule_time)) {
+            errors.schedule_time = 'Time must be in HH:MM format (e.g., 09:00)';
+          }
+        } else if (scheduleForm.schedule_type === 'weekly') {
+          if (!/^(MON|TUE|WED|THU|FRI|SAT|SUN)-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(scheduleForm.schedule_time)) {
+            errors.schedule_time = 'Time must be in DAY-HH:MM format (e.g., MON-09:00)';
+          }
+        } else if (scheduleForm.schedule_type === 'monthly') {
+          if (!/^([1-9]|[12][0-9]|3[01])-([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(scheduleForm.schedule_time)) {
+            errors.schedule_time = 'Time must be in DD-HH:MM format (e.g., 1-09:00)';
+          }
+        }
+      }
+    }
+    
+    setScheduleValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Save schedule
   const saveSchedule = async () => {
     try {
       const storeId = selectedStore?.id;
       if (!storeId) return;
+
+      // Validation
+      if (!validateScheduleForm()) {
+        toast.error('Please fix the validation errors before saving');
+        return;
+      }
 
       const response = await apiClient.post('/integrations/akeneo/schedules', scheduleForm, {
         'x-store-id': storeId
@@ -860,6 +907,7 @@ const AkeneoIntegration = () => {
           filters: { channels: [], families: [], categoryIds: [], attributes: {} },
           options: { locale: 'en_US', dryRun: false, batchSize: 50 }
         });
+        setScheduleValidationErrors({});
         await loadSchedules();
       }
     } catch (error) {
@@ -2554,7 +2602,11 @@ const AkeneoIntegration = () => {
                           <Label>Schedule Type</Label>
                           <Select 
                             value={scheduleForm.schedule_type} 
-                            onValueChange={(value) => setScheduleForm(prev => ({ ...prev, schedule_type: value }))}
+                            onValueChange={(value) => {
+                              setScheduleForm(prev => ({ ...prev, schedule_type: value }));
+                              // Clear validation errors when schedule type changes
+                              setScheduleValidationErrors({});
+                            }}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select schedule type" />
@@ -2571,30 +2623,62 @@ const AkeneoIntegration = () => {
 
                       {scheduleForm.schedule_type === 'once' && (
                         <div className="space-y-2">
-                          <Label>Schedule Date & Time</Label>
+                          <Label className="text-sm font-medium">
+                            Schedule Date & Time <span className="text-red-500">*</span>
+                          </Label>
                           <Input
                             type="datetime-local"
+                            required
                             value={scheduleForm.schedule_date}
-                            onChange={(e) => setScheduleForm(prev => ({ ...prev, schedule_date: e.target.value }))}
+                            onChange={(e) => {
+                              setScheduleForm(prev => ({ ...prev, schedule_date: e.target.value }));
+                              // Clear validation error when user starts typing
+                              if (scheduleValidationErrors.schedule_date) {
+                                setScheduleValidationErrors(prev => ({ ...prev, schedule_date: undefined }));
+                              }
+                            }}
+                            className={scheduleValidationErrors.schedule_date ? 'border-red-500 focus:border-red-500' : ''}
                           />
+                          {scheduleValidationErrors.schedule_date && (
+                            <p className="text-sm text-red-600 mt-1">
+                              {scheduleValidationErrors.schedule_date}
+                            </p>
+                          )}
                         </div>
                       )}
 
                       {scheduleForm.schedule_type !== 'once' && (
                         <div className="space-y-2">
-                          <Label>
-                            Time {scheduleForm.schedule_type === 'weekly' && '(e.g., MON-09:00)'}
-                            {scheduleForm.schedule_type === 'monthly' && '(e.g., 1-09:00 for 1st of month)'}
+                          <Label className="text-sm font-medium">
+                            Time <span className="text-red-500">*</span>
+                            <span className="font-normal text-gray-600 ml-1">
+                              {scheduleForm.schedule_type === 'weekly' && '(e.g., MON-09:00)'}
+                              {scheduleForm.schedule_type === 'monthly' && '(e.g., 1-09:00 for 1st of month)'}
+                              {scheduleForm.schedule_type === 'daily' && '(e.g., 09:00)'}
+                            </span>
                           </Label>
                           <Input
+                            required
                             placeholder={
                               scheduleForm.schedule_type === 'daily' ? 'HH:MM (e.g., 09:00)' :
                               scheduleForm.schedule_type === 'weekly' ? 'DAY-HH:MM (e.g., MON-09:00)' :
                               'DD-HH:MM (e.g., 1-09:00)'
                             }
                             value={scheduleForm.schedule_time}
-                            onChange={(e) => setScheduleForm(prev => ({ ...prev, schedule_time: e.target.value }))}
+                            onChange={(e) => {
+                              setScheduleForm(prev => ({ ...prev, schedule_time: e.target.value }));
+                              // Clear validation error when user starts typing
+                              if (scheduleValidationErrors.schedule_time) {
+                                setScheduleValidationErrors(prev => ({ ...prev, schedule_time: undefined }));
+                              }
+                            }}
+                            className={scheduleValidationErrors.schedule_time ? 'border-red-500 focus:border-red-500' : ''}
                           />
+                          {scheduleValidationErrors.schedule_time && (
+                            <p className="text-sm text-red-600 mt-1">
+                              {scheduleValidationErrors.schedule_time}
+                            </p>
+                          )}
                         </div>
                       )}
 
@@ -2734,6 +2818,7 @@ const AkeneoIntegration = () => {
                               filters: { channels: [], families: [], categoryIds: [], attributes: {} },
                               options: { locale: 'en_US', dryRun: false, batchSize: 50 }
                             });
+                            setScheduleValidationErrors({});
                           }}
                         >
                           Cancel
