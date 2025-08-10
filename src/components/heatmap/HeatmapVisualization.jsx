@@ -230,7 +230,7 @@ export default function HeatmapVisualization({
         }
       }
 
-      const response = await apiClient.get(`/api/heatmap/data/${storeId}?${params}`);
+      const response = await apiClient.get(`heatmap/data/${storeId}?${params}`);
       setHeatmapData(response.data || []);
     } catch (err) {
       console.error('Error loading heatmap data:', err);
@@ -244,7 +244,7 @@ export default function HeatmapVisualization({
     if (!storeId) return;
 
     try {
-      const response = await apiClient.get(`/api/heatmap/realtime/${storeId}?time_window=300000`);
+      const response = await apiClient.get(`heatmap/realtime/${storeId}?time_window=300000`);
       setRealTimeStats(response.data);
     } catch (err) {
       console.warn('Error loading real-time stats:', err);

@@ -86,7 +86,7 @@ export default function HeatmapAnalytics() {
 
   const loadAnalytics = async () => {
     try {
-      const response = await apiClient.get(`/api/heatmap/analytics/${selectedStore.id}`);
+      const response = await apiClient.get(`heatmap/analytics/${selectedStore.id}`);
       setAnalytics(response.data);
     } catch (err) {
       console.warn('Error loading analytics:', err);
@@ -95,7 +95,7 @@ export default function HeatmapAnalytics() {
 
   const loadTopPages = async () => {
     try {
-      const response = await apiClient.get(`/api/heatmap/top-pages/${selectedStore.id}?limit=10`);
+      const response = await apiClient.get(`heatmap/top-pages/${selectedStore.id}?limit=10`);
       setTopPages(response.data || []);
     } catch (err) {
       console.warn('Error loading top pages:', err);
@@ -104,7 +104,7 @@ export default function HeatmapAnalytics() {
 
   const loadRealTimeStats = async () => {
     try {
-      const response = await apiClient.get(`/api/heatmap/realtime/${selectedStore.id}?time_window=1800000`); // 30 minutes
+      const response = await apiClient.get(`heatmap/realtime/${selectedStore.id}?time_window=1800000`); // 30 minutes
       setRealTimeStats(response.data);
     } catch (err) {
       console.warn('Error loading real-time stats:', err);
@@ -113,7 +113,7 @@ export default function HeatmapAnalytics() {
 
   const loadSummary = async () => {
     try {
-      const response = await apiClient.get(`/api/heatmap/summary/${selectedStore.id}`);
+      const response = await apiClient.get(`heatmap/summary/${selectedStore.id}`);
       setSummary(response.data || []);
     } catch (err) {
       console.warn('Error loading summary:', err);

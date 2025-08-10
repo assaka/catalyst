@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const AkeneoIntegration = require('../services/akeneo-integration');
 const AkeneoSyncService = require('../services/akeneo-sync-service');
 const IntegrationConfig = require('../models/IntegrationConfig');
+const AkeneoCustomMapping = require('../models/AkeneoCustomMapping');
 const auth = require('../middleware/auth');
 
 // Debug route to test if integrations router is working
@@ -1139,8 +1140,6 @@ router.post('/akeneo/save-config',
 // ======================
 // Akeneo Custom Mappings
 // ======================
-
-const AkeneoCustomMapping = require('../models/AkeneoCustomMapping');
 
 /**
  * Get custom mappings for a store
