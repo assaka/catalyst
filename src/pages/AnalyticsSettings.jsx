@@ -494,14 +494,10 @@ export default function AnalyticsSettings() {
             </div>
 
             <Tabs defaultValue="basic" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="basic" className="flex items-center gap-2">
                         <BarChart3 className="w-4 h-4" />
-                        Basic Setup
-                    </TabsTrigger>
-                    <TabsTrigger value="advanced" className="flex items-center gap-2">
-                        <Code className="w-4 h-4" />
-                        Advanced GTM
+                        GTM
                     </TabsTrigger>
                     <TabsTrigger value="datalayer" className="flex items-center gap-2">
                         <Activity className="w-4 h-4" />
@@ -525,203 +521,151 @@ export default function AnalyticsSettings() {
                             <CardDescription>Connect Google services to your store.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                        <Label htmlFor="enable_gtm">Enable Google Tag Manager</Label>
-                    </div>
-                    <Switch id="enable_gtm" checked={!!store.settings.analytics_settings.enable_google_tag_manager} onCheckedChange={(c) => handleAnalyticsChange('enable_google_tag_manager', c)} />
-                </div>
-
-                {store.settings.analytics_settings.enable_google_tag_manager && (
-                    <div className="pl-6 border-l-2 border-blue-200 space-y-4">
-                        <div>
-                            <Label className="text-base font-medium">GTM Implementation Type</Label>
-                            <RadioGroup
-                                value={store.settings.analytics_settings.gtm_script_type || 'default'}
-                                onValueChange={(value) => handleAnalyticsChange('gtm_script_type', value)}
-                                className="mt-2"
-                            >
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="default" id="gtm_default" />
-                                    <Label htmlFor="gtm_default" className="cursor-pointer">
-                                        Default Google Tag Manager
-                                    </Label>
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <Label htmlFor="enable_gtm">Enable Google Tag Manager</Label>
                                 </div>
-                                <p className="text-sm text-gray-500 ml-6">Standard GTM implementation using Google's servers</p>
-
-                                <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="custom" id="gtm_custom" />
-                                    <Label htmlFor="gtm_custom" className="cursor-pointer">
-                                        Custom GTM Script (Server-Side Tagging)
-                                    </Label>
-                                </div>
-                                <p className="text-sm text-gray-500 ml-6">Custom implementation for first-party data collection and server-side tagging</p>
-                            </RadioGroup>
-                        </div>
-
-                        {store.settings.analytics_settings.gtm_script_type === 'default' ? (
-                            <div>
-                                <Label htmlFor="gtm_id">Google Tag Manager ID</Label>
-                                <Input
-                                    id="gtm_id"
-                                    value={store.settings.analytics_settings.gtm_id || ''}
-                                    onChange={(e) => handleAnalyticsChange('gtm_id', e.target.value)}
-                                    placeholder="GTM-XXXXXX"
-                                />
-                                <p className="text-sm text-gray-500 mt-1">Your Google Tag Manager container ID</p>
-                                
-                                <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
-                                    <p className="font-medium text-blue-900 mb-2">📍 How GTM is implemented:</p>
-                                    <ul className="space-y-1 text-blue-800">
-                                        <li>• <strong>Head section:</strong> The main GTM JavaScript code is automatically added to <code className="px-1 py-0.5 bg-blue-100 rounded">&lt;head&gt;</code></li>
-                                        <li>• <strong>Body section:</strong> A <code className="px-1 py-0.5 bg-blue-100 rounded">&lt;noscript&gt;</code> fallback is automatically added after <code className="px-1 py-0.5 bg-blue-100 rounded">&lt;body&gt;</code> opening tag</li>
-                                        <li>• <strong>No manual placement needed:</strong> Just enter your GTM ID and everything is handled automatically</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        ) : (
-                            <div>
-                                <div className="mb-4">
-                                    <Label htmlFor="gtm_id_custom">Google Tag Manager ID (for noscript generation)</Label>
-                                    <Input
-                                        id="gtm_id_custom"
-                                        value={store.settings.analytics_settings.gtm_id || ''}
-                                        onChange={(e) => handleAnalyticsChange('gtm_id', e.target.value)}
-                                        placeholder="GTM-XXXXXX"
-                                    />
-                                    <p className="text-sm text-gray-500 mt-1">Enter your GTM ID to generate the correct noscript tag below</p>
-                                </div>
-                                
-                                <Label htmlFor="custom_gtm_script">Custom GTM Script (Head Section Only)</Label>
-                                <Textarea
-                                    id="custom_gtm_script"
-                                    value={store.settings.analytics_settings.custom_gtm_script || ''}
-                                    onChange={(e) => handleAnalyticsChange('custom_gtm_script', e.target.value)}
-                                    placeholder="<!-- Google Tag Manager -->\n<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':\nnew Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],\nj=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=\n'https://your-server.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);\n})(window,document,'script','dataLayer','GTM-XXXXXX');</script>\n<!-- End Google Tag Manager -->"
-                                    rows={8}
-                                    className="font-mono text-sm"
-                                />
-                                <p className="text-sm text-gray-500 mt-1">
-                                    Complete GTM script for server-side tagging. Replace the GTM endpoint with your server-side tagging URL for first-party data collection.
-                                </p>
-                                
-                                <div className="mt-3 p-3 bg-green-50 rounded-lg text-sm">
-                                    <p className="font-medium text-green-900 mb-2">✅ Custom GTM Implementation:</p>
-                                    <ul className="space-y-1 text-green-800">
-                                        <li>• <strong>Head script:</strong> Your custom script above will be placed in <code className="px-1 py-0.5 bg-green-100 rounded">&lt;head&gt;</code></li>
-                                        <li>• <strong>Noscript tags:</strong> Automatically added to <code className="px-1 py-0.5 bg-green-100 rounded">&lt;body&gt;</code> when GTM ID is provided</li>
-                                        <li>• <strong>No manual placement needed:</strong> Both head and body implementations are handled automatically</li>
-                                    </ul>
-                                </div>
-                                
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                <div>
-                    <Label htmlFor="google_ads_id">Google Ads ID</Label>
-                    <Input id="google_ads_id" value={store.settings.analytics_settings.google_ads_id} onChange={(e) => handleAnalyticsChange('google_ads_id', e.target.value)} placeholder="AW-XXXXXXXXX" />
-                    <p className="text-sm text-gray-500 mt-1">For conversion tracking and remarketing.</p>
-                    
-                    {store.settings.analytics_settings.google_ads_id && (
-                        <div className="mt-3 p-3 bg-green-50 rounded-lg text-sm">
-                            <p className="font-medium text-green-900 mb-2">✅ Google Ads Implementation:</p>
-                            <ul className="space-y-1 text-green-800">
-                                <li>• <strong>Head section:</strong> Both the gtag.js library and configuration scripts are added to <code className="px-1 py-0.5 bg-green-100 rounded">&lt;head&gt;</code></li>
-                                <li>• <strong>Automatic setup:</strong> No manual placement needed - just enter your Google Ads ID</li>
-                                <li>• <strong>Works with GTM:</strong> Can be used alongside Google Tag Manager without conflicts</li>
-                            </ul>
-                        </div>
-                    )}
-                </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                {/* Advanced GTM Configuration */}
-                <TabsContent value="advanced" className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Settings className="w-5 h-5" />
-                                Advanced Google Tag Manager Configuration
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center space-x-2">
-                                <Switch
-                                    id="gtm-enabled-advanced"
-                                    checked={gtmSettings.enabled}
-                                    onCheckedChange={(enabled) => setGtmSettings(prev => ({ ...prev, enabled }))}
-                                />
-                                <Label htmlFor="gtm-enabled-advanced">Enable Advanced GTM Features</Label>
+                                <Switch id="enable_gtm" checked={!!store.settings.analytics_settings.enable_google_tag_manager} onCheckedChange={(c) => handleAnalyticsChange('enable_google_tag_manager', c)} />
                             </div>
 
-                            <div>
-                                <Label htmlFor="container-id-advanced">GTM Container ID</Label>
-                                <Input
-                                    id="container-id-advanced"
-                                    placeholder="GTM-XXXXXXX"
-                                    value={gtmSettings.container_id}
-                                    onChange={(e) => setGtmSettings(prev => ({ ...prev, container_id: e.target.value }))}
-                                />
-                                <p className="text-sm text-gray-500 mt-1">
-                                    Find your Container ID in Google Tag Manager dashboard
-                                </p>
-                            </div>
+                            {store.settings.analytics_settings.enable_google_tag_manager && (
+                                <div className="pl-6 border-l-2 border-blue-200 space-y-4">
+                                    <div>
+                                        <Label className="text-base font-medium">GTM Implementation Type</Label>
+                                        <RadioGroup
+                                            value={store.settings.analytics_settings.gtm_script_type || 'default'}
+                                            onValueChange={(value) => handleAnalyticsChange('gtm_script_type', value)}
+                                            className="mt-2"
+                                        >
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="default" id="gtm_default" />
+                                                <Label htmlFor="gtm_default" className="cursor-pointer">
+                                                    Default Google Tag Manager
+                                                </Label>
+                                            </div>
+                                            <p className="text-sm text-gray-500 ml-6">Standard GTM implementation using Google's servers</p>
 
-                            <div className="space-y-3">
-                                <div className="flex items-center space-x-2">
-                                    <Switch
-                                        id="auto-page-views"
-                                        checked={gtmSettings.auto_track_page_views}
-                                        onCheckedChange={(auto_track_page_views) => setGtmSettings(prev => ({ ...prev, auto_track_page_views }))}
-                                    />
-                                    <Label htmlFor="auto-page-views">Auto-track Page Views</Label>
-                                </div>
+                                            <div className="flex items-center space-x-2">
+                                                <RadioGroupItem value="custom" id="gtm_custom" />
+                                                <Label htmlFor="gtm_custom" className="cursor-pointer">
+                                                    Custom GTM Script (Server-Side Tagging)
+                                                </Label>
+                                            </div>
+                                            <p className="text-sm text-gray-500 ml-6">Custom implementation for first-party data collection and server-side tagging</p>
+                                        </RadioGroup>
+                                    </div>
 
-                                <div className="flex items-center space-x-2">
-                                    <Switch
-                                        id="auto-ecommerce"
-                                        checked={gtmSettings.auto_track_ecommerce}
-                                        onCheckedChange={(auto_track_ecommerce) => setGtmSettings(prev => ({ ...prev, auto_track_ecommerce }))}
-                                    />
-                                    <Label htmlFor="auto-ecommerce">Auto-track E-commerce Events</Label>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-2">
-                                <Button variant="outline" onClick={testDataLayerPush}>
-                                    Test DataLayer
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Custom Events */}
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Custom Events</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="space-y-3">
-                                {gtmSettings.custom_events.map((event, index) => (
-                                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                                    {store.settings.analytics_settings.gtm_script_type === 'default' ? (
                                         <div>
-                                            <p className="font-medium">{event.name}</p>
-                                            <p className="text-sm text-gray-600">{event.description || 'No description'}</p>
+                                            <Label htmlFor="gtm_id">Google Tag Manager ID</Label>
+                                            <Input
+                                                id="gtm_id"
+                                                value={store.settings.analytics_settings.gtm_id || ''}
+                                                onChange={(e) => handleAnalyticsChange('gtm_id', e.target.value)}
+                                                placeholder="GTM-XXXXXX"
+                                            />
+                                            <p className="text-sm text-gray-500 mt-1">Your Google Tag Manager container ID</p>
+
+                                            <div className="mt-3 p-3 bg-blue-50 rounded-lg text-sm">
+                                                <p className="font-medium text-blue-900 mb-2">📍 How GTM is implemented:</p>
+                                                <ul className="space-y-1 text-blue-800">
+                                                    <li>• <strong>Head section:</strong> The main GTM JavaScript code is automatically added to <code className="px-1 py-0.5 bg-blue-100 rounded">&lt;head&gt;</code></li>
+                                                    <li>• <strong>Body section:</strong> A <code className="px-1 py-0.5 bg-blue-100 rounded">&lt;noscript&gt;</code> fallback is automatically added after <code className="px-1 py-0.5 bg-blue-100 rounded">&lt;body&gt;</code> opening tag</li>
+                                                    <li>• <strong>No manual placement needed:</strong> Just enter your GTM ID and everything is handled automatically</li>
+                                                </ul>
+                                            </div>
                                         </div>
-                                        <Button variant="outline" size="sm" onClick={() => removeCustomEvent(index)}>
-                                            Remove
+                                    ) : (
+                                        <div>
+                                            <div className="mb-4">
+                                                <Label htmlFor="gtm_id_custom">Google Tag Manager ID (for noscript generation)</Label>
+                                                <Input
+                                                    id="gtm_id_custom"
+                                                    value={store.settings.analytics_settings.gtm_id || ''}
+                                                    onChange={(e) => handleAnalyticsChange('gtm_id', e.target.value)}
+                                                    placeholder="GTM-XXXXXX"
+                                                />
+                                                <p className="text-sm text-gray-500 mt-1">Enter your GTM ID to generate the correct noscript tag below</p>
+                                            </div>
+
+                                            <Label htmlFor="custom_gtm_script">Custom GTM Script (Head Section Only)</Label>
+                                            <Textarea
+                                                id="custom_gtm_script"
+                                                value={store.settings.analytics_settings.custom_gtm_script || ''}
+                                                onChange={(e) => handleAnalyticsChange('custom_gtm_script', e.target.value)}
+                                                placeholder="<!-- Google Tag Manager -->\n<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':\nnew Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],\nj=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=\n'https://your-server.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);\n})(window,document,'script','dataLayer','GTM-XXXXXX');</script>\n<!-- End Google Tag Manager -->"
+                                                rows={8}
+                                                className="font-mono text-sm"
+                                            />
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                Complete GTM script for server-side tagging. Replace the GTM endpoint with your server-side tagging URL for first-party data collection.
+                                            </p>
+
+                                            <div className="mt-3 p-3 bg-green-50 rounded-lg text-sm">
+                                                <p className="font-medium text-green-900 mb-2">✅ Custom GTM Implementation:</p>
+                                                <ul className="space-y-1 text-green-800">
+                                                    <li>• <strong>Head script:</strong> Your custom script above will be placed in <code className="px-1 py-0.5 bg-green-100 rounded">&lt;head&gt;</code></li>
+                                                    <li>• <strong>Noscript tags:</strong> Automatically added to <code className="px-1 py-0.5 bg-green-100 rounded">&lt;body&gt;</code> when GTM ID is provided</li>
+                                                    <li>• <strong>No manual placement needed:</strong> Both head and body implementations are handled automatically</li>
+                                                </ul>
+                                            </div>
+
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div>
+                                <Label htmlFor="google_ads_id">Google Ads ID</Label>
+                                <Input id="google_ads_id" value={store.settings.analytics_settings.google_ads_id} onChange={(e) => handleAnalyticsChange('google_ads_id', e.target.value)} placeholder="AW-XXXXXXXXX" />
+                                <p className="text-sm text-gray-500 mt-1">For conversion tracking and remarketing.</p>
+
+                                {store.settings.analytics_settings.google_ads_id && (
+                                    <div className="mt-3 p-3 bg-green-50 rounded-lg text-sm">
+                                        <p className="font-medium text-green-900 mb-2">✅ Google Ads Implementation:</p>
+                                        <ul className="space-y-1 text-green-800">
+                                            <li>• <strong>Head section:</strong> Both the gtag.js library and configuration scripts are added to <code className="px-1 py-0.5 bg-green-100 rounded">&lt;head&gt;</code></li>
+                                            <li>• <strong>Automatic setup:</strong> No manual placement needed - just enter your Google Ads ID</li>
+                                            <li>• <strong>Works with GTM:</strong> Can be used alongside Google Tag Manager without conflicts</li>
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Auto-tracking options moved from Advanced GTM */}
+                            {store.settings.analytics_settings.enable_google_tag_manager && (
+                                <div className="space-y-4">
+                                    <hr className="my-6" />
+                                    <div>
+                                        <h3 className="text-lg font-medium text-gray-900 mb-4">Tracking Options</h3>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center space-x-2">
+                                                <Switch
+                                                    id="auto-page-views"
+                                                    checked={gtmSettings.auto_track_page_views}
+                                                    onCheckedChange={(auto_track_page_views) => setGtmSettings(prev => ({ ...prev, auto_track_page_views }))}
+                                                />
+                                                <Label htmlFor="auto-page-views">Auto-track Page Views</Label>
+                                            </div>
+
+                                            <div className="flex items-center space-x-2">
+                                                <Switch
+                                                    id="auto-ecommerce"
+                                                    checked={gtmSettings.auto_track_ecommerce}
+                                                    onCheckedChange={(auto_track_ecommerce) => setGtmSettings(prev => ({ ...prev, auto_track_ecommerce }))}
+                                                />
+                                                <Label htmlFor="auto-ecommerce">Auto-track E-commerce Events</Label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end">
+                                        <Button variant="outline" onClick={testDataLayerPush}>
+                                            Test Datalayer
                                         </Button>
                                     </div>
-                                ))}
-                                
-                                <Button variant="outline" onClick={addCustomEvent} className="w-full">
-                                    Add Custom Event
-                                </Button>
-                            </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
