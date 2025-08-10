@@ -415,8 +415,9 @@ class AkeneoMapping {
         break;
       
       case 'low_stock_threshold':
-        const numericThreshold = parseFloat(akeneoValue);
-        if (!isNaN(numericThreshold)) {
+        // Handle complex threshold objects from Akeneo (similar to price objects)
+        const numericThreshold = this.extractPriceFromValue(akeneoValue);
+        if (numericThreshold !== null && !isNaN(numericThreshold)) {
           catalystProduct.low_stock_threshold = Math.max(0, Math.floor(numericThreshold));
         }
         break;
@@ -609,6 +610,12 @@ class AkeneoMapping {
         const numericValue = parseFloat(firstPrice.amount);
         return isNaN(numericValue) ? null : numericValue;
       }
+    }
+    
+    // Handle single Akeneo price object: { amount: "29.99", currency: "USD" }
+    if (typeof value === 'object' && value !== null && !Array.isArray(value) && value.amount !== undefined) {
+      const numericValue = parseFloat(value.amount);
+      return isNaN(numericValue) ? null : numericValue;
     }
     
     // Handle simple numeric values (string or number)

@@ -269,6 +269,11 @@ class ApiClient {
         return result;
       }
       
+      // Special handling for custom mappings endpoint - don't transform, return full response
+      if (endpoint.includes('/custom-mappings')) {
+        return result;
+      }
+      
       if (isListEndpoint && result && typeof result === 'object' && result.success && result.data) {
         // If data is already an array, return it directly (for list responses)
         if (Array.isArray(result.data)) {
