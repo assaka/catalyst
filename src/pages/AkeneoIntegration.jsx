@@ -858,7 +858,11 @@ const AkeneoIntegration = () => {
         errors.schedule_time = 'Schedule Time is required for recurring schedules';
       } else {
         // Validate time format based on schedule type
-        if (scheduleForm.schedule_type === 'daily') {
+        if (scheduleForm.schedule_type === 'hourly') {
+          if (!/^:[0-5][0-9]$/.test(scheduleForm.schedule_time)) {
+            errors.schedule_time = 'Time must be in :MM format (e.g., :00, :30)';
+          }
+        } else if (scheduleForm.schedule_type === 'daily') {
           if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(scheduleForm.schedule_time)) {
             errors.schedule_time = 'Time must be in HH:MM format (e.g., 09:00)';
           }
@@ -2613,6 +2617,7 @@ const AkeneoIntegration = () => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="once">Once</SelectItem>
+                              <SelectItem value="hourly">Hourly</SelectItem>
                               <SelectItem value="daily">Daily</SelectItem>
                               <SelectItem value="weekly">Weekly</SelectItem>
                               <SelectItem value="monthly">Monthly</SelectItem>
@@ -2652,14 +2657,16 @@ const AkeneoIntegration = () => {
                           <Label className="text-sm font-medium">
                             Time <span className="text-red-500">*</span>
                             <span className="font-normal text-gray-600 ml-1">
+                              {scheduleForm.schedule_type === 'hourly' && '(e.g., :00, :30)'}
+                              {scheduleForm.schedule_type === 'daily' && '(e.g., 09:00)'}
                               {scheduleForm.schedule_type === 'weekly' && '(e.g., MON-09:00)'}
                               {scheduleForm.schedule_type === 'monthly' && '(e.g., 1-09:00 for 1st of month)'}
-                              {scheduleForm.schedule_type === 'daily' && '(e.g., 09:00)'}
                             </span>
                           </Label>
                           <Input
                             required
                             placeholder={
+                              scheduleForm.schedule_type === 'hourly' ? ':MM (e.g., :00, :30)' :
                               scheduleForm.schedule_type === 'daily' ? 'HH:MM (e.g., 09:00)' :
                               scheduleForm.schedule_type === 'weekly' ? 'DAY-HH:MM (e.g., MON-09:00)' :
                               'DD-HH:MM (e.g., 1-09:00)'

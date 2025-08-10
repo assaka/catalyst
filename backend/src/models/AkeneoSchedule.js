@@ -20,12 +20,12 @@ const AkeneoSchedule = sequelize.define('AkeneoSchedule', {
     allowNull: false
   },
   schedule_type: {
-    type: DataTypes.ENUM('once', 'daily', 'weekly', 'monthly'),
+    type: DataTypes.ENUM('once', 'hourly', 'daily', 'weekly', 'monthly'),
     allowNull: false,
     defaultValue: 'once'
   },
   schedule_time: {
-    type: DataTypes.STRING, // Format: "HH:MM" for daily, "MON-09:00" for weekly, "1-09:00" for monthly
+    type: DataTypes.STRING, // Format: ":MM" for hourly, "HH:MM" for daily, "MON-09:00" for weekly, "1-09:00" for monthly
     allowNull: true
   },
   schedule_date: {
