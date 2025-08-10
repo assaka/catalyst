@@ -20,30 +20,47 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Wrapper middleware to extract storeId and add it to req
 const storeAuth = (req, res, next) => {
+  console.log('🔍 [MIDDLEWARE] storeAuth called for:', req.method, req.originalUrl);
+  console.log('🔍 [MIDDLEWARE] Headers x-store-id:', req.headers['x-store-id']);
+  console.log('🔍 [MIDDLEWARE] User:', req.user ? `${req.user.id} (${req.user.email})` : 'undefined');
+  
   // Extract store_id from multiple sources for integration routes
   const storeId = req.headers['x-store-id'] || 
                   req.body.store_id || 
                   req.query.store_id ||
                   req.params.store_id;
   
+  console.log('🔍 [MIDDLEWARE] Extracted storeId:', storeId);
+  
   if (storeId) {
     req.params.store_id = storeId;
   }
   
   if (!storeId) {
+    console.log('❌ [MIDDLEWARE] No storeId found - returning 400');
     return res.status(400).json({
       success: false,
       message: 'Store ID is required. Please provide store_id in headers (x-store-id), body, or query parameters.'
     });
   }
   
+  console.log('🔍 [MIDDLEWARE] Calling checkStoreOwnership...');
   checkStoreOwnership(req, res, (err) => {
-    if (err) return next(err);
+    if (err) {
+      console.log('❌ [MIDDLEWARE] checkStoreOwnership error:', err);
+      return next(err);
+    }
+    
+    console.log('🔍 [MIDDLEWARE] checkStoreOwnership passed');
+    console.log('🔍 [MIDDLEWARE] req.store:', req.store ? `${req.store.id} (${req.store.name})` : 'undefined');
     
     // Add storeId to req for backward compatibility
     req.storeId = req.store?.id || storeId;
     
+    console.log('🔍 [MIDDLEWARE] Final req.storeId:', req.storeId);
+    
     if (!req.storeId) {
+      console.log('❌ [MIDDLEWARE] Unable to determine storeId - returning 400');
       return res.status(400).json({
         success: false,
         message: 'Unable to determine store ID from request'
