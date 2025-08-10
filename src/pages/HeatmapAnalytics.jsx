@@ -26,7 +26,8 @@ import {
   Settings,
   RefreshCw,
   Info,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle
 } from 'lucide-react';
 
 import HeatmapVisualization from '@/components/heatmap/HeatmapVisualization';
@@ -136,10 +137,38 @@ export default function HeatmapAnalytics() {
 
   if (loading && !analytics) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <RefreshCw className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
-          <p className="text-gray-600">Loading heatmap analytics...</p>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Alpha Disclaimer Banner */}
+          <Card className="border-amber-200 bg-amber-50 mb-6">
+            <CardContent className="pt-4">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-amber-800 mb-1">Alpha Preliminary Version</h3>
+                  <p className="text-sm text-amber-700 mb-2">
+                    This heatmap analytics dashboard is currently in alpha development and may contain incomplete features, 
+                    inaccurate data, or experimental functionality.
+                  </p>
+                  <div className="flex items-center space-x-4 text-xs text-amber-600">
+                    <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-100">
+                      <Activity className="w-3 h-3 mr-1" />
+                      Alpha Version
+                    </Badge>
+                    <span>• Use for testing and development only</span>
+                    <span>• Data may be simulated or incomplete</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex items-center justify-center min-h-96">
+            <div className="text-center">
+              <RefreshCw className="w-12 h-12 animate-spin mx-auto mb-4 text-blue-600" />
+              <p className="text-gray-600">Loading heatmap analytics...</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -193,6 +222,30 @@ export default function HeatmapAnalytics() {
               </Button>
             </div>
           </div>
+
+          {/* Alpha Disclaimer Banner */}
+          <Card className="border-amber-200 bg-amber-50 mb-6">
+            <CardContent className="pt-4">
+              <div className="flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold text-amber-800 mb-1">Alpha Preliminary Version</h3>
+                  <p className="text-sm text-amber-700 mb-2">
+                    This heatmap analytics dashboard is currently in alpha development and may contain incomplete features, 
+                    inaccurate data, or experimental functionality.
+                  </p>
+                  <div className="flex items-center space-x-4 text-xs text-amber-600">
+                    <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-100">
+                      <Activity className="w-3 h-3 mr-1" />
+                      Alpha Version
+                    </Badge>
+                    <span>• Use for testing and development only</span>
+                    <span>• Data may be simulated or incomplete</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {error && (
             <Alert className="mb-6">
