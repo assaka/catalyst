@@ -177,7 +177,7 @@ export default function HeatmapAnalytics() {
                   <div>
                     <Label className="text-base font-semibold">Enable Heatmap Analytics</Label>
                     <p className="text-sm text-gray-600 mt-1">
-                      Free during beta. This feature will charge 1 credit per day for continuous tracking in the future.
+                      Currently free. Future billing (1 credit per day) will only begin after advance notification.
                     </p>
                   </div>
                 </div>
@@ -282,7 +282,7 @@ export default function HeatmapAnalytics() {
                   <div>
                     <Label className="text-base font-semibold">Enable Heatmap Analytics</Label>
                     <p className="text-sm text-gray-600 mt-1">
-                      Free during beta. This feature will charge 1 credit per day for continuous tracking in the future.
+                      Currently free. Future billing (1 credit per day) will only begin after advance notification.
                     </p>
                   </div>
                 </div>
@@ -551,7 +551,7 @@ export default function HeatmapAnalytics() {
                     Enable heatmap analytics above to start tracking customer behavior
                   </p>
                   <p className="text-sm text-gray-500">
-                    Free during beta. This feature will charge 1 credit per day for continuous tracking in the future.
+                    Currently free. Future billing (1 credit per day) will only begin after advance notification.
                   </p>
                 </div>
               </CardContent>

@@ -421,6 +421,7 @@ export default function Layout({ children, currentPageName }) {
       name: "Advanced",
       items: [
         { name: "System Monitoring", path: "monitoring-dashboard", icon: Activity },
+        { name: "Scheduled", path: "scheduled-jobs", icon: Calendar },
       ]
     }
   ];
