@@ -126,6 +126,7 @@ export default function Layout({ children, currentPageName }) {
     "SEO": false, // Added new group for SEO
     "Plugins": false, // Added new group for Plugins
     "Store": false,
+    "Advanced": false, // Added new group for Advanced features
   });
 
   // Add this block to handle the RobotsTxt page
@@ -412,6 +413,12 @@ export default function Layout({ children, currentPageName }) {
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "STORES", icon: Building2 },
         ] : []),
+      ]
+    },
+    {
+      name: "Advanced",
+      items: [
+        { name: "System Monitoring", path: "monitoring-dashboard", icon: Activity },
       ]
     }
   ];
