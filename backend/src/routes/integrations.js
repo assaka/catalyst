@@ -561,19 +561,39 @@ router.post('/akeneo/import-products',
       batchSize = 50,
       filters = {},
       settings = {},
-      customMappings = {}
+      customMappings: requestCustomMappings
     } = body;
+    
+    // Load custom mappings from database if not provided in request
+    let customMappings = requestCustomMappings || {};
+    
+    // If no custom mappings provided in request, load from database
+    if (!requestCustomMappings || Object.keys(requestCustomMappings).length === 0) {
+      try {
+        console.log('🔍 Loading custom mappings from database...');
+        const dbMappings = await AkeneoCustomMapping.getMappings(storeId);
+        if (dbMappings && Object.keys(dbMappings).length > 0) {
+          customMappings = dbMappings;
+          console.log('✅ Loaded custom mappings from database:', customMappings);
+        } else {
+          console.log('ℹ️ No custom mappings found in database');
+        }
+      } catch (mappingError) {
+        console.warn('⚠️ Failed to load custom mappings from database:', mappingError.message);
+        // Continue with import using empty mappings
+      }
+    }
     
     console.log(`📦 Starting product import with dryRun: ${dryRun}, locale: ${locale}`);
     console.log(`🎯 Product filters:`, filters);
     console.log(`⚙️ Product settings:`, settings);
     console.log(`🗺️ Custom mappings:`, customMappings);
     
-    // Save custom mappings to database if provided and not empty
-    if (customMappings && Object.keys(customMappings).length > 0) {
+    // Save custom mappings to database if provided in request and not empty
+    if (requestCustomMappings && Object.keys(requestCustomMappings).length > 0) {
       try {
         console.log('💾 Saving custom mappings to database during import...');
-        await AkeneoCustomMapping.saveAllMappings(storeId, customMappings, req.user?.id);
+        await AkeneoCustomMapping.saveAllMappings(storeId, requestCustomMappings, req.user?.id);
         console.log('✅ Custom mappings saved successfully');
       } catch (mappingError) {
         console.warn('⚠️ Failed to save custom mappings during import:', mappingError.message);
