@@ -14,7 +14,10 @@ import {
   Check,
   Upload,
   Grid,
-  List
+  List,
+  AlertCircle,
+  Settings,
+  ExternalLink
 } from 'lucide-react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { toast } from 'sonner';
@@ -29,6 +32,8 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
   const [viewMode, setViewMode] = useState('grid');
   const [uploading, setUploading] = useState(false);
   const [showUploadOnOpen, setShowUploadOnOpen] = useState(false);
+  const [storageConnected, setStorageConnected] = useState(true);
+  const [storageError, setStorageError] = useState(null);
 
   // File type icons
   const getFileIcon = (mimeType) => {
@@ -96,6 +101,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
   useEffect(() => {
     if (isOpen && selectedStore?.id) {
       loadFiles();
+      checkStorageConnection();
       
       // Check if we should show upload interface by default
       const shouldShowUpload = sessionStorage.getItem('mediaBrowserShowUpload');
@@ -114,8 +120,46 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
     }
   }, [isOpen, selectedStore?.id]);
 
+  // Check storage connection status
+  const checkStorageConnection = async () => {
+    try {
+      if (!selectedStore?.id) return;
+      
+      const response = await apiClient.get('/storage/providers', {
+        'x-store-id': selectedStore.id
+      });
+      
+      if (response.success && response.data) {
+        const currentProvider = response.data.current;
+        const isAvailable = response.data.providers[currentProvider?.provider]?.available;
+        
+        if (isAvailable) {
+          setStorageConnected(true);
+          setStorageError(null);
+        } else {
+          setStorageConnected(false);
+          setStorageError(`${currentProvider?.name || 'Storage provider'} is not properly configured`);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking storage connection:', error);
+      setStorageConnected(false);
+      setStorageError('Unable to check storage connection status');
+    }
+  };
+
   // Handle file upload
   const handleFileUpload = async (filesArray) => {
+    if (!storageConnected || storageError) {
+      toast.error("Media storage is not connected. Please configure storage in Media Storage settings first.", {
+        action: {
+          label: "Configure Storage",
+          onClick: () => window.open('/admin/media-storage', '_blank')
+        }
+      });
+      return;
+    }
+    
     if (filesArray.length === 0) return;
 
     setUploading(true);
@@ -202,6 +246,33 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
           </DialogTitle>
         </DialogHeader>
 
+        {/* Storage Connection Warning */}
+        {(!storageConnected || storageError) && (
+          <div className="mx-6 mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-amber-800 mb-1">
+                  Media Storage Not Connected
+                </h3>
+                <p className="text-sm text-amber-700 mb-3">
+                  {storageError || "Media storage is not properly configured. Files cannot be uploaded until storage is connected."}
+                </p>
+                <a 
+                  href="/admin/media-storage" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-md hover:bg-amber-700 transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                  Configure Storage
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Toolbar */}
         <div className="flex items-center justify-between gap-4 py-4 border-b">
           <div className="relative flex-1 max-w-md">
@@ -222,10 +293,10 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
               onChange={(e) => handleFileUpload(Array.from(e.target.files))}
               className="hidden"
               id="media-upload"
-              disabled={uploading}
+              disabled={uploading || !storageConnected || storageError}
             />
             <label htmlFor="media-upload">
-              <Button variant="outline" asChild disabled={uploading}>
+              <Button variant="outline" asChild disabled={uploading || !storageConnected || storageError}>
                 <span className="flex items-center gap-2 cursor-pointer">
                   <Upload className="w-4 h-4" />
                   {uploading ? 'Uploading...' : 'Upload'}

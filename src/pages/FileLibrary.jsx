@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X } from 'lucide-react';
+import { Upload, File, Image, FileText, Film, Music, Archive, Copy, Check, Trash2, Search, Grid, List, Download, Eye, X, AlertCircle, ExternalLink, Settings } from 'lucide-react';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';
 import { toast } from 'sonner';
 import apiClient from '../api/client';
@@ -14,6 +14,8 @@ const FileLibrary = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [copiedUrl, setCopiedUrl] = useState(null);
   const [storageProvider, setStorageProvider] = useState(null);
+  const [storageConnected, setStorageConnected] = useState(true);
+  const [storageError, setStorageError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [previewFile, setPreviewFile] = useState(null);
 
@@ -39,32 +41,37 @@ const FileLibrary = () => {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   };
 
-  // Check for default storage provider
+  // Check for storage provider and connection status
   const checkStorageProvider = async () => {
     try {
-      // Try media storage provider first
-      const response = await apiClient.get(`/stores/${selectedStore?.id}/default-mediastorage-provider`, {
+      // Check storage providers and their availability
+      const response = await apiClient.get('/storage/providers', {
         'x-store-id': selectedStore?.id
       });
       
-      if (response.success && response.provider) {
-        setStorageProvider(response.provider);
-        return response.provider;
+      if (response.success && response.data) {
+        const currentProvider = response.data.current;
+        const providerName = currentProvider?.name || 'Unknown Provider';
+        
+        setStorageProvider(providerName);
+        
+        // Check if the current provider is available
+        const isAvailable = response.data.providers[currentProvider?.provider]?.available;
+        
+        if (isAvailable) {
+          setStorageConnected(true);
+          setStorageError(null);
+        } else {
+          setStorageConnected(false);
+          setStorageError(`${providerName} is not properly configured or connected`);
+        }
+        
+        return currentProvider?.provider;
       }
     } catch (error) {
-      // Fall back to database provider for backward compatibility
-      try {
-        const fallbackResponse = await apiClient.get(`/stores/${selectedStore?.id}/default-database-provider`, {
-          'x-store-id': selectedStore?.id
-        });
-        
-        if (fallbackResponse.success && fallbackResponse.provider) {
-          setStorageProvider(fallbackResponse.provider);
-          return fallbackResponse.provider;
-        }
-      } catch (fallbackError) {
-        console.error('Error checking storage provider:', fallbackError);
-      }
+      console.error('Error checking storage provider:', error);
+      setStorageConnected(false);
+      setStorageError('Unable to check storage connection status');
     }
     return null;
   };
@@ -142,6 +149,16 @@ const FileLibrary = () => {
 
   // Handle file upload using provider-agnostic storage API
   const handleFileUpload = async (filesArray) => {
+    if (!storageConnected || storageError) {
+      toast.error("Media storage is not connected. Please configure storage in Media Storage settings first.", {
+        action: {
+          label: "Go to Settings",
+          onClick: () => window.open('/admin/media-storage', '_blank')
+        }
+      });
+      return;
+    }
+
     if (!storageProvider) {
       toast.error("Please configure a storage provider in Media Storage settings first");
       return;
@@ -217,6 +234,12 @@ const FileLibrary = () => {
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Don't allow drag interaction if storage is not connected
+    if (!storageConnected || storageError) {
+      return;
+    }
+    
     if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
     } else if (e.type === "dragleave") {
@@ -228,6 +251,12 @@ const FileLibrary = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
+    
+    // Don't allow drop if storage is not connected
+    if (!storageConnected || storageError) {
+      toast.error("Media storage is not connected. Please configure storage first.");
+      return;
+    }
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileUpload(Array.from(e.dataTransfer.files));
@@ -310,9 +339,49 @@ const FileLibrary = () => {
         <p className="text-gray-600">
           Upload and manage files for your store. Copy URLs to use in CMS blocks, pages, or anywhere else.
         </p>
-        {storageProvider && (
-          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-            Storage Provider: {storageProvider}
+        
+        {/* Storage Status */}
+        {storageProvider && storageConnected && (
+          <div className="mt-2 inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+            ✓ Connected to {storageProvider}
+          </div>
+        )}
+        
+        {/* Storage Connection Warning */}
+        {(!storageConnected || storageError) && (
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-amber-800 mb-1">
+                  Media Storage Not Connected
+                </h3>
+                <p className="text-sm text-amber-700 mb-3">
+                  {storageError || "Media storage is not properly configured. Files cannot be uploaded or managed until storage is connected."}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <a 
+                    href="/admin/media-storage" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-600 text-white text-sm font-medium rounded-md hover:bg-amber-700 transition-colors"
+                  >
+                    <Settings className="w-4 h-4" />
+                    Configure Storage
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <button 
+                    onClick={() => {
+                      checkStorageProvider();
+                      loadFiles();
+                    }}
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-amber-300 text-amber-700 text-sm font-medium rounded-md hover:bg-amber-50 transition-colors"
+                  >
+                    Retry Connection
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -320,7 +389,11 @@ const FileLibrary = () => {
       {/* Upload Area */}
       <div 
         className={`mb-6 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+          !storageConnected || storageError 
+            ? 'border-gray-200 bg-gray-50 cursor-not-allowed' 
+            : dragActive 
+              ? 'border-blue-500 bg-blue-50' 
+              : 'border-gray-300 hover:border-gray-400'
         }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -340,12 +413,12 @@ const FileLibrary = () => {
           onChange={(e) => handleFileUpload(Array.from(e.target.files))}
           className="hidden"
           id="file-upload"
-          disabled={uploading || !storageProvider}
+          disabled={uploading || !storageConnected || storageError}
         />
         <label
           htmlFor="file-upload"
           className={`inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700 transition-colors ${
-            (uploading || !storageProvider) ? 'opacity-50 cursor-not-allowed' : ''
+            (uploading || !storageConnected || storageError) ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
           {uploading ? 'Uploading...' : 'Select Files'}

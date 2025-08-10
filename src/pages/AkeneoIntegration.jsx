@@ -345,6 +345,8 @@ const AkeneoIntegration = () => {
   });
   const [mappingsLoaded, setMappingsLoaded] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
+  const [storageConnected, setStorageConnected] = useState(true);
+  const [storageError, setStorageError] = useState(null);
   const [scheduleForm, setScheduleForm] = useState({
     import_type: 'attributes',
     schedule_type: 'once',
@@ -947,6 +949,7 @@ const AkeneoIntegration = () => {
       await loadConfigStatus();
       await loadLocales();
       await loadStats();
+      await checkStorageConnection();
     };
     
     loadData();
@@ -1112,6 +1115,34 @@ const AkeneoIntegration = () => {
       }
     } catch (error) {
       console.error('❌ Failed to load connection status:', error);
+    }
+  };
+
+  const checkStorageConnection = async () => {
+    try {
+      const storeId = selectedStore?.id;
+      if (!storeId) return;
+      
+      const response = await apiClient.get('/storage/providers', {
+        'x-store-id': storeId
+      });
+      
+      if (response.success && response.data) {
+        const currentProvider = response.data.current;
+        const isAvailable = response.data.providers[currentProvider?.provider]?.available;
+        
+        if (isAvailable) {
+          setStorageConnected(true);
+          setStorageError(null);
+        } else {
+          setStorageConnected(false);
+          setStorageError(`${currentProvider?.name || 'Storage provider'} is not properly configured`);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking storage connection:', error);
+      setStorageConnected(false);
+      setStorageError('Unable to check storage connection status');
     }
   };
 
@@ -3393,11 +3424,46 @@ const AkeneoIntegration = () => {
                       </div>
                       <Switch
                         checked={productSettings.includeImages}
-                        onCheckedChange={(checked) => 
-                          setProductSettings(prev => ({ ...prev, includeImages: checked }))
-                        }
+                        disabled={!storageConnected || storageError}
+                        onCheckedChange={(checked) => {
+                          if (!storageConnected || storageError) {
+                            toast.error("Media storage must be connected to import images", {
+                              action: {
+                                label: "Configure Storage",
+                                onClick: () => window.open('/admin/media-storage', '_blank')
+                              }
+                            });
+                            return;
+                          }
+                          setProductSettings(prev => ({ ...prev, includeImages: checked }));
+                        }}
                       />
                     </div>
+                    
+                    {/* Storage Connection Warning for Images */}
+                    {productSettings.includeImages && (!storageConnected || storageError) && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm text-amber-800 font-medium">
+                              Media Storage Required
+                            </p>
+                            <p className="text-xs text-amber-700 mb-2">
+                              {storageError || "Media storage must be configured to import product images"}
+                            </p>
+                            <a 
+                              href="/admin/media-storage" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 hover:text-amber-900"
+                            >
+                              Configure Storage →
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between">
                       <div className="space-y-1">
@@ -3406,11 +3472,46 @@ const AkeneoIntegration = () => {
                       </div>
                       <Switch
                         checked={productSettings.includeFiles}
-                        onCheckedChange={(checked) => 
-                          setProductSettings(prev => ({ ...prev, includeFiles: checked }))
-                        }
+                        disabled={!storageConnected || storageError}
+                        onCheckedChange={(checked) => {
+                          if (!storageConnected || storageError) {
+                            toast.error("Media storage must be connected to import files", {
+                              action: {
+                                label: "Configure Storage",
+                                onClick: () => window.open('/admin/media-storage', '_blank')
+                              }
+                            });
+                            return;
+                          }
+                          setProductSettings(prev => ({ ...prev, includeFiles: checked }));
+                        }}
                       />
                     </div>
+                    
+                    {/* Storage Connection Warning for Files */}
+                    {productSettings.includeFiles && (!storageConnected || storageError) && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm text-amber-800 font-medium">
+                              Media Storage Required
+                            </p>
+                            <p className="text-xs text-amber-700 mb-2">
+                              {storageError || "Media storage must be configured to import product files"}
+                            </p>
+                            <a 
+                              href="/admin/media-storage" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-medium text-amber-800 hover:text-amber-900"
+                            >
+                              Configure Storage →
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                   </div>
 
