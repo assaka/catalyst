@@ -1071,10 +1071,42 @@ router.post('/akeneo/schedules', storeAuth, async (req, res) => {
     const storeId = req.storeId;
     const AkeneoSchedule = require('../models/AkeneoSchedule');
     
+    // Validate and convert date fields
     const scheduleData = {
       ...req.body,
       store_id: storeId
     };
+
+    // Convert schedule_date if it's provided and not empty
+    if (scheduleData.schedule_date && scheduleData.schedule_date !== '') {
+      try {
+        const date = new Date(scheduleData.schedule_date);
+        if (isNaN(date.getTime())) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid schedule date format. Please provide a valid date.'
+          });
+        }
+        scheduleData.schedule_date = date.toISOString();
+      } catch (dateError) {
+        console.error('Date conversion error:', dateError);
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid schedule date format. Please provide a valid date.'
+        });
+      }
+    } else {
+      // Set to null if empty or not provided
+      scheduleData.schedule_date = null;
+    }
+
+    // Validate schedule type specific requirements
+    if (scheduleData.schedule_type === 'once' && !scheduleData.schedule_date) {
+      return res.status(400).json({
+        success: false,
+        message: 'Schedule date is required for one-time schedules.'
+      });
+    }
 
     if (req.body.id) {
       // Update existing schedule
