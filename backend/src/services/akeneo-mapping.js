@@ -1243,9 +1243,41 @@ class AkeneoMapping {
           rawValue = allValues; // Array of values
         }
       }
-      // For all other attributes, use single value extraction
+      // For all other attributes, use appropriate extraction method based on attribute type/name
       else {
-        rawValue = this.extractProductValue(values, attributeCode, locale);
+        // Check if this is a numeric attribute that should be extracted as number
+        const numericAttributes = [
+          'price', 'sale_price', 'compare_price', 'cost_price', 'base_price', 'unit_price',
+          'special_price', 'discounted_price', 'promo_price', 'msrp', 'regular_price', 'list_price',
+          'weight', 'weight_kg', 'weight_lb', 'length', 'width', 'height', 'depth', 'diameter',
+          'stock_quantity', 'quantity', 'low_stock_threshold', 'minimum_quantity', 'maximum_quantity'
+        ];
+        
+        // Check database attribute type first
+        if (dbAttrDef?.type === 'number') {
+          rawValue = this.extractNumericValue(values, attributeCode, locale);
+        }
+        // Check Akeneo attribute type
+        else if (akeneoAttributeTypes[attributeCode] && 
+                 ['pim_catalog_number', 'pim_catalog_metric', 'pim_catalog_price_collection'].includes(akeneoAttributeTypes[attributeCode])) {
+          rawValue = this.extractNumericValue(values, attributeCode, locale);
+        }
+        // Check attribute name patterns for numeric fields
+        else if (numericAttributes.includes(attributeCode) || 
+                 attributeCode.endsWith('_price') || attributeCode.endsWith('_weight') || 
+                 attributeCode.endsWith('_quantity') || attributeCode.includes('price_') ||
+                 attributeCode.includes('weight_') || attributeCode.includes('dimension')) {
+          rawValue = this.extractNumericValue(values, attributeCode, locale);
+        }
+        // For boolean attributes
+        else if (dbAttrDef?.type === 'boolean' || 
+                 akeneoAttributeTypes[attributeCode] === 'pim_catalog_boolean') {
+          rawValue = this.extractBooleanValue(values, attributeCode, locale);
+        }
+        // Default to regular product value extraction
+        else {
+          rawValue = this.extractProductValue(values, attributeCode, locale);
+        }
       }
       
       if (rawValue !== null && rawValue !== undefined) {
