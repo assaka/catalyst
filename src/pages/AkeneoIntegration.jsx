@@ -2438,6 +2438,7 @@ const AkeneoIntegration = () => {
           <TabsTrigger value="advanced" className="flex items-center gap-2">
             <Activity className="h-4 w-4" />
             Advanced
+            <Badge variant="destructive" className="ml-1 text-xs">NEW</Badge>
           </TabsTrigger>
         </TabsList>
 
