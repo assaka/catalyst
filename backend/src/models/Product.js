@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../database/connection');
+const { sanitizeNumericFields } = require('../utils/dataValidation');
 
 const Product = sequelize.define('Product', {
   id: {
@@ -156,11 +157,19 @@ const Product = sequelize.define('Product', {
       if (!product.slug && product.name) {
         product.slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
+      
+      // Apply data validation using utility function
+      const sanitizedData = sanitizeNumericFields(product, ['price', 'compare_price', 'cost_price', 'weight']);
+      Object.assign(product, sanitizedData);
     },
     beforeUpdate: (product) => {
       if (product.changed('name') && !product.changed('slug')) {
         product.slug = product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       }
+      
+      // Apply data validation using utility function
+      const sanitizedData = sanitizeNumericFields(product, ['price', 'compare_price', 'cost_price', 'weight']);
+      Object.assign(product, sanitizedData);
     }
   }
 });

@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const { Attribute } = require('../models');
+const { sanitizeAkeneoProduct } = require('../utils/dataValidation');
 
 class AkeneoMapping {
   constructor() {
@@ -300,7 +301,9 @@ class AkeneoMapping {
       }
     }
 
-    return catalystProduct;
+    // Apply final data validation to prevent [object Object] errors
+    const sanitizedProduct = sanitizeAkeneoProduct(catalystProduct);
+    return sanitizedProduct;
   }
 
   /**
