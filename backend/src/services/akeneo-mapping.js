@@ -324,30 +324,34 @@ class AkeneoMapping {
         break;
       
       case 'price':
-        const numericPrice = parseFloat(akeneoValue);
-        if (!isNaN(numericPrice)) {
+        // Handle complex price objects from Akeneo (e.g., [{ amount: "29.99", currency: "USD" }])
+        const numericPrice = this.extractPriceFromValue(akeneoValue);
+        if (numericPrice !== null) {
           catalystProduct.price = numericPrice;
         }
         break;
       
       case 'compare_price':
       case 'msrp':
-        const numericComparePrice = parseFloat(akeneoValue);
-        if (!isNaN(numericComparePrice)) {
+        // Handle complex price objects from Akeneo (e.g., [{ amount: "29.99", currency: "USD" }])
+        const numericComparePrice = this.extractPriceFromValue(akeneoValue);
+        if (numericComparePrice !== null) {
           catalystProduct.compare_price = numericComparePrice;
         }
         break;
       
       case 'cost_price':
-        const numericCostPrice = parseFloat(akeneoValue);
-        if (!isNaN(numericCostPrice)) {
+        // Handle complex price objects from Akeneo (e.g., [{ amount: "29.99", currency: "USD" }])
+        const numericCostPrice = this.extractPriceFromValue(akeneoValue);
+        if (numericCostPrice !== null) {
           catalystProduct.cost_price = numericCostPrice;
         }
         break;
       
       case 'weight':
-        const numericWeight = parseFloat(akeneoValue);
-        if (!isNaN(numericWeight)) {
+        // Handle complex weight objects from Akeneo (similar to price objects)
+        const numericWeight = this.extractPriceFromValue(akeneoValue);
+        if (numericWeight !== null) {
           catalystProduct.weight = numericWeight;
         }
         break;
@@ -395,8 +399,9 @@ class AkeneoMapping {
         break;
       
       case 'stock_quantity':
-        const numericStock = parseFloat(akeneoValue);
-        if (!isNaN(numericStock)) {
+        // Handle complex stock quantity objects from Akeneo
+        const numericStock = this.extractPriceFromValue(akeneoValue);
+        if (numericStock !== null) {
           catalystProduct.stock_quantity = Math.max(0, Math.floor(numericStock));
         }
         break;
@@ -569,6 +574,31 @@ class AkeneoMapping {
    */
   extractNumericValue(values, attributeCode, locale = 'en_US') {
     const value = this.extractProductValue(values, attributeCode, locale);
+    if (value === null || value === undefined) return null;
+    
+    // Handle Akeneo price collection format: [{ amount: "29.99", currency: "USD" }]
+    if (Array.isArray(value) && value.length > 0) {
+      // For price collections, get the first price's amount
+      const firstPrice = value[0];
+      if (firstPrice && typeof firstPrice === 'object' && firstPrice.amount !== undefined) {
+        const numericValue = parseFloat(firstPrice.amount);
+        return isNaN(numericValue) ? null : numericValue;
+      }
+    }
+    
+    // Handle simple numeric values (string or number)
+    if (typeof value === 'string' || typeof value === 'number') {
+      const numericValue = parseFloat(value);
+      return isNaN(numericValue) ? null : numericValue;
+    }
+    
+    return null;
+  }
+
+  /**
+   * Extract price from complex Akeneo value (handles both simple values and price objects)
+   */
+  extractPriceFromValue(value) {
     if (value === null || value === undefined) return null;
     
     // Handle Akeneo price collection format: [{ amount: "29.99", currency: "USD" }]
