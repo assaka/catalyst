@@ -4,7 +4,7 @@ class HeatmapTracker {
   constructor(config = {}) {
     this.config = {
       storeId: null,
-      apiEndpoint: '/api/heatmap',
+      apiEndpoint: 'https://catalyst-backend-fzhu.onrender.com/api/heatmap',
       batchSize: 20,
       batchTimeout: 5000, // 5 seconds
       trackClicks: true,

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import apiClient from '@/api/client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -229,14 +230,8 @@ export default function HeatmapVisualization({
         }
       }
 
-      const response = await fetch(`/api/heatmap/data/${storeId}?${params}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load heatmap data: ${response.status}`);
-      }
-
-      const result = await response.json();
-      setHeatmapData(result.data || []);
+      const response = await apiClient.get(`/api/heatmap/data/${storeId}?${params}`);
+      setHeatmapData(response.data || []);
     } catch (err) {
       console.error('Error loading heatmap data:', err);
       setError(err.message);
@@ -249,12 +244,8 @@ export default function HeatmapVisualization({
     if (!storeId) return;
 
     try {
-      const response = await fetch(`/api/heatmap/realtime/${storeId}?time_window=300000`);
-      
-      if (response.ok) {
-        const result = await response.json();
-        setRealTimeStats(result.data);
-      }
+      const response = await apiClient.get(`/api/heatmap/realtime/${storeId}?time_window=300000`);
+      setRealTimeStats(response.data);
     } catch (err) {
       console.warn('Error loading real-time stats:', err);
     }

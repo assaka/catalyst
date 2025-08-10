@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext.jsx';
+import apiClient from '@/api/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -85,11 +86,8 @@ export default function HeatmapAnalytics() {
 
   const loadAnalytics = async () => {
     try {
-      const response = await fetch(`/api/heatmap/analytics/${selectedStore.id}`);
-      if (response.ok) {
-        const result = await response.json();
-        setAnalytics(result.data);
-      }
+      const response = await apiClient.get(`/api/heatmap/analytics/${selectedStore.id}`);
+      setAnalytics(response.data);
     } catch (err) {
       console.warn('Error loading analytics:', err);
     }
@@ -97,11 +95,8 @@ export default function HeatmapAnalytics() {
 
   const loadTopPages = async () => {
     try {
-      const response = await fetch(`/api/heatmap/top-pages/${selectedStore.id}?limit=10`);
-      if (response.ok) {
-        const result = await response.json();
-        setTopPages(result.data || []);
-      }
+      const response = await apiClient.get(`/api/heatmap/top-pages/${selectedStore.id}?limit=10`);
+      setTopPages(response.data || []);
     } catch (err) {
       console.warn('Error loading top pages:', err);
     }
@@ -109,11 +104,8 @@ export default function HeatmapAnalytics() {
 
   const loadRealTimeStats = async () => {
     try {
-      const response = await fetch(`/api/heatmap/realtime/${selectedStore.id}?time_window=1800000`); // 30 minutes
-      if (response.ok) {
-        const result = await response.json();
-        setRealTimeStats(result.data);
-      }
+      const response = await apiClient.get(`/api/heatmap/realtime/${selectedStore.id}?time_window=1800000`); // 30 minutes
+      setRealTimeStats(response.data);
     } catch (err) {
       console.warn('Error loading real-time stats:', err);
     }
@@ -121,11 +113,8 @@ export default function HeatmapAnalytics() {
 
   const loadSummary = async () => {
     try {
-      const response = await fetch(`/api/heatmap/summary/${selectedStore.id}`);
-      if (response.ok) {
-        const result = await response.json();
-        setSummary(result.data || []);
-      }
+      const response = await apiClient.get(`/api/heatmap/summary/${selectedStore.id}`);
+      setSummary(response.data || []);
     } catch (err) {
       console.warn('Error loading summary:', err);
     }
