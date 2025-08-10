@@ -118,6 +118,8 @@ import HeatMaps from "./HeatMaps";
 
 import ABTesting from "./ABTesting";
 
+import MonitoringDashboard from "./MonitoringDashboard";
+
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
 const PAGES = {
@@ -237,6 +239,8 @@ const PAGES = {
     
     ABTesting: ABTesting,
     
+    MonitoringDashboard: MonitoringDashboard,
+    
 }
 
 function _getCurrentPage(url) {
@@ -284,7 +288,8 @@ function _getCurrentPage(url) {
         'plugin-builder': 'PluginBuilder',
         'template-editor': 'TemplateEditor',
         'heatmaps': 'HeatMaps',
-        'ab-testing': 'ABTesting'
+        'ab-testing': 'ABTesting',
+        'monitoring': 'MonitoringDashboard'
     };
 
     // First try direct mapping for admin URLs
@@ -728,6 +733,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/monitoring" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <MonitoringDashboard />
+                    </RoleProtectedRoute>
+                } />
+                
                 <Route path="/admin/simple-test" element={<SimpleTest />} />
                 
                 {/* =========================== */}
@@ -1080,6 +1091,12 @@ function PagesContent() {
                 <Route path="/admin/ab-testing" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <ABTesting />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/monitoring" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <MonitoringDashboard />
                     </RoleProtectedRoute>
                 } />
                 
