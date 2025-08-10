@@ -285,6 +285,8 @@ function _getCurrentPage(url) {
         'akeneo-integration': 'AkeneoIntegration',
         'shopify-integration': 'ShopifyIntegration',
         'integrations': 'Integrations',
+        'ecommerce-integrations': 'EcommerceIntegrations',
+        'crm-integrations': 'CRMIntegrations',
         'database-integrations': 'DatabaseIntegrations',
         'plugin-how-to': 'PluginHowToFixed',
         'plugin-builder': 'PluginBuilder',
