@@ -5,15 +5,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Database, Server, Cloud, Check, Star } from 'lucide-react';
+import { Database, Server, Cloud, Check, Star, Shield, Lock, UserX } from 'lucide-react';
 import apiClient from '../api/client';
 import { toast } from 'sonner';
+import { getCurrentUser } from '../utils/auth';
 
 const DatabaseIntegrations = () => {
   const { selectedStore } = useStoreSelection();
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
   const [defaultProvider, setDefaultProvider] = useState(null);
   const [settingDefault, setSettingDefault] = useState(false);
+  
+  const currentUser = getCurrentUser();
+  const isStoreOwner = currentUser?.role === 'store_owner' || currentUser?.role === 'admin';
 
   useEffect(() => {
     if (storeId) {
@@ -55,6 +59,52 @@ const DatabaseIntegrations = () => {
       setSettingDefault(false);
     }
   };
+
+  // Role-based access control
+  if (!isStoreOwner) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-blue-100 p-3 rounded-full">
+                <Shield className="w-8 h-8 text-blue-600" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">Store Owner Access Required</h1>
+            <div className="max-w-2xl mx-auto space-y-4">
+              <p className="text-gray-700 leading-relaxed">
+                Database integrations and configuration require <strong>store owner</strong> privileges. This security measure helps:
+              </p>
+              <div className="bg-white/70 rounded-lg p-4 text-left">
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <Lock className="w-4 h-4 mt-0.5 text-blue-500" />
+                    <span>Secure database credentials and connection strings</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Shield className="w-4 h-4 mt-0.5 text-blue-500" />
+                    <span>Prevent unauthorized database schema modifications</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Database className="w-4 h-4 mt-0.5 text-blue-500" />
+                    <span>Protect sensitive customer and business data</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <UserX className="w-4 h-4 mt-0.5 text-blue-500" />
+                    <span>Ensure compliance with data governance policies</span>
+                  </li>
+                </ul>
+              </div>
+              <p className="text-gray-600 text-sm">
+                Database integrations manage critical store data including products, orders, and customer information. Only authorized store owners can configure these connections.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

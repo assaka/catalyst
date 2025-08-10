@@ -15,11 +15,14 @@ import {
   Lock,
   CheckCircle,
   Check,
-  Star
+  Star,
+  Shield,
+  UserX
 } from 'lucide-react';
 import apiClient from '../api/client';
 import { Button } from '../components/ui/button';
 import { toast } from 'sonner';
+import { getCurrentUser } from '../utils/auth';
 
 const MediaStorage = () => {
   const { selectedStore } = useStoreSelection();
@@ -31,6 +34,8 @@ const MediaStorage = () => {
   const [settingDefault, setSettingDefault] = useState(false);
   
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  const currentUser = getCurrentUser();
+  const isStoreOwner = currentUser?.role === 'store_owner' || currentUser?.role === 'admin';
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
@@ -121,6 +126,52 @@ const MediaStorage = () => {
       setSettingDefault(false);
     }
   };
+
+  // Role-based access control
+  if (!isStoreOwner) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center">
+          <div className="bg-gradient-to-br from-orange-50 to-red-50 border border-orange-200 rounded-lg p-8">
+            <div className="flex items-center justify-center mb-4">
+              <div className="bg-orange-100 p-3 rounded-full">
+                <Shield className="w-8 h-8 text-orange-600" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-3">Store Owner Access Required</h1>
+            <div className="max-w-2xl mx-auto space-y-4">
+              <p className="text-gray-700 leading-relaxed">
+                Media storage configuration and management require <strong>store owner</strong> privileges. This restriction is in place to:
+              </p>
+              <div className="bg-white/70 rounded-lg p-4 text-left">
+                <ul className="space-y-2 text-sm text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <Lock className="w-4 h-4 mt-0.5 text-orange-500" />
+                    <span>Protect sensitive storage credentials and API keys</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Shield className="w-4 h-4 mt-0.5 text-orange-500" />
+                    <span>Ensure only authorized users can modify storage settings</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Database className="w-4 h-4 mt-0.5 text-orange-500" />
+                    <span>Prevent unauthorized access to stored media files</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <UserX className="w-4 h-4 mt-0.5 text-orange-500" />
+                    <span>Maintain compliance with data protection regulations</span>
+                  </li>
+                </ul>
+              </div>
+              <p className="text-gray-600 text-sm">
+                If you need access to media storage features, please contact your store administrator or request store owner privileges.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!selectedStore) {
     return (
