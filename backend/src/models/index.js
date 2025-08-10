@@ -38,6 +38,11 @@ const SupabaseOAuthToken = require('./SupabaseOAuthToken');
 const ShopifyOAuthToken = require('./ShopifyOAuthToken');
 const MediaAsset = require('./MediaAsset');
 const AkeneoCustomMapping = require('./AkeneoCustomMapping');
+const Credit = require('./Credit');
+const CreditTransaction = require('./CreditTransaction');
+const CreditUsage = require('./CreditUsage');
+const Job = require('./Job');
+const JobHistory = require('./JobHistory');
 
 // Define associations
 const defineAssociations = () => {
@@ -214,6 +219,32 @@ const defineAssociations = () => {
   // ShopifyOAuthToken associations
   ShopifyOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasOne(ShopifyOAuthToken, { foreignKey: 'store_id' });
+
+  // Credit system associations
+  Credit.belongsTo(User, { foreignKey: 'user_id' });
+  Credit.belongsTo(Store, { foreignKey: 'store_id' });
+  User.hasMany(Credit, { foreignKey: 'user_id' });
+  Store.hasMany(Credit, { foreignKey: 'store_id' });
+
+  CreditTransaction.belongsTo(User, { foreignKey: 'user_id' });
+  CreditTransaction.belongsTo(Store, { foreignKey: 'store_id' });
+  User.hasMany(CreditTransaction, { foreignKey: 'user_id' });
+  Store.hasMany(CreditTransaction, { foreignKey: 'store_id' });
+
+  CreditUsage.belongsTo(User, { foreignKey: 'user_id' });
+  CreditUsage.belongsTo(Store, { foreignKey: 'store_id' });
+  User.hasMany(CreditUsage, { foreignKey: 'user_id' });
+  Store.hasMany(CreditUsage, { foreignKey: 'store_id' });
+
+  // Job associations
+  Job.belongsTo(Store, { foreignKey: 'store_id' });
+  Job.belongsTo(User, { foreignKey: 'user_id' });
+  Job.hasMany(JobHistory, { foreignKey: 'job_id', as: 'history' });
+  Store.hasMany(Job, { foreignKey: 'store_id' });
+  User.hasMany(Job, { foreignKey: 'user_id' });
+
+  // JobHistory associations  
+  JobHistory.belongsTo(Job, { foreignKey: 'job_id', as: 'job' });
 };
 
 // Initialize associations
@@ -259,5 +290,10 @@ module.exports = {
   SupabaseOAuthToken,
   ShopifyOAuthToken,
   MediaAsset,
-  AkeneoCustomMapping
+  AkeneoCustomMapping,
+  Credit,
+  CreditTransaction,
+  CreditUsage,
+  Job,
+  JobHistory
 };

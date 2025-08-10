@@ -62,6 +62,21 @@ const AkeneoSchedule = sequelize.define('AkeneoSchedule', {
     type: DataTypes.JSON,
     allowNull: true,
     comment: 'Result of last execution'
+  },
+  credit_cost: {
+    type: DataTypes.DECIMAL(5, 3),
+    allowNull: false,
+    defaultValue: 0.1,
+    comment: 'Cost in credits per execution'
+  },
+  last_credit_usage: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'credit_usage',
+      key: 'id'
+    },
+    comment: 'Reference to the last credit usage record'
   }
 }, {
   tableName: 'akeneo_schedules',
@@ -77,5 +92,78 @@ const AkeneoSchedule = sequelize.define('AkeneoSchedule', {
     }
   ]
 });
+
+// Class methods for credit management
+AkeneoSchedule.prototype.checkCreditsBeforeExecution = async function(userId) {
+  const Credit = require('./Credit');
+  const requiredCredits = parseFloat(this.credit_cost) || 0.1;
+  
+  return await Credit.hasEnoughCredits(userId, this.store_id, requiredCredits);
+};
+
+AkeneoSchedule.prototype.deductCreditsForExecution = async function(userId) {
+  const Credit = require('./Credit');
+  const CreditUsage = require('./CreditUsage');
+  
+  const requiredCredits = parseFloat(this.credit_cost) || 0.1;
+  
+  try {
+    // Record the credit usage
+    const usage = await CreditUsage.recordAkeneoScheduleUsage(
+      userId,
+      this.store_id,
+      this.id,
+      requiredCredits,
+      {
+        import_type: this.import_type,
+        schedule_type: this.schedule_type,
+        filters: this.filters,
+        options: this.options
+      }
+    );
+    
+    // Update the schedule with the credit usage reference
+    await this.update({
+      last_credit_usage: usage.id
+    });
+    
+    return {
+      success: true,
+      usage_id: usage.id,
+      credits_deducted: requiredCredits
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+AkeneoSchedule.getSchedulesNeedingCredits = async function(userId, storeId) {
+  const Credit = require('./Credit');
+  const currentBalance = await Credit.getBalance(userId, storeId);
+  
+  // Get active schedules for the store
+  const activeSchedules = await this.findAll({
+    where: {
+      store_id: storeId,
+      is_active: true
+    }
+  });
+  
+  // Filter schedules that can't run due to insufficient credits
+  const schedulesNeedingCredits = activeSchedules.filter(schedule => {
+    const requiredCredits = parseFloat(schedule.credit_cost) || 0.1;
+    return currentBalance < requiredCredits;
+  });
+  
+  return {
+    current_balance: currentBalance,
+    active_schedules: activeSchedules.length,
+    schedules_needing_credits: schedulesNeedingCredits.length,
+    schedules: schedulesNeedingCredits
+  };
+};
 
 module.exports = AkeneoSchedule;

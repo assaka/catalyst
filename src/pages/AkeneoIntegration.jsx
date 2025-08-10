@@ -41,7 +41,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Progress } from '../components/ui/progress';
 import { Separator } from '../components/ui/separator';
-import { AlertCircle, CheckCircle, RefreshCw, Download, Settings, Database, Package, Clock, Plus, Trash2, Edit, ChevronDown } from 'lucide-react';
+import { AlertCircle, CheckCircle, RefreshCw, Download, Settings, Database, Package, Clock, Plus, Trash2, Edit, ChevronDown, Power } from 'lucide-react';
 import { toast } from 'sonner';
 import { useStoreSlug } from '../hooks/useStoreSlug';
 import { useStoreSelection } from '../contexts/StoreSelectionContext';

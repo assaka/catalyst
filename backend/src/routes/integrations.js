@@ -5,6 +5,7 @@ const AkeneoIntegration = require('../services/akeneo-integration');
 const AkeneoSyncService = require('../services/akeneo-sync-service');
 const IntegrationConfig = require('../models/IntegrationConfig');
 const AkeneoCustomMapping = require('../models/AkeneoCustomMapping');
+const creditService = require('../services/credit-service');
 const auth = require('../middleware/auth');
 
 // Debug route to test if integrations router is working
@@ -103,9 +104,34 @@ const loadAkeneoConfig = async (storeId, reqBody = null) => {
   throw new Error('Akeneo integration not configured. Please save your configuration first.');
 };
 
-// Helper function to handle import operations with proper status tracking
+// Helper function to handle import operations with proper status tracking and credit management
 const handleImportOperation = async (storeId, req, res, importFunction) => {
   try {
+    const userId = req.user.id;
+    
+    // Check if user has enough credits for this operation (unless it's a dry run)
+    const isDryRun = req.body.dryRun === true;
+    if (!isDryRun) {
+      console.log('💳 Checking credits for import operation...');
+      const hasCredits = await creditService.hasEnoughCredits(userId, storeId, 0.1);
+      
+      if (!hasCredits) {
+        const balance = await creditService.getBalance(userId, storeId);
+        return res.status(402).json({
+          success: false,
+          message: 'Insufficient credits to perform this operation',
+          error: `Required: 0.1 credits, Available: ${balance} credits`,
+          error_code: 'INSUFFICIENT_CREDITS',
+          required_credits: 0.1,
+          available_credits: balance,
+          credit_info: {
+            message: 'Please purchase more credits to continue using Akeneo integrations',
+            cost_per_operation: 0.1
+          }
+        });
+      }
+    }
+
     // Use the unified sync service approach
     const syncService = new AkeneoSyncService();
     await syncService.initialize(storeId);
@@ -118,6 +144,49 @@ const handleImportOperation = async (storeId, req, res, importFunction) => {
 
     try {
       const result = await importFunction(syncService.integration, storeId, req.body);
+      
+      // Deduct credits if operation was successful and not a dry run
+      if (result.success && !isDryRun) {
+        console.log('💳 Deducting credits for successful import operation...');
+        try {
+          // Determine import type from path
+          let importType = 'manual_import';
+          if (req.path.includes('/import-attributes')) importType = 'attributes';
+          else if (req.path.includes('/import-families')) importType = 'families';
+          else if (req.path.includes('/import-categories')) importType = 'categories';
+          else if (req.path.includes('/import-products')) importType = 'products';
+          else if (req.path.includes('/import-all')) importType = 'all';
+          
+          const creditUsage = await creditService.recordManualAkeneoUsage(
+            userId,
+            storeId,
+            importType,
+            {
+              operation: req.path,
+              filters: req.body.filters || {},
+              settings: req.body.settings || {},
+              result_summary: {
+                total_processed: result.total || 0,
+                successful: result.successful || 0,
+                failed: result.failed || 0
+              }
+            }
+          );
+          
+          // Add credit info to response
+          result.credit_usage = {
+            credits_deducted: creditUsage.credits_deducted,
+            remaining_balance: creditUsage.remaining_balance,
+            usage_id: creditUsage.usage_id
+          };
+          
+          console.log(`💳 Successfully deducted ${creditUsage.credits_deducted} credits`);
+        } catch (creditError) {
+          console.error('❌ Error deducting credits:', creditError);
+          // Don't fail the import if credit deduction fails, but log it
+          result.credit_error = creditError.message;
+        }
+      }
       
       // Update sync status based on result
       if (integrationConfig) {

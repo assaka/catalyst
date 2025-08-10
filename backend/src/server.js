@@ -96,6 +96,7 @@ const templateRoutes = require('./routes/templates');
 const storeDatabaseRoutes = require('./routes/store-database');
 const storeMediaStorageRoutes = require('./routes/store-mediastorage');
 const heatmapRoutes = require('./routes/heatmap');
+const backgroundJobRoutes = require('./routes/background-jobs');
 
 const app = express();
 
@@ -1514,6 +1515,7 @@ app.use('/api/stores/:store_id/categories', categoryImageRoutes);
 app.use('/api/file-manager', fileManagerRoutes);
 app.use('/api/stores/:store_id/templates', authMiddleware, templateRoutes);
 app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
+app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
 
@@ -1587,6 +1589,24 @@ const startServer = async () => {
         } catch (error) {
           console.warn('⚠️ Plugin Manager initialization failed:', error.message);
           // Don't fail server startup if plugin manager fails
+        }
+
+        // Initialize Background Job Manager
+        console.log('⚙️ Initializing Background Job Manager...');
+        try {
+          const jobManager = require('./core/BackgroundJobManager');
+          await jobManager.initialize();
+          console.log('✅ Background Job Manager initialized successfully');
+          
+          // Initialize Akeneo Scheduler Integration
+          console.log('📅 Initializing Akeneo Scheduler Integration...');
+          const akeneoSchedulerIntegration = require('./services/akeneo-scheduler-integration');
+          await akeneoSchedulerIntegration.initialize();
+          console.log('✅ Akeneo Scheduler Integration initialized successfully');
+          
+        } catch (error) {
+          console.warn('⚠️ Background Job Manager initialization failed:', error.message);
+          // Don't fail server startup if background job manager fails
         }
         
         // Run all pending database migrations automatically
