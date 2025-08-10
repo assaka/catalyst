@@ -585,29 +585,15 @@ const AkeneoIntegration = () => {
     if (!selectedStore?.id) return;
     
     try {
-      console.log('🔍 Loading custom mappings for store:', selectedStore.id);
       const response = await apiClient.get('/integrations/akeneo/custom-mappings', {
         'x-store-id': selectedStore.id
       });
       
-      console.log('📡 Custom mappings API response:', response.data);
-      
       if (response.data?.success) {
         const mappings = response.data.mappings;
-        console.log('📋 Extracted mappings:', mappings);
-        console.log('📋 attributes.length:', mappings.attributes?.length);
-        console.log('📋 images.length:', mappings.images?.length);
-        console.log('📋 files.length:', mappings.files?.length);
         
         // If no mappings in database, use defaults
         const shouldUseDefaults = !mappings.attributes?.length && !mappings.images?.length && !mappings.files?.length;
-        console.log('📋 shouldUseDefaults:', shouldUseDefaults);
-        
-        if (shouldUseDefaults) {
-          console.log('⚠️ Using default mappings because no mappings found');
-        } else {
-          console.log('✅ Using saved mappings from database');
-        }
         
         if (shouldUseDefaults) {
           const defaultMappings = {
@@ -624,24 +610,15 @@ const AkeneoIntegration = () => {
             files: []
           };
           setCustomMappings(defaultMappings);
-          console.log('📝 Set default mappings:', defaultMappings);
           // Save defaults to database
           await saveCustomMappingsToDb(defaultMappings);
         } else {
           setCustomMappings(mappings);
-          console.log('📝 Set custom mappings from DB:', mappings);
         }
         setMappingsLoaded(true);
-      } else {
-        console.error('❌ API returned success: false');
       }
     } catch (error) {
-      console.error('❌ Failed to load custom mappings:', error);
-      console.error('❌ Error details:', {
-        message: error.message,
-        status: error.response?.status,
-        data: error.response?.data
-      });
+      console.error('Failed to load custom mappings:', error);
       
       // Fall back to defaults on error
       const fallbackMappings = {

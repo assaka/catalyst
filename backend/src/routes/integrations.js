@@ -1146,32 +1146,20 @@ router.post('/akeneo/save-config',
  * GET /api/integrations/akeneo/custom-mappings
  */
 router.get('/akeneo/custom-mappings', auth, storeAuth, async (req, res) => {
-  console.log('🔍 [API] GET /akeneo/custom-mappings called');
-  console.log('🔍 [API] req.storeId:', req.storeId);
-  console.log('🔍 [API] req.user:', req.user ? `${req.user.id} (${req.user.email})` : 'undefined');
-  console.log('🔍 [API] Headers x-store-id:', req.headers['x-store-id']);
-  
   try {
-    console.log('🔍 [API] Calling AkeneoCustomMapping.getMappings...');
     const mappings = await AkeneoCustomMapping.getMappings(req.storeId);
-    console.log('🔍 [API] getMappings result:', JSON.stringify(mappings, null, 2));
     
-    const response = {
+    res.json({
       success: true,
       mappings: mappings
-    };
-    
-    console.log('🔍 [API] Sending response:', JSON.stringify(response, null, 2));
-    res.json(response);
+    });
   } catch (error) {
-    console.error('❌ [API] Error fetching custom mappings:', error);
-    const errorResponse = {
+    console.error('Error fetching custom mappings:', error);
+    res.status(500).json({
       success: false,
       message: 'Failed to fetch custom mappings',
       error: error.message
-    };
-    console.log('🔍 [API] Sending error response:', JSON.stringify(errorResponse, null, 2));
-    res.status(500).json(errorResponse);
+    });
   }
 });
 
