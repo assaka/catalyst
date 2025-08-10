@@ -585,15 +585,23 @@ const AkeneoIntegration = () => {
     if (!selectedStore?.id) return;
     
     try {
+      console.log('🔍 [DEBUG] Loading custom mappings for store:', selectedStore.id);
       const response = await apiClient.get('/integrations/akeneo/custom-mappings', {
         'x-store-id': selectedStore.id
       });
       
+      console.log('📡 [DEBUG] API Response:', response);
+      console.log('📊 [DEBUG] Response data:', response.data);
+      
       if (response.data?.success) {
         const mappings = response.data.mappings;
+        console.log('📋 [DEBUG] Extracted mappings:', mappings);
+        console.log('📋 [DEBUG] attributes array:', mappings.attributes);
+        console.log('📋 [DEBUG] attributes length:', mappings.attributes?.length);
         
         // If no mappings in database, use defaults
         const shouldUseDefaults = !mappings.attributes?.length && !mappings.images?.length && !mappings.files?.length;
+        console.log('🤔 [DEBUG] shouldUseDefaults:', shouldUseDefaults);
         
         if (shouldUseDefaults) {
           const defaultMappings = {
@@ -613,12 +621,16 @@ const AkeneoIntegration = () => {
           // Save defaults to database
           await saveCustomMappingsToDb(defaultMappings);
         } else {
+          console.log('✅ [DEBUG] Using database mappings, calling setCustomMappings with:', mappings);
           setCustomMappings(mappings);
         }
         setMappingsLoaded(true);
+        console.log('✅ [DEBUG] Mappings loaded successfully');
+      } else {
+        console.error('❌ [DEBUG] API response success was false:', response.data);
       }
     } catch (error) {
-      console.error('Failed to load custom mappings:', error);
+      console.error('❌ [DEBUG] Failed to load custom mappings:', error);
       
       // Fall back to defaults on error
       const fallbackMappings = {
@@ -3571,6 +3583,7 @@ const AkeneoIntegration = () => {
                         </div>
                       </div>
                       <div className="space-y-2 max-h-64 overflow-y-auto border rounded p-3 bg-gray-50">
+                        {console.log('🎯 [DEBUG] Rendering mappings - customMappings:', customMappings, 'attributes length:', customMappings?.attributes?.length)}
                         {customMappings?.attributes?.length === 0 ? (
                           <div className="text-center py-4 text-sm text-gray-500">
                             No attribute mappings defined. Click "Add Mapping" to create one.

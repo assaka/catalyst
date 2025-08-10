@@ -2,9 +2,15 @@ import { useEffect, useRef, useState } from 'react';
 
 class HeatmapTracker {
   constructor(config = {}) {
+    // Build API endpoint consistently with the main API client
+    const baseURL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+    const apiEndpoint = import.meta.env.DEV 
+      ? '/api/heatmap'  // Use proxy in development
+      : `${baseURL}/api/heatmap`;  // Use full URL in production
+
     this.config = {
       storeId: null,
-      apiEndpoint: 'https://catalyst-backend-fzhu.onrender.com/api/heatmap',
+      apiEndpoint: apiEndpoint,
       batchSize: 20,
       batchTimeout: 5000, // 5 seconds
       trackClicks: true,

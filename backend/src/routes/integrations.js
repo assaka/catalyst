@@ -1147,12 +1147,17 @@ router.post('/akeneo/save-config',
  */
 router.get('/akeneo/custom-mappings', auth, storeAuth, async (req, res) => {
   try {
+    console.log('🔍 [API DEBUG] Custom mappings requested for store:', req.storeId);
     const mappings = await AkeneoCustomMapping.getMappings(req.storeId);
+    console.log('📊 [API DEBUG] Retrieved mappings:', JSON.stringify(mappings, null, 2));
     
-    res.json({
+    const response = {
       success: true,
       mappings: mappings
-    });
+    };
+    console.log('📡 [API DEBUG] Sending response:', JSON.stringify(response, null, 2));
+    
+    res.json(response);
   } catch (error) {
     console.error('Error fetching custom mappings:', error);
     res.status(500).json({
