@@ -112,11 +112,21 @@ const MediaAsset = sequelize.define('MediaAsset', {
 // Class methods
 MediaAsset.createFromUpload = async function(storeId, uploadResult, userId = null) {
   try {
-    const asset = await this.create({
+    const filePath = uploadResult.path || uploadResult.fullPath;
+    
+    // Check if asset already exists for this store and file path
+    const existingAsset = await this.findOne({
+      where: {
+        store_id: storeId,
+        file_path: filePath
+      }
+    });
+    
+    const assetData = {
       store_id: storeId,
       file_name: uploadResult.filename || uploadResult.name,
       original_name: uploadResult.originalname || uploadResult.filename,
-      file_path: uploadResult.path || uploadResult.fullPath,
+      file_path: filePath,
       file_url: uploadResult.url || uploadResult.publicUrl,
       mime_type: uploadResult.mimetype || uploadResult.mimeType,
       file_size: uploadResult.size,
@@ -127,11 +137,19 @@ MediaAsset.createFromUpload = async function(storeId, uploadResult, userId = nul
         provider: uploadResult.provider,
         ...uploadResult.metadata
       }
-    });
+    };
     
-    return asset;
+    if (existingAsset) {
+      // Update existing record with new upload data
+      await existingAsset.update(assetData);
+      return existingAsset;
+    } else {
+      // Create new record
+      const asset = await this.create(assetData);
+      return asset;
+    }
   } catch (error) {
-    console.error('Error creating media asset:', error);
+    console.error('Error creating/updating media asset:', error);
     throw error;
   }
 };
