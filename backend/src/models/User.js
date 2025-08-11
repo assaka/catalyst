@@ -66,6 +66,11 @@ const User = sequelize.define('User', {
   account_type: {
     type: DataTypes.ENUM('agency', 'individual'),
     defaultValue: 'agency'
+  },
+  credits: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0
   }
 }, {
   tableName: 'users',
