@@ -91,10 +91,13 @@ class RenderIntegration {
 
     // Handle different response structures from Render API
     if (Array.isArray(data)) {
-      // If response is an array of owners (expected original structure)
-      userOwner = data.find(owner => owner.type === 'user') || data[0];
+      // If response is an array of owner objects with nested owner property
+      const ownerItem = data.find(item => item.owner && item.owner.type === 'user') || 
+                        data.find(item => item.owner) || 
+                        data[0];
+      userOwner = ownerItem?.owner || ownerItem;
     } else if (data.owner && data.owner.owner) {
-      // If response has nested owner structure (actual structure from API)
+      // If response has nested owner structure
       userOwner = data.owner.owner;
     } else if (data.owner) {
       // If response has single owner structure
