@@ -50,12 +50,18 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
   const loadStatus = async () => {
     try {
       setLoading(true);
+      console.log('🔍 Loading Render status for store:', storeId);
       const response = await apiClient.get(`/render/oauth/status/${storeId}`);
+      console.log('📡 Render status API response:', response.data);
+      console.log('🔍 Connected status:', response.data?.connected);
       setStatus(response.data);
       
       // If connected, load services
       if (response.data?.connected) {
+        console.log('✅ Status shows connected, loading services...');
         loadServices();
+      } else {
+        console.log('❌ Status shows not connected');
       }
     } catch (error) {
       console.error('Failed to load Render status:', error);
