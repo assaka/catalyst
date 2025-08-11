@@ -45,12 +45,27 @@ router.post('/connect', authMiddleware, async (req, res) => {
       });
     }
 
-    // Check store ownership
-    const storeOwnership = await checkStoreOwnership(req, res, () => {}, store_id);
-    if (!storeOwnership) {
+    // Manual store ownership check with better error handling
+    const { Store } = require('../models');
+    const store = await Store.findByPk(store_id);
+    
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Check if user has access to this store
+    const userEmail = req.user.email;
+    const hasAccess = store.owner_email === userEmail || 
+                     req.user.role === 'admin' || 
+                     req.user.account_type === 'agency';
+
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied: You do not own this store'
+        message: 'Access denied: You do not have permission to configure this store'
       });
     }
 
@@ -126,12 +141,27 @@ router.post('/migrate', authMiddleware, async (req, res) => {
       });
     }
 
-    // Check store ownership
-    const storeOwnership = await checkStoreOwnership(req, res, () => {}, store_id);
-    if (!storeOwnership) {
+    // Manual store ownership check with better error handling
+    const { Store } = require('../models');
+    const store = await Store.findByPk(store_id);
+    
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Check if user has access to this store
+    const userEmail = req.user.email;
+    const hasAccess = store.owner_email === userEmail || 
+                     req.user.role === 'admin' || 
+                     req.user.account_type === 'agency';
+
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied: You do not own this store'
+        message: 'Access denied: You do not have permission to configure this store'
       });
     }
 
@@ -218,12 +248,27 @@ router.post('/disconnect', authMiddleware, async (req, res) => {
       });
     }
 
-    // Check store ownership
-    const storeOwnership = await checkStoreOwnership(req, res, () => {}, store_id);
-    if (!storeOwnership) {
+    // Manual store ownership check with better error handling
+    const { Store } = require('../models');
+    const store = await Store.findByPk(store_id);
+    
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Check if user has access to this store
+    const userEmail = req.user.email;
+    const hasAccess = store.owner_email === userEmail || 
+                     req.user.role === 'admin' || 
+                     req.user.account_type === 'agency';
+
+    if (!hasAccess) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied: You do not own this store'
+        message: 'Access denied: You do not have permission to configure this store'
       });
     }
 
