@@ -53,7 +53,7 @@ router.post('/store-token', authMiddleware, async (req, res) => {
     }
 
     // Store and validate the token
-    const result = await renderIntegration.storePersonalAccessToken(store_id, token.trim(), user_email);
+    const result = await renderIntegration.storePersonalAccessToken(store_id, token.trim(), req.user.email);
 
     if (result.success) {
       res.json({
