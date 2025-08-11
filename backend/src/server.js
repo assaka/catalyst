@@ -153,8 +153,31 @@ app.use(cors({
     console.log('🔍 CORS origin check:', origin);
     console.log('🔍 Allowed origins:', allowedOrigins);
     
+    // Check for exact match first
     if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log('✅ CORS allowed for origin:', origin);
+      console.log('✅ CORS allowed for origin (exact match):', origin);
+      callback(null, true);
+      return;
+    }
+    
+    // Check for origin without trailing slash
+    const originWithoutSlash = origin.replace(/\/$/, '');
+    if (allowedOrigins.indexOf(originWithoutSlash) !== -1) {
+      console.log('✅ CORS allowed for origin (without trailing slash):', origin);
+      callback(null, true);
+      return;
+    }
+    
+    // Check if any allowed origin matches (handling potential subdomain patterns)
+    const isAllowed = allowedOrigins.some(allowed => {
+      // Handle both with and without trailing slash
+      const allowedWithoutSlash = allowed.replace(/\/$/, '');
+      const originWithoutSlash = origin.replace(/\/$/, '');
+      return allowedWithoutSlash === originWithoutSlash;
+    });
+    
+    if (isAllowed) {
+      console.log('✅ CORS allowed for origin (pattern match):', origin);
       callback(null, true);
     } else {
       console.log('❌ CORS blocked for origin:', origin);
