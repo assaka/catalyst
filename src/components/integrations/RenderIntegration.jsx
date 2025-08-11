@@ -16,24 +16,18 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
     name: ''
   });
   const [deploying, setDeploying] = useState(false);
+  const [tokenForm, setTokenForm] = useState({
+    token: '',
+    userEmail: ''
+  });
+  const [showTokenForm, setShowTokenForm] = useState(false);
+  const [validatingToken, setValidatingToken] = useState(false);
 
-  // Check for OAuth callback results
+  // Initialize component
   useEffect(() => {
+    // Remove any URL parameters from previous OAuth attempts
     const urlParams = new URLSearchParams(window.location.search);
-    
-    if (urlParams.get('success')) {
-      toast.success('Successfully connected to Render!');
-      const userEmail = urlParams.get('user_email');
-      const ownerId = urlParams.get('owner_id');
-      if (userEmail) {
-        toast.info(`Connected as: ${userEmail}`);
-      }
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } else if (urlParams.get('error')) {
-      const error = urlParams.get('error');
-      toast.error(`Connection failed: ${error}`);
-      // Clean up URL
+    if (urlParams.has('success') || urlParams.has('error')) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -75,24 +69,70 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
     }
   };
 
-  const handleConnect = async () => {
+  const handleConnect = () => {
+    setShowTokenForm(true);
+    setTokenForm({ token: '', userEmail: '' });
+  };
+
+  const handleTokenSubmit = async () => {
+    if (!tokenForm.token.trim()) {
+      toast.error('Please enter your Personal Access Token');
+      return;
+    }
+
     try {
       setConnecting(true);
-      const response = await apiClient.post('/render/oauth/authorize', {
-        store_id: storeId
+      const response = await apiClient.post('/render/oauth/store-token', {
+        store_id: storeId,
+        token: tokenForm.token.trim(),
+        user_email: tokenForm.userEmail.trim() || undefined
       });
       
-      if (response.data?.success && response.data?.auth_url) {
-        // Redirect to Render OAuth
-        window.location.href = response.data.auth_url;
+      if (response.data?.success) {
+        toast.success('Successfully connected to Render!');
+        if (response.data.user_info?.email) {
+          toast.info(`Connected as: ${response.data.user_info.email}`);
+        }
+        setShowTokenForm(false);
+        setTokenForm({ token: '', userEmail: '' });
+        loadStatus(); // Refresh status
       } else {
-        toast.error('Failed to generate authorization URL');
+        toast.error(response.data?.message || 'Failed to connect to Render');
       }
     } catch (error) {
-      console.error('Failed to initiate Render connection:', error);
+      console.error('Failed to store Render token:', error);
       toast.error(error.response?.data?.message || 'Failed to connect to Render');
     } finally {
       setConnecting(false);
+    }
+  };
+
+  const handleValidateToken = async () => {
+    if (!tokenForm.token.trim()) {
+      toast.error('Please enter your Personal Access Token');
+      return;
+    }
+
+    try {
+      setValidatingToken(true);
+      const response = await apiClient.post('/render/oauth/validate-token', {
+        token: tokenForm.token.trim()
+      });
+      
+      if (response.data?.success) {
+        toast.success(`Token is valid! ${response.data.user_info?.email ? `User: ${response.data.user_info.email}` : ''}`);
+        // Pre-fill user email if we got it from validation
+        if (response.data.user_info?.email) {
+          setTokenForm(prev => ({ ...prev, userEmail: response.data.user_info.email }));
+        }
+      } else {
+        toast.error(response.data?.message || 'Token validation failed');
+      }
+    } catch (error) {
+      console.error('Token validation failed:', error);
+      toast.error(error.response?.data?.message || 'Token validation failed');
+    } finally {
+      setValidatingToken(false);
     }
   };
 
@@ -261,7 +301,7 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
               Deploy your applications, manage services, and configure custom domains with Render's powerful hosting platform.
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
               <div className="p-4 bg-gray-50 rounded-lg">
                 <Rocket className="w-8 h-8 text-purple-600 mx-auto mb-2" />
                 <h5 className="font-medium text-gray-900">Easy Deployment</h5>
@@ -278,6 +318,87 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
                 <p className="text-sm text-gray-600">Monitor and manage your services</p>
               </div>
             </div>
+
+            {/* Token Setup Instructions */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-left max-w-2xl mx-auto">
+              <div className="flex items-start space-x-2">
+                <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-2">How to get your Personal Access Token:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-blue-700">
+                    <li>Go to <a href="https://dashboard.render.com/account/api-keys" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900">Render API Keys</a></li>
+                    <li>Create a new Personal Access Token</li>
+                    <li>Copy the token and paste it below</li>
+                    <li>Click "Connect" to validate and store the token</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+
+            {/* Token Form */}
+            {showTokenForm ? (
+              <div className="max-w-md mx-auto space-y-4 text-left">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Personal Access Token *
+                  </label>
+                  <input
+                    type="password"
+                    value={tokenForm.token}
+                    onChange={(e) => setTokenForm(prev => ({ ...prev, token: e.target.value }))}
+                    placeholder="rnd_xxx..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Email (Optional)
+                  </label>
+                  <input
+                    type="email"
+                    value={tokenForm.userEmail}
+                    onChange={(e) => setTokenForm(prev => ({ ...prev, userEmail: e.target.value }))}
+                    placeholder="your@email.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleValidateToken}
+                    disabled={validatingToken || !tokenForm.token.trim()}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 flex items-center justify-center space-x-2"
+                  >
+                    {validatingToken ? <RefreshCw className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
+                    <span>{validatingToken ? 'Validating...' : 'Validate'}</span>
+                  </button>
+                  <button
+                    onClick={handleTokenSubmit}
+                    disabled={connecting || !tokenForm.token.trim()}
+                    className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 flex items-center justify-center space-x-2"
+                  >
+                    {connecting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
+                    <span>{connecting ? 'Connecting...' : 'Connect'}</span>
+                  </button>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowTokenForm(false);
+                    setTokenForm({ token: '', userEmail: '' });
+                  }}
+                  className="w-full px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleConnect}
+                className="px-6 py-3 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center space-x-2 mx-auto"
+              >
+                <Zap className="w-5 h-5" />
+                <span>Connect with Personal Access Token</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-6">

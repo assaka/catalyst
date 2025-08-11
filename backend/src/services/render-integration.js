@@ -5,133 +5,76 @@ const { sequelize } = require('../database/connection');
 
 class RenderIntegration {
   constructor() {
-    this.clientId = process.env.RENDER_CLIENT_ID;
-    this.clientSecret = process.env.RENDER_CLIENT_SECRET;
-    this.redirectUri = process.env.RENDER_REDIRECT_URI || `${process.env.APP_URL}/api/render/oauth/callback`;
+    // Render uses Personal Access Tokens, not OAuth
     this.baseUrl = 'https://api.render.com/v1';
-    this.authUrl = 'https://render.com/oauth/authorize';
-    this.tokenUrl = 'https://render.com/oauth/token';
-    
-    this.oauthConfigured = !!(this.clientId && this.clientSecret);
+    this.tokenConfigured = false; // Will be set per-store basis
   }
 
   /**
-   * Generate OAuth authorization URL
+   * Store Personal Access Token for a store
    */
-  generateAuthUrl(storeId, scopes = ['read:services', 'write:services', 'read:deploys', 'write:deploys']) {
-    if (!this.oauthConfigured) {
-      throw new Error('Render OAuth not configured. Set RENDER_CLIENT_ID and RENDER_CLIENT_SECRET');
-    }
-
-    const state = this.generateState(storeId);
-    const params = new URLSearchParams({
-      client_id: this.clientId,
-      redirect_uri: this.redirectUri,
-      response_type: 'code',
-      scope: scopes.join(' '),
-      state
-    });
-
-    return `${this.authUrl}?${params.toString()}`;
-  }
-
-  /**
-   * Generate secure state parameter
-   */
-  generateState(storeId) {
-    const timestamp = Date.now();
-    const random = crypto.randomBytes(16).toString('hex');
-    const data = `${storeId}:${timestamp}:${random}`;
-    return Buffer.from(data).toString('base64url');
-  }
-
-  /**
-   * Validate and parse state parameter
-   */
-  validateState(state) {
+  async storePersonalAccessToken(storeId, token, userEmail = null) {
     try {
-      const decoded = Buffer.from(state, 'base64url').toString();
-      const [storeId, timestamp, random] = decoded.split(':');
-      
-      // Check if state is not too old (15 minutes)
-      const now = Date.now();
-      const stateAge = now - parseInt(timestamp);
-      const maxAge = 15 * 60 * 1000; // 15 minutes
-      
-      if (stateAge > maxAge) {
-        throw new Error('State parameter expired');
-      }
-
-      return { storeId, timestamp, random, valid: true };
-    } catch (error) {
-      console.error('Invalid state parameter:', error.message);
-      return { valid: false, error: error.message };
-    }
-  }
-
-  /**
-   * Exchange authorization code for access token
-   */
-  async exchangeCodeForToken(code, state) {
-    try {
-      // Validate state
-      const stateValidation = this.validateState(state);
-      if (!stateValidation.valid) {
+      // Validate the token by testing it
+      const testResult = await this.testToken(token);
+      if (!testResult.success) {
         return {
           success: false,
-          error: `Invalid state: ${stateValidation.error}`
+          error: `Invalid token: ${testResult.error}`
         };
       }
 
-      // Exchange code for token
-      const tokenResponse = await axios.post(this.tokenUrl, {
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        code: code,
-        grant_type: 'authorization_code',
-        redirect_uri: this.redirectUri
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      // Store the token data
+      const tokenData = {
+        access_token: token,
+        user_email: userEmail || testResult.userInfo?.email || 'Unknown',
+        owner_id: testResult.userInfo?.id || 'Unknown',
+        expires_at: null, // Personal Access Tokens don't expire unless revoked
+        scope: 'personal_access_token'
+      };
 
-      const tokenData = tokenResponse.data;
-
-      // Get user information
-      const userInfo = await this.getUserInfo(tokenData.access_token);
+      await RenderOAuthToken.createOrUpdate(storeId, tokenData);
 
       return {
         success: true,
-        storeId: stateValidation.storeId,
-        tokenData: {
-          access_token: tokenData.access_token,
-          refresh_token: tokenData.refresh_token,
-          expires_at: new Date(Date.now() + tokenData.expires_in * 1000),
-          scope: tokenData.scope,
-          user_id: userInfo.id,
-          user_email: userInfo.email,
-          owner_id: userInfo.owner?.id
-        },
-        userInfo
+        message: 'Render Personal Access Token stored successfully',
+        userInfo: testResult.userInfo
       };
-
     } catch (error) {
-      console.error('Token exchange failed:', error.response?.data || error.message);
+      console.error('Failed to store Render token:', error);
       return {
         success: false,
-        error: error.response?.data?.error_description || error.message
+        error: error.message
       };
     }
   }
 
   /**
-   * Get user information from Render API
+   * Test a Personal Access Token
+   */
+  async testToken(token) {
+    try {
+      const userInfo = await this.getUserInfo(token);
+      return {
+        success: true,
+        userInfo
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || error.message
+      };
+    }
+  }
+
+  /**
+   * Get user information from Render API using Personal Access Token
    */
   async getUserInfo(accessToken) {
     const response = await axios.get(`${this.baseUrl}/owners`, {
       headers: {
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept': 'application/json'
       }
     });
 
@@ -628,21 +571,20 @@ class RenderIntegration {
   }
 
   /**
-   * Validate OAuth configuration
+   * Validate token configuration for a store
    */
-  validateConfig() {
+  async validateStoreConfig(storeId) {
     const errors = [];
     
-    if (!this.clientId) {
-      errors.push('RENDER_CLIENT_ID environment variable is required');
-    }
-    
-    if (!this.clientSecret) {
-      errors.push('RENDER_CLIENT_SECRET environment variable is required');
-    }
-    
-    if (!this.redirectUri) {
-      errors.push('RENDER_REDIRECT_URI environment variable is required');
+    try {
+      const credentials = await this.getStoredCredentials(storeId);
+      if (!credentials) {
+        errors.push('No Render Personal Access Token configured for this store');
+      } else if (!credentials.access_token) {
+        errors.push('Invalid token data stored');
+      }
+    } catch (error) {
+      errors.push(`Failed to validate configuration: ${error.message}`);
     }
     
     return errors;
@@ -651,14 +593,20 @@ class RenderIntegration {
   /**
    * Get service status
    */
-  getStatus() {
-    return {
-      configured: this.oauthConfigured,
-      clientId: this.clientId ? `${this.clientId.slice(0, 8)}...` : null,
-      redirectUri: this.redirectUri,
+  async getStatus(storeId = null) {
+    const status = {
       baseUrl: this.baseUrl,
-      authUrl: this.authUrl
+      authMethod: 'Personal Access Token'
     };
+
+    if (storeId) {
+      const credentials = await this.getStoredCredentials(storeId);
+      status.configured = !!credentials;
+      status.tokenExists = !!credentials?.access_token;
+      status.userEmail = credentials?.user_email;
+    }
+
+    return status;
   }
 }
 

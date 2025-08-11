@@ -8,11 +8,11 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 const storeDataMigration = new StoreDataMigration();
 
 /**
- * Initialize OAuth flow - generate authorization URL
+ * Store Personal Access Token
  */
-router.post('/authorize', authMiddleware, async (req, res) => {
+router.post('/store-token', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
-    const { store_id } = req.body;
+    const { store_id, token, user_email } = req.body;
     
     if (!store_id) {
       return res.status(400).json({
@@ -21,88 +21,74 @@ router.post('/authorize', authMiddleware, async (req, res) => {
       });
     }
 
-    // Validate OAuth configuration
-    const configErrors = renderIntegration.validateConfig();
-    if (configErrors.length > 0) {
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'Render OAuth configuration incomplete',
-        errors: configErrors
+        message: 'Personal Access Token is required'
       });
     }
 
-    // Generate authorization URL with deployment permissions
-    const authUrl = renderIntegration.generateAuthUrl(store_id, [
-      'read:services',
-      'write:services', 
-      'read:deploys',
-      'write:deploys',
-      'read:owners'
-    ]);
+    // Store and validate the token
+    const result = await renderIntegration.storePersonalAccessToken(store_id, token.trim(), user_email);
 
-    res.json({
-      success: true,
-      auth_url: authUrl,
-      message: 'Authorization URL generated. Redirect user to this URL.'
-    });
+    if (result.success) {
+      res.json({
+        success: true,
+        message: result.message,
+        user_info: result.userInfo
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.error
+      });
+    }
   } catch (error) {
-    console.error('Render OAuth authorization failed:', error);
+    console.error('Failed to store Render token:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to generate authorization URL',
+      message: 'Failed to store Personal Access Token',
       error: error.message
     });
   }
 });
 
 /**
- * Handle OAuth callback - exchange code for token
+ * Validate Personal Access Token (without storing it)
  */
-router.get('/callback', async (req, res) => {
+router.post('/validate-token', authMiddleware, async (req, res) => {
   try {
-    const { code, state, error, error_description } = req.query;
+    const { token } = req.body;
     
-    // Handle OAuth errors
-    if (error) {
-      console.error('Render OAuth callback error:', error, error_description);
-      return res.redirect(`/admin/integrations/render?error=${encodeURIComponent(error_description || error)}`);
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Personal Access Token is required'
+      });
     }
 
-    if (!code || !state) {
-      return res.redirect('/admin/integrations/render?error=Missing authorization code or state');
-    }
-
-    // Exchange code for token
-    const tokenResult = await renderIntegration.exchangeCodeForToken(code, state);
+    // Test the token
+    const testResult = await renderIntegration.testToken(token.trim());
     
-    if (!tokenResult.success) {
-      console.error('Token exchange failed:', tokenResult.error);
-      return res.redirect(`/admin/integrations/render?error=${encodeURIComponent(tokenResult.error)}`);
+    if (testResult.success) {
+      res.json({
+        success: true,
+        message: 'Token is valid',
+        user_info: testResult.userInfo
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: `Invalid token: ${testResult.error}`
+      });
     }
-
-    // Store credentials
-    const storeResult = await renderIntegration.storeCredentials(
-      tokenResult.storeId,
-      tokenResult.tokenData
-    );
-
-    if (!storeResult.success) {
-      console.error('Failed to store credentials:', storeResult.error);
-      return res.redirect(`/admin/integrations/render?error=${encodeURIComponent(storeResult.error)}`);
-    }
-
-    // Success redirect
-    const successParams = new URLSearchParams({
-      success: 'true',
-      user_email: tokenResult.userInfo?.email || 'Unknown',
-      owner_id: tokenResult.userInfo?.owner?.id || 'Unknown'
-    });
-
-    res.redirect(`/admin/integrations/render?${successParams.toString()}`);
-    
   } catch (error) {
-    console.error('Render OAuth callback processing failed:', error);
-    res.redirect(`/admin/integrations/render?error=${encodeURIComponent('Authentication failed. Please try again.')}`);
+    console.error('Token validation failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Token validation failed',
+      error: error.message
+    });
   }
 });
 
@@ -367,24 +353,35 @@ router.get('/database-status/:store_id', authMiddleware, checkStoreOwnership, as
 });
 
 /**
- * Get OAuth service configuration
+ * Get Render integration configuration
  */
-router.get('/config', authMiddleware, async (req, res) => {
+router.get('/config/:store_id?', authMiddleware, async (req, res) => {
   try {
-    const status = renderIntegration.getStatus();
-    const configErrors = renderIntegration.validateConfig();
+    const { store_id } = req.params;
+    const status = await renderIntegration.getStatus(store_id);
+    
+    let configErrors = [];
+    if (store_id) {
+      configErrors = await renderIntegration.validateStoreConfig(store_id);
+    }
     
     res.json({
       success: true,
       config: status,
       errors: configErrors,
-      ready: configErrors.length === 0
+      ready: configErrors.length === 0,
+      instructions: {
+        step1: 'Go to https://dashboard.render.com/account/api-keys',
+        step2: 'Create a new Personal Access Token with appropriate scopes',
+        step3: 'Copy the token and paste it in the form below',
+        step4: 'Click "Connect" to validate and store the token'
+      }
     });
   } catch (error) {
-    console.error('Failed to get Render OAuth config:', error);
+    console.error('Failed to get Render config:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to get OAuth configuration',
+      message: 'Failed to get configuration',
       error: error.message
     });
   }
