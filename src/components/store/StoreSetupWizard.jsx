@@ -39,6 +39,11 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
   }, [storeId]);
 
   const checkExistingConnection = async () => {
+    if (!storeId || storeId === 'undefined') {
+      console.warn('StoreSetupWizard: Invalid storeId, skipping connection check:', storeId);
+      return;
+    }
+    
     try {
       const response = await apiClient.get('/supabase/status', {
         'x-store-id': storeId
@@ -55,7 +60,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
 
   // Poll for Supabase connection status changes
   useEffect(() => {
-    if (currentStep === 1 && !supabaseConnected) {
+    if (currentStep === 1 && !supabaseConnected && storeId && storeId !== 'undefined') {
       const pollInterval = setInterval(async () => {
         try {
           const response = await apiClient.get('/supabase/status', {
@@ -79,6 +84,11 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
   }, [currentStep, storeId, supabaseConnected]);
 
   const handleDatabaseMigration = async () => {
+    if (!storeId || storeId === 'undefined') {
+      toast.error('Invalid store ID. Please refresh and try again.');
+      return;
+    }
+    
     try {
       setLoading(true);
       setMigrationStatus({ status: 'running', message: 'Initializing database migration...' });
@@ -302,6 +312,33 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
       </div>
     </div>
   );
+
+  // Show error message if storeId is invalid
+  if (!storeId || storeId === 'undefined') {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Set Up Your Store</h2>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <p className="text-red-800 font-medium">Invalid Store Configuration</p>
+            </div>
+            <p className="text-red-700 mt-2">
+              Store ID is missing or invalid. Please go back to the stores page and try creating a new store.
+            </p>
+            <Button 
+              onClick={onSkip} 
+              variant="outline" 
+              className="mt-4"
+            >
+              Go Back to Stores
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-2xl mx-auto">
