@@ -258,7 +258,16 @@ function _getCurrentPage(url) {
         url = url.slice(0, -1);
     }
     
-    // Check for SEO tools sub-routes first
+    // Check for editor routes first
+    if (url.includes('/editor/')) {
+        const editorPath = url.split('/editor/')[1];
+        if (editorPath === 'templates') return 'TemplateEditor';
+        if (editorPath === 'themes') return 'ThemeLayout';
+        if (editorPath === 'plugins') return 'PluginBuilder';
+        return 'TemplateEditor'; // Default for editor mode
+    }
+    
+    // Check for SEO tools sub-routes
     if (url.includes('/admin/seo-tools')) {
         return 'SeoTools';
     }
@@ -780,6 +789,28 @@ function PagesContent() {
                 <Route path="/admin/simple-test" element={<SimpleTest />} />
                 
                 {/* =========================== */}
+                {/* EDITOR ROUTES */}
+                {/* =========================== */}
+                
+                <Route path="/editor/templates" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <TemplateEditor />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/editor/themes" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ThemeLayout />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/editor/plugins" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PluginBuilder />
+                    </RoleProtectedRoute>
+                } />
+                
+                {/* =========================== */}
                 {/* PUBLIC CONTENT ROUTES */}
                 {/* =========================== */}
                 
@@ -1163,6 +1194,28 @@ function PagesContent() {
                 } />
                 
                 <Route path="/admin/simple-test" element={<SimpleTest />} />
+                
+                {/* =========================== */}
+                {/* EDITOR ROUTES */}
+                {/* =========================== */}
+                
+                <Route path="/editor/templates" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <TemplateEditor />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/editor/themes" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <ThemeLayout />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/editor/plugins" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <PluginBuilder />
+                    </RoleProtectedRoute>
+                } />
                 
                 {/* =========================== */}
                 {/* SPECIAL ROUTES */}

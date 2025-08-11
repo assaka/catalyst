@@ -86,6 +86,7 @@ import {
 import { StoreProvider } from "@/components/storefront/StoreProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
+import EditorLayout from "@/components/EditorLayout";
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -119,6 +120,17 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [gtmConfig, setGtmConfig] = useState(null);
+  const [currentMode, setCurrentMode] = useState('admin'); // 'admin' or 'editor'
+  
+  // Determine mode from URL
+  useEffect(() => {
+    if (location.pathname.includes('/editor')) {
+      setCurrentMode('editor');
+    } else if (location.pathname.includes('/admin')) {
+      setCurrentMode('admin');
+    }
+  }, [location.pathname]);
+  
   const [openGroups, setOpenGroups] = useState({
     "Catalog": false,
     "Sales": false,
@@ -261,6 +273,16 @@ export default function Layout({ children, currentPageName }) {
                   <p className="text-lg text-gray-700 mb-4">Redirecting...</p>
               </div>
           );
+      }
+      
+      // If in editor mode, use the EditorLayout
+      if (currentMode === 'editor') {
+        return (
+          <div className="min-h-screen bg-gray-50">
+            <RoleSwitcher />
+            <EditorLayout>{children}</EditorLayout>
+          </div>
+        );
       }
   }
 
@@ -430,6 +452,18 @@ export default function Layout({ children, currentPageName }) {
 
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
+  };
+  
+  const switchToAdmin = () => {
+    if (currentMode !== 'admin') {
+      navigate('/admin/dashboard');
+    }
+  };
+  
+  const switchToEditor = () => {
+    if (currentMode !== 'editor') {
+      navigate('/editor/templates');
+    }
   };
   
 
@@ -754,10 +788,32 @@ export default function Layout({ children, currentPageName }) {
             <Menu className="w-5 h-5" />
           </Button>
           <div className="flex items-center space-x-3">
-            <div className="w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded flex items-center justify-center">
-              <StoreIcon className="w-4 h-4 text-white" />
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToAdmin}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  currentMode === 'admin' 
+                    ? 'bg-white shadow-sm text-gray-900' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Admin
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToEditor}
+                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  currentMode === 'editor' 
+                    ? 'bg-white shadow-sm text-gray-900' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Editor
+              </Button>
             </div>
-            <span className="text-lg font-bold text-gray-900">Catalyst</span>
           </div>
           <div className="w-10" />
         </div>
@@ -765,7 +821,32 @@ export default function Layout({ children, currentPageName }) {
         {/* Desktop Header with Store Selector */}
         <div className="hidden lg:flex items-center justify-between h-16 px-6 bg-white border-b border-gray-200">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold text-gray-900">{currentPageName || 'Dashboard'}</h1>
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToAdmin}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  currentMode === 'admin' 
+                    ? 'bg-white shadow-sm text-gray-900' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Admin
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={switchToEditor}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  currentMode === 'editor' 
+                    ? 'bg-white shadow-sm text-gray-900' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                Editor
+              </Button>
+            </div>
           </div>
           <div className="flex items-center space-x-4">
             <StoreSelector />
