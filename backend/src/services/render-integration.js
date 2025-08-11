@@ -25,6 +25,9 @@ class RenderIntegration {
       }
 
       // Store the token data
+      console.log('📋 User info from token test:', JSON.stringify(testResult.userInfo, null, 2));
+      console.log('📋 Provided user email:', userEmail);
+      
       const tokenData = {
         access_token: token,
         user_id: testResult.userInfo?.id || 'unknown_user', // Required field
@@ -33,6 +36,8 @@ class RenderIntegration {
         expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Set to 1 year from now (Personal Access Tokens are long-lived)
         scope: 'personal_access_token'
       };
+      
+      console.log('💾 Storing token data:', JSON.stringify(tokenData, null, 2));
 
       await RenderOAuthToken.createOrUpdate(storeId, tokenData);
 
@@ -79,9 +84,31 @@ class RenderIntegration {
       }
     });
 
-    // Get the first owner (user's personal account)
-    const owners = response.data;
-    const userOwner = owners.find(owner => owner.type === 'user') || owners[0];
+    console.log('🔍 Render API /owners response:', JSON.stringify(response.data, null, 2));
+
+    let userOwner;
+    const data = response.data;
+
+    // Handle different response structures from Render API
+    if (Array.isArray(data)) {
+      // If response is an array of owners (expected original structure)
+      userOwner = data.find(owner => owner.type === 'user') || data[0];
+    } else if (data.owner && data.owner.owner) {
+      // If response has nested owner structure (actual structure from API)
+      userOwner = data.owner.owner;
+    } else if (data.owner) {
+      // If response has single owner structure
+      userOwner = data.owner;
+    } else {
+      // Fallback - use the data directly
+      userOwner = data;
+    }
+
+    if (!userOwner) {
+      throw new Error('No owner information found in Render API response');
+    }
+
+    console.log('✅ Extracted user owner:', JSON.stringify(userOwner, null, 2));
 
     return {
       id: userOwner.id,
