@@ -296,6 +296,7 @@ function _getCurrentPage(url) {
         'ecommerce-integrations': 'EcommerceIntegrations',
         'crm-integrations': 'CRMIntegrations',
         'database-integrations': 'DatabaseIntegrations',
+        'render-integration': 'RenderIntegration',
         'plugin-how-to': 'PluginHowToFixed',
         'plugin-builder': 'PluginBuilder',
         'template-editor': 'TemplateEditor',
