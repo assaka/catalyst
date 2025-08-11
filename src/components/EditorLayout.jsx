@@ -497,6 +497,7 @@ const EditorLayout = ({ children }) => {
             </div>
           </div>
         </div>
+        </div>
       </div>
     </div>
   );
