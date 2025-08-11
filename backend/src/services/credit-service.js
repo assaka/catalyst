@@ -164,6 +164,74 @@ class CreditService {
   }
 
   /**
+   * Check if user can publish store (has enough credits for daily cost)
+   */
+  async canPublishStore(userId, storeId) {
+    const dailyCost = 1.0; // 1 credit per day
+    const hasCredits = await this.hasEnoughCredits(userId, storeId, dailyCost);
+    
+    return {
+      can_publish: hasCredits,
+      required_credits: dailyCost,
+      current_balance: await this.getBalance(userId, storeId),
+      message: hasCredits ? 'Ready to publish' : 'Insufficient credits for publishing'
+    };
+  }
+
+  /**
+   * Start charging daily credits for published store
+   */
+  async startDailyCharging(userId, storeId) {
+    const dailyCost = 1.0; // 1 credit per day
+    
+    return await this.deduct(
+      userId,
+      storeId,
+      dailyCost,
+      'Store publishing - daily charge',
+      { 
+        charge_type: 'daily',
+        store_published: true,
+        started_at: new Date().toISOString()
+      },
+      storeId,
+      'store_publishing'
+    );
+  }
+
+  /**
+   * Record daily credit charge for published store
+   */
+  async chargeDailyPublishingFee(userId, storeId) {
+    const dailyCost = 1.0; // 1 credit per day
+    
+    // Check if store is still published
+    const Store = require('../models/Store');
+    const store = await Store.findByPk(storeId);
+    
+    if (!store || !store.published) {
+      return {
+        success: false,
+        message: 'Store is not published, skipping daily charge'
+      };
+    }
+    
+    return await this.deduct(
+      userId,
+      storeId,
+      dailyCost,
+      'Store publishing - daily charge',
+      { 
+        charge_type: 'daily',
+        store_published: true,
+        charge_date: new Date().toISOString()
+      },
+      storeId,
+      'store_publishing'
+    );
+  }
+
+  /**
    * Create a credit purchase transaction
    */
   async createPurchaseTransaction(userId, storeId, amountUsd, creditsAmount, paymentIntentId = null) {

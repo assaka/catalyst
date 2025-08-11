@@ -131,6 +131,43 @@ const Store = sequelize.define('Store', {
   stripe_account_id: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+  // Store publishing and deployment status
+  deployment_status: {
+    type: DataTypes.ENUM('draft', 'deployed', 'published', 'failed'),
+    defaultValue: 'draft'
+  },
+  published: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  published_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  render_service_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  render_service_url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  auto_supabase_project_id: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  auto_supabase_project_url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  github_repo_url: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  template_customizations: {
+    type: DataTypes.JSON,
+    defaultValue: {}
   }
 }, {
   tableName: 'stores',
@@ -147,5 +184,95 @@ const Store = sequelize.define('Store', {
     }
   }
 });
+
+// Store instance methods for deployment and publishing
+Store.prototype.canPublish = function() {
+  return this.deployment_status === 'deployed' && !this.published;
+};
+
+Store.prototype.publish = function() {
+  return this.update({
+    published: true,
+    published_at: new Date(),
+    deployment_status: 'published'
+  });
+};
+
+Store.prototype.unpublish = function() {
+  return this.update({
+    published: false,
+    published_at: null,
+    deployment_status: 'deployed'
+  });
+};
+
+Store.prototype.updateDeploymentStatus = function(status, serviceId = null, serviceUrl = null) {
+  const updateData = { deployment_status: status };
+  
+  if (serviceId) updateData.render_service_id = serviceId;
+  if (serviceUrl) updateData.render_service_url = serviceUrl;
+  
+  return this.update(updateData);
+};
+
+// Static methods for deployment management
+Store.findPublishedStores = function() {
+  return this.findAll({
+    where: { published: true },
+    order: [['published_at', 'DESC']]
+  });
+};
+
+Store.findByDeploymentStatus = function(status) {
+  return this.findAll({
+    where: { deployment_status: status },
+    order: [['updated_at', 'DESC']]
+  });
+};
+
+// Store instance methods for deployment and publishing
+Store.prototype.canPublish = function() {
+  return this.deployment_status === 'deployed' && !this.published;
+};
+
+Store.prototype.publish = function() {
+  return this.update({
+    published: true,
+    published_at: new Date(),
+    deployment_status: 'published'
+  });
+};
+
+Store.prototype.unpublish = function() {
+  return this.update({
+    published: false,
+    published_at: null,
+    deployment_status: 'deployed'
+  });
+};
+
+Store.prototype.updateDeploymentStatus = function(status, serviceId = null, serviceUrl = null) {
+  const updateData = { deployment_status: status };
+  
+  if (serviceId) updateData.render_service_id = serviceId;
+  if (serviceUrl) updateData.render_service_url = serviceUrl;
+  
+  return this.update(updateData);
+};
+
+// Static methods for deployment management
+Store.findPublishedStores = function() {
+  return this.findAll({
+    where: { published: true },
+    order: [['published_at', 'DESC']]
+  });
+};
+
+Store.findByDeploymentStatus = function(status) {
+  return this.findAll({
+    where: { deployment_status: status },
+    order: [['updated_at', 'DESC']]
+  });
+};
 
 module.exports = Store;
