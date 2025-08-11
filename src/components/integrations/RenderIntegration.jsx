@@ -34,6 +34,15 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
 
   useEffect(() => {
     if (storeId && storeId !== 'undefined') {
+      // Check if user is authenticated before attempting to load status
+      const token = apiClient.getToken();
+      if (!token) {
+        toast.error('Please log in to access Render integration settings.');
+        setStatus({ connected: false });
+        setLoading(false);
+        return;
+      }
+      
       loadStatus();
     }
   }, [storeId]);
@@ -50,6 +59,18 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
       }
     } catch (error) {
       console.error('Failed to load Render status:', error);
+      
+      // Show user-friendly error message
+      if (error.status === 401 || error.status === 403) {
+        toast.error('Authentication required. Please ensure you are logged in and have access to this store.');
+      } else if (error.status === 404) {
+        toast.error('Store not found. Please check your store configuration.');
+      } else if (error.message.includes('Network error')) {
+        toast.error('Unable to connect to server. Please check your internet connection.');
+      } else {
+        toast.error(`Failed to load Render status: ${error.message}`);
+      }
+      
       setStatus({ connected: false });
     } finally {
       setLoading(false);
@@ -63,6 +84,16 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
       setServices(response.data?.services || []);
     } catch (error) {
       console.error('Failed to load Render services:', error);
+      
+      // Show user-friendly error message for services loading
+      if (error.status === 401 || error.status === 403) {
+        toast.error('Authentication required to load services. Please ensure you are logged in.');
+      } else if (error.status === 404) {
+        toast.error('No Render connection found. Please connect to Render first.');
+      } else {
+        toast.error(`Failed to load services: ${error.message}`);
+      }
+      
       setServices([]);
     } finally {
       setLoadingServices(false);
