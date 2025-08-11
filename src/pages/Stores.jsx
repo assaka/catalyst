@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { User } from '@/api/entities';
 import { Store } from '@/api/entities';
 import { CreditTransaction } from '@/api/entities';
@@ -15,6 +16,7 @@ import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
 
 export default function Stores() {
+  const { selectStore, refreshStores } = useStoreSelection();
   const [stores, setStores] = useState([]);
   const [user, setUser] = useState(null);
   const [clients, setClients] = useState([]); // Keep state for clients, though its usage in loadData is removed by outline
@@ -122,8 +124,17 @@ export default function Stores() {
       setNewStore({ name: '', client_email: '', description: '', slug: '' });
       setCreateError('');
       
-      // Store created successfully - redirect to store dashboard
+      // Store created successfully - auto-select and redirect to store dashboard
       const storeData = createdStore.data || createdStore;
+      
+      // Refresh stores list and auto-select the new store
+      await refreshStores();
+      selectStore({
+        id: storeData.id,
+        name: storeData.name || newStore.name
+      });
+      
+      // Redirect to store dashboard
       window.location.href = `/admin/settings?store=${storeData.id}`;
       
       loadData();
