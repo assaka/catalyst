@@ -191,13 +191,13 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                Render
+                Connection Status
                 <ExternalLink 
                   className="w-4 h-4 ml-2 text-gray-400 cursor-pointer hover:text-gray-600" 
                   onClick={() => window.open('https://render.com', '_blank')}
                 />
               </h3>
-              <p className="text-sm text-gray-600">Deploy and host your applications</p>
+              <p className="text-sm text-gray-600">Deploy and host your applications with Render</p>
             </div>
           </div>
           
