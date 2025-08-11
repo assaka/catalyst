@@ -1,23 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import apiClient from '../../api/client';
-import { CheckCircle, ArrowRight, Database, Shield, Settings, AlertCircle, RefreshCw, ExternalLink, Copy, Eye, EyeOff } from 'lucide-react';
+import { CheckCircle, ArrowRight, Database, Shield, Settings, AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
+import SupabaseIntegration from '../integrations/SupabaseIntegration';
 
 const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [supabaseConfig, setSupabaseConfig] = useState({
-    projectUrl: '',
-    anonKey: '',
-    serviceRoleKey: ''
-  });
-  const [showServiceKey, setShowServiceKey] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [migrationStatus, setMigrationStatus] = useState(null);
+  const [supabaseConnected, setSupabaseConnected] = useState(false);
 
   const steps = [
     {
@@ -46,9 +40,12 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
 
   const checkExistingConnection = async () => {
     try {
-      const response = await apiClient.get(`/supabase/status/${storeId}`);
-      if (response.data?.connected) {
-        setConnectionStatus(response.data);
+      const response = await apiClient.get('/supabase/status', {
+        'x-store-id': storeId
+      });
+      if (response.success && response.connected) {
+        setConnectionStatus(response);
+        setSupabaseConnected(true);
         setCurrentStep(2);
       }
     } catch (error) {
@@ -56,57 +53,53 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
     }
   };
 
-  const handleSupabaseConnect = async () => {
-    if (!supabaseConfig.projectUrl || !supabaseConfig.anonKey) {
-      toast.error('Project URL and Anonymous Key are required');
-      return;
-    }
+  // Poll for Supabase connection status changes
+  useEffect(() => {
+    if (currentStep === 1 && !supabaseConnected) {
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await apiClient.get('/supabase/status', {
+            'x-store-id': storeId
+          });
+          if (response.success && response.connected && !supabaseConnected) {
+            setSupabaseConnected(true);
+            setConnectionStatus(response);
+            setCurrentStep(2);
+            toast.success('Supabase connected! Ready to initialize database.');
+            clearInterval(pollInterval);
+          }
+        } catch (error) {
+          // Silently continue polling on error
+        }
+      }, 2000); // Poll every 2 seconds
 
-    try {
-      setLoading(true);
-      const response = await apiClient.post('/supabase/connect', {
-        store_id: storeId,
-        project_url: supabaseConfig.projectUrl,
-        anon_key: supabaseConfig.anonKey,
-        service_role_key: supabaseConfig.serviceRoleKey || undefined
-      });
-
-      if (response.data?.success) {
-        setConnectionStatus(response.data);
-        toast.success('Successfully connected to Supabase!');
-        setCurrentStep(2);
-      } else {
-        toast.error(response.data?.message || 'Failed to connect to Supabase');
-      }
-    } catch (error) {
-      console.error('Supabase connection failed:', error);
-      toast.error(error.response?.data?.message || 'Failed to connect to Supabase');
-    } finally {
-      setLoading(false);
+      // Clean up interval on component unmount or when connection is established
+      return () => clearInterval(pollInterval);
     }
-  };
+  }, [currentStep, storeId, supabaseConnected]);
 
   const handleDatabaseMigration = async () => {
     try {
       setLoading(true);
       setMigrationStatus({ status: 'running', message: 'Initializing database migration...' });
 
-      const response = await apiClient.post('/supabase/migrate', {
-        store_id: storeId
-      });
+      const response = await apiClient.post('/supabase/migrate', 
+        { store_id: storeId },
+        { 'x-store-id': storeId }
+      );
 
-      if (response.data?.success) {
+      if (response.success) {
         setMigrationStatus({ 
           status: 'success', 
           message: 'Database migration completed successfully!',
-          details: response.data.details
+          details: response.details
         });
         toast.success('Database migration completed!');
         setCurrentStep(3);
       } else {
         setMigrationStatus({ 
           status: 'error', 
-          message: response.data?.message || 'Migration failed'
+          message: response.message || 'Migration failed'
         });
         toast.error('Database migration failed');
       }
@@ -122,10 +115,6 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
     }
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    toast.success('Copied to clipboard!');
-  };
 
   const renderStep1 = () => (
     <div className="space-y-6">
@@ -137,135 +126,11 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
         </p>
       </div>
 
-      {/* Supabase Setup Instructions */}
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center">
-            <ExternalLink className="w-5 h-5 mr-2 text-blue-600" />
-            How to get your Supabase credentials
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
-            <li>
-              Visit{' '}
-              <a 
-                href="https://supabase.com/dashboard" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="underline hover:text-blue-900"
-              >
-                Supabase Dashboard
-              </a>{' '}
-              and create a new project or select existing one
-            </li>
-            <li>Go to Settings → API</li>
-            <li>Copy your Project URL and anon key</li>
-            <li>Optionally copy your service_role key for advanced features</li>
-            <li>Paste the credentials below</li>
-          </ol>
-        </CardContent>
-      </Card>
-
-      {/* Connection Form */}
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="projectUrl">Project URL *</Label>
-          <div className="flex space-x-2">
-            <Input
-              id="projectUrl"
-              value={supabaseConfig.projectUrl}
-              onChange={(e) => setSupabaseConfig(prev => ({ ...prev, projectUrl: e.target.value }))}
-              placeholder="https://your-project.supabase.co"
-              className="flex-1"
-            />
-            {supabaseConfig.projectUrl && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => copyToClipboard(supabaseConfig.projectUrl)}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="anonKey">Anonymous Key *</Label>
-          <div className="flex space-x-2">
-            <Input
-              id="anonKey"
-              value={supabaseConfig.anonKey}
-              onChange={(e) => setSupabaseConfig(prev => ({ ...prev, anonKey: e.target.value }))}
-              placeholder="eyJ..."
-              className="flex-1"
-              type="password"
-            />
-            {supabaseConfig.anonKey && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => copyToClipboard(supabaseConfig.anonKey)}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="serviceRoleKey">Service Role Key (Optional)</Label>
-          <div className="flex space-x-2">
-            <Input
-              id="serviceRoleKey"
-              value={supabaseConfig.serviceRoleKey}
-              onChange={(e) => setSupabaseConfig(prev => ({ ...prev, serviceRoleKey: e.target.value }))}
-              placeholder="eyJ..."
-              className="flex-1"
-              type={showServiceKey ? 'text' : 'password'}
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowServiceKey(!showServiceKey)}
-            >
-              {showServiceKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            </Button>
-            {supabaseConfig.serviceRoleKey && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => copyToClipboard(supabaseConfig.serviceRoleKey)}
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Required for advanced features like user management and data migrations
-          </p>
-        </div>
-
-        <Button
-          onClick={handleSupabaseConnect}
-          disabled={loading || !supabaseConfig.projectUrl || !supabaseConfig.anonKey}
-          className="w-full"
-          size="lg"
-        >
-          {loading ? (
-            <>
-              <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
-              Connecting...
-            </>
-          ) : (
-            <>
-              <Shield className="w-5 h-5 mr-2" />
-              Connect to Supabase
-            </>
-          )}
-        </Button>
-      </div>
+      {/* Use SupabaseIntegration component with OAuth project selection */}
+      <SupabaseIntegration 
+        storeId={storeId}
+        context="wizard"
+      />
 
       {connectionStatus && (
         <Card className={connectionStatus.connected ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}>
