@@ -27,11 +27,11 @@ const RenderOAuthToken = sequelize.define('RenderOAuthToken', {
   },
   expires_at: {
     type: DataTypes.DATE,
-    allowNull: false
+    allowNull: true // Personal Access Tokens may not have expiration
   },
   user_id: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: true // May not be available for all token types
   },
   user_email: {
     type: DataTypes.STRING,

@@ -27,9 +27,10 @@ class RenderIntegration {
       // Store the token data
       const tokenData = {
         access_token: token,
+        user_id: testResult.userInfo?.id || 'unknown_user', // Required field
         user_email: userEmail || testResult.userInfo?.email || 'Unknown',
         owner_id: testResult.userInfo?.id || 'Unknown',
-        expires_at: null, // Personal Access Tokens don't expire unless revoked
+        expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Set to 1 year from now (Personal Access Tokens are long-lived)
         scope: 'personal_access_token'
       };
 
