@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import StoreSelector from '@/components/admin/StoreSelector';
+import ModeHeader from '@/components/shared/ModeHeader';
 import { 
   Eye, 
   Send, 
@@ -49,6 +49,9 @@ const EditorLayout = ({ children }) => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Get user info for shared header
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
 
   // Auto-save functionality
   useEffect(() => {
@@ -286,56 +289,38 @@ const EditorLayout = ({ children }) => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Editor Header */}
-      <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToAdmin}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
-            >
-              Admin
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={switchToEditor}
-              className="px-4 py-2 text-sm font-medium bg-white shadow-sm text-gray-900 rounded-md"
-            >
-              Editor
-            </Button>
-          </div>
-          <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-            <Button
-              size="sm"
-              variant={viewMode === 'desktop' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('desktop')}
-              className="px-3 py-1"
-            >
-              <Monitor className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant={viewMode === 'tablet' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('tablet')}
-              className="px-3 py-1"
-            >
-              <Tablet className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant={viewMode === 'mobile' ? 'default' : 'ghost'}
-              onClick={() => setViewMode('mobile')}
-              className="px-3 py-1"
-            >
-              <Smartphone className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-3">
+      <ModeHeader 
+        user={user} 
+        currentMode="editor"
+        showExtraButtons={true}
+        extraButtons={
+          <>
+            <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+              <Button
+                size="sm"
+                variant={viewMode === 'desktop' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('desktop')}
+                className="px-3 py-1"
+              >
+                <Monitor className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === 'tablet' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('tablet')}
+                className="px-3 py-1"
+              >
+                <Tablet className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === 'mobile' ? 'default' : 'ghost'}
+                onClick={() => setViewMode('mobile')}
+                className="px-3 py-1"
+              >
+                <Smartphone className="w-4 h-4" />
+              </Button>
+            </div>
             {!chatOpen && (
               <Button
                 variant="ghost"
@@ -367,28 +352,9 @@ const EditorLayout = ({ children }) => {
                 Last saved: {lastSaved.toLocaleTimeString()}
               </div>
             )}
-          </div>
-          <StoreSelector />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <UserIcon className="h-5 w-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">User Profile</p>
-                  <p className="text-xs leading-none text-muted-foreground">user@example.com</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Settings</DropdownMenuItem>
-              <DropdownMenuItem>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+          </>
+        }
+      />
       
       <div className="flex flex-1 overflow-hidden">
         {/* AI Chat Context Column */}
