@@ -13,7 +13,6 @@ import { Plus, Store as StoreIcon, Users, Settings, Trash2, Eye, Crown, UserPlus
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 import { getExternalStoreUrl, getStoreBaseUrl } from '@/utils/urlUtils';
-import StoreSetupWizard from '@/components/store/StoreSetupWizard';
 
 export default function Stores() {
   const [stores, setStores] = useState([]);
@@ -22,8 +21,6 @@ export default function Stores() {
   const [loading, setLoading] = useState(true);
   const [showCreateStore, setShowCreateStore] = useState(false);
   const [createError, setCreateError] = useState('');
-  const [showSetupWizard, setShowSetupWizard] = useState(false);
-  const [newlyCreatedStore, setNewlyCreatedStore] = useState(null);
   const [newStore, setNewStore] = useState({
     name: '',
     // client_email and description are kept here because UI still references them
@@ -125,13 +122,9 @@ export default function Stores() {
       setNewStore({ name: '', client_email: '', description: '', slug: '' });
       setCreateError('');
       
-      // Set up the newly created store for the setup wizard
+      // Store created successfully - redirect to store dashboard
       const storeData = createdStore.data || createdStore;
-      setNewlyCreatedStore({
-        id: storeData.id,
-        name: storeData.name || newStore.name
-      });
-      setShowSetupWizard(true);
+      window.location.href = `/admin/settings?store=${storeData.id}`;
       
       loadData();
     } catch (error) {
@@ -384,29 +377,6 @@ export default function Stores() {
         </div>
       )}
 
-      {/* Store Setup Wizard Modal */}
-      {showSetupWizard && newlyCreatedStore && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <StoreSetupWizard
-                storeId={newlyCreatedStore.id}
-                storeName={newlyCreatedStore.name}
-                onComplete={() => {
-                  setShowSetupWizard(false);
-                  setNewlyCreatedStore(null);
-                  // Navigate to store dashboard
-                  window.location.href = `/admin/settings?store=${newlyCreatedStore.id}`;
-                }}
-                onSkip={() => {
-                  setShowSetupWizard(false);
-                  setNewlyCreatedStore(null);
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
