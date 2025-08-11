@@ -504,10 +504,6 @@ export default function Layout({ children, currentPageName }) {
     }
   ];
 
-  const toggleGroup = (groupName) => {
-    setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
-  };
-  
   const switchToAdmin = () => {
     if (currentMode !== 'admin') {
       navigate('/admin/dashboard');
@@ -519,8 +515,10 @@ export default function Layout({ children, currentPageName }) {
       navigate('/editor/templates');
     }
   };
-  
 
+  const toggleGroup = (groupName) => {
+    setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
