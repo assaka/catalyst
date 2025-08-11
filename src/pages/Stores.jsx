@@ -74,10 +74,16 @@ export default function Stores() {
   // Add function to refresh user data specifically
   const refreshUserData = async () => {
     try {
+      console.log('🔄 Refreshing user data for Create Store modal...');
       const userData = await User.me();
+      console.log('✅ Fresh user data received:', {
+        email: userData?.email,
+        credits: userData?.credits,
+        creditsType: typeof userData?.credits
+      });
       setUser(userData);
     } catch (error) {
-      console.error('Error refreshing user data:', error);
+      console.error('❌ Error refreshing user data:', error);
     }
   };
 
@@ -191,13 +197,13 @@ export default function Stores() {
           </p>
         </div>
 
-        <Dialog open={showCreateStore} onOpenChange={(open) => {
+        <Dialog open={showCreateStore} onOpenChange={async (open) => {
           setShowCreateStore(open);
           if (!open) {
             setCreateError('');
           } else {
             // Refresh user data when opening dialog to get latest credits
-            refreshUserData();
+            await refreshUserData();
           }
         }}>
           <DialogTrigger asChild>
@@ -267,6 +273,10 @@ export default function Stores() {
                   <p className="text-sm text-blue-800">
                     <strong>Store Pricing:</strong> Each store costs 1 credit per day to maintain.
                     You have {user?.credits || 0} credits remaining.
+                  </p>
+                  {/* Debug info - remove after testing */}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Debug: credits = {user?.credits} ({typeof user?.credits})
                   </p>
                 </div>
               )}
