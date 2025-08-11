@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import apiClient from '../../api/client';
-import { ExternalLink, Cloud, Server, Deploy, AlertCircle, Info, Copy, ArrowRight, RefreshCw, Globe, Activity, Zap, Building, Link2, Settings } from 'lucide-react';
+import { ExternalLink, Cloud, Server, Rocket, AlertCircle, Info, Copy, ArrowRight, RefreshCw, Globe, Activity, Zap, Building, Link2, Settings } from 'lucide-react';
 
 const RenderIntegration = ({ storeId, context = 'full' }) => {
   const [status, setStatus] = useState(null);
@@ -263,7 +263,7 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="p-4 bg-gray-50 rounded-lg">
-                <Deploy className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                <Rocket className="w-8 h-8 text-purple-600 mx-auto mb-2" />
                 <h5 className="font-medium text-gray-900">Easy Deployment</h5>
                 <p className="text-sm text-gray-600">Deploy from Git with automatic builds</p>
               </div>
@@ -399,7 +399,7 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
                   disabled={deploying || !deploymentConfig.repo || !deploymentConfig.name}
                   className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                 >
-                  {deploying ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Deploy className="w-4 h-4" />}
+                  {deploying ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Rocket className="w-4 h-4" />}
                   <span>{deploying ? 'Deploying...' : 'Deploy Application'}</span>
                 </button>
               </div>
