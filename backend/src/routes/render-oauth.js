@@ -10,7 +10,7 @@ const storeDataMigration = new StoreDataMigration();
 /**
  * Store Personal Access Token
  */
-router.post('/store-token', authMiddleware, checkStoreOwnership, async (req, res) => {
+router.post('/store-token', authMiddleware, async (req, res) => {
   try {
     const { store_id, token, user_email } = req.body;
     
@@ -25,6 +25,30 @@ router.post('/store-token', authMiddleware, checkStoreOwnership, async (req, res
       return res.status(400).json({
         success: false,
         message: 'Personal Access Token is required'
+      });
+    }
+
+    // Manual store ownership check with better error handling
+    const { Store } = require('../models');
+    const store = await Store.findByPk(store_id);
+    
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        message: 'Store not found'
+      });
+    }
+
+    // Check if user has access to this store
+    const userEmail = req.user.email;
+    const hasAccess = store.owner_email === userEmail || 
+                     req.user.role === 'admin' || 
+                     req.user.account_type === 'agency';
+
+    if (!hasAccess) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied: You do not have permission to configure this store'
       });
     }
 
