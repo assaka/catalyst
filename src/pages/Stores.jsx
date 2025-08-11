@@ -90,11 +90,7 @@ export default function Stores() {
   const handleCreateStore = async () => {
     setCreateError('');
     
-    // Check credits before proceeding (only for agency users)
-    if (user?.account_type === 'agency' && user?.role !== 'admin' && (user?.credits || 0) <= 0) {
-      setCreateError('You need at least 1 credit to create a store. Each store costs 1 credit per day.');
-      return;
-    }
+    // Store creation is now free - credits only charged when publishing
     
     // Dynamically generate slug if not provided, to ensure validation works
     // and to align with previous functionality where slug was derived from name.
@@ -130,9 +126,10 @@ export default function Stores() {
       setCreateError('');
       
       // Set up the newly created store for the setup wizard
+      const storeData = createdStore.data || createdStore;
       setNewlyCreatedStore({
-        id: createdStore.data.id,
-        name: createdStore.data.name || newStore.name
+        id: storeData.id,
+        name: storeData.name || newStore.name
       });
       setShowSetupWizard(true);
       
@@ -271,12 +268,8 @@ export default function Stores() {
               {user?.account_type === 'agency' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                   <p className="text-sm text-blue-800">
-                    <strong>Store Pricing:</strong> Each store costs 1 credit per day to maintain.
-                    You have {user?.credits || 0} credits remaining.
-                  </p>
-                  {/* Debug info - remove after testing */}
-                  <p className="text-xs text-gray-500 mt-1">
-                    Debug: credits = {user?.credits} ({typeof user?.credits})
+                    <strong>Store Pricing:</strong> Stores are free to create and develop. Publishing costs 1 credit per day.
+                    During development, you can view your store on a preview URL.
                   </p>
                 </div>
               )}
