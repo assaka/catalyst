@@ -125,7 +125,7 @@ export default function Layout({ children, currentPageName }) {
     "Marketing": false,
     "SEO": false, // Added new group for SEO
     "Plugins": false, // Added new group for Plugins
-    "Import & Categories": false, // Added new group for Import & Categories
+    "Import & Export": false, // Added new group for Import & Export
     "Store": false,
     "Advanced": false, // Added new group for Advanced features
   });
@@ -397,7 +397,7 @@ export default function Layout({ children, currentPageName }) {
       ]
     },
     {
-      name: "Import & Categories",
+      name: "Import & Export",
       items: [
         { name: "Akeneo Connector", path: "akeneo-integration", icon: RefreshCw, isPremium: true },
         { name: "Marketplace Export", path: "MARKETPLACE_EXPORT", icon: Upload },
