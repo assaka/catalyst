@@ -85,6 +85,8 @@ const supabaseRoutes = require('./routes/supabase');
 const shopifyRoutes = require('./routes/shopify');
 const imageRoutes = require('./routes/images');
 const cloudflareOAuthRoutes = require('./routes/cloudflare-oauth');
+const renderOAuthRoutes = require('./routes/render-oauth');
+const domainSettingsRoutes = require('./routes/domain-settings');
 const pluginRoutes = require('./routes/plugins');
 const pluginCreationRoutes = require('./routes/plugin-creation');
 const pluginRenderRoutes = require('./routes/plugin-render');
@@ -93,6 +95,10 @@ const productImageRoutes = require('./routes/product-images');
 const categoryImageRoutes = require('./routes/category-images');
 const fileManagerRoutes = require('./routes/file-manager');
 const templateRoutes = require('./routes/templates');
+const templateCustomizationRoutes = require('./routes/template-customization');
+const storeDataMigrationRoutes = require('./routes/store-data-migration');
+const storeProvisioningRoutes = require('./routes/store-provisioning');
+const domainsRoutes = require('./routes/domains');
 const storeDatabaseRoutes = require('./routes/store-database');
 const storeMediaStorageRoutes = require('./routes/store-mediastorage');
 const heatmapRoutes = require('./routes/heatmap');
@@ -1505,6 +1511,7 @@ app.use('/api/supabase', supabaseRoutes);
 app.use('/api/shopify', shopifyRoutes);
 app.use('/api/images', authMiddleware, imageRoutes);
 app.use('/api/cloudflare/oauth', cloudflareOAuthRoutes);
+app.use('/api/render/oauth', renderOAuthRoutes);
 app.use('/api/plugins', pluginRoutes);
 app.use('/api/stores/:store_id/plugins/create', pluginCreationRoutes);
 app.use('/api/stores/:store_id/plugins', pluginRenderRoutes);
@@ -1514,6 +1521,11 @@ app.use('/api/stores/:store_id/products', productImageRoutes);
 app.use('/api/stores/:store_id/categories', categoryImageRoutes);
 app.use('/api/file-manager', fileManagerRoutes);
 app.use('/api/stores/:store_id/templates', authMiddleware, templateRoutes);
+app.use('/api/stores/:store_id/template-customization', templateCustomizationRoutes);
+app.use('/api/stores/:store_id/data-migration', storeDataMigrationRoutes);
+app.use('/api/store-provisioning', storeProvisioningRoutes);
+app.use('/api/stores/:store_id/domains', domainsRoutes);
+app.use('/api/stores', domainSettingsRoutes); // Domain settings for Store -> Settings -> Domain
 app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes

@@ -36,6 +36,7 @@ const Plugin = require('./Plugin');
 const PluginConfiguration = require('./PluginConfiguration');
 const SupabaseOAuthToken = require('./SupabaseOAuthToken');
 const ShopifyOAuthToken = require('./ShopifyOAuthToken');
+const RenderOAuthToken = require('./RenderOAuthToken');
 const MediaAsset = require('./MediaAsset');
 const AkeneoCustomMapping = require('./AkeneoCustomMapping');
 const AkeneoSchedule = require('./AkeneoSchedule');
@@ -44,6 +45,10 @@ const CreditTransaction = require('./CreditTransaction');
 const CreditUsage = require('./CreditUsage');
 const Job = require('./Job');
 const JobHistory = require('./JobHistory');
+const StoreTemplate = require('./StoreTemplate');
+const TemplateAsset = require('./TemplateAsset');
+const StoreSupabaseConnection = require('./StoreSupabaseConnection');
+const StoreDataMigration = require('./StoreDataMigration');
 
 // Define associations
 const defineAssociations = () => {
@@ -220,6 +225,10 @@ const defineAssociations = () => {
   // ShopifyOAuthToken associations
   ShopifyOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasOne(ShopifyOAuthToken, { foreignKey: 'store_id' });
+  
+  // RenderOAuthToken associations
+  RenderOAuthToken.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasOne(RenderOAuthToken, { foreignKey: 'store_id' });
 
   // Credit system associations
   Credit.belongsTo(User, { foreignKey: 'user_id' });
@@ -250,6 +259,21 @@ const defineAssociations = () => {
   // AkeneoSchedule associations
   AkeneoSchedule.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(AkeneoSchedule, { foreignKey: 'store_id' });
+
+  // Template system associations
+  StoreTemplate.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(StoreTemplate, { foreignKey: 'store_id' });
+
+  TemplateAsset.belongsTo(Store, { foreignKey: 'store_id' });
+  TemplateAsset.belongsTo(StoreTemplate, { foreignKey: 'template_id' });
+  Store.hasMany(TemplateAsset, { foreignKey: 'store_id' });
+  StoreTemplate.hasMany(TemplateAsset, { foreignKey: 'template_id' });
+
+  StoreSupabaseConnection.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(StoreSupabaseConnection, { foreignKey: 'store_id' });
+
+  StoreDataMigration.belongsTo(Store, { foreignKey: 'store_id' });
+  Store.hasMany(StoreDataMigration, { foreignKey: 'store_id' });
 };
 
 // Initialize associations
@@ -294,6 +318,7 @@ module.exports = {
   PluginConfiguration,
   SupabaseOAuthToken,
   ShopifyOAuthToken,
+  RenderOAuthToken,
   MediaAsset,
   AkeneoCustomMapping,
   AkeneoSchedule,
@@ -301,5 +326,9 @@ module.exports = {
   CreditTransaction,
   CreditUsage,
   Job,
-  JobHistory
+  JobHistory,
+  StoreTemplate,
+  TemplateAsset,
+  StoreSupabaseConnection,
+  StoreDataMigration
 };
