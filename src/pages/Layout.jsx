@@ -65,7 +65,8 @@ import {
   Activity,
   FlaskConical,
   Image,
-  Database
+  Database,
+  Cloud
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -412,6 +413,7 @@ export default function Layout({ children, currentPageName }) {
         { name: "Theme & Layout", path: "THEME_LAYOUT", icon: Palette },
         { name: "Media Storage", path: "media-storage", icon: Image },
         { name: "Database", path: "database-integrations", icon: Database },
+        { name: "Render Integration", path: "render-integration", icon: Cloud },
         ...(user?.account_type === 'agency' || user?.role === 'admin' || user?.role === 'store_owner' ? [
           { name: "Stores", path: "STORES", icon: Building2 },
         ] : []),

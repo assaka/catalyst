@@ -116,6 +116,8 @@ import CRMIntegrations from "./CRMIntegrations";
 
 import DatabaseIntegrations from "./DatabaseIntegrations";
 
+import RenderIntegration from "./RenderIntegration";
+
 import HeatMaps from "./HeatMaps";
 
 import ABTesting from "./ABTesting";
@@ -238,6 +240,8 @@ const PAGES = {
     Integrations: Integrations,
     
     DatabaseIntegrations: DatabaseIntegrations,
+    
+    RenderIntegration: RenderIntegration,
     
     HeatMaps: HeatMaps,
     
@@ -742,6 +746,12 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
+                <Route path="/admin/render-integration" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <RenderIntegration />
+                    </RoleProtectedRoute>
+                } />
+                
                 <Route path="/admin/heatmaps" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <HeatMaps />
@@ -1118,6 +1128,12 @@ function PagesContent() {
                 <Route path="/admin/database-integrations" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <DatabaseIntegrations />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/render-integration" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <RenderIntegration />
                     </RoleProtectedRoute>
                 } />
                 
