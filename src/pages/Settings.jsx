@@ -11,13 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Save, Building2, Bell, Settings as SettingsIcon, Globe, RefreshCw, KeyRound } from 'lucide-react'; // Removed ReceiptText, BookOpen, Palette, Brush, ShoppingCart, Search icons
+import { Save, Building2, Bell, Settings as SettingsIcon, Globe, RefreshCw, KeyRound, Rocket } from 'lucide-react'; // Removed ReceiptText, BookOpen, Palette, Brush, ShoppingCart, Search icons
 import { CountrySelect } from "@/components/ui/country-select";
 import { TimezoneSelect } from "@/components/ui/timezone-select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import PublishButton from '@/components/store/PublishButton';
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -621,9 +622,10 @@ export default function Settings() {
           params.set('tab', value);
           setSearchParams(params);
         }} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general">General</TabsTrigger>
             <TabsTrigger value="domain">Domain</TabsTrigger>
+            <TabsTrigger value="publish">Publish</TabsTrigger>
             <TabsTrigger value="brevo">Brevo</TabsTrigger>
             <TabsTrigger value="contact">Contact</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
@@ -832,6 +834,99 @@ export default function Settings() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="publish" className="mt-6">
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-lg flex items-center justify-center">
+                    <Rocket className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Publish Your Store</h2>
+                    <p className="text-gray-600">Deploy your store to make it publicly accessible</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-700 mb-4">
+                  Once you publish your store, it will be deployed to Render.com and accessible to your customers. 
+                  Make sure you've configured your store settings, added products, and set up payment processing before publishing.
+                </p>
+              </div>
+
+              {/* Publish Button Component */}
+              <PublishButton 
+                storeId={store?.id} 
+                storeName={store?.name}
+              />
+
+              {/* Publishing Information */}
+              <Card className="bg-blue-50 border-blue-200">
+                <CardHeader>
+                  <CardTitle className="text-blue-900 flex items-center">
+                    <Globe className="w-5 h-5 mr-2" />
+                    What happens when you publish?
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3 text-sm text-blue-800">
+                    <div className="flex items-start space-x-2">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                      <p>Your store will be deployed to Render.com with automatic SSL certificate</p>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                      <p>All your products, categories, and settings will be included</p>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                      <p>Your store will get a unique URL: <code className="bg-blue-100 px-1 rounded">{store?.name?.toLowerCase().replace(/\s+/g, '-') || 'your-store'}.onrender.com</code></p>
+                    </div>
+                    <div className="flex items-start space-x-2">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-1.5 flex-shrink-0"></div>
+                      <p>You can later connect your custom domain in the Domain tab</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Prerequisites Check */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Bell className="w-5 h-5 mr-2" />
+                    Pre-publish Checklist
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full ${store?.name ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      <span className={store?.name ? 'text-green-700' : 'text-gray-500'}>
+                        Store name configured
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full ${store?.contact_details?.email || store?.contact_email ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                      <span className={store?.contact_details?.email || store?.contact_email ? 'text-green-700' : 'text-gray-500'}>
+                        Contact email set
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                      <span className="text-blue-700">Products and categories (optional)</span>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                      <span className="text-blue-700">Payment settings (optional)</span>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-4">
+                    Green items are required, blue items are optional but recommended before publishing.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="brevo" className="mt-6">

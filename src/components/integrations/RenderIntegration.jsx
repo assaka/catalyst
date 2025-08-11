@@ -326,7 +326,7 @@ const RenderIntegration = ({ storeId, context = 'full' }) => {
                 <div className="text-sm text-blue-800">
                   <p className="font-medium mb-2">How to get your Personal Access Token:</p>
                   <ol className="list-decimal list-inside space-y-1 text-blue-700">
-                    <li>Go to <a href="https://dashboard.render.com/account/api-keys" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900">Render API Keys</a></li>
+                    <li>Go to <a href="https://dashboard.render.com/u/settings?add-api-key" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-900">Render API Keys</a></li>
                     <li>Create a new Personal Access Token</li>
                     <li>Copy the token and paste it below</li>
                     <li>Click "Connect" to validate and store the token</li>
