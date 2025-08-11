@@ -131,8 +131,8 @@ export default function Stores() {
       
       // Set up the newly created store for the setup wizard
       setNewlyCreatedStore({
-        id: createdStore.id,
-        name: createdStore.name || newStore.name
+        id: createdStore.data.id,
+        name: createdStore.data.name || newStore.name
       });
       setShowSetupWizard(true);
       
