@@ -71,6 +71,16 @@ export default function Stores() {
     }
   };
 
+  // Add function to refresh user data specifically
+  const refreshUserData = async () => {
+    try {
+      const userData = await User.me();
+      setUser(userData);
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  };
+
   const handleCreateStore = async () => {
     setCreateError('');
     
@@ -185,6 +195,9 @@ export default function Stores() {
           setShowCreateStore(open);
           if (!open) {
             setCreateError('');
+          } else {
+            // Refresh user data when opening dialog to get latest credits
+            refreshUserData();
           }
         }}>
           <DialogTrigger asChild>
