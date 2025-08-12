@@ -266,6 +266,7 @@ const EditorLayout = ({ children }) => {
     
     const actualPath = fileMapping[filePath];
     let content = `// Loading ${fileName}...\n// File path: ${actualPath || 'Path not mapped'}\n\n`;
+    let loadSuccess = false; // Declare at function scope
     
     // Try to load actual file content
     if (actualPath) {
@@ -279,7 +280,6 @@ const EditorLayout = ({ children }) => {
         }]);
         
         // Try multiple methods to load the file content
-        let loadSuccess = false;
         
         // Method 1: Try loading via API endpoint
         try {
