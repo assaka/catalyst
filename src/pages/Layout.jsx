@@ -144,6 +144,19 @@ export default function Layout({ children, currentPageName }) {
     "Advanced": false, // Added new group for Advanced features
   });
 
+  // Navigation functions for mode switching
+  const switchToAdmin = () => {
+    if (currentMode !== 'admin') {
+      navigate('/admin/dashboard');
+    }
+  };
+  
+  const switchToEditor = () => {
+    if (currentMode !== 'editor') {
+      navigate('/editor/templates');
+    }
+  };
+
   // Add this block to handle the RobotsTxt page
   if (currentPageName === 'RobotsTxt') {
     return <>{children}</>;
@@ -503,18 +516,6 @@ export default function Layout({ children, currentPageName }) {
       ]
     }
   ];
-
-  const switchToAdmin = () => {
-    if (currentMode !== 'admin') {
-      navigate('/admin/dashboard');
-    }
-  };
-  
-  const switchToEditor = () => {
-    if (currentMode !== 'editor') {
-      navigate('/editor/templates');
-    }
-  };
 
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
