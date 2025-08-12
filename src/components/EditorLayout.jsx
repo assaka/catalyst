@@ -227,6 +227,33 @@ const EditorLayout = ({ children }) => {
       'storefront-components/CookieConsentBanner.jsx': 'src/components/storefront/CookieConsentBanner.jsx',
       'storefront-components/FlashMessage.jsx': 'src/components/storefront/FlashMessage.jsx',
       
+      // Admin Pages
+      'admin-pages/Dashboard.jsx': 'src/pages/Dashboard.jsx',
+      'admin-pages/Products.jsx': 'src/pages/Products.jsx',
+      'admin-pages/Categories.jsx': 'src/pages/Categories.jsx',
+      'admin-pages/Attributes.jsx': 'src/pages/Attributes.jsx',
+      'admin-pages/Orders.jsx': 'src/pages/Orders.jsx',
+      'admin-pages/Customers.jsx': 'src/pages/Customers.jsx',
+      'admin-pages/CmsPages.jsx': 'src/pages/CmsPages.jsx',
+      'admin-pages/CmsBlocks.jsx': 'src/pages/CmsBlocks.jsx',
+      'admin-pages/Settings.jsx': 'src/pages/Settings.jsx',
+      'admin-pages/ThemeLayout.jsx': 'src/pages/ThemeLayout.jsx',
+      'admin-pages/TemplateEditor.jsx': 'src/pages/TemplateEditor.jsx',
+      
+      // UI Components
+      'ui-components/button.jsx': 'src/components/ui/button.jsx',
+      'ui-components/card.jsx': 'src/components/ui/card.jsx',
+      'ui-components/input.jsx': 'src/components/ui/input.jsx',
+      'ui-components/select.jsx': 'src/components/ui/select.jsx',
+      'ui-components/dialog.jsx': 'src/components/ui/dialog.jsx',
+      'ui-components/dropdown-menu.jsx': 'src/components/ui/dropdown-menu.jsx',
+      'ui-components/tabs.jsx': 'src/components/ui/tabs.jsx',
+      'ui-components/table.jsx': 'src/components/ui/table.jsx',
+      'ui-components/badge.jsx': 'src/components/ui/badge.jsx',
+      'ui-components/alert.jsx': 'src/components/ui/alert.jsx',
+      'ui-components/pagination.jsx': 'src/components/ui/pagination.jsx',
+      'ui-components/skeleton.jsx': 'src/components/ui/skeleton.jsx',
+      
       // Layouts
       'layouts/Layout.jsx': 'src/pages/Layout.jsx',
       'layouts/EditorLayout.jsx': 'src/components/EditorLayout.jsx',
@@ -238,12 +265,94 @@ const EditorLayout = ({ children }) => {
     };
     
     const actualPath = fileMapping[filePath];
-    let content = `// Content of ${fileName}\n// This would be loaded from the actual file\n\n`;
+    let content = `// Loading ${fileName}...\n// File path: ${actualPath || 'Path not mapped'}\n\n`;
     
-    if (fileType === 'jsx') {
-      content += `const ${fileName.split('.')[0].replace(/[^a-zA-Z0-9]/g, '')} = () => {\n  return (\n    <div className="p-4">\n      <h1>${fileName.split('.')[0]} Component</h1>\n      {/* Component content here */}\n    </div>\n  );\n};\n\nexport default ${fileName.split('.')[0].replace(/[^a-zA-Z0-9]/g, '')};`;
-    } else if (fileType === 'css') {
-      content += `/* ${fileName} styles */\n\n.container {\n  padding: 1rem;\n  margin: 0 auto;\n}\n\n/* Add your styles here */`;
+    // Try to load actual file content
+    if (actualPath) {
+      try {
+        // Add loading state
+        setChatMessages(prev => [...prev, {
+          id: Date.now() - 1,
+          type: 'ai',
+          content: `📁 Loading ${fileName}...`,
+          timestamp: new Date()
+        }]);
+        
+        // Try multiple methods to load the file content
+        let loadSuccess = false;
+        
+        // Method 1: Try loading via API endpoint
+        try {
+          const apiResponse = await fetch(`/api/files/content?path=${encodeURIComponent(actualPath)}`, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+            }
+          });
+          
+          if (apiResponse.ok) {
+            const data = await apiResponse.json();
+            if (data.success && data.content) {
+              content = data.content;
+              loadSuccess = true;
+            }
+          }
+        } catch (apiError) {
+          console.log('API method failed, trying direct fetch...');
+        }
+        
+        // Method 2: Try direct fetch from public path (for development)
+        if (!loadSuccess) {
+          try {
+            const response = await fetch(`/${actualPath}?t=${Date.now()}`, {
+              method: 'GET',
+              headers: {
+                'Accept': 'text/plain'
+              }
+            });
+            
+            if (response && response.ok) {
+              const text = await response.text();
+              // Check if we got actual file content (not HTML error page)
+              if (!text.includes('<!DOCTYPE html>') && !text.includes('<html')) {
+                content = text;
+                loadSuccess = true;
+              }
+            }
+          } catch (fetchError) {
+            console.log('Direct fetch failed, using fallback...');
+          }
+        }
+        
+        // Method 3: Fallback with enhanced mock content
+        if (!loadSuccess) {
+          // Fallback: Try loading from the file system path directly
+          const absolutePath = `C:/Users/info/PhpstormProjects/catalyst/${actualPath}`;
+          
+          // Since we can't directly read files in browser, provide better mock content based on file type
+          if (fileType === 'jsx') {
+            const componentName = fileName.split('.')[0];
+            content = `import React from 'react';\n\n// ${componentName} Component\n// This is a React component file\n// Actual content would be loaded here\n\nconst ${componentName} = () => {\n  return (\n    <div className="p-4">\n      <h1>${componentName}</h1>\n      {/* Component implementation */}\n    </div>\n  );\n};\n\nexport default ${componentName};`;
+          } else if (fileType === 'css') {
+            content = `/* ${fileName} */\n/* Stylesheet for the application */\n/* Actual CSS content would be loaded here */\n\n.container {\n  padding: 1rem;\n  margin: 0 auto;\n  max-width: 1200px;\n}\n\n/* Add your styles here */`;
+          } else {
+            content = `// ${fileName}\n// File type: ${fileType}\n// Path: ${actualPath}\n// Actual file content would be loaded here`;
+          }
+        }
+      } catch (error) {
+        console.error('Error loading file:', error);
+        content = `// Error loading ${fileName}\n// ${error.message}\n// File path: ${actualPath}\n\n// Fallback content shown below:\n\n`;
+        
+        if (fileType === 'jsx') {
+          const componentName = fileName.split('.')[0].replace(/[^a-zA-Z0-9]/g, '');
+          content += `const ${componentName} = () => {\n  return (\n    <div className="p-4">\n      <h1>${componentName} Component</h1>\n      {/* Component content here */}\n    </div>\n  );\n};\n\nexport default ${componentName};`;
+        } else if (fileType === 'css') {
+          content += `/* ${fileName} styles */\n\n.container {\n  padding: 1rem;\n  margin: 0 auto;\n}\n\n/* Add your styles here */`;
+        }
+      }
+    } else {
+      content = `// File mapping not found for: ${filePath}\n// Please add mapping for this file in EditorLayout.jsx\n\n// Available paths in fileMapping:\n${Object.keys(fileMapping).map(key => `// - ${key}`).join('\n')}`;
     }
     
     setSelectedFile({
@@ -258,7 +367,7 @@ const EditorLayout = ({ children }) => {
     setChatMessages(prev => [...prev, {
       id: Date.now(),
       type: 'ai',
-      content: `Opened ${fileName}. This is a ${fileType === 'jsx' ? 'React component' : 'CSS stylesheet'} file. I can help you understand its structure, suggest improvements, or explain how it fits into the storefront architecture.`,
+      content: `Opened ${fileName}. ${loadSuccess !== undefined ? (loadSuccess ? '✅ Loaded actual file content.' : '⚠️ Showing fallback content - actual file content could not be loaded.') : ''} This is a ${fileType === 'jsx' ? 'React component' : fileType === 'css' ? 'CSS stylesheet' : fileType} file. I can help you understand its structure, suggest improvements, or explain how it fits into the storefront architecture.`,
       timestamp: new Date()
     }]);
   };
