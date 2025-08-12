@@ -59,56 +59,105 @@ const EditorLayout = ({ children }) => {
   // File tree state
   const [selectedFile, setSelectedFile] = useState(null);
   const [expandedFolders, setExpandedFolders] = useState({
-    'templates': true,
-    'components': true,
-    'pages': true,
-    'styles': true
+    'storefront-pages': true,
+    'storefront-components': true,
+    'admin-pages': false,
+    'ui-components': false,
+    'layouts': false,
+    'styles': false
   });
   const [fileTreeOpen, setFileTreeOpen] = useState(true);
   
   // Get user info for shared header
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // File tree data structure
+  // File tree data structure - actual storefront files
   const fileTree = {
-    templates: {
-      name: 'Templates',
+    'storefront-pages': {
+      name: 'Storefront Pages',
       type: 'folder',
       children: {
-        'homepage.jsx': { name: 'homepage.jsx', type: 'file', language: 'jsx' },
-        'category.jsx': { name: 'category.jsx', type: 'file', language: 'jsx' },
-        'product.jsx': { name: 'product.jsx', type: 'file', language: 'jsx' },
-        'checkout.jsx': { name: 'checkout.jsx', type: 'file', language: 'jsx' },
-        'layout.jsx': { name: 'layout.jsx', type: 'file', language: 'jsx' }
+        'Storefront.jsx': { name: 'Storefront.jsx', type: 'file', language: 'jsx' },
+        'ProductDetail.jsx': { name: 'ProductDetail.jsx', type: 'file', language: 'jsx' },
+        'Cart.jsx': { name: 'Cart.jsx', type: 'file', language: 'jsx' },
+        'Checkout.jsx': { name: 'Checkout.jsx', type: 'file', language: 'jsx' },
+        'OrderSuccess.jsx': { name: 'OrderSuccess.jsx', type: 'file', language: 'jsx' },
+        'CustomerDashboard.jsx': { name: 'CustomerDashboard.jsx', type: 'file', language: 'jsx' },
+        'CmsPageViewer.jsx': { name: 'CmsPageViewer.jsx', type: 'file', language: 'jsx' },
+        'HtmlSitemap.jsx': { name: 'HtmlSitemap.jsx', type: 'file', language: 'jsx' }
       }
     },
-    components: {
-      name: 'Components',
+    'storefront-components': {
+      name: 'Storefront Components',
       type: 'folder',
       children: {
-        'Header.jsx': { name: 'Header.jsx', type: 'file', language: 'jsx' },
-        'Footer.jsx': { name: 'Footer.jsx', type: 'file', language: 'jsx' },
+        'StorefrontLayout.jsx': { name: 'StorefrontLayout.jsx', type: 'file', language: 'jsx' },
         'ProductCard.jsx': { name: 'ProductCard.jsx', type: 'file', language: 'jsx' },
-        'Button.jsx': { name: 'Button.jsx', type: 'file', language: 'jsx' },
-        'Modal.jsx': { name: 'Modal.jsx', type: 'file', language: 'jsx' }
+        'CategoryNav.jsx': { name: 'CategoryNav.jsx', type: 'file', language: 'jsx' },
+        'HeaderSearch.jsx': { name: 'HeaderSearch.jsx', type: 'file', language: 'jsx' },
+        'MiniCart.jsx': { name: 'MiniCart.jsx', type: 'file', language: 'jsx' },
+        'Breadcrumb.jsx': { name: 'Breadcrumb.jsx', type: 'file', language: 'jsx' },
+        'LayeredNavigation.jsx': { name: 'LayeredNavigation.jsx', type: 'file', language: 'jsx' },
+        'WishlistDropdown.jsx': { name: 'WishlistDropdown.jsx', type: 'file', language: 'jsx' },
+        'RecommendedProducts.jsx': { name: 'RecommendedProducts.jsx', type: 'file', language: 'jsx' },
+        'RelatedProductsViewer.jsx': { name: 'RelatedProductsViewer.jsx', type: 'file', language: 'jsx' },
+        'ProductLabel.jsx': { name: 'ProductLabel.jsx', type: 'file', language: 'jsx' },
+        'CustomOptions.jsx': { name: 'CustomOptions.jsx', type: 'file', language: 'jsx' },
+        'CmsBlockRenderer.jsx': { name: 'CmsBlockRenderer.jsx', type: 'file', language: 'jsx' },
+        'CookieConsentBanner.jsx': { name: 'CookieConsentBanner.jsx', type: 'file', language: 'jsx' },
+        'FlashMessage.jsx': { name: 'FlashMessage.jsx', type: 'file', language: 'jsx' }
       }
     },
-    pages: {
-      name: 'Pages',
+    'admin-pages': {
+      name: 'Admin Pages',
       type: 'folder',
       children: {
-        'index.jsx': { name: 'index.jsx', type: 'file', language: 'jsx' },
-        'about.jsx': { name: 'about.jsx', type: 'file', language: 'jsx' },
-        'contact.jsx': { name: 'contact.jsx', type: 'file', language: 'jsx' }
+        'Dashboard.jsx': { name: 'Dashboard.jsx', type: 'file', language: 'jsx' },
+        'Products.jsx': { name: 'Products.jsx', type: 'file', language: 'jsx' },
+        'Categories.jsx': { name: 'Categories.jsx', type: 'file', language: 'jsx' },
+        'Attributes.jsx': { name: 'Attributes.jsx', type: 'file', language: 'jsx' },
+        'Orders.jsx': { name: 'Orders.jsx', type: 'file', language: 'jsx' },
+        'Customers.jsx': { name: 'Customers.jsx', type: 'file', language: 'jsx' },
+        'CmsPages.jsx': { name: 'CmsPages.jsx', type: 'file', language: 'jsx' },
+        'CmsBlocks.jsx': { name: 'CmsBlocks.jsx', type: 'file', language: 'jsx' },
+        'Settings.jsx': { name: 'Settings.jsx', type: 'file', language: 'jsx' },
+        'ThemeLayout.jsx': { name: 'ThemeLayout.jsx', type: 'file', language: 'jsx' },
+        'TemplateEditor.jsx': { name: 'TemplateEditor.jsx', type: 'file', language: 'jsx' }
       }
     },
-    styles: {
+    'ui-components': {
+      name: 'UI Components',
+      type: 'folder',
+      children: {
+        'button.jsx': { name: 'button.jsx', type: 'file', language: 'jsx' },
+        'card.jsx': { name: 'card.jsx', type: 'file', language: 'jsx' },
+        'input.jsx': { name: 'input.jsx', type: 'file', language: 'jsx' },
+        'select.jsx': { name: 'select.jsx', type: 'file', language: 'jsx' },
+        'dialog.jsx': { name: 'dialog.jsx', type: 'file', language: 'jsx' },
+        'dropdown-menu.jsx': { name: 'dropdown-menu.jsx', type: 'file', language: 'jsx' },
+        'tabs.jsx': { name: 'tabs.jsx', type: 'file', language: 'jsx' },
+        'table.jsx': { name: 'table.jsx', type: 'file', language: 'jsx' },
+        'badge.jsx': { name: 'badge.jsx', type: 'file', language: 'jsx' },
+        'alert.jsx': { name: 'alert.jsx', type: 'file', language: 'jsx' },
+        'pagination.jsx': { name: 'pagination.jsx', type: 'file', language: 'jsx' },
+        'skeleton.jsx': { name: 'skeleton.jsx', type: 'file', language: 'jsx' }
+      }
+    },
+    'layouts': {
+      name: 'Layouts',
+      type: 'folder',
+      children: {
+        'Layout.jsx': { name: 'Layout.jsx', type: 'file', language: 'jsx' },
+        'EditorLayout.jsx': { name: 'EditorLayout.jsx', type: 'file', language: 'jsx' },
+        'StorefrontLayout.jsx': { name: 'StorefrontLayout.jsx', type: 'file', language: 'jsx' }
+      }
+    },
+    'styles': {
       name: 'Styles',
       type: 'folder',
       children: {
-        'globals.css': { name: 'globals.css', type: 'file', language: 'css' },
-        'components.css': { name: 'components.css', type: 'file', language: 'css' },
-        'layout.css': { name: 'layout.css', type: 'file', language: 'css' }
+        'App.css': { name: 'App.css', type: 'file', language: 'css' },
+        'index.css': { name: 'index.css', type: 'file', language: 'css' }
       }
     }
   };
@@ -148,19 +197,68 @@ const EditorLayout = ({ children }) => {
     }));
   };
 
-  const handleFileSelect = (filePath, fileName, fileType) => {
+  const handleFileSelect = async (filePath, fileName, fileType) => {
+    // Map file tree paths to actual file system paths
+    const fileMapping = {
+      // Storefront Pages
+      'storefront-pages/Storefront.jsx': 'src/pages/Storefront.jsx',
+      'storefront-pages/ProductDetail.jsx': 'src/pages/ProductDetail.jsx',
+      'storefront-pages/Cart.jsx': 'src/pages/Cart.jsx',
+      'storefront-pages/Checkout.jsx': 'src/pages/Checkout.jsx',
+      'storefront-pages/OrderSuccess.jsx': 'src/pages/OrderSuccess.jsx',
+      'storefront-pages/CustomerDashboard.jsx': 'src/pages/CustomerDashboard.jsx',
+      'storefront-pages/CmsPageViewer.jsx': 'src/pages/CmsPageViewer.jsx',
+      'storefront-pages/HtmlSitemap.jsx': 'src/pages/HtmlSitemap.jsx',
+      
+      // Storefront Components
+      'storefront-components/StorefrontLayout.jsx': 'src/components/storefront/StorefrontLayout.jsx',
+      'storefront-components/ProductCard.jsx': 'src/components/storefront/ProductCard.jsx',
+      'storefront-components/CategoryNav.jsx': 'src/components/storefront/CategoryNav.jsx',
+      'storefront-components/HeaderSearch.jsx': 'src/components/storefront/HeaderSearch.jsx',
+      'storefront-components/MiniCart.jsx': 'src/components/storefront/MiniCart.jsx',
+      'storefront-components/Breadcrumb.jsx': 'src/components/storefront/Breadcrumb.jsx',
+      'storefront-components/LayeredNavigation.jsx': 'src/components/storefront/LayeredNavigation.jsx',
+      'storefront-components/WishlistDropdown.jsx': 'src/components/storefront/WishlistDropdown.jsx',
+      'storefront-components/RecommendedProducts.jsx': 'src/components/storefront/RecommendedProducts.jsx',
+      'storefront-components/RelatedProductsViewer.jsx': 'src/components/storefront/RelatedProductsViewer.jsx',
+      'storefront-components/ProductLabel.jsx': 'src/components/storefront/ProductLabel.jsx',
+      'storefront-components/CustomOptions.jsx': 'src/components/storefront/CustomOptions.jsx',
+      'storefront-components/CmsBlockRenderer.jsx': 'src/components/storefront/CmsBlockRenderer.jsx',
+      'storefront-components/CookieConsentBanner.jsx': 'src/components/storefront/CookieConsentBanner.jsx',
+      'storefront-components/FlashMessage.jsx': 'src/components/storefront/FlashMessage.jsx',
+      
+      // Layouts
+      'layouts/Layout.jsx': 'src/pages/Layout.jsx',
+      'layouts/EditorLayout.jsx': 'src/components/EditorLayout.jsx',
+      'layouts/StorefrontLayout.jsx': 'src/components/storefront/StorefrontLayout.jsx',
+      
+      // Styles
+      'styles/App.css': 'src/App.css',
+      'styles/index.css': 'src/index.css'
+    };
+    
+    const actualPath = fileMapping[filePath];
+    let content = `// Content of ${fileName}\n// This would be loaded from the actual file\n\n`;
+    
+    if (fileType === 'jsx') {
+      content += `const ${fileName.split('.')[0].replace(/[^a-zA-Z0-9]/g, '')} = () => {\n  return (\n    <div className="p-4">\n      <h1>${fileName.split('.')[0]} Component</h1>\n      {/* Component content here */}\n    </div>\n  );\n};\n\nexport default ${fileName.split('.')[0].replace(/[^a-zA-Z0-9]/g, '')};`;
+    } else if (fileType === 'css') {
+      content += `/* ${fileName} styles */\n\n.container {\n  padding: 1rem;\n  margin: 0 auto;\n}\n\n/* Add your styles here */`;
+    }
+    
     setSelectedFile({
       path: filePath,
       name: fileName,
       type: fileType,
-      content: `// Content of ${fileName}\n// This would be loaded from the actual file\n\nconst ${fileName.split('.')[0]} = () => {\n  return (\n    <div>\n      {/* File content here */}\n    </div>\n  );\n};\n\nexport default ${fileName.split('.')[0]};`
+      actualPath: actualPath,
+      content: content
     });
     
     // Add AI message about file selection
     setChatMessages(prev => [...prev, {
       id: Date.now(),
       type: 'ai',
-      content: `Opened ${fileName}. I can help you edit this file or explain its contents.`,
+      content: `Opened ${fileName}. This is a ${fileType === 'jsx' ? 'React component' : 'CSS stylesheet'} file. I can help you understand its structure, suggest improvements, or explain how it fits into the storefront architecture.`,
       timestamp: new Date()
     }]);
   };
