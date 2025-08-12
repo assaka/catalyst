@@ -19,7 +19,13 @@ import {
   Box,
   Smartphone,
   Monitor,
-  Tablet
+  Tablet,
+  FileText,
+  Folder,
+  FolderOpen,
+  ChevronRight,
+  ChevronDown,
+  File
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -50,8 +56,62 @@ const EditorLayout = ({ children }) => {
   const [lastSaved, setLastSaved] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
+  // File tree state
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [expandedFolders, setExpandedFolders] = useState({
+    'templates': true,
+    'components': true,
+    'pages': true,
+    'styles': true
+  });
+  const [fileTreeOpen, setFileTreeOpen] = useState(true);
+  
   // Get user info for shared header
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+  // File tree data structure
+  const fileTree = {
+    templates: {
+      name: 'Templates',
+      type: 'folder',
+      children: {
+        'homepage.jsx': { name: 'homepage.jsx', type: 'file', language: 'jsx' },
+        'category.jsx': { name: 'category.jsx', type: 'file', language: 'jsx' },
+        'product.jsx': { name: 'product.jsx', type: 'file', language: 'jsx' },
+        'checkout.jsx': { name: 'checkout.jsx', type: 'file', language: 'jsx' },
+        'layout.jsx': { name: 'layout.jsx', type: 'file', language: 'jsx' }
+      }
+    },
+    components: {
+      name: 'Components',
+      type: 'folder',
+      children: {
+        'Header.jsx': { name: 'Header.jsx', type: 'file', language: 'jsx' },
+        'Footer.jsx': { name: 'Footer.jsx', type: 'file', language: 'jsx' },
+        'ProductCard.jsx': { name: 'ProductCard.jsx', type: 'file', language: 'jsx' },
+        'Button.jsx': { name: 'Button.jsx', type: 'file', language: 'jsx' },
+        'Modal.jsx': { name: 'Modal.jsx', type: 'file', language: 'jsx' }
+      }
+    },
+    pages: {
+      name: 'Pages',
+      type: 'folder',
+      children: {
+        'index.jsx': { name: 'index.jsx', type: 'file', language: 'jsx' },
+        'about.jsx': { name: 'about.jsx', type: 'file', language: 'jsx' },
+        'contact.jsx': { name: 'contact.jsx', type: 'file', language: 'jsx' }
+      }
+    },
+    styles: {
+      name: 'Styles',
+      type: 'folder',
+      children: {
+        'globals.css': { name: 'globals.css', type: 'file', language: 'css' },
+        'components.css': { name: 'components.css', type: 'file', language: 'css' },
+        'layout.css': { name: 'layout.css', type: 'file', language: 'css' }
+      }
+    }
+  };
 
   // Auto-save functionality
   useEffect(() => {
@@ -78,6 +138,31 @@ const EditorLayout = ({ children }) => {
   
   const switchToEditor = () => {
     // Already in editor mode, do nothing
+  };
+
+  // File tree helper functions
+  const toggleFolder = (folderKey) => {
+    setExpandedFolders(prev => ({
+      ...prev,
+      [folderKey]: !prev[folderKey]
+    }));
+  };
+
+  const handleFileSelect = (filePath, fileName, fileType) => {
+    setSelectedFile({
+      path: filePath,
+      name: fileName,
+      type: fileType,
+      content: `// Content of ${fileName}\n// This would be loaded from the actual file\n\nconst ${fileName.split('.')[0]} = () => {\n  return (\n    <div>\n      {/* File content here */}\n    </div>\n  );\n};\n\nexport default ${fileName.split('.')[0]};`
+    });
+    
+    // Add AI message about file selection
+    setChatMessages(prev => [...prev, {
+      id: Date.now(),
+      type: 'ai',
+      content: `Opened ${fileName}. I can help you edit this file or explain its contents.`,
+      timestamp: new Date()
+    }]);
   };
 
   const editorTools = [
@@ -187,6 +272,71 @@ const EditorLayout = ({ children }) => {
     } finally {
       setIsPublishing(false);
     }
+  };
+
+  // File Tree Component
+  const FileTreeItem = ({ itemKey, item, level = 0 }) => {
+    const isFolder = item.type === 'folder';
+    const isExpanded = expandedFolders[itemKey];
+    const isSelected = selectedFile?.path === `${itemKey}/${item.name}`;
+
+    return (
+      <div>
+        <div
+          className={`flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer rounded ${
+            isSelected ? 'bg-blue-50 text-blue-700' : ''
+          }`}
+          style={{ paddingLeft: `${(level * 16) + 8}px` }}
+          onClick={() => {
+            if (isFolder) {
+              toggleFolder(itemKey);
+            } else {
+              handleFileSelect(`${itemKey}/${item.name}`, item.name, item.language);
+            }
+          }}
+        >
+          {isFolder ? (
+            <>
+              {isExpanded ? (
+                <ChevronDown className="w-4 h-4 mr-1 text-gray-500" />
+              ) : (
+                <ChevronRight className="w-4 h-4 mr-1 text-gray-500" />
+              )}
+              {isExpanded ? (
+                <FolderOpen className="w-4 h-4 mr-2 text-blue-500" />
+              ) : (
+                <Folder className="w-4 h-4 mr-2 text-blue-500" />
+              )}
+            </>
+          ) : (
+            <>
+              <div className="w-4 h-4 mr-1" />
+              {item.language === 'jsx' ? (
+                <FileText className="w-4 h-4 mr-2 text-green-500" />
+              ) : item.language === 'css' ? (
+                <FileText className="w-4 h-4 mr-2 text-purple-500" />
+              ) : (
+                <File className="w-4 h-4 mr-2 text-gray-500" />
+              )}
+            </>
+          )}
+          <span className="text-sm truncate">{item.name}</span>
+        </div>
+        
+        {isFolder && isExpanded && item.children && (
+          <div>
+            {Object.entries(item.children).map(([childKey, childItem]) => (
+              <FileTreeItem
+                key={childKey}
+                itemKey={`${itemKey}/${childKey}`}
+                item={childItem}
+                level={level + 1}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderToolContent = () => {
@@ -331,6 +481,16 @@ const EditorLayout = ({ children }) => {
                 AI Chat
               </Button>
             )}
+            {!fileTreeOpen && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFileTreeOpen(true)}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Files
+              </Button>
+            )}
             <Button
               variant={previewMode ? "default" : "outline"}
               size="sm"
@@ -358,7 +518,7 @@ const EditorLayout = ({ children }) => {
       
       <div className="flex flex-1 overflow-hidden">
         {/* AI Chat Context Column */}
-      <div className={`transition-all duration-300 bg-white border-r border-gray-200 ${chatOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
+        <div className={`transition-all duration-300 bg-white border-r border-gray-200 ${chatOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
         <div className="h-full flex flex-col">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -439,7 +599,38 @@ const EditorLayout = ({ children }) => {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+
+        {/* File Tree Column */}
+        <div className={`transition-all duration-300 bg-white border-r border-gray-200 ${fileTreeOpen ? 'w-64' : 'w-0'} overflow-hidden`}>
+          <div className="h-full flex flex-col">
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Files</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setFileTreeOpen(!fileTreeOpen)}
+                >
+                  <FileText className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="flex-1 p-2 overflow-y-auto">
+              <div className="space-y-1">
+                {Object.entries(fileTree).map(([key, item]) => (
+                  <FileTreeItem
+                    key={key}
+                    itemKey={key}
+                    item={item}
+                    level={0}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
 
       {/* Main Editor Area */}
       <div className="flex-1 flex">
@@ -467,7 +658,32 @@ const EditorLayout = ({ children }) => {
               viewMode === 'tablet' ? 'w-[768px] mx-auto' : 
               'w-[375px] mx-auto'
             }`}>
-              {previewMode ? (
+              {selectedFile ? (
+                <div className="h-full flex flex-col">
+                  <div className="p-4 border-b border-gray-200 bg-gray-50">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-gray-700">
+                        {selectedFile.name}
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
+                          {selectedFile.type}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setSelectedFile(null)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm overflow-auto">
+                    <pre className="whitespace-pre-wrap">{selectedFile.content}</pre>
+                  </div>
+                </div>
+              ) : previewMode ? (
                 <div className="p-8">
                   <div className="text-center">
                     <h3 className="text-xl font-semibold text-gray-900 mb-4">Live Preview</h3>
