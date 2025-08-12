@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import EditorLayout from '@/components/EditorLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
@@ -147,6 +147,7 @@ const TemplateCanvas = ({ template, onDrop, onSelectElement, selectedElement }) 
 
 const TemplateEditor = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState('category');
   const [viewMode, setViewMode] = useState('desktop'); // desktop, tablet, mobile
@@ -452,7 +453,10 @@ const TemplateEditor = () => {
     previewWindow.document.close();
   };
 
-  return (
+  // Check if we're on the editor route (not admin route)
+  const isEditorRoute = location.pathname.startsWith('/editor/');
+  
+  const content = (
     <DndProvider backend={HTML5Backend}>
       <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-gray-50 relative z-0 overflow-auto">
         <div className="mb-6">
@@ -820,6 +824,13 @@ const TemplateEditor = () => {
       </div>
     </DndProvider>
   );
+
+  // Return content wrapped with EditorLayout if on editor route, otherwise just the content
+  return isEditorRoute ? (
+    <EditorLayout>
+      {content}
+    </EditorLayout>
+  ) : content;
 };
 
 export default TemplateEditor;
