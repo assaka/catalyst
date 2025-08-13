@@ -486,7 +486,7 @@ const EditorLayout = ({ children }) => {
   const FileTreeItem = ({ itemKey, item, level = 0 }) => {
     const isFolder = item.type === 'folder';
     const isExpanded = expandedFolders[itemKey];
-    const isSelected = selectedFile?.path === `${itemKey}/${item.name}`;
+    const isSelected = selectedFile?.path === itemKey;
 
     return (
       <div>
@@ -499,7 +499,7 @@ const EditorLayout = ({ children }) => {
             if (isFolder) {
               toggleFolder(itemKey);
             } else {
-              handleFileSelect(`${itemKey}/${item.name}`, item.name, item.language);
+              handleFileSelect(itemKey, item.name, item.language);
             }
           }}
         >
