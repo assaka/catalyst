@@ -297,7 +297,7 @@ const EditorLayout = ({ children }) => {
           console.log('🔑 Token found:', !!token, token ? `(${token.substring(0, 20)}...)` : 'none');
           
           if (token) {
-            const apiUrl = `/api/source-files/content?path=${encodeURIComponent(actualPath)}`;
+            const apiUrl = `/api/template-editor/source-files/content?path=${encodeURIComponent(actualPath)}`;
             console.log('🌐 Making API request to:', apiUrl);
             
             const apiResponse = await fetch(apiUrl, {
