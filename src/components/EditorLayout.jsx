@@ -277,6 +277,14 @@ const EditorLayout = ({ children }) => {
           timestamp: new Date()
         }]);
         
+        // Debug: Log the path we're trying to load
+        console.log('🔍 Loading file:', {
+          filePath,
+          fileName,
+          actualPath,
+          fileType
+        });
+        
         // Try multiple methods to load the file content
         
         // Method 1: Try loading via API endpoint
@@ -286,8 +294,13 @@ const EditorLayout = ({ children }) => {
                        localStorage.getItem('auth_token') ||
                        localStorage.getItem('token');
           
+          console.log('🔑 Token found:', !!token, token ? `(${token.substring(0, 20)}...)` : 'none');
+          
           if (token) {
-            const apiResponse = await fetch(`/api/source-files/content?path=${encodeURIComponent(actualPath)}`, {
+            const apiUrl = `/api/source-files/content?path=${encodeURIComponent(actualPath)}`;
+            console.log('🌐 Making API request to:', apiUrl);
+            
+            const apiResponse = await fetch(apiUrl, {
               method: 'GET',
               headers: {
                 'Accept': 'application/json',
@@ -296,8 +309,12 @@ const EditorLayout = ({ children }) => {
               }
             });
             
+            console.log('📡 API response status:', apiResponse.status, apiResponse.statusText);
+            
             if (apiResponse.ok) {
               const data = await apiResponse.json();
+              console.log('📦 API response data:', { success: data.success, contentLength: data.content?.length });
+              
               if (data.success && data.content) {
                 content = data.content;
                 loadSuccess = true;
@@ -310,7 +327,8 @@ const EditorLayout = ({ children }) => {
               console.log('❌ API response not ok:', apiResponse.status, apiResponse.statusText, errorData);
             }
           } else {
-            console.log('No auth token found, skipping API call');
+            console.log('❌ No auth token found, skipping API call');
+            console.log('🔍 Available localStorage keys:', Object.keys(localStorage));
           }
         } catch (apiError) {
           console.log('API method failed:', apiError.message);
