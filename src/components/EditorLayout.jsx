@@ -287,7 +287,7 @@ const EditorLayout = ({ children }) => {
                        localStorage.getItem('token');
           
           if (token) {
-            const apiResponse = await fetch(`/api/template-editor/source-files/content?path=${encodeURIComponent(actualPath)}`, {
+            const apiResponse = await fetch(`/api/source-files/content?path=${encodeURIComponent(actualPath)}`, {
               method: 'GET',
               headers: {
                 'Accept': 'application/json',
@@ -339,19 +339,18 @@ const EditorLayout = ({ children }) => {
           }
         }
         
-        // Method 3: Fallback with enhanced mock content
+        // Method 3: Final fallback with enhanced mock content
         if (!loadSuccess) {
-          // Fallback: Try loading from the file system path directly
-          const absolutePath = `C:/Users/info/PhpstormProjects/catalyst/${actualPath}`;
-          
           // Since we can't directly read files in browser, provide better mock content based on file type
+          console.warn(`⚠️ Could not load actual file content for ${fileName}. Using fallback content.`);
+          
           if (fileType === 'jsx') {
             const componentName = fileName.split('.')[0];
-            content = `import React from 'react';\n\n// ${componentName} Component\n// This is a React component file\n// Actual content would be loaded here\n\nconst ${componentName} = () => {\n  return (\n    <div className="p-4">\n      <h1>${componentName}</h1>\n      {/* Component implementation */}\n    </div>\n  );\n};\n\nexport default ${componentName};`;
+            content = `// ⚠️ FALLBACK CONTENT - Actual file could not be loaded\n// File: ${actualPath}\n// To see actual content, implement /api/files/read endpoint\n\nimport React from 'react';\n\n// ${componentName} Component\n// This is a React component file\n// Actual content would be loaded here\n\nconst ${componentName} = () => {\n  return (\n    <div className="p-4">\n      <h1>${componentName}</h1>\n      {/* Component implementation */}\n    </div>\n  );\n};\n\nexport default ${componentName};`;
           } else if (fileType === 'css') {
-            content = `/* ${fileName} */\n/* Stylesheet for the application */\n/* Actual CSS content would be loaded here */\n\n.container {\n  padding: 1rem;\n  margin: 0 auto;\n  max-width: 1200px;\n}\n\n/* Add your styles here */`;
+            content = `/* ⚠️ FALLBACK CONTENT - Actual file could not be loaded */\n/* File: ${actualPath} */\n/* To see actual content, implement /api/files/read endpoint */\n\n/* ${fileName} */\n/* Stylesheet for the application */\n/* Actual CSS content would be loaded here */\n\n.container {\n  padding: 1rem;\n  margin: 0 auto;\n  max-width: 1200px;\n}\n\n/* Add your styles here */`;
           } else {
-            content = `// ${fileName}\n// File type: ${fileType}\n// Path: ${actualPath}\n// Actual file content would be loaded here`;
+            content = `// ⚠️ FALLBACK CONTENT - Actual file could not be loaded\n// File: ${actualPath}\n// To see actual content, implement /api/files/read endpoint\n\n// ${fileName}\n// File type: ${fileType}\n// Path: ${actualPath}\n// Actual file content would be loaded here`;
           }
         }
       } catch (error) {
