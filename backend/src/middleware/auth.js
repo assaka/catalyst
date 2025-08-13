@@ -11,9 +11,9 @@ const authMiddleware = async (req, res, next) => {
       'content-type': req.headers['content-type']
     });
     
-    // Development bypass for source files endpoint
+    // Development bypass for source files endpoints
     if (process.env.NODE_ENV !== 'production' && req.path.includes('/source-files/content')) {
-      console.log('🛠️ Development bypass for source files endpoint');
+      console.log('🛠️ Development bypass for source files endpoint:', req.path);
       req.user = {
         id: 'dev-user',
         role: 'store_owner',

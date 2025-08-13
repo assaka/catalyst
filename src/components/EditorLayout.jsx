@@ -289,12 +289,14 @@ const EditorLayout = ({ children }) => {
         
         // Method 1: Try loading via API endpoint
         try {
+          // Try multiple possible token locations
           const token = localStorage.getItem('store_owner_auth_token') ||
                        localStorage.getItem('customer_auth_token') ||
                        localStorage.getItem('auth_token') ||
                        localStorage.getItem('token');
           
           console.log('🔑 Token found:', !!token, token ? `(${token.substring(0, 20)}...)` : 'none');
+          console.log('🔍 Available localStorage keys:', Object.keys(localStorage));
           
           if (token) {
             const apiUrl = `/api/template-editor/source-files/content?path=${encodeURIComponent(actualPath)}`;
@@ -325,13 +327,71 @@ const EditorLayout = ({ children }) => {
             } else {
               const errorData = await apiResponse.text();
               console.log('❌ API response not ok:', apiResponse.status, apiResponse.statusText, errorData);
+              
+              // Handle specific authentication errors
+              if (apiResponse.status === 401) {
+                console.log('🔐 Authentication failed - user may need to log in to admin dashboard first');
+                console.log('💡 Suggestion: Make sure you are logged into your store admin dashboard');
+                
+                // Try to parse error response
+                try {
+                  const errorJson = JSON.parse(errorData);
+                  if (errorJson.message) {
+                    console.log('📝 Server error message:', errorJson.message);
+                  }
+                } catch (parseError) {
+                  console.log('📝 Server response:', errorData);
+                }
+              }
             }
           } else {
-            console.log('❌ No auth token found, skipping API call');
-            console.log('🔍 Available localStorage keys:', Object.keys(localStorage));
+            console.log('❌ No auth token found - user needs to authenticate first');
+            console.log('💡 Please ensure you are logged into your store admin dashboard');
           }
         } catch (apiError) {
-          console.log('API method failed:', apiError.message);
+          console.log('❌ Primary API method failed:', apiError.message);
+        }
+        
+        // Method 1.5: Try original source-files endpoint as backup
+        if (!loadSuccess) {
+          try {
+            const token = localStorage.getItem('store_owner_auth_token') ||
+                         localStorage.getItem('customer_auth_token') ||
+                         localStorage.getItem('auth_token') ||
+                         localStorage.getItem('token');
+            
+            if (token) {
+              const backupApiUrl = `/api/source-files/content?path=${encodeURIComponent(actualPath)}`;
+              console.log('🔄 Trying backup API endpoint:', backupApiUrl);
+              
+              const backupResponse = await fetch(backupApiUrl, {
+                method: 'GET',
+                headers: {
+                  'Accept': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              console.log('📡 Backup API response status:', backupResponse.status, backupResponse.statusText);
+              
+              if (backupResponse.ok) {
+                const data = await backupResponse.json();
+                if (data.success && data.content) {
+                  content = data.content;
+                  loadSuccess = true;
+                  console.log('✅ Successfully loaded file from backup API:', fileName, `(${data.content.length} chars)`);
+                } else {
+                  console.log('❌ Backup API returned unsuccessful response:', data);
+                }
+              } else {
+                const errorData = await backupResponse.text();
+                console.log('❌ Backup API response not ok:', backupResponse.status, errorData);
+              }
+            }
+          } catch (backupError) {
+            console.log('❌ Backup API method failed:', backupError.message);
+          }
         }
         
         // Method 2: Try direct fetch from public path (for development)
@@ -364,9 +424,9 @@ const EditorLayout = ({ children }) => {
           
           if (fileType === 'jsx') {
             const componentName = fileName.split('.')[0];
-            content = `// ⚠️ FALLBACK CONTENT - Actual file could not be loaded\n// File: ${actualPath}\n// To see actual content, implement /api/files/read endpoint\n\nimport React from 'react';\n\n// ${componentName} Component\n// This is a React component file\n// Actual content would be loaded here\n\nconst ${componentName} = () => {\n  return (\n    <div className="p-4">\n      <h1>${componentName}</h1>\n      {/* Component implementation */}\n    </div>\n  );\n};\n\nexport default ${componentName};`;
+            content = `// ⚠️ FALLBACK CONTENT - Actual file could not be loaded\n// File: ${actualPath}\n// Possible causes:\n//   - Authentication required: Please log into your store admin dashboard\n//   - File permissions or network issues\n//   - API endpoint not available in production\n\nimport React from 'react';\n\n// ${componentName} Component\n// This is a React component file\n// Actual content would be loaded here if authentication was successful\n\nconst ${componentName} = () => {\n  return (\n    <div className="p-4">\n      <h1>${componentName}</h1>\n      {/* Component implementation */}\n    </div>\n  );\n};\n\nexport default ${componentName};`;
           } else if (fileType === 'css') {
-            content = `/* ⚠️ FALLBACK CONTENT - Actual file could not be loaded */\n/* File: ${actualPath} */\n/* To see actual content, implement /api/files/read endpoint */\n\n/* ${fileName} */\n/* Stylesheet for the application */\n/* Actual CSS content would be loaded here */\n\n.container {\n  padding: 1rem;\n  margin: 0 auto;\n  max-width: 1200px;\n}\n\n/* Add your styles here */`;
+            content = `/* ⚠️ FALLBACK CONTENT - Actual file could not be loaded */\n/* File: ${actualPath} */\n/* Possible causes: */\n/*   - Authentication required: Please log into your store admin dashboard */\n/*   - File permissions or network issues */\n/*   - API endpoint not available in production */\n\n/* ${fileName} */\n/* Stylesheet for the application */\n/* Actual CSS content would be loaded here if authentication was successful */\n\n.container {\n  padding: 1rem;\n  margin: 0 auto;\n  max-width: 1200px;\n}\n\n/* Add your styles here */`;
           } else {
             content = `// ⚠️ FALLBACK CONTENT - Actual file could not be loaded\n// File: ${actualPath}\n// To see actual content, implement /api/files/read endpoint\n\n// ${fileName}\n// File type: ${fileType}\n// Path: ${actualPath}\n// Actual file content would be loaded here`;
           }
@@ -398,7 +458,7 @@ const EditorLayout = ({ children }) => {
     const fileTypeDescription = fileType === 'jsx' ? 'React component' : fileType === 'css' ? 'CSS stylesheet' : fileType;
     const loadStatusMessage = loadSuccess ? 
       '✅ Successfully loaded actual file content from the project filesystem.' : 
-      '⚠️ Showing fallback content - could not load actual file. This might be due to file permissions or the file not existing at the expected location.';
+      '⚠️ Showing fallback content - could not load actual file. This might be due to authentication requirements (please ensure you are logged into your store admin dashboard) or file permissions.';
     
     setChatMessages(prev => [...prev, {
       id: Date.now(),
