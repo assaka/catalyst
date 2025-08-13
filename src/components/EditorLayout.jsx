@@ -25,7 +25,8 @@ import {
   FolderOpen,
   ChevronRight,
   ChevronDown,
-  File
+  File,
+  X
 } from 'lucide-react';
 import {
   DropdownMenu,
