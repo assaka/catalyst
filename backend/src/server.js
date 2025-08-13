@@ -95,6 +95,7 @@ const storageRoutes = require('./routes/storage');
 const productImageRoutes = require('./routes/product-images');
 const categoryImageRoutes = require('./routes/category-images');
 const fileManagerRoutes = require('./routes/file-manager');
+const sourceFilesRoutes = require('./routes/source-files');
 const templateRoutes = require('./routes/templates');
 const templateCustomizationRoutes = require('./routes/template-customization');
 const storeDataMigrationRoutes = require('./routes/store-data-migration');
@@ -1551,6 +1552,7 @@ app.use('/api/stores/:store_id/storage', storageRoutes); // Store-specific stora
 app.use('/api/stores/:store_id/products', productImageRoutes);
 app.use('/api/stores/:store_id/categories', categoryImageRoutes);
 app.use('/api/file-manager', fileManagerRoutes);
+app.use('/api/source-files', sourceFilesRoutes);
 app.use('/api/stores/:store_id/templates', authMiddleware, templateRoutes);
 app.use('/api/stores/:store_id/template-customization', templateCustomizationRoutes);
 app.use('/api/stores/:store_id/data-migration', storeDataMigrationRoutes);

@@ -281,7 +281,7 @@ const EditorLayout = ({ children }) => {
         
         // Method 1: Try loading via API endpoint
         try {
-          const apiResponse = await fetch(`/api/files/content?path=${encodeURIComponent(actualPath)}`, {
+          const apiResponse = await fetch(`/api/source-files/content?path=${encodeURIComponent(actualPath)}`, {
             method: 'GET',
             headers: {
               'Accept': 'application/json',
