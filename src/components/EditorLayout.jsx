@@ -60,11 +60,8 @@ const EditorLayout = ({ children }) => {
   // File tree state
   const [selectedFile, setSelectedFile] = useState(null);
   const [expandedFolders, setExpandedFolders] = useState({
-    'storefront-pages': true,
-    'storefront-components': true,
-    'admin-pages': false,
-    'ui-components': false,
-    'layouts': false,
+    'pages': true,
+    'components': true,
     'styles': false
   });
   const [fileTreeOpen, setFileTreeOpen] = useState(true);
@@ -72,12 +69,13 @@ const EditorLayout = ({ children }) => {
   // Get user info for shared header
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // File tree data structure - actual storefront files
+  // File tree data structure - using actual project directories
   const fileTree = {
-    'storefront-pages': {
-      name: 'Storefront Pages',
+    'pages': {
+      name: 'Pages',
       type: 'folder',
       children: {
+        // Storefront Pages
         'Storefront.jsx': { name: 'Storefront.jsx', type: 'file', language: 'jsx' },
         'ProductDetail.jsx': { name: 'ProductDetail.jsx', type: 'file', language: 'jsx' },
         'Cart.jsx': { name: 'Cart.jsx', type: 'file', language: 'jsx' },
@@ -85,34 +83,8 @@ const EditorLayout = ({ children }) => {
         'OrderSuccess.jsx': { name: 'OrderSuccess.jsx', type: 'file', language: 'jsx' },
         'CustomerDashboard.jsx': { name: 'CustomerDashboard.jsx', type: 'file', language: 'jsx' },
         'CmsPageViewer.jsx': { name: 'CmsPageViewer.jsx', type: 'file', language: 'jsx' },
-        'HtmlSitemap.jsx': { name: 'HtmlSitemap.jsx', type: 'file', language: 'jsx' }
-      }
-    },
-    'storefront-components': {
-      name: 'Storefront Components',
-      type: 'folder',
-      children: {
-        'StorefrontLayout.jsx': { name: 'StorefrontLayout.jsx', type: 'file', language: 'jsx' },
-        'ProductCard.jsx': { name: 'ProductCard.jsx', type: 'file', language: 'jsx' },
-        'CategoryNav.jsx': { name: 'CategoryNav.jsx', type: 'file', language: 'jsx' },
-        'HeaderSearch.jsx': { name: 'HeaderSearch.jsx', type: 'file', language: 'jsx' },
-        'MiniCart.jsx': { name: 'MiniCart.jsx', type: 'file', language: 'jsx' },
-        'Breadcrumb.jsx': { name: 'Breadcrumb.jsx', type: 'file', language: 'jsx' },
-        'LayeredNavigation.jsx': { name: 'LayeredNavigation.jsx', type: 'file', language: 'jsx' },
-        'WishlistDropdown.jsx': { name: 'WishlistDropdown.jsx', type: 'file', language: 'jsx' },
-        'RecommendedProducts.jsx': { name: 'RecommendedProducts.jsx', type: 'file', language: 'jsx' },
-        'RelatedProductsViewer.jsx': { name: 'RelatedProductsViewer.jsx', type: 'file', language: 'jsx' },
-        'ProductLabel.jsx': { name: 'ProductLabel.jsx', type: 'file', language: 'jsx' },
-        'CustomOptions.jsx': { name: 'CustomOptions.jsx', type: 'file', language: 'jsx' },
-        'CmsBlockRenderer.jsx': { name: 'CmsBlockRenderer.jsx', type: 'file', language: 'jsx' },
-        'CookieConsentBanner.jsx': { name: 'CookieConsentBanner.jsx', type: 'file', language: 'jsx' },
-        'FlashMessage.jsx': { name: 'FlashMessage.jsx', type: 'file', language: 'jsx' }
-      }
-    },
-    'admin-pages': {
-      name: 'Admin Pages',
-      type: 'folder',
-      children: {
+        'HtmlSitemap.jsx': { name: 'HtmlSitemap.jsx', type: 'file', language: 'jsx' },
+        // Admin Pages
         'Dashboard.jsx': { name: 'Dashboard.jsx', type: 'file', language: 'jsx' },
         'Products.jsx': { name: 'Products.jsx', type: 'file', language: 'jsx' },
         'Categories.jsx': { name: 'Categories.jsx', type: 'file', language: 'jsx' },
@@ -123,34 +95,58 @@ const EditorLayout = ({ children }) => {
         'CmsBlocks.jsx': { name: 'CmsBlocks.jsx', type: 'file', language: 'jsx' },
         'Settings.jsx': { name: 'Settings.jsx', type: 'file', language: 'jsx' },
         'ThemeLayout.jsx': { name: 'ThemeLayout.jsx', type: 'file', language: 'jsx' },
-        'TemplateEditor.jsx': { name: 'TemplateEditor.jsx', type: 'file', language: 'jsx' }
-      }
-    },
-    'ui-components': {
-      name: 'UI Components',
-      type: 'folder',
-      children: {
-        'button.jsx': { name: 'button.jsx', type: 'file', language: 'jsx' },
-        'card.jsx': { name: 'card.jsx', type: 'file', language: 'jsx' },
-        'input.jsx': { name: 'input.jsx', type: 'file', language: 'jsx' },
-        'select.jsx': { name: 'select.jsx', type: 'file', language: 'jsx' },
-        'dialog.jsx': { name: 'dialog.jsx', type: 'file', language: 'jsx' },
-        'dropdown-menu.jsx': { name: 'dropdown-menu.jsx', type: 'file', language: 'jsx' },
-        'tabs.jsx': { name: 'tabs.jsx', type: 'file', language: 'jsx' },
-        'table.jsx': { name: 'table.jsx', type: 'file', language: 'jsx' },
-        'badge.jsx': { name: 'badge.jsx', type: 'file', language: 'jsx' },
-        'alert.jsx': { name: 'alert.jsx', type: 'file', language: 'jsx' },
-        'pagination.jsx': { name: 'pagination.jsx', type: 'file', language: 'jsx' },
-        'skeleton.jsx': { name: 'skeleton.jsx', type: 'file', language: 'jsx' }
-      }
-    },
-    'layouts': {
-      name: 'Layouts',
-      type: 'folder',
-      children: {
+        'TemplateEditor.jsx': { name: 'TemplateEditor.jsx', type: 'file', language: 'jsx' },
         'Layout.jsx': { name: 'Layout.jsx', type: 'file', language: 'jsx' },
+        'Auth.jsx': { name: 'Auth.jsx', type: 'file', language: 'jsx' },
+        'Landing.jsx': { name: 'Landing.jsx', type: 'file', language: 'jsx' }
+      }
+    },
+    'components': {
+      name: 'Components',
+      type: 'folder',
+      children: {
+        'storefront': {
+          name: 'storefront',
+          type: 'folder',
+          children: {
+            'StorefrontLayout.jsx': { name: 'StorefrontLayout.jsx', type: 'file', language: 'jsx' },
+            'ProductCard.jsx': { name: 'ProductCard.jsx', type: 'file', language: 'jsx' },
+            'CategoryNav.jsx': { name: 'CategoryNav.jsx', type: 'file', language: 'jsx' },
+            'HeaderSearch.jsx': { name: 'HeaderSearch.jsx', type: 'file', language: 'jsx' },
+            'MiniCart.jsx': { name: 'MiniCart.jsx', type: 'file', language: 'jsx' },
+            'Breadcrumb.jsx': { name: 'Breadcrumb.jsx', type: 'file', language: 'jsx' },
+            'LayeredNavigation.jsx': { name: 'LayeredNavigation.jsx', type: 'file', language: 'jsx' },
+            'WishlistDropdown.jsx': { name: 'WishlistDropdown.jsx', type: 'file', language: 'jsx' },
+            'RecommendedProducts.jsx': { name: 'RecommendedProducts.jsx', type: 'file', language: 'jsx' },
+            'RelatedProductsViewer.jsx': { name: 'RelatedProductsViewer.jsx', type: 'file', language: 'jsx' },
+            'ProductLabel.jsx': { name: 'ProductLabel.jsx', type: 'file', language: 'jsx' },
+            'CustomOptions.jsx': { name: 'CustomOptions.jsx', type: 'file', language: 'jsx' },
+            'CmsBlockRenderer.jsx': { name: 'CmsBlockRenderer.jsx', type: 'file', language: 'jsx' },
+            'CookieConsentBanner.jsx': { name: 'CookieConsentBanner.jsx', type: 'file', language: 'jsx' },
+            'FlashMessage.jsx': { name: 'FlashMessage.jsx', type: 'file', language: 'jsx' }
+          }
+        },
+        'ui': {
+          name: 'ui',
+          type: 'folder',
+          children: {
+            'button.jsx': { name: 'button.jsx', type: 'file', language: 'jsx' },
+            'card.jsx': { name: 'card.jsx', type: 'file', language: 'jsx' },
+            'input.jsx': { name: 'input.jsx', type: 'file', language: 'jsx' },
+            'select.jsx': { name: 'select.jsx', type: 'file', language: 'jsx' },
+            'dialog.jsx': { name: 'dialog.jsx', type: 'file', language: 'jsx' },
+            'dropdown-menu.jsx': { name: 'dropdown-menu.jsx', type: 'file', language: 'jsx' },
+            'tabs.jsx': { name: 'tabs.jsx', type: 'file', language: 'jsx' },
+            'table.jsx': { name: 'table.jsx', type: 'file', language: 'jsx' },
+            'badge.jsx': { name: 'badge.jsx', type: 'file', language: 'jsx' },
+            'alert.jsx': { name: 'alert.jsx', type: 'file', language: 'jsx' },
+            'pagination.jsx': { name: 'pagination.jsx', type: 'file', language: 'jsx' },
+            'skeleton.jsx': { name: 'skeleton.jsx', type: 'file', language: 'jsx' }
+          }
+        },
         'EditorLayout.jsx': { name: 'EditorLayout.jsx', type: 'file', language: 'jsx' },
-        'StorefrontLayout.jsx': { name: 'StorefrontLayout.jsx', type: 'file', language: 'jsx' }
+        'RoleProtectedRoute.jsx': { name: 'RoleProtectedRoute.jsx', type: 'file', language: 'jsx' },
+        'AuthMiddleware.jsx': { name: 'AuthMiddleware.jsx', type: 'file', language: 'jsx' }
       }
     },
     'styles': {
@@ -201,64 +197,65 @@ const EditorLayout = ({ children }) => {
   const handleFileSelect = async (filePath, fileName, fileType) => {
     // Map file tree paths to actual file system paths
     const fileMapping = {
-      // Storefront Pages
-      'storefront-pages/Storefront.jsx': 'src/pages/Storefront.jsx',
-      'storefront-pages/ProductDetail.jsx': 'src/pages/ProductDetail.jsx',
-      'storefront-pages/Cart.jsx': 'src/pages/Cart.jsx',
-      'storefront-pages/Checkout.jsx': 'src/pages/Checkout.jsx',
-      'storefront-pages/OrderSuccess.jsx': 'src/pages/OrderSuccess.jsx',
-      'storefront-pages/CustomerDashboard.jsx': 'src/pages/CustomerDashboard.jsx',
-      'storefront-pages/CmsPageViewer.jsx': 'src/pages/CmsPageViewer.jsx',
-      'storefront-pages/HtmlSitemap.jsx': 'src/pages/HtmlSitemap.jsx',
+      // Pages (both storefront and admin)
+      'pages/Storefront.jsx': 'src/pages/Storefront.jsx',
+      'pages/ProductDetail.jsx': 'src/pages/ProductDetail.jsx',
+      'pages/Cart.jsx': 'src/pages/Cart.jsx',
+      'pages/Checkout.jsx': 'src/pages/Checkout.jsx',
+      'pages/OrderSuccess.jsx': 'src/pages/OrderSuccess.jsx',
+      'pages/CustomerDashboard.jsx': 'src/pages/CustomerDashboard.jsx',
+      'pages/CmsPageViewer.jsx': 'src/pages/CmsPageViewer.jsx',
+      'pages/HtmlSitemap.jsx': 'src/pages/HtmlSitemap.jsx',
+      'pages/Dashboard.jsx': 'src/pages/Dashboard.jsx',
+      'pages/Products.jsx': 'src/pages/Products.jsx',
+      'pages/Categories.jsx': 'src/pages/Categories.jsx',
+      'pages/Attributes.jsx': 'src/pages/Attributes.jsx',
+      'pages/Orders.jsx': 'src/pages/Orders.jsx',
+      'pages/Customers.jsx': 'src/pages/Customers.jsx',
+      'pages/CmsPages.jsx': 'src/pages/CmsPages.jsx',
+      'pages/CmsBlocks.jsx': 'src/pages/CmsBlocks.jsx',
+      'pages/Settings.jsx': 'src/pages/Settings.jsx',
+      'pages/ThemeLayout.jsx': 'src/pages/ThemeLayout.jsx',
+      'pages/TemplateEditor.jsx': 'src/pages/TemplateEditor.jsx',
+      'pages/Layout.jsx': 'src/pages/Layout.jsx',
+      'pages/Auth.jsx': 'src/pages/Auth.jsx',
+      'pages/Landing.jsx': 'src/pages/Landing.jsx',
       
-      // Storefront Components
-      'storefront-components/StorefrontLayout.jsx': 'src/components/storefront/StorefrontLayout.jsx',
-      'storefront-components/ProductCard.jsx': 'src/components/storefront/ProductCard.jsx',
-      'storefront-components/CategoryNav.jsx': 'src/components/storefront/CategoryNav.jsx',
-      'storefront-components/HeaderSearch.jsx': 'src/components/storefront/HeaderSearch.jsx',
-      'storefront-components/MiniCart.jsx': 'src/components/storefront/MiniCart.jsx',
-      'storefront-components/Breadcrumb.jsx': 'src/components/storefront/Breadcrumb.jsx',
-      'storefront-components/LayeredNavigation.jsx': 'src/components/storefront/LayeredNavigation.jsx',
-      'storefront-components/WishlistDropdown.jsx': 'src/components/storefront/WishlistDropdown.jsx',
-      'storefront-components/RecommendedProducts.jsx': 'src/components/storefront/RecommendedProducts.jsx',
-      'storefront-components/RelatedProductsViewer.jsx': 'src/components/storefront/RelatedProductsViewer.jsx',
-      'storefront-components/ProductLabel.jsx': 'src/components/storefront/ProductLabel.jsx',
-      'storefront-components/CustomOptions.jsx': 'src/components/storefront/CustomOptions.jsx',
-      'storefront-components/CmsBlockRenderer.jsx': 'src/components/storefront/CmsBlockRenderer.jsx',
-      'storefront-components/CookieConsentBanner.jsx': 'src/components/storefront/CookieConsentBanner.jsx',
-      'storefront-components/FlashMessage.jsx': 'src/components/storefront/FlashMessage.jsx',
+      // Components - Storefront
+      'components/storefront/StorefrontLayout.jsx': 'src/components/storefront/StorefrontLayout.jsx',
+      'components/storefront/ProductCard.jsx': 'src/components/storefront/ProductCard.jsx',
+      'components/storefront/CategoryNav.jsx': 'src/components/storefront/CategoryNav.jsx',
+      'components/storefront/HeaderSearch.jsx': 'src/components/storefront/HeaderSearch.jsx',
+      'components/storefront/MiniCart.jsx': 'src/components/storefront/MiniCart.jsx',
+      'components/storefront/Breadcrumb.jsx': 'src/components/storefront/Breadcrumb.jsx',
+      'components/storefront/LayeredNavigation.jsx': 'src/components/storefront/LayeredNavigation.jsx',
+      'components/storefront/WishlistDropdown.jsx': 'src/components/storefront/WishlistDropdown.jsx',
+      'components/storefront/RecommendedProducts.jsx': 'src/components/storefront/RecommendedProducts.jsx',
+      'components/storefront/RelatedProductsViewer.jsx': 'src/components/storefront/RelatedProductsViewer.jsx',
+      'components/storefront/ProductLabel.jsx': 'src/components/storefront/ProductLabel.jsx',
+      'components/storefront/CustomOptions.jsx': 'src/components/storefront/CustomOptions.jsx',
+      'components/storefront/CmsBlockRenderer.jsx': 'src/components/storefront/CmsBlockRenderer.jsx',
+      'components/storefront/CookieConsentBanner.jsx': 'src/components/storefront/CookieConsentBanner.jsx',
+      'components/storefront/FlashMessage.jsx': 'src/components/storefront/FlashMessage.jsx',
       
-      // Admin Pages
-      'admin-pages/Dashboard.jsx': 'src/pages/Dashboard.jsx',
-      'admin-pages/Products.jsx': 'src/pages/Products.jsx',
-      'admin-pages/Categories.jsx': 'src/pages/Categories.jsx',
-      'admin-pages/Attributes.jsx': 'src/pages/Attributes.jsx',
-      'admin-pages/Orders.jsx': 'src/pages/Orders.jsx',
-      'admin-pages/Customers.jsx': 'src/pages/Customers.jsx',
-      'admin-pages/CmsPages.jsx': 'src/pages/CmsPages.jsx',
-      'admin-pages/CmsBlocks.jsx': 'src/pages/CmsBlocks.jsx',
-      'admin-pages/Settings.jsx': 'src/pages/Settings.jsx',
-      'admin-pages/ThemeLayout.jsx': 'src/pages/ThemeLayout.jsx',
-      'admin-pages/TemplateEditor.jsx': 'src/pages/TemplateEditor.jsx',
+      // Components - UI
+      'components/ui/button.jsx': 'src/components/ui/button.jsx',
+      'components/ui/card.jsx': 'src/components/ui/card.jsx',
+      'components/ui/input.jsx': 'src/components/ui/input.jsx',
+      'components/ui/select.jsx': 'src/components/ui/select.jsx',
+      'components/ui/dialog.jsx': 'src/components/ui/dialog.jsx',
+      'components/ui/dropdown-menu.jsx': 'src/components/ui/dropdown-menu.jsx',
+      'components/ui/tabs.jsx': 'src/components/ui/tabs.jsx',
+      'components/ui/table.jsx': 'src/components/ui/table.jsx',
+      'components/ui/badge.jsx': 'src/components/ui/badge.jsx',
+      'components/ui/alert.jsx': 'src/components/ui/alert.jsx',
+      'components/ui/pagination.jsx': 'src/components/ui/pagination.jsx',
+      'components/ui/skeleton.jsx': 'src/components/ui/skeleton.jsx',
       
-      // UI Components
-      'ui-components/button.jsx': 'src/components/ui/button.jsx',
-      'ui-components/card.jsx': 'src/components/ui/card.jsx',
-      'ui-components/input.jsx': 'src/components/ui/input.jsx',
-      'ui-components/select.jsx': 'src/components/ui/select.jsx',
-      'ui-components/dialog.jsx': 'src/components/ui/dialog.jsx',
-      'ui-components/dropdown-menu.jsx': 'src/components/ui/dropdown-menu.jsx',
-      'ui-components/tabs.jsx': 'src/components/ui/tabs.jsx',
-      'ui-components/table.jsx': 'src/components/ui/table.jsx',
-      'ui-components/badge.jsx': 'src/components/ui/badge.jsx',
-      'ui-components/alert.jsx': 'src/components/ui/alert.jsx',
-      'ui-components/pagination.jsx': 'src/components/ui/pagination.jsx',
-      'ui-components/skeleton.jsx': 'src/components/ui/skeleton.jsx',
-      
-      // Layouts
-      'layouts/Layout.jsx': 'src/pages/Layout.jsx',
-      'layouts/EditorLayout.jsx': 'src/components/EditorLayout.jsx',
-      'layouts/StorefrontLayout.jsx': 'src/components/storefront/StorefrontLayout.jsx',
+      // Components - Root Level
+      'components/EditorLayout.jsx': 'src/components/EditorLayout.jsx',
+      'components/RoleProtectedRoute.jsx': 'src/components/RoleProtectedRoute.jsx',
+      'components/AuthMiddleware.jsx': 'src/components/AuthMiddleware.jsx',
       
       // Styles
       'styles/App.css': 'src/App.css',
