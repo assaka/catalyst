@@ -387,6 +387,10 @@ const EditorLayout = ({ children }) => {
               } else {
                 const errorData = await backupResponse.text();
                 console.log('❌ Backup API response not ok:', backupResponse.status, errorData);
+                
+                if (backupResponse.status === 404) {
+                  console.log('ℹ️ Backup endpoint not available in production - this is expected');
+                }
               }
             }
           } catch (backupError) {
@@ -421,6 +425,13 @@ const EditorLayout = ({ children }) => {
         if (!loadSuccess) {
           // Since we can't directly read files in browser, provide better mock content based on file type
           console.warn(`⚠️ Could not load actual file content for ${fileName}. Using fallback content.`);
+          console.log('');
+          console.log('🔐 TO ACCESS REAL FILE CONTENT:');
+          console.log('   1. Open your store admin dashboard in a new tab');
+          console.log('   2. Log in with your store owner credentials');
+          console.log('   3. Return to this Editor tab and try again');
+          console.log('   4. The Editor requires authenticated access to read project files');
+          console.log('');
           
           if (fileType === 'jsx') {
             const componentName = fileName.split('.')[0];
@@ -818,6 +829,33 @@ const EditorLayout = ({ children }) => {
           </>
         }
       />
+      
+      {/* Authentication Status Banner */}
+      {(() => {
+        const token = localStorage.getItem('store_owner_auth_token') ||
+                     localStorage.getItem('customer_auth_token') ||
+                     localStorage.getItem('auth_token') ||
+                     localStorage.getItem('token');
+        
+        if (!token) {
+          return (
+            <div className="bg-amber-50 border-b border-amber-200 px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                  <span className="text-sm font-medium text-amber-800">
+                    Authentication Required for Real File Content
+                  </span>
+                </div>
+                <div className="text-xs text-amber-700">
+                  <span className="font-medium">Solution:</span> Log into your store admin dashboard first
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
       
       <div className="flex flex-1 overflow-hidden">
         {/* AI Chat Context Column */}
