@@ -281,23 +281,39 @@ const EditorLayout = ({ children }) => {
         
         // Method 1: Try loading via API endpoint
         try {
-          const apiResponse = await fetch(`/api/source-files/content?path=${encodeURIComponent(actualPath)}`, {
-            method: 'GET',
-            headers: {
-              'Accept': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
-            }
-          });
+          const token = localStorage.getItem('store_owner_auth_token') ||
+                       localStorage.getItem('customer_auth_token') ||
+                       localStorage.getItem('auth_token') ||
+                       localStorage.getItem('token');
           
-          if (apiResponse.ok) {
-            const data = await apiResponse.json();
-            if (data.success && data.content) {
-              content = data.content;
-              loadSuccess = true;
+          if (token) {
+            const apiResponse = await fetch(`/api/template-editor/source-files/content?path=${encodeURIComponent(actualPath)}`, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (apiResponse.ok) {
+              const data = await apiResponse.json();
+              if (data.success && data.content) {
+                content = data.content;
+                loadSuccess = true;
+                console.log('✅ Successfully loaded file from API:', fileName, `(${data.content.length} chars)`);
+              } else {
+                console.log('❌ API returned unsuccessful response:', data);
+              }
+            } else {
+              const errorData = await apiResponse.text();
+              console.log('❌ API response not ok:', apiResponse.status, apiResponse.statusText, errorData);
             }
+          } else {
+            console.log('No auth token found, skipping API call');
           }
         } catch (apiError) {
-          console.log('API method failed, trying direct fetch...');
+          console.log('API method failed:', apiError.message);
         }
         
         // Method 2: Try direct fetch from public path (for development)
@@ -362,10 +378,15 @@ const EditorLayout = ({ children }) => {
     });
     
     // Add AI message about file selection
+    const fileTypeDescription = fileType === 'jsx' ? 'React component' : fileType === 'css' ? 'CSS stylesheet' : fileType;
+    const loadStatusMessage = loadSuccess ? 
+      '✅ Successfully loaded actual file content from the project filesystem.' : 
+      '⚠️ Showing fallback content - could not load actual file. This might be due to file permissions or the file not existing at the expected location.';
+    
     setChatMessages(prev => [...prev, {
       id: Date.now(),
       type: 'ai',
-      content: `Opened ${fileName}. ${loadSuccess !== undefined ? (loadSuccess ? '✅ Loaded actual file content.' : '⚠️ Showing fallback content - actual file content could not be loaded.') : ''} This is a ${fileType === 'jsx' ? 'React component' : fileType === 'css' ? 'CSS stylesheet' : fileType} file. I can help you understand its structure, suggest improvements, or explain how it fits into the storefront architecture.`,
+      content: `📂 Opened ${fileName}. ${loadStatusMessage} This is a ${fileTypeDescription} file. I can help you understand its structure, suggest improvements, or explain how it fits into the application architecture.`,
       timestamp: new Date()
     }]);
   };

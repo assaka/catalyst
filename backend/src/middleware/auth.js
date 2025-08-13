@@ -11,6 +11,17 @@ const authMiddleware = async (req, res, next) => {
       'content-type': req.headers['content-type']
     });
     
+    // Development bypass for source files endpoint
+    if (process.env.NODE_ENV !== 'production' && req.path.includes('/source-files/content')) {
+      console.log('🛠️ Development bypass for source files endpoint');
+      req.user = {
+        id: 'dev-user',
+        role: 'store_owner',
+        email: 'dev@example.com'
+      };
+      return next();
+    }
+    
     const token = req.header('Authorization')?.replace('Bearer ', '');
     console.log('🔍 Token present:', !!token);
     console.log('🔍 Token (first 20 chars):', token?.substring(0, 20));

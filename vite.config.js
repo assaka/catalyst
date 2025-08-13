@@ -9,9 +9,9 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'https://catalyst-backend-fzhu.onrender.com',
+        target: 'http://localhost:5000',
         changeOrigin: true,
-        secure: true
+        secure: false
       }
     }
   },

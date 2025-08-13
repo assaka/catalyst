@@ -1,10 +1,13 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { authorize } = require('../middleware/auth');
+const authMiddleware = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const StoreTemplate = require('../models/StoreTemplate');
 const dummyImageService = require('../services/dummy-image-service');
 const supabaseIntegration = require('../services/supabase-integration');
+const fs = require('fs');
+const path = require('path');
 
 const router = express.Router();
 
@@ -322,6 +325,89 @@ router.get('/:storeId/stats', authorize(['store_owner']), checkStoreOwnership, a
     res.status(500).json({
       success: false,
       message: 'Server error'
+    });
+  }
+});
+
+// @route   GET /api/template-editor/source-files/content
+// @desc    Get source file content for file tree editor
+// @access  Private
+router.get('/source-files/content', authMiddleware, async (req, res) => {
+  try {
+    const { path: filePath } = req.query;
+    
+    console.log('📁 Source file request:', { filePath, user: req.user?.id });
+    
+    if (!filePath) {
+      return res.status(400).json({
+        success: false,
+        message: 'File path is required'
+      });
+    }
+    
+    // Security: Only allow files within the project directory
+    const allowedPaths = [
+      'src/pages/',
+      'src/components/',
+      'src/App.css',
+      'src/index.css'
+    ];
+    
+    const isAllowed = allowedPaths.some(allowedPath => filePath.startsWith(allowedPath));
+    if (!isAllowed) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access to this file path is not allowed'
+      });
+    }
+    
+    // Construct the full file path relative to project root
+    const projectRoot = path.resolve(__dirname, '../../../');
+    const fullPath = path.join(projectRoot, filePath);
+    
+    // Check if file exists and is within project bounds (prevent directory traversal)
+    if (!fullPath.startsWith(projectRoot)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid file path'
+      });
+    }
+    
+    try {
+      // Check if file exists
+      await fs.promises.access(fullPath, fs.constants.F_OK);
+      console.log('✅ File exists:', fullPath);
+      
+      // Read file content
+      const content = await fs.promises.readFile(fullPath, 'utf8');
+      console.log('✅ File content loaded, length:', content.length);
+      
+      res.json({
+        success: true,
+        content: content,
+        path: filePath,
+        fullPath: fullPath,
+        message: 'File loaded successfully'
+      });
+    } catch (fileError) {
+      console.error('❌ File error:', fileError);
+      if (fileError.code === 'ENOENT') {
+        return res.status(404).json({
+          success: false,
+          message: 'File not found',
+          path: filePath,
+          fullPath: fullPath
+        });
+      }
+      
+      throw fileError;
+    }
+  } catch (error) {
+    console.error('Get source file content error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error reading file',
+      error: error.message
     });
   }
 });
