@@ -61,6 +61,8 @@ const EditorLayout = ({ children }) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
+  const [customizations, setCustomizations] = useState(null);
+  const [recentFiles, setRecentFiles] = useState([]);
   
   // Check if we're in the template editor route to filter file tree
   const isTemplateEditor = location.pathname === '/editor/templates';
@@ -83,6 +85,54 @@ const EditorLayout = ({ children }) => {
   
   // Get user info for shared header
   const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  // Load customizations from database on mount
+  useEffect(() => {
+    const loadCustomizations = async () => {
+      try {
+        const token = localStorage.getItem('store_owner_auth_token') || 
+                     localStorage.getItem('auth_token');
+        
+        if (!token) return;
+        
+        const storeId = user.store_id || localStorage.getItem('current_store_id');
+        const url = storeId ? `/api/editor-customizations?store_id=${storeId}` : '/api/editor-customizations';
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setCustomizations(data.data);
+            setRecentFiles(data.data.recent_files || []);
+            
+            // Apply layout preferences
+            if (data.data.layout_preferences) {
+              setChatOpen(data.data.layout_preferences.chat_open);
+              setFileTreeOpen(data.data.layout_preferences.file_tree_open);
+            }
+            
+            // Apply expanded folders
+            if (data.data.preferences?.expanded_folders) {
+              setExpandedFolders(prev => ({
+                ...prev,
+                ...data.data.preferences.expanded_folders
+              }));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load customizations:', error);
+      }
+    };
+    
+    loadCustomizations();
+  }, [user.store_id]);
   
   // File tree data structure - filtered for storefront files when in template editor
   const fileTree = isTemplateEditor ? {
@@ -286,10 +336,137 @@ const EditorLayout = ({ children }) => {
 
   // File tree helper functions
   const toggleFolder = (folderKey) => {
-    setExpandedFolders(prev => ({
-      ...prev,
-      [folderKey]: !prev[folderKey]
-    }));
+    setExpandedFolders(prev => {
+      const newExpanded = {
+        ...prev,
+        [folderKey]: !prev[folderKey]
+      };
+      
+      // Save expanded folders to database
+      saveExpandedFolders(newExpanded);
+      
+      return newExpanded;
+    });
+  };
+  
+  // Save customizations to database
+  const saveExpandedFolders = async (expandedFolders) => {
+    try {
+      const token = localStorage.getItem('store_owner_auth_token') || 
+                   localStorage.getItem('auth_token');
+      
+      if (!token) return;
+      
+      const storeId = user.store_id || localStorage.getItem('current_store_id');
+      const url = storeId ? `/api/editor-customizations/expanded-folders?store_id=${storeId}` : 
+                           '/api/editor-customizations/expanded-folders';
+      
+      await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ expanded_folders: expandedFolders })
+      });
+    } catch (error) {
+      console.error('Failed to save expanded folders:', error);
+    }
+  };
+  
+  const saveLayoutPreferences = async (preferences) => {
+    try {
+      const token = localStorage.getItem('store_owner_auth_token') || 
+                   localStorage.getItem('auth_token');
+      
+      if (!token) return;
+      
+      const storeId = user.store_id || localStorage.getItem('current_store_id');
+      const url = storeId ? `/api/editor-customizations/layout?store_id=${storeId}` : 
+                           '/api/editor-customizations/layout';
+      
+      await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ preferences })
+      });
+    } catch (error) {
+      console.error('Failed to save layout preferences:', error);
+    }
+  };
+  
+  const saveFileContent = async (filePath, content, metadata = {}) => {
+    try {
+      const token = localStorage.getItem('store_owner_auth_token') || 
+                   localStorage.getItem('auth_token');
+      
+      if (!token) return;
+      
+      const storeId = user.store_id || localStorage.getItem('current_store_id');
+      const url = storeId ? `/api/editor-customizations/file-content?store_id=${storeId}` : 
+                           '/api/editor-customizations/file-content';
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          file_path: filePath, 
+          content, 
+          metadata 
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setCustomizations(data.data);
+          setRecentFiles(data.data.recent_files || []);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to save file content:', error);
+    }
+  };
+  
+  const addToRecentFiles = async (filePath, fileName, fileType) => {
+    try {
+      const token = localStorage.getItem('store_owner_auth_token') || 
+                   localStorage.getItem('auth_token');
+      
+      if (!token) return;
+      
+      const storeId = user.store_id || localStorage.getItem('current_store_id');
+      const url = storeId ? `/api/editor-customizations/recent-files?store_id=${storeId}` : 
+                           '/api/editor-customizations/recent-files';
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          file_path: filePath, 
+          file_name: fileName, 
+          file_type: fileType 
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setRecentFiles(data.data.recent_files || []);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to add to recent files:', error);
+    }
   };
 
   // Template customization handler - creates overrides without modifying core files
@@ -467,7 +644,7 @@ What would you like to customize in this template?`,
     }
   }, [selectedFile]);
 
-  const handleSaveEdit = useCallback(() => {
+  const handleSaveEdit = useCallback(async () => {
     if (selectedFile && editedContent !== undefined) {
       setSelectedFile({
         ...selectedFile,
@@ -477,10 +654,17 @@ What would you like to customize in this template?`,
       setHasUnsavedChanges(true);
       setLastSaved(new Date());
       
+      // Save to database
+      await saveFileContent(selectedFile.path, editedContent, {
+        name: selectedFile.name,
+        type: selectedFile.type,
+        actualPath: selectedFile.actualPath
+      });
+      
       setChatMessages(prev => [...prev, {
         id: Date.now(),
         type: 'ai',
-        content: `💾 Saved changes to ${selectedFile.name}! Your edits are now applied. You can continue editing or publish to make the changes live.`,
+        content: `💾 Saved changes to ${selectedFile.name}! Your edits are now applied and stored in the database. You can continue editing or publish to make the changes live.`,
         timestamp: new Date()
       }]);
     }
@@ -498,8 +682,15 @@ What would you like to customize in this template?`,
   }, [selectedFile]);
 
   const handleFileSelect = async (filePath, fileName, fileType) => {
+    // Check if this is a storefront template that should use customization interface
+    const isStorefrontTemplate = filePath.includes('storefront/') || 
+                                filePath.includes('pages/Storefront') ||
+                                filePath.includes('pages/ProductDetail') ||
+                                filePath.includes('pages/Cart') ||
+                                filePath.includes('pages/Checkout');
+    
     // Template customization logic - create overrides without modifying core files
-    if (isTemplateEditor) {
+    if (isTemplateEditor && isStorefrontTemplate) {
       handleTemplateCustomization(filePath, fileName, fileType);
       return;
     }
@@ -809,6 +1000,9 @@ What would you like to customize in this template?`,
     // Reset editing state when selecting a new file
     setIsEditing(false);
     setEditedContent('');
+    
+    // Add to recent files
+    await addToRecentFiles(filePath, fileName, fileType);
     
     // Add AI message about file selection
     const fileTypeDescription = fileType === 'jsx' ? 'React component' : fileType === 'css' ? 'CSS stylesheet' : fileType;
