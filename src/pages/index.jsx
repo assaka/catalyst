@@ -268,6 +268,7 @@ function _getCurrentPage(url) {
         if (editorPath === 'templates') return 'TemplateEditor';
         if (editorPath === 'themes') return 'ThemeLayout';
         if (editorPath === 'plugins') return 'PluginBuilder';
+        if (editorPath === 'ai') return 'AIEditor';
         return 'TemplateEditor'; // Default for editor mode
     }
     
@@ -424,8 +425,6 @@ function PagesContent() {
                         <AnalyticsSettings />
                     </RoleProtectedRoute>
                 } />
-                
-                <Route path="/admin/ai-editor" element={<AIEditor />} />
                 
                 {/* PUBLIC STOREFRONT ROUTES */}
                 <Route path="/public/:storeCode" element={<Storefront />} />
@@ -814,6 +813,12 @@ function PagesContent() {
                 <Route path="/editor/plugins" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <PluginBuilder />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/editor/ai" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <AIEditor />
                     </RoleProtectedRoute>
                 } />
                 
