@@ -134,6 +134,44 @@ const EditorLayout = ({ children }) => {
     loadCustomizations();
   }, [user.store_id]);
   
+  // Define callback functions before useEffect that references them
+  const handleSaveEdit = useCallback(async () => {
+    if (selectedFile && editedContent !== undefined) {
+      setSelectedFile({
+        ...selectedFile,
+        content: editedContent
+      });
+      setIsEditing(false);
+      setHasUnsavedChanges(true);
+      setLastSaved(new Date());
+      
+      // Save to database
+      await saveFileContent(selectedFile.path, editedContent, {
+        name: selectedFile.name,
+        type: selectedFile.type,
+        actualPath: selectedFile.actualPath
+      });
+      
+      setChatMessages(prev => [...prev, {
+        id: Date.now(),
+        type: 'ai',
+        content: `💾 Saved changes to ${selectedFile.name}! Your edits are now applied and stored in the database. You can continue editing or publish to make the changes live.`,
+        timestamp: new Date()
+      }]);
+    }
+  }, [selectedFile, editedContent]);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+    setEditedContent('');
+    setChatMessages(prev => [...prev, {
+      id: Date.now(),
+      type: 'ai',
+      content: `❌ Cancelled editing ${selectedFile?.name}. Changes have been discarded.`,
+      timestamp: new Date()
+    }]);
+  }, [selectedFile]);
+  
   // File tree data structure - filtered for storefront files when in template editor
   const fileTree = isTemplateEditor ? {
     'storefront-pages': {
@@ -642,43 +680,6 @@ What would you like to customize in this template?`,
         timestamp: new Date()
       }]);
     }
-  }, [selectedFile]);
-
-  const handleSaveEdit = useCallback(async () => {
-    if (selectedFile && editedContent !== undefined) {
-      setSelectedFile({
-        ...selectedFile,
-        content: editedContent
-      });
-      setIsEditing(false);
-      setHasUnsavedChanges(true);
-      setLastSaved(new Date());
-      
-      // Save to database
-      await saveFileContent(selectedFile.path, editedContent, {
-        name: selectedFile.name,
-        type: selectedFile.type,
-        actualPath: selectedFile.actualPath
-      });
-      
-      setChatMessages(prev => [...prev, {
-        id: Date.now(),
-        type: 'ai',
-        content: `💾 Saved changes to ${selectedFile.name}! Your edits are now applied and stored in the database. You can continue editing or publish to make the changes live.`,
-        timestamp: new Date()
-      }]);
-    }
-  }, [selectedFile, editedContent]);
-
-  const handleCancelEdit = useCallback(() => {
-    setIsEditing(false);
-    setEditedContent('');
-    setChatMessages(prev => [...prev, {
-      id: Date.now(),
-      type: 'ai',
-      content: `❌ Cancelled editing ${selectedFile?.name}. Changes have been discarded.`,
-      timestamp: new Date()
-    }]);
   }, [selectedFile]);
 
   const handleFileSelect = async (filePath, fileName, fileType) => {
