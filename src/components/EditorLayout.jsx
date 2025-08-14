@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ModeHeader from '@/components/shared/ModeHeader';
@@ -26,7 +26,10 @@ import {
   ChevronRight,
   ChevronDown,
   File,
-  X
+  X,
+  Save,
+  Edit3,
+  RotateCcw
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -56,6 +59,8 @@ const EditorLayout = ({ children }) => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
   
   // Check if we're in the template editor route to filter file tree
   const isTemplateEditor = location.pathname === '/editor/templates';
@@ -250,6 +255,26 @@ const EditorLayout = ({ children }) => {
       return () => clearTimeout(timer);
     }
   }, [hasUnsavedChanges]);
+
+  // Keyboard shortcuts for editing
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Ctrl+S or Cmd+S to save
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        if (isEditing) {
+          handleSaveEdit();
+        }
+      }
+      // Escape to cancel editing
+      if (event.key === 'Escape' && isEditing) {
+        handleCancelEdit();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isEditing, editedContent, handleSaveEdit, handleCancelEdit]);
   
   const switchToAdmin = () => {
     navigate('/admin/dashboard');
@@ -427,6 +452,50 @@ What would you like to customize in this template?`,
     }
     return [];
   };
+
+  // Handle editing functionality
+  const handleStartEditing = useCallback(() => {
+    if (selectedFile) {
+      setEditedContent(selectedFile.content);
+      setIsEditing(true);
+      setChatMessages(prev => [...prev, {
+        id: Date.now(),
+        type: 'ai',
+        content: `📝 Started editing ${selectedFile.name}. You can now modify the code directly. Remember to save your changes when done!`,
+        timestamp: new Date()
+      }]);
+    }
+  }, [selectedFile]);
+
+  const handleSaveEdit = useCallback(() => {
+    if (selectedFile && editedContent !== undefined) {
+      setSelectedFile({
+        ...selectedFile,
+        content: editedContent
+      });
+      setIsEditing(false);
+      setHasUnsavedChanges(true);
+      setLastSaved(new Date());
+      
+      setChatMessages(prev => [...prev, {
+        id: Date.now(),
+        type: 'ai',
+        content: `💾 Saved changes to ${selectedFile.name}! Your edits are now applied. You can continue editing or publish to make the changes live.`,
+        timestamp: new Date()
+      }]);
+    }
+  }, [selectedFile, editedContent]);
+
+  const handleCancelEdit = useCallback(() => {
+    setIsEditing(false);
+    setEditedContent('');
+    setChatMessages(prev => [...prev, {
+      id: Date.now(),
+      type: 'ai',
+      content: `❌ Cancelled editing ${selectedFile?.name}. Changes have been discarded.`,
+      timestamp: new Date()
+    }]);
+  }, [selectedFile]);
 
   const handleFileSelect = async (filePath, fileName, fileType) => {
     // Template customization logic - create overrides without modifying core files
@@ -736,6 +805,10 @@ What would you like to customize in this template?`,
       actualPath: actualPath,
       content: content
     });
+    
+    // Reset editing state when selecting a new file
+    setIsEditing(false);
+    setEditedContent('');
     
     // Add AI message about file selection
     const fileTypeDescription = fileType === 'jsx' ? 'React component' : fileType === 'css' ? 'CSS stylesheet' : fileType;
@@ -1674,6 +1747,38 @@ What would you like to customize in this template?`,
                         <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
                           {selectedFile.type}
                         </div>
+                        {!isEditing ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleStartEditing}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Edit3 className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                        ) : (
+                          <div className="flex gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleSaveEdit}
+                              className="text-green-600 hover:text-green-700"
+                            >
+                              <Save className="w-4 h-4 mr-1" />
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelEdit}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <RotateCcw className="w-4 h-4 mr-1" />
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -1684,8 +1789,51 @@ What would you like to customize in this template?`,
                       </div>
                     </div>
                   </div>
-                  <div className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm overflow-auto">
-                    <pre className="whitespace-pre-wrap">{selectedFile.content}</pre>
+                  <div className="flex-1 flex flex-col">
+                    {isEditing ? (
+                      // Editable code editor
+                      <div className="flex-1 flex flex-col">
+                        <div className="p-2 bg-blue-50 border-b border-blue-200">
+                          <div className="flex items-center gap-2 text-sm">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span className="text-blue-800 font-medium">Editing Mode Active</span>
+                            <span className="text-blue-600">- Make your changes below</span>
+                          </div>
+                        </div>
+                        <textarea
+                          value={editedContent}
+                          onChange={(e) => setEditedContent(e.target.value)}
+                          className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm resize-none border-none outline-none"
+                          style={{
+                            fontFamily: 'Monaco, Menlo, "Ubuntu Mono", monospace',
+                            fontSize: '14px',
+                            lineHeight: '1.5',
+                            tabSize: 2
+                          }}
+                          placeholder="Enter your code here..."
+                          spellCheck={false}
+                        />
+                        <div className="p-2 bg-gray-100 border-t border-gray-200">
+                          <div className="flex items-center justify-between text-xs text-gray-600">
+                            <span>💡 Tip: Use Ctrl+S (Cmd+S) to save quickly</span>
+                            <span>Lines: {editedContent.split('\n').length}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      // Read-only display
+                      <div className="flex-1 flex flex-col">
+                        <div className="p-2 bg-gray-50 border-b border-gray-200">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">Read-only view</span>
+                            <span className="text-gray-500">Click "Edit" to modify</span>
+                          </div>
+                        </div>
+                        <div className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm overflow-auto">
+                          <pre className="whitespace-pre-wrap">{selectedFile.content}</pre>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : previewMode ? (
