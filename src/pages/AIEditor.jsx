@@ -1,10 +1,10 @@
 import React from 'react';
-import VisualEditor from '@/components/editor/VisualEditor';
+import OverlayEditor from '@/components/editor/OverlayEditor';
 
 export default function AIEditor() {
   return (
     <div className="h-screen">
-      <VisualEditor />
+      <OverlayEditor />
     </div>
   );
 }
