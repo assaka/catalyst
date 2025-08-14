@@ -57,6 +57,9 @@ const EditorLayout = ({ children }) => {
   const [lastSaved, setLastSaved] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
+  // Check if we're in the template editor route to filter file tree
+  const isTemplateEditor = location.pathname === '/editor/templates';
+  
   // File tree state
   const [selectedFile, setSelectedFile] = useState(null);
   const [expandedFolders, setExpandedFolders] = useState(
@@ -75,9 +78,6 @@ const EditorLayout = ({ children }) => {
   
   // Get user info for shared header
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-
-  // Check if we're in the template editor route to filter file tree
-  const isTemplateEditor = location.pathname === '/editor/templates';
   
   // File tree data structure - filtered for storefront files when in template editor
   const fileTree = isTemplateEditor ? {
