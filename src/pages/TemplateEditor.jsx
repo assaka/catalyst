@@ -554,9 +554,7 @@ const TemplateEditor = () => {
     previewWindow.document.close();
   };
 
-  // Check if we're on the editor route (not admin route)
-  const isEditorRoute = location.pathname.startsWith('/editor/');
-  
+  // For template editor, we want our custom layout, not the general EditorLayout
   const content = (
     <DndProvider backend={HTML5Backend}>
       <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-gray-50 relative z-0 overflow-auto">
@@ -1184,12 +1182,8 @@ const TemplateEditor = () => {
     </DndProvider>
   );
 
-  // Return content wrapped with EditorLayout if on editor route, otherwise just the content
-  return isEditorRoute ? (
-    <EditorLayout>
-      {content}
-    </EditorLayout>
-  ) : content;
+  // Return our custom template editor content directly
+  return content;
 };
 
 export default TemplateEditor;
