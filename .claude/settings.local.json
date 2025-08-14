@@ -455,6 +455,9 @@
       "Bash(del \"src\\pages\\AIEditor.jsx\")"
     ],
     "deny": [],
-    "defaultMode": "acceptEdits"
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "C:\\c\\Users\\info\\PhpstormProjects"
+    ]
   }
 }

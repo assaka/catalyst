@@ -62,7 +62,8 @@ const ComponentTypes = {
 // Draggable component
 const DraggableComponent = ({ component, onSelect }) => {
   const [{ isDragging }, drag] = useDrag({
-    type: ComponentTypes.WIDGET,
+    type: component.type === 'section' ? ComponentTypes.SECTION : 
+          component.type === 'element' ? ComponentTypes.ELEMENT : ComponentTypes.WIDGET,
     item: component,
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
@@ -89,12 +90,17 @@ const DraggableComponent = ({ component, onSelect }) => {
 };
 
 // Droppable canvas area
-const TemplateCanvas = ({ template, onDrop, onSelectElement, selectedElement }) => {
+const TemplateCanvas = ({ template, onDrop, onSelectElement, selectedElement, setTemplates, activeTemplate, setSelectedElement }) => {
   const [{ isOver }, drop] = useDrop({
-    accept: ComponentTypes.WIDGET,
+    accept: [ComponentTypes.WIDGET, ComponentTypes.SECTION, ComponentTypes.ELEMENT],
     drop: (item, monitor) => {
       const offset = monitor.getClientOffset();
-      onDrop(item, offset);
+      const canvasRect = drop.current?.getBoundingClientRect();
+      const relativeOffset = canvasRect ? {
+        x: offset.x - canvasRect.left,
+        y: offset.y - canvasRect.top
+      } : { x: 50, y: 50 };
+      onDrop(item, relativeOffset);
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
@@ -132,7 +138,18 @@ const TemplateCanvas = ({ template, onDrop, onSelectElement, selectedElement }) 
               className="h-6 w-6"
               onClick={(e) => {
                 e.stopPropagation();
-                // Remove element
+                // Remove element from template
+                setTemplates(prev => ({
+                  ...prev,
+                  [activeTemplate]: {
+                    ...prev[activeTemplate],
+                    elements: prev[activeTemplate].elements.filter(el => el.id !== element.id)
+                  }
+                }));
+                if (selectedElement?.id === element.id) {
+                  setSelectedElement(null);
+                }
+                toast.success('Element removed');
               }}
             >
               <X className="h-3 w-3" />
@@ -301,12 +318,12 @@ const TemplateEditor = () => {
       name: component.name,
       content: component.defaultContent,
       position: {
-        x: position ? position.x - 100 : 50,
-        y: position ? position.y - 100 : 50
+        x: position ? Math.max(0, position.x - 10) : 50,
+        y: position ? Math.max(0, position.y - 10) : 50
       },
       size: {
-        width: 200,
-        height: 100
+        width: component.type === 'section' ? 400 : component.type === 'widget' ? 300 : 200,
+        height: component.type === 'section' ? 200 : component.type === 'widget' ? 150 : 100
       },
       styles: {}
     };
@@ -750,25 +767,49 @@ const TemplateEditor = () => {
                   <div className="relative">
                     {/* Live Preview with Overlay */}
                     <div 
-                      className="border rounded-lg overflow-hidden"
+                      className="border rounded-lg overflow-hidden bg-white"
                       style={{
                         width: viewMode === 'desktop' ? '100%' : viewMode === 'tablet' ? '768px' : '375px',
                         height: '600px',
                         margin: '0 auto'
                       }}
                     >
-                      <iframe
-                        src={`/public/${localStorage.getItem('storeCode') || 'demo'}/category-preview`}
-                        className="w-full h-full"
-                        title="Live Preview"
-                        style={{ border: 'none' }}
-                      />
+                      <div className="w-full h-full p-4 overflow-auto">
+                        {/* Render template elements as live preview */}
+                        <div className="space-y-4">
+                          {templates[activeTemplate].elements.length === 0 ? (
+                            <div className="text-center py-20 text-gray-500">
+                              <Layout className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                              <p>Drop components here to see live preview</p>
+                            </div>
+                          ) : (
+                            templates[activeTemplate].elements.map((element, index) => (
+                              <div
+                                key={element.id}
+                                className={`p-2 border rounded cursor-pointer transition-all ${
+                                  selectedElement?.id === element.id
+                                    ? 'border-blue-500 ring-2 ring-blue-200'
+                                    : 'border-gray-200 hover:border-blue-300'
+                                }`}
+                                onClick={() => setSelectedElement(element)}
+                                style={{ minHeight: '60px' }}
+                              >
+                                <div className="text-xs text-gray-500 mb-1">{element.name}</div>
+                                <div 
+                                  dangerouslySetInnerHTML={{ __html: element.content }} 
+                                  className="live-preview-content"
+                                />
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
                     </div>
                     
                     {/* Overlay Controls */}
-                    <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 space-y-2 max-w-xs">
+                    <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 space-y-2 max-w-xs z-10">
                       <div className="text-sm font-medium text-gray-700">Live Customization</div>
-                      {selectedElement && (
+                      {selectedElement ? (
                         <div className="space-y-2">
                           <div className="text-xs text-gray-500">Editing: {selectedElement.name}</div>
                           <div className="space-y-1">
@@ -777,20 +818,26 @@ const TemplateEditor = () => {
                               variant="outline" 
                               className="w-full text-xs h-7"
                               onClick={() => {
-                                // Apply overlay styling
-                                const overlayStyle = `
-                                  .${selectedElement.id} { 
-                                    background: linear-gradient(45deg, #3b82f6, #8b5cf6) !important;
-                                    color: white !important;
+                                // Apply gradient styling to selected element
+                                const updatedElement = {
+                                  ...selectedElement,
+                                  content: selectedElement.content.replace(
+                                    /class="([^"]*)"/, 
+                                    'class="$1 bg-gradient-to-r from-blue-500 to-purple-600 text-white"'
+                                  )
+                                };
+                                
+                                setTemplates(prev => ({
+                                  ...prev,
+                                  [activeTemplate]: {
+                                    ...prev[activeTemplate],
+                                    elements: prev[activeTemplate].elements.map(el => 
+                                      el.id === selectedElement.id ? updatedElement : el
+                                    )
                                   }
-                                `;
-                                // Inject style into preview
-                                const iframe = document.querySelector('iframe[title="Live Preview"]');
-                                if (iframe?.contentDocument) {
-                                  const style = iframe.contentDocument.createElement('style');
-                                  style.textContent = overlayStyle;
-                                  iframe.contentDocument.head.appendChild(style);
-                                }
+                                }));
+                                
+                                setSelectedElement(updatedElement);
                                 toast.success('Gradient theme applied');
                               }}
                             >
@@ -802,32 +849,70 @@ const TemplateEditor = () => {
                               variant="outline" 
                               className="w-full text-xs h-7"
                               onClick={() => {
-                                // Apply dark theme overlay
-                                const overlayStyle = `
-                                  .${selectedElement.id} { 
-                                    background: #1f2937 !important;
-                                    color: #f9fafb !important;
-                                    border-color: #374151 !important;
+                                // Apply dark theme styling to selected element
+                                const updatedElement = {
+                                  ...selectedElement,
+                                  content: selectedElement.content.replace(
+                                    /class="([^"]*)"/, 
+                                    'class="$1 bg-gray-900 text-white border-gray-700"'
+                                  )
+                                };
+                                
+                                setTemplates(prev => ({
+                                  ...prev,
+                                  [activeTemplate]: {
+                                    ...prev[activeTemplate],
+                                    elements: prev[activeTemplate].elements.map(el => 
+                                      el.id === selectedElement.id ? updatedElement : el
+                                    )
                                   }
-                                `;
-                                const iframe = document.querySelector('iframe[title="Live Preview"]');
-                                if (iframe?.contentDocument) {
-                                  const style = iframe.contentDocument.createElement('style');
-                                  style.textContent = overlayStyle;
-                                  iframe.contentDocument.head.appendChild(style);
-                                }
+                                }));
+                                
+                                setSelectedElement(updatedElement);
                                 toast.success('Dark theme applied');
                               }}
                             >
                               <PaintBucket className="w-3 h-3 mr-1" />
                               Dark Theme
                             </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs h-7"
+                              onClick={() => {
+                                // Reset to original styling
+                                const updatedElement = {
+                                  ...selectedElement,
+                                  content: selectedElement.content
+                                    .replace(/bg-gradient-to-r from-blue-500 to-purple-600 text-white/g, '')
+                                    .replace(/bg-gray-900 text-white border-gray-700/g, '')
+                                    .replace(/class="\s+"/g, 'class=""')
+                                };
+                                
+                                setTemplates(prev => ({
+                                  ...prev,
+                                  [activeTemplate]: {
+                                    ...prev[activeTemplate],
+                                    elements: prev[activeTemplate].elements.map(el => 
+                                      el.id === selectedElement.id ? updatedElement : el
+                                    )
+                                  }
+                                }));
+                                
+                                setSelectedElement(updatedElement);
+                                toast.success('Styling reset');
+                              }}
+                            >
+                              <RefreshCw className="w-3 h-3 mr-1" />
+                              Reset
+                            </Button>
                           </div>
                         </div>
+                      ) : (
+                        <div className="text-xs text-gray-400">
+                          Click an element to customize it
+                        </div>
                       )}
-                      <div className="text-xs text-gray-400 pt-1 border-t">
-                        Click elements to customize live
-                      </div>
                     </div>
                   </div>
                 ) : (
@@ -836,6 +921,9 @@ const TemplateEditor = () => {
                     onDrop={handleComponentDrop}
                     onSelectElement={setSelectedElement}
                     selectedElement={selectedElement}
+                    setTemplates={setTemplates}
+                    activeTemplate={activeTemplate}
+                    setSelectedElement={setSelectedElement}
                   />
                 )}
               </CardContent>
@@ -865,6 +953,15 @@ const TemplateEditor = () => {
                           };
                           setSelectedElement(updatedElement);
                           // Update in template
+                          setTemplates(prev => ({
+                            ...prev,
+                            [activeTemplate]: {
+                              ...prev[activeTemplate],
+                              elements: prev[activeTemplate].elements.map(el => 
+                                el.id === selectedElement.id ? updatedElement : el
+                              )
+                            }
+                          }));
                         }}
                         rows={4}
                       />
@@ -885,6 +982,16 @@ const TemplateEditor = () => {
                               }
                             };
                             setSelectedElement(updatedElement);
+                            // Update in template
+                            setTemplates(prev => ({
+                              ...prev,
+                              [activeTemplate]: {
+                                ...prev[activeTemplate],
+                                elements: prev[activeTemplate].elements.map(el => 
+                                  el.id === selectedElement.id ? updatedElement : el
+                                )
+                              }
+                            }));
                           }}
                         />
                       </div>
@@ -902,6 +1009,16 @@ const TemplateEditor = () => {
                               }
                             };
                             setSelectedElement(updatedElement);
+                            // Update in template
+                            setTemplates(prev => ({
+                              ...prev,
+                              [activeTemplate]: {
+                                ...prev[activeTemplate],
+                                elements: prev[activeTemplate].elements.map(el => 
+                                  el.id === selectedElement.id ? updatedElement : el
+                                )
+                              }
+                            }));
                           }}
                         />
                       </div>
@@ -922,6 +1039,16 @@ const TemplateEditor = () => {
                               }
                             };
                             setSelectedElement(updatedElement);
+                            // Update in template
+                            setTemplates(prev => ({
+                              ...prev,
+                              [activeTemplate]: {
+                                ...prev[activeTemplate],
+                                elements: prev[activeTemplate].elements.map(el => 
+                                  el.id === selectedElement.id ? updatedElement : el
+                                )
+                              }
+                            }));
                           }}
                         />
                       </div>
@@ -939,6 +1066,16 @@ const TemplateEditor = () => {
                               }
                             };
                             setSelectedElement(updatedElement);
+                            // Update in template
+                            setTemplates(prev => ({
+                              ...prev,
+                              [activeTemplate]: {
+                                ...prev[activeTemplate],
+                                elements: prev[activeTemplate].elements.map(el => 
+                                  el.id === selectedElement.id ? updatedElement : el
+                                )
+                              }
+                            }));
                           }}
                         />
                       </div>
@@ -951,8 +1088,16 @@ const TemplateEditor = () => {
                       size="sm"
                       className="w-full"
                       onClick={() => {
-                        // Remove element
+                        // Remove element from template
+                        setTemplates(prev => ({
+                          ...prev,
+                          [activeTemplate]: {
+                            ...prev[activeTemplate],
+                            elements: prev[activeTemplate].elements.filter(el => el.id !== selectedElement.id)
+                          }
+                        }));
                         setSelectedElement(null);
+                        toast.success('Element deleted');
                       }}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
