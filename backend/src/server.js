@@ -108,6 +108,7 @@ const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
 const aiEditorRoutes = require('./routes/ai-editor');
 const overlayEditorRoutes = require('./routes/overlay-editor');
+const editorCustomizationRoutes = require('./routes/editor-customizations');
 
 const app = express();
 
@@ -1567,6 +1568,7 @@ app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, 
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/ai', aiEditorRoutes); // AI-powered code editor routes
 app.use('/api/overlay', overlayEditorRoutes); // Overlay-based customization editor routes
+app.use('/api/editor-customizations', editorCustomizationRoutes); // File tree editor customizations and persistence
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
 

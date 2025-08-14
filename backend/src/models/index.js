@@ -52,6 +52,7 @@ const StoreDataMigration = require('./StoreDataMigration');
 const CodeCustomization = require('./CodeCustomization');
 const RenderDeployment = require('./RenderDeployment');
 const AIGenerationLog = require('./AIGenerationLog');
+const EditorCustomization = require('./EditorCustomization');
 
 // Define associations
 const defineAssociations = () => {
@@ -298,6 +299,12 @@ const defineAssociations = () => {
   AIGenerationLog.belongsTo(CodeCustomization, { foreignKey: 'customization_id', as: 'customization' });
   
   User.hasMany(AIGenerationLog, { foreignKey: 'user_id', as: 'aiGenerationLogs' });
+  
+  // EditorCustomization associations
+  EditorCustomization.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  EditorCustomization.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  User.hasMany(EditorCustomization, { foreignKey: 'user_id', as: 'editorCustomizations' });
+  Store.hasMany(EditorCustomization, { foreignKey: 'store_id', as: 'editorCustomizations' });
 };
 
 // Initialize associations
@@ -357,5 +364,6 @@ module.exports = {
   StoreDataMigration,
   CodeCustomization,
   RenderDeployment,
-  AIGenerationLog
+  AIGenerationLog,
+  EditorCustomization
 };
