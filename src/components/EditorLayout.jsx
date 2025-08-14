@@ -59,18 +59,91 @@ const EditorLayout = ({ children }) => {
   
   // File tree state
   const [selectedFile, setSelectedFile] = useState(null);
-  const [expandedFolders, setExpandedFolders] = useState({
-    'pages': true,
-    'components': true,
-    'styles': false
-  });
+  const [expandedFolders, setExpandedFolders] = useState(
+    isTemplateEditor ? {
+      'storefront-pages': true,
+      'storefront-components': true,
+      'ui-components': false,
+      'styles': false
+    } : {
+      'pages': true,
+      'components': true,
+      'styles': false
+    }
+  );
   const [fileTreeOpen, setFileTreeOpen] = useState(true);
   
   // Get user info for shared header
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // File tree data structure - using actual project directories
-  const fileTree = {
+  // Check if we're in the template editor route to filter file tree
+  const isTemplateEditor = location.pathname === '/editor/templates';
+  
+  // File tree data structure - filtered for storefront files when in template editor
+  const fileTree = isTemplateEditor ? {
+    'storefront-pages': {
+      name: 'Storefront Pages',
+      type: 'folder',
+      children: {
+        'Storefront.jsx': { name: 'Storefront.jsx', type: 'file', language: 'jsx' },
+        'ProductDetail.jsx': { name: 'ProductDetail.jsx', type: 'file', language: 'jsx' },
+        'Cart.jsx': { name: 'Cart.jsx', type: 'file', language: 'jsx' },
+        'Checkout.jsx': { name: 'Checkout.jsx', type: 'file', language: 'jsx' },
+        'OrderSuccess.jsx': { name: 'OrderSuccess.jsx', type: 'file', language: 'jsx' },
+        'CustomerDashboard.jsx': { name: 'CustomerDashboard.jsx', type: 'file', language: 'jsx' },
+        'CmsPageViewer.jsx': { name: 'CmsPageViewer.jsx', type: 'file', language: 'jsx' },
+        'HtmlSitemap.jsx': { name: 'HtmlSitemap.jsx', type: 'file', language: 'jsx' }
+      }
+    },
+    'storefront-components': {
+      name: 'Storefront Components',
+      type: 'folder',
+      children: {
+        'StorefrontLayout.jsx': { name: 'StorefrontLayout.jsx', type: 'file', language: 'jsx' },
+        'ProductCard.jsx': { name: 'ProductCard.jsx', type: 'file', language: 'jsx' },
+        'CategoryNav.jsx': { name: 'CategoryNav.jsx', type: 'file', language: 'jsx' },
+        'HeaderSearch.jsx': { name: 'HeaderSearch.jsx', type: 'file', language: 'jsx' },
+        'MiniCart.jsx': { name: 'MiniCart.jsx', type: 'file', language: 'jsx' },
+        'Breadcrumb.jsx': { name: 'Breadcrumb.jsx', type: 'file', language: 'jsx' },
+        'LayeredNavigation.jsx': { name: 'LayeredNavigation.jsx', type: 'file', language: 'jsx' },
+        'WishlistDropdown.jsx': { name: 'WishlistDropdown.jsx', type: 'file', language: 'jsx' },
+        'RecommendedProducts.jsx': { name: 'RecommendedProducts.jsx', type: 'file', language: 'jsx' },
+        'RelatedProductsViewer.jsx': { name: 'RelatedProductsViewer.jsx', type: 'file', language: 'jsx' },
+        'ProductLabel.jsx': { name: 'ProductLabel.jsx', type: 'file', language: 'jsx' },
+        'CustomOptions.jsx': { name: 'CustomOptions.jsx', type: 'file', language: 'jsx' },
+        'CmsBlockRenderer.jsx': { name: 'CmsBlockRenderer.jsx', type: 'file', language: 'jsx' },
+        'CookieConsentBanner.jsx': { name: 'CookieConsentBanner.jsx', type: 'file', language: 'jsx' },
+        'FlashMessage.jsx': { name: 'FlashMessage.jsx', type: 'file', language: 'jsx' }
+      }
+    },
+    'ui-components': {
+      name: 'UI Components',
+      type: 'folder',
+      children: {
+        'button.jsx': { name: 'button.jsx', type: 'file', language: 'jsx' },
+        'card.jsx': { name: 'card.jsx', type: 'file', language: 'jsx' },
+        'input.jsx': { name: 'input.jsx', type: 'file', language: 'jsx' },
+        'select.jsx': { name: 'select.jsx', type: 'file', language: 'jsx' },
+        'dialog.jsx': { name: 'dialog.jsx', type: 'file', language: 'jsx' },
+        'dropdown-menu.jsx': { name: 'dropdown-menu.jsx', type: 'file', language: 'jsx' },
+        'tabs.jsx': { name: 'tabs.jsx', type: 'file', language: 'jsx' },
+        'table.jsx': { name: 'table.jsx', type: 'file', language: 'jsx' },
+        'badge.jsx': { name: 'badge.jsx', type: 'file', language: 'jsx' },
+        'alert.jsx': { name: 'alert.jsx', type: 'file', language: 'jsx' },
+        'pagination.jsx': { name: 'pagination.jsx', type: 'file', language: 'jsx' },
+        'skeleton.jsx': { name: 'skeleton.jsx', type: 'file', language: 'jsx' }
+      }
+    },
+    'styles': {
+      name: 'Styles',
+      type: 'folder',
+      children: {
+        'App.css': { name: 'App.css', type: 'file', language: 'css' },
+        'index.css': { name: 'index.css', type: 'file', language: 'css' },
+        'storefront.css': { name: 'storefront.css', type: 'file', language: 'css' }
+      }
+    }
+  } : {
     'pages': {
       name: 'Pages',
       type: 'folder',
@@ -194,7 +267,174 @@ const EditorLayout = ({ children }) => {
     }));
   };
 
+  // Template customization handler - creates overrides without modifying core files
+  const handleTemplateCustomization = async (filePath, fileName, fileType) => {
+    try {
+      // Load the original template content for reference
+      const originalContent = await loadOriginalTemplate(filePath, fileName);
+      
+      // Create a template customization interface
+      const customizationData = {
+        originalFile: fileName,
+        originalPath: filePath,
+        originalContent: originalContent,
+        customizations: getExistingCustomizations(fileName),
+        availableProps: getAvailableProps(fileName),
+        availableComponents: getAvailableComponents(fileType)
+      };
+      
+      // Set the selected file with customization metadata
+      setSelectedFile({
+        path: filePath,
+        name: fileName,
+        type: 'template-customization',
+        language: fileType,
+        content: originalContent,
+        customizations: customizationData
+      });
+
+      // Add AI message about template customization
+      setChatMessages(prev => [...prev, {
+        id: Date.now(),
+        type: 'ai',
+        content: `🎨 **Template Customization: ${fileName}**
+
+I've loaded the ${fileName} template for customization. Here's what you can do:
+
+**Available Customization Options:**
+• **Visual Styling**: Change colors, fonts, spacing, and layout
+• **Content Sections**: Add, remove, or reorder content blocks
+• **Component Behavior**: Modify functionality without touching core code
+• **Data Binding**: Connect to different data sources
+• **Conditional Logic**: Show/hide elements based on conditions
+
+**How it works:**
+- Your customizations create an override layer on top of the original template
+- Core files remain untouched for easy updates
+- Changes are stored as template configurations
+- You can preview changes instantly
+
+Try saying something like:
+- "Change the background color to blue"
+- "Add a promotional banner at the top"
+- "Hide the sidebar on mobile devices"
+- "Replace the product grid with a carousel"
+
+What would you like to customize in this template?`,
+        timestamp: new Date()
+      }]);
+
+      console.log('🎨 Template customization initialized for:', fileName);
+      
+    } catch (error) {
+      console.error('❌ Template customization error:', error);
+      setChatMessages(prev => [...prev, {
+        id: Date.now(),
+        type: 'ai',
+        content: `⚠️ Sorry, I encountered an issue loading the ${fileName} template for customization. Please try again.`,
+        timestamp: new Date()
+      }]);
+    }
+  };
+
+  // Helper functions for template customization
+  const loadOriginalTemplate = async (filePath, fileName) => {
+    const templateMappings = {
+      // Storefront Pages
+      'storefront-pages/Storefront.jsx': 'src/pages/Storefront.jsx',
+      'storefront-pages/ProductDetail.jsx': 'src/pages/ProductDetail.jsx',
+      'storefront-pages/Cart.jsx': 'src/pages/Cart.jsx',
+      'storefront-pages/Checkout.jsx': 'src/pages/Checkout.jsx',
+      'storefront-pages/OrderSuccess.jsx': 'src/pages/OrderSuccess.jsx',
+      'storefront-pages/CustomerDashboard.jsx': 'src/pages/CustomerDashboard.jsx',
+      'storefront-pages/CmsPageViewer.jsx': 'src/pages/CmsPageViewer.jsx',
+      'storefront-pages/HtmlSitemap.jsx': 'src/pages/HtmlSitemap.jsx',
+      
+      // Storefront Components  
+      'storefront-components/StorefrontLayout.jsx': 'src/components/storefront/StorefrontLayout.jsx',
+      'storefront-components/ProductCard.jsx': 'src/components/storefront/ProductCard.jsx',
+      'storefront-components/CategoryNav.jsx': 'src/components/storefront/CategoryNav.jsx',
+      'storefront-components/HeaderSearch.jsx': 'src/components/storefront/HeaderSearch.jsx',
+      'storefront-components/MiniCart.jsx': 'src/components/storefront/MiniCart.jsx',
+      'storefront-components/Breadcrumb.jsx': 'src/components/storefront/Breadcrumb.jsx',
+      'storefront-components/LayeredNavigation.jsx': 'src/components/storefront/LayeredNavigation.jsx',
+      'storefront-components/WishlistDropdown.jsx': 'src/components/storefront/WishlistDropdown.jsx',
+      'storefront-components/RecommendedProducts.jsx': 'src/components/storefront/RecommendedProducts.jsx',
+      'storefront-components/RelatedProductsViewer.jsx': 'src/components/storefront/RelatedProductsViewer.jsx',
+      'storefront-components/ProductLabel.jsx': 'src/components/storefront/ProductLabel.jsx',
+      'storefront-components/CustomOptions.jsx': 'src/components/storefront/CustomOptions.jsx',
+      'storefront-components/CmsBlockRenderer.jsx': 'src/components/storefront/CmsBlockRenderer.jsx',
+      'storefront-components/CookieConsentBanner.jsx': 'src/components/storefront/CookieConsentBanner.jsx',
+      'storefront-components/FlashMessage.jsx': 'src/components/storefront/FlashMessage.jsx'
+    };
+    
+    const actualPath = templateMappings[filePath];
+    if (actualPath) {
+      try {
+        const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token');
+        const apiUrl = `/api/template-editor/source-files/content?path=${encodeURIComponent(actualPath)}`;
+        
+        const response = await fetch(apiUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          return data.content || `// Original ${fileName} template\n// File: ${actualPath}\n\n// Template content will be loaded here for customization`;
+        }
+      } catch (error) {
+        console.error('Error loading original template:', error);
+      }
+    }
+    
+    return `// Original ${fileName} template\n// This is a placeholder for the original template content\n// Your customizations will be applied as an override layer`;
+  };
+
+  const getExistingCustomizations = (fileName) => {
+    // Load existing customizations from localStorage or API
+    const stored = localStorage.getItem(`template_customizations_${fileName}`);
+    try {
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  };
+
+  const getAvailableProps = (fileName) => {
+    const propMappings = {
+      'Storefront.jsx': ['products', 'categories', 'featuredProducts', 'banners', 'seoData'],
+      'ProductDetail.jsx': ['product', 'relatedProducts', 'reviews', 'specifications', 'images'],
+      'ProductCard.jsx': ['product', 'showPrice', 'showRating', 'showWishlist', 'layout'],
+      'Cart.jsx': ['cartItems', 'totals', 'shippingMethods', 'coupons'],
+      'Checkout.jsx': ['checkoutSteps', 'paymentMethods', 'shippingAddress', 'billingAddress'],
+      'CategoryNav.jsx': ['categories', 'showIcons', 'maxDepth', 'layout'],
+      'HeaderSearch.jsx': ['placeholder', 'suggestions', 'autocomplete', 'filters']
+    };
+    
+    return propMappings[fileName] || ['data', 'config', 'theme', 'user'];
+  };
+
+  const getAvailableComponents = (fileType) => {
+    if (fileType === 'jsx') {
+      return [
+        'Button', 'Card', 'Input', 'Select', 'Dialog', 'Badge', 'Alert',
+        'ProductCard', 'CategoryNav', 'Breadcrumb', 'MiniCart', 'HeaderSearch',
+        'LayeredNavigation', 'RecommendedProducts', 'CustomOptions'
+      ];
+    }
+    return [];
+  };
+
   const handleFileSelect = async (filePath, fileName, fileType) => {
+    // Template customization logic - create overrides without modifying core files
+    if (isTemplateEditor) {
+      handleTemplateCustomization(filePath, fileName, fileType);
+      return;
+    }
+    
     // Map file tree paths to actual file system paths
     const fileMapping = {
       // Pages (both storefront and admin)
@@ -685,6 +925,382 @@ const EditorLayout = ({ children }) => {
     );
   };
 
+  // Template customization interface
+  const renderTemplateCustomization = () => {
+    if (!selectedFile || selectedFile.type !== 'template-customization') return null;
+    
+    const { customizations } = selectedFile;
+    
+    return (
+      <div className="space-y-6">
+        <div className="border-b border-gray-200 pb-4">
+          <h4 className="text-lg font-semibold flex items-center gap-2">
+            <Code className="w-5 h-5 text-blue-600" />
+            Customizing: {selectedFile.name}
+          </h4>
+          <p className="text-sm text-gray-600 mt-1">
+            Make changes without modifying the original template files
+          </p>
+          {/* Live Preview Toggle */}
+          <div className="flex items-center gap-2 mt-3">
+            <Button
+              variant={previewMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setPreviewMode(!previewMode)}
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              {previewMode ? 'Exit Preview' : 'Live Preview'}
+            </Button>
+            <div className="text-xs text-gray-500">
+              {previewMode ? 'Showing live preview' : 'Showing customization controls'}
+            </div>
+          </div>
+        </div>
+
+        {/* Customization Options */}
+        {!previewMode && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Visual Customizations */}
+          <div className="space-y-4">
+            <h5 className="font-medium text-gray-900 flex items-center gap-2">
+              <Palette className="w-4 h-4" />
+              Visual Styling
+            </h5>
+            <div className="grid grid-cols-2 gap-3">
+              <div 
+                className="p-3 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors group"
+                onClick={() => {
+                  setActiveTool('colors');
+                  setChatMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `🎨 Opening color customization for ${selectedFile.name}. You can change theme colors, backgrounds, text colors, and accent colors. Try saying "make the background darker" or "change the primary color to green".`,
+                    timestamp: new Date()
+                  }]);
+                }}
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded mb-2 group-hover:scale-110 transition-transform"></div>
+                <p className="text-sm font-medium">Colors</p>
+                <p className="text-xs text-gray-500">Change theme colors</p>
+              </div>
+              <div 
+                className="p-3 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors group"
+                onClick={() => {
+                  setActiveTool('typography');
+                  setChatMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `✍️ Opening typography settings for ${selectedFile.name}. You can adjust font families, sizes, weights, and spacing. Try "make headings larger" or "use a serif font for body text".`,
+                    timestamp: new Date()
+                  }]);
+                }}
+              >
+                <Type className="w-8 h-8 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-sm font-medium">Typography</p>
+                <p className="text-xs text-gray-500">Adjust fonts & sizes</p>
+              </div>
+              <div 
+                className="p-3 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors group"
+                onClick={() => {
+                  setActiveTool('layout');
+                  setChatMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `📐 Opening layout controls for ${selectedFile.name}. You can modify structure, grid systems, and component arrangement. Try "make it a two-column layout" or "center align the content".`,
+                    timestamp: new Date()
+                  }]);
+                }}
+              >
+                <Layout className="w-8 h-8 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-sm font-medium">Layout</p>
+                <p className="text-xs text-gray-500">Modify structure</p>
+              </div>
+              <div 
+                className="p-3 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors group"
+                onClick={() => {
+                  setActiveTool('spacing');
+                  setChatMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `📏 Opening spacing controls for ${selectedFile.name}. You can adjust margins, padding, and element spacing. Try "add more space between sections" or "reduce padding".`,
+                    timestamp: new Date()
+                  }]);
+                }}
+              >
+                <Move className="w-8 h-8 text-gray-600 mb-2 group-hover:scale-110 transition-transform" />
+                <p className="text-sm font-medium">Spacing</p>
+                <p className="text-xs text-gray-500">Adjust margins & padding</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Component Customizations */}
+          <div className="space-y-4">
+            <h5 className="font-medium text-gray-900 flex items-center gap-2">
+              <Box className="w-4 h-4" />
+              Components
+            </h5>
+            <div className="space-y-3">
+              <div 
+                className="p-3 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors group"
+                onClick={() => {
+                  setActiveTool('components');
+                  setChatMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `🧩 Opening component library for ${selectedFile.name}. You can add buttons, forms, cards, banners, and more. Try "add a promotional banner at the top" or "insert a contact form".`,
+                    timestamp: new Date()
+                  }]);
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <Box className="w-6 h-6 text-blue-600 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <p className="text-sm font-medium">Add Component</p>
+                    <p className="text-xs text-gray-500">Insert new elements</p>
+                  </div>
+                </div>
+              </div>
+              <div 
+                className="p-3 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors group"
+                onClick={() => {
+                  setChatMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `🔄 Section reordering mode enabled for ${selectedFile.name}. You can drag sections up or down, or tell me which sections to move. Try "move the product grid above the banner" or "put testimonials at the bottom".`,
+                    timestamp: new Date()
+                  }]);
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <Layers className="w-6 h-6 text-green-600 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <p className="text-sm font-medium">Reorder Sections</p>
+                    <p className="text-xs text-gray-500">Drag & drop content</p>
+                  </div>
+                </div>
+              </div>
+              <div 
+                className="p-3 border rounded-lg hover:border-blue-500 cursor-pointer transition-colors group"
+                onClick={() => {
+                  setChatMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `👁️ Element visibility controls for ${selectedFile.name}. You can show or hide any section. Try "hide the sidebar" or "show product reviews only on desktop".`,
+                    timestamp: new Date()
+                  }]);
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  <Eye className="w-6 h-6 text-purple-600 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <p className="text-sm font-medium">Hide Elements</p>
+                    <p className="text-xs text-gray-500">Show/hide content blocks</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* Live Preview Mode */}
+        {previewMode && (
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-8 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Eye className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Live Preview Mode</h3>
+              <p className="text-gray-600 mb-4">
+                Preview your customized {selectedFile.name} template as it would appear to your store visitors.
+              </p>
+              <div className="bg-white rounded-lg p-6 shadow-sm mb-4">
+                <div className="h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-blue-500 rounded mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Template Preview</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedFile.name} with your customizations
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span>Live</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span>Responsive</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span>Interactive</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Available Props */}
+        {customizations?.availableProps && customizations.availableProps.length > 0 && (
+          <div className="space-y-3">
+            <h5 className="font-medium text-gray-900">Available Data</h5>
+            <div className="flex flex-wrap gap-2">
+              {customizations.availableProps.map(prop => (
+                <span
+                  key={prop}
+                  className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full cursor-pointer hover:bg-blue-200 transition-colors"
+                  title={`Click to use ${prop} in your template`}
+                >
+                  {prop}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Preview & Actions */}
+        {!previewMode && (
+        <div className="border-t border-gray-200 pt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-gray-500" />
+              <span className="text-sm text-gray-600">
+                Changes will be previewed instantly
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  // Reset customizations for this template
+                  localStorage.removeItem(`template_customizations_${selectedFile.name}`);
+                  setChatMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `🔄 Reset all customizations for ${selectedFile.name}. The template is back to its original state.`,
+                    timestamp: new Date()
+                  }]);
+                  setHasUnsavedChanges(false);
+                }}
+              >
+                Reset Changes
+              </Button>
+              <Button 
+                size="sm"
+                onClick={() => {
+                  // Save customizations
+                  const customizationData = {
+                    templateName: selectedFile.name,
+                    customizations: selectedFile.customizations || {},
+                    tools: { activeTool },
+                    timestamp: new Date().toISOString(),
+                    version: '1.0'
+                  };
+                  
+                  localStorage.setItem(`template_customizations_${selectedFile.name}`, JSON.stringify(customizationData));
+                  setLastSaved(new Date());
+                  setHasUnsavedChanges(false);
+                  
+                  setChatMessages(prev => [...prev, {
+                    id: Date.now(),
+                    type: 'ai',
+                    content: `💾 Saved customizations for ${selectedFile.name}! Your changes are preserved and will be applied to your storefront. You can continue editing or publish these changes.`,
+                    timestamp: new Date()
+                  }]);
+                }}
+              >
+                Save Customization
+              </Button>
+              <Button 
+                size="sm" 
+                variant="default"
+                onClick={handlePublish}
+                disabled={isPublishing}
+              >
+                <Send className="w-4 h-4 mr-2" />
+                {isPublishing ? 'Publishing...' : 'Publish Live'}
+              </Button>
+            </div>
+          </div>
+        </div>
+        )}
+
+        {/* Quick Template Switching */}
+        {!previewMode && customizations?.availableProps && (
+          <div className="border border-gray-200 rounded-lg p-4">
+            <h6 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Quick Actions for {selectedFile.name}
+            </h6>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="justify-start"
+                onClick={() => {
+                  setChatInput("Change the color scheme to dark mode");
+                  handleSendMessage();
+                }}
+              >
+                🌙 Dark Mode Theme
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="justify-start"
+                onClick={() => {
+                  setChatInput("Make the layout more compact");
+                  handleSendMessage();
+                }}
+              >
+                📱 Mobile Optimized
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="justify-start"
+                onClick={() => {
+                  setChatInput("Add a promotional banner at the top");
+                  handleSendMessage();
+                }}
+              >
+                📢 Add Promo Banner
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="justify-start"
+                onClick={() => {
+                  setChatInput("Hide the sidebar on mobile");
+                  handleSendMessage();
+                }}
+              >
+                📐 Responsive Layout
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Instructions */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h6 className="font-medium text-blue-900 mb-2">💡 How to customize templates:</h6>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• <strong>Chat naturally:</strong> "Make the header blue" or "Add a contact form"</li>
+            <li>• <strong>Visual controls:</strong> Click on styling options above for quick changes</li>
+            <li>• <strong>Live preview:</strong> Toggle preview mode to see changes instantly</li>
+            <li>• <strong>Safe editing:</strong> Original templates stay untouched - only customizations are saved</li>
+            <li>• <strong>Publish:</strong> Make changes live on your storefront when ready</li>
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
   const renderToolContent = () => {
     switch (activeTool) {
       case 'layout':
@@ -1095,13 +1711,20 @@ const EditorLayout = ({ children }) => {
                     </div>
                   </div>
                   <div className="p-4">
-                    {renderToolContent()}
+                    {selectedFile && selectedFile.type === 'template-customization' ? renderTemplateCustomization() : renderToolContent()}
                   </div>
                 </div>
               )}
             </div>
           </div>
         </div>
+        
+        {/* Children content - only render when not in template customization mode */}
+        {!isTemplateEditor && children && (
+          <div className="flex-1">
+            {children}
+          </div>
+        )}
         </div>
       </div>
     </div>
