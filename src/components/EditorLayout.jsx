@@ -698,7 +698,61 @@ What would you like to customize in this template?`,
     
     // Map file tree paths to actual file system paths
     const fileMapping = {
-      // Pages (both storefront and admin)
+      // Template Editor - Storefront Pages (mapped to actual src/pages/)
+      'storefront-pages/Storefront.jsx': 'src/pages/Storefront.jsx',
+      'storefront-pages/ProductDetail.jsx': 'src/pages/ProductDetail.jsx', 
+      'storefront-pages/Cart.jsx': 'src/pages/Cart.jsx',
+      'storefront-pages/Checkout.jsx': 'src/pages/Checkout.jsx',
+      'storefront-pages/OrderSuccess.jsx': 'src/pages/OrderSuccess.jsx',
+      'storefront-pages/CustomerDashboard.jsx': 'src/pages/CustomerDashboard.jsx',
+      'storefront-pages/CmsPageViewer.jsx': 'src/pages/CmsPageViewer.jsx',
+      'storefront-pages/HtmlSitemap.jsx': 'src/pages/HtmlSitemap.jsx',
+      
+      // Template Editor - Storefront Components (mapped to actual src/components/storefront/)
+      'storefront-components/StorefrontLayout.jsx': 'src/components/storefront/StorefrontLayout.jsx',
+      'storefront-components/ProductCard.jsx': 'src/components/storefront/ProductCard.jsx',
+      'storefront-components/CategoryNav.jsx': 'src/components/storefront/CategoryNav.jsx',
+      'storefront-components/HeaderSearch.jsx': 'src/components/storefront/HeaderSearch.jsx',
+      'storefront-components/MiniCart.jsx': 'src/components/storefront/MiniCart.jsx',
+      'storefront-components/Breadcrumb.jsx': 'src/components/storefront/Breadcrumb.jsx',
+      'storefront-components/LayeredNavigation.jsx': 'src/components/storefront/LayeredNavigation.jsx',
+      'storefront-components/WishlistDropdown.jsx': 'src/components/storefront/WishlistDropdown.jsx',
+      'storefront-components/RecommendedProducts.jsx': 'src/components/storefront/RecommendedProducts.jsx',
+      'storefront-components/RelatedProductsViewer.jsx': 'src/components/storefront/RelatedProductsViewer.jsx',
+      'storefront-components/ProductLabel.jsx': 'src/components/storefront/ProductLabel.jsx',
+      'storefront-components/CustomOptions.jsx': 'src/components/storefront/CustomOptions.jsx',
+      'storefront-components/CmsBlockRenderer.jsx': 'src/components/storefront/CmsBlockRenderer.jsx',
+      'storefront-components/CookieConsentBanner.jsx': 'src/components/storefront/CookieConsentBanner.jsx',
+      'storefront-components/FlashMessage.jsx': 'src/components/storefront/FlashMessage.jsx',
+      
+      // Template Editor - UI Components (mapped to actual src/components/ui/)
+      'ui-components/button.jsx': 'src/components/ui/button.jsx',
+      'ui-components/card.jsx': 'src/components/ui/card.jsx',
+      'ui-components/input.jsx': 'src/components/ui/input.jsx',
+      'ui-components/select.jsx': 'src/components/ui/select.jsx',
+      'ui-components/dialog.jsx': 'src/components/ui/dialog.jsx',
+      'ui-components/dropdown-menu.jsx': 'src/components/ui/dropdown-menu.jsx',
+      'ui-components/tabs.jsx': 'src/components/ui/tabs.jsx',
+      'ui-components/table.jsx': 'src/components/ui/table.jsx',
+      'ui-components/badge.jsx': 'src/components/ui/badge.jsx',
+      'ui-components/alert.jsx': 'src/components/ui/alert.jsx',
+      'ui-components/pagination.jsx': 'src/components/ui/pagination.jsx',
+      'ui-components/skeleton.jsx': 'src/components/ui/skeleton.jsx',
+      'ui-components/calendar.jsx': 'src/components/ui/calendar.jsx',
+      'ui-components/checkbox.jsx': 'src/components/ui/checkbox.jsx',
+      'ui-components/radio-group.jsx': 'src/components/ui/radio-group.jsx',
+      'ui-components/slider.jsx': 'src/components/ui/slider.jsx',
+      'ui-components/switch.jsx': 'src/components/ui/switch.jsx',
+      'ui-components/textarea.jsx': 'src/components/ui/textarea.jsx',
+      'ui-components/toggle.jsx': 'src/components/ui/toggle.jsx',
+      'ui-components/tooltip.jsx': 'src/components/ui/tooltip.jsx',
+      'ui-components/popover.jsx': 'src/components/ui/popover.jsx',
+      
+      // Template Editor - Styles (mapped to actual src/)
+      'styles/App.css': 'src/App.css',
+      'styles/index.css': 'src/index.css',
+      
+      // Full Editor - Pages (both storefront and admin)
       'pages/Storefront.jsx': 'src/pages/Storefront.jsx',
       'pages/ProductDetail.jsx': 'src/pages/ProductDetail.jsx',
       'pages/Cart.jsx': 'src/pages/Cart.jsx',
