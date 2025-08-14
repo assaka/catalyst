@@ -482,7 +482,6 @@ export default function Layout({ children, currentPageName }) {
       items: [
         { name: "Installation", path: "PLUGINS", icon: Puzzle },
         { name: "Create Plugin", path: "plugin-builder", icon: Plus },
-        { name: "Template Editor", path: "template-editor", icon: FileCode },
         { name: "How-To Guide", path: "plugin-how-to", icon: Book },
       ]
     },

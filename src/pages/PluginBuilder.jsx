@@ -627,7 +627,7 @@ module.exports = SocialMediaPlugin;`
               <div className="flex space-x-2">
                 <Button
                   variant="outline"
-                  onClick={() => navigate('/admin/template-editor')}
+                  onClick={() => navigate('/editor/templates')}
                 >
                   <Layout className="mr-2 h-4 w-4" />
                   Template Editor

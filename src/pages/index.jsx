@@ -310,7 +310,6 @@ function _getCurrentPage(url) {
         'render-integration': 'RenderIntegration',
         'plugin-how-to': 'PluginHowToFixed',
         'plugin-builder': 'PluginBuilder',
-        'template-editor': 'TemplateEditor',
         'heatmaps': 'HeatMaps',
         'ab-testing': 'ABTesting',
         'monitoring-dashboard': 'MonitoringDashboard',
@@ -541,11 +540,6 @@ function PagesContent() {
                 } />
                 
                 
-                <Route path="/admin/template-editor" element={
-                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <TemplateEditor />
-                    </RoleProtectedRoute>
-                } />
                 
                 <Route path="/admin/cms-blocks" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
@@ -949,11 +943,6 @@ function PagesContent() {
                 } />
                 
                 
-                <Route path="/admin/template-editor" element={
-                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <TemplateEditor />
-                    </RoleProtectedRoute>
-                } />
                 
                 <Route path="/admin/cms-blocks" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>

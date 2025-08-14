@@ -554,7 +554,6 @@ const TemplateEditor = () => {
     previewWindow.document.close();
   };
 
-  // For template editor, we want our custom layout, not the general EditorLayout
   const content = (
     <DndProvider backend={HTML5Backend}>
       <div className="p-6 max-w-[1600px] mx-auto min-h-screen bg-gray-50 relative z-0 overflow-auto">
@@ -1182,8 +1181,12 @@ const TemplateEditor = () => {
     </DndProvider>
   );
 
-  // Return our custom template editor content directly
-  return content;
+  // Always wrap with EditorLayout since this is only used for /editor/templates
+  return (
+    <EditorLayout>
+      {content}
+    </EditorLayout>
+  );
 };
 
 export default TemplateEditor;
