@@ -126,7 +126,6 @@ import MonitoringDashboard from "./MonitoringDashboard";
 
 import ScheduledJobs from "./ScheduledJobs";
 
-import AIEditor from "./AIEditor";
 
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
@@ -268,7 +267,6 @@ function _getCurrentPage(url) {
         if (editorPath === 'templates') return 'TemplateEditor';
         if (editorPath === 'themes') return 'ThemeLayout';
         if (editorPath === 'plugins') return 'PluginBuilder';
-        if (editorPath === 'ai') return 'AIEditor';
         return 'TemplateEditor'; // Default for editor mode
     }
     
@@ -816,11 +814,6 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/editor/ai" element={
-                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <AIEditor />
-                    </RoleProtectedRoute>
-                } />
                 
                 {/* =========================== */}
                 {/* PUBLIC CONTENT ROUTES */}

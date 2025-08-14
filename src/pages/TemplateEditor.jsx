@@ -155,6 +155,7 @@ const TemplateEditor = () => {
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [aiPrompt, setAiPrompt] = useState('');
   const [showCodeEditor, setShowCodeEditor] = useState(false);
+  const [overlayMode, setOverlayMode] = useState(false);
   
   // Store templates state
   const [templates, setTemplates] = useState({
@@ -322,6 +323,63 @@ const TemplateEditor = () => {
     toast.success(`Added ${component.name} to template`);
   };
 
+  // Sample generated codes for different templates
+  const sampleCodes = {
+    'hero-section': `<!-- Hero Section -->
+<section class="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-20">
+  <div class="container mx-auto px-4 text-center">
+    <h1 class="text-5xl font-bold mb-6">Welcome to Amazing Store</h1>
+    <p class="text-xl mb-8 max-w-2xl mx-auto">
+      Discover our curated collection of premium products designed to enhance your lifestyle.
+    </p>
+    <button class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+      Shop Now
+    </button>
+  </div>
+</section>`,
+    'product-card': `<!-- Product Card Component -->
+<div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+  <div class="aspect-square overflow-hidden">
+    <img src="product-image.jpg" alt="Product" class="w-full h-full object-cover hover:scale-105 transition-transform" />
+  </div>
+  <div class="p-4">
+    <h3 class="text-lg font-semibold text-gray-900 mb-2">Product Name</h3>
+    <p class="text-gray-600 text-sm mb-3">Product description goes here...</p>
+    <div class="flex justify-between items-center">
+      <span class="text-xl font-bold text-blue-600">$29.99</span>
+      <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">
+        Add to Cart
+      </button>
+    </div>
+  </div>
+</div>`,
+    'navigation': `<!-- Navigation Menu -->
+<nav class="bg-white shadow-sm border-b">
+  <div class="container mx-auto px-4">
+    <div class="flex items-center justify-between h-16">
+      <div class="flex items-center space-x-8">
+        <div class="text-2xl font-bold text-gray-900">Store Logo</div>
+        <div class="hidden md:flex space-x-6">
+          <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors">Home</a>
+          <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors">Products</a>
+          <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors">Categories</a>
+          <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors">About</a>
+          <a href="#" class="text-gray-700 hover:text-blue-600 transition-colors">Contact</a>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4">
+        <button class="text-gray-700 hover:text-blue-600">Search</button>
+        <button class="text-gray-700 hover:text-blue-600">Cart (0)</button>
+      </div>
+    </div>
+  </div>
+</nav>`,
+    'custom-html': `<div class="p-6 bg-white rounded-lg shadow-sm border">
+  <h2 class="text-2xl font-semibold mb-4">Custom Component</h2>
+  <p class="text-gray-600">Your custom content goes here...</p>
+</div>`
+  };
+
   // Generate template with AI
   const generateWithAI = async () => {
     if (!aiPrompt.trim()) {
@@ -330,30 +388,56 @@ const TemplateEditor = () => {
     }
 
     setLoading(true);
+    
+    // Simulate AI generation delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     try {
-      const storeId = localStorage.getItem('storeId');
-      const response = await apiClient.post(`/api/stores/${storeId}/templates/generate-ai`, {
-        prompt: aiPrompt,
-        templateType: activeTemplate,
-        context: {
-          storeName: localStorage.getItem('store_name') || 'Your Store',
-          currentTemplate: templates[activeTemplate]
-        }
-      });
-
-      if (response?.data?.success) {
-        const generatedTemplate = response.data.template;
-        setTemplates(prev => ({
-          ...prev,
-          [activeTemplate]: generatedTemplate
-        }));
-        toast.success('Template generated successfully with AI');
-        setShowAIAssistant(false);
-        setAiPrompt('');
+      // Determine component type from selection or default to custom-html
+      const componentType = selectedElement?.type || 'custom-html';
+      let baseCode = sampleCodes[componentType] || sampleCodes['custom-html'];
+      
+      // Apply customizations based on prompt
+      if (aiPrompt.toLowerCase().includes('dark')) {
+        baseCode = baseCode.replace(/bg-white/g, 'bg-gray-900')
+                          .replace(/text-gray-900/g, 'text-white')
+                          .replace(/text-gray-700/g, 'text-gray-300');
       }
+      if (aiPrompt.toLowerCase().includes('green')) {
+        baseCode = baseCode.replace(/blue-600/g, 'green-600')
+                          .replace(/blue-700/g, 'green-700');
+      }
+      if (aiPrompt.toLowerCase().includes('purple')) {
+        baseCode = baseCode.replace(/blue-600/g, 'purple-600')
+                          .replace(/blue-700/g, 'purple-700');
+      }
+      
+      // Create new element with generated code
+      const newElement = {
+        id: `ai-element-${Date.now()}`,
+        type: componentType,
+        name: `AI Generated ${componentType.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}`,
+        content: `<!-- Generated: "${aiPrompt}" -->\n${baseCode}`,
+        position: { x: 50, y: 50 },
+        size: { width: 400, height: 200 },
+        styles: {}
+      };
+
+      // Add to current template
+      setTemplates(prev => ({
+        ...prev,
+        [activeTemplate]: {
+          ...prev[activeTemplate],
+          elements: [...prev[activeTemplate].elements, newElement]
+        }
+      }));
+
+      setSelectedElement(newElement);
+      toast.success('AI generated component added to canvas');
+      setAiPrompt('');
     } catch (error) {
       console.error('AI generation error:', error);
-      toast.error(error.message || 'Failed to generate template with AI');
+      toast.error('Failed to generate component with AI');
     } finally {
       setLoading(false);
     }
@@ -536,21 +620,59 @@ const TemplateEditor = () => {
                   AI Assistant
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Describe what you want to create..."
-                  value={aiPrompt}
-                  onChange={(e) => setAiPrompt(e.target.value)}
-                  className="mb-2"
-                  rows={3}
-                />
+              <CardContent className="space-y-3">
+                <div>
+                  <Label className="text-xs font-medium mb-1 block">Component Type</Label>
+                  <Select value={selectedElement?.type || 'custom-html'}>
+                    <SelectTrigger className="h-8">
+                      <SelectValue placeholder="Select component" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hero-section">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">layout</Badge>
+                          Hero Section
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="product-card">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">component</Badge>
+                          Product Card
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="navigation">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">navigation</Badge>
+                          Navigation Menu
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="custom-html">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">element</Badge>
+                          Custom HTML
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs font-medium mb-1 block">Describe customization</Label>
+                  <Textarea
+                    placeholder="E.g., 'Make it dark themed with green accents'"
+                    value={aiPrompt}
+                    onChange={(e) => setAiPrompt(e.target.value)}
+                    rows={2}
+                    className="text-sm"
+                  />
+                </div>
                 <Button 
                   onClick={generateWithAI} 
                   disabled={loading}
-                  className="w-full"
+                  className="w-full h-8 text-sm"
+                  size="sm"
                 >
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Generate with AI
+                  <Wand2 className="w-3 h-3 mr-1" />
+                  Generate Code
                 </Button>
               </CardContent>
             </Card>
@@ -597,6 +719,14 @@ const TemplateEditor = () => {
                       <Code className="w-4 h-4 mr-2" />
                       Code
                     </Button>
+                    <Button 
+                      size="sm" 
+                      variant={overlayMode ? 'default' : 'outline'}
+                      onClick={() => setOverlayMode(!overlayMode)}
+                    >
+                      <Layers className="w-4 h-4 mr-2" />
+                      Overlay
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -616,6 +746,90 @@ const TemplateEditor = () => {
                       wordWrap: 'on'
                     }}
                   />
+                ) : overlayMode ? (
+                  <div className="relative">
+                    {/* Live Preview with Overlay */}
+                    <div 
+                      className="border rounded-lg overflow-hidden"
+                      style={{
+                        width: viewMode === 'desktop' ? '100%' : viewMode === 'tablet' ? '768px' : '375px',
+                        height: '600px',
+                        margin: '0 auto'
+                      }}
+                    >
+                      <iframe
+                        src={`/public/${localStorage.getItem('storeCode') || 'demo'}/category-preview`}
+                        className="w-full h-full"
+                        title="Live Preview"
+                        style={{ border: 'none' }}
+                      />
+                    </div>
+                    
+                    {/* Overlay Controls */}
+                    <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-3 space-y-2 max-w-xs">
+                      <div className="text-sm font-medium text-gray-700">Live Customization</div>
+                      {selectedElement && (
+                        <div className="space-y-2">
+                          <div className="text-xs text-gray-500">Editing: {selectedElement.name}</div>
+                          <div className="space-y-1">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs h-7"
+                              onClick={() => {
+                                // Apply overlay styling
+                                const overlayStyle = `
+                                  .${selectedElement.id} { 
+                                    background: linear-gradient(45deg, #3b82f6, #8b5cf6) !important;
+                                    color: white !important;
+                                  }
+                                `;
+                                // Inject style into preview
+                                const iframe = document.querySelector('iframe[title="Live Preview"]');
+                                if (iframe?.contentDocument) {
+                                  const style = iframe.contentDocument.createElement('style');
+                                  style.textContent = overlayStyle;
+                                  iframe.contentDocument.head.appendChild(style);
+                                }
+                                toast.success('Gradient theme applied');
+                              }}
+                            >
+                              <Palette className="w-3 h-3 mr-1" />
+                              Apply Gradient
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full text-xs h-7"
+                              onClick={() => {
+                                // Apply dark theme overlay
+                                const overlayStyle = `
+                                  .${selectedElement.id} { 
+                                    background: #1f2937 !important;
+                                    color: #f9fafb !important;
+                                    border-color: #374151 !important;
+                                  }
+                                `;
+                                const iframe = document.querySelector('iframe[title="Live Preview"]');
+                                if (iframe?.contentDocument) {
+                                  const style = iframe.contentDocument.createElement('style');
+                                  style.textContent = overlayStyle;
+                                  iframe.contentDocument.head.appendChild(style);
+                                }
+                                toast.success('Dark theme applied');
+                              }}
+                            >
+                              <PaintBucket className="w-3 h-3 mr-1" />
+                              Dark Theme
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      <div className="text-xs text-gray-400 pt-1 border-t">
+                        Click elements to customize live
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <TemplateCanvas
                     template={templates[activeTemplate]}
