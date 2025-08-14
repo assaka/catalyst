@@ -58,6 +58,7 @@ const EditorLayout = ({ children }) => {
   const [chatInput, setChatInput] = useState('');
   const [isPublishing, setIsPublishing] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const [showOriginalContent, setShowOriginalContent] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState('');
@@ -137,25 +138,46 @@ const EditorLayout = ({ children }) => {
   // Define callback functions before useEffect that references them
   const handleSaveEdit = useCallback(async () => {
     if (selectedFile && editedContent !== undefined) {
+      // Create overlay system: store original content and customizations separately
+      const customization = {
+        originalContent: selectedFile.originalContent || selectedFile.content,
+        customizedContent: editedContent,
+        timestamp: new Date().toISOString(),
+        path: selectedFile.path,
+        name: selectedFile.name,
+        type: selectedFile.type,
+        actualPath: selectedFile.actualPath
+      };
+      
+      // Update selected file with customization info
       setSelectedFile({
         ...selectedFile,
-        content: editedContent
+        content: editedContent,
+        originalContent: selectedFile.originalContent || selectedFile.content,
+        hasCustomizations: true,
+        customizationTimestamp: new Date().toISOString()
       });
+      
       setIsEditing(false);
       setHasUnsavedChanges(true);
       setLastSaved(new Date());
       
-      // Save to database
+      // Save customization to database as overlay
       await saveFileContent(selectedFile.path, editedContent, {
         name: selectedFile.name,
         type: selectedFile.type,
-        actualPath: selectedFile.actualPath
+        actualPath: selectedFile.actualPath,
+        isOverlay: true,
+        originalContent: selectedFile.originalContent || selectedFile.content
       });
+      
+      // Store customization overlay locally
+      localStorage.setItem(`template_overlay_${selectedFile.name}`, JSON.stringify(customization));
       
       setChatMessages(prev => [...prev, {
         id: Date.now(),
         type: 'ai',
-        content: `💾 Saved changes to ${selectedFile.name}! Your edits are now applied and stored in the database. You can continue editing or publish to make the changes live.`,
+        content: `✅ Saved customizations as overlay for ${selectedFile.name}. Your changes are now applied as a layer on top of the original template without modifying the source file. These customizations will be displayed in the storefront preview and when users visit your store.`,
         timestamp: new Date()
       }]);
     }
@@ -673,6 +695,7 @@ What would you like to customize in this template?`,
     if (selectedFile) {
       setEditedContent(selectedFile.content);
       setIsEditing(true);
+      setShowOriginalContent(false); // Always edit the customized version
       setChatMessages(prev => [...prev, {
         id: Date.now(),
         type: 'ai',
@@ -1010,6 +1033,42 @@ What would you like to customize in this template?`,
           }
         }
         
+        // Special handling for ProductDetail.jsx - always try to show real content
+        if (!loadSuccess && fileName === 'ProductDetail.jsx') {
+          console.log('🎯 ProductDetail.jsx requested - attempting to load actual file content...');
+          try {
+            const token = localStorage.getItem('store_owner_auth_token') ||
+                         localStorage.getItem('customer_auth_token') ||
+                         localStorage.getItem('auth_token') ||
+                         localStorage.getItem('token');
+            
+            if (token) {
+              const productDetailApiUrl = `/api/template-editor/source-files/content?path=src/pages/ProductDetail.jsx`;
+              console.log('🔗 Loading ProductDetail.jsx via:', productDetailApiUrl);
+              
+              const response = await fetch(productDetailApiUrl, {
+                method: 'GET',
+                headers: {
+                  'Accept': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.content) {
+                  content = data.content;
+                  loadSuccess = true;
+                  console.log('✅ ProductDetail.jsx loaded successfully:', data.content.length, 'characters');
+                }
+              }
+            }
+          } catch (productDetailError) {
+            console.log('⚠️ Failed to load actual ProductDetail.jsx content:', productDetailError.message);
+          }
+        }
+        
         // Method 3: Final fallback with enhanced mock content
         if (!loadSuccess) {
           console.warn(`⚠️ Could not load actual file content for ${fileName}. Using fallback content.`);
@@ -1044,17 +1103,40 @@ What would you like to customize in this template?`,
       content = `// File mapping not found for: ${filePath}\n// Please add mapping for this file in EditorLayout.jsx\n\n// Available paths in fileMapping:\n${Object.keys(fileMapping).map(key => `// - ${key}`).join('\n')}`;
     }
     
+    // Check for existing customizations/overlays
+    const overlayKey = `template_overlay_${fileName}`;
+    const existingOverlay = localStorage.getItem(overlayKey);
+    let finalContent = content;
+    let hasCustomizations = false;
+    let customizationTimestamp = null;
+    
+    if (existingOverlay) {
+      try {
+        const overlay = JSON.parse(existingOverlay);
+        finalContent = overlay.customizedContent;
+        hasCustomizations = true;
+        customizationTimestamp = overlay.timestamp;
+        console.log('✨ Applying existing customization overlay for:', fileName);
+      } catch (error) {
+        console.error('Error parsing existing overlay:', error);
+      }
+    }
+
     setSelectedFile({
       path: filePath,
       name: fileName,
       type: fileType,
       actualPath: actualPath,
-      content: content
+      content: finalContent,
+      originalContent: content, // Always preserve original content
+      hasCustomizations: hasCustomizations,
+      customizationTimestamp: customizationTimestamp
     });
     
     // Reset editing state when selecting a new file
     setIsEditing(false);
     setEditedContent('');
+    setShowOriginalContent(false);
     
     // Add to recent files
     await addToRecentFiles(filePath, fileName, fileType);
@@ -1065,10 +1147,21 @@ What would you like to customize in this template?`,
       '✅ Successfully loaded actual file content from the project filesystem.' : 
       'ℹ️ Showing representative content - source files are not available in production deployments for security reasons. This is expected behavior.';
     
+    // Generate appropriate load message based on whether it's ProductDetail.jsx and if overlay exists
+    let loadMessage = loadStatusMessage;
+    if (fileName === 'ProductDetail.jsx' && loadSuccess) {
+      loadMessage = '🎉 Successfully loaded the actual ProductDetail.jsx source code! This is the real React component with all 971 lines of code including product gallery, pricing, cart functionality, and more.';
+    }
+    
+    let overlayMessage = '';
+    if (hasCustomizations) {
+      overlayMessage = ` ✨ This file has customizations applied as an overlay. You can view the original content using the "Show Original" button.`;
+    }
+
     setChatMessages(prev => [...prev, {
       id: Date.now(),
       type: 'ai',
-      content: `📂 Opened ${fileName}. ${loadStatusMessage} This is a ${fileTypeDescription} file. I can help you understand its structure, suggest improvements, or explain how it fits into the application architecture.`,
+      content: `📂 Opened ${fileName}. ${loadMessage} This is a ${fileTypeDescription} file.${overlayMessage} I can help you understand its structure, suggest improvements, or explain how it fits into the application architecture.`,
       timestamp: new Date()
     }]);
   };
@@ -1187,13 +1280,16 @@ What would you like to customize in this template?`,
     const isFolder = item.type === 'folder';
     const isExpanded = expandedFolders[itemKey];
     const isSelected = selectedFile?.path === itemKey;
+    
+    // Check if file has customizations
+    const hasCustomizations = !isFolder && localStorage.getItem(`template_overlay_${item.name}`);
 
     return (
       <div>
         <div
-          className={`flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer rounded ${
+          className={`flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer rounded relative ${
             isSelected ? 'bg-blue-50 text-blue-700' : ''
-          }`}
+          } ${hasCustomizations ? 'bg-amber-50' : ''}`}
           style={{ paddingLeft: `${(level * 16) + 8}px` }}
           onClick={() => {
             if (isFolder) {
@@ -1229,6 +1325,12 @@ What would you like to customize in this template?`,
             </>
           )}
           <span className="text-sm truncate">{item.name}</span>
+          {hasCustomizations && (
+            <div 
+              className="absolute right-1 top-1 w-2 h-2 bg-amber-500 rounded-full" 
+              title="File has customizations"
+            />
+          )}
         </div>
         
         {isFolder && isExpanded && item.children && (
@@ -1996,6 +2098,22 @@ What would you like to customize in this template?`,
                         <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded">
                           {selectedFile.type}
                         </div>
+                        {selectedFile.hasCustomizations && (
+                          <>
+                            <div className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200">
+                              ✨ Customized
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setShowOriginalContent(!showOriginalContent)}
+                              className="text-gray-600 hover:text-gray-700"
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              {showOriginalContent ? 'Show Custom' : 'Show Original'}
+                            </Button>
+                          </>
+                        )}
                         {!isEditing ? (
                           <Button
                             size="sm"
@@ -2079,7 +2197,11 @@ What would you like to customize in this template?`,
                           </div>
                         </div>
                         <div className="flex-1 p-4 bg-gray-900 text-gray-100 font-mono text-sm overflow-auto">
-                          <pre className="whitespace-pre-wrap">{selectedFile.content}</pre>
+                          <pre className="whitespace-pre-wrap">
+                            {showOriginalContent && selectedFile.hasCustomizations 
+                              ? selectedFile.originalContent 
+                              : selectedFile.content}
+                          </pre>
                         </div>
                       </div>
                     )}
