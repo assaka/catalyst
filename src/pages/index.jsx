@@ -425,11 +425,7 @@ function PagesContent() {
                     </RoleProtectedRoute>
                 } />
                 
-                <Route path="/admin/ai-editor" element={
-                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
-                        <AIEditor />
-                    </RoleProtectedRoute>
-                } />
+                <Route path="/admin/ai-editor" element={<AIEditor />} />
                 
                 {/* PUBLIC STOREFRONT ROUTES */}
                 <Route path="/public/:storeCode" element={<Storefront />} />

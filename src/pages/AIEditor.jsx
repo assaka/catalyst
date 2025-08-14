@@ -1,10 +1,12 @@
 import React from 'react';
-import OverlayEditorSimple from '@/components/editor/OverlayEditorSimple';
+import MinimalTest from '@/components/editor/MinimalTest';
 
 export default function AIEditor() {
+  console.log('AIEditor page is rendering');
+  
   return (
-    <div className="h-screen">
-      <OverlayEditorSimple />
+    <div style={{ height: '100vh', backgroundColor: 'lightblue' }}>
+      <MinimalTest />
     </div>
   );
 }
