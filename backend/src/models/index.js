@@ -49,6 +49,9 @@ const StoreTemplate = require('./StoreTemplate');
 const TemplateAsset = require('./TemplateAsset');
 const StoreSupabaseConnection = require('./StoreSupabaseConnection');
 const StoreDataMigration = require('./StoreDataMigration');
+const CodeCustomization = require('./CodeCustomization');
+const RenderDeployment = require('./RenderDeployment');
+const AIGenerationLog = require('./AIGenerationLog');
 
 // Define associations
 const defineAssociations = () => {
@@ -274,6 +277,27 @@ const defineAssociations = () => {
 
   StoreDataMigration.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(StoreDataMigration, { foreignKey: 'store_id' });
+
+  // AI Editor associations
+  CodeCustomization.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  CodeCustomization.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  CodeCustomization.belongsTo(CodeCustomization, { foreignKey: 'parent_version_id', as: 'parentVersion' });
+  CodeCustomization.hasMany(CodeCustomization, { foreignKey: 'parent_version_id', as: 'childVersions' });
+  CodeCustomization.hasMany(RenderDeployment, { foreignKey: 'customization_id', as: 'deployments' });
+  CodeCustomization.hasMany(AIGenerationLog, { foreignKey: 'customization_id', as: 'aiLogs' });
+  
+  User.hasMany(CodeCustomization, { foreignKey: 'user_id', as: 'codeCustomizations' });
+  Store.hasMany(CodeCustomization, { foreignKey: 'store_id', as: 'codeCustomizations' });
+
+  RenderDeployment.belongsTo(CodeCustomization, { foreignKey: 'customization_id', as: 'customization' });
+  RenderDeployment.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  
+  User.hasMany(RenderDeployment, { foreignKey: 'user_id', as: 'renderDeployments' });
+
+  AIGenerationLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  AIGenerationLog.belongsTo(CodeCustomization, { foreignKey: 'customization_id', as: 'customization' });
+  
+  User.hasMany(AIGenerationLog, { foreignKey: 'user_id', as: 'aiGenerationLogs' });
 };
 
 // Initialize associations
@@ -330,5 +354,8 @@ module.exports = {
   StoreTemplate,
   TemplateAsset,
   StoreSupabaseConnection,
-  StoreDataMigration
+  StoreDataMigration,
+  CodeCustomization,
+  RenderDeployment,
+  AIGenerationLog
 };
