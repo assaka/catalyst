@@ -1,10 +1,10 @@
 import React from 'react';
-import OverlayEditor from '@/components/editor/OverlayEditor';
+import SimpleOverlayTest from '@/components/editor/SimpleOverlayTest';
 
 export default function AIEditor() {
   return (
     <div className="h-screen">
-      <OverlayEditor />
+      <SimpleOverlayTest />
     </div>
   );
 }
