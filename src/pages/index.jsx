@@ -252,7 +252,6 @@ const PAGES = {
     
     ScheduledJobs: ScheduledJobs,
     
-    AIEditor: AIEditor,
     
 }
 
@@ -316,7 +315,6 @@ function _getCurrentPage(url) {
         'ab-testing': 'ABTesting',
         'monitoring-dashboard': 'MonitoringDashboard',
         'scheduled-jobs': 'ScheduledJobs',
-        'ai-editor': 'AIEditor'
     };
 
     // First try direct mapping for admin URLs
