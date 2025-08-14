@@ -126,6 +126,8 @@ import MonitoringDashboard from "./MonitoringDashboard";
 
 import ScheduledJobs from "./ScheduledJobs";
 
+import AIEditor from "./AIEditor";
+
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
 const PAGES = {
@@ -251,6 +253,8 @@ const PAGES = {
     
     ScheduledJobs: ScheduledJobs,
     
+    AIEditor: AIEditor,
+    
 }
 
 function _getCurrentPage(url) {
@@ -312,7 +316,8 @@ function _getCurrentPage(url) {
         'heatmaps': 'HeatMaps',
         'ab-testing': 'ABTesting',
         'monitoring-dashboard': 'MonitoringDashboard',
-        'scheduled-jobs': 'ScheduledJobs'
+        'scheduled-jobs': 'ScheduledJobs',
+        'ai-editor': 'AIEditor'
     };
 
     // First try direct mapping for admin URLs
@@ -417,6 +422,12 @@ function PagesContent() {
                 <Route path="/admin/analytics" element={
                     <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
                         <AnalyticsSettings />
+                    </RoleProtectedRoute>
+                } />
+                
+                <Route path="/admin/ai-editor" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <AIEditor />
                     </RoleProtectedRoute>
                 } />
                 
