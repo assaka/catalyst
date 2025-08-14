@@ -5,29 +5,39 @@ export default function MinimalTest() {
   
   return (
     <div style={{ 
-      padding: '20px', 
+      padding: '40px', 
       backgroundColor: 'white', 
-      border: '2px solid red',
-      height: '100vh'
+      border: '5px solid red',
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      textAlign: 'center'
     }}>
-      <h1 style={{ color: 'black', fontSize: '24px' }}>
-        🚀 AI Editor is Loading!
+      <h1 style={{ color: 'red', fontSize: '48px', marginBottom: '20px' }}>
+        🚀 AI EDITOR IS WORKING! 🚀
       </h1>
-      <p style={{ color: 'black', marginTop: '10px' }}>
-        If you can see this red border and text, the component is working.
+      <p style={{ color: 'black', fontSize: '20px', marginBottom: '20px' }}>
+        SUCCESS! The AI Editor component is rendering correctly.
+      </p>
+      <p style={{ color: 'blue', fontSize: '16px', marginBottom: '30px' }}>
+        This proves the routing works and the component loads.
+        The sidebar you saw was from the main admin layout wrapping this content.
       </p>
       <button 
-        onClick={() => alert('Button clicked!')}
+        onClick={() => alert('AI Editor component is working perfectly!')}
         style={{
-          padding: '10px 20px',
-          backgroundColor: '#blue',
+          padding: '15px 30px',
+          backgroundColor: '#22c55e',
           color: 'white',
           border: 'none',
-          borderRadius: '4px',
-          marginTop: '20px'
+          borderRadius: '8px',
+          fontSize: '18px',
+          cursor: 'pointer'
         }}
       >
-        Test Button
+        🎉 Test Button - Click Me!
       </button>
     </div>
   );

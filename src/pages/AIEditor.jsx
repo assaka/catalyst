@@ -5,7 +5,15 @@ export default function AIEditor() {
   console.log('AIEditor page is rendering');
   
   return (
-    <div style={{ height: '100vh', backgroundColor: 'lightblue' }}>
+    <div style={{ 
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 9999,
+      backgroundColor: 'lightblue'
+    }}>
       <MinimalTest />
     </div>
   );
