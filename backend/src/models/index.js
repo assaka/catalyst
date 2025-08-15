@@ -53,6 +53,7 @@ const CodeCustomization = require('./CodeCustomization');
 const RenderDeployment = require('./RenderDeployment');
 const AIGenerationLog = require('./AIGenerationLog');
 const EditorCustomization = require('./EditorCustomization');
+const TemplateCustomization = require('./TemplateCustomization');
 
 // Define associations
 const defineAssociations = () => {
@@ -305,6 +306,12 @@ const defineAssociations = () => {
   EditorCustomization.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
   User.hasMany(EditorCustomization, { foreignKey: 'user_id', as: 'editorCustomizations' });
   Store.hasMany(EditorCustomization, { foreignKey: 'store_id', as: 'editorCustomizations' });
+
+  // TemplateCustomization associations
+  TemplateCustomization.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+  TemplateCustomization.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  User.hasMany(TemplateCustomization, { foreignKey: 'created_by', as: 'templateCustomizations' });
+  Store.hasMany(TemplateCustomization, { foreignKey: 'store_id', as: 'templateCustomizations' });
 };
 
 // Initialize associations
@@ -365,5 +372,6 @@ module.exports = {
   CodeCustomization,
   RenderDeployment,
   AIGenerationLog,
-  EditorCustomization
+  EditorCustomization,
+  TemplateCustomization
 };

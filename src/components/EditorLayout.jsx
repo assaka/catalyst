@@ -532,15 +532,19 @@ const EditorLayout = ({ children }) => {
   // Template customization handler - creates overrides without modifying core files
   const handleTemplateCustomization = async (filePath, fileName, fileType) => {
     try {
-      // Load the original template content for reference
-      const originalContent = await loadOriginalTemplate(filePath, fileName);
+      // Create a visual customization interface for ProductDetail
+      const customizationInterface = await createCustomizationInterface(fileName);
+      
+      // Load existing customizations from database
+      const existingCustomizations = await loadTemplateCustomizations(fileName);
       
       // Create a template customization interface
       const customizationData = {
         originalFile: fileName,
         originalPath: filePath,
-        originalContent: originalContent,
-        customizations: getExistingCustomizations(fileName),
+        templateType: fileName.replace('.jsx', ''),
+        customizations: existingCustomizations,
+        interface: customizationInterface,
         availableProps: getAvailableProps(fileName),
         availableComponents: getAvailableComponents(fileType)
       };
@@ -550,8 +554,8 @@ const EditorLayout = ({ children }) => {
         path: filePath,
         name: fileName,
         type: 'template-customization',
-        language: fileType,
-        content: originalContent,
+        language: 'customization',
+        content: customizationInterface,
         customizations: customizationData
       });
 
@@ -661,6 +665,124 @@ What would you like to customize in this template?`,
     try {
       return stored ? JSON.parse(stored) : {};
     } catch {
+      return {};
+    }
+  };
+
+  // Helper function to create customization interface
+  const createCustomizationInterface = async (fileName) => {
+    const templateType = fileName.replace('.jsx', '');
+    
+    // Create a JSON-based customization interface
+    const customizationSchema = {
+      template: templateType,
+      timestamp: new Date().toISOString(),
+      customization_sections: {
+        styles: {
+          theme_colors: {
+            primary: "#3b82f6",
+            secondary: "#64748b", 
+            accent: "#f59e0b",
+            background: "#ffffff",
+            text: "#1f2937"
+          },
+          layout: {
+            container_width: "1200px",
+            spacing: "medium",
+            border_radius: "8px",
+            shadow: "md"
+          },
+          typography: {
+            font_family: "Inter, sans-serif",
+            font_size_base: "16px",
+            font_weight: "400",
+            line_height: "1.5"
+          }
+        },
+        content: {
+          blocks: [
+            {
+              id: "header",
+              type: "header",
+              content: "Product Details",
+              position: "top",
+              visible: true
+            },
+            {
+              id: "product_info",
+              type: "product_info",
+              fields: ["name", "price", "description", "sku"],
+              position: "main",
+              visible: true
+            },
+            {
+              id: "images",
+              type: "image_gallery",
+              layout: "carousel",
+              thumbnail_position: "bottom",
+              zoom: true,
+              visible: true
+            },
+            {
+              id: "actions",
+              type: "action_buttons",
+              buttons: ["add_to_cart", "add_to_wishlist", "share"],
+              position: "right",
+              visible: true
+            }
+          ]
+        },
+        behavior: {
+          features_enabled: {
+            product_zoom: true,
+            image_gallery: true,
+            related_products: true,
+            reviews: true,
+            specifications: true,
+            social_share: true
+          },
+          interactions: {
+            auto_save: true,
+            real_time_preview: true,
+            undo_redo: true
+          }
+        }
+      }
+    };
+    
+    // Convert to formatted JSON for display
+    return JSON.stringify(customizationSchema, null, 2);
+  };
+
+  // Helper function to load existing template customizations
+  const loadTemplateCustomizations = async (fileName) => {
+    try {
+      const templateType = fileName.replace('.jsx', '');
+      const token = localStorage.getItem('store_owner_auth_token');
+      const storeId = localStorage.getItem('current_store_id') || '157d4590-49bf-4b0b-bd77-abe131909528';
+      
+      if (!token) {
+        console.log('No auth token found, returning empty customizations');
+        return {};
+      }
+      
+      const response = await fetch(`/api/template-customizations/${storeId}/${templateType}?component_path=pages/${templateType}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Loaded existing customizations:', result);
+        return result.data?.customizations || {};
+      } else {
+        console.log('No existing customizations found, starting fresh');
+        return {};
+      }
+    } catch (error) {
+      console.error('Error loading template customizations:', error);
       return {};
     }
   };
