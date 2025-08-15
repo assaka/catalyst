@@ -828,20 +828,39 @@ What would you like to customize in this template?`,
   }, [selectedFile]);
 
   const handleFileSelect = async (filePath, fileName, fileType) => {
+    // Log the actual file path to debug routing issues
+    console.log('🔍 File selection debug:', {
+      filePath,
+      fileName,
+      fileType,
+      isTemplateEditor
+    });
+    
     // Check if this is a storefront template that should use customization interface
-    // Exception: ProductDetail.jsx should always load real file content for editing
+    // Exception: ProductDetail.jsx should ALWAYS load real file content for editing
+    const isProductDetail = fileName === 'ProductDetail.jsx' || filePath.includes('ProductDetail');
     const isStorefrontTemplate = (filePath.includes('storefront/') || 
                                 filePath.includes('pages/Storefront') ||
                                 filePath.includes('pages/Cart') ||
                                 filePath.includes('pages/Checkout')) &&
-                                !filePath.includes('pages/ProductDetail'); // Allow ProductDetail.jsx to use real file loading
+                                !isProductDetail; // ProductDetail.jsx bypasses template customization
+    
+    console.log('🔍 Routing decision:', {
+      isProductDetail,
+      isStorefrontTemplate,
+      willUseTemplateCustomization: isTemplateEditor && isStorefrontTemplate,
+      willLoadRealFile: !isStorefrontTemplate || isProductDetail
+    });
     
     // Template customization logic - create overrides without modifying core files
     // ProductDetail.jsx bypasses this and uses real file content loading
-    if (isTemplateEditor && isStorefrontTemplate) {
+    if (isTemplateEditor && isStorefrontTemplate && !isProductDetail) {
+      console.log('🎨 Using template customization for:', fileName);
       handleTemplateCustomization(filePath, fileName, fileType);
       return;
     }
+    
+    console.log('📄 Loading real file content for:', fileName);
     
     // Map file tree paths to actual file system paths
     const fileMapping = {
