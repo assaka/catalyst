@@ -707,13 +707,15 @@ What would you like to customize in this template?`,
 
   const handleFileSelect = async (filePath, fileName, fileType) => {
     // Check if this is a storefront template that should use customization interface
-    const isStorefrontTemplate = filePath.includes('storefront/') || 
+    // Exception: ProductDetail.jsx should always load real file content for editing
+    const isStorefrontTemplate = (filePath.includes('storefront/') || 
                                 filePath.includes('pages/Storefront') ||
-                                filePath.includes('pages/ProductDetail') ||
                                 filePath.includes('pages/Cart') ||
-                                filePath.includes('pages/Checkout');
+                                filePath.includes('pages/Checkout')) &&
+                                !filePath.includes('pages/ProductDetail'); // Allow ProductDetail.jsx to use real file loading
     
     // Template customization logic - create overrides without modifying core files
+    // ProductDetail.jsx bypasses this and uses real file content loading
     if (isTemplateEditor && isStorefrontTemplate) {
       handleTemplateCustomization(filePath, fileName, fileType);
       return;
