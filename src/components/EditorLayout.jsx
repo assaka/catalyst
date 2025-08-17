@@ -1114,16 +1114,18 @@ This is the real ProductDetail.jsx file from your project!`,
               console.log('🧪 Auth test failed:', testError.message);
             }
             
-            const apiUrl = `/api/template-editor/source-files/content?path=${encodeURIComponent(actualPath)}`;
-            console.log('🌐 Making API request to:', apiUrl);
+            console.log('🌐 Making POST API request for:', actualPath);
             
-            const apiResponse = await fetch(apiUrl, {
-              method: 'GET',
+            const apiResponse = await fetch('/api/template-editor/source-files/content', {
+              method: 'POST',
               headers: {
                 'Accept': 'application/json',
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-              }
+              },
+              body: JSON.stringify({
+                filePath: actualPath
+              })
             });
             
             console.log('📡 API response status:', apiResponse.status, apiResponse.statusText);
@@ -1237,43 +1239,44 @@ This is the real ProductDetail.jsx file from your project!`,
           }
         }
         
-        // Special handling for ProductDetail.jsx - always try to show real content
-        if (!loadSuccess && fileName === 'ProductDetail.jsx') {
-          console.log('🎯 ProductDetail.jsx requested - attempting to load actual file content...');
+        // Method 3: Try public file content endpoint (no auth required)
+        if (!loadSuccess) {
+          console.log('🔄 Trying public file content endpoint...');
           try {
-            const token = localStorage.getItem('store_owner_auth_token') ||
-                         localStorage.getItem('customer_auth_token') ||
-                         localStorage.getItem('auth_token') ||
-                         localStorage.getItem('token');
+            const response = await fetch('/api/template-editor/get-file-content', {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                filePath: actualPath
+              })
+            });
             
-            if (token) {
-              const productDetailApiUrl = `/api/template-editor/source-files/content?path=src/pages/ProductDetail.jsx`;
-              console.log('🔗 Loading ProductDetail.jsx via:', productDetailApiUrl);
+            console.log('📡 Public API response:', response.status, response.statusText);
+            
+            if (response.ok) {
+              const data = await response.json();
+              console.log('📦 Public API response data:', { success: data.success, contentLength: data.content?.length });
               
-              const response = await fetch(productDetailApiUrl, {
-                method: 'GET',
-                headers: {
-                  'Accept': 'application/json',
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              });
-              
-              if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.content) {
-                  content = data.content;
-                  loadSuccess = true;
-                  console.log('✅ ProductDetail.jsx loaded successfully:', data.content.length, 'characters');
-                }
+              if (data.success && data.content) {
+                content = data.content;
+                loadSuccess = true;
+                console.log('✅ File loaded successfully via public API:', fileName, `(${data.content.length} chars)`);
+              } else {
+                console.log('❌ Public API returned unsuccessful response:', data);
               }
+            } else {
+              const errorData = await response.text();
+              console.log('❌ Public API response not ok:', response.status, response.statusText, errorData);
             }
-          } catch (productDetailError) {
-            console.log('⚠️ Failed to load actual ProductDetail.jsx content:', productDetailError.message);
+          } catch (publicApiError) {
+            console.log('⚠️ Failed to load via public API:', publicApiError.message);
           }
         }
         
-        // Method 3: Final fallback with enhanced mock content
+        // Method 4: Final fallback with enhanced mock content
         if (!loadSuccess) {
           console.warn(`⚠️ Could not load actual file content for ${fileName}. Using fallback content.`);
           console.log('');

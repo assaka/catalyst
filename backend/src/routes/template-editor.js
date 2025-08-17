@@ -533,4 +533,85 @@ router.processTemplateImages = async function(elements, storeId) {
   return elements;
 };
 
+// @route   POST /api/template-editor/get-file-content
+// @desc    Get file content for editor (development helper)
+// @access  Public (for development/editor use)
+router.post('/get-file-content', async (req, res) => {
+  try {
+    const { filePath } = req.body;
+    
+    console.log('📁 File content request:', { filePath });
+    
+    if (!filePath) {
+      return res.status(400).json({
+        success: false,
+        message: 'File path is required'
+      });
+    }
+    
+    // Security: Only allow files within the project directory
+    const allowedPaths = [
+      'src/pages/',
+      'src/components/',
+      'src/App.css',
+      'src/index.css'
+    ];
+    
+    const isAllowed = allowedPaths.some(allowedPath => filePath.startsWith(allowedPath));
+    if (!isAllowed) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access to this file path is not allowed'
+      });
+    }
+    
+    // Construct the full file path relative to project root
+    const projectRoot = path.resolve(__dirname, '../../../');
+    const fullPath = path.join(projectRoot, filePath);
+    
+    // Check if file exists and is within project bounds (prevent directory traversal)
+    if (!fullPath.startsWith(projectRoot)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid file path'
+      });
+    }
+    
+    try {
+      // Check if file exists
+      await fs.promises.access(fullPath, fs.constants.F_OK);
+      console.log('✅ File exists:', fullPath);
+      
+      // Read file content
+      const content = await fs.promises.readFile(fullPath, 'utf8');
+      console.log('✅ File content loaded, length:', content.length);
+      
+      res.json({
+        success: true,
+        content: content,
+        path: filePath,
+        message: 'File loaded successfully'
+      });
+    } catch (fileError) {
+      console.error('❌ File error:', fileError);
+      if (fileError.code === 'ENOENT') {
+        return res.status(404).json({
+          success: false,
+          message: 'File not found',
+          path: filePath
+        });
+      }
+      
+      throw fileError;
+    }
+  } catch (error) {
+    console.error('Get file content error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error reading file',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
