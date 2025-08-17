@@ -329,12 +329,12 @@ router.get('/:storeId/stats', authorize(['store_owner']), checkStoreOwnership, a
   }
 });
 
-// @route   GET /api/template-editor/source-files/content
+// @route   POST /api/template-editor/source-files/content
 // @desc    Get source file content for file tree editor
 // @access  Private
-router.get('/source-files/content', authMiddleware, async (req, res) => {
+router.post('/source-files/content', authMiddleware, async (req, res) => {
   try {
-    const { path: filePath } = req.query;
+    const { filePath } = req.body;
     
     console.log('📁 Source file request:', { filePath, user: req.user?.id });
     
