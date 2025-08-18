@@ -28,7 +28,7 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
   
   const switchToEditor = () => {
     if (currentMode !== 'editor') {
-      navigate('/editor/templates');
+      navigate('/editor/ai-context');
     }
   };
 

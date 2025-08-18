@@ -224,15 +224,20 @@ export default function Layout({ children, currentPageName }) {
 
   const publicPages = ['Landing', 'Auth', 'CustomerAuth', 'Pricing', 'Onboarding'];
   const storefrontPages = ['Storefront', 'ProductDetail', 'Cart', 'Checkout', 'CustomerDashboard', 'CmsPageViewer', 'OrderSuccess', 'HtmlSitemap'];
+  const editorPages = ['AIContextWindow']; // Pages that use the editor mode
   const isPublicPage = publicPages.includes(currentPageName);
   const isStorefrontPage = storefrontPages.includes(currentPageName);
   const isCustomerDashboard = currentPageName === 'CustomerDashboard';
-  const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard;
+  const isEditorPage = editorPages.includes(currentPageName) || location.pathname.startsWith('/editor/');
+  const isAdminPage = !isPublicPage && !isStorefrontPage && !isCustomerDashboard && !isEditorPage;
   
-  // Apply role-based access control only for admin pages
-  useRoleProtection(isAdminPage);
+  // Determine current mode for ModeHeader
+  const currentMode = isEditorPage ? 'editor' : 'admin';
+  
+  // Apply role-based access control for admin and editor pages
+  useRoleProtection(isAdminPage || isEditorPage);
 
-  if (isLoading && isAdminPage) {
+  if (isLoading && (isAdminPage || isEditorPage)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -250,10 +255,10 @@ export default function Layout({ children, currentPageName }) {
   
   // Role-based access control is now handled by RoleProtectedRoute at the route level
 
-  // Handle admin pages
-  if (isAdminPage) {
+  // Handle admin and editor pages
+  if (isAdminPage || isEditorPage) {
       
-      // Use token-only validation for admin access like RoleProtectedRoute
+      // Use token-only validation for admin/editor access like RoleProtectedRoute
       const hasStoreOwnerToken = !!localStorage.getItem('store_owner_auth_token');
       
       if (!isLoading && !hasStoreOwnerToken) {
@@ -745,7 +750,8 @@ export default function Layout({ children, currentPageName }) {
 
       <div className="flex-1 flex flex-col">
         <ModeHeader 
-          user={user} 
+          user={user}
+          currentMode={currentMode}
           showExtraButtons={true}
           extraButtons={
             <Button

@@ -1,0 +1,347 @@
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, RefreshCw } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+/**
+ * File Tree Navigator Component
+ * Virtualized tree view for file navigation with modification indicators
+ * Supports right-click operations and expandable directories
+ */
+const FileTreeNavigator = ({ 
+  onFileSelect, 
+  selectedFile, 
+  modifiedFiles = [], 
+  className,
+  showHidden = false,
+  searchTerm = '',
+  onRefresh
+}) => {
+  const [fileTree, setFileTree] = useState([]);
+  const [expandedDirs, setExpandedDirs] = useState(new Set());
+  const [loading, setLoading] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
+
+  // Fetch file tree from backend
+  const fetchFileTree = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/ai-context/file-tree', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setFileTree(data.data.tree);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch file tree:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Load file tree on mount
+  useEffect(() => {
+    fetchFileTree();
+  }, [fetchFileTree]);
+
+  // Handle refresh
+  const handleRefresh = useCallback(() => {
+    fetchFileTree();
+    onRefresh?.();
+  }, [fetchFileTree, onRefresh]);
+
+  // Filter tree based on search term
+  const filteredTree = useMemo(() => {
+    if (!searchTerm) return fileTree;
+
+    const filterNode = (node) => {
+      const nameMatches = node.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (node.type === 'file') {
+        return nameMatches;
+      }
+
+      // For directories, include if name matches or if any children match
+      const filteredChildren = node.children?.filter(filterNode) || [];
+      return nameMatches || filteredChildren.length > 0;
+    };
+
+    return fileTree.filter(filterNode);
+  }, [fileTree, searchTerm]);
+
+  // Toggle directory expansion
+  const toggleExpanded = useCallback((path) => {
+    setExpandedDirs(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(path)) {
+        newSet.delete(path);
+      } else {
+        newSet.add(path);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Handle file selection
+  const handleFileSelect = useCallback((file) => {
+    if (file.type === 'file' && file.isSupported) {
+      onFileSelect?.(file);
+    }
+  }, [onFileSelect]);
+
+  // Handle right-click context menu
+  const handleContextMenu = useCallback((e, node) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      node
+    });
+  }, []);
+
+  // Close context menu
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  // Handle context menu actions
+  const handleContextAction = useCallback((action, node) => {
+    switch (action) {
+      case 'create-file':
+        console.log('Create new file in:', node.path);
+        break;
+      case 'create-folder':
+        console.log('Create new folder in:', node.path);
+        break;
+      case 'rename':
+        console.log('Rename:', node.name);
+        break;
+      case 'delete':
+        console.log('Delete:', node.name);
+        break;
+      case 'copy-path':
+        navigator.clipboard.writeText(node.path);
+        break;
+    }
+    closeContextMenu();
+  }, [closeContextMenu]);
+
+  // Render tree node
+  const renderNode = useCallback((node, depth = 0) => {
+    const isExpanded = expandedDirs.has(node.path);
+    const isSelected = selectedFile?.path === node.path;
+    const isModified = modifiedFiles.includes(node.path);
+    const hasChildren = node.children && node.children.length > 0;
+
+    return (
+      <div key={node.path}>
+        <div
+          className={cn(
+            "flex items-center py-1 px-2 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer",
+            "select-none transition-colors duration-150",
+            isSelected && "bg-blue-100 dark:bg-blue-900",
+            isModified && "bg-yellow-50 dark:bg-yellow-900/20",
+            !node.isSupported && node.type === 'file' && "opacity-50"
+          )}
+          style={{ paddingLeft: `${depth * 16 + 8}px` }}
+          onClick={() => {
+            if (node.type === 'directory') {
+              toggleExpanded(node.path);
+            } else {
+              handleFileSelect(node);
+            }
+          }}
+          onContextMenu={(e) => handleContextMenu(e, node)}
+        >
+          {/* Expansion toggle for directories */}
+          {node.type === 'directory' && (
+            <button
+              className="mr-1 p-0.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleExpanded(node.path);
+              }}
+            >
+              {hasChildren && isExpanded ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : hasChildren ? (
+                <ChevronRight className="w-3 h-3" />
+              ) : (
+                <div className="w-3 h-3" />
+              )}
+            </button>
+          )}
+
+          {/* File/folder icon */}
+          <div className="mr-2 flex-shrink-0">
+            {node.type === 'directory' ? (
+              isExpanded ? (
+                <FolderOpen className="w-4 h-4 text-blue-500" />
+              ) : (
+                <Folder className="w-4 h-4 text-blue-500" />
+              )
+            ) : (
+              <File 
+                className={cn(
+                  "w-4 h-4",
+                  getFileIconColor(node.extension)
+                )} 
+              />
+            )}
+          </div>
+
+          {/* File/folder name */}
+          <span 
+            className={cn(
+              "flex-1 truncate text-sm",
+              isModified && "font-medium",
+              !node.isSupported && node.type === 'file' && "text-gray-400"
+            )}
+          >
+            {node.name}
+          </span>
+
+          {/* Modification indicator */}
+          {isModified && (
+            <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0 ml-2" />
+          )}
+        </div>
+
+        {/* Render children if expanded */}
+        {node.type === 'directory' && isExpanded && hasChildren && (
+          <div>
+            {node.children.map(child => renderNode(child, depth + 1))}
+          </div>
+        )}
+      </div>
+    );
+  }, [expandedDirs, selectedFile, modifiedFiles, toggleExpanded, handleFileSelect, handleContextMenu]);
+
+  // Get file icon color based on extension
+  const getFileIconColor = (extension) => {
+    const colorMap = {
+      '.js': 'text-yellow-500',
+      '.jsx': 'text-blue-500',
+      '.ts': 'text-blue-600',
+      '.tsx': 'text-blue-600',
+      '.json': 'text-green-500',
+      '.css': 'text-pink-500',
+      '.html': 'text-orange-500',
+      '.md': 'text-gray-600',
+      '.py': 'text-green-600',
+      '.java': 'text-red-500',
+      '.cpp': 'text-blue-700',
+      '.c': 'text-blue-700'
+    };
+    return colorMap[extension] || 'text-gray-500';
+  };
+
+  return (
+    <div 
+      className={cn("h-full flex flex-col bg-white dark:bg-gray-900 border-r", className)}
+      onClick={closeContextMenu}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between p-3 border-b bg-gray-50 dark:bg-gray-800">
+        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+          File Explorer
+        </h3>
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+            title="Refresh"
+          >
+            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+          </button>
+        </div>
+      </div>
+
+      {/* Tree content */}
+      <div className="flex-1 overflow-auto">
+        {loading ? (
+          <div className="flex items-center justify-center p-4">
+            <RefreshCw className="w-5 h-5 animate-spin text-gray-400" />
+            <span className="ml-2 text-sm text-gray-500">Loading files...</span>
+          </div>
+        ) : filteredTree.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">
+            <File className="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No files found</p>
+          </div>
+        ) : (
+          <div className="py-1">
+            {filteredTree.map(node => renderNode(node))}
+          </div>
+        )}
+      </div>
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg py-1 min-w-[150px]"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {contextMenu.node.type === 'directory' && (
+            <>
+              <ContextMenuItem
+                icon={<Plus className="w-4 h-4" />}
+                label="New File"
+                onClick={() => handleContextAction('create-file', contextMenu.node)}
+              />
+              <ContextMenuItem
+                icon={<Folder className="w-4 h-4" />}
+                label="New Folder"
+                onClick={() => handleContextAction('create-folder', contextMenu.node)}
+              />
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+            </>
+          )}
+          <ContextMenuItem
+            label="Rename"
+            onClick={() => handleContextAction('rename', contextMenu.node)}
+          />
+          <ContextMenuItem
+            label="Copy Path"
+            onClick={() => handleContextAction('copy-path', contextMenu.node)}
+          />
+          <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+          <ContextMenuItem
+            label="Delete"
+            onClick={() => handleContextAction('delete', contextMenu.node)}
+            className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Context menu item component
+const ContextMenuItem = ({ icon, label, onClick, className }) => (
+  <button
+    className={cn(
+      "w-full flex items-center px-3 py-2 text-sm text-left",
+      "hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors",
+      className
+    )}
+    onClick={onClick}
+  >
+    {icon && <span className="mr-2">{icon}</span>}
+    {label}
+  </button>
+);
+
+export default FileTreeNavigator;
