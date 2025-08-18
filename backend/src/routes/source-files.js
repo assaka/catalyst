@@ -17,7 +17,15 @@ router.get('/content', auth, async (req, res) => {
     }
 
     // Security: Only allow reading files from src directory
-    const basePath = path.resolve(__dirname, '../../../');
+    // Support both local development and Render deployment structures
+    let basePath = path.resolve(__dirname, '../../../'); // Local: backend/src/routes -> project root
+    
+    // On Render, if running from backend subdirectory, adjust path
+    if (!fs.existsSync(path.join(basePath, 'src'))) {
+      // Try parent directory (Render deployment case)
+      basePath = path.resolve(__dirname, '../../../../');
+    }
+    
     const fullPath = path.resolve(basePath, filePath);
     
     // Check if the resolved path is within the project directory
@@ -60,7 +68,15 @@ router.get('/list', auth, async (req, res) => {
     const { path: dirPath = 'src' } = req.query;
     
     // Security: Only allow listing files from src directory
-    const basePath = path.resolve(__dirname, '../../../');
+    // Support both local development and Render deployment structures
+    let basePath = path.resolve(__dirname, '../../../'); // Local: backend/src/routes -> project root
+    
+    // On Render, if running from backend subdirectory, adjust path
+    if (!fs.existsSync(path.join(basePath, 'src'))) {
+      // Try parent directory (Render deployment case)
+      basePath = path.resolve(__dirname, '../../../../');
+    }
+    
     const fullPath = path.resolve(basePath, dirPath);
     
     // Check if the resolved path is within the project directory
