@@ -87,7 +87,6 @@ import {
 import { StoreProvider } from "@/components/storefront/StoreProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useStoreSelection } from "@/contexts/StoreSelectionContext";
-import EditorLayout from "@/components/EditorLayout";
 
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -121,17 +120,6 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [gtmConfig, setGtmConfig] = useState(null);
-  const [currentMode, setCurrentMode] = useState('admin'); // 'admin' or 'editor'
-  
-  // Determine mode from URL
-  useEffect(() => {
-    if (location.pathname.includes('/editor')) {
-      setCurrentMode('editor');
-    } else if (location.pathname.includes('/admin')) {
-      setCurrentMode('admin');
-    }
-  }, [location.pathname]);
-  
   const [openGroups, setOpenGroups] = useState({
     "Catalog": false,
     "Sales": false,
@@ -144,18 +132,6 @@ export default function Layout({ children, currentPageName }) {
     "Advanced": false, // Added new group for Advanced features
   });
 
-  // Navigation functions for mode switching
-  const switchToAdmin = () => {
-    if (currentMode !== 'admin') {
-      navigate('/admin/dashboard');
-    }
-  };
-  
-  const switchToEditor = () => {
-    if (currentMode !== 'editor') {
-      navigate('/editor/templates');
-    }
-  };
 
   // Add this block to handle the RobotsTxt page
   if (currentPageName === 'RobotsTxt') {
@@ -289,68 +265,6 @@ export default function Layout({ children, currentPageName }) {
           );
       }
       
-      // If in editor mode, use the EditorLayout with enhanced header
-      if (currentMode === 'editor') {
-        return (
-          <div className="min-h-screen bg-gray-50">
-            <RoleSwitcher />
-            {/* Enhanced Editor Header with Admin/Editor toggle */}
-            <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={switchToAdmin}
-                    className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-md transition-colors"
-                  >
-                    Admin
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={switchToEditor}
-                    className="px-4 py-2 text-sm font-medium bg-white shadow-sm text-gray-900 rounded-md"
-                  >
-                    Editor
-                  </Button>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <StoreSelector />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                      <UserIcon className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <DropdownMenuLabel className="font-normal">
-                      <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user?.first_name || user?.name || user?.email} ({user?.role})</p>
-                        <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={async () => {
-                      try {
-                        await handleLogout();
-                      } catch (error) {
-                        console.error('❌ Editor logout error:', error);
-                        window.location.href = '/admin/auth';
-                      }
-                    }}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-            <EditorLayout>{children}</EditorLayout>
-          </div>
-        );
-      }
   }
 
   // For public pages
@@ -832,7 +746,6 @@ export default function Layout({ children, currentPageName }) {
       <div className="flex-1 flex flex-col">
         <ModeHeader 
           user={user} 
-          currentMode={currentMode}
           showExtraButtons={true}
           extraButtons={
             <Button

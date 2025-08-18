@@ -45,15 +45,8 @@ const CreditTransaction = require('./CreditTransaction');
 const CreditUsage = require('./CreditUsage');
 const Job = require('./Job');
 const JobHistory = require('./JobHistory');
-const StoreTemplate = require('./StoreTemplate');
-const TemplateAsset = require('./TemplateAsset');
 const StoreSupabaseConnection = require('./StoreSupabaseConnection');
 const StoreDataMigration = require('./StoreDataMigration');
-const CodeCustomization = require('./CodeCustomization');
-const RenderDeployment = require('./RenderDeployment');
-const AIGenerationLog = require('./AIGenerationLog');
-const EditorCustomization = require('./EditorCustomization');
-const TemplateCustomization = require('./TemplateCustomization');
 
 // Define associations
 const defineAssociations = () => {
@@ -265,53 +258,11 @@ const defineAssociations = () => {
   AkeneoSchedule.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(AkeneoSchedule, { foreignKey: 'store_id' });
 
-  // Template system associations
-  StoreTemplate.belongsTo(Store, { foreignKey: 'store_id' });
-  Store.hasMany(StoreTemplate, { foreignKey: 'store_id' });
-
-  TemplateAsset.belongsTo(Store, { foreignKey: 'store_id' });
-  TemplateAsset.belongsTo(StoreTemplate, { foreignKey: 'template_id' });
-  Store.hasMany(TemplateAsset, { foreignKey: 'store_id' });
-  StoreTemplate.hasMany(TemplateAsset, { foreignKey: 'template_id' });
-
   StoreSupabaseConnection.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(StoreSupabaseConnection, { foreignKey: 'store_id' });
 
   StoreDataMigration.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(StoreDataMigration, { foreignKey: 'store_id' });
-
-  // AI Editor associations
-  CodeCustomization.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-  CodeCustomization.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
-  CodeCustomization.belongsTo(CodeCustomization, { foreignKey: 'parent_version_id', as: 'parentVersion' });
-  CodeCustomization.hasMany(CodeCustomization, { foreignKey: 'parent_version_id', as: 'childVersions' });
-  CodeCustomization.hasMany(RenderDeployment, { foreignKey: 'customization_id', as: 'deployments' });
-  CodeCustomization.hasMany(AIGenerationLog, { foreignKey: 'customization_id', as: 'aiLogs' });
-  
-  User.hasMany(CodeCustomization, { foreignKey: 'user_id', as: 'codeCustomizations' });
-  Store.hasMany(CodeCustomization, { foreignKey: 'store_id', as: 'codeCustomizations' });
-
-  RenderDeployment.belongsTo(CodeCustomization, { foreignKey: 'customization_id', as: 'customization' });
-  RenderDeployment.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-  
-  User.hasMany(RenderDeployment, { foreignKey: 'user_id', as: 'renderDeployments' });
-
-  AIGenerationLog.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-  AIGenerationLog.belongsTo(CodeCustomization, { foreignKey: 'customization_id', as: 'customization' });
-  
-  User.hasMany(AIGenerationLog, { foreignKey: 'user_id', as: 'aiGenerationLogs' });
-  
-  // EditorCustomization associations
-  EditorCustomization.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
-  EditorCustomization.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
-  User.hasMany(EditorCustomization, { foreignKey: 'user_id', as: 'editorCustomizations' });
-  Store.hasMany(EditorCustomization, { foreignKey: 'store_id', as: 'editorCustomizations' });
-
-  // TemplateCustomization associations
-  TemplateCustomization.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
-  TemplateCustomization.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
-  User.hasMany(TemplateCustomization, { foreignKey: 'created_by', as: 'templateCustomizations' });
-  Store.hasMany(TemplateCustomization, { foreignKey: 'store_id', as: 'templateCustomizations' });
 };
 
 // Initialize associations
@@ -365,13 +316,6 @@ module.exports = {
   CreditUsage,
   Job,
   JobHistory,
-  StoreTemplate,
-  TemplateAsset,
   StoreSupabaseConnection,
-  StoreDataMigration,
-  CodeCustomization,
-  RenderDeployment,
-  AIGenerationLog,
-  EditorCustomization,
-  TemplateCustomization
+  StoreDataMigration
 };

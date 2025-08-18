@@ -97,9 +97,6 @@ const categoryImageRoutes = require('./routes/category-images');
 const fileManagerRoutes = require('./routes/file-manager');
 const sourceFilesRoutes = require('./routes/source-files');
 const templateRoutes = require('./routes/templates');
-const templateEditorRoutes = require('./routes/template-editor');
-const templateCustomizationRoutes = require('./routes/template-customization');
-const newTemplateCustomizationRoutes = require('./routes/template-customizations');
 const storeDataMigrationRoutes = require('./routes/store-data-migration');
 const storeProvisioningRoutes = require('./routes/store-provisioning');
 const domainsRoutes = require('./routes/domains');
@@ -107,9 +104,6 @@ const storeDatabaseRoutes = require('./routes/store-database');
 const storeMediaStorageRoutes = require('./routes/store-mediastorage');
 const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
-const aiEditorRoutes = require('./routes/ai-editor');
-const overlayEditorRoutes = require('./routes/overlay-editor');
-const editorCustomizationRoutes = require('./routes/editor-customizations');
 
 const app = express();
 
@@ -1559,18 +1553,12 @@ app.use('/api/stores/:store_id/categories', categoryImageRoutes);
 app.use('/api/file-manager', fileManagerRoutes);
 app.use('/api/source-files', sourceFilesRoutes);
 app.use('/api/stores/:store_id/templates', authMiddleware, templateRoutes);
-app.use('/api/template-editor', templateEditorRoutes);
-app.use('/api/stores/:store_id/template-customization', templateCustomizationRoutes);
-app.use('/api/template-customizations', newTemplateCustomizationRoutes);
 app.use('/api/stores/:store_id/data-migration', storeDataMigrationRoutes);
 app.use('/api/store-provisioning', storeProvisioningRoutes);
 app.use('/api/stores/:store_id/domains', domainsRoutes);
 app.use('/api/stores', domainSettingsRoutes); // Domain settings for Store -> Settings -> Domain
 app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
-app.use('/api/ai', aiEditorRoutes); // AI-powered code editor routes
-app.use('/api/overlay', overlayEditorRoutes); // Overlay-based customization editor routes
-app.use('/api/editor-customizations', editorCustomizationRoutes); // File tree editor customizations and persistence
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
 
