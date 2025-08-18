@@ -6,6 +6,7 @@ import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import PreviewSystem from '@/components/ai-context/PreviewSystem';
+import apiClient from '@/api/client';
 
 /**
  * AI Context Window Page
@@ -37,31 +38,24 @@ const AIContextWindowPage = () => {
   const loadFileContent = useCallback(async (filePath) => {
     setIsFileLoading(true);
     try {
-      // For now, we'll use a simple fetch to the source files API
-      // In a real implementation, this would integrate with the file system
-      const response = await fetch(`/api/source-files/content?path=${encodeURIComponent(filePath)}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
-        }
-      });
+      // Use the configured API client which handles the correct backend URL
+      const data = await apiClient.get(`source-files/content?path=${encodeURIComponent(filePath)}`);
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setSourceCode(data.content);
-          setSelectedFile({
-            path: filePath,
-            name: filePath.split('/').pop(),
-            type: 'file',
-            isSupported: true
-          });
-          
-          // Update URL
-          setSearchParams({ file: filePath });
-        } else {
-          console.error('Failed to load file:', data.message);
-          // Provide detailed diagnostic information
-          const diagnosticInfo = `// API Error: ${data.message}
+      if (data && data.success) {
+        setSourceCode(data.content);
+        setSelectedFile({
+          path: filePath,
+          name: filePath.split('/').pop(),
+          type: 'file',
+          isSupported: true
+        });
+        
+        // Update URL
+        setSearchParams({ file: filePath });
+      } else {
+        console.error('Failed to load file:', data.message);
+        // Provide detailed diagnostic information
+        const diagnosticInfo = `// API Error: ${data.message}
 // File Path: ${filePath}
 // Status: API responded but file loading failed
 // 
@@ -87,17 +81,17 @@ const DiagnosticComponent = () => {
 };
 
 export default DiagnosticComponent;`;
-          
-          setSourceCode(diagnosticInfo);
-          setSelectedFile({
-            path: filePath,
-            name: filePath.split('/').pop() || 'unknown.js',
-            type: 'file',
-            isSupported: true
-          });
-        }
-      } else {
-        console.error('Failed to load file:', response.statusText);
+        
+        setSourceCode(diagnosticInfo);
+        setSelectedFile({
+          path: filePath,
+          name: filePath.split('/').pop() || 'unknown.js',
+          type: 'file',
+          isSupported: true
+        });
+      }
+    } catch (error) {
+      console.error('Error loading file:', error);
         
         // Determine specific error type based on status
         let errorType = 'Unknown Error';
@@ -194,31 +188,57 @@ export default ErrorDiagnostic;`;
     } catch (error) {
       console.error('Error loading file:', error);
       
-      // Enhanced network error handling
+      // Enhanced error handling for API client errors
       let errorInfo = '';
-      if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-        errorInfo = `// Network Error: Cannot connect to backend server
-// File Path: ${filePath}
-// 
-// The backend server appears to be offline.
-// 
-// To fix this issue:
-// 1. Start the backend server: npm run dev (in backend directory)
-// 2. Or start full stack: npm start (in root directory)
-// 3. Verify server is running on port 3000
-// 4. Check server logs for any startup errors
-//
-// You can still test the AI Context Window with this placeholder
-//`;
+      let errorType = 'Network Error';
+      let troubleshooting = [];
+      
+      if (error.message.includes('Network error: Unable to connect to server')) {
+        errorType = 'Backend Server Offline';
+        troubleshooting = [
+          'The backend server is not responding',
+          'Verify backend is deployed and running on Render',
+          'Check Render dashboard for deployment status',
+          'Review Render logs for server errors'
+        ];
+      } else if (error.status === 401) {
+        errorType = 'Authentication Error';
+        troubleshooting = [
+          'Please log in as a store owner',
+          'Verify authentication token is valid',
+          'Try refreshing the page and logging in again'
+        ];
+      } else if (error.status === 403) {
+        errorType = 'Access Denied';
+        troubleshooting = [
+          'File path may be outside allowed directories',
+          'Check if file path starts with "src/"',
+          'Verify you have store owner permissions'
+        ];
+      } else if (error.status === 404) {
+        errorType = 'File Not Found';
+        troubleshooting = [
+          'Check if the file exists at the specified path',
+          'Verify the file path is correct',
+          'Try selecting a different file from the tree'
+        ];
       } else {
-        errorInfo = `// Network Error: ${error.message}
+        troubleshooting = [
+          'Check network connection to backend server',
+          'Verify backend is deployed and accessible',
+          'Contact system administrator if issue persists'
+        ];
+      }
+      
+      errorInfo = `// ${errorType}: ${error.message}
 // File Path: ${filePath}
+// Backend: ${import.meta.env.VITE_API_BASE_URL || 'Not configured'}
 // 
-// Connection to backend failed. Ensure the server is running.
+// Troubleshooting Steps:
+${troubleshooting.map((step, i) => `// ${i + 1}. ${step}`).join('\n')}
 //
 // You can still test the AI Context Window with this placeholder
 //`;
-      }
       
       // Fallback for demo purposes
       setSourceCode(errorInfo + `
@@ -333,41 +353,8 @@ export default ExampleComponent;`);
         return;
       }
 
-      // Test the list endpoint first
-      const listResponse = await fetch('/api/source-files/list?path=src', {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-
-      if (!listResponse.ok) {
-        let errorDetails = '';
-        switch (listResponse.status) {
-          case 401:
-            errorDetails = 'Authentication failed. Please refresh and log in again.';
-            break;
-          case 403:
-            errorDetails = 'Access denied. Verify you have store owner permissions.';
-            break;
-          case 404:
-            errorDetails = 'Backend server not running. Start with: npm run dev (backend) or npm start';
-            break;
-          case 500:
-            errorDetails = 'Server error. Check backend logs for details.';
-            break;
-          default:
-            errorDetails = `HTTP ${listResponse.status}: ${listResponse.statusText}`;
-        }
-        
-        setConnectionStatus({
-          status: 'error',
-          message: `API connection failed (${listResponse.status})`,
-          details: errorDetails
-        });
-        return;
-      }
-
-      const listData = await listResponse.json();
+      // Test the list endpoint first using API client
+      const listData = await apiClient.get('source-files/list?path=src');
       
       if (!listData.success) {
         setConnectionStatus({
@@ -380,19 +367,13 @@ export default ExampleComponent;`);
 
       // Test loading a specific file
       const testFilePath = 'src/pages/AIContextWindow.jsx';
-      const contentResponse = await fetch(`/api/source-files/content?path=${encodeURIComponent(testFilePath)}`, {
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-
-      if (contentResponse.ok) {
-        const contentData = await contentResponse.json();
+      try {
+        const contentData = await apiClient.get(`source-files/content?path=${encodeURIComponent(testFilePath)}`);
         if (contentData.success) {
           setConnectionStatus({
             status: 'success',
             message: 'Connection successful!',
-            details: `Successfully connected to backend API. Found ${listData.files?.length || 0} files in src directory.`
+            details: `Successfully connected to backend at ${import.meta.env.VITE_API_BASE_URL}. Found ${listData.files?.length || 0} files in src directory.`
           });
         } else {
           setConnectionStatus({
@@ -401,26 +382,29 @@ export default ExampleComponent;`);
             details: `Can list files but cannot read content: ${contentData.message}`
           });
         }
-      } else {
+      } catch (contentError) {
         setConnectionStatus({
           status: 'warning',
           message: 'Partial connection success',
-          details: `Can list files but file content access failed (${contentResponse.status})`
+          details: `Can list files but file content access failed: ${contentError.message}`
         });
       }
     } catch (error) {
-      // Enhanced error detection for common connectivity issues
+      // Enhanced error detection for API client errors
       let errorMessage = 'Connection test failed';
       let errorDetails = '';
       
-      if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
-        errorMessage = 'Backend server not running';
-        errorDetails = 'Cannot connect to backend server. Start with: npm run dev (backend) or npm start';
-      } else if (error.message.includes('NetworkError') || error.message.includes('ECONNREFUSED')) {
-        errorMessage = 'Network connection failed';
-        errorDetails = 'Backend server appears to be offline. Check if it\'s running on port 3000.';
+      if (error.message.includes('Network error: Unable to connect to server')) {
+        errorMessage = 'Backend server offline';
+        errorDetails = `Cannot connect to backend at ${import.meta.env.VITE_API_BASE_URL}. Check Render deployment status.`;
+      } else if (error.status === 401) {
+        errorMessage = 'Authentication failed';
+        errorDetails = 'Please refresh and log in again as a store owner.';
+      } else if (error.status === 403) {
+        errorMessage = 'Access denied';
+        errorDetails = 'Verify you have store owner permissions.';
       } else {
-        errorDetails = `Network error: ${error.message}. Ensure backend server is running.`;
+        errorDetails = `Error: ${error.message}. Backend: ${import.meta.env.VITE_API_BASE_URL}`;
       }
       
       setConnectionStatus({
