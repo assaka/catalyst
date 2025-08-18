@@ -19,6 +19,8 @@ const ModeHeader = ({ user, currentMode, showExtraButtons = false, extraButtons 
   const navigate = useNavigate();
   const location = useLocation();
   const selectedStore = JSON.parse(localStorage.getItem('selectedStore') || '{}');
+  
+  // Test comment to trigger deployment sync
 
   const switchToAdmin = () => {
     if (currentMode !== 'admin') {
