@@ -567,16 +567,19 @@ export default function Layout({ children, currentPageName }) {
         }
       `}</style>
 
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Hide admin sidebar in Editor Mode */}
+      {!isEditorPage && (
+        <>
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
 
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white material-elevation-2 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+          <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white material-elevation-2 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+            sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          }`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -747,21 +750,25 @@ export default function Layout({ children, currentPageName }) {
           </nav>
         </div>
       </div>
+        </>
+      )}
 
       <div className="flex-1 flex flex-col">
         <ModeHeader 
           user={user}
           currentMode={currentMode}
-          showExtraButtons={true}
+          showExtraButtons={!isEditorPage}
           extraButtons={
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
+            !isEditorPage ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            ) : null
           }
         />
 

@@ -21,29 +21,195 @@ const FileTreeNavigator = ({
   const [loading, setLoading] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
 
-  // Fetch file tree from backend
+  // Demo file tree representing the current codebase
+  const getDemoFileTree = () => [
+    {
+      name: 'src',
+      type: 'directory',
+      path: 'src',
+      children: [
+        {
+          name: 'components',
+          type: 'directory',
+          path: 'src/components',
+          children: [
+            {
+              name: 'ui',
+              type: 'directory',
+              path: 'src/components/ui',
+              children: [
+                { name: 'button.jsx', type: 'file', path: 'src/components/ui/button.jsx' },
+                { name: 'input.jsx', type: 'file', path: 'src/components/ui/input.jsx' },
+                { name: 'card.jsx', type: 'file', path: 'src/components/ui/card.jsx' }
+              ]
+            },
+            {
+              name: 'shared',
+              type: 'directory',
+              path: 'src/components/shared',
+              children: [
+                { name: 'ModeHeader.jsx', type: 'file', path: 'src/components/shared/ModeHeader.jsx' },
+                { name: 'Header.jsx', type: 'file', path: 'src/components/shared/Header.jsx' }
+              ]
+            },
+            {
+              name: 'ai-context',
+              type: 'directory', 
+              path: 'src/components/ai-context',
+              children: [
+                { name: 'FileTreeNavigator.jsx', type: 'file', path: 'src/components/ai-context/FileTreeNavigator.jsx' },
+                { name: 'CodeEditor.jsx', type: 'file', path: 'src/components/ai-context/CodeEditor.jsx' },
+                { name: 'AIContextWindow.jsx', type: 'file', path: 'src/components/ai-context/AIContextWindow.jsx' },
+                { name: 'PreviewSystem.jsx', type: 'file', path: 'src/components/ai-context/PreviewSystem.jsx' }
+              ]
+            }
+          ]
+        },
+        {
+          name: 'pages',
+          type: 'directory',
+          path: 'src/pages',
+          children: [
+            { name: 'index.jsx', type: 'file', path: 'src/pages/index.jsx' },
+            { name: 'Layout.jsx', type: 'file', path: 'src/pages/Layout.jsx' },
+            { name: 'Dashboard.jsx', type: 'file', path: 'src/pages/Dashboard.jsx' },
+            { name: 'Products.jsx', type: 'file', path: 'src/pages/Products.jsx' },
+            { name: 'AIContextWindow.jsx', type: 'file', path: 'src/pages/AIContextWindow.jsx' }
+          ]
+        },
+        {
+          name: 'hooks',
+          type: 'directory',
+          path: 'src/hooks',
+          children: [
+            { name: 'useAuth.js', type: 'file', path: 'src/hooks/useAuth.js' },
+            { name: 'useRoleProtection.js', type: 'file', path: 'src/hooks/useRoleProtection.js' }
+          ]
+        },
+        {
+          name: 'utils',
+          type: 'directory',
+          path: 'src/utils',
+          children: [
+            { name: 'index.js', type: 'file', path: 'src/utils/index.js' },
+            { name: 'auth.js', type: 'file', path: 'src/utils/auth.js' },
+            { name: 'urlUtils.js', type: 'file', path: 'src/utils/urlUtils.js' }
+          ]
+        }
+      ]
+    },
+    {
+      name: 'backend',
+      type: 'directory',
+      path: 'backend',
+      children: [
+        {
+          name: 'src',
+          type: 'directory',
+          path: 'backend/src',
+          children: [
+            {
+              name: 'routes',
+              type: 'directory',
+              path: 'backend/src/routes',
+              children: [
+                { name: 'auth.js', type: 'file', path: 'backend/src/routes/auth.js' },
+                { name: 'products.js', type: 'file', path: 'backend/src/routes/products.js' },
+                { name: 'ai-context.js', type: 'file', path: 'backend/src/routes/ai-context.js' }
+              ]
+            },
+            {
+              name: 'services',
+              type: 'directory',
+              path: 'backend/src/services',
+              children: [
+                { name: 'ast-analyzer.js', type: 'file', path: 'backend/src/services/ast-analyzer.js' },
+                { name: 'json-patch-service.js', type: 'file', path: 'backend/src/services/json-patch-service.js' },
+                { name: 'conflict-detector.js', type: 'file', path: 'backend/src/services/conflict-detector.js' }
+              ]
+            },
+            {
+              name: 'models',
+              type: 'directory',
+              path: 'backend/src/models',
+              children: [
+                { name: 'index.js', type: 'file', path: 'backend/src/models/index.js' },
+                { name: 'User.js', type: 'file', path: 'backend/src/models/User.js' },
+                { name: 'Product.js', type: 'file', path: 'backend/src/models/Product.js' }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    { name: 'package.json', type: 'file', path: 'package.json' },
+    { name: 'README.md', type: 'file', path: 'README.md' },
+    { name: '.gitignore', type: 'file', path: '.gitignore' }
+  ];
+
+  // Fetch file tree from backend with fallback to demo
   const fetchFileTree = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/ai-context/file-tree', {
+      const response = await fetch('/api/source-files/list?path=src', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         }
       });
 
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          setFileTree(data.data.tree);
+          // Convert the flat file list to a tree structure
+          const convertToTree = (files) => {
+            const tree = [];
+            const pathMap = new Map();
+            
+            // Create tree structure from flat file list
+            files.forEach(file => {
+              const parts = file.path.split('/');
+              let currentPath = '';
+              let currentLevel = tree;
+              
+              parts.forEach((part, index) => {
+                currentPath = currentPath ? `${currentPath}/${part}` : part;
+                
+                if (!pathMap.has(currentPath)) {
+                  const node = {
+                    name: part,
+                    path: currentPath,
+                    type: index === parts.length - 1 ? file.type : 'directory',
+                    children: index === parts.length - 1 ? undefined : [],
+                    isSupported: file.type === 'file' ? true : undefined,
+                    extension: file.extension
+                  };
+                  
+                  pathMap.set(currentPath, node);
+                  currentLevel.push(node);
+                  currentLevel = node.children || [];
+                } else {
+                  currentLevel = pathMap.get(currentPath).children || [];
+                }
+              });
+            });
+            
+            return tree;
+          };
+          
+          setFileTree(convertToTree(data.files));
+          setLoading(false);
+          return;
         }
       }
     } catch (error) {
-      console.error('Failed to fetch file tree:', error);
-    } finally {
-      setLoading(false);
+      console.error('Failed to fetch file tree from API, using demo structure:', error);
     }
+    
+    // Fallback to demo file tree representing the current codebase
+    setFileTree(getDemoFileTree());
+    setLoading(false);
   }, []);
 
   // Load file tree on mount

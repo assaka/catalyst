@@ -38,24 +38,36 @@ const AIContextWindowPage = () => {
     try {
       // For now, we'll use a simple fetch to the source files API
       // In a real implementation, this would integrate with the file system
-      const response = await fetch(`/api/source-files${filePath}`, {
+      const response = await fetch(`/api/source-files/content?path=${encodeURIComponent(filePath)}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
         }
       });
 
       if (response.ok) {
-        const content = await response.text();
-        setSourceCode(content);
-        setSelectedFile({
-          path: filePath,
-          name: filePath.split('/').pop(),
-          type: 'file',
-          isSupported: true
-        });
-        
-        // Update URL
-        setSearchParams({ file: filePath });
+        const data = await response.json();
+        if (data.success) {
+          setSourceCode(data.content);
+          setSelectedFile({
+            path: filePath,
+            name: filePath.split('/').pop(),
+            type: 'file',
+            isSupported: true
+          });
+          
+          // Update URL
+          setSearchParams({ file: filePath });
+        } else {
+          console.error('Failed to load file:', data.message);
+          // Fallback to empty content for demo
+          setSourceCode('// File not found or access denied\n// You can still test the AI Context Window with this placeholder');
+          setSelectedFile({
+            path: filePath,
+            name: filePath.split('/').pop() || 'unknown.js',
+            type: 'file',
+            isSupported: true
+          });
+        }
       } else {
         console.error('Failed to load file:', response.statusText);
         // Fallback to empty content for demo
