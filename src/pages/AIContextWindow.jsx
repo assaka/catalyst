@@ -121,8 +121,15 @@ export default DiagnosticComponent;`;
             ];
             break;
           case 404:
-            errorType = 'File Not Found';
-            troubleshooting = [
+            // Check if this is a server connectivity issue vs actual file not found
+            const isServerIssue = response.url && !response.url.includes('/api/source-files/');
+            errorType = isServerIssue ? 'Server Not Running' : 'File Not Found';
+            troubleshooting = isServerIssue ? [
+              'Backend server appears to be offline',
+              'Start the backend server (usually: npm run dev or npm start)',
+              'Verify the server is running on the correct port (typically 3000)',
+              'Check server logs for startup errors'
+            ] : [
               'Check if the file exists at the specified path',
               'Verify the file path is correct',
               'Try selecting a different file from the tree'
@@ -186,8 +193,35 @@ export default ErrorDiagnostic;`;
       }
     } catch (error) {
       console.error('Error loading file:', error);
+      
+      // Enhanced network error handling
+      let errorInfo = '';
+      if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+        errorInfo = `// Network Error: Cannot connect to backend server
+// File Path: ${filePath}
+// 
+// The backend server appears to be offline.
+// 
+// To fix this issue:
+// 1. Start the backend server: npm run dev (in backend directory)
+// 2. Or start full stack: npm start (in root directory)
+// 3. Verify server is running on port 3000
+// 4. Check server logs for any startup errors
+//
+// You can still test the AI Context Window with this placeholder
+//`;
+      } else {
+        errorInfo = `// Network Error: ${error.message}
+// File Path: ${filePath}
+// 
+// Connection to backend failed. Ensure the server is running.
+//
+// You can still test the AI Context Window with this placeholder
+//`;
+      }
+      
       // Fallback for demo purposes
-      setSourceCode(`// Demo mode - simulating file: ${filePath}
+      setSourceCode(errorInfo + `
 import React, { useState, useEffect } from 'react';
 
 const ExampleComponent = () => {
@@ -316,7 +350,7 @@ export default ExampleComponent;`);
             errorDetails = 'Access denied. Verify you have store owner permissions.';
             break;
           case 404:
-            errorDetails = 'API endpoint not found. Backend may not be running.';
+            errorDetails = 'Backend server not running. Start with: npm run dev (backend) or npm start';
             break;
           case 500:
             errorDetails = 'Server error. Check backend logs for details.';
@@ -375,10 +409,24 @@ export default ExampleComponent;`);
         });
       }
     } catch (error) {
+      // Enhanced error detection for common connectivity issues
+      let errorMessage = 'Connection test failed';
+      let errorDetails = '';
+      
+      if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+        errorMessage = 'Backend server not running';
+        errorDetails = 'Cannot connect to backend server. Start with: npm run dev (backend) or npm start';
+      } else if (error.message.includes('NetworkError') || error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Network connection failed';
+        errorDetails = 'Backend server appears to be offline. Check if it\'s running on port 3000.';
+      } else {
+        errorDetails = `Network error: ${error.message}. Ensure backend server is running.`;
+      }
+      
       setConnectionStatus({
         status: 'error',
-        message: 'Connection test failed',
-        details: `Network error: ${error.message}. Ensure backend server is running.`
+        message: errorMessage,
+        details: errorDetails
       });
     }
   }, []);
