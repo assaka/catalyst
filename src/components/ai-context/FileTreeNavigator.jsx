@@ -21,6 +21,14 @@ const FileTreeNavigator = ({
   const [loading, setLoading] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
 
+  // Get supported file types for the AI Context Window
+  const getSupportedFileTypes = () => [
+    '.js', '.jsx', '.ts', '.tsx', '.json', '.css', '.scss', '.less',
+    '.html', '.htm', '.xml', '.md', '.txt', '.py', '.java', '.c', '.cpp',
+    '.h', '.hpp', '.cs', '.php', '.rb', '.go', '.rs', '.swift', '.kt',
+    '.scala', '.clj', '.elm', '.hs', '.ml', '.fs', '.vb', '.sql'
+  ];
+
   // Demo file tree representing the current codebase
   const getDemoFileTree = () => [
     {
@@ -38,9 +46,9 @@ const FileTreeNavigator = ({
               type: 'directory',
               path: 'src/components/ui',
               children: [
-                { name: 'button.jsx', type: 'file', path: 'src/components/ui/button.jsx' },
-                { name: 'input.jsx', type: 'file', path: 'src/components/ui/input.jsx' },
-                { name: 'card.jsx', type: 'file', path: 'src/components/ui/card.jsx' }
+                { name: 'button.jsx', type: 'file', path: 'src/components/ui/button.jsx', isSupported: true, extension: '.jsx' },
+                { name: 'input.jsx', type: 'file', path: 'src/components/ui/input.jsx', isSupported: true, extension: '.jsx' },
+                { name: 'card.jsx', type: 'file', path: 'src/components/ui/card.jsx', isSupported: true, extension: '.jsx' }
               ]
             },
             {
@@ -48,8 +56,8 @@ const FileTreeNavigator = ({
               type: 'directory',
               path: 'src/components/shared',
               children: [
-                { name: 'ModeHeader.jsx', type: 'file', path: 'src/components/shared/ModeHeader.jsx' },
-                { name: 'Header.jsx', type: 'file', path: 'src/components/shared/Header.jsx' }
+                { name: 'ModeHeader.jsx', type: 'file', path: 'src/components/shared/ModeHeader.jsx', isSupported: true, extension: '.jsx' },
+                { name: 'Header.jsx', type: 'file', path: 'src/components/shared/Header.jsx', isSupported: true, extension: '.jsx' }
               ]
             },
             {
@@ -57,10 +65,10 @@ const FileTreeNavigator = ({
               type: 'directory', 
               path: 'src/components/ai-context',
               children: [
-                { name: 'FileTreeNavigator.jsx', type: 'file', path: 'src/components/ai-context/FileTreeNavigator.jsx' },
-                { name: 'CodeEditor.jsx', type: 'file', path: 'src/components/ai-context/CodeEditor.jsx' },
-                { name: 'AIContextWindow.jsx', type: 'file', path: 'src/components/ai-context/AIContextWindow.jsx' },
-                { name: 'PreviewSystem.jsx', type: 'file', path: 'src/components/ai-context/PreviewSystem.jsx' }
+                { name: 'FileTreeNavigator.jsx', type: 'file', path: 'src/components/ai-context/FileTreeNavigator.jsx', isSupported: true, extension: '.jsx' },
+                { name: 'CodeEditor.jsx', type: 'file', path: 'src/components/ai-context/CodeEditor.jsx', isSupported: true, extension: '.jsx' },
+                { name: 'AIContextWindow.jsx', type: 'file', path: 'src/components/ai-context/AIContextWindow.jsx', isSupported: true, extension: '.jsx' },
+                { name: 'PreviewSystem.jsx', type: 'file', path: 'src/components/ai-context/PreviewSystem.jsx', isSupported: true, extension: '.jsx' }
               ]
             }
           ]
@@ -70,11 +78,11 @@ const FileTreeNavigator = ({
           type: 'directory',
           path: 'src/pages',
           children: [
-            { name: 'index.jsx', type: 'file', path: 'src/pages/index.jsx' },
-            { name: 'Layout.jsx', type: 'file', path: 'src/pages/Layout.jsx' },
-            { name: 'Dashboard.jsx', type: 'file', path: 'src/pages/Dashboard.jsx' },
-            { name: 'Products.jsx', type: 'file', path: 'src/pages/Products.jsx' },
-            { name: 'AIContextWindow.jsx', type: 'file', path: 'src/pages/AIContextWindow.jsx' }
+            { name: 'index.jsx', type: 'file', path: 'src/pages/index.jsx', isSupported: true, extension: '.jsx' },
+            { name: 'Layout.jsx', type: 'file', path: 'src/pages/Layout.jsx', isSupported: true, extension: '.jsx' },
+            { name: 'Dashboard.jsx', type: 'file', path: 'src/pages/Dashboard.jsx', isSupported: true, extension: '.jsx' },
+            { name: 'Products.jsx', type: 'file', path: 'src/pages/Products.jsx', isSupported: true, extension: '.jsx' },
+            { name: 'AIContextWindow.jsx', type: 'file', path: 'src/pages/AIContextWindow.jsx', isSupported: true, extension: '.jsx' }
           ]
         },
         {
@@ -82,8 +90,8 @@ const FileTreeNavigator = ({
           type: 'directory',
           path: 'src/hooks',
           children: [
-            { name: 'useAuth.js', type: 'file', path: 'src/hooks/useAuth.js' },
-            { name: 'useRoleProtection.js', type: 'file', path: 'src/hooks/useRoleProtection.js' }
+            { name: 'useAuth.js', type: 'file', path: 'src/hooks/useAuth.js', isSupported: true, extension: '.js' },
+            { name: 'useRoleProtection.js', type: 'file', path: 'src/hooks/useRoleProtection.js', isSupported: true, extension: '.js' }
           ]
         },
         {
@@ -91,9 +99,9 @@ const FileTreeNavigator = ({
           type: 'directory',
           path: 'src/utils',
           children: [
-            { name: 'index.js', type: 'file', path: 'src/utils/index.js' },
-            { name: 'auth.js', type: 'file', path: 'src/utils/auth.js' },
-            { name: 'urlUtils.js', type: 'file', path: 'src/utils/urlUtils.js' }
+            { name: 'index.js', type: 'file', path: 'src/utils/index.js', isSupported: true, extension: '.js' },
+            { name: 'auth.js', type: 'file', path: 'src/utils/auth.js', isSupported: true, extension: '.js' },
+            { name: 'urlUtils.js', type: 'file', path: 'src/utils/urlUtils.js', isSupported: true, extension: '.js' }
           ]
         }
       ]
@@ -113,9 +121,9 @@ const FileTreeNavigator = ({
               type: 'directory',
               path: 'backend/src/routes',
               children: [
-                { name: 'auth.js', type: 'file', path: 'backend/src/routes/auth.js' },
-                { name: 'products.js', type: 'file', path: 'backend/src/routes/products.js' },
-                { name: 'ai-context.js', type: 'file', path: 'backend/src/routes/ai-context.js' }
+                { name: 'auth.js', type: 'file', path: 'backend/src/routes/auth.js', isSupported: true, extension: '.js' },
+                { name: 'products.js', type: 'file', path: 'backend/src/routes/products.js', isSupported: true, extension: '.js' },
+                { name: 'ai-context.js', type: 'file', path: 'backend/src/routes/ai-context.js', isSupported: true, extension: '.js' }
               ]
             },
             {
@@ -123,9 +131,9 @@ const FileTreeNavigator = ({
               type: 'directory',
               path: 'backend/src/services',
               children: [
-                { name: 'ast-analyzer.js', type: 'file', path: 'backend/src/services/ast-analyzer.js' },
-                { name: 'json-patch-service.js', type: 'file', path: 'backend/src/services/json-patch-service.js' },
-                { name: 'conflict-detector.js', type: 'file', path: 'backend/src/services/conflict-detector.js' }
+                { name: 'ast-analyzer.js', type: 'file', path: 'backend/src/services/ast-analyzer.js', isSupported: true, extension: '.js' },
+                { name: 'json-patch-service.js', type: 'file', path: 'backend/src/services/json-patch-service.js', isSupported: true, extension: '.js' },
+                { name: 'conflict-detector.js', type: 'file', path: 'backend/src/services/conflict-detector.js', isSupported: true, extension: '.js' }
               ]
             },
             {
@@ -133,18 +141,18 @@ const FileTreeNavigator = ({
               type: 'directory',
               path: 'backend/src/models',
               children: [
-                { name: 'index.js', type: 'file', path: 'backend/src/models/index.js' },
-                { name: 'User.js', type: 'file', path: 'backend/src/models/User.js' },
-                { name: 'Product.js', type: 'file', path: 'backend/src/models/Product.js' }
+                { name: 'index.js', type: 'file', path: 'backend/src/models/index.js', isSupported: true, extension: '.js' },
+                { name: 'User.js', type: 'file', path: 'backend/src/models/User.js', isSupported: true, extension: '.js' },
+                { name: 'Product.js', type: 'file', path: 'backend/src/models/Product.js', isSupported: true, extension: '.js' }
               ]
             }
           ]
         }
       ]
     },
-    { name: 'package.json', type: 'file', path: 'package.json' },
-    { name: 'README.md', type: 'file', path: 'README.md' },
-    { name: '.gitignore', type: 'file', path: '.gitignore' }
+    { name: 'package.json', type: 'file', path: 'package.json', isSupported: true, extension: '.json' },
+    { name: 'README.md', type: 'file', path: 'README.md', isSupported: true, extension: '.md' },
+    { name: '.gitignore', type: 'file', path: '.gitignore', isSupported: true, extension: '' }
   ];
 
   // Fetch file tree from backend with fallback to demo
@@ -177,13 +185,17 @@ const FileTreeNavigator = ({
                 currentPath = currentPath ? `${currentPath}/${part}` : part;
                 
                 if (!pathMap.has(currentPath)) {
+                  const isFile = index === parts.length - 1 && file.type === 'file';
+                  const extension = isFile ? file.extension : null;
+                  const isSupported = isFile ? getSupportedFileTypes().includes(extension) : true;
+                  
                   const node = {
                     name: part,
                     path: currentPath,
-                    type: index === parts.length - 1 ? file.type : 'directory',
-                    children: index === parts.length - 1 ? undefined : [],
-                    isSupported: file.type === 'file' ? true : undefined,
-                    extension: file.extension
+                    type: isFile ? 'file' : 'directory',
+                    children: isFile ? undefined : [],
+                    isSupported: isSupported,
+                    extension: extension
                   };
                   
                   pathMap.set(currentPath, node);
