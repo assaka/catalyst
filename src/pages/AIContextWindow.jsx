@@ -23,6 +23,7 @@ const AIContextWindowPage = () => {
   const [cursorPosition, setCursorPosition] = useState({ line: 0, column: 0 });
   const [selection, setSelection] = useState(null);
   const [isFileLoading, setIsFileLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState(null);
 
   // Load file from URL parameter on mount
   useEffect(() => {
@@ -59,8 +60,35 @@ const AIContextWindowPage = () => {
           setSearchParams({ file: filePath });
         } else {
           console.error('Failed to load file:', data.message);
-          // Fallback to empty content for demo
-          setSourceCode('// File not found or access denied\n// You can still test the AI Context Window with this placeholder');
+          // Provide detailed diagnostic information
+          const diagnosticInfo = `// API Error: ${data.message}
+// File Path: ${filePath}
+// Status: API responded but file loading failed
+// 
+// Troubleshooting:
+// 1. Check if the file exists at: ${filePath}
+// 2. Verify file permissions
+// 3. Ensure path is within allowed directories
+//
+// You can still test the AI Context Window with this placeholder
+//
+import React, { useState, useEffect } from 'react';
+
+const DiagnosticComponent = () => {
+  const [error] = useState('${data.message}');
+  
+  return (
+    <div>
+      <h2>File Loading Error</h2>
+      <p>Error: {error}</p>
+      <p>Attempted to load: ${filePath}</p>
+    </div>
+  );
+};
+
+export default DiagnosticComponent;`;
+          
+          setSourceCode(diagnosticInfo);
           setSelectedFile({
             path: filePath,
             name: filePath.split('/').pop() || 'unknown.js',
@@ -70,8 +98,85 @@ const AIContextWindowPage = () => {
         }
       } else {
         console.error('Failed to load file:', response.statusText);
-        // Fallback to empty content for demo
-        setSourceCode('// File not found or access denied\n// You can still test the AI Context Window with this placeholder');
+        
+        // Determine specific error type based on status
+        let errorType = 'Unknown Error';
+        let troubleshooting = [];
+        
+        switch (response.status) {
+          case 401:
+            errorType = 'Authentication Error';
+            troubleshooting = [
+              'Check if you are logged in as a store owner',
+              'Verify authentication token in browser storage',
+              'Try refreshing the page and logging in again'
+            ];
+            break;
+          case 403:
+            errorType = 'Access Denied';
+            troubleshooting = [
+              'File path may be outside allowed directories',
+              'Check if file path starts with "src/"',
+              'Verify file permissions'
+            ];
+            break;
+          case 404:
+            errorType = 'File Not Found';
+            troubleshooting = [
+              'Check if the file exists at the specified path',
+              'Verify the file path is correct',
+              'Try selecting a different file from the tree'
+            ];
+            break;
+          case 500:
+            errorType = 'Server Error';
+            troubleshooting = [
+              'Check if the backend server is running',
+              'Verify server logs for detailed error information',
+              'Contact system administrator if issue persists'
+            ];
+            break;
+          default:
+            errorType = `HTTP ${response.status} Error`;
+            troubleshooting = [
+              'Check network connection',
+              'Verify backend server is accessible',
+              'Try refreshing the page'
+            ];
+        }
+        
+        const diagnosticInfo = `// ${errorType}: ${response.statusText}
+// File Path: ${filePath}
+// HTTP Status: ${response.status}
+// 
+// Troubleshooting Steps:
+${troubleshooting.map((step, i) => `// ${i + 1}. ${step}`).join('\n')}
+//
+// Authentication Token: ${localStorage.getItem('store_owner_auth_token') ? 'Present' : 'Missing'}
+//
+// You can still test the AI Context Window with this placeholder
+//
+import React, { useState } from 'react';
+
+const ErrorDiagnostic = () => {
+  return (
+    <div className="p-4 border rounded bg-red-50">
+      <h3 className="text-red-800 font-semibold">${errorType}</h3>
+      <p className="text-red-600">Status: ${response.status} ${response.statusText}</p>
+      <p className="text-red-600">File: ${filePath}</p>
+      <div className="mt-2">
+        <p className="text-sm text-red-700">Troubleshooting:</p>
+        <ul className="text-sm text-red-700 list-disc ml-4">
+          ${troubleshooting.map(step => `<li>${step}</li>`).join('\n          ')}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
+export default ErrorDiagnostic;`;
+        
+        setSourceCode(diagnosticInfo);
         setSelectedFile({
           path: filePath,
           name: filePath.split('/').pop() || 'unknown.js',
@@ -177,6 +282,107 @@ export default ExampleComponent;`);
     console.log('File tree refreshed');
   }, []);
 
+  // Test API connection
+  const testConnection = useCallback(async () => {
+    setConnectionStatus({ status: 'testing', message: 'Testing connection...' });
+    
+    try {
+      // Test authentication and basic API access
+      const authToken = localStorage.getItem('store_owner_auth_token');
+      
+      if (!authToken) {
+        setConnectionStatus({
+          status: 'error',
+          message: 'No authentication token found. Please log in as a store owner.',
+          details: 'The AI Context Window requires store owner authentication to access source files.'
+        });
+        return;
+      }
+
+      // Test the list endpoint first
+      const listResponse = await fetch('/api/source-files/list?path=src', {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!listResponse.ok) {
+        let errorDetails = '';
+        switch (listResponse.status) {
+          case 401:
+            errorDetails = 'Authentication failed. Please refresh and log in again.';
+            break;
+          case 403:
+            errorDetails = 'Access denied. Verify you have store owner permissions.';
+            break;
+          case 404:
+            errorDetails = 'API endpoint not found. Backend may not be running.';
+            break;
+          case 500:
+            errorDetails = 'Server error. Check backend logs for details.';
+            break;
+          default:
+            errorDetails = `HTTP ${listResponse.status}: ${listResponse.statusText}`;
+        }
+        
+        setConnectionStatus({
+          status: 'error',
+          message: `API connection failed (${listResponse.status})`,
+          details: errorDetails
+        });
+        return;
+      }
+
+      const listData = await listResponse.json();
+      
+      if (!listData.success) {
+        setConnectionStatus({
+          status: 'error',
+          message: 'API responded but failed to list files',
+          details: listData.message || 'Unknown API error'
+        });
+        return;
+      }
+
+      // Test loading a specific file
+      const testFilePath = 'src/pages/AIContextWindow.jsx';
+      const contentResponse = await fetch(`/api/source-files/content?path=${encodeURIComponent(testFilePath)}`, {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (contentResponse.ok) {
+        const contentData = await contentResponse.json();
+        if (contentData.success) {
+          setConnectionStatus({
+            status: 'success',
+            message: 'Connection successful!',
+            details: `Successfully connected to backend API. Found ${listData.files?.length || 0} files in src directory.`
+          });
+        } else {
+          setConnectionStatus({
+            status: 'warning',
+            message: 'API connected but file access limited',
+            details: `Can list files but cannot read content: ${contentData.message}`
+          });
+        }
+      } else {
+        setConnectionStatus({
+          status: 'warning',
+          message: 'Partial connection success',
+          details: `Can list files but file content access failed (${contentResponse.status})`
+        });
+      }
+    } catch (error) {
+      setConnectionStatus({
+        status: 'error',
+        message: 'Connection test failed',
+        details: `Network error: ${error.message}. Ensure backend server is running.`
+      });
+    }
+  }, []);
+
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -188,6 +394,31 @@ export default ExampleComponent;`);
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Natural language code editing with AST-aware intelligence
           </p>
+        </div>
+
+        {/* Connection Status and Test Button */}
+        <div className="flex items-center space-x-4">
+          {connectionStatus && (
+            <div className={`p-2 rounded-md text-xs ${
+              connectionStatus.status === 'success' ? 'bg-green-100 text-green-800' :
+              connectionStatus.status === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+              connectionStatus.status === 'error' ? 'bg-red-100 text-red-800' :
+              'bg-blue-100 text-blue-800'
+            }`}>
+              <div className="font-medium">{connectionStatus.message}</div>
+              {connectionStatus.details && (
+                <div className="mt-1">{connectionStatus.details}</div>
+              )}
+            </div>
+          )}
+          
+          <button
+            onClick={testConnection}
+            disabled={connectionStatus?.status === 'testing'}
+            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {connectionStatus?.status === 'testing' ? 'Testing...' : 'Test Connection'}
+          </button>
         </div>
         
         {selectedFile && (
@@ -251,9 +482,9 @@ export default ExampleComponent;`);
                 </>
               ) : (
                 <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-                  <div className="text-center text-gray-500 dark:text-gray-400">
+                  <div className="text-center text-gray-500 dark:text-gray-400 max-w-md">
                     <p className="text-lg mb-2">Select a file to begin editing</p>
-                    <p className="text-sm">
+                    <p className="text-sm mb-4">
                       Choose a file from the navigator or{' '}
                       <button
                         onClick={() => loadFileContent('/demo/example.jsx')}
@@ -262,6 +493,23 @@ export default ExampleComponent;`);
                         load a demo file
                       </button>
                     </p>
+                    
+                    {!connectionStatus && (
+                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-700 mb-2">
+                          <strong>Having trouble loading files?</strong>
+                        </p>
+                        <p className="text-xs text-blue-600 mb-3">
+                          Click "Test Connection" in the header to diagnose API access issues.
+                        </p>
+                        <button
+                          onClick={testConnection}
+                          className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                        >
+                          Test API Connection
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
