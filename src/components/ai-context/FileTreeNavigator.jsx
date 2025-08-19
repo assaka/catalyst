@@ -159,7 +159,7 @@ const FileTreeNavigator = ({
   const fetchFileTree = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/source-files/list?path=src', {
+      const response = await fetch('/api/proxy-source-files/list?path=src', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

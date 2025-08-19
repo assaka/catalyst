@@ -5,7 +5,11 @@ const path = require('path');
 const auth = require('../middleware/auth');
 
 // GitHub raw file base URL for the repository
+// Note: This always fetches from the 'main' branch, so it automatically
+// stays in sync when files change in Git. The content is live from GitHub.
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/assaka/catalyst/main';
+const GITHUB_REPO = 'assaka/catalyst';
+const GITHUB_BRANCH = 'main';
 
 // Helper function to fetch file from GitHub
 async function fetchFromGitHub(filePath) {
@@ -130,6 +134,51 @@ router.get('/content', auth, async (req, res) => {
   }
 });
 
+// Helper function to recursively fetch all files from GitHub
+async function fetchAllFilesRecursively(dirPath = 'src') {
+  const allFiles = [];
+  
+  async function fetchDirectory(currentPath) {
+    const githubApiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${currentPath}?ref=${GITHUB_BRANCH}`;
+    
+    try {
+      const response = await fetch(githubApiUrl, {
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'User-Agent': 'Catalyst-AI-Context-Window'
+        }
+      });
+      
+      if (!response.ok) {
+        console.log(`GitHub API failed for ${currentPath}: ${response.status}`);
+        return;
+      }
+      
+      const data = await response.json();
+      
+      for (const item of data) {
+        if (item.type === 'file') {
+          // Add file to our list
+          allFiles.push({
+            name: item.name,
+            type: 'file',
+            path: item.path,
+            extension: path.extname(item.name)
+          });
+        } else if (item.type === 'dir') {
+          // Recursively fetch subdirectory
+          await fetchDirectory(item.path);
+        }
+      }
+    } catch (error) {
+      console.log(`Error fetching directory ${currentPath}:`, error.message);
+    }
+  }
+  
+  await fetchDirectory(dirPath);
+  return allFiles;
+}
+
 // List files in a directory with fallback strategy
 router.get('/list', auth, async (req, res) => {
   try {
@@ -143,36 +192,17 @@ router.get('/list', auth, async (req, res) => {
       });
     }
 
-    // For listing, we'll use GitHub API to get directory contents
-    const githubApiUrl = `https://api.github.com/repos/assaka/catalyst/contents/${dirPath}`;
-    
+    // For listing, we'll use recursive GitHub API to get ALL files
     try {
-      const response = await fetch(githubApiUrl, {
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'User-Agent': 'Catalyst-AI-Context-Window'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`GitHub API failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Transform GitHub API response to match expected format
-      const files = data.map(item => ({
-        name: item.name,
-        type: item.type === 'dir' ? 'folder' : 'file',
-        path: item.path,
-        extension: item.type === 'file' ? path.extname(item.name) : null
-      }));
+      console.log(`Fetching recursive file listing for ${dirPath}...`);
+      const files = await fetchAllFilesRecursively(dirPath);
       
       res.json({
         success: true,
         files: files,
         path: dirPath,
-        source: 'github-api'
+        source: 'github-api-recursive',
+        totalFiles: files.length
       });
     } catch (githubError) {
       // Fallback to local filesystem for directory listing
