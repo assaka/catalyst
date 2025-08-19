@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronRight, ChevronDown, File, Folder, FolderOpen, Plus, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import apiClient from '@/api/client';
 
 /**
  * File Tree Navigator Component
@@ -159,61 +160,52 @@ const FileTreeNavigator = ({
   const fetchFileTree = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/proxy-source-files/list?path=src', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
-        }
-      });
+      const data = await apiClient.get('proxy-source-files/list?path=src');
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Convert the flat file list to a tree structure
-          const convertToTree = (files) => {
-            const tree = [];
-            const pathMap = new Map();
-            
-            // Create tree structure from flat file list
-            files.forEach(file => {
-              const parts = file.path.split('/');
-              let currentPath = '';
-              let currentLevel = tree;
-              
-              parts.forEach((part, index) => {
-                currentPath = currentPath ? `${currentPath}/${part}` : part;
-                
-                if (!pathMap.has(currentPath)) {
-                  const isFile = index === parts.length - 1 && file.type === 'file';
-                  const extension = isFile ? file.extension : null;
-                  const isSupported = isFile ? getSupportedFileTypes().includes(extension) : true;
-                  
-                  const node = {
-                    name: part,
-                    path: currentPath,
-                    type: isFile ? 'file' : 'directory',
-                    children: isFile ? undefined : [],
-                    isSupported: isSupported,
-                    extension: extension
-                  };
-                  
-                  pathMap.set(currentPath, node);
-                  currentLevel.push(node);
-                  currentLevel = node.children || [];
-                } else {
-                  currentLevel = pathMap.get(currentPath).children || [];
-                }
-              });
-            });
-            
-            return tree;
-          };
+      if (data && data.success) {
+        // Convert the flat file list to a tree structure
+        const convertToTree = (files) => {
+          const tree = [];
+          const pathMap = new Map();
           
-          setFileTree(convertToTree(data.files));
-          setLoading(false);
-          return;
-        }
+          // Create tree structure from flat file list
+          files.forEach(file => {
+            const parts = file.path.split('/');
+            let currentPath = '';
+            let currentLevel = tree;
+            
+            parts.forEach((part, index) => {
+              currentPath = currentPath ? `${currentPath}/${part}` : part;
+              
+              if (!pathMap.has(currentPath)) {
+                const isFile = index === parts.length - 1 && file.type === 'file';
+                const extension = isFile ? file.extension : null;
+                const isSupported = isFile ? getSupportedFileTypes().includes(extension) : true;
+                
+                const node = {
+                  name: part,
+                  path: currentPath,
+                  type: isFile ? 'file' : 'directory',
+                  children: isFile ? undefined : [],
+                  isSupported: isSupported,
+                  extension: extension
+                };
+                
+                pathMap.set(currentPath, node);
+                currentLevel.push(node);
+                currentLevel = node.children || [];
+              } else {
+                currentLevel = pathMap.get(currentPath).children || [];
+              }
+            });
+          });
+          
+          return tree;
+        };
+        
+        setFileTree(convertToTree(data.files));
+        setLoading(false);
+        return;
       }
     } catch (error) {
       console.error('Failed to fetch file tree from API, using demo structure:', error);
