@@ -38,8 +38,8 @@ const AIContextWindowPage = () => {
   const loadFileContent = useCallback(async (filePath) => {
     setIsFileLoading(true);
     try {
-      // Use the configured API client which handles the correct backend URL
-      const data = await apiClient.get(`source-files/content?path=${encodeURIComponent(filePath)}`);
+      // Use the proxy endpoint which fetches from GitHub when local filesystem unavailable
+      const data = await apiClient.get(`proxy-source-files/content?path=${encodeURIComponent(filePath)}`);
 
       if (data && data.success) {
         setSourceCode(data.content);
@@ -259,7 +259,7 @@ export default ExampleComponent;`);
       }
 
       // Test the list endpoint first using API client
-      const listData = await apiClient.get('source-files/list?path=src');
+      const listData = await apiClient.get('proxy-source-files/list?path=src');
       
       if (!listData.success) {
         setConnectionStatus({
@@ -273,7 +273,7 @@ export default ExampleComponent;`);
       // Test loading a specific file
       const testFilePath = 'src/pages/AIContextWindow.jsx';
       try {
-        const contentData = await apiClient.get(`source-files/content?path=${encodeURIComponent(testFilePath)}`);
+        const contentData = await apiClient.get(`proxy-source-files/content?path=${encodeURIComponent(testFilePath)}`);
         if (contentData.success) {
           setConnectionStatus({
             status: 'success',
