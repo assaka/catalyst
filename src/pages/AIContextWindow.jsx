@@ -659,160 +659,103 @@ export default ExampleComponent;`;
 
           <ResizableHandle />
 
-          {/* Code Editor, Preview, or Diff System - Based on View Mode */}
+          {/* Code Editor and Preview Panel */}
           <ResizablePanel defaultSize={55} minSize={30}>
-            {viewMode === 'code' ? (
-              <div className="h-full flex flex-col">
-                {selectedFile ? (
-                  <>
-                    {/* Editor Header */}
-                    <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          {selectedFile.name}
+            <div className="h-full flex flex-col">
+              {selectedFile ? (
+                <>
+                  {/* Header */}
+                  <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {selectedFile.name}
+                      </span>
+                      {modifiedFiles.includes(selectedFile.path) && (
+                        <span className="w-2 h-2 bg-yellow-500 rounded-full" title="Modified" />
+                      )}
+                      {currentPatch && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded dark:bg-green-900 dark:text-green-300">
+                          Preview Available
                         </span>
-                        {modifiedFiles.includes(selectedFile.path) && (
-                          <span className="w-2 h-2 bg-yellow-500 rounded-full" title="Modified" />
-                        )}
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded dark:bg-blue-900 dark:text-blue-300">
-                          Code Mode
-                        </span>
-                      </div>
-                      
-                      {isFileLoading && (
-                        <span className="text-xs text-gray-500">Loading...</span>
                       )}
                     </div>
+                    
+                    {isFileLoading && (
+                      <span className="text-xs text-gray-500">Loading...</span>
+                    )}
+                  </div>
 
-                    {/* Code Editor */}
-                    <CodeEditor
-                      value={sourceCode}
-                      onChange={handleCodeChange}
-                      fileName={selectedFile.name}
-                      onCursorPositionChange={setCursorPosition}
-                      onSelectionChange={setSelection}
-                      onManualEdit={handleManualEdit}
-                      originalCode={originalCode} // Use stored original baseline for diff detection
-                      enableDiffDetection={true}
-                      className="flex-1"
-                    />
-                  </>
-                ) : (
-                  <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
-                    <div className="text-center text-gray-500 dark:text-gray-400 max-w-md">
-                      <p className="text-lg mb-2">Select a file to begin editing</p>
-                      <p className="text-sm mb-4">
-                        Choose a file from the navigator or{' '}
+                  {/* Resizable Code Editor and Preview */}
+                  <div className="flex-1">
+                    <ResizablePanelGroup direction="horizontal" className="h-full">
+                      {/* Code Editor */}
+                      <ResizablePanel defaultSize={60} minSize={40}>
+                        <CodeEditor
+                          value={sourceCode}
+                          onChange={handleCodeChange}
+                          fileName={selectedFile.name}
+                          onCursorPositionChange={setCursorPosition}
+                          onSelectionChange={setSelection}
+                          onManualEdit={handleManualEdit}
+                          originalCode={originalCode}
+                          enableDiffDetection={true}
+                          className="h-full"
+                        />
+                      </ResizablePanel>
+
+                      <ResizableHandle />
+
+                      {/* Preview Panel */}
+                      <ResizablePanel defaultSize={40} minSize={30}>
+                        <PreviewSystem
+                          originalCode={originalCode}
+                          currentCode={sourceCode}
+                          patch={currentPatch}
+                          fileName={selectedFile?.name || ''}
+                          onApplyPatch={handleApplyPatch}
+                          onRejectPatch={handleRejectPatch}
+                          hasManualEdits={manualEditResult?.hasChanges || false}
+                          manualEditResult={manualEditResult}
+                          className="h-full"
+                        />
+                      </ResizablePanel>
+                    </ResizablePanelGroup>
+                  </div>
+                </>
+              ) : (
+                <div className="h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800">
+                  <div className="text-center text-gray-500 dark:text-gray-400 max-w-md">
+                    <p className="text-lg mb-2">Select a file to begin editing</p>
+                    <p className="text-sm mb-4">
+                      Choose a file from the navigator or{' '}
+                      <button
+                        onClick={() => loadFileContent('/demo/example.jsx')}
+                        className="text-blue-500 hover:text-blue-600 underline"
+                      >
+                        load a demo file
+                      </button>
+                    </p>
+                    
+                    {!connectionStatus && (
+                      <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-700 mb-2">
+                          <strong>Having trouble loading files?</strong>
+                        </p>
+                        <p className="text-xs text-blue-600 mb-3">
+                          Click "Test Connection" in the header to diagnose API access issues.
+                        </p>
                         <button
-                          onClick={() => loadFileContent('/demo/example.jsx')}
-                          className="text-blue-500 hover:text-blue-600 underline"
+                          onClick={testConnection}
+                          className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
                         >
-                          load a demo file
+                          Test API Connection
                         </button>
-                      </p>
-                      
-                      {!connectionStatus && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm text-blue-700 mb-2">
-                            <strong>Having trouble loading files?</strong>
-                          </p>
-                          <p className="text-xs text-blue-600 mb-3">
-                            Click "Test Connection" in the header to diagnose API access issues.
-                          </p>
-                          <button
-                            onClick={testConnection}
-                            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
-                          >
-                            Test API Connection
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            ) : viewMode === 'preview' ? (
-              /* Preview System */
-              <div className="h-full flex flex-col">
-                <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {selectedFile?.name || 'No File Selected'}
-                    </span>
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded dark:bg-green-900 dark:text-green-300">
-                      Preview Mode
-                    </span>
-                  </div>
-                  {currentPatch && (
-                    <span className="text-xs text-orange-600 dark:text-orange-400">
-                      Patch Available
-                    </span>
-                  )}
                 </div>
-                <PreviewSystem
-                  originalCode={originalCode}
-                  currentCode={sourceCode}
-                  patch={currentPatch}
-                  fileName={selectedFile?.name || ''}
-                  onApplyPatch={handleApplyPatch}
-                  onRejectPatch={handleRejectPatch}
-                  hasManualEdits={manualEditResult?.hasChanges || false}
-                  manualEditResult={manualEditResult}
-                  className="flex-1"
-                />
-              </div>
-            ) : viewMode === 'diff' ? (
-              /* Diff Preview System */
-              <div className="h-full flex flex-col">
-                <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {selectedFile?.name || 'No File Selected'}
-                    </span>
-                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded dark:bg-orange-900 dark:text-orange-300">
-                      Diff Mode
-                    </span>
-                  </div>
-                  {manualEditResult && (
-                    <span className="text-xs text-orange-600 dark:text-orange-400">
-                      {manualEditResult.changeCount} Changes
-                    </span>
-                  )}
-                </div>
-                <DiffPreviewSystem
-                  diffResult={manualEditResult}
-                  fileName={selectedFile?.name || ''}
-                  className="flex-1"
-                  onCopyDiff={(diffText) => console.log('Copied diff:', diffText)}
-                />
-              </div>
-            ) : (
-              /* Storefront Preview System */
-              <div className="h-full flex flex-col">
-                <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {selectedFile?.name || 'No File Selected'}
-                    </span>
-                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded dark:bg-purple-900 dark:text-purple-300">
-                      Storefront Mode
-                    </span>
-                  </div>
-                  {currentPatch && (
-                    <span className="text-xs text-orange-600 dark:text-orange-400">
-                      Patch Available
-                    </span>
-                  )}
-                </div>
-                <StorefrontPreview
-                  originalCode={sourceCode}
-                  patch={currentPatch}
-                  fileName={selectedFile?.name || ''}
-                  filePath={selectedFile?.path || ''}
-                  className="flex-1"
-                />
-              </div>
-            )}
+              )}
+            </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
@@ -821,7 +764,6 @@ export default ExampleComponent;`;
       <div className="p-2 border-t bg-white dark:bg-gray-800 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
         <div className="flex items-center space-x-4">
           <span>AI Context Window v1.0</span>
-          <span className="capitalize">{viewMode} Mode</span>
           {selectedFile && (
             <span>
               {sourceCode.split('\n').length} lines

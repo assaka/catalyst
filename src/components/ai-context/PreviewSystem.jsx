@@ -96,7 +96,7 @@ const PreviewSystem = ({
           }
         };
 
-        setVisualPreview(PreviewComponent);
+        setVisualPreview(() => PreviewComponent);
       } else {
         // For non-React files, show a message
         setPreviewError('Visual preview is only available for React components');
@@ -435,7 +435,7 @@ const PreviewSystem = ({
                     className="min-h-[400px] border rounded bg-white"
                   >
                     {/* Visual preview will be rendered here by React */}
-                    {React.createElement(visualPreview)}
+                    {visualPreview && <visualPreview />}
                   </div>
                 </div>
               </div>
