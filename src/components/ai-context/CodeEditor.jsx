@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 import { cn } from '@/lib/utils';
+import { detectManualEdit, createDebouncedDiffDetector } from '@/services/diff-detector';
 
 /**
  * Monaco Code Editor with AST-aware autocomplete
@@ -15,14 +16,57 @@ const CodeEditor = ({
   readOnly = false,
   className,
   onCursorPositionChange,
-  onSelectionChange
+  onSelectionChange,
+  onManualEdit, // Callback for when manual edits are detected
+  originalCode = '', // Original code baseline for diff detection
+  enableDiffDetection = false // Enable manual edit detection
 }) => {
   const [editorInstance, setEditorInstance] = useState(null);
   const [monacoInstance, setMonacoInstance] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [astData, setAstData] = useState(null);
   const [completionProvider, setCompletionProvider] = useState(null);
+  const [diffResult, setDiffResult] = useState(null); // Current diff result
+  const [isDiffMode, setIsDiffMode] = useState(false); // Show diff indicators in editor
   const astAnalysisRef = useRef(null);
+  const diffDetectorRef = useRef(null);
+  const originalCodeRef = useRef(originalCode);
+
+  // Initialize diff detection system
+  useEffect(() => {
+    if (enableDiffDetection && originalCode) {
+      originalCodeRef.current = originalCode;
+      
+      // Create debounced diff detector
+      if (diffDetectorRef.current) {
+        // Clean up existing detector
+        diffDetectorRef.current = null;
+      }
+      
+      diffDetectorRef.current = createDebouncedDiffDetector((diffResult) => {
+        setDiffResult(diffResult);
+        onManualEdit?.(diffResult);
+      }, 500);
+      
+      console.log('🔍 Diff detection enabled for file:', fileName);
+    }
+    
+    return () => {
+      // Cleanup on unmount
+      if (diffDetectorRef.current) {
+        diffDetectorRef.current = null;
+      }
+    };
+  }, [enableDiffDetection, originalCode, fileName, onManualEdit]);
+
+  // Update original code reference when it changes
+  useEffect(() => {
+    if (originalCode !== originalCodeRef.current) {
+      originalCodeRef.current = originalCode;
+      // Reset diff result when original code changes
+      setDiffResult(null);
+    }
+  }, [originalCode]);
 
   // Configure Monaco loader
   useEffect(() => {
@@ -357,7 +401,12 @@ const CodeEditor = ({
   // Handle value changes
   const handleChange = useCallback((value) => {
     onChange?.(value);
-  }, [onChange]);
+    
+    // Trigger manual edit detection if enabled
+    if (enableDiffDetection && diffDetectorRef.current && originalCodeRef.current) {
+      diffDetectorRef.current(value);
+    }
+  }, [onChange, enableDiffDetection]);
 
   // Get file language from extension
   const getLanguageFromFileName = useCallback((fileName) => {
@@ -393,6 +442,36 @@ const CodeEditor = ({
         </div>
       )}
 
+      {/* Diff Mode Controls */}
+      {enableDiffDetection && diffResult && (
+        <div className="absolute top-2 right-2 z-20 flex items-center space-x-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border p-2">
+          <button
+            onClick={() => setIsDiffMode(!isDiffMode)}
+            className={`px-3 py-1 text-xs rounded transition-colors ${
+              isDiffMode 
+                ? 'bg-orange-500 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'
+            }`}
+            title={isDiffMode ? 'Hide diff indicators' : 'Show diff indicators'}
+          >
+            {isDiffMode ? 'Hide Diff' : 'Show Diff'}
+          </button>
+          
+          <div className="text-xs text-gray-600 dark:text-gray-400">
+            {diffResult.changeCount} change{diffResult.changeCount !== 1 ? 's' : ''}
+          </div>
+          
+          <div className="flex items-center space-x-1 text-xs">
+            {diffResult.summary?.stats?.additions > 0 && (
+              <span className="text-green-600 dark:text-green-400">+{diffResult.summary.stats.additions}</span>
+            )}
+            {diffResult.summary?.stats?.deletions > 0 && (
+              <span className="text-red-600 dark:text-red-400">-{diffResult.summary.stats.deletions}</span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Monaco Editor */}
       <Editor
         height="100%"
@@ -421,12 +500,22 @@ const CodeEditor = ({
         }}
       />
 
-      {/* AST Data Indicator */}
-      {astData && (
-        <div className="absolute bottom-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded opacity-75">
-          AST Active
-        </div>
-      )}
+      {/* Status Indicators */}
+      <div className="absolute bottom-2 right-2 flex items-center space-x-2">
+        {/* Manual Edit Indicator */}
+        {enableDiffDetection && diffResult && (
+          <div className="bg-orange-500 text-white text-xs px-2 py-1 rounded opacity-90 animate-pulse">
+            Manual Edit Detected
+          </div>
+        )}
+        
+        {/* AST Data Indicator */}
+        {astData && (
+          <div className="bg-green-500 text-white text-xs px-2 py-1 rounded opacity-75">
+            AST Active
+          </div>
+        )}
+      </div>
     </div>
   );
 };

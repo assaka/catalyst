@@ -7,6 +7,7 @@ import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import PreviewSystem from '@/components/ai-context/PreviewSystem';
 import StorefrontPreview from '@/components/ai-context/StorefrontPreview';
+import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import apiClient from '@/api/client';
 
 /**
@@ -80,8 +81,9 @@ const AIContextWindowPage = () => {
   const [selection, setSelection] = useState(null);
   const [isFileLoading, setIsFileLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
-  const [viewMode, setViewMode] = useState('code'); // 'code', 'preview', or 'storefront'
+  const [viewMode, setViewMode] = useState('code'); // 'code', 'preview', 'diff', or 'storefront'
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
+  const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
 
   // Load file from URL parameter on mount
   useEffect(() => {
@@ -334,15 +336,35 @@ export default ExampleComponent;`);
     setCurrentPatch(null);
   }, []);
 
+  // Handle manual edit detection
+  const handleManualEdit = useCallback((diffResult) => {
+    setManualEditResult(diffResult);
+    console.log('Manual edit detected:', diffResult);
+    
+    // You could optionally show a notification or update UI to indicate manual editing
+    if (diffResult.hasChanges) {
+      console.log(`🔍 Manual changes detected: ${diffResult.changeCount} modifications`);
+      console.log('📋 Diff summary:', diffResult.summary);
+    }
+  }, []);
+
   // Handle view mode toggle and store AST diff when switching to preview
   const handleViewModeToggle = useCallback(async (targetMode = null) => {
-    const modes = ['code', 'preview', 'storefront'];
+    const modes = ['code', 'preview', 'diff', 'storefront'];
     const currentIndex = modes.indexOf(viewMode);
-    const newMode = targetMode || modes[(currentIndex + 1) % modes.length];
+    let newMode = targetMode || modes[(currentIndex + 1) % modes.length];
+    
+    // Skip diff mode if no manual edits detected
+    if (newMode === 'diff' && (!manualEditResult || !manualEditResult.hasChanges)) {
+      // Continue to next mode
+      const nextIndex = (modes.indexOf(newMode) + 1) % modes.length;
+      newMode = modes[nextIndex];
+    }
+    
     setViewMode(newMode);
     
-    // When switching to preview or storefront mode, save AST diff as overlay if there's a current patch
-    if ((newMode === 'preview' || newMode === 'storefront') && selectedFile && sourceCode && currentPatch) {
+    // When switching to preview, diff, or storefront mode, save AST diff as overlay if there's a current patch
+    if ((newMode === 'preview' || newMode === 'diff' || newMode === 'storefront') && selectedFile && sourceCode && currentPatch) {
       setAstDiffStatus({ status: 'saving', message: 'Saving AST diff overlay on preview switch...' });
       
       try {
@@ -508,6 +530,18 @@ export default ExampleComponent;`);
               Preview
             </button>
             <button
+              onClick={() => handleViewModeToggle('diff')}
+              className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                viewMode === 'diff' 
+                  ? 'bg-orange-500 text-white border-orange-500' 
+                  : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
+              }`}
+              disabled={!manualEditResult || !manualEditResult.hasChanges}
+              title={!manualEditResult || !manualEditResult.hasChanges ? 'No manual edits to show' : 'Show diff preview'}
+            >
+              Diff
+            </button>
+            <button
               onClick={() => handleViewModeToggle('storefront')}
               className={`px-3 py-1 text-xs rounded-md border transition-colors ${
                 viewMode === 'storefront' 
@@ -518,6 +552,19 @@ export default ExampleComponent;`);
               Storefront
             </button>
           </div>
+
+          {/* Manual Edit Status */}
+          {manualEditResult && manualEditResult.hasChanges && (
+            <div className="p-2 rounded-md text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+              <div className="font-medium flex items-center">
+                <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-1 animate-pulse"></span>
+                Manual Edit Detected
+              </div>
+              <div className="mt-1 text-xs">
+                {manualEditResult.changeCount} change{manualEditResult.changeCount !== 1 ? 's' : ''} • {manualEditResult.summary?.stats?.additions || 0} additions, {manualEditResult.summary?.stats?.deletions || 0} deletions
+              </div>
+            </div>
+          )}
 
           {/* AST Diff Status */}
           {astDiffStatus && (
@@ -604,7 +651,7 @@ export default ExampleComponent;`);
 
           <ResizableHandle />
 
-          {/* Code Editor or Preview System - Based on View Mode */}
+          {/* Code Editor, Preview, or Diff System - Based on View Mode */}
           <ResizablePanel defaultSize={55} minSize={30}>
             {viewMode === 'code' ? (
               <div className="h-full flex flex-col">
@@ -636,6 +683,9 @@ export default ExampleComponent;`);
                       fileName={selectedFile.name}
                       onCursorPositionChange={setCursorPosition}
                       onSelectionChange={setSelection}
+                      onManualEdit={handleManualEdit}
+                      originalCode={sourceCode} // Use current code as baseline for now
+                      enableDiffDetection={true}
                       className="flex-1"
                     />
                   </>
@@ -700,6 +750,31 @@ export default ExampleComponent;`);
                   className="flex-1"
                 />
               </div>
+            ) : viewMode === 'diff' ? (
+              /* Diff Preview System */
+              <div className="h-full flex flex-col">
+                <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {selectedFile?.name || 'No File Selected'}
+                    </span>
+                    <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded dark:bg-orange-900 dark:text-orange-300">
+                      Diff Mode
+                    </span>
+                  </div>
+                  {manualEditResult && (
+                    <span className="text-xs text-orange-600 dark:text-orange-400">
+                      {manualEditResult.changeCount} Changes
+                    </span>
+                  )}
+                </div>
+                <DiffPreviewSystem
+                  diffResult={manualEditResult}
+                  fileName={selectedFile?.name || ''}
+                  className="flex-1"
+                  onCopyDiff={(diffText) => console.log('Copied diff:', diffText)}
+                />
+              </div>
             ) : (
               /* Storefront Preview System */
               <div className="h-full flex flex-col">
@@ -750,6 +825,9 @@ export default ExampleComponent;`);
           )}
           {currentPatch && (
             <span className="text-orange-600 dark:text-orange-400">Patch Ready</span>
+          )}
+          {manualEditResult && manualEditResult.hasChanges && (
+            <span className="text-orange-600 dark:text-orange-400">Manual Edit Active</span>
           )}
           <span>Ready</span>
         </div>
