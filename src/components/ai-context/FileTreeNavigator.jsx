@@ -165,20 +165,45 @@ const FileTreeNavigator = ({
 
       // Handle both transformed array response and original wrapped response
       let files = [];
+      let success = false;
+      
       if (Array.isArray(data)) {
         // API client transformed the response and returned just the files array
         files = data;
+        success = files.length > 0;
         console.log('📋 Using transformed array response with', files.length, 'files');
-      } else if (data && data.success && data.files) {
+      } else if (data && data.success === true && data.files) {
         // Original wrapped response format
         files = data.files;
+        success = true;
         console.log('📋 Using wrapped response format with', files.length, 'files');
+      } else if (data && data.success === false) {
+        // API explicitly returned failure
+        console.log('❌ API returned failure:', data.message || 'Unknown error');
+        success = false;
       } else {
+        // Unrecognized response format - treat as failure
         console.log('❌ Unrecognized response format:', data);
+        success = false;
       }
 
-      if (files && files.length > 0) {
+      // Only proceed if we have a successful response with files
+      if (success && files && Array.isArray(files) && files.length > 0) {
         console.log(`📁 Found ${files.length} files from API`);
+        
+        // Validate file structure before processing
+        const validFiles = files.filter(file => {
+          return file && 
+                 typeof file.path === 'string' && 
+                 file.path.length > 0 &&
+                 typeof file.type === 'string';
+        });
+        
+        if (validFiles.length === 0) {
+          console.log('❌ No valid files found in API response');
+          throw new Error('No valid files in API response');
+        }
+        
         // Convert the flat file list to a tree structure
         const convertToTree = (fileList) => {
           const tree = [];
@@ -186,48 +211,62 @@ const FileTreeNavigator = ({
           
           // Create tree structure from flat file list
           fileList.forEach(file => {
-            const parts = file.path.split('/');
-            let currentPath = '';
-            let currentLevel = tree;
-            
-            parts.forEach((part, index) => {
-              currentPath = currentPath ? `${currentPath}/${part}` : part;
+            try {
+              const parts = file.path.split('/');
+              let currentPath = '';
+              let currentLevel = tree;
               
-              if (!pathMap.has(currentPath)) {
-                const isFile = index === parts.length - 1 && file.type === 'file';
-                const extension = isFile ? file.extension : null;
-                const isSupported = isFile ? getSupportedFileTypes().includes(extension) : true;
+              parts.forEach((part, index) => {
+                currentPath = currentPath ? `${currentPath}/${part}` : part;
                 
-                const node = {
-                  name: part,
-                  path: currentPath,
-                  type: isFile ? 'file' : 'directory',
-                  children: isFile ? undefined : [],
-                  isSupported: isSupported,
-                  extension: extension
-                };
-                
-                pathMap.set(currentPath, node);
-                currentLevel.push(node);
-                currentLevel = node.children || [];
-              } else {
-                currentLevel = pathMap.get(currentPath).children || [];
-              }
-            });
+                if (!pathMap.has(currentPath)) {
+                  const isFile = index === parts.length - 1 && file.type === 'file';
+                  const extension = isFile ? (file.extension || '') : null;
+                  const isSupported = isFile ? getSupportedFileTypes().includes(extension) : true;
+                  
+                  const node = {
+                    name: part,
+                    path: currentPath,
+                    type: isFile ? 'file' : 'directory',
+                    children: isFile ? undefined : [],
+                    isSupported: isSupported,
+                    extension: extension
+                  };
+                  
+                  pathMap.set(currentPath, node);
+                  currentLevel.push(node);
+                  currentLevel = node.children || [];
+                } else {
+                  currentLevel = pathMap.get(currentPath).children || [];
+                }
+              });
+            } catch (fileError) {
+              console.warn('Failed to process file:', file.path, fileError);
+            }
           });
           
           return tree;
         };
         
-        setFileTree(convertToTree(files));
-        setLoading(false);
-        return;
+        const tree = convertToTree(validFiles);
+        
+        // Only set tree if it's not empty
+        if (tree.length > 0) {
+          setFileTree(tree);
+          setLoading(false);
+          return;
+        } else {
+          console.log('❌ Converted tree is empty, falling back to demo');
+        }
+      } else {
+        console.log('❌ No valid files or unsuccessful response, falling back to demo');
       }
     } catch (error) {
       console.error('Failed to fetch file tree from API, using demo structure:', error);
     }
     
     // Fallback to demo file tree representing the current codebase
+    console.log('📁 Using demo file tree as fallback');
     setFileTree(getDemoFileTree());
     setLoading(false);
   }, []);

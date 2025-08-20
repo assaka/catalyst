@@ -82,7 +82,6 @@ const AIContextWindowPage = () => {
   const [selection, setSelection] = useState(null);
   const [isFileLoading, setIsFileLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
-  const [viewMode, setViewMode] = useState('code'); // 'code', 'preview', 'diff', or 'storefront'
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
 
@@ -356,63 +355,6 @@ export default ExampleComponent;`;
     }
   }, []);
 
-  // Handle view mode toggle and store AST diff when switching to preview
-  const handleViewModeToggle = useCallback(async (targetMode = null) => {
-    const modes = ['code', 'preview', 'diff', 'storefront'];
-    const currentIndex = modes.indexOf(viewMode);
-    let newMode = targetMode || modes[(currentIndex + 1) % modes.length];
-    
-    // Skip diff mode if no manual edits detected
-    if (newMode === 'diff' && (!manualEditResult || !manualEditResult.hasChanges)) {
-      // Continue to next mode
-      const nextIndex = (modes.indexOf(newMode) + 1) % modes.length;
-      newMode = modes[nextIndex];
-    }
-    
-    setViewMode(newMode);
-    
-    // When switching to preview, diff, or storefront mode, save AST diff as overlay if there's a current patch
-    if ((newMode === 'preview' || newMode === 'diff' || newMode === 'storefront') && selectedFile && sourceCode && currentPatch) {
-      setAstDiffStatus({ status: 'saving', message: 'Saving AST diff overlay on preview switch...' });
-      
-      try {
-        // Calculate the modified code by applying the current patch
-        const modifiedCode = applyPatchToCode(sourceCode, currentPatch);
-        
-        // Create AST diff overlay in database
-        const response = await apiClient.post('ast-diffs/create', {
-          filePath: selectedFile.path,
-          originalCode: sourceCode,
-          modifiedCode: modifiedCode,
-          changeSummary: `AI-generated changes for: ${selectedFile.path} (switched to ${newMode} mode)`,
-          changeType: 'modification'
-        });
-        
-        if (response.success) {
-          console.log('AST diff overlay created on preview mode switch:', response.data);
-          setAstDiffStatus({ 
-            status: 'success', 
-            message: 'AST diff overlay saved on preview switch',
-            data: response.data 
-          });
-          // Clear status after 3 seconds
-          setTimeout(() => setAstDiffStatus(null), 3000);
-        } else {
-          console.error('Failed to create AST diff overlay on preview switch:', response.message);
-          setAstDiffStatus({ 
-            status: 'error', 
-            message: `Failed to save overlay on preview switch: ${response.message}` 
-          });
-        }
-      } catch (error) {
-        console.error('Error creating AST diff overlay on preview switch:', error);
-        setAstDiffStatus({ 
-          status: 'error', 
-          message: `Error saving overlay on preview switch: ${error.message}` 
-        });
-      }
-    }
-  }, [viewMode, selectedFile, sourceCode, currentPatch]);
 
   // Handle file tree refresh
   const handleFileTreeRefresh = useCallback(() => {
@@ -512,54 +454,8 @@ export default ExampleComponent;`;
           </p>
         </div>
 
-        {/* Mode Toggle and Connection Status */}
+        {/* Connection Status */}
         <div className="flex items-center space-x-4">
-          {/* View Mode Toggle */}
-          <div className="flex items-center space-x-2">
-            <span className="text-xs text-gray-600 dark:text-gray-400">View:</span>
-            <button
-              onClick={() => handleViewModeToggle('code')}
-              className={`px-3 py-1 text-xs rounded-md border transition-colors ${
-                viewMode === 'code' 
-                  ? 'bg-blue-500 text-white border-blue-500' 
-                  : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
-              }`}
-            >
-              Code
-            </button>
-            <button
-              onClick={() => handleViewModeToggle('preview')}
-              className={`px-3 py-1 text-xs rounded-md border transition-colors ${
-                viewMode === 'preview' 
-                  ? 'bg-blue-500 text-white border-blue-500' 
-                  : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
-              }`}
-            >
-              Preview
-            </button>
-            <button
-              onClick={() => handleViewModeToggle('diff')}
-              className={`px-3 py-1 text-xs rounded-md border transition-colors ${
-                viewMode === 'diff' 
-                  ? 'bg-orange-500 text-white border-orange-500' 
-                  : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
-              }`}
-              disabled={!manualEditResult || !manualEditResult.hasChanges}
-              title={!manualEditResult || !manualEditResult.hasChanges ? 'No manual edits to show' : 'Show diff preview'}
-            >
-              Diff
-            </button>
-            <button
-              onClick={() => handleViewModeToggle('storefront')}
-              className={`px-3 py-1 text-xs rounded-md border transition-colors ${
-                viewMode === 'storefront' 
-                  ? 'bg-blue-500 text-white border-blue-500' 
-                  : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
-              }`}
-            >
-              Storefront
-            </button>
-          </div>
 
           {/* Manual Edit Status */}
           {manualEditResult && manualEditResult.hasChanges && (
