@@ -77,6 +77,7 @@ class ApiClient {
     const isAdminContext = currentPath.startsWith('/admin/') ||
                           currentPath === '/dashboard' || 
                           currentPath === '/auth' ||
+                          currentPath === '/ai-context-window' ||
                           // Legacy paths for backward compatibility
                           currentPath.includes('/dashboard') || 
                           currentPath.includes('/products') || 
