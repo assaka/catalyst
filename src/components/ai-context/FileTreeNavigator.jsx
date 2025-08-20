@@ -161,15 +161,31 @@ const FileTreeNavigator = ({
     setLoading(true);
     try {
       const data = await apiClient.get('proxy-source-files/list?path=src');
+      console.log('🔍 Raw API response:', data);
 
-      if (data && data.success) {
+      // Handle both transformed array response and original wrapped response
+      let files = [];
+      if (Array.isArray(data)) {
+        // API client transformed the response and returned just the files array
+        files = data;
+        console.log('📋 Using transformed array response with', files.length, 'files');
+      } else if (data && data.success && data.files) {
+        // Original wrapped response format
+        files = data.files;
+        console.log('📋 Using wrapped response format with', files.length, 'files');
+      } else {
+        console.log('❌ Unrecognized response format:', data);
+      }
+
+      if (files && files.length > 0) {
+        console.log(`📁 Found ${files.length} files from API`);
         // Convert the flat file list to a tree structure
-        const convertToTree = (files) => {
+        const convertToTree = (fileList) => {
           const tree = [];
           const pathMap = new Map();
           
           // Create tree structure from flat file list
-          files.forEach(file => {
+          fileList.forEach(file => {
             const parts = file.path.split('/');
             let currentPath = '';
             let currentLevel = tree;
@@ -203,7 +219,7 @@ const FileTreeNavigator = ({
           return tree;
         };
         
-        setFileTree(convertToTree(data.files));
+        setFileTree(convertToTree(files));
         setLoading(false);
         return;
       }
