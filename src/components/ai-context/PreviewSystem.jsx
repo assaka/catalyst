@@ -25,7 +25,71 @@ const PreviewSystem = ({
   const [validationResult, setValidationResult] = useState(null);
   const [diff, setDiff] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [viewMode, setViewMode] = useState('split'); // 'split', 'preview', 'diff'
+  const [viewMode, setViewMode] = useState('visual'); // 'split', 'preview', 'diff', 'visual'
+  const [visualPreview, setVisualPreview] = useState(null);
+  const [previewError, setPreviewError] = useState(null);
+
+  // Generate visual preview by compiling and rendering the component
+  const generateVisualPreview = useCallback(async (codeToRender) => {
+    if (!codeToRender || !fileName.match(/\.(jsx?|tsx?)$/)) {
+      setVisualPreview(null);
+      setPreviewError('Visual preview only supports React components (.jsx, .tsx files)');
+      return;
+    }
+
+    try {
+      setPreviewError(null);
+      
+      // For React components, attempt to render them
+      if (fileName.match(/\.(jsx|tsx)$/)) {
+        // Remove imports and exports for preview rendering
+        let componentCode = codeToRender
+          .replace(/^import\s+.*$/gm, '') // Remove import statements
+          .replace(/^export\s+default\s+.*$/gm, '') // Remove export default
+          .replace(/^export\s+\{.*\}.*$/gm, '') // Remove named exports
+          .trim();
+
+        // Extract component name from the code
+        const componentMatch = componentCode.match(/(?:const|function)\s+(\w+)\s*[=\(]/);
+        const componentName = componentMatch ? componentMatch[1] : 'PreviewComponent';
+
+        // Wrap in a simple preview container
+        const previewCode = `
+          const React = window.React;
+          const { useState, useEffect, useCallback } = React;
+          
+          ${componentCode}
+          
+          // Render the component
+          const PreviewContainer = () => {
+            try {
+              return React.createElement('div', { 
+                className: 'p-4 bg-white min-h-[200px] border rounded',
+                style: { fontFamily: 'system-ui, -apple-system, sans-serif' }
+              }, React.createElement(${componentName}));
+            } catch (error) {
+              return React.createElement('div', {
+                className: 'p-4 bg-red-50 border border-red-200 rounded text-red-700'
+              }, 'Preview Error: ' + error.message);
+            }
+          };
+          
+          PreviewContainer;
+        `;
+
+        // Create a function to evaluate the preview code
+        const previewFunction = new Function('return ' + previewCode)();
+        setVisualPreview(previewFunction);
+      } else {
+        // For non-React files, show a message
+        setPreviewError('Visual preview is only available for React components');
+      }
+    } catch (error) {
+      console.error('Visual preview generation failed:', error);
+      setPreviewError(`Preview compilation failed: ${error.message}`);
+      setVisualPreview(null);
+    }
+  }, [fileName]);
 
   // Generate preview when patch changes or manual edits are detected
   useEffect(() => {
@@ -45,6 +109,10 @@ const PreviewSystem = ({
           summary: manualEditResult.summary
         });
       }
+      // Generate visual preview for manual edits
+      if (viewMode === 'visual') {
+        generateVisualPreview(currentCode);
+      }
     } else if (patch && originalCode) {
       // For AI-generated patches, use the API to generate preview
       generatePreview();
@@ -52,8 +120,10 @@ const PreviewSystem = ({
       setPreviewCode('');
       setValidationResult(null);
       setDiff(null);
+      setVisualPreview(null);
+      setPreviewError(null);
     }
-  }, [patch, originalCode, currentCode, hasManualEdits, manualEditResult]);
+  }, [patch, originalCode, currentCode, hasManualEdits, manualEditResult, viewMode, generateVisualPreview]);
 
   // Generate preview from patch
   const generatePreview = useCallback(async () => {
@@ -71,6 +141,10 @@ const PreviewSystem = ({
         setPreviewCode(data.data.previewCode);
         setDiff(data.data.diff);
         setValidationResult(data.data.validation);
+        // Generate visual preview for AI-generated patches
+        if (viewMode === 'visual') {
+          generateVisualPreview(data.data.previewCode);
+        }
       } else {
         setValidationResult({
           isValid: false,
@@ -236,6 +310,23 @@ const PreviewSystem = ({
             >
               Diff
             </button>
+            <button
+              onClick={() => {
+                setViewMode('visual');
+                // Trigger visual preview generation when switching to visual mode
+                if (previewCode) {
+                  generateVisualPreview(previewCode);
+                }
+              }}
+              className={cn(
+                "px-2 py-1 text-xs rounded transition-colors",
+                viewMode === 'visual' 
+                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100" 
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              )}
+            >
+              Visual
+            </button>
           </div>
         </div>
         
@@ -317,6 +408,41 @@ const PreviewSystem = ({
           </div>
         ) : viewMode === 'diff' ? (
           renderDiffView()
+        ) : viewMode === 'visual' ? (
+          // Visual Preview Mode
+          <div className="h-full overflow-auto">
+            {previewError ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center text-orange-600 dark:text-orange-400 p-4">
+                  <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm font-medium">{previewError}</p>
+                </div>
+              </div>
+            ) : visualPreview ? (
+              <div className="h-full">
+                <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400">
+                  Visual Preview • {fileName}
+                </div>
+                <div className="p-4">
+                  <div 
+                    id="visual-preview-container"
+                    className="min-h-[400px] border rounded bg-white"
+                  >
+                    {/* Visual preview will be rendered here by React */}
+                    {React.createElement(visualPreview)}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center text-gray-500 dark:text-gray-400">
+                  <Eye className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Visual preview loading...</p>
+                  <p className="text-xs mt-1">Compiling React component</p>
+                </div>
+              </div>
+            )}
+          </div>
         ) : viewMode === 'split' ? (
           <div className="h-full flex">
             {/* Original Code */}
