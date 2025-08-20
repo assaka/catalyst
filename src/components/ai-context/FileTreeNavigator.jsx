@@ -21,6 +21,7 @@ const FileTreeNavigator = ({
   const [expandedDirs, setExpandedDirs] = useState(new Set());
   const [loading, setLoading] = useState(false);
   const [contextMenu, setContextMenu] = useState(null);
+  const [filesWithPatches, setFilesWithPatches] = useState(new Set());
 
   // Get supported file types for the AI Context Window
   const getSupportedFileTypes = () => [
@@ -314,10 +315,62 @@ const FileTreeNavigator = ({
     });
   }, []);
 
-  // Handle file selection
-  const handleFileSelect = useCallback((file) => {
+  // Handle file selection and fetch AST diff patches
+  const handleFileSelect = useCallback(async (file) => {
     if (file.type === 'file' && file.isSupported) {
+      // First, trigger the normal file selection
       onFileSelect?.(file);
+      
+      // Then, fetch AST diff patches from database for this file
+      try {
+        console.log(`🔍 Fetching AST diff patches for file: ${file.path}`);
+        
+        const astDiffData = await apiClient.get(`ast-diffs/file/${encodeURIComponent(file.path)}`);
+        
+        if (astDiffData && astDiffData.success && astDiffData.data) {
+          const patches = astDiffData.data.overlays || [];
+          console.log(`📋 Found ${patches.length} AST diff patches for ${file.path}:`, patches);
+          
+          // Pass the patches to the parent component along with file info
+          // This allows the PreviewSystem or other components to use the patch data
+          if (patches.length > 0) {
+            const fileWithPatches = {
+              ...file,
+              astDiffPatches: patches,
+              hasPendingPatches: patches.some(p => p.status === 'pending'),
+              lastPatchDate: patches[0]?.created_at || patches[0]?.createdAt
+            };
+            
+            // Update the files with patches set to show visual indicators
+            setFilesWithPatches(prev => new Set([...prev, file.path]));
+            
+            // Trigger a custom event or callback for AST patches if available
+            if (window.dispatchEvent) {
+              window.dispatchEvent(new CustomEvent('astPatchesLoaded', {
+                detail: {
+                  file: fileWithPatches,
+                  patches: patches
+                }
+              }));
+            }
+            
+            console.log(`✅ Loaded ${patches.length} patches for ${file.path}, dispatched astPatchesLoaded event`);
+          } else {
+            console.log(`📭 No AST diff patches found for ${file.path}`);
+            // Remove from files with patches set if no patches found
+            setFilesWithPatches(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(file.path);
+              return newSet;
+            });
+          }
+        } else {
+          console.log(`📭 No AST diff data returned for ${file.path}`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to fetch AST diff patches for ${file.path}:`, error.message);
+        // Don't block file selection if AST diff fetch fails
+      }
     }
   }, [onFileSelect]);
 
@@ -364,6 +417,7 @@ const FileTreeNavigator = ({
     const isSelected = selectedFile?.path === node.path;
     const isModified = modifiedFiles.includes(node.path);
     const hasChildren = node.children && node.children.length > 0;
+    const hasAstPatches = filesWithPatches.has(node.path);
 
     return (
       <div key={node.path}>
@@ -437,6 +491,14 @@ const FileTreeNavigator = ({
           {isModified && (
             <div className="w-2 h-2 bg-yellow-500 rounded-full flex-shrink-0 ml-2" />
           )}
+          
+          {/* AST Patch indicator */}
+          {hasAstPatches && (
+            <div 
+              className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-2" 
+              title="AST diff patches available"
+            />
+          )}
         </div>
 
         {/* Render children if expanded */}
@@ -447,7 +509,7 @@ const FileTreeNavigator = ({
         )}
       </div>
     );
-  }, [expandedDirs, selectedFile, modifiedFiles, toggleExpanded, handleFileSelect, handleContextMenu]);
+  }, [expandedDirs, selectedFile, modifiedFiles, filesWithPatches, toggleExpanded, handleFileSelect, handleContextMenu]);
 
   // Get file icon color based on extension
   const getFileIconColor = (extension) => {
