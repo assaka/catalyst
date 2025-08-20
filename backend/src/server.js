@@ -97,6 +97,7 @@ const categoryImageRoutes = require('./routes/category-images');
 const fileManagerRoutes = require('./routes/file-manager');
 const sourceFilesRoutes = require('./routes/source-files');
 const proxySourceFilesRoutes = require('./routes/proxy-source-files');
+const astDiffRoutes = require('./routes/ast-diffs');
 const storeDataMigrationRoutes = require('./routes/store-data-migration');
 const storeProvisioningRoutes = require('./routes/store-provisioning');
 const domainsRoutes = require('./routes/domains');
@@ -1561,6 +1562,7 @@ app.use('/api/stores', domainSettingsRoutes); // Domain settings for Store -> Se
 app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/ai-context', aiContextRoutes); // AI Context Window routes for natural language code editing
+app.use('/api/ast-diffs', astDiffRoutes); // AST diff overlay routes for code change tracking
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
 

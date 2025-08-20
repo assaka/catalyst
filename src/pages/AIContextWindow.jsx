@@ -6,7 +6,62 @@ import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import PreviewSystem from '@/components/ai-context/PreviewSystem';
+import StorefrontPreview from '@/components/ai-context/StorefrontPreview';
 import apiClient from '@/api/client';
+
+/**
+ * Apply JSON Patch operations to source code
+ * This is a simple implementation for basic patch operations
+ * @param {string} sourceCode - Original source code
+ * @param {Array} patch - JSON Patch operations (RFC 6902)
+ * @returns {string} Modified source code
+ */
+const applyPatchToCode = (sourceCode, patch) => {
+  if (!patch || !Array.isArray(patch)) return sourceCode;
+  
+  let lines = sourceCode.split('\n');
+  
+  // Apply each patch operation
+  patch.forEach(operation => {
+    try {
+      switch (operation.op) {
+        case 'add':
+          // Simple line-based addition
+          if (operation.path.includes('/line/')) {
+            const lineNumber = parseInt(operation.path.split('/line/')[1]);
+            if (lineNumber >= 0 && lineNumber <= lines.length) {
+              lines.splice(lineNumber, 0, operation.value);
+            }
+          }
+          break;
+          
+        case 'replace':
+          // Simple line-based replacement
+          if (operation.path.includes('/line/')) {
+            const lineNumber = parseInt(operation.path.split('/line/')[1]);
+            if (lineNumber >= 0 && lineNumber < lines.length) {
+              lines[lineNumber] = operation.value;
+            }
+          }
+          break;
+          
+        case 'remove':
+          // Simple line-based removal
+          if (operation.path.includes('/line/')) {
+            const lineNumber = parseInt(operation.path.split('/line/')[1]);
+            if (lineNumber >= 0 && lineNumber < lines.length) {
+              lines.splice(lineNumber, 1);
+            }
+          }
+          break;
+      }
+    } catch (error) {
+      console.warn('Failed to apply patch operation:', operation, error);
+    }
+  });
+  
+  return lines.join('\n');
+};
 
 /**
  * AI Context Window Page
@@ -25,7 +80,8 @@ const AIContextWindowPage = () => {
   const [selection, setSelection] = useState(null);
   const [isFileLoading, setIsFileLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState(null);
-  const [viewMode, setViewMode] = useState('code'); // 'code' or 'preview'
+  const [viewMode, setViewMode] = useState('code'); // 'code', 'preview', or 'storefront'
+  const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
 
   // Load file from URL parameter on mount
   useEffect(() => {
@@ -207,11 +263,53 @@ export default ExampleComponent;`);
     setCurrentPatch(patch);
   }, []);
 
-  // Handle preview generation
-  const handlePreviewGenerated = useCallback((preview) => {
+  // Handle preview generation and store AST diff as overlay
+  const handlePreviewGenerated = useCallback(async (preview) => {
     // Preview is handled by the PreviewSystem component
     console.log('Preview generated:', preview);
-  }, []);
+    
+    // Store AST diff in database when switching to preview mode
+    if (selectedFile && sourceCode && currentPatch) {
+      setAstDiffStatus({ status: 'saving', message: 'Saving AST diff overlay...' });
+      
+      try {
+        // Calculate the modified code by applying the current patch
+        const modifiedCode = applyPatchToCode(sourceCode, currentPatch);
+        
+        // Create AST diff overlay in database
+        const response = await apiClient.post('ast-diffs/create', {
+          filePath: selectedFile.path,
+          originalCode: sourceCode,
+          modifiedCode: modifiedCode,
+          changeSummary: `AI-generated changes for: ${selectedFile.path}`,
+          changeType: 'modification'
+        });
+        
+        if (response.success) {
+          console.log('AST diff overlay created:', response.data);
+          setAstDiffStatus({ 
+            status: 'success', 
+            message: 'AST diff overlay saved successfully',
+            data: response.data 
+          });
+          // Clear status after 3 seconds
+          setTimeout(() => setAstDiffStatus(null), 3000);
+        } else {
+          console.error('Failed to create AST diff overlay:', response.message);
+          setAstDiffStatus({ 
+            status: 'error', 
+            message: `Failed to save overlay: ${response.message}` 
+          });
+        }
+      } catch (error) {
+        console.error('Error creating AST diff overlay:', error);
+        setAstDiffStatus({ 
+          status: 'error', 
+          message: `Error saving overlay: ${error.message}` 
+        });
+      }
+    }
+  }, [selectedFile, sourceCode, currentPatch]);
 
   // Handle patch application
   const handleApplyPatch = useCallback((modifiedCode, patchResult) => {
@@ -236,10 +334,55 @@ export default ExampleComponent;`);
     setCurrentPatch(null);
   }, []);
 
-  // Handle view mode toggle
-  const handleViewModeToggle = useCallback(() => {
-    setViewMode(prev => prev === 'code' ? 'preview' : 'code');
-  }, []);
+  // Handle view mode toggle and store AST diff when switching to preview
+  const handleViewModeToggle = useCallback(async (targetMode = null) => {
+    const modes = ['code', 'preview', 'storefront'];
+    const currentIndex = modes.indexOf(viewMode);
+    const newMode = targetMode || modes[(currentIndex + 1) % modes.length];
+    setViewMode(newMode);
+    
+    // When switching to preview or storefront mode, save AST diff as overlay if there's a current patch
+    if ((newMode === 'preview' || newMode === 'storefront') && selectedFile && sourceCode && currentPatch) {
+      setAstDiffStatus({ status: 'saving', message: 'Saving AST diff overlay on preview switch...' });
+      
+      try {
+        // Calculate the modified code by applying the current patch
+        const modifiedCode = applyPatchToCode(sourceCode, currentPatch);
+        
+        // Create AST diff overlay in database
+        const response = await apiClient.post('ast-diffs/create', {
+          filePath: selectedFile.path,
+          originalCode: sourceCode,
+          modifiedCode: modifiedCode,
+          changeSummary: `AI-generated changes for: ${selectedFile.path} (switched to ${newMode} mode)`,
+          changeType: 'modification'
+        });
+        
+        if (response.success) {
+          console.log('AST diff overlay created on preview mode switch:', response.data);
+          setAstDiffStatus({ 
+            status: 'success', 
+            message: 'AST diff overlay saved on preview switch',
+            data: response.data 
+          });
+          // Clear status after 3 seconds
+          setTimeout(() => setAstDiffStatus(null), 3000);
+        } else {
+          console.error('Failed to create AST diff overlay on preview switch:', response.message);
+          setAstDiffStatus({ 
+            status: 'error', 
+            message: `Failed to save overlay on preview switch: ${response.message}` 
+          });
+        }
+      } catch (error) {
+        console.error('Error creating AST diff overlay on preview switch:', error);
+        setAstDiffStatus({ 
+          status: 'error', 
+          message: `Error saving overlay on preview switch: ${error.message}` 
+        });
+      }
+    }
+  }, [viewMode, selectedFile, sourceCode, currentPatch]);
 
   // Handle file tree refresh
   const handleFileTreeRefresh = useCallback(() => {
@@ -345,7 +488,7 @@ export default ExampleComponent;`);
           <div className="flex items-center space-x-2">
             <span className="text-xs text-gray-600 dark:text-gray-400">View:</span>
             <button
-              onClick={handleViewModeToggle}
+              onClick={() => handleViewModeToggle('code')}
               className={`px-3 py-1 text-xs rounded-md border transition-colors ${
                 viewMode === 'code' 
                   ? 'bg-blue-500 text-white border-blue-500' 
@@ -355,7 +498,7 @@ export default ExampleComponent;`);
               Code
             </button>
             <button
-              onClick={handleViewModeToggle}
+              onClick={() => handleViewModeToggle('preview')}
               className={`px-3 py-1 text-xs rounded-md border transition-colors ${
                 viewMode === 'preview' 
                   ? 'bg-blue-500 text-white border-blue-500' 
@@ -364,7 +507,38 @@ export default ExampleComponent;`);
             >
               Preview
             </button>
+            <button
+              onClick={() => handleViewModeToggle('storefront')}
+              className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                viewMode === 'storefront' 
+                  ? 'bg-blue-500 text-white border-blue-500' 
+                  : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600'
+              }`}
+            >
+              Storefront
+            </button>
           </div>
+
+          {/* AST Diff Status */}
+          {astDiffStatus && (
+            <div className={`p-2 rounded-md text-xs ${
+              astDiffStatus.status === 'success' ? 'bg-green-100 text-green-800' :
+              astDiffStatus.status === 'error' ? 'bg-red-100 text-red-800' :
+              'bg-blue-100 text-blue-800'
+            }`}>
+              <div className="font-medium">
+                {astDiffStatus.status === 'saving' && (
+                  <span className="inline-block w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mr-1"></span>
+                )}
+                {astDiffStatus.message}
+              </div>
+              {astDiffStatus.data && (
+                <div className="mt-1 text-xs">
+                  ID: {astDiffStatus.data.id?.substring(0, 8)}...
+                </div>
+              )}
+            </div>
+          )}
 
           {connectionStatus && (
             <div className={`p-2 rounded-md text-xs ${
@@ -499,7 +673,7 @@ export default ExampleComponent;`);
                   </div>
                 )}
               </div>
-            ) : (
+            ) : viewMode === 'preview' ? (
               /* Preview System */
               <div className="h-full flex flex-col">
                 <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
@@ -523,6 +697,32 @@ export default ExampleComponent;`);
                   fileName={selectedFile?.name || ''}
                   onApplyPatch={handleApplyPatch}
                   onRejectPatch={handleRejectPatch}
+                  className="flex-1"
+                />
+              </div>
+            ) : (
+              /* Storefront Preview System */
+              <div className="h-full flex flex-col">
+                <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {selectedFile?.name || 'No File Selected'}
+                    </span>
+                    <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded dark:bg-purple-900 dark:text-purple-300">
+                      Storefront Mode
+                    </span>
+                  </div>
+                  {currentPatch && (
+                    <span className="text-xs text-orange-600 dark:text-orange-400">
+                      Patch Available
+                    </span>
+                  )}
+                </div>
+                <StorefrontPreview
+                  originalCode={sourceCode}
+                  patch={currentPatch}
+                  fileName={selectedFile?.name || ''}
+                  filePath={selectedFile?.path || ''}
                   className="flex-1"
                 />
               </div>
