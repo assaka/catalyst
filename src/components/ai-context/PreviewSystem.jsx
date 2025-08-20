@@ -80,17 +80,116 @@ const PreviewSystem = ({
             });
         };
 
-        // Try to create a simpler preview for JSX components
+        // Try to create a preview showing code structure and component info
         const PreviewComponent = () => {
           try {
-            // For now, show a placeholder for JSX components that can't be easily transformed
+            // Extract component information for display
+            const lines = componentCode.split('\n').filter(line => line.trim());
+            const functionMatch = componentCode.match(/(?:const|function)\s+(\w+)/);
+            const propsMatch = componentCode.match(/\(\s*\{([^}]*)\}/);
+            const hookMatches = componentCode.match(/use\w+/g) || [];
+            const jsxElements = componentCode.match(/<\w+/g) || [];
+            
             return React.createElement('div', {
-              className: 'p-4 bg-gray-50 border rounded text-center'
+              className: 'p-4 space-y-4'
             }, [
-              React.createElement('div', { key: 'icon', className: 'text-2xl mb-2' }, '⚛️'),
-              React.createElement('div', { key: 'title', className: 'font-medium text-gray-700' }, componentName),
-              React.createElement('div', { key: 'desc', className: 'text-sm text-gray-500 mt-1' }, 'React Component Preview'),
-              React.createElement('div', { key: 'note', className: 'text-xs text-gray-400 mt-2' }, 'Visual preview for JSX components coming soon')
+              // Component Header
+              React.createElement('div', {
+                key: 'header',
+                className: 'bg-blue-50 border border-blue-200 rounded-lg p-4'
+              }, [
+                React.createElement('div', { 
+                  key: 'icon', 
+                  className: 'flex items-center mb-2' 
+                }, [
+                  React.createElement('span', { key: 'emoji', className: 'text-2xl mr-2' }, '⚛️'),
+                  React.createElement('h3', { key: 'name', className: 'text-lg font-semibold text-blue-800' }, componentName)
+                ]),
+                React.createElement('p', { 
+                  key: 'desc', 
+                  className: 'text-sm text-blue-600' 
+                }, 'React Component Structure Preview')
+              ]),
+              
+              // Component Details
+              React.createElement('div', {
+                key: 'details',
+                className: 'grid grid-cols-1 md:grid-cols-2 gap-4'
+              }, [
+                // Props & Hooks
+                React.createElement('div', {
+                  key: 'props-hooks',
+                  className: 'bg-gray-50 rounded-lg p-3'
+                }, [
+                  React.createElement('h4', { 
+                    key: 'title', 
+                    className: 'font-medium text-gray-800 mb-2' 
+                  }, 'Props & Hooks'),
+                  React.createElement('div', { key: 'content', className: 'space-y-1' }, [
+                    propsMatch ? React.createElement('div', {
+                      key: 'props',
+                      className: 'text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded'
+                    }, `Props: {${propsMatch[1].trim()}}`) : null,
+                    hookMatches.length > 0 ? React.createElement('div', {
+                      key: 'hooks',
+                      className: 'text-xs bg-green-100 text-green-700 px-2 py-1 rounded'
+                    }, `Hooks: ${hookMatches.join(', ')}`) : null,
+                    hookMatches.length === 0 && !propsMatch ? React.createElement('div', {
+                      key: 'none',
+                      className: 'text-xs text-gray-500'
+                    }, 'No props or hooks detected') : null
+                  ].filter(Boolean))
+                ]),
+                
+                // JSX Elements  
+                React.createElement('div', {
+                  key: 'jsx',
+                  className: 'bg-gray-50 rounded-lg p-3'
+                }, [
+                  React.createElement('h4', { 
+                    key: 'title', 
+                    className: 'font-medium text-gray-800 mb-2' 
+                  }, 'JSX Elements'),
+                  React.createElement('div', { key: 'content', className: 'space-y-1' }, [
+                    jsxElements.length > 0 ? React.createElement('div', {
+                      key: 'elements',
+                      className: 'flex flex-wrap gap-1'
+                    }, jsxElements.slice(0, 6).map((element, i) => 
+                      React.createElement('span', {
+                        key: i,
+                        className: 'text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded'
+                      }, element.substring(1))
+                    )) : React.createElement('div', {
+                      key: 'none',
+                      className: 'text-xs text-gray-500'
+                    }, 'No JSX elements detected')
+                  ])
+                ])
+              ]),
+              
+              // Code Preview
+              React.createElement('div', {
+                key: 'code',
+                className: 'bg-gray-900 text-gray-100 rounded-lg p-4 text-xs font-mono overflow-auto max-h-48'
+              }, [
+                React.createElement('div', { key: 'title', className: 'text-gray-400 mb-2' }, '// Component Preview'),
+                React.createElement('pre', { key: 'code' }, lines.slice(0, 15).join('\n') + (lines.length > 15 ? '\n// ... truncated' : ''))
+              ]),
+              
+              // Limitation Notice
+              React.createElement('div', {
+                key: 'notice',
+                className: 'bg-yellow-50 border border-yellow-200 rounded-lg p-3'
+              }, [
+                React.createElement('div', { key: 'title', className: 'flex items-center text-yellow-800 font-medium text-sm mb-1' }, [
+                  React.createElement('span', { key: 'icon', className: 'mr-2' }, '⚠️'),
+                  'Live Preview Limitation'
+                ]),
+                React.createElement('p', { 
+                  key: 'desc', 
+                  className: 'text-xs text-yellow-700' 
+                }, 'This is a structural preview. For full component rendering, switch to Patch Review mode and deploy your changes.')
+              ])
             ]);
           } catch (error) {
             return React.createElement('div', {
