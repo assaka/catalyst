@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Eye, EyeOff, Check, X, AlertTriangle, RefreshCw, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodeEditor from './CodeEditor';
+import apiClient from '@/api/client';
 
 /**
  * Preview System Component
@@ -40,20 +41,11 @@ const PreviewSystem = ({
 
     setIsGenerating(true);
     try {
-      const response = await fetch('/api/ai-context/generate-preview', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
-        },
-        body: JSON.stringify({
-          sourceCode: originalCode,
-          changes: patch,
-          filePath: fileName
-        })
+      const data = await apiClient.post('ai-context/generate-preview', {
+        sourceCode: originalCode,
+        changes: patch,
+        filePath: fileName
       });
-
-      const data = await response.json();
 
       if (data.success) {
         setPreviewCode(data.data.previewCode);
@@ -80,20 +72,11 @@ const PreviewSystem = ({
     if (!patch || !originalCode) return;
 
     try {
-      const response = await fetch('/api/ai-context/apply-patch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
-        },
-        body: JSON.stringify({
-          patch,
-          sourceCode: originalCode,
-          filePath: fileName
-        })
+      const data = await apiClient.post('ai-context/apply-patch', {
+        patch,
+        sourceCode: originalCode,
+        filePath: fileName
       });
-
-      const data = await response.json();
 
       if (data.success) {
         onApplyPatch?.(data.data.modifiedCode, data.data);
