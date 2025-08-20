@@ -25,7 +25,7 @@ const PreviewSystem = ({
   const [validationResult, setValidationResult] = useState(null);
   const [diff, setDiff] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [viewMode, setViewMode] = useState('visual'); // 'split', 'preview', 'diff', 'visual'
+  const [viewMode, setViewMode] = useState('preview'); // 'split', 'preview', 'diff'
   const [visualPreview, setVisualPreview] = useState(null);
   const [previewError, setPreviewError] = useState(null);
 
@@ -53,33 +53,50 @@ const PreviewSystem = ({
         const componentMatch = componentCode.match(/(?:const|function)\s+(\w+)\s*[=\(]/);
         const componentName = componentMatch ? componentMatch[1] : 'PreviewComponent';
 
-        // Wrap in a simple preview container
-        const previewCode = `
-          const React = window.React;
-          const { useState, useEffect, useCallback } = React;
-          
-          ${componentCode}
-          
-          // Render the component
-          const PreviewContainer = () => {
-            try {
-              return React.createElement('div', { 
-                className: 'p-4 bg-white min-h-[200px] border rounded',
-                style: { fontFamily: 'system-ui, -apple-system, sans-serif' }
-              }, React.createElement(${componentName}));
-            } catch (error) {
-              return React.createElement('div', {
-                className: 'p-4 bg-red-50 border border-red-200 rounded text-red-700'
-              }, 'Preview Error: ' + error.message);
-            }
-          };
-          
-          PreviewContainer;
-        `;
+        // Simple JSX to React.createElement transformation
+        // This is a basic transformation for common JSX patterns
+        const transformJSX = (code) => {
+          return code
+            // Transform self-closing tags: <div /> -> React.createElement('div')
+            .replace(/<(\w+)\s*\/>/g, "React.createElement('$1')")
+            // Transform opening tags: <div> -> React.createElement('div', null,
+            .replace(/<(\w+)([^>]*)>/g, (match, tag, props) => {
+              if (props.trim()) {
+                // Basic props handling - this is simplified
+                const propsObj = props.includes('=') ? `{${props.replace(/(\w+)="([^"]*)"/g, '$1: "$2"')}}` : 'null';
+                return `React.createElement('${tag}', ${propsObj}, `;
+              }
+              return `React.createElement('${tag}', null, `;
+            })
+            // Transform closing tags: </div> -> )
+            .replace(/<\/\w+>/g, ')')
+            // Handle string content between tags
+            .replace(/>\s*([^<>{}]+)\s*</g, (match, content) => {
+              const trimmed = content.trim();
+              return trimmed ? `>, "${trimmed}", <` : '>, <';
+            });
+        };
 
-        // Create a function to evaluate the preview code
-        const previewFunction = new Function('return ' + previewCode)();
-        setVisualPreview(previewFunction);
+        // Try to create a simpler preview for JSX components
+        const PreviewComponent = () => {
+          try {
+            // For now, show a placeholder for JSX components that can't be easily transformed
+            return React.createElement('div', {
+              className: 'p-4 bg-gray-50 border rounded text-center'
+            }, [
+              React.createElement('div', { key: 'icon', className: 'text-2xl mb-2' }, '⚛️'),
+              React.createElement('div', { key: 'title', className: 'font-medium text-gray-700' }, componentName),
+              React.createElement('div', { key: 'desc', className: 'text-sm text-gray-500 mt-1' }, 'React Component Preview'),
+              React.createElement('div', { key: 'note', className: 'text-xs text-gray-400 mt-2' }, 'Visual preview for JSX components coming soon')
+            ]);
+          } catch (error) {
+            return React.createElement('div', {
+              className: 'p-4 bg-red-50 border border-red-200 rounded text-red-700'
+            }, 'Preview Error: ' + error.message);
+          }
+        };
+
+        setVisualPreview(PreviewComponent);
       } else {
         // For non-React files, show a message
         setPreviewError('Visual preview is only available for React components');
@@ -110,7 +127,7 @@ const PreviewSystem = ({
         });
       }
       // Generate visual preview for manual edits
-      if (viewMode === 'visual') {
+      if (viewMode === 'preview') {
         generateVisualPreview(currentCode);
       }
     } else if (patch && originalCode) {
@@ -142,7 +159,7 @@ const PreviewSystem = ({
         setDiff(data.data.diff);
         setValidationResult(data.data.validation);
         // Generate visual preview for AI-generated patches
-        if (viewMode === 'visual') {
+        if (viewMode === 'preview') {
           generateVisualPreview(data.data.previewCode);
         }
       } else {
@@ -278,6 +295,23 @@ const PreviewSystem = ({
           {/* View Mode Toggle */}
           <div className="flex bg-gray-200 dark:bg-gray-700 rounded p-0.5">
             <button
+              onClick={() => {
+                setViewMode('preview');
+                // Trigger visual preview generation when switching to preview mode
+                if (previewCode) {
+                  generateVisualPreview(previewCode);
+                }
+              }}
+              className={cn(
+                "px-2 py-1 text-xs rounded transition-colors",
+                viewMode === 'preview' 
+                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100" 
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              )}
+            >
+              Preview
+            </button>
+            <button
               onClick={() => setViewMode('split')}
               className={cn(
                 "px-2 py-1 text-xs rounded transition-colors",
@@ -289,17 +323,6 @@ const PreviewSystem = ({
               Split
             </button>
             <button
-              onClick={() => setViewMode('preview')}
-              className={cn(
-                "px-2 py-1 text-xs rounded transition-colors",
-                viewMode === 'preview' 
-                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100" 
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              )}
-            >
-              Preview
-            </button>
-            <button
               onClick={() => setViewMode('diff')}
               className={cn(
                 "px-2 py-1 text-xs rounded transition-colors",
@@ -309,23 +332,6 @@ const PreviewSystem = ({
               )}
             >
               Diff
-            </button>
-            <button
-              onClick={() => {
-                setViewMode('visual');
-                // Trigger visual preview generation when switching to visual mode
-                if (previewCode) {
-                  generateVisualPreview(previewCode);
-                }
-              }}
-              className={cn(
-                "px-2 py-1 text-xs rounded transition-colors",
-                viewMode === 'visual' 
-                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100" 
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              )}
-            >
-              Visual
             </button>
           </div>
         </div>
@@ -408,7 +414,7 @@ const PreviewSystem = ({
           </div>
         ) : viewMode === 'diff' ? (
           renderDiffView()
-        ) : viewMode === 'visual' ? (
+        ) : viewMode === 'preview' ? (
           // Visual Preview Mode
           <div className="h-full overflow-auto">
             {previewError ? (
@@ -443,7 +449,8 @@ const PreviewSystem = ({
               </div>
             )}
           </div>
-        ) : viewMode === 'split' ? (
+        ) : (
+          // Split view: Original vs Preview Code
           <div className="h-full flex">
             {/* Original Code */}
             <div className="flex-1 border-r">
@@ -461,7 +468,7 @@ const PreviewSystem = ({
             {/* Preview Code */}
             <div className="flex-1">
               <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400">
-                Preview
+                Preview Code
               </div>
               <CodeEditor
                 value={previewCode}
@@ -471,14 +478,6 @@ const PreviewSystem = ({
               />
             </div>
           </div>
-        ) : (
-          // Preview only
-          <CodeEditor
-            value={previewCode}
-            fileName={fileName}
-            readOnly={true}
-            className="h-full"
-          />
         )}
       </div>
 
