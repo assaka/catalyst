@@ -276,13 +276,14 @@ export function detectManualEdit(original, current) {
  * Create a debounced diff detector
  * @param {Function} callback - Function to call when changes are detected
  * @param {number} delay - Debounce delay in milliseconds
- * @returns {Function} Debounced detector function
+ * @param {string} initialOriginalCode - Initial original code baseline
+ * @returns {Function} Debounced detector function with setOriginal method
  */
-export function createDebouncedDiffDetector(callback, delay = 500) {
+export function createDebouncedDiffDetector(callback, delay = 500, initialOriginalCode = '') {
   let timeoutId = null;
-  let originalCode = '';
+  let originalCode = initialOriginalCode;
   
-  return function detectChanges(currentCode) {
+  const detectChanges = function(currentCode) {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
@@ -296,6 +297,13 @@ export function createDebouncedDiffDetector(callback, delay = 500) {
       }
     }, delay);
   };
+  
+  // Add method to update the original code baseline
+  detectChanges.setOriginal = function(newOriginalCode) {
+    originalCode = newOriginalCode;
+  };
+  
+  return detectChanges;
 }
 
 /**

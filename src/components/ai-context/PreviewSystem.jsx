@@ -11,10 +11,13 @@ import apiClient from '@/api/client';
  */
 const PreviewSystem = ({ 
   originalCode = '', 
+  currentCode = '',
   patch = null, 
   fileName = '',
   onApplyPatch,
   onRejectPatch,
+  hasManualEdits = false,
+  manualEditResult = null,
   className 
 }) => {
   const [previewCode, setPreviewCode] = useState('');
@@ -24,16 +27,33 @@ const PreviewSystem = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [viewMode, setViewMode] = useState('split'); // 'split', 'preview', 'diff'
 
-  // Generate preview when patch changes
+  // Generate preview when patch changes or manual edits are detected
   useEffect(() => {
-    if (patch && originalCode) {
+    if (hasManualEdits && currentCode !== originalCode) {
+      // For manual edits, show the current edited code as preview
+      setPreviewCode(currentCode);
+      setValidationResult({
+        isValid: true,
+        message: 'Manual edits detected',
+        type: 'manual'
+      });
+      // Generate simple diff for manual edits
+      if (manualEditResult) {
+        setDiff({
+          type: 'manual',
+          changes: manualEditResult.changeCount,
+          summary: manualEditResult.summary
+        });
+      }
+    } else if (patch && originalCode) {
+      // For AI-generated patches, use the API to generate preview
       generatePreview();
     } else {
       setPreviewCode('');
       setValidationResult(null);
       setDiff(null);
     }
-  }, [patch, originalCode]);
+  }, [patch, originalCode, currentCode, hasManualEdits, manualEditResult]);
 
   // Generate preview from patch
   const generatePreview = useCallback(async () => {
@@ -259,7 +279,10 @@ const PreviewSystem = ({
                 ? "text-green-700 dark:text-green-400" 
                 : "text-red-700 dark:text-red-400"
             )}>
-              {validationResult.isValid ? "Code is valid" : "Validation errors found"}
+              {validationResult.type === 'manual' 
+                ? `Live preview (${diff?.changes || 0} changes)`
+                : validationResult.isValid ? "Code is valid" : "Validation errors found"
+              }
             </span>
           </div>
           
@@ -284,12 +307,12 @@ const PreviewSystem = ({
               <p className="text-sm">Generating preview...</p>
             </div>
           </div>
-        ) : !patch ? (
+        ) : !patch && !hasManualEdits ? (
           <div className="h-full flex items-center justify-center">
             <div className="text-center text-gray-500 dark:text-gray-400">
               <Eye className="w-8 h-8 mx-auto mb-2 opacity-50" />
               <p className="text-sm">No changes to preview</p>
-              <p className="text-xs mt-1">Make changes in the AI Context Window to see a preview</p>
+              <p className="text-xs mt-1">Make changes in the AI Context Window or Code Editor to see a preview</p>
             </div>
           </div>
         ) : viewMode === 'diff' ? (
@@ -334,7 +357,7 @@ const PreviewSystem = ({
       </div>
 
       {/* Action Buttons */}
-      {patch && previewCode && (
+      {patch && previewCode && !hasManualEdits && (
         <div className="p-3 border-t bg-gray-50 dark:bg-gray-800 flex justify-end space-x-2">
           <button
             onClick={() => onRejectPatch?.()}
@@ -357,6 +380,23 @@ const PreviewSystem = ({
             <Check className="w-4 h-4 inline mr-1" />
             Apply Changes
           </button>
+        </div>
+      )}
+      
+      {/* Manual Edit Status */}
+      {hasManualEdits && previewCode && (
+        <div className="p-3 border-t bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <div className="text-sm text-blue-700 dark:text-blue-400">
+            <Check className="w-4 h-4 inline mr-2" />
+            Showing live preview of manual edits
+          </div>
+          {manualEditResult && (
+            <div className="text-xs text-blue-600 dark:text-blue-500 mt-1">
+              {manualEditResult.summary?.additions && `+${manualEditResult.summary.additions} additions`}
+              {manualEditResult.summary?.deletions && ` -${manualEditResult.summary.deletions} deletions`}
+              {manualEditResult.summary?.modifications && ` ~${manualEditResult.summary.modifications} modifications`}
+            </div>
+          )}
         </div>
       )}
     </div>

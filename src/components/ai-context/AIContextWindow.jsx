@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Send, RefreshCw, AlertCircle, CheckCircle, Code, Lightbulb } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import apiClient from '@/api/client';
 
 /**
  * AI Context Window Component
@@ -19,6 +20,7 @@ const AIContextWindow = ({
   const [lastResult, setLastResult] = useState(null);
   const [error, setError] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const textareaRef = useRef(null);
 
   // Auto-resize textarea
@@ -30,6 +32,22 @@ const AIContextWindow = ({
     }
   }, [prompt]);
 
+  // Check authentication status on component mount and when needed
+  useEffect(() => {
+    const checkAuth = () => {
+      const authToken = apiClient.getToken();
+      setIsAuthenticated(!!authToken);
+    };
+    
+    checkAuth();
+    
+    // Check auth status when localStorage changes (e.g., user logs in/out)
+    const handleStorageChange = () => checkAuth();
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   // Generate patch from natural language
   const generatePatch = useCallback(async () => {
     if (!prompt.trim() || !sourceCode.trim()) return;
@@ -38,11 +56,19 @@ const AIContextWindow = ({
     setError(null);
 
     try {
+      // Check if user has valid authentication token
+      const authToken = apiClient.getToken();
+      if (!authToken) {
+        setError('Authentication required. Please log in to use AI features.');
+        setIsAuthenticated(false);
+        return;
+      }
+
       const response = await fetch('/api/ai-context/nl-to-patch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token')}`
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
           prompt: prompt.trim(),
@@ -55,6 +81,15 @@ const AIContextWindow = ({
       });
 
       const data = await response.json();
+
+      // Handle authentication errors
+      if (response.status === 401) {
+        setError('Authentication expired. Please log in again to use AI features.');
+        // Clear invalid token and update auth status
+        apiClient.setToken(null);
+        setIsAuthenticated(false);
+        return;
+      }
 
       if (data.success) {
         setLastResult(data.data);
@@ -114,9 +149,24 @@ const AIContextWindow = ({
     <div className={cn("h-full flex flex-col bg-white dark:bg-gray-900 border-l", className)}>
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b bg-gray-50 dark:bg-gray-800">
-        <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-          AI Context Window
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+            AI Context Window
+          </h3>
+          {/* Authentication Status */}
+          <div className={cn(
+            "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs",
+            isAuthenticated 
+              ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+              : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+          )}>
+            <div className={cn(
+              "w-1.5 h-1.5 rounded-full",
+              isAuthenticated ? "bg-green-500" : "bg-red-500"
+            )} />
+            {isAuthenticated ? "Auth OK" : "Auth Required"}
+          </div>
+        </div>
         <button
           onClick={clearState}
           className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -200,6 +250,23 @@ const AIContextWindow = ({
 
         {/* Results Area */}
         <div className="flex-1 overflow-auto">
+          {/* Authentication Help */}
+          {!isAuthenticated && !error && !lastResult && (
+            <div className="p-3 m-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+              <div className="flex items-start">
+                <AlertCircle className="w-4 h-4 text-blue-500 mr-2 mt-0.5" />
+                <div>
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-400 block mb-1">
+                    Authentication Required
+                  </span>
+                  <span className="text-xs text-blue-600 dark:text-blue-500">
+                    Please log in to use AI code generation features. You'll need a valid store owner account to access these tools.
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Error Display */}
           {error && (
             <div className="p-3 m-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">

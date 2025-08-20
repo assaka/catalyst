@@ -37,7 +37,7 @@ const CodeEditor = ({
     if (enableDiffDetection && originalCode) {
       originalCodeRef.current = originalCode;
       
-      // Create debounced diff detector
+      // Create debounced diff detector with initial original code
       if (diffDetectorRef.current) {
         // Clean up existing detector
         diffDetectorRef.current = null;
@@ -46,9 +46,9 @@ const CodeEditor = ({
       diffDetectorRef.current = createDebouncedDiffDetector((diffResult) => {
         setDiffResult(diffResult);
         onManualEdit?.(diffResult);
-      }, 500);
+      }, 500, originalCode);
       
-      console.log('🔍 Diff detection enabled for file:', fileName);
+      console.log('🔍 Diff detection enabled for file:', fileName, 'with baseline length:', originalCode.length);
     }
     
     return () => {
@@ -63,6 +63,10 @@ const CodeEditor = ({
   useEffect(() => {
     if (originalCode !== originalCodeRef.current) {
       originalCodeRef.current = originalCode;
+      // Update the detector's baseline if it exists
+      if (diffDetectorRef.current && diffDetectorRef.current.setOriginal) {
+        diffDetectorRef.current.setOriginal(originalCode);
+      }
       // Reset diff result when original code changes
       setDiffResult(null);
     }
@@ -403,7 +407,7 @@ const CodeEditor = ({
     onChange?.(value);
     
     // Trigger manual edit detection if enabled
-    if (enableDiffDetection && diffDetectorRef.current && originalCodeRef.current) {
+    if (enableDiffDetection && diffDetectorRef.current) {
       diffDetectorRef.current(value);
     }
   }, [onChange, enableDiffDetection]);

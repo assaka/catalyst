@@ -75,6 +75,7 @@ const AIContextWindowPage = () => {
   // State management
   const [selectedFile, setSelectedFile] = useState(null);
   const [sourceCode, setSourceCode] = useState('');
+  const [originalCode, setOriginalCode] = useState(''); // Store original baseline for diff detection
   const [modifiedFiles, setModifiedFiles] = useState([]);
   const [currentPatch, setCurrentPatch] = useState(null);
   const [cursorPosition, setCursorPosition] = useState({ line: 0, column: 0 });
@@ -102,6 +103,7 @@ const AIContextWindowPage = () => {
 
       if (data && data.success) {
         setSourceCode(data.content);
+        setOriginalCode(data.content); // Set baseline for diff detection
         setSelectedFile({
           path: filePath,
           name: filePath.split('/').pop(),
@@ -142,6 +144,7 @@ const DiagnosticComponent = () => {
 export default DiagnosticComponent;`;
         
         setSourceCode(diagnosticInfo);
+        setOriginalCode(diagnosticInfo); // Set baseline for diff detection
         setSelectedFile({
           path: filePath,
           name: filePath.split('/').pop() || 'unknown.js',
@@ -205,7 +208,7 @@ ${troubleshooting.map((step, i) => `// ${i + 1}. ${step}`).join('\n')}
 //`;
       
       // Fallback for demo purposes
-      setSourceCode(errorInfo + `
+      const fallbackContent = errorInfo + `
 import React, { useState, useEffect } from 'react';
 
 const ExampleComponent = () => {
@@ -225,7 +228,10 @@ const ExampleComponent = () => {
   );
 };
 
-export default ExampleComponent;`);
+export default ExampleComponent;`;
+      
+      setSourceCode(fallbackContent);
+      setOriginalCode(fallbackContent); // Set baseline for diff detection
       
       setSelectedFile({
         path: filePath,
@@ -241,6 +247,8 @@ export default ExampleComponent;`);
   // Handle file selection from tree navigator
   const handleFileSelect = useCallback((file) => {
     if (file.path !== selectedFile?.path) {
+      // Reset manual edit result when switching files
+      setManualEditResult(null);
       loadFileContent(file.path);
     }
   }, [selectedFile, loadFileContent]);
@@ -684,7 +692,7 @@ export default ExampleComponent;`);
                       onCursorPositionChange={setCursorPosition}
                       onSelectionChange={setSelection}
                       onManualEdit={handleManualEdit}
-                      originalCode={sourceCode} // Use current code as baseline for now
+                      originalCode={originalCode} // Use stored original baseline for diff detection
                       enableDiffDetection={true}
                       className="flex-1"
                     />
@@ -742,11 +750,14 @@ export default ExampleComponent;`);
                   )}
                 </div>
                 <PreviewSystem
-                  originalCode={sourceCode}
+                  originalCode={originalCode}
+                  currentCode={sourceCode}
                   patch={currentPatch}
                   fileName={selectedFile?.name || ''}
                   onApplyPatch={handleApplyPatch}
                   onRejectPatch={handleRejectPatch}
+                  hasManualEdits={manualEditResult?.hasChanges || false}
+                  manualEditResult={manualEditResult}
                   className="flex-1"
                 />
               </div>
