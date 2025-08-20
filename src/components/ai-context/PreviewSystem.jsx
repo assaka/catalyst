@@ -25,9 +25,12 @@ const PreviewSystem = ({
   const [validationResult, setValidationResult] = useState(null);
   const [diff, setDiff] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [viewMode, setViewMode] = useState('preview'); // 'split', 'preview', 'diff'
+  const [previewMode, setPreviewMode] = useState('live'); // 'live', 'patch'
   const [visualPreview, setVisualPreview] = useState(null);
   const [previewError, setPreviewError] = useState(null);
+  const [patchHistory, setPatchHistory] = useState([]);
+  const [showPatchHistory, setShowPatchHistory] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Generate visual preview by compiling and rendering the component
   const generateVisualPreview = useCallback(async (codeToRender) => {
@@ -127,7 +130,7 @@ const PreviewSystem = ({
         });
       }
       // Generate visual preview for manual edits
-      if (viewMode === 'preview') {
+      if (previewMode === 'live') {
         generateVisualPreview(currentCode);
       }
     } else if (patch && originalCode) {
@@ -140,7 +143,7 @@ const PreviewSystem = ({
       setVisualPreview(null);
       setPreviewError(null);
     }
-  }, [patch, originalCode, currentCode, hasManualEdits, manualEditResult, viewMode, generateVisualPreview]);
+  }, [patch, originalCode, currentCode, hasManualEdits, manualEditResult, previewMode, generateVisualPreview]);
 
   // Generate preview from patch
   const generatePreview = useCallback(async () => {
@@ -159,7 +162,7 @@ const PreviewSystem = ({
         setDiff(data.data.diff);
         setValidationResult(data.data.validation);
         // Generate visual preview for AI-generated patches
-        if (viewMode === 'preview') {
+        if (previewMode === 'live') {
           generateVisualPreview(data.data.previewCode);
         }
       } else {
@@ -176,7 +179,7 @@ const PreviewSystem = ({
     } finally {
       setIsGenerating(false);
     }
-  }, [patch, originalCode, fileName]);
+  }, [patch, originalCode, fileName, previewMode, generateVisualPreview]);
 
   // Apply patch to original code
   const handleApplyPatch = useCallback(async () => {
@@ -219,6 +222,86 @@ const PreviewSystem = ({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, [previewCode, fileName]);
+
+  // Load patch history for the current file
+  const loadPatchHistory = useCallback(async () => {
+    if (!fileName) return;
+    
+    setLoadingHistory(true);
+    try {
+      const data = await apiClient.get(`ast-diffs/file/${fileName}`);
+      if (data.success) {
+        setPatchHistory(data.data.overlays || []);
+      }
+    } catch (error) {
+      console.error('Failed to load patch history:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, [fileName]);
+
+  // Save patch to persistent storage
+  const savePatchToPersistentStorage = useCallback(async () => {
+    if (!patch || !originalCode || !previewCode || !fileName) return;
+
+    try {
+      const data = await apiClient.post('ast-diffs/create', {
+        filePath: fileName,
+        originalCode: originalCode,
+        modifiedCode: previewCode,
+        changeSummary: `AI-generated changes for: ${fileName}`,
+        changeType: 'modification'
+      });
+
+      if (data.success) {
+        console.log('Patch saved to persistent storage:', data.data.id);
+        // Reload patch history to show the new patch
+        loadPatchHistory();
+        return data.data;
+      }
+    } catch (error) {
+      console.error('Failed to save patch to persistent storage:', error);
+    }
+  }, [patch, originalCode, previewCode, fileName, loadPatchHistory]);
+
+  // Revert a specific patch from history
+  const revertPatch = useCallback(async (patchId) => {
+    try {
+      const data = await apiClient.post(`ast-diffs/${patchId}/revert`);
+      if (data.success) {
+        console.log('Patch reverted successfully:', patchId);
+        // Reload patch history to reflect the revert
+        loadPatchHistory();
+        return true;
+      }
+    } catch (error) {
+      console.error('Failed to revert patch:', error);
+    }
+    return false;
+  }, [loadPatchHistory]);
+
+  // Apply a specific patch from history
+  const applyStoredPatch = useCallback(async (patchId) => {
+    try {
+      const data = await apiClient.post(`ast-diffs/${patchId}/apply`);
+      if (data.success) {
+        console.log('Stored patch applied successfully:', patchId);
+        // Reload patch history to reflect the application
+        loadPatchHistory();
+        return true;
+      }
+    } catch (error) {
+      console.error('Failed to apply stored patch:', error);
+    }
+    return false;
+  }, [loadPatchHistory]);
+
+  // Load patch history when file changes
+  useEffect(() => {
+    if (fileName && showPatchHistory) {
+      loadPatchHistory();
+    }
+  }, [fileName, showPatchHistory, loadPatchHistory]);
 
   // Render diff view
   const renderDiffView = () => {
@@ -292,46 +375,37 @@ const PreviewSystem = ({
             Preview
           </h3>
           
-          {/* View Mode Toggle */}
+          {/* Preview Mode Toggle */}
           <div className="flex bg-gray-200 dark:bg-gray-700 rounded p-0.5">
             <button
               onClick={() => {
-                setViewMode('preview');
-                // Trigger visual preview generation when switching to preview mode
-                if (previewCode) {
-                  generateVisualPreview(previewCode);
+                setPreviewMode('live');
+                // Trigger visual preview generation when switching to live mode
+                if (previewCode || currentCode) {
+                  generateVisualPreview(previewCode || currentCode);
                 }
               }}
               className={cn(
-                "px-2 py-1 text-xs rounded transition-colors",
-                viewMode === 'preview' 
-                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100" 
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                "px-3 py-1 text-xs rounded transition-colors font-medium",
+                previewMode === 'live' 
+                  ? "bg-blue-500 text-white shadow-sm" 
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
               )}
+              title="Visual rendering without deployment"
             >
-              Preview
+              🔴 Live Preview
             </button>
             <button
-              onClick={() => setViewMode('split')}
+              onClick={() => setPreviewMode('patch')}
               className={cn(
-                "px-2 py-1 text-xs rounded transition-colors",
-                viewMode === 'split' 
-                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100" 
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                "px-3 py-1 text-xs rounded transition-colors font-medium",
+                previewMode === 'patch' 
+                  ? "bg-orange-500 text-white shadow-sm" 
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
               )}
+              title="Review changes before production deployment"
             >
-              Split
-            </button>
-            <button
-              onClick={() => setViewMode('diff')}
-              className={cn(
-                "px-2 py-1 text-xs rounded transition-colors",
-                viewMode === 'diff' 
-                  ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100" 
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              )}
-            >
-              Diff
+              📋 Patch Review
             </button>
           </div>
         </div>
@@ -412,10 +486,8 @@ const PreviewSystem = ({
               <p className="text-xs mt-1">Make changes in the AI Context Window or Code Editor to see a preview</p>
             </div>
           </div>
-        ) : viewMode === 'diff' ? (
-          renderDiffView()
-        ) : viewMode === 'preview' ? (
-          // Visual Preview Mode
+        ) : previewMode === 'live' ? (
+          // Live Preview Mode - Visual rendering without deployment
           <div className="h-full overflow-auto">
             {previewError ? (
               <div className="h-full flex items-center justify-center">
@@ -426,85 +498,217 @@ const PreviewSystem = ({
               </div>
             ) : visualPreview ? (
               <div className="h-full">
-                <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400">
-                  Visual Preview • {fileName}
+                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border-b text-xs text-blue-600 dark:text-blue-400 flex items-center">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
+                  🔴 Live Preview • {fileName} • No deployment
                 </div>
                 <div className="p-4">
                   <div 
                     id="visual-preview-container"
-                    className="min-h-[400px] border rounded bg-white"
+                    className="min-h-[400px] border-2 border-blue-200 rounded bg-white shadow-sm"
                   >
                     {/* Visual preview will be rendered here by React */}
-                    {visualPreview && <visualPreview />}
+                    {visualPreview && React.createElement(visualPreview)}
                   </div>
                 </div>
               </div>
             ) : (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center text-gray-500 dark:text-gray-400">
-                  <Eye className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Visual preview loading...</p>
+                  <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
+                  <p className="text-sm">Generating live preview...</p>
                   <p className="text-xs mt-1">Compiling React component</p>
                 </div>
               </div>
             )}
           </div>
         ) : (
-          // Split view: Original vs Preview Code
-          <div className="h-full flex">
-            {/* Original Code */}
-            <div className="flex-1 border-r">
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400">
-                Original
-              </div>
-              <CodeEditor
-                value={originalCode}
-                fileName={fileName}
-                readOnly={true}
-                className="h-full"
-              />
+          // Patch Review Mode - Show detailed diff and changes for approval
+          <div className="h-full flex flex-col">
+            <div className="p-2 bg-orange-50 dark:bg-orange-900/20 border-b text-xs text-orange-600 dark:text-orange-400 flex items-center">
+              <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+              📋 Patch Review • Review before production deployment
             </div>
             
-            {/* Preview Code */}
-            <div className="flex-1">
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400">
-                Preview Code
+            {diff ? (
+              <div className="flex-1 overflow-auto">
+                {renderDiffView()}
               </div>
-              <CodeEditor
-                value={previewCode}
-                fileName={fileName}
-                readOnly={true}
-                className="h-full"
-              />
-            </div>
+            ) : (
+              <div className="flex-1 flex">
+                {/* Original Code */}
+                <div className="flex-1 border-r">
+                  <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400">
+                    ❌ Original Code
+                  </div>
+                  <CodeEditor
+                    value={originalCode}
+                    fileName={fileName}
+                    readOnly={true}
+                    className="h-full"
+                  />
+                </div>
+                
+                {/* Modified Code */}
+                <div className="flex-1">
+                  <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400">
+                    ✅ Modified Code (for production)
+                  </div>
+                  <CodeEditor
+                    value={previewCode}
+                    fileName={fileName}
+                    readOnly={true}
+                    className="h-full"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Action Buttons */}
+      {/* Action Buttons and Patch History */}
       {patch && previewCode && !hasManualEdits && (
-        <div className="p-3 border-t bg-gray-50 dark:bg-gray-800 flex justify-end space-x-2">
-          <button
-            onClick={() => onRejectPatch?.()}
-            className="px-3 py-1.5 text-sm border border-red-300 text-red-700 dark:text-red-400 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-          >
-            <X className="w-4 h-4 inline mr-1" />
-            Reject
-          </button>
+        <div className="border-t bg-gray-50 dark:bg-gray-800">
+          {/* Action Buttons */}
+          <div className="p-3 flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowPatchHistory(!showPatchHistory)}
+                className="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 dark:text-gray-300 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                title="View patch history"
+              >
+                <span className="text-xs">📋</span> History ({patchHistory.length})
+              </button>
+              
+              <button
+                onClick={savePatchToPersistentStorage}
+                className="px-3 py-1.5 text-sm border border-blue-300 text-blue-700 dark:text-blue-400 dark:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
+                title="Save patch to history"
+              >
+                💾 Save Patch
+              </button>
+            </div>
+            
+            <div className="flex space-x-2">
+              <button
+                onClick={() => onRejectPatch?.()}
+                className="px-3 py-1.5 text-sm border border-red-300 text-red-700 dark:text-red-400 dark:border-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+              >
+                <X className="w-4 h-4 inline mr-1" />
+                Reject
+              </button>
+              
+              <button
+                onClick={handleApplyPatch}
+                disabled={validationResult && !validationResult.isValid}
+                className={cn(
+                  "px-3 py-1.5 text-sm rounded transition-colors",
+                  validationResult && !validationResult.isValid
+                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    : "bg-green-500 hover:bg-green-600 text-white"
+                )}
+              >
+                <Check className="w-4 h-4 inline mr-1" />
+                Apply Changes
+              </button>
+            </div>
+          </div>
           
-          <button
-            onClick={handleApplyPatch}
-            disabled={validationResult && !validationResult.isValid}
-            className={cn(
-              "px-3 py-1.5 text-sm rounded transition-colors",
-              validationResult && !validationResult.isValid
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                : "bg-green-500 hover:bg-green-600 text-white"
-            )}
-          >
-            <Check className="w-4 h-4 inline mr-1" />
-            Apply Changes
-          </button>
+          {/* Patch History Panel */}
+          {showPatchHistory && (
+            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+              <div className="p-3">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    Patch History • {fileName}
+                  </h4>
+                  {loadingHistory && (
+                    <RefreshCw className="w-4 h-4 animate-spin text-gray-400" />
+                  )}
+                </div>
+                
+                {patchHistory.length === 0 ? (
+                  <div className="text-center py-4 text-gray-500 dark:text-gray-400">
+                    <div className="text-xs">No saved patches for this file</div>
+                    <div className="text-xs mt-1">Save the current patch to see it here</div>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {patchHistory.map((historyPatch) => (
+                      <div
+                        key={historyPatch.id}
+                        className="p-2 border border-gray-200 dark:border-gray-700 rounded text-xs bg-gray-50 dark:bg-gray-800"
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center space-x-2">
+                            <span className={cn(
+                              "w-2 h-2 rounded-full",
+                              historyPatch.status === 'applied' ? "bg-green-500" :
+                              historyPatch.status === 'reverted' ? "bg-red-500" :
+                              "bg-blue-500"
+                            )} />
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
+                              {historyPatch.changeSummary || 'Untitled Change'}
+                            </span>
+                          </div>
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {new Date(historyPatch.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        
+                        {historyPatch.patchPreview && (
+                          <div className="mb-2 text-gray-600 dark:text-gray-400">
+                            {historyPatch.patchPreview.substring(0, 100)}
+                            {historyPatch.patchPreview.length > 100 && '...'}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center justify-between">
+                          <div className="text-gray-500 dark:text-gray-400">
+                            {historyPatch.affectedSymbols?.length > 0 && (
+                              <span>Affects: {historyPatch.affectedSymbols.slice(0, 2).join(', ')}{historyPatch.affectedSymbols.length > 2 && '...'}</span>
+                            )}
+                          </div>
+                          
+                          <div className="flex space-x-1">
+                            {historyPatch.status === 'pending' && (
+                              <button
+                                onClick={() => applyStoredPatch(historyPatch.id)}
+                                className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                                title="Apply this patch"
+                              >
+                                Apply
+                              </button>
+                            )}
+                            
+                            {historyPatch.status === 'applied' && (
+                              <button
+                                onClick={() => revertPatch(historyPatch.id)}
+                                className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                                title="Revert this patch"
+                              >
+                                Revert
+                              </button>
+                            )}
+                            
+                            <span className={cn(
+                              "px-2 py-1 text-xs rounded",
+                              historyPatch.status === 'applied' ? "bg-green-100 text-green-700" :
+                              historyPatch.status === 'reverted' ? "bg-red-100 text-red-700" :
+                              "bg-blue-100 text-blue-700"
+                            )}>
+                              {historyPatch.status}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
       
