@@ -126,7 +126,10 @@ const PreviewSystem = ({
         setDiff({
           type: 'manual',
           changes: manualEditResult.changeCount,
-          summary: manualEditResult.summary
+          summary: manualEditResult.summary,
+          hunks: manualEditResult.summary?.hunks || [],
+          oldFileName: 'original',
+          newFileName: 'modified'
         });
       }
       // Generate visual preview for manual edits
@@ -489,6 +492,24 @@ const PreviewSystem = ({
         ) : previewMode === 'live' ? (
           // Live Preview Mode - Visual rendering without deployment
           <div className="h-full overflow-auto">
+            {/* File Preview Bar */}
+            <div className="sticky top-0 p-2 bg-blue-50 dark:bg-blue-900/20 border-b text-xs text-blue-600 dark:text-blue-400 flex items-center justify-between z-10">
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
+                🔴 Live Preview • No deployment
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="px-2 py-1 bg-blue-100 dark:bg-blue-800 rounded text-blue-700 dark:text-blue-300 font-mono">
+                  {fileName}
+                </span>
+                {hasManualEdits && (
+                  <span className="px-2 py-1 bg-orange-100 dark:bg-orange-800 rounded text-orange-700 dark:text-orange-300">
+                    Manual Edits
+                  </span>
+                )}
+              </div>
+            </div>
+            
             {previewError ? (
               <div className="h-full flex items-center justify-center">
                 <div className="text-center text-orange-600 dark:text-orange-400 p-4">
@@ -497,19 +518,13 @@ const PreviewSystem = ({
                 </div>
               </div>
             ) : visualPreview ? (
-              <div className="h-full">
-                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border-b text-xs text-blue-600 dark:text-blue-400 flex items-center">
-                  <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
-                  🔴 Live Preview • {fileName} • No deployment
-                </div>
-                <div className="p-4">
-                  <div 
-                    id="visual-preview-container"
-                    className="min-h-[400px] border-2 border-blue-200 rounded bg-white shadow-sm"
-                  >
-                    {/* Visual preview will be rendered here by React */}
-                    {visualPreview && React.createElement(visualPreview)}
-                  </div>
+              <div className="p-4">
+                <div 
+                  id="visual-preview-container"
+                  className="min-h-[400px] border-2 border-blue-200 rounded bg-white shadow-sm"
+                >
+                  {/* Visual preview will be rendered here by React */}
+                  {visualPreview && React.createElement(visualPreview)}
                 </div>
               </div>
             ) : (
@@ -525,9 +540,22 @@ const PreviewSystem = ({
         ) : (
           // Patch Review Mode - Show detailed diff and changes for approval
           <div className="h-full flex flex-col">
-            <div className="p-2 bg-orange-50 dark:bg-orange-900/20 border-b text-xs text-orange-600 dark:text-orange-400 flex items-center">
-              <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-              📋 Patch Review • Review before production deployment
+            {/* File Preview Bar for Patch Review */}
+            <div className="p-2 bg-orange-50 dark:bg-orange-900/20 border-b text-xs text-orange-600 dark:text-orange-400 flex items-center justify-between">
+              <div className="flex items-center">
+                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                📋 Patch Review • Review before production deployment
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="px-2 py-1 bg-orange-100 dark:bg-orange-800 rounded text-orange-700 dark:text-orange-300 font-mono">
+                  {fileName}
+                </span>
+                {patch && (
+                  <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-800 rounded text-yellow-700 dark:text-yellow-300">
+                    Pending Changes
+                  </span>
+                )}
+              </div>
             </div>
             
             {diff ? (
