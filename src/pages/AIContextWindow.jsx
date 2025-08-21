@@ -325,12 +325,13 @@ export default ExampleComponent;`;
   // Handle manual edit detection
   const handleManualEdit = useCallback((diffResult) => {
     setManualEditResult(diffResult);
-    console.log('Manual edit detected:', diffResult);
     
-    // You could optionally show a notification or update UI to indicate manual editing
     if (diffResult.hasChanges) {
       console.log(`🔍 Manual changes detected: ${diffResult.changeCount} modifications`);
       console.log('📋 Diff summary:', diffResult.summary);
+    } else {
+      console.log('✅ Changes undone - code returned to original state');
+      // Clear any manual edit indicators when returning to original state
     }
   }, []);
 

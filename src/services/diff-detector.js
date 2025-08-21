@@ -289,11 +289,10 @@ export function createDebouncedDiffDetector(callback, delay = 500, initialOrigin
     }
     
     timeoutId = setTimeout(() => {
-      if (originalCode && originalCode !== currentCode) {
+      if (originalCode) {
         const result = detectManualEdit(originalCode, currentCode);
-        if (result.hasChanges) {
-          callback(result);
-        }
+        // Always call callback to handle both changes and clearing when returning to original
+        callback(result);
       }
     }, delay);
   };

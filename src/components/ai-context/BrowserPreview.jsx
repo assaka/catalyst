@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useStoreSlug } from '@/hooks/useStoreSlug';
+import { getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
 
 /**
  * Browser Preview Component
@@ -18,23 +20,28 @@ const BrowserPreview = ({
   const [deviceView, setDeviceView] = useState('desktop'); // desktop, tablet, mobile
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
 
+  // Get actual store slug from current context
+  const { storeSlug, isStoreContext } = useStoreSlug();
+
   // Detect route from file path
   const detectRouteFromFile = useCallback((filePath) => {
     if (!filePath) return null;
 
-    // Default store code for preview
-    const defaultStoreCode = 'amazing-store';
+    // Use actual store slug from context, or try to extract from current URL, or fallback to default
+    const currentStoreSlug = storeSlug || 
+                           getStoreSlugFromPublicUrl(window.location.pathname) || 
+                           'amazing-store';
     
     // Map file paths to their corresponding routes
     const routeMapping = {
       // Pages directory mappings
-      'src/pages/Storefront.jsx': `/public/${defaultStoreCode}`,
-      'src/pages/ProductDetail.jsx': `/public/${defaultStoreCode}/product/sample-product`,
-      'src/pages/Cart.jsx': `/public/${defaultStoreCode}/cart`,
-      'src/pages/Checkout.jsx': `/public/${defaultStoreCode}/checkout`,
-      'src/pages/OrderSuccess.jsx': `/public/${defaultStoreCode}/order-success/12345`,
-      'src/pages/CustomerAuth.jsx': `/public/${defaultStoreCode}/login`,
-      'src/pages/CustomerDashboard.jsx': `/public/${defaultStoreCode}/account`,
+      'src/pages/Storefront.jsx': `/public/${currentStoreSlug}`,
+      'src/pages/ProductDetail.jsx': `/public/${currentStoreSlug}/product/sample-product`,
+      'src/pages/Cart.jsx': `/public/${currentStoreSlug}/cart`,
+      'src/pages/Checkout.jsx': `/public/${currentStoreSlug}/checkout`,
+      'src/pages/OrderSuccess.jsx': `/public/${currentStoreSlug}/order-success/12345`,
+      'src/pages/CustomerAuth.jsx': `/public/${currentStoreSlug}/login`,
+      'src/pages/CustomerDashboard.jsx': `/public/${currentStoreSlug}/account`,
       
       // Admin pages
       'src/pages/Dashboard.jsx': '/admin/dashboard',
@@ -49,13 +56,13 @@ const BrowserPreview = ({
       'src/pages/Customers.jsx': '/admin/customers',
       
       // Component mappings (try to guess based on component name)
-      'src/components/storefront/ProductCard.jsx': `/public/${defaultStoreCode}`,
-      'src/components/storefront/CategoryGrid.jsx': `/public/${defaultStoreCode}/category/sample-category`,
-      'src/components/storefront/CartSummary.jsx': `/public/${defaultStoreCode}/cart`,
-      'src/components/storefront/CheckoutForm.jsx': `/public/${defaultStoreCode}/checkout`,
-      'src/components/storefront/Header.jsx': `/public/${defaultStoreCode}`,
-      'src/components/storefront/Footer.jsx': `/public/${defaultStoreCode}`,
-      'src/components/storefront/Navigation.jsx': `/public/${defaultStoreCode}`,
+      'src/components/storefront/ProductCard.jsx': `/public/${currentStoreSlug}`,
+      'src/components/storefront/CategoryGrid.jsx': `/public/${currentStoreSlug}/category/sample-category`,
+      'src/components/storefront/CartSummary.jsx': `/public/${currentStoreSlug}/cart`,
+      'src/components/storefront/CheckoutForm.jsx': `/public/${currentStoreSlug}/checkout`,
+      'src/components/storefront/Header.jsx': `/public/${currentStoreSlug}`,
+      'src/components/storefront/Footer.jsx': `/public/${currentStoreSlug}`,
+      'src/components/storefront/Navigation.jsx': `/public/${currentStoreSlug}`,
       
       // Landing and auth pages
       'src/pages/Landing.jsx': '/',
@@ -72,7 +79,7 @@ const BrowserPreview = ({
     
     // Check if it's a storefront component
     if (filePath.includes('/storefront/') || filePath.includes('/components/storefront/')) {
-      return `/public/${defaultStoreCode}`;
+      return `/public/${currentStoreSlug}`;
     }
     
     // Check if it's an admin component
@@ -91,25 +98,25 @@ const BrowserPreview = ({
       
       // Public pages
       if (['storefront', 'shop', 'home'].includes(pageName)) {
-        return `/public/${defaultStoreCode}`;
+        return `/public/${currentStoreSlug}`;
       }
       
       if (pageName === 'productdetail') {
-        return `/public/${defaultStoreCode}/product/sample-product`;
+        return `/public/${currentStoreSlug}/product/sample-product`;
       }
       
       if (pageName === 'cart') {
-        return `/public/${defaultStoreCode}/cart`;
+        return `/public/${currentStoreSlug}/cart`;
       }
       
       if (pageName === 'checkout') {
-        return `/public/${defaultStoreCode}/checkout`;
+        return `/public/${currentStoreSlug}/checkout`;
       }
     }
     
     // Default fallback - show storefront
-    return `/public/${defaultStoreCode}`;
-  }, []);
+    return `/public/${currentStoreSlug}`;
+  }, [storeSlug]);
 
   // Get preview URL based on file
   const detectedRoute = useMemo(() => {
