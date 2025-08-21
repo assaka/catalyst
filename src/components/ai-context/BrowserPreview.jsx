@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useStoreSlug } from '@/hooks/useStoreSlug';
+import { useStore } from '@/components/storefront/StoreProvider';
 import { getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
 
 /**
@@ -22,56 +23,87 @@ const BrowserPreview = ({
 
   // Get actual store slug from current context
   const { storeSlug, isStoreContext } = useStoreSlug();
+  
+  // Get store data from StoreProvider context
+  const { store } = useStore();
 
-  // Detect route from file path
-  const detectRouteFromFile = useCallback((filePath) => {
+  // Analyze file content to detect appropriate route
+  const analyzeFileContentForRoute = useCallback((filePath, fileContent) => {
     if (!filePath) return null;
 
-    // Use actual store slug from context, or try to extract from current URL, or fallback to default
+    // Use actual store slug from context, or try to extract from current URL, or use store data fallback
     const currentStoreSlug = storeSlug || 
                            getStoreSlugFromPublicUrl(window.location.pathname) || 
-                           'amazing-store';
-    
-    // Map file paths to their corresponding routes
-    const routeMapping = {
-      // Pages directory mappings
-      'src/pages/Storefront.jsx': `/public/${currentStoreSlug}`,
-      'src/pages/ProductDetail.jsx': `/public/${currentStoreSlug}/product/sample-product`,
-      'src/pages/Cart.jsx': `/public/${currentStoreSlug}/cart`,
-      'src/pages/Checkout.jsx': `/public/${currentStoreSlug}/checkout`,
-      'src/pages/OrderSuccess.jsx': `/public/${currentStoreSlug}/order-success/12345`,
-      'src/pages/CustomerAuth.jsx': `/public/${currentStoreSlug}/login`,
-      'src/pages/CustomerDashboard.jsx': `/public/${currentStoreSlug}/account`,
-      
-      // Admin pages
-      'src/pages/Dashboard.jsx': '/admin/dashboard',
-      'src/pages/Products.jsx': '/admin/products',
-      'src/pages/Categories.jsx': '/admin/categories',
-      'src/pages/Orders.jsx': '/admin/orders',
-      'src/pages/Settings.jsx': '/admin/settings',
-      'src/pages/Attributes.jsx': '/admin/attributes',
-      'src/pages/Plugins.jsx': '/admin/plugins',
-      'src/pages/CmsPages.jsx': '/admin/cms-pages',
-      'src/pages/CmsBlocks.jsx': '/admin/cms-blocks',
-      'src/pages/Customers.jsx': '/admin/customers',
-      
-      // Component mappings (try to guess based on component name)
-      'src/components/storefront/ProductCard.jsx': `/public/${currentStoreSlug}`,
-      'src/components/storefront/CategoryGrid.jsx': `/public/${currentStoreSlug}/category/sample-category`,
-      'src/components/storefront/CartSummary.jsx': `/public/${currentStoreSlug}/cart`,
-      'src/components/storefront/CheckoutForm.jsx': `/public/${currentStoreSlug}/checkout`,
-      'src/components/storefront/Header.jsx': `/public/${currentStoreSlug}`,
-      'src/components/storefront/Footer.jsx': `/public/${currentStoreSlug}`,
-      'src/components/storefront/Navigation.jsx': `/public/${currentStoreSlug}`,
-      
-      // Landing and auth pages
-      'src/pages/Landing.jsx': '/',
-      'src/pages/Auth.jsx': '/admin/login',
-    };
+                           store?.slug || 
+                           store?.code || 
+                           'demo-store';
 
-    // Check for exact match first
-    if (routeMapping[filePath]) {
-      return routeMapping[filePath];
+    // Check if content contains React Router route definitions
+    const routePatterns = [
+      // Look for exact route patterns in the code
+      { pattern: /path=["']\/public\/[^"']*\/product\/[^"']*["']/, route: `/public/${currentStoreSlug}/product/sample-product` },
+      { pattern: /path=["']\/public\/[^"']*\/cart["']/, route: `/public/${currentStoreSlug}/cart` },
+      { pattern: /path=["']\/public\/[^"']*\/checkout["']/, route: `/public/${currentStoreSlug}/checkout` },
+      { pattern: /path=["']\/public\/[^"']*\/login["']/, route: `/public/${currentStoreSlug}/login` },
+      { pattern: /path=["']\/public\/[^"']*\/account["']/, route: `/public/${currentStoreSlug}/account` },
+      { pattern: /path=["']\/public\/[^"']*\/order-success["']/, route: `/public/${currentStoreSlug}/order-success/12345` },
+      { pattern: /path=["']\/public\/[^"']*["']/, route: `/public/${currentStoreSlug}` },
+      
+      // Admin route patterns
+      { pattern: /path=["']\/admin\/dashboard["']/, route: '/admin/dashboard' },
+      { pattern: /path=["']\/admin\/products["']/, route: '/admin/products' },
+      { pattern: /path=["']\/admin\/categories["']/, route: '/admin/categories' },
+      { pattern: /path=["']\/admin\/orders["']/, route: '/admin/orders' },
+      { pattern: /path=["']\/admin\/settings["']/, route: '/admin/settings' },
+      { pattern: /path=["']\/admin\/customers["']/, route: '/admin/customers' },
+      { pattern: /path=["']\/admin\/attributes["']/, route: '/admin/attributes' },
+      { pattern: /path=["']\/admin\/plugins["']/, route: '/admin/plugins' },
+      { pattern: /path=["']\/admin\/cms-pages["']/, route: '/admin/cms-pages' },
+      { pattern: /path=["']\/admin\/cms-blocks["']/, route: '/admin/cms-blocks' },
+      { pattern: /path=["']\/admin["']/, route: '/admin/dashboard' },
+    ];
+
+    // Check file content for route patterns
+    if (fileContent) {
+      for (const { pattern, route } of routePatterns) {
+        if (pattern.test(fileContent)) {
+          return route;
+        }
+      }
+
+      // Check for specific component indicators in content
+      if (fileContent.includes('ProductCard') || fileContent.includes('ProductGrid')) {
+        return `/public/${currentStoreSlug}`;
+      }
+      if (fileContent.includes('CartSummary') || fileContent.includes('cart')) {
+        return `/public/${currentStoreSlug}/cart`;
+      }
+      if (fileContent.includes('CheckoutForm') || fileContent.includes('checkout')) {
+        return `/public/${currentStoreSlug}/checkout`;
+      }
+      if (fileContent.includes('CategoryGrid') || fileContent.includes('category')) {
+        return `/public/${currentStoreSlug}/category/sample-category`;
+      }
+    }
+
+    return null;
+  }, [storeSlug, store]);
+
+  // Detect route from file path and content
+  const detectRouteFromFile = useCallback((filePath, fileContent = '') => {
+    if (!filePath) return null;
+
+    // Use actual store slug from context, or try to extract from current URL, or use store data fallback
+    const currentStoreSlug = storeSlug || 
+                           getStoreSlugFromPublicUrl(window.location.pathname) || 
+                           store?.slug || 
+                           store?.code || 
+                           'demo-store';
+
+    // First try to analyze file content for route information
+    const contentBasedRoute = analyzeFileContentForRoute(filePath, fileContent);
+    if (contentBasedRoute) {
+      return contentBasedRoute;
     }
 
     // Try to infer route from file name
@@ -116,12 +148,12 @@ const BrowserPreview = ({
     
     // Default fallback - show storefront
     return `/public/${currentStoreSlug}`;
-  }, [storeSlug]);
+  }, [storeSlug, store]);
 
-  // Get preview URL based on file
+  // Get preview URL based on file and content
   const detectedRoute = useMemo(() => {
-    return detectRouteFromFile(fileName);
-  }, [fileName, detectRouteFromFile]);
+    return detectRouteFromFile(fileName, currentCode);
+  }, [fileName, currentCode, detectRouteFromFile]);
 
   // Update preview URL when route changes
   useEffect(() => {

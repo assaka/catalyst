@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 import { cn } from '@/lib/utils';
 import { detectManualEdit, createDebouncedDiffDetector } from '@/services/diff-detector';
+import apiClient from '@/api/client';
 
 /**
  * Monaco Code Editor with AST-aware autocomplete
@@ -28,9 +29,12 @@ const CodeEditor = ({
   const [completionProvider, setCompletionProvider] = useState(null);
   const [diffResult, setDiffResult] = useState(null); // Current diff result
   const [isDiffMode, setIsDiffMode] = useState(false); // Show diff indicators in editor
+  const [savedPatches, setSavedPatches] = useState([]); // Previous patches from database
+  const [patchSaveStatus, setPatchSaveStatus] = useState(null); // Status of patch saving
   const astAnalysisRef = useRef(null);
   const diffDetectorRef = useRef(null);
   const originalCodeRef = useRef(originalCode);
+  const autoSaveTimeoutRef = useRef(null);
 
   // Initialize diff detection system
   useEffect(() => {
@@ -46,6 +50,11 @@ const CodeEditor = ({
       diffDetectorRef.current = createDebouncedDiffDetector((diffResult) => {
         setDiffResult(diffResult);
         onManualEdit?.(diffResult);
+        
+        // Auto-save patch if changes detected
+        if (diffResult.hasChanges) {
+          autoSavePatch(diffResult);
+        }
       }, 500, originalCode);
       
       console.log('🔍 Diff detection enabled for file:', fileName, 'with baseline length:', originalCode.length);
@@ -55,6 +64,9 @@ const CodeEditor = ({
       // Cleanup on unmount
       if (diffDetectorRef.current) {
         diffDetectorRef.current = null;
+      }
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
       }
     };
   }, [enableDiffDetection, originalCode, fileName, onManualEdit]);
@@ -71,6 +83,191 @@ const CodeEditor = ({
       setDiffResult(null);
     }
   }, [originalCode]);
+
+  // Load previous patches when fileName changes
+  useEffect(() => {
+    if (fileName && enableDiffDetection) {
+      loadPreviousPatches();
+    }
+  }, [fileName, enableDiffDetection]);
+
+  // Load previous patches from database
+  const loadPreviousPatches = useCallback(async () => {
+    if (!fileName) return;
+
+    try {
+      console.log(`📋 Loading previous patches for ${fileName}...`);
+      const response = await apiClient.get(`ast-diffs/file/${encodeURIComponent(fileName)}`);
+      
+      if (response.success && response.data) {
+        const patches = response.data.overlays || [];
+        setSavedPatches(patches);
+        console.log(`✅ Loaded ${patches.length} previous patches for ${fileName}`);
+      } else {
+        setSavedPatches([]);
+        console.log(`📋 No previous patches found for ${fileName}`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ Failed to load patches for ${fileName}:`, error.message);
+      setSavedPatches([]);
+    }
+  }, [fileName]);
+
+  // Auto-save patches when manual edits are detected
+  const autoSavePatch = useCallback(async (diffResult) => {
+    if (!fileName || !diffResult.hasChanges || !originalCode) return;
+
+    // Clear previous timeout
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
+    }
+
+    // Debounce auto-save by 3 seconds to avoid too frequent saves
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        setPatchSaveStatus({ status: 'saving', message: 'Auto-saving patch...' });
+        
+        // Get current code from the editor
+        const currentCode = editorInstance?.getValue() || value;
+        
+        const response = await apiClient.post('ast-diffs/create', {
+          filePath: fileName,
+          originalCode: originalCode,
+          modifiedCode: currentCode,
+          changeSummary: `Manual edit: ${diffResult.changeCount} changes (${diffResult.summary?.stats?.additions || 0} additions, ${diffResult.summary?.stats?.deletions || 0} deletions)`,
+          changeType: 'modification'
+        });
+
+        if (response.success) {
+          console.log('💾 Auto-saved patch:', response.data.id);
+          setPatchSaveStatus({ 
+            status: 'success', 
+            message: 'Patch auto-saved',
+            data: response.data 
+          });
+          
+          // Add to saved patches list
+          setSavedPatches(prev => [response.data, ...prev]);
+          
+          // Clear status after 2 seconds
+          setTimeout(() => setPatchSaveStatus(null), 2000);
+        } else {
+          setPatchSaveStatus({ 
+            status: 'error', 
+            message: `Save failed: ${response.message}` 
+          });
+        }
+      } catch (error) {
+        console.error('Error auto-saving patch:', error);
+        setPatchSaveStatus({ 
+          status: 'error', 
+          message: `Save error: ${error.message}` 
+        });
+      }
+    }, 3000);
+  }, [fileName, originalCode, editorInstance, value]);
+
+  // Apply a saved patch
+  const applyPatch = useCallback(async (patchId) => {
+    try {
+      setPatchSaveStatus({ status: 'applying', message: 'Applying patch...' });
+      
+      const response = await apiClient.post(`ast-diffs/${patchId}/apply`);
+      
+      if (response.success) {
+        console.log('✅ Applied patch:', patchId);
+        setPatchSaveStatus({ 
+          status: 'success', 
+          message: 'Patch applied successfully' 
+        });
+        
+        // Refresh patches to get updated status
+        loadPreviousPatches();
+        
+        // Clear status after 2 seconds
+        setTimeout(() => setPatchSaveStatus(null), 2000);
+      } else {
+        setPatchSaveStatus({ 
+          status: 'error', 
+          message: `Apply failed: ${response.message}` 
+        });
+      }
+    } catch (error) {
+      console.error('Error applying patch:', error);
+      setPatchSaveStatus({ 
+        status: 'error', 
+        message: `Apply error: ${error.message}` 
+      });
+    }
+  }, [loadPreviousPatches]);
+
+  // Revert a saved patch
+  const revertPatch = useCallback(async (patchId) => {
+    try {
+      setPatchSaveStatus({ status: 'reverting', message: 'Reverting patch...' });
+      
+      const response = await apiClient.post(`ast-diffs/${patchId}/revert`);
+      
+      if (response.success) {
+        console.log('↩️ Reverted patch:', patchId);
+        setPatchSaveStatus({ 
+          status: 'success', 
+          message: 'Patch reverted successfully' 
+        });
+        
+        // Refresh patches to get updated status
+        loadPreviousPatches();
+        
+        // Clear status after 2 seconds
+        setTimeout(() => setPatchSaveStatus(null), 2000);
+      } else {
+        setPatchSaveStatus({ 
+          status: 'error', 
+          message: `Revert failed: ${response.message}` 
+        });
+      }
+    } catch (error) {
+      console.error('Error reverting patch:', error);
+      setPatchSaveStatus({ 
+        status: 'error', 
+        message: `Revert error: ${error.message}` 
+      });
+    }
+  }, [loadPreviousPatches]);
+
+  // Delete a saved patch
+  const deletePatch = useCallback(async (patchId) => {
+    try {
+      setPatchSaveStatus({ status: 'deleting', message: 'Deleting patch...' });
+      
+      const response = await apiClient.delete(`ast-diffs/${patchId}`);
+      
+      if (response.success) {
+        console.log('🗑️ Deleted patch:', patchId);
+        setPatchSaveStatus({ 
+          status: 'success', 
+          message: 'Patch deleted successfully' 
+        });
+        
+        // Remove from saved patches list
+        setSavedPatches(prev => prev.filter(p => p.id !== patchId));
+        
+        // Clear status after 2 seconds
+        setTimeout(() => setPatchSaveStatus(null), 2000);
+      } else {
+        setPatchSaveStatus({ 
+          status: 'error', 
+          message: `Delete failed: ${response.message}` 
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting patch:', error);
+      setPatchSaveStatus({ 
+        status: 'error', 
+        message: `Delete error: ${error.message}` 
+      });
+    }
+  }, []);
 
   // Configure Monaco loader
   useEffect(() => {
@@ -476,6 +673,61 @@ const CodeEditor = ({
         </div>
       )}
 
+      {/* Saved Patches Panel */}
+      {enableDiffDetection && savedPatches.length > 0 && (
+        <div className="absolute top-2 left-2 z-20 bg-white dark:bg-gray-800 rounded-lg shadow-lg border p-3 max-w-sm">
+          <div className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Previous Patches ({savedPatches.length})
+          </div>
+          <div className="max-h-40 overflow-y-auto space-y-2">
+            {savedPatches.slice(0, 5).map((patch) => (
+              <div key={patch.id} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded p-2">
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {patch.changeSummary || 'Manual edit'}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {new Date(patch.createdAt).toLocaleTimeString()} • {patch.status}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-1 ml-2">
+                  {patch.status === 'pending' && (
+                    <button
+                      onClick={() => applyPatch(patch.id)}
+                      className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+                      title="Apply patch"
+                    >
+                      Apply
+                    </button>
+                  )}
+                  {patch.status === 'applied' && (
+                    <button
+                      onClick={() => revertPatch(patch.id)}
+                      className="px-2 py-1 text-xs bg-orange-500 text-white rounded hover:bg-orange-600"
+                      title="Revert patch"
+                    >
+                      Revert
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deletePatch(patch.id)}
+                    className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                    title="Delete patch"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+            {savedPatches.length > 5 && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                +{savedPatches.length - 5} more patches
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Monaco Editor */}
       <Editor
         height="100%"
@@ -506,10 +758,31 @@ const CodeEditor = ({
 
       {/* Status Indicators */}
       <div className="absolute bottom-2 right-2 flex items-center space-x-2">
+        {/* Patch Save Status */}
+        {patchSaveStatus && (
+          <div className={`text-white text-xs px-2 py-1 rounded ${
+            patchSaveStatus.status === 'success' ? 'bg-green-500' :
+            patchSaveStatus.status === 'error' ? 'bg-red-500' :
+            'bg-blue-500'
+          }`}>
+            {patchSaveStatus.status === 'saving' && (
+              <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></span>
+            )}
+            {patchSaveStatus.message}
+          </div>
+        )}
+        
         {/* Manual Edit Indicator */}
         {enableDiffDetection && diffResult && (
           <div className="bg-orange-500 text-white text-xs px-2 py-1 rounded opacity-90 animate-pulse">
             Manual Edit Detected
+          </div>
+        )}
+        
+        {/* Saved Patches Count */}
+        {enableDiffDetection && savedPatches.length > 0 && (
+          <div className="bg-purple-500 text-white text-xs px-2 py-1 rounded opacity-75">
+            {savedPatches.length} Patch{savedPatches.length !== 1 ? 'es' : ''}
           </div>
         )}
         
