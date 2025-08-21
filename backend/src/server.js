@@ -103,6 +103,7 @@ const storeProvisioningRoutes = require('./routes/store-provisioning');
 const domainsRoutes = require('./routes/domains');
 const storeDatabaseRoutes = require('./routes/store-database');
 const storeMediaStorageRoutes = require('./routes/store-mediastorage');
+const storeRoutesManagement = require('./routes/store-routes');
 const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
 const aiContextRoutes = require('./routes/ai-context');
@@ -1565,6 +1566,7 @@ app.use('/api/ai-context', aiContextRoutes); // AI Context Window routes for nat
 app.use('/api/ast-diffs', astDiffRoutes); // AST diff overlay routes for code change tracking
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
+app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management
 
 // 404 handler
 app.use('*', (req, res) => {

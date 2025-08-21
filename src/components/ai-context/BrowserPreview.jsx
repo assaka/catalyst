@@ -21,69 +21,95 @@ const BrowserPreview = ({
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
 
   // Get store context using unified utility
-  const { getStoreSlug } = useStoreContext();
+  const { getStoreSlug, getApiConfig } = useStoreContext();
+
+  // Query database for route resolution
+  const resolveRouteFromDatabase = useCallback(async (targetComponent) => {
+    try {
+      const apiConfig = getApiConfig();
+      
+      // Query store routes API to find matching route
+      const response = await fetch(`/api/store-routes?target_value=${encodeURIComponent(targetComponent)}&active_only=true`, apiConfig);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data.length > 0) {
+          // Return the first matching route
+          return data.data[0].route_path;
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to resolve route from database:', error);
+    }
+    return null;
+  }, [getApiConfig]);
 
   // Analyze file content to detect appropriate route
-  const analyzeFileContentForRoute = useCallback((filePath, fileContent) => {
+  const analyzeFileContentForRoute = useCallback(async (filePath, fileContent) => {
     if (!filePath) return null;
 
     // Get current store slug from unified context with URL fallback
     const currentStoreSlug = getStoreSlug() || 
                            getStoreSlugFromPublicUrl(window.location.pathname);
 
-    // Check if content contains React Router route definitions
-    const routePatterns = [
-      // Look for exact route patterns in the code
-      { pattern: /path=["']\/public\/[^"']*\/product\/[^"']*["']/, route: `/public/${currentStoreSlug}/product/sample-product` },
-      { pattern: /path=["']\/public\/[^"']*\/cart["']/, route: `/public/${currentStoreSlug}/cart` },
-      { pattern: /path=["']\/public\/[^"']*\/checkout["']/, route: `/public/${currentStoreSlug}/checkout` },
-      { pattern: /path=["']\/public\/[^"']*\/login["']/, route: `/public/${currentStoreSlug}/login` },
-      { pattern: /path=["']\/public\/[^"']*\/account["']/, route: `/public/${currentStoreSlug}/account` },
-      { pattern: /path=["']\/public\/[^"']*\/order-success["']/, route: `/public/${currentStoreSlug}/order-success/12345` },
-      { pattern: /path=["']\/public\/[^"']*["']/, route: `/public/${currentStoreSlug}` },
-      
-      // Admin route patterns
-      { pattern: /path=["']\/admin\/dashboard["']/, route: '/admin/dashboard' },
-      { pattern: /path=["']\/admin\/products["']/, route: '/admin/products' },
-      { pattern: /path=["']\/admin\/categories["']/, route: '/admin/categories' },
-      { pattern: /path=["']\/admin\/orders["']/, route: '/admin/orders' },
-      { pattern: /path=["']\/admin\/settings["']/, route: '/admin/settings' },
-      { pattern: /path=["']\/admin\/customers["']/, route: '/admin/customers' },
-      { pattern: /path=["']\/admin\/attributes["']/, route: '/admin/attributes' },
-      { pattern: /path=["']\/admin\/plugins["']/, route: '/admin/plugins' },
-      { pattern: /path=["']\/admin\/cms-pages["']/, route: '/admin/cms-pages' },
-      { pattern: /path=["']\/admin\/cms-blocks["']/, route: '/admin/cms-blocks' },
-      { pattern: /path=["']\/admin["']/, route: '/admin/dashboard' },
+    // Component mapping for database queries
+    const componentPatterns = [
+      { pattern: /path=["']\/public\/[^"']*\/product\/[^"']*["']/, component: 'ProductDetail' },
+      { pattern: /path=["']\/public\/[^"']*\/cart["']/, component: 'Cart' },
+      { pattern: /path=["']\/public\/[^"']*\/checkout["']/, component: 'Checkout' },
+      { pattern: /path=["']\/admin\/ab-testing["']/, component: 'ABTesting' },
+      { pattern: /path=["']\/admin\/dashboard["']/, component: 'Dashboard' },
+      { pattern: /path=["']\/admin\/products["']/, component: 'ProductListing' },
+      { pattern: /path=["']\/admin\/categories["']/, component: 'Categories' },
+      { pattern: /path=["']\/admin\/orders["']/, component: 'Orders' },
+      { pattern: /path=["']\/admin\/settings["']/, component: 'Settings' },
+      { pattern: /path=["']\/admin\/customers["']/, component: 'Customers' },
+      { pattern: /path=["']\/admin\/attributes["']/, component: 'Attributes' },
+      { pattern: /path=["']\/admin\/plugins["']/, component: 'Plugins' },
+      { pattern: /path=["']\/admin\/cms-pages["']/, component: 'CmsPages' },
+      { pattern: /path=["']\/admin\/cms-blocks["']/, component: 'CmsBlocks' },
+      { pattern: /path=["']\/public\/[^"']*["']/, component: 'Storefront' },
     ];
 
-    // Check file content for route patterns
+    // Check file content for route patterns and resolve from database
     if (fileContent) {
-      for (const { pattern, route } of routePatterns) {
+      for (const { pattern, component } of componentPatterns) {
         if (pattern.test(fileContent)) {
-          return route;
+          const dbRoute = await resolveRouteFromDatabase(component);
+          if (dbRoute) {
+            return dbRoute;
+          }
+          // Fallback to legacy behavior if database lookup fails
+          return pattern.source.includes('admin') 
+            ? `/admin/${component.toLowerCase()}` 
+            : `/public/${currentStoreSlug}`;
         }
       }
 
       // Check for specific component indicators in content
-      if (fileContent.includes('ProductCard') || fileContent.includes('ProductGrid')) {
-        return `/public/${currentStoreSlug}`;
-      }
-      if (fileContent.includes('CartSummary') || fileContent.includes('cart')) {
-        return `/public/${currentStoreSlug}/cart`;
-      }
-      if (fileContent.includes('CheckoutForm') || fileContent.includes('checkout')) {
-        return `/public/${currentStoreSlug}/checkout`;
-      }
-      if (fileContent.includes('CategoryGrid') || fileContent.includes('category')) {
-        return `/public/${currentStoreSlug}/category/sample-category`;
+      const contentIndicators = [
+        { keywords: ['ProductCard', 'ProductGrid'], component: 'Storefront' },
+        { keywords: ['CartSummary', 'cart'], component: 'Cart' },
+        { keywords: ['CheckoutForm', 'checkout'], component: 'Checkout' },
+        { keywords: ['CategoryGrid', 'category'], component: 'Categories' },
+        { keywords: ['ABTesting', 'ab-testing'], component: 'ABTesting' }
+      ];
+
+      for (const { keywords, component } of contentIndicators) {
+        if (keywords.some(keyword => fileContent.includes(keyword))) {
+          const dbRoute = await resolveRouteFromDatabase(component);
+          if (dbRoute) {
+            return dbRoute;
+          }
+        }
       }
     }
 
     return null;
-  }, [getStoreSlug]);
+  }, [getStoreSlug, resolveRouteFromDatabase]);
 
-  // Detect route from file path and content
-  const detectRouteFromFile = useCallback((filePath, fileContent = '') => {
+  // Detect route from file path and content (now async for database queries)
+  const detectRouteFromFile = useCallback(async (filePath, fileContent = '') => {
     if (!filePath) return null;
 
     // Get current store slug from unified context with URL fallback
@@ -91,34 +117,60 @@ const BrowserPreview = ({
                            getStoreSlugFromPublicUrl(window.location.pathname);
 
     // First try to analyze file content for route information
-    const contentBasedRoute = analyzeFileContentForRoute(filePath, fileContent);
+    const contentBasedRoute = await analyzeFileContentForRoute(filePath, fileContent);
     if (contentBasedRoute) {
       return contentBasedRoute;
     }
 
-    // Try to infer route from file name
+    // Try to infer route from file name and resolve from database
     const fileName = filePath.split('/').pop().replace(/\.(jsx?|tsx?)$/, '');
     
     // Check if it's a storefront component
     if (filePath.includes('/storefront/') || filePath.includes('/components/storefront/')) {
-      return `/public/${currentStoreSlug}`;
+      const dbRoute = await resolveRouteFromDatabase('Storefront');
+      return dbRoute || `/public/${currentStoreSlug}`;
     }
     
     // Check if it's an admin component
     if (filePath.includes('/admin/') || filePath.includes('/components/admin/')) {
-      return '/admin/dashboard';
+      const dbRoute = await resolveRouteFromDatabase('Dashboard');
+      return dbRoute || '/admin/dashboard';
     }
     
     // Check if it's a page component
     if (filePath.includes('/pages/')) {
       const pageName = fileName.toLowerCase();
       
-      // Admin pages
+      // Map page names to components for database lookup
+      const pageComponentMap = {
+        'dashboard': 'Dashboard',
+        'products': 'ProductListing',  
+        'categories': 'Categories',
+        'orders': 'Orders',
+        'settings': 'Settings',
+        'customers': 'Customers',
+        'storefront': 'Storefront',
+        'shop': 'Storefront',
+        'home': 'Storefront',
+        'productdetail': 'ProductDetail',
+        'cart': 'Cart',
+        'checkout': 'Checkout',
+        'abtesting': 'ABTesting'
+      };
+      
+      const componentName = pageComponentMap[pageName];
+      if (componentName) {
+        const dbRoute = await resolveRouteFromDatabase(componentName);
+        if (dbRoute) {
+          return dbRoute;
+        }
+      }
+      
+      // Legacy fallbacks if database lookup fails
       if (['dashboard', 'products', 'categories', 'orders', 'settings', 'customers'].includes(pageName)) {
         return `/admin/${pageName}`;
       }
       
-      // Public pages
       if (['storefront', 'shop', 'home'].includes(pageName)) {
         return `/public/${currentStoreSlug}`;
       }
@@ -136,13 +188,51 @@ const BrowserPreview = ({
       }
     }
     
-    // Default fallback - show storefront if store slug is available
-    return `/public/${currentStoreSlug}`;
-  }, [getStoreSlug]);
+    // Default fallback - try to get home route from database or show storefront
+    const homeRoute = await resolveRouteFromDatabase('Storefront');
+    return homeRoute || `/public/${currentStoreSlug}`;
+  }, [getStoreSlug, analyzeFileContentForRoute, resolveRouteFromDatabase]);
 
-  // Get preview URL based on file and content
-  const detectedRoute = useMemo(() => {
-    return detectRouteFromFile(fileName, currentCode);
+  // State for detected route
+  const [detectedRoute, setDetectedRoute] = useState(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+
+  // Detect route asynchronously when file or content changes
+  useEffect(() => {
+    let isCancelled = false;
+    
+    const resolveRoute = async () => {
+      if (!fileName) {
+        setDetectedRoute(null);
+        return;
+      }
+
+      setRouteLoading(true);
+      setError(null);
+      
+      try {
+        const route = await detectRouteFromFile(fileName, currentCode);
+        if (!isCancelled) {
+          setDetectedRoute(route);
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          console.error('Route detection failed:', error);
+          setError('Failed to detect route from database');
+          setDetectedRoute(null);
+        }
+      } finally {
+        if (!isCancelled) {
+          setRouteLoading(false);
+        }
+      }
+    };
+
+    resolveRoute();
+    
+    return () => {
+      isCancelled = true;
+    };
   }, [fileName, currentCode, detectRouteFromFile]);
 
   // Update preview URL when route changes
@@ -152,11 +242,11 @@ const BrowserPreview = ({
       const baseUrl = window.location.origin;
       setPreviewUrl(`${baseUrl}${detectedRoute}`);
       setError(null);
-    } else {
+    } else if (!routeLoading) {
       setPreviewUrl(null);
       setError('Could not determine preview route for this file');
     }
-  }, [detectedRoute]);
+  }, [detectedRoute, routeLoading]);
 
   // Device view dimensions
   const deviceDimensions = {
@@ -200,9 +290,16 @@ const BrowserPreview = ({
     return (
       <div className={cn("h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900", className)}>
         <div className="text-center text-gray-500 dark:text-gray-400">
-          <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">Detecting preview route...</p>
+          <Globe className={cn("w-8 h-8 mx-auto mb-2 opacity-50", routeLoading && "animate-pulse")} />
+          <p className="text-sm">
+            {routeLoading ? 'Resolving route from database...' : 'Detecting preview route...'}
+          </p>
           <p className="text-xs mt-1">Analyzing file path: {fileName}</p>
+          {routeLoading && (
+            <p className="text-xs mt-1 text-blue-500 dark:text-blue-400">
+              🔄 Querying store routes API
+            </p>
+          )}
         </div>
       </div>
     );
