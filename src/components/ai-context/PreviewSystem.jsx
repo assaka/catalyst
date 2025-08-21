@@ -644,52 +644,6 @@ const PreviewSystem = ({
         ) : previewMode === 'live' ? (
           // Live Preview Mode - Visual rendering without deployment
           <div className="h-full overflow-auto">
-            {/* Tab Interface Above File Name */}
-            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
-              <div className="flex border-b border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => {
-                    // Code tab - switch to code view if implemented
-                    console.log('Code tab clicked');
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                >
-                  Code
-                </button>
-                <button
-                  onClick={() => {
-                    setPreviewMode('patch');
-                    onPreviewModeChange?.('patch');
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                >
-                  Diff
-                </button>
-                <button
-                  onClick={() => {
-                    setPreviewMode('live');
-                    onPreviewModeChange?.('live');
-                    if (previewCode || currentCode) {
-                      generateVisualPreview(previewCode || currentCode);
-                    }
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
-                >
-                  Live Preview
-                </button>
-              </div>
-              
-              {/* File Name Bar */}
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className="text-gray-500 dark:text-gray-500 mr-2">📄</span>
-                  File Preview
-                </div>
-                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-mono">
-                  {fileName}
-                </span>
-              </div>
-            </div>
             
             {previewError ? (
               <div className="h-full flex items-center justify-center">
@@ -721,53 +675,6 @@ const PreviewSystem = ({
         ) : (
           // Patch Review Mode - Show detailed diff and changes for approval
           <div className="h-full flex flex-col">
-            {/* Tab Interface Above File Name */}
-            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
-              <div className="flex border-b border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => {
-                    // Code tab - switch to code view if implemented
-                    console.log('Code tab clicked');
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                >
-                  Code
-                </button>
-                <button
-                  onClick={() => {
-                    setPreviewMode('patch');
-                    onPreviewModeChange?.('patch');
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
-                >
-                  Diff
-                </button>
-                <button
-                  onClick={() => {
-                    setPreviewMode('live');
-                    onPreviewModeChange?.('live');
-                    if (previewCode || currentCode) {
-                      generateVisualPreview(previewCode || currentCode);
-                    }
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                >
-                  Live Preview
-                </button>
-              </div>
-              
-              {/* File Name Bar */}
-              <div className="p-2 bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
-                <div className="flex items-center">
-                  <span className="text-gray-500 dark:text-gray-500 mr-2">📄</span>
-                  File Preview
-                </div>
-                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-mono">
-                  {fileName}
-                </span>
-              </div>
-            </div>
-            
             {diff ? (
               <div className="flex-1 overflow-auto">
                 {renderDiffView()}

@@ -567,6 +567,54 @@ export default ExampleComponent;`;
             <div className="h-full flex flex-col">
               {selectedFile ? (
                 <>
+                  {/* Tab Interface Above File Name */}
+                  <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
+                    <div className="flex border-b border-gray-200 dark:border-gray-700">
+                      <button
+                        onClick={() => {
+                          // Code tab - focus on code editor
+                          console.log('Code tab clicked - focus on code editor');
+                        }}
+                        className={cn(
+                          "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                          previewMode === 'code' 
+                            ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                        )}
+                      >
+                        Code
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPreviewMode('patch');
+                          handlePreviewModeChange('patch');
+                        }}
+                        className={cn(
+                          "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                          previewMode === 'patch' 
+                            ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                        )}
+                      >
+                        Diff
+                      </button>
+                      <button
+                        onClick={() => {
+                          setPreviewMode('live');
+                          handlePreviewModeChange('live');
+                        }}
+                        className={cn(
+                          "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                          previewMode === 'live' 
+                            ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                        )}
+                      >
+                        Live Preview
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Header */}
                   <div className="p-2 border-b bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
                     <div className="flex items-center space-x-2">
