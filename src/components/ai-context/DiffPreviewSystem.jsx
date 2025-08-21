@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ChevronDown, ChevronRight, Copy, Check, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +14,7 @@ const DiffPreviewSystem = ({
 }) => {
   const [expandedHunks, setExpandedHunks] = useState(new Set());
   const [copiedHunks, setCopiedHunks] = useState(new Set());
+  const [astDiffResult, setAstDiffResult] = useState(null);
 
   // Toggle hunk expansion
   const toggleHunk = useCallback((hunkIndex) => {
@@ -72,25 +73,63 @@ const DiffPreviewSystem = ({
     }
   }, [diffResult, onCopyDiff]);
 
-  // Memoized statistics
+  // Memoized statistics - use AST diff result if available, otherwise manual diff result
   const stats = useMemo(() => {
-    if (!diffResult?.summary?.stats) return null;
-    return diffResult.summary.stats;
-  }, [diffResult]);
+    const activeResult = astDiffResult || diffResult;
+    if (!activeResult?.summary?.stats) return null;
+    return activeResult.summary.stats;
+  }, [diffResult, astDiffResult]);
 
-  // Memoized hunks
+  // Listen for AST patches loaded from database
+  useEffect(() => {
+    const handleAstPatchesLoaded = (event) => {
+      const { file, patches } = event.detail;
+      if (file.path === fileName && patches.length > 0) {
+        console.log('📋 AST patches loaded in DiffPreviewSystem:', patches);
+        const latestPatch = patches[0];
+        
+        // Transform AST patch to diff result format that DiffPreviewSystem expects
+        if (latestPatch.diffHunks && latestPatch.diffHunks.length > 0) {
+          const transformedDiff = {
+            hasChanges: true,
+            changeCount: latestPatch.diffHunks.reduce((acc, hunk) => acc + hunk.changes.length, 0),
+            timestamp: latestPatch.created_at || new Date().toISOString(),
+            summary: {
+              stats: {
+                additions: latestPatch.diffHunks.reduce((acc, hunk) => 
+                  acc + hunk.changes.filter(c => c.type === 'add').length, 0),
+                deletions: latestPatch.diffHunks.reduce((acc, hunk) => 
+                  acc + hunk.changes.filter(c => c.type === 'del').length, 0),
+                modifications: latestPatch.diffHunks.reduce((acc, hunk) => 
+                  acc + hunk.changes.filter(c => c.type === 'normal').length, 0)
+              },
+              hunks: latestPatch.diffHunks
+            }
+          };
+          setAstDiffResult(transformedDiff);
+        }
+      }
+    };
+
+    window.addEventListener('astPatchesLoaded', handleAstPatchesLoaded);
+    return () => window.removeEventListener('astPatchesLoaded', handleAstPatchesLoaded);
+  }, [fileName]);
+
+  // Memoized hunks - use AST diff result if available, otherwise manual diff result
   const hunks = useMemo(() => {
-    if (!diffResult?.summary?.hunks) return [];
-    return diffResult.summary.hunks;
-  }, [diffResult]);
+    const activeResult = astDiffResult || diffResult;
+    if (!activeResult?.summary?.hunks) return [];
+    return activeResult.summary.hunks;
+  }, [diffResult, astDiffResult]);
 
-  if (!diffResult || !diffResult.hasChanges) {
+  const activeResult = astDiffResult || diffResult;
+  if (!activeResult || !activeResult.hasChanges) {
     return (
       <div className={cn("h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900", className)}>
         <div className="text-center text-gray-500 dark:text-gray-400">
           <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No manual edits detected</p>
-          <p className="text-xs mt-1">Start editing to see diff preview</p>
+          <p className="text-sm">No changes detected</p>
+          <p className="text-xs mt-1">Select a file with changes or edit code to see diff patches</p>
         </div>
       </div>
     );
@@ -102,7 +141,7 @@ const DiffPreviewSystem = ({
       <div className="p-4 border-b bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            Manual Edit Preview
+            {astDiffResult ? 'AST Diff Patches' : 'Manual Edit Preview'}
           </h3>
           <button
             onClick={copyEntireDiff}
@@ -223,7 +262,7 @@ const DiffPreviewSystem = ({
       {/* Footer */}
       <div className="p-2 border-t bg-gray-50 dark:bg-gray-800">
         <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          Detected at {diffResult.timestamp ? new Date(diffResult.timestamp).toLocaleTimeString() : 'unknown time'}
+          {astDiffResult ? 'AST patches from database' : 'Manual edits'} • Detected at {activeResult.timestamp ? new Date(activeResult.timestamp).toLocaleTimeString() : 'unknown time'}
         </div>
       </div>
     </div>

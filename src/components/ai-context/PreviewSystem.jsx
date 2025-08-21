@@ -19,6 +19,7 @@ const PreviewSystem = ({
   hasManualEdits = false,
   manualEditResult = null,
   onPreviewModeChange,
+  previewMode = 'live', // Receive from parent instead of internal state
   className 
 }) => {
   const [previewCode, setPreviewCode] = useState('');
@@ -26,12 +27,12 @@ const PreviewSystem = ({
   const [validationResult, setValidationResult] = useState(null);
   const [diff, setDiff] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [previewMode, setPreviewMode] = useState('live'); // 'live', 'patch'
   const [visualPreview, setVisualPreview] = useState(null);
   const [previewError, setPreviewError] = useState(null);
   const [patchHistory, setPatchHistory] = useState([]);
   const [showPatchHistory, setShowPatchHistory] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [astPatches, setAstPatches] = useState([]); // Store AST patches from database
 
   // Generate visual preview by compiling and rendering the component
   const generateVisualPreview = useCallback(async (codeToRender) => {
@@ -320,6 +321,15 @@ const PreviewSystem = ({
     } else if (patch && originalCode) {
       // For AI-generated patches, use the API to generate preview
       generatePreview();
+    } else if (previewMode === 'live' && currentCode) {
+      // Generate visual preview for current code even without changes
+      setPreviewCode(currentCode);
+      setValidationResult({
+        isValid: true,
+        message: 'Live preview of current code',
+        type: 'live'
+      });
+      generateVisualPreview(currentCode);
     } else {
       setPreviewCode('');
       setValidationResult(null);
@@ -487,10 +497,37 @@ const PreviewSystem = ({
     }
   }, [fileName, showPatchHistory, loadPatchHistory]);
 
-  // Initialize preview mode in global header when component mounts
+  // Listen for AST patches loaded from database
   useEffect(() => {
-    onPreviewModeChange?.(previewMode);
-  }, [onPreviewModeChange]); // Only run once on mount
+    const handleAstPatchesLoaded = (event) => {
+      const { file, patches } = event.detail;
+      if (file.path === fileName) {
+        console.log('📋 AST patches loaded for current file:', patches);
+        setAstPatches(patches);
+        
+        // If we're in patch mode and have patches, generate diff view
+        if (previewMode === 'patch' && patches.length > 0) {
+          const latestPatch = patches[0];
+          setDiff({
+            type: 'ast',
+            oldFileName: fileName,
+            newFileName: fileName + ' (modified)',
+            hunks: latestPatch.diffHunks || [],
+            patchData: latestPatch
+          });
+          setPreviewCode(latestPatch.modifiedCode || currentCode);
+          setValidationResult({
+            isValid: true,
+            message: `AST patch loaded (${patches.length} total)`,
+            type: 'ast'
+          });
+        }
+      }
+    };
+
+    window.addEventListener('astPatchesLoaded', handleAstPatchesLoaded);
+    return () => window.removeEventListener('astPatchesLoaded', handleAstPatchesLoaded);
+  }, [fileName, previewMode, currentCode]);
 
   // Render diff view
   const renderDiffView = () => {

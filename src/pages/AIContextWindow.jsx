@@ -652,18 +652,10 @@ export default ExampleComponent;`;
                         className="h-full"
                       />
                     ) : previewMode === 'patch' ? (
-                      // AST Diff/Patch View
-                      <PreviewSystem
-                        originalCode={originalCode}
-                        currentCode={sourceCode}
-                        patch={currentPatch}
+                      // Diff View - Always use DiffPreviewSystem for showing diffs
+                      <DiffPreviewSystem
+                        diffResult={manualEditResult}
                         fileName={selectedFile?.name || ''}
-                        onApplyPatch={handleApplyPatch}
-                        onRejectPatch={handleRejectPatch}
-                        hasManualEdits={manualEditResult?.hasChanges || false}
-                        manualEditResult={manualEditResult}
-                        onPreviewModeChange={handlePreviewModeChange}
-                        previewMode="patch"
                         className="h-full"
                       />
                     ) : (
