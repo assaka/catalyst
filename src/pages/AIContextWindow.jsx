@@ -357,9 +357,42 @@ export default ExampleComponent;`;
   }, []);
 
   // Handle preview mode changes from PreviewSystem
-  const handlePreviewModeChange = useCallback((mode) => {
+  const handlePreviewModeChange = useCallback(async (mode) => {
     setPreviewMode(mode);
-  }, []);
+    
+    // If switching to patch mode and we have a selected file, ensure AST patches are loaded
+    if (mode === 'patch' && selectedFile?.path) {
+      try {
+        console.log(`🔍 Loading AST diff patches for Diff tab: ${selectedFile.path}`);
+        
+        const astDiffData = await apiClient.get(`ast-diffs/file/${encodeURIComponent(selectedFile.path)}`);
+        
+        if (astDiffData && astDiffData.success && astDiffData.data) {
+          const patches = astDiffData.data.overlays || [];
+          console.log(`📋 Found ${patches.length} AST diff patches for ${selectedFile.path}:`, patches);
+          
+          if (patches.length > 0) {
+            const fileWithPatches = {
+              ...selectedFile,
+              astDiffPatches: patches
+            };
+            
+            // Dispatch the astPatchesLoaded event to update DiffPreviewSystem
+            window.dispatchEvent(new CustomEvent('astPatchesLoaded', {
+              detail: {
+                file: fileWithPatches,
+                patches: patches
+              }
+            }));
+            
+            console.log(`✅ Reloaded ${patches.length} patches for ${selectedFile.path} when switching to Diff tab`);
+          }
+        }
+      } catch (error) {
+        console.warn(`⚠️ Failed to reload AST diff patches for ${selectedFile.path}:`, error.message);
+      }
+    }
+  }, [selectedFile]);
 
 
   // Handle file tree refresh
@@ -655,7 +688,7 @@ export default ExampleComponent;`;
                       // Diff View - Always use DiffPreviewSystem for showing diffs
                       <DiffPreviewSystem
                         diffResult={manualEditResult}
-                        fileName={selectedFile?.name || ''}
+                        fileName={selectedFile?.path || ''}
                         className="h-full"
                       />
                     ) : (
@@ -664,7 +697,7 @@ export default ExampleComponent;`;
                         originalCode={originalCode}
                         currentCode={sourceCode}
                         patch={currentPatch}
-                        fileName={selectedFile?.name || ''}
+                        fileName={selectedFile?.path || ''}
                         onApplyPatch={handleApplyPatch}
                         onRejectPatch={handleRejectPatch}
                         hasManualEdits={manualEditResult?.hasChanges || false}

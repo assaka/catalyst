@@ -80,6 +80,11 @@ const DiffPreviewSystem = ({
     return activeResult.summary.stats;
   }, [diffResult, astDiffResult]);
 
+  // Clear AST diff result when file changes
+  useEffect(() => {
+    setAstDiffResult(null);
+  }, [fileName]);
+
   // Listen for AST patches loaded from database
   useEffect(() => {
     const handleAstPatchesLoaded = (event) => {
@@ -108,6 +113,9 @@ const DiffPreviewSystem = ({
           };
           setAstDiffResult(transformedDiff);
         }
+      } else if (file.path === fileName && patches.length === 0) {
+        // Clear AST diff result if no patches found for this file
+        setAstDiffResult(null);
       }
     };
 
