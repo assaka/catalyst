@@ -146,6 +146,7 @@ const checkStoreOwnership = async (req, res, next) => {
 
     // Attach store and access info to request for downstream use
     req.store = store;
+    req.storeId = store.id; // Add this for compatibility with AST diff routes
     req.storeAccess = {
       isDirectOwner,
       teamRole: teamAccess.role,

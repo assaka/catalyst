@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 import { cn } from '@/lib/utils';
 import { detectManualEdit, createDebouncedDiffDetector } from '@/services/diff-detector';
+import { useStoreContext, normalizeFilePath } from '@/utils/storeContext';
 import apiClient from '@/api/client';
 
 /**
@@ -35,6 +36,9 @@ const CodeEditor = ({
   const diffDetectorRef = useRef(null);
   const originalCodeRef = useRef(originalCode);
   const autoSaveTimeoutRef = useRef(null);
+  
+  // Get store context for API calls that require store_id
+  const { getApiConfig, hasStoreId } = useStoreContext();
 
   // Initialize diff detection system
   useEffect(() => {
@@ -96,8 +100,12 @@ const CodeEditor = ({
     if (!fileName) return;
 
     try {
-      console.log(`📋 Loading previous patches for ${fileName}...`);
-      const response = await apiClient.get(`ast-diffs/file/${encodeURIComponent(fileName)}`);
+      // Normalize file path and get API config with store context
+      const normalizedFileName = normalizeFilePath(fileName);
+      console.log(`📋 Loading previous patches for ${normalizedFileName}...`);
+      
+      const apiConfig = getApiConfig();
+      const response = await apiClient.get(`ast-diffs/file/${encodeURIComponent(normalizedFileName)}`, apiConfig);
       
       if (response.success && response.data) {
         const patches = response.data.overlays || [];
@@ -111,7 +119,7 @@ const CodeEditor = ({
       console.warn(`⚠️ Failed to load patches for ${fileName}:`, error.message);
       setSavedPatches([]);
     }
-  }, [fileName]);
+  }, [fileName, getApiConfig]);
 
   // Auto-save patches when manual edits are detected
   const autoSavePatch = useCallback(async (diffResult) => {
@@ -130,13 +138,17 @@ const CodeEditor = ({
         // Get current code from the editor
         const currentCode = editorInstance?.getValue() || value;
         
+        // Normalize file path and get API config with store context
+        const normalizedFileName = normalizeFilePath(fileName);
+        const apiConfig = getApiConfig();
+        
         const response = await apiClient.post('ast-diffs/create', {
-          filePath: fileName,
+          filePath: normalizedFileName,
           originalCode: originalCode,
           modifiedCode: currentCode,
           changeSummary: `Manual edit: ${diffResult.changeCount} changes (${diffResult.summary?.stats?.additions || 0} additions, ${diffResult.summary?.stats?.deletions || 0} deletions)`,
           changeType: 'modification'
-        });
+        }, apiConfig);
 
         if (response.success) {
           console.log('💾 Auto-saved patch:', response.data.id);
@@ -165,14 +177,15 @@ const CodeEditor = ({
         });
       }
     }, 3000);
-  }, [fileName, originalCode, editorInstance, value]);
+  }, [fileName, originalCode, editorInstance, value, getApiConfig]);
 
   // Apply a saved patch
   const applyPatch = useCallback(async (patchId) => {
     try {
       setPatchSaveStatus({ status: 'applying', message: 'Applying patch...' });
       
-      const response = await apiClient.post(`ast-diffs/${patchId}/apply`);
+      const apiConfig = getApiConfig();
+      const response = await apiClient.post(`ast-diffs/${patchId}/apply`, {}, apiConfig);
       
       if (response.success) {
         console.log('✅ Applied patch:', patchId);
@@ -199,14 +212,15 @@ const CodeEditor = ({
         message: `Apply error: ${error.message}` 
       });
     }
-  }, [loadPreviousPatches]);
+  }, [loadPreviousPatches, getApiConfig]);
 
   // Revert a saved patch
   const revertPatch = useCallback(async (patchId) => {
     try {
       setPatchSaveStatus({ status: 'reverting', message: 'Reverting patch...' });
       
-      const response = await apiClient.post(`ast-diffs/${patchId}/revert`);
+      const apiConfig = getApiConfig();
+      const response = await apiClient.post(`ast-diffs/${patchId}/revert`, {}, apiConfig);
       
       if (response.success) {
         console.log('↩️ Reverted patch:', patchId);
@@ -233,14 +247,15 @@ const CodeEditor = ({
         message: `Revert error: ${error.message}` 
       });
     }
-  }, [loadPreviousPatches]);
+  }, [loadPreviousPatches, getApiConfig]);
 
   // Delete a saved patch
   const deletePatch = useCallback(async (patchId) => {
     try {
       setPatchSaveStatus({ status: 'deleting', message: 'Deleting patch...' });
       
-      const response = await apiClient.delete(`ast-diffs/${patchId}`);
+      const apiConfig = getApiConfig();
+      const response = await apiClient.delete(`ast-diffs/${patchId}`, apiConfig);
       
       if (response.success) {
         console.log('🗑️ Deleted patch:', patchId);
@@ -267,7 +282,7 @@ const CodeEditor = ({
         message: `Delete error: ${error.message}` 
       });
     }
-  }, []);
+  }, [getApiConfig]);
 
   // Configure Monaco loader
   useEffect(() => {

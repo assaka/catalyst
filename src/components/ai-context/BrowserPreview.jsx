@@ -25,7 +25,7 @@ const BrowserPreview = ({
   const { storeSlug, isStoreContext } = useStoreSlug();
   
   // Get store data from StoreProvider context
-  const { store } = useStore();
+  const { store } = useStore() || {};
 
   // Analyze file content to detect appropriate route
   const analyzeFileContentForRoute = useCallback((filePath, fileContent) => {
