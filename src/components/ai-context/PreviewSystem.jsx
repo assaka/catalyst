@@ -18,6 +18,7 @@ const PreviewSystem = ({
   onRejectPatch,
   hasManualEdits = false,
   manualEditResult = null,
+  onPreviewModeChange,
   className 
 }) => {
   const [previewCode, setPreviewCode] = useState('');
@@ -486,6 +487,11 @@ const PreviewSystem = ({
     }
   }, [fileName, showPatchHistory, loadPatchHistory]);
 
+  // Initialize preview mode in global header when component mounts
+  useEffect(() => {
+    onPreviewModeChange?.(previewMode);
+  }, [onPreviewModeChange]); // Only run once on mount
+
   // Render diff view
   const renderDiffView = () => {
     if (!diff || !diff.hunks) return null;
@@ -563,6 +569,7 @@ const PreviewSystem = ({
             <button
               onClick={() => {
                 setPreviewMode('live');
+                onPreviewModeChange?.('live');
                 // Trigger visual preview generation when switching to live mode
                 if (previewCode || currentCode) {
                   generateVisualPreview(previewCode || currentCode);
@@ -579,7 +586,10 @@ const PreviewSystem = ({
               🔴 Live Preview
             </button>
             <button
-              onClick={() => setPreviewMode('patch')}
+              onClick={() => {
+                setPreviewMode('patch');
+                onPreviewModeChange?.('patch');
+              }}
               className={cn(
                 "px-3 py-1 text-xs rounded transition-colors font-medium",
                 previewMode === 'patch' 
@@ -672,23 +682,8 @@ const PreviewSystem = ({
         ) : previewMode === 'live' ? (
           // Live Preview Mode - Visual rendering without deployment
           <div className="h-full overflow-auto">
-            {/* Preview Mode Bar - Above File Name */}
-            <div className="sticky top-0 p-2 bg-blue-50 dark:bg-blue-900/20 border-b text-xs text-blue-600 dark:text-blue-400 flex items-center justify-between z-10">
-              <div className="flex items-center">
-                <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
-                🔴 Live Preview • No deployment
-              </div>
-              <div className="flex items-center space-x-2">
-                {hasManualEdits && (
-                  <span className="px-2 py-1 bg-orange-100 dark:bg-orange-800 rounded text-orange-700 dark:text-orange-300">
-                    Manual Edits
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            {/* File Name Bar - Below Preview Mode Bar */}
-            <div className="sticky top-8 p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between z-10">
+            {/* File Name Bar */}
+            <div className="sticky top-0 p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between z-10">
               <div className="flex items-center">
                 <span className="text-gray-500 dark:text-gray-500 mr-2">📄</span>
                 File Preview
@@ -728,22 +723,7 @@ const PreviewSystem = ({
         ) : (
           // Patch Review Mode - Show detailed diff and changes for approval
           <div className="h-full flex flex-col">
-            {/* Preview Mode Bar - Above File Name */}
-            <div className="p-2 bg-orange-50 dark:bg-orange-900/20 border-b text-xs text-orange-600 dark:text-orange-400 flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
-                📋 Patch Review • Review before production deployment
-              </div>
-              <div className="flex items-center space-x-2">
-                {patch && (
-                  <span className="px-2 py-1 bg-yellow-100 dark:bg-yellow-800 rounded text-yellow-700 dark:text-yellow-300">
-                    Pending Changes
-                  </span>
-                )}
-              </div>
-            </div>
-            
-            {/* File Name Bar - Below Preview Mode Bar */}
+            {/* File Name Bar */}
             <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
               <div className="flex items-center">
                 <span className="text-gray-500 dark:text-gray-500 mr-2">📄</span>
