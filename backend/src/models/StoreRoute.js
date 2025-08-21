@@ -1,4 +1,4 @@
-const { DataTypes } = require('sequelize');
+const { DataTypes, Op } = require('sequelize');
 const { sequelize } = require('../database/connection');
 
 /**
@@ -151,6 +151,20 @@ const StoreRoute = sequelize.define('StoreRoute', {
   ]
 });
 
+// Define associations after the model
+StoreRoute.associate = function() {
+  // Self-referencing association for hierarchical navigation
+  StoreRoute.hasMany(StoreRoute, {
+    as: 'children',
+    foreignKey: 'navigation_parent_id'
+  });
+  
+  StoreRoute.belongsTo(StoreRoute, {
+    as: 'parent',
+    foreignKey: 'navigation_parent_id'
+  });
+};
+
 /**
  * Static method: Find route by store and path
  * @param {string} storeId - Store ID
@@ -164,19 +178,7 @@ StoreRoute.findByPath = async function(storeId, path) {
         store_id: storeId,
         route_path: path,
         is_active: true
-      },
-      include: [
-        {
-          association: 'parent',
-          attributes: ['id', 'route_name', 'route_path']
-        },
-        {
-          association: 'children',
-          where: { is_active: true },
-          required: false,
-          attributes: ['id', 'route_name', 'route_path', 'navigation_sort_order']
-        }
-      ]
+      }
     });
   } catch (error) {
     console.error('Error finding route by path:', error);
@@ -292,7 +294,7 @@ StoreRoute.resolvePath = async function(storeId, path) {
         store_id: storeId,
         is_active: true,
         route_path: {
-          [sequelize.Op.like]: '%:%' // Contains route parameters
+          [Op.like]: '%:%' // Contains route parameters
         }
       }
     });
