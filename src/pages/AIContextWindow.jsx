@@ -449,36 +449,6 @@ export default ExampleComponent;`;
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      {/* Preview Mode Bar - Global header showing current preview mode */}
-      <div className={cn(
-        "p-2 border-b text-xs flex items-center justify-between",
-        previewMode === 'live' 
-          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-          : "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400"
-      )}>
-        <div className="flex items-center">
-          <span className={cn(
-            "w-2 h-2 rounded-full mr-2",
-            previewMode === 'live' ? "bg-red-500 animate-pulse" : "bg-orange-500"
-          )}></span>
-          {previewMode === 'live' ? '🔴 Live Preview Mode' : '📋 Patch Review Mode'} • AI Context Window
-        </div>
-        <div className="flex items-center space-x-2">
-          {manualEditResult && manualEditResult.hasChanges && (
-            <span className="px-2 py-1 bg-orange-100 dark:bg-orange-800 rounded text-orange-700 dark:text-orange-300">
-              Manual Edits Active
-            </span>
-          )}
-          {currentPatch && (
-            <span className="px-2 py-1 bg-green-100 dark:bg-green-800 rounded text-green-700 dark:text-green-300">
-              AI Patch Ready
-            </span>
-          )}
-          <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300">
-            No Deployment
-          </span>
-        </div>
-      </div>
       
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-white dark:bg-gray-800">

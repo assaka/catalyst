@@ -563,44 +563,6 @@ const PreviewSystem = ({
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
             Preview
           </h3>
-          
-          {/* Preview Mode Toggle */}
-          <div className="flex bg-gray-200 dark:bg-gray-700 rounded p-0.5">
-            <button
-              onClick={() => {
-                setPreviewMode('live');
-                onPreviewModeChange?.('live');
-                // Trigger visual preview generation when switching to live mode
-                if (previewCode || currentCode) {
-                  generateVisualPreview(previewCode || currentCode);
-                }
-              }}
-              className={cn(
-                "px-3 py-1 text-xs rounded transition-colors font-medium",
-                previewMode === 'live' 
-                  ? "bg-blue-500 text-white shadow-sm" 
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-              )}
-              title="Visual rendering without deployment"
-            >
-              🔴 Live Preview
-            </button>
-            <button
-              onClick={() => {
-                setPreviewMode('patch');
-                onPreviewModeChange?.('patch');
-              }}
-              className={cn(
-                "px-3 py-1 text-xs rounded transition-colors font-medium",
-                previewMode === 'patch' 
-                  ? "bg-orange-500 text-white shadow-sm" 
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-              )}
-              title="Review changes before production deployment"
-            >
-              📋 Patch Review
-            </button>
-          </div>
         </div>
         
         <div className="flex items-center space-x-1">
@@ -682,15 +644,51 @@ const PreviewSystem = ({
         ) : previewMode === 'live' ? (
           // Live Preview Mode - Visual rendering without deployment
           <div className="h-full overflow-auto">
-            {/* File Name Bar */}
-            <div className="sticky top-0 p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between z-10">
-              <div className="flex items-center">
-                <span className="text-gray-500 dark:text-gray-500 mr-2">📄</span>
-                File Preview
+            {/* Tab Interface Above File Name */}
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
+              <div className="flex border-b border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    // Code tab - switch to code view if implemented
+                    console.log('Code tab clicked');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                >
+                  Code
+                </button>
+                <button
+                  onClick={() => {
+                    setPreviewMode('patch');
+                    onPreviewModeChange?.('patch');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                >
+                  Diff
+                </button>
+                <button
+                  onClick={() => {
+                    setPreviewMode('live');
+                    onPreviewModeChange?.('live');
+                    if (previewCode || currentCode) {
+                      generateVisualPreview(previewCode || currentCode);
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                >
+                  Live Preview
+                </button>
               </div>
-              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-mono">
-                {fileName}
-              </span>
+              
+              {/* File Name Bar */}
+              <div className="p-2 bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
+                <div className="flex items-center">
+                  <span className="text-gray-500 dark:text-gray-500 mr-2">📄</span>
+                  File Preview
+                </div>
+                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-mono">
+                  {fileName}
+                </span>
+              </div>
             </div>
             
             {previewError ? (
@@ -723,15 +721,51 @@ const PreviewSystem = ({
         ) : (
           // Patch Review Mode - Show detailed diff and changes for approval
           <div className="h-full flex flex-col">
-            {/* File Name Bar */}
-            <div className="p-2 bg-gray-50 dark:bg-gray-800 border-b text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="text-gray-500 dark:text-gray-500 mr-2">📄</span>
-                File Preview
+            {/* Tab Interface Above File Name */}
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
+              <div className="flex border-b border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => {
+                    // Code tab - switch to code view if implemented
+                    console.log('Code tab clicked');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                >
+                  Code
+                </button>
+                <button
+                  onClick={() => {
+                    setPreviewMode('patch');
+                    onPreviewModeChange?.('patch');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400"
+                >
+                  Diff
+                </button>
+                <button
+                  onClick={() => {
+                    setPreviewMode('live');
+                    onPreviewModeChange?.('live');
+                    if (previewCode || currentCode) {
+                      generateVisualPreview(previewCode || currentCode);
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                >
+                  Live Preview
+                </button>
               </div>
-              <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-mono">
-                {fileName}
-              </span>
+              
+              {/* File Name Bar */}
+              <div className="p-2 bg-gray-50 dark:bg-gray-800 text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
+                <div className="flex items-center">
+                  <span className="text-gray-500 dark:text-gray-500 mr-2">📄</span>
+                  File Preview
+                </div>
+                <span className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-700 dark:text-gray-300 font-mono">
+                  {fileName}
+                </span>
+              </div>
             </div>
             
             {diff ? (
