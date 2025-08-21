@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
+import { Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
@@ -333,6 +334,35 @@ export default ExampleComponent;`;
     }
   }, []);
 
+  // Handle download in Preview mode
+  const handleDownload = useCallback(() => {
+    if (!selectedFile || previewMode !== 'live') return;
+    
+    try {
+      // Create a blob with the current source code
+      const blob = new Blob([sourceCode], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create a download link
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = selectedFile.name;
+      link.style.display = 'none';
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+      
+      console.log(`📥 Downloaded ${selectedFile.name}`);
+    } catch (error) {
+      console.error('Failed to download file:', error);
+    }
+  }, [selectedFile, sourceCode, previewMode]);
+
   // Handle preview mode changes
   const handlePreviewModeChange = useCallback(async (mode) => {
     setPreviewMode(mode);
@@ -638,6 +668,16 @@ export default ExampleComponent;`;
                         <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded dark:bg-green-900 dark:text-green-300">
                           Preview Available
                         </span>
+                      )}
+                      {/* Download Button - Only show in Preview mode */}
+                      {previewMode === 'live' && (
+                        <button
+                          onClick={handleDownload}
+                          className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                          title="Download current file"
+                        >
+                          <Download className="w-4 h-4" />
+                        </button>
                       )}
                     </div>
                     
