@@ -70,7 +70,8 @@ const FileTreeNavigator = ({
                 { name: 'FileTreeNavigator.jsx', type: 'file', path: 'src/components/ai-context/FileTreeNavigator.jsx', isSupported: true, extension: '.jsx' },
                 { name: 'CodeEditor.jsx', type: 'file', path: 'src/components/ai-context/CodeEditor.jsx', isSupported: true, extension: '.jsx' },
                 { name: 'AIContextWindow.jsx', type: 'file', path: 'src/components/ai-context/AIContextWindow.jsx', isSupported: true, extension: '.jsx' },
-                { name: 'PreviewSystem.jsx', type: 'file', path: 'src/components/ai-context/PreviewSystem.jsx', isSupported: true, extension: '.jsx' }
+                { name: 'BrowserPreview.jsx', type: 'file', path: 'src/components/ai-context/BrowserPreview.jsx', isSupported: true, extension: '.jsx' },
+                { name: 'DiffPreviewSystem.jsx', type: 'file', path: 'src/components/ai-context/DiffPreviewSystem.jsx', isSupported: true, extension: '.jsx' }
               ]
             }
           ]
@@ -332,7 +333,7 @@ const FileTreeNavigator = ({
           console.log(`📋 Found ${patches.length} AST diff patches for ${file.path}:`, patches);
           
           // Pass the patches to the parent component along with file info
-          // This allows the PreviewSystem or other components to use the patch data
+          // This allows the DiffPreviewSystem or other components to use the patch data
           if (patches.length > 0) {
             const fileWithPatches = {
               ...file,

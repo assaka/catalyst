@@ -5,9 +5,9 @@ import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
-import PreviewSystem from '@/components/ai-context/PreviewSystem';
 import StorefrontPreview from '@/components/ai-context/StorefrontPreview';
 import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
+import BrowserPreview from '@/components/ai-context/BrowserPreview';
 import apiClient from '@/api/client';
 
 /**
@@ -275,7 +275,7 @@ export default ExampleComponent;`;
 
   // Handle preview generation and store AST diff as overlay
   const handlePreviewGenerated = useCallback(async (preview) => {
-    // Preview is handled by the PreviewSystem component
+    // Preview is handled by the BrowserPreview component
     console.log('Preview generated:', preview);
     
     // Store AST diff in database when switching to preview mode
@@ -321,29 +321,6 @@ export default ExampleComponent;`;
     }
   }, [selectedFile, sourceCode, currentPatch]);
 
-  // Handle patch application
-  const handleApplyPatch = useCallback((modifiedCode, patchResult) => {
-    setSourceCode(modifiedCode);
-    setCurrentPatch(null);
-    
-    // Mark file as modified
-    if (selectedFile) {
-      setModifiedFiles(prev => {
-        if (!prev.includes(selectedFile.path)) {
-          return [...prev, selectedFile.path];
-        }
-        return prev;
-      });
-    }
-
-    console.log('Patch applied successfully:', patchResult);
-  }, [selectedFile]);
-
-  // Handle patch rejection
-  const handleRejectPatch = useCallback(() => {
-    setCurrentPatch(null);
-  }, []);
-
   // Handle manual edit detection
   const handleManualEdit = useCallback((diffResult) => {
     setManualEditResult(diffResult);
@@ -356,7 +333,7 @@ export default ExampleComponent;`;
     }
   }, []);
 
-  // Handle preview mode changes from PreviewSystem
+  // Handle preview mode changes
   const handlePreviewModeChange = useCallback(async (mode) => {
     setPreviewMode(mode);
     
@@ -692,17 +669,10 @@ export default ExampleComponent;`;
                         className="h-full"
                       />
                     ) : (
-                      // Live Preview View
-                      <PreviewSystem
-                        originalCode={originalCode}
-                        currentCode={sourceCode}
-                        patch={currentPatch}
+                      // Live Preview View - Browser-like rendering of actual routes
+                      <BrowserPreview
                         fileName={selectedFile?.path || ''}
-                        onApplyPatch={handleApplyPatch}
-                        onRejectPatch={handleRejectPatch}
-                        hasManualEdits={manualEditResult?.hasChanges || false}
-                        manualEditResult={manualEditResult}
-                        onPreviewModeChange={handlePreviewModeChange}
+                        currentCode={sourceCode}
                         previewMode="live"
                         className="h-full"
                       />
