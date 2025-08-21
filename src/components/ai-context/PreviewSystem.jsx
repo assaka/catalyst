@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Eye, EyeOff, Check, X, AlertTriangle, RefreshCw, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import CodeEditor from './CodeEditor';
+import BrowserPreview from './BrowserPreview';
 import apiClient from '@/api/client';
 
 /**
@@ -679,36 +680,13 @@ const PreviewSystem = ({
             </div>
           </div>
         ) : previewMode === 'live' ? (
-          // Live Preview Mode - Visual rendering without deployment
-          <div className="h-full overflow-auto">
-            
-            {previewError ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center text-orange-600 dark:text-orange-400 p-4">
-                  <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm font-medium">{previewError}</p>
-                </div>
-              </div>
-            ) : visualPreview ? (
-              <div className="p-4">
-                <div 
-                  id="visual-preview-container"
-                  className="min-h-[400px] border-2 border-blue-200 rounded bg-white shadow-sm"
-                >
-                  {/* Visual preview will be rendered here by React */}
-                  {visualPreview && React.createElement(visualPreview)}
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center text-gray-500 dark:text-gray-400">
-                  <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin" />
-                  <p className="text-sm">Generating live preview...</p>
-                  <p className="text-xs mt-1">Compiling React component</p>
-                </div>
-              </div>
-            )}
-          </div>
+          // Live Preview Mode - Browser-like rendering of actual routes
+          <BrowserPreview
+            fileName={fileName}
+            currentCode={currentCode}
+            previewMode={previewMode}
+            className="h-full"
+          />
         ) : (
           // Patch Review Mode - Show detailed diff and changes for approval
           <div className="h-full flex flex-col">
