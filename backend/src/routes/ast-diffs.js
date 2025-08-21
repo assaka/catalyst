@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const ASTDiff = require('../models/ASTDiff');
 
@@ -14,7 +14,7 @@ const ASTDiff = require('../models/ASTDiff');
  * POST /api/ast-diffs/create
  * Create a new AST diff overlay from code changes
  */
-router.post('/create', auth, checkStoreOwnership, async (req, res) => {
+router.post('/create', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const {
       filePath,
@@ -84,7 +84,7 @@ router.post('/create', auth, checkStoreOwnership, async (req, res) => {
  * POST /api/ast-diffs/:id/apply
  * Apply an AST diff overlay to make changes live
  */
-router.post('/:id/apply', auth, checkStoreOwnership, async (req, res) => {
+router.post('/:id/apply', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const astDiff = await ASTDiff.findOne({
       where: {
@@ -127,7 +127,7 @@ router.post('/:id/apply', auth, checkStoreOwnership, async (req, res) => {
  * POST /api/ast-diffs/:id/revert
  * Revert an applied AST diff overlay
  */
-router.post('/:id/revert', auth, checkStoreOwnership, async (req, res) => {
+router.post('/:id/revert', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const astDiff = await ASTDiff.findOne({
       where: {
@@ -170,7 +170,7 @@ router.post('/:id/revert', auth, checkStoreOwnership, async (req, res) => {
  * GET /api/ast-diffs/file/:filePath
  * Get all AST diff overlays for a specific file
  */
-router.get('/file/*', auth, checkStoreOwnership, async (req, res) => {
+router.get('/file/*', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     // Extract file path from params (everything after /file/)
     const filePath = req.params[0];
@@ -218,7 +218,7 @@ router.get('/file/*', auth, checkStoreOwnership, async (req, res) => {
  * GET /api/ast-diffs/history
  * Get AST diff overlay history for the store
  */
-router.get('/history', auth, checkStoreOwnership, async (req, res) => {
+router.get('/history', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const {
       limit = 50,
@@ -277,7 +277,7 @@ router.get('/history', auth, checkStoreOwnership, async (req, res) => {
  * GET /api/ast-diffs/:id
  * Get detailed information about a specific AST diff overlay
  */
-router.get('/:id', auth, checkStoreOwnership, async (req, res) => {
+router.get('/:id', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const astDiff = await ASTDiff.findOne({
       where: {
@@ -339,7 +339,7 @@ router.get('/:id', auth, checkStoreOwnership, async (req, res) => {
  * DELETE /api/ast-diffs/:id
  * Delete an AST diff overlay (only if not applied)
  */
-router.delete('/:id', auth, checkStoreOwnership, async (req, res) => {
+router.delete('/:id', authMiddleware, checkStoreOwnership, async (req, res) => {
   try {
     const astDiff = await ASTDiff.findOne({
       where: {

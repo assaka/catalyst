@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const ASTAnalyzer = require('../services/ast-analyzer');
 const JSONPatchService = require('../services/json-patch-service');
 const ConflictDetector = require('../services/conflict-detector');

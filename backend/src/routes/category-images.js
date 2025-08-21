@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const storageManager = require('../services/storage-manager');
 const { Category } = require('../models');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Configure multer for image uploads

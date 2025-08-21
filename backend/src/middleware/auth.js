@@ -180,9 +180,11 @@ const storeOwnerOnly = validateRoleSession(['store_owner', 'admin']);
 // Middleware for routes that require admin privileges
 const adminOnly = validateRoleSession(['admin']);
 
-module.exports = authMiddleware;
-module.exports.authorize = authorize;
-module.exports.validateRoleSession = validateRoleSession;
-module.exports.customerOnly = customerOnly;
-module.exports.storeOwnerOnly = storeOwnerOnly;
-module.exports.adminOnly = adminOnly;
+module.exports = {
+  authMiddleware,
+  authorize,
+  validateRoleSession,
+  customerOnly,
+  storeOwnerOnly,
+  adminOnly
+};

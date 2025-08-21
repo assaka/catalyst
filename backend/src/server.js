@@ -13,7 +13,7 @@ console.log('🚀 SERVER STARTING - VERSION 3.0 - OrderItems Fix Deployed');
 
 const { sequelize } = require('./database/connection');
 const errorHandler = require('./middleware/errorHandler');
-const authMiddleware = require('./middleware/auth');
+const { authMiddleware } = require('./middleware/auth');
 
 // Import all models to ensure associations are loaded
 const models = require('./models');

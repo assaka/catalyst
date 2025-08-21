@@ -1,13 +1,13 @@
 const express = require('express');
 const { Address } = require('../models');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
 // Custom middleware that applies auth but doesn't fail for guests
 const optionalAuth = (req, res, next) => {
   // Try to apply auth middleware
-  auth(req, res, (err) => {
+  authMiddleware(req, res, (err) => {
     // If auth fails but we have a session_id, continue as guest
     if (err && req.query.session_id) {
       req.user = null; // Ensure req.user is null for guests
@@ -200,7 +200,7 @@ router.post('/', optionalAuth, async (req, res) => {
 // @route   PUT /api/addresses/:id
 // @desc    Update address
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     // Build where clause based on user role
     const isCustomer = req.user.role === 'customer';
@@ -239,7 +239,7 @@ router.put('/:id', auth, async (req, res) => {
 // @route   DELETE /api/addresses/:id
 // @desc    Delete address
 // @access  Private
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     // Build where clause based on user role
     const isCustomer = req.user.role === 'customer';
