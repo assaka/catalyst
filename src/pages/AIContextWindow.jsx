@@ -84,7 +84,7 @@ const AIContextWindowPage = () => {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
-  const [previewMode, setPreviewMode] = useState('live'); // Track preview mode: 'live', 'patch'
+  const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
 
   // Load file from URL parameter on mount
   useEffect(() => {
@@ -572,8 +572,8 @@ export default ExampleComponent;`;
                     <div className="flex border-b border-gray-200 dark:border-gray-700">
                       <button
                         onClick={() => {
-                          // Code tab - focus on code editor
-                          console.log('Code tab clicked - focus on code editor');
+                          setPreviewMode('code');
+                          handlePreviewModeChange('code');
                         }}
                         className={cn(
                           "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
@@ -610,7 +610,7 @@ export default ExampleComponent;`;
                             : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
                         )}
                       >
-                        Live Preview
+                        Preview
                       </button>
                     </div>
                   </div>
@@ -636,42 +636,52 @@ export default ExampleComponent;`;
                     )}
                   </div>
 
-                  {/* Resizable Code Editor and Preview */}
+                  {/* Single Content Area - Tab-based Content */}
                   <div className="flex-1">
-                    <ResizablePanelGroup direction="horizontal" className="h-full">
-                      {/* Code Editor */}
-                      <ResizablePanel defaultSize={60} minSize={40}>
-                        <CodeEditor
-                          value={sourceCode}
-                          onChange={handleCodeChange}
-                          fileName={selectedFile.name}
-                          onCursorPositionChange={setCursorPosition}
-                          onSelectionChange={setSelection}
-                          onManualEdit={handleManualEdit}
-                          originalCode={originalCode}
-                          enableDiffDetection={true}
-                          className="h-full"
-                        />
-                      </ResizablePanel>
-
-                      <ResizableHandle />
-
-                      {/* Preview Panel */}
-                      <ResizablePanel defaultSize={40} minSize={30}>
-                        <PreviewSystem
-                          originalCode={originalCode}
-                          currentCode={sourceCode}
-                          patch={currentPatch}
-                          fileName={selectedFile?.name || ''}
-                          onApplyPatch={handleApplyPatch}
-                          onRejectPatch={handleRejectPatch}
-                          hasManualEdits={manualEditResult?.hasChanges || false}
-                          manualEditResult={manualEditResult}
-                          onPreviewModeChange={handlePreviewModeChange}
-                          className="h-full"
-                        />
-                      </ResizablePanel>
-                    </ResizablePanelGroup>
+                    {previewMode === 'code' ? (
+                      // Code Editor View
+                      <CodeEditor
+                        value={sourceCode}
+                        onChange={handleCodeChange}
+                        fileName={selectedFile.name}
+                        onCursorPositionChange={setCursorPosition}
+                        onSelectionChange={setSelection}
+                        onManualEdit={handleManualEdit}
+                        originalCode={originalCode}
+                        enableDiffDetection={true}
+                        className="h-full"
+                      />
+                    ) : previewMode === 'patch' ? (
+                      // AST Diff/Patch View
+                      <PreviewSystem
+                        originalCode={originalCode}
+                        currentCode={sourceCode}
+                        patch={currentPatch}
+                        fileName={selectedFile?.name || ''}
+                        onApplyPatch={handleApplyPatch}
+                        onRejectPatch={handleRejectPatch}
+                        hasManualEdits={manualEditResult?.hasChanges || false}
+                        manualEditResult={manualEditResult}
+                        onPreviewModeChange={handlePreviewModeChange}
+                        previewMode="patch"
+                        className="h-full"
+                      />
+                    ) : (
+                      // Live Preview View
+                      <PreviewSystem
+                        originalCode={originalCode}
+                        currentCode={sourceCode}
+                        patch={currentPatch}
+                        fileName={selectedFile?.name || ''}
+                        onApplyPatch={handleApplyPatch}
+                        onRejectPatch={handleRejectPatch}
+                        hasManualEdits={manualEditResult?.hasChanges || false}
+                        manualEditResult={manualEditResult}
+                        onPreviewModeChange={handlePreviewModeChange}
+                        previewMode="live"
+                        className="h-full"
+                      />
+                    )}
                   </div>
                 </>
               ) : (
