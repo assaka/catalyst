@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useStoreSlug } from '@/hooks/useStoreSlug';
-import { useStore } from '@/components/storefront/StoreProvider';
+import { useStoreContext } from '@/utils/storeContext';
 import { getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
 
 /**
@@ -21,22 +20,16 @@ const BrowserPreview = ({
   const [deviceView, setDeviceView] = useState('desktop'); // desktop, tablet, mobile
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
 
-  // Get actual store slug from current context
-  const { storeSlug, isStoreContext } = useStoreSlug();
-  
-  // Get store data from StoreProvider context
-  const { store } = useStore() || {};
+  // Get store context using unified utility
+  const { getStoreSlug } = useStoreContext();
 
   // Analyze file content to detect appropriate route
   const analyzeFileContentForRoute = useCallback((filePath, fileContent) => {
     if (!filePath) return null;
 
-    // Use actual store slug from context, or try to extract from current URL, or use store data fallback
-    const currentStoreSlug = storeSlug || 
-                           getStoreSlugFromPublicUrl(window.location.pathname) || 
-                           store?.slug || 
-                           store?.code || 
-                           'demo-store';
+    // Get current store slug from unified context with URL fallback
+    const currentStoreSlug = getStoreSlug() || 
+                           getStoreSlugFromPublicUrl(window.location.pathname);
 
     // Check if content contains React Router route definitions
     const routePatterns = [
@@ -87,18 +80,15 @@ const BrowserPreview = ({
     }
 
     return null;
-  }, [storeSlug, store]);
+  }, [getStoreSlug]);
 
   // Detect route from file path and content
   const detectRouteFromFile = useCallback((filePath, fileContent = '') => {
     if (!filePath) return null;
 
-    // Use actual store slug from context, or try to extract from current URL, or use store data fallback
-    const currentStoreSlug = storeSlug || 
-                           getStoreSlugFromPublicUrl(window.location.pathname) || 
-                           store?.slug || 
-                           store?.code || 
-                           'demo-store';
+    // Get current store slug from unified context with URL fallback
+    const currentStoreSlug = getStoreSlug() || 
+                           getStoreSlugFromPublicUrl(window.location.pathname);
 
     // First try to analyze file content for route information
     const contentBasedRoute = analyzeFileContentForRoute(filePath, fileContent);
@@ -146,9 +136,9 @@ const BrowserPreview = ({
       }
     }
     
-    // Default fallback - show storefront
+    // Default fallback - show storefront if store slug is available
     return `/public/${currentStoreSlug}`;
-  }, [storeSlug, store]);
+  }, [getStoreSlug]);
 
   // Get preview URL based on file and content
   const detectedRoute = useMemo(() => {

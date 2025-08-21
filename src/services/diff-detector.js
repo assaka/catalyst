@@ -249,12 +249,25 @@ export function generateDiffSummary(diff) {
  * @returns {Object} Detection result with diff information
  */
 export function detectManualEdit(original, current) {
-  if (!original || !current || original === current) {
+  if (!original || !current) {
     return {
       hasChanges: false,
       diff: null,
       patch: null,
-      summary: null
+      summary: null,
+      changeCount: 0
+    };
+  }
+
+  // Check for exact match first - if content is identical, no changes
+  if (original === current) {
+    return {
+      hasChanges: false,
+      diff: null,
+      patch: null,
+      summary: null,
+      changeCount: 0,
+      revertedToOriginal: true // Flag to indicate explicit revert to baseline
     };
   }
   
@@ -262,12 +275,15 @@ export function detectManualEdit(original, current) {
   const patch = generateJSONPatch(diff);
   const summary = generateDiffSummary(diff);
   
+  // Double-check: if no actual changes in summary, treat as no changes
+  const actualChanges = summary.totalChanges > 0;
+  
   return {
-    hasChanges: true,
-    diff,
-    patch,
-    summary,
-    changeCount: summary.totalChanges,
+    hasChanges: actualChanges,
+    diff: actualChanges ? diff : null,
+    patch: actualChanges ? patch : null,
+    summary: actualChanges ? summary : null,
+    changeCount: actualChanges ? summary.totalChanges : 0,
     timestamp: new Date().toISOString()
   };
 }
@@ -291,7 +307,7 @@ export function createDebouncedDiffDetector(callback, delay = 500, initialOrigin
     timeoutId = setTimeout(() => {
       if (originalCode) {
         const result = detectManualEdit(originalCode, currentCode);
-        // Always call callback to handle both changes and clearing when returning to original
+        // Always call callback - it will indicate hasChanges: false when reverted to original
         callback(result);
       }
     }, delay);

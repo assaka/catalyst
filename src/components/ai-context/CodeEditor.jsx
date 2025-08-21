@@ -32,6 +32,7 @@ const CodeEditor = ({
   const [isDiffMode, setIsDiffMode] = useState(false); // Show diff indicators in editor
   const [savedPatches, setSavedPatches] = useState([]); // Previous patches from database
   const [patchSaveStatus, setPatchSaveStatus] = useState(null); // Status of patch saving
+  const [showRevertedIndicator, setShowRevertedIndicator] = useState(false); // Show "Back to Original" indicator
   const astAnalysisRef = useRef(null);
   const diffDetectorRef = useRef(null);
   const originalCodeRef = useRef(originalCode);
@@ -55,8 +56,14 @@ const CodeEditor = ({
         setDiffResult(diffResult);
         onManualEdit?.(diffResult);
         
-        // Auto-save patch if changes detected
-        if (diffResult.hasChanges) {
+        // Show "Back to Original" indicator briefly when user reverts to baseline
+        if (!diffResult.hasChanges && diffResult.revertedToOriginal) {
+          setShowRevertedIndicator(true);
+          setTimeout(() => setShowRevertedIndicator(false), 3000); // Hide after 3 seconds
+        }
+        
+        // Auto-save patch only if there are actual changes (not when reverted to original)
+        if (diffResult.hasChanges && diffResult.changeCount > 0) {
           autoSavePatch(diffResult);
         }
       }, 500, originalCode);
@@ -659,7 +666,7 @@ const CodeEditor = ({
       )}
 
       {/* Diff Mode Controls */}
-      {enableDiffDetection && diffResult && (
+      {enableDiffDetection && diffResult && diffResult.hasChanges && (
         <div className="absolute top-2 right-2 z-20 flex items-center space-x-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border p-2">
           <button
             onClick={() => setIsDiffMode(!isDiffMode)}
@@ -788,9 +795,16 @@ const CodeEditor = ({
         )}
         
         {/* Manual Edit Indicator */}
-        {enableDiffDetection && diffResult && (
+        {enableDiffDetection && diffResult && diffResult.hasChanges && (
           <div className="bg-orange-500 text-white text-xs px-2 py-1 rounded opacity-90 animate-pulse">
             Manual Edit Detected
+          </div>
+        )}
+        
+        {/* Back to Original Indicator */}
+        {enableDiffDetection && showRevertedIndicator && (
+          <div className="bg-green-500 text-white text-xs px-2 py-1 rounded opacity-75 animate-pulse">
+            Back to Original
           </div>
         )}
         
