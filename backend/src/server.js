@@ -179,8 +179,20 @@ app.use(cors({
       return allowedWithoutSlash === originWithoutSlash;
     });
     
-    if (isAllowed) {
-      console.log('✅ CORS allowed for origin (pattern match):', origin);
+    // Check for Vercel preview URLs pattern (catalyst-*.vercel.app)
+    const isVercelPreview = /^https:\/\/catalyst-[a-z0-9]+-hamids-projects-[a-z0-9]+\.vercel\.app$/.test(origin);
+    
+    // Also check for main Vercel domain pattern
+    const isVercelDomain = /^https:\/\/catalyst-[a-z0-9-]*\.vercel\.app$/.test(origin);
+    
+    if (isAllowed || isVercelPreview || isVercelDomain) {
+      if (isVercelPreview) {
+        console.log('✅ CORS allowed for Vercel preview URL:', origin);
+      } else if (isVercelDomain) {
+        console.log('✅ CORS allowed for Vercel domain:', origin);
+      } else {
+        console.log('✅ CORS allowed for origin (pattern match):', origin);
+      }
       callback(null, true);
     } else {
       console.log('❌ CORS blocked for origin:', origin);
