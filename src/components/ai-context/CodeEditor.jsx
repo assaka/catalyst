@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Editor, { loader } from '@monaco-editor/react';
 import { cn } from '@/lib/utils';
 import { detectManualEdit, createDebouncedDiffDetector } from '@/services/diff-detector';
-import { useStoreContext, normalizeFilePath } from '@/utils/storeContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import { normalizeFilePath } from '@/utils/storeContext';
 import apiClient from '@/api/client';
 
 /**
@@ -39,7 +40,17 @@ const CodeEditor = ({
   const autoSaveTimeoutRef = useRef(null);
   
   // Get store context for API calls that require store_id
-  const { getApiConfig, hasStoreId } = useStoreContext();
+  const { selectedStore } = useStoreSelection();
+  const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  
+  // Create API config with store headers
+  const getApiConfig = useCallback(() => {
+    const headers = {};
+    if (storeId && storeId !== 'undefined') {
+      headers['x-store-id'] = storeId;
+    }
+    return { headers };
+  }, [storeId]);
 
   // Initialize diff detection system
   useEffect(() => {

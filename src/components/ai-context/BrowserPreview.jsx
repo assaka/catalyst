@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useStoreContext } from '@/utils/storeContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
 
 /**
@@ -20,8 +20,19 @@ const BrowserPreview = ({
   const [deviceView, setDeviceView] = useState('desktop'); // desktop, tablet, mobile
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
 
-  // Get store context using unified utility
-  const { getStoreSlug, getApiConfig } = useStoreContext();
+  // Get store context for API calls
+  const { selectedStore } = useStoreSelection();
+  const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  const storeSlug = selectedStore?.slug || selectedStore?.name?.toLowerCase().replace(/\s+/g, '-');
+  
+  // Create API config with store headers
+  const getApiConfig = useCallback(() => {
+    const headers = {};
+    if (storeId && storeId !== 'undefined') {
+      headers['x-store-id'] = storeId;
+    }
+    return { headers };
+  }, [storeId]);
 
   // Query database for route resolution
   const resolveRouteFromDatabase = useCallback(async (targetComponent) => {
@@ -48,8 +59,8 @@ const BrowserPreview = ({
   const analyzeFileContentForRoute = useCallback(async (filePath, fileContent) => {
     if (!filePath) return null;
 
-    // Get current store slug from unified context with URL fallback
-    const currentStoreSlug = getStoreSlug() || 
+    // Get current store slug with URL fallback
+    const currentStoreSlug = storeSlug || 
                            getStoreSlugFromPublicUrl(window.location.pathname);
 
     // Component mapping for database queries
@@ -112,8 +123,8 @@ const BrowserPreview = ({
   const detectRouteFromFile = useCallback(async (filePath, fileContent = '') => {
     if (!filePath) return null;
 
-    // Get current store slug from unified context with URL fallback
-    const currentStoreSlug = getStoreSlug() || 
+    // Get current store slug with URL fallback
+    const currentStoreSlug = storeSlug || 
                            getStoreSlugFromPublicUrl(window.location.pathname);
 
     // First try to analyze file content for route information
