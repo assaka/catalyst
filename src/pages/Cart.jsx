@@ -593,7 +593,7 @@ export default function Cart() {
     return (
         <div className="bg-gray-50">
             <SeoHeadManager
-                title="My Cart"
+                title="Your Cart"
                 description="Review your shopping cart items before proceeding to checkout."
                 keywords="cart, shopping cart, checkout, e-commerce, online store"
             />
