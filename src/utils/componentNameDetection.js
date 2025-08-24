@@ -172,6 +172,38 @@ export function extractComponentNameFromContent(fileContent) {
  * @returns {string|null} Best detected component/page name or null
  */
 export function detectComponentName(filePath, fileContent = '') {
+  // Check if this is a page file
+  const isPageFile = filePath && (filePath.includes('/pages/') || filePath.includes('\\pages\\'));
+  
+  if (isPageFile) {
+    // For page files, prioritize the filename over content
+    const fileName = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
+    
+    // Direct page name mappings for common page files
+    const pageNameMappings = {
+      'Cart': 'Cart',
+      'Checkout': 'Checkout', 
+      'ProductDetail': 'Product Detail',
+      'Storefront': 'Home',
+      'Dashboard': 'Dashboard',
+      'Products': 'Products',
+      'Categories': 'Categories',
+      'Orders': 'Orders',
+      'Customers': 'Customers',
+      'Settings': 'Settings',
+      'Attributes': 'Attributes',
+      'Plugins': 'Plugins',
+      'CmsBlocks': 'CMS Blocks',
+      'CmsPages': 'CMS Pages',
+      'ABTesting': 'AB Testing',
+      'Integrations': 'Integrations'
+    };
+    
+    if (pageNameMappings[fileName]) {
+      return pageNameMappings[fileName];
+    }
+  }
+  
   // Try content-based detection first (more accurate for route patterns)
   const contentName = extractComponentNameFromContent(fileContent);
   if (contentName) {

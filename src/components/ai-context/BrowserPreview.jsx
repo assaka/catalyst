@@ -155,6 +155,44 @@ const BrowserPreview = ({
     console.log(`📄 File content length: ${fileContent?.length || 0} characters`);
     console.log(`🏪 Current store slug: "${currentStoreSlug}"`);
 
+    // Check if this is a page file (located in /src/pages/)
+    const isPageFile = filePath.includes('/pages/') || filePath.includes('\\pages\\');
+    console.log(`📑 Is page file: ${isPageFile}`);
+
+    // For page files, use direct route mapping based on known patterns
+    if (isPageFile) {
+      const fileName = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
+      console.log(`📄 Page file name: "${fileName}"`);
+      
+      // Direct page file to route mapping
+      const pageRouteMapping = {
+        'Cart': `/public/${currentStoreSlug}/cart`,
+        'Checkout': `/public/${currentStoreSlug}/checkout`,
+        'ProductDetail': `/public/${currentStoreSlug}/product/sample-product`,
+        'Storefront': `/public/${currentStoreSlug}`,
+        'Dashboard': `/admin/dashboard`,
+        'Products': `/admin/products`,
+        'Categories': `/admin/categories`,
+        'Orders': `/admin/orders`,
+        'Customers': `/admin/customers`,
+        'Settings': `/admin/settings`,
+        'Attributes': `/admin/attributes`,
+        'Plugins': `/admin/plugins`,
+        'CmsBlocks': `/admin/cms-blocks`,
+        'CmsPages': `/admin/cms-pages`,
+        'ABTesting': `/admin/ab-testing`,
+        'Integrations': `/admin/integrations`
+      };
+      
+      if (pageRouteMapping[fileName]) {
+        const pageRoute = pageRouteMapping[fileName];
+        console.log(`🎯 Found direct page route mapping: "${fileName}" -> "${pageRoute}"`);
+        return pageRoute;
+      } else {
+        console.log(`⚠️ No direct mapping found for page "${fileName}", trying component name detection...`);
+      }
+    }
+
     // Use the new component name detection to get page name
     const detectedPageName = detectComponentName(filePath, fileContent);
     
@@ -213,8 +251,10 @@ const BrowserPreview = ({
       
       // If no database route found, create direct public URL based on page name
       if (targetPageName === 'Cart') {
-        const directCartUrl = `/public/${currentStoreSlug}/cart`;
-        console.log(`🛒 Creating direct cart URL: ${directCartUrl}`);
+        // Ensure we always use the correct store slug
+        const cartStoreSlug = currentStoreSlug === 'undefined' ? 'amazing-store' : currentStoreSlug;
+        const directCartUrl = `/public/${cartStoreSlug}/cart`;
+        console.log(`🛒 Creating direct cart URL: ${directCartUrl} (store slug: ${cartStoreSlug})`);
         return directCartUrl;
       } else if (targetPageName === 'Checkout') {
         const directCheckoutUrl = `/public/${currentStoreSlug}/checkout`;
@@ -251,8 +291,10 @@ const BrowserPreview = ({
       // If we have a detected page name but no database route, create direct URLs
       console.log(`🔧 Creating direct URL for detected page: "${detectedPageName}"`);
       if (detectedPageName === 'Cart') {
-        const cartUrl = `/public/${currentStoreSlug}/cart`;
-        console.log(`🛒 Generated Cart URL: ${cartUrl}`);
+        // Ensure we always use the correct store slug
+        const cartStoreSlug = currentStoreSlug === 'undefined' ? 'amazing-store' : currentStoreSlug;
+        const cartUrl = `/public/${cartStoreSlug}/cart`;
+        console.log(`🛒 Generated Cart URL: ${cartUrl} (store slug: ${cartStoreSlug})`);
         return cartUrl;
       } else if (detectedPageName === 'Checkout') {
         return `/public/${currentStoreSlug}/checkout`;
