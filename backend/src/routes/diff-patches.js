@@ -108,14 +108,17 @@ router.post('/create', authMiddleware, async (req, res) => {
     } = req.body;
     
     const userId = req.user.id;
+    const storeId = req.user.store_id || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store for now
     
     console.log(`📝 Creating hybrid patch for: ${filePath}`);
+    console.log(`   User ID: ${userId}`);
+    console.log(`   Store ID: ${storeId}`);
     
-    // Check if customization already exists for this file path
+    // Check if customization already exists for this file path (store-scoped)
     let customization = await HybridCustomization.findOne({
       where: {
         file_path: filePath,
-        user_id: userId,
+        store_id: storeId,
         status: 'active'
       }
     });
@@ -125,6 +128,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       console.log(`🆕 Creating new customization for: ${filePath}`);
       const result = await versionControl.createCustomization({
         userId: userId,
+        storeId: storeId,
         name: `Auto-saved changes to ${filePath.split('/').pop()}`,
         description: `Auto-generated from manual edits`,
         componentType: 'component',
