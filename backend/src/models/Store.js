@@ -164,10 +164,6 @@ const Store = sequelize.define('Store', {
   github_repo_url: {
     type: DataTypes.STRING,
     allowNull: true
-  },
-  template_customizations: {
-    type: DataTypes.JSON,
-    defaultValue: {}
   }
 }, {
   tableName: 'stores',
