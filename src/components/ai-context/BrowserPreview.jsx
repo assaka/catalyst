@@ -587,10 +587,54 @@ const BrowserPreview = ({
     // Apply code patches after iframe loads (if enabled)
     const iframe = document.getElementById('browser-preview-iframe');
     if (iframe && currentCode && enablePatches) {
-      // Wait a moment for the page to fully render
-      setTimeout(() => {
-        applyCodePatches(iframe);
-      }, 1000);
+      // Wait for page content to fully load with proper verification
+      const waitForPageContent = () => {
+        return new Promise((resolve) => {
+          let attempts = 0;
+          const maxAttempts = 20; // 10 seconds max wait time
+          
+          const checkContent = () => {
+            attempts++;
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            
+            if (!iframeDoc) {
+              console.log('🔄 Iframe document not ready, retrying...');
+              if (attempts < maxAttempts) {
+                setTimeout(checkContent, 500);
+              } else {
+                resolve();
+              }
+              return;
+            }
+            
+            // Check for actual page content (not just loading state)
+            const allElements = iframeDoc.getElementsByTagName('*');
+            const contentElements = Array.from(allElements).filter(el => {
+              // Look for actual content elements, not just HTML/HEAD/BODY
+              const excludedTags = ['HTML', 'HEAD', 'BODY', 'STYLE', 'SCRIPT', 'NOSCRIPT', 'META', 'LINK', 'TITLE'];
+              return !excludedTags.includes(el.tagName) && el.textContent && el.textContent.trim();
+            });
+            
+            console.log(`🔍 Content check attempt ${attempts}: Found ${contentElements.length} content elements out of ${allElements.length} total`);
+            
+            // If we have substantial content elements, proceed
+            if (contentElements.length >= 5 || attempts >= maxAttempts) {
+              console.log('✅ Page content ready for patch application');
+              resolve();
+            } else {
+              // Keep waiting for more content to load
+              setTimeout(checkContent, 500);
+            }
+          };
+          
+          // Start checking immediately, then retry if needed
+          checkContent();
+        });
+      };
+      
+      // Wait for content to be ready, then apply patches
+      await waitForPageContent();
+      applyCodePatches(iframe);
     }
   }, [applyCodePatches, currentCode, enablePatches]);
 

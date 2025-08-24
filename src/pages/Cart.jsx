@@ -593,13 +593,13 @@ export default function Cart() {
     return (
         <div className="bg-gray-50">
             <SeoHeadManager
-                title="Your Cart"
+                title="My Cart"
                 description="Review your shopping cart items before proceeding to checkout."
                 keywords="cart, shopping cart, checkout, e-commerce, online store"
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">Your Cart</h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
                 <CmsBlockRenderer position="cart_above_items" />
                 {cartItems.length === 0 ? (
                     <Card>
