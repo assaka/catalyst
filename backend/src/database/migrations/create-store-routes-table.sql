@@ -191,8 +191,242 @@ WHERE NOT EXISTS (
     WHERE sr.store_id = s.id AND sr.route_path = '/checkout'
 );
 
--- Insert route for ABTesting page as an example admin route
-INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, created_at) 
+-- Insert all standard admin routes that every store should have
+-- These routes require authentication and are accessible to store owners and admins
+
+-- Dashboard
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/dashboard' as route_path,
+    'Dashboard' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'Dashboard' as target_value,
+    'Admin Dashboard' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    1 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/dashboard'
+);
+
+-- Products (Admin)
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/products' as route_path,
+    'Products' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'ProductListing' as target_value,
+    'Product Management' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    2 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/products'
+);
+
+-- Categories
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/categories' as route_path,
+    'Categories' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'Categories' as target_value,
+    'Category Management' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    3 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/categories'
+);
+
+-- Orders
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/orders' as route_path,
+    'Orders' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'Orders' as target_value,
+    'Order Management' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    4 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/orders'
+);
+
+-- Customers
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/customers' as route_path,
+    'Customers' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'Customers' as target_value,
+    'Customer Management' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    5 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/customers'
+);
+
+-- Attributes
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/attributes' as route_path,
+    'Attributes' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'Attributes' as target_value,
+    'Product Attributes' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    6 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/attributes'
+);
+
+-- CMS Pages
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/cms-pages' as route_path,
+    'CMS Pages' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'CmsPages' as target_value,
+    'CMS Page Management' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    7 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/cms-pages'
+);
+
+-- CMS Blocks
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/cms-blocks' as route_path,
+    'CMS Blocks' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'CmsBlocks' as target_value,
+    'CMS Block Management' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    8 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/cms-blocks'
+);
+
+-- Plugins
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/plugins' as route_path,
+    'Plugins' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'Plugins' as target_value,
+    'Plugin Management' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    9 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/plugins'
+);
+
+-- Integrations
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/integrations' as route_path,
+    'Integrations' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'Integrations' as target_value,
+    'Integration Management' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    10 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/integrations'
+);
+
+-- Settings
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/settings' as route_path,
+    'Settings' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'Settings' as target_value,
+    'Store Settings' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    11 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/settings'
+);
+
+-- A/B Testing
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
 SELECT 
     s.id as store_id,
     '/admin/ab-testing' as route_path,
@@ -203,6 +437,8 @@ SELECT
     'A/B Testing Dashboard' as title,
     true as requires_auth,
     '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    12 as navigation_sort_order,
     CURRENT_TIMESTAMP as created_at
 FROM stores s
 WHERE NOT EXISTS (
