@@ -147,6 +147,8 @@ const BrowserPreview = ({
                            getStoreSlugFromPublicUrl(window.location.pathname);
 
     console.log(`🔍 Detecting route for file: ${filePath}`);
+    console.log(`📄 File content length: ${fileContent?.length || 0} characters`);
+    console.log(`🏪 Current store slug: "${currentStoreSlug}"`);
 
     // Use the new component name detection to get page name
     const detectedPageName = detectComponentName(filePath, fileContent);
@@ -157,8 +159,13 @@ const BrowserPreview = ({
       // Try to resolve using the new page name resolution API
       const resolvedRoute = await resolveRouteFromPageName(detectedPageName);
       if (resolvedRoute) {
+        console.log(`✅ Resolved page "${detectedPageName}" to route: ${resolvedRoute}`);
         return resolvedRoute;
+      } else {
+        console.log(`⚠️ Could not resolve page "${detectedPageName}" to database route, trying fallbacks...`);
       }
+    } else {
+      console.log(`⚠️ No page name detected from file path or content`);
     }
 
     // Fallback: Try to analyze file content for direct route patterns
@@ -170,19 +177,63 @@ const BrowserPreview = ({
     // Legacy fallback logic for common file path patterns
     const fileName = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
     
-    // Check if it's a storefront component
+    // Try to extract page name from file name as a last resort
+    const fileBasedPageName = detectComponentName(filePath, '');
+    
+    if (fileBasedPageName && fileBasedPageName !== 'Home') {
+      console.log(`🔍 Trying file-based page name: "${fileBasedPageName}"`);
+      const fileBasedRoute = await resolveRouteFromPageName(fileBasedPageName);
+      if (fileBasedRoute) {
+        return fileBasedRoute;
+      }
+    }
+    
+    // Check if it's a storefront component - but try to use the detected component name
     if (filePath.includes('/storefront/') || filePath.includes('/components/storefront/')) {
-      const homeRoute = await resolveRouteFromPageName('Home');
-      return homeRoute || `/public/${currentStoreSlug}`;
+      // If we detected a specific page, try it first, otherwise fall back to Home
+      const targetPageName = detectedPageName || fileBasedPageName || 'Home';
+      console.log(`🏪 Storefront component detected. Target page: "${targetPageName}"`);
+      
+      const storefrontRoute = await resolveRouteFromPageName(targetPageName);
+      if (storefrontRoute) {
+        console.log(`✅ Found route for ${targetPageName}: ${storefrontRoute}`);
+        return storefrontRoute;
+      }
+      
+      // If no database route found, create direct public URL based on page name
+      if (targetPageName === 'Cart') {
+        const directCartUrl = `/public/${currentStoreSlug}/cart`;
+        console.log(`🛒 Creating direct cart URL: ${directCartUrl}`);
+        return directCartUrl;
+      } else if (targetPageName === 'Checkout') {
+        const directCheckoutUrl = `/public/${currentStoreSlug}/checkout`;
+        console.log(`💳 Creating direct checkout URL: ${directCheckoutUrl}`);
+        return directCheckoutUrl;
+      } else if (targetPageName === 'Product Detail') {
+        const directProductUrl = `/public/${currentStoreSlug}/product/sample-product`;
+        console.log(`📦 Creating direct product URL: ${directProductUrl}`);
+        return directProductUrl;
+      }
+      
+      // Default to home
+      return `/public/${currentStoreSlug}`;
     }
     
-    // Check if it's an admin component
+    // Check if it's an admin component - but try to use the detected component name
     if (filePath.includes('/admin/') || filePath.includes('/components/admin/')) {
-      const dashboardRoute = await resolveRouteFromPageName('Dashboard');
-      return dashboardRoute || '/admin/dashboard';
+      const targetPageName = detectedPageName || fileBasedPageName || 'Dashboard';
+      const adminRoute = await resolveRouteFromPageName(targetPageName);
+      return adminRoute || '/admin/dashboard';
     }
     
-    // Default fallback - show storefront/home page
+    // Default fallback - try detected page name first, then home page
+    if (detectedPageName) {
+      const detectedRoute = await resolveRouteFromPageName(detectedPageName);
+      if (detectedRoute) {
+        return detectedRoute;
+      }
+    }
+    
     const homeRoute = await resolveRouteFromPageName('Home');
     return homeRoute || `/public/${currentStoreSlug}`;
   }, [storeSlug, resolveRouteFromPageName, analyzeFileContentForRoute]);
