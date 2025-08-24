@@ -231,13 +231,24 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
   }
   
   try {
+    // Get authentication token from localStorage
+    const token = localStorage.getItem('token');
+    
+    // Build headers with authentication
+    const headers = {
+      'Content-Type': 'application/json',
+      ...apiConfig.headers
+    };
+    
+    // Add authentication if token exists
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     // Use the new page name resolution API endpoint
     const response = await fetch(`/api/store-routes/find-by-page/${encodeURIComponent(pageName)}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...apiConfig.headers
-      }
+      headers
     });
     
     const data = await response.json();
