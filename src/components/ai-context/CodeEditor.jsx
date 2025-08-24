@@ -121,21 +121,21 @@ const CodeEditor = ({
     try {
       // Normalize file path and get API config with store context
       const normalizedFileName = normalizeFilePath(fileName);
-      console.log(`📋 Loading previous patches for ${normalizedFileName}...`);
+      console.log(`📋 Loading previous hybrid customization patches for ${normalizedFileName}...`);
       
       const apiConfig = getApiConfig();
-      const response = await apiClient.get(`ast-diffs/file/${encodeURIComponent(normalizedFileName)}`, apiConfig);
+      const response = await apiClient.get(`hybrid-patches/${encodeURIComponent(normalizedFileName)}`, apiConfig);
       
       if (response.success && response.data) {
-        const patches = response.data.overlays || [];
+        const patches = response.data.patches || [];
         setSavedPatches(patches);
-        console.log(`✅ Loaded ${patches.length} previous patches for ${fileName}`);
+        console.log(`✅ Loaded ${patches.length} previous hybrid customization patches for ${fileName}`);
       } else {
         setSavedPatches([]);
-        console.log(`📋 No previous patches found for ${fileName}`);
+        console.log(`📋 No previous hybrid customization patches found for ${fileName}`);
       }
     } catch (error) {
-      console.warn(`⚠️ Failed to load patches for ${fileName}:`, error.message);
+      console.warn(`⚠️ Failed to load hybrid customization patches for ${fileName}:`, error.message);
       setSavedPatches([]);
     }
   }, [fileName, getApiConfig]);

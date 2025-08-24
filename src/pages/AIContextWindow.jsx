@@ -368,25 +368,25 @@ export default ExampleComponent;`;
   const handlePreviewModeChange = useCallback(async (mode) => {
     setPreviewMode(mode);
     
-    // If switching to patch mode and we have a selected file, ensure AST patches are loaded
+    // If switching to patch mode and we have a selected file, ensure hybrid patches are loaded
     if (mode === 'patch' && selectedFile?.path) {
       try {
-        console.log(`🔍 Loading AST diff patches for Diff tab: ${selectedFile.path}`);
+        console.log(`🔍 Loading hybrid customization patches for Diff tab: ${selectedFile.path}`);
         
-        const astDiffData = await apiClient.get(`ast-diffs/file/${encodeURIComponent(selectedFile.path)}`);
+        const hybridPatchData = await apiClient.get(`hybrid-patches/${encodeURIComponent(selectedFile.path)}`);
         
-        if (astDiffData && astDiffData.success && astDiffData.data) {
-          const patches = astDiffData.data.overlays || [];
-          console.log(`📋 Found ${patches.length} AST diff patches for ${selectedFile.path}:`, patches);
+        if (hybridPatchData && hybridPatchData.success && hybridPatchData.data) {
+          const patches = hybridPatchData.data.patches || [];
+          console.log(`📋 Found ${patches.length} hybrid customization patches for ${selectedFile.path}:`, patches);
           
           if (patches.length > 0) {
             const fileWithPatches = {
               ...selectedFile,
-              astDiffPatches: patches
+              hybridPatches: patches
             };
             
-            // Dispatch the astPatchesLoaded event to update DiffPreviewSystem
-            window.dispatchEvent(new CustomEvent('astPatchesLoaded', {
+            // Dispatch the hybridPatchesLoaded event to update DiffPreviewSystem
+            window.dispatchEvent(new CustomEvent('hybridPatchesLoaded', {
               detail: {
                 file: fileWithPatches,
                 patches: patches
@@ -397,7 +397,7 @@ export default ExampleComponent;`;
           }
         }
       } catch (error) {
-        console.warn(`⚠️ Failed to reload AST diff patches for ${selectedFile.path}:`, error.message);
+        console.warn(`⚠️ Failed to reload hybrid customization patches for ${selectedFile.path}:`, error.message);
       }
     }
   }, [selectedFile]);

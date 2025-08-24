@@ -330,32 +330,32 @@ const FileTreeNavigator = ({
       // First, trigger the normal file selection
       onFileSelect?.(file);
       
-      // Then, fetch AST diff patches from database for this file
+      // Then, fetch hybrid customization patches from database for this file
       try {
-        console.log(`🔍 Fetching AST diff patches for file: ${file.path}`);
+        console.log(`🔍 Fetching hybrid customization patches for file: ${file.path}`);
         
-        const astDiffData = await apiClient.get(`ast-diffs/file/${encodeURIComponent(file.path)}`);
+        const hybridPatchData = await apiClient.get(`hybrid-patches/${encodeURIComponent(file.path)}`);
         
-        if (astDiffData && astDiffData.success && astDiffData.data) {
-          const patches = astDiffData.data.overlays || [];
-          console.log(`📋 Found ${patches.length} AST diff patches for ${file.path}:`, patches);
+        if (hybridPatchData && hybridPatchData.success && hybridPatchData.data) {
+          const patches = hybridPatchData.data.patches || [];
+          console.log(`📋 Found ${patches.length} hybrid customization patches for ${file.path}:`, patches);
           
           // Pass the patches to the parent component along with file info
           // This allows the DiffPreviewSystem or other components to use the patch data
           if (patches.length > 0) {
             const fileWithPatches = {
               ...file,
-              astDiffPatches: patches,
-              hasPendingPatches: patches.some(p => p.status === 'pending'),
+              hybridPatches: patches,
+              hasPendingPatches: patches.some(p => p.metadata?.status === 'active'),
               lastPatchDate: patches[0]?.created_at || patches[0]?.createdAt
             };
             
             // Update the files with patches set to show visual indicators
             setFilesWithPatches(prev => new Set([...prev, file.path]));
             
-            // Trigger a custom event or callback for AST patches if available
+            // Trigger a custom event or callback for hybrid patches if available
             if (window.dispatchEvent) {
-              window.dispatchEvent(new CustomEvent('astPatchesLoaded', {
+              window.dispatchEvent(new CustomEvent('hybridPatchesLoaded', {
                 detail: {
                   file: fileWithPatches,
                   patches: patches
@@ -363,9 +363,9 @@ const FileTreeNavigator = ({
               }));
             }
             
-            console.log(`✅ Loaded ${patches.length} patches for ${file.path}, dispatched astPatchesLoaded event`);
+            console.log(`✅ Loaded ${patches.length} hybrid patches for ${file.path}, dispatched hybridPatchesLoaded event`);
           } else {
-            console.log(`📭 No AST diff patches found for ${file.path}`);
+            console.log(`📭 No hybrid customization patches found for ${file.path}`);
             // Remove from files with patches set if no patches found
             setFilesWithPatches(prev => {
               const newSet = new Set(prev);
@@ -374,11 +374,11 @@ const FileTreeNavigator = ({
             });
           }
         } else {
-          console.log(`📭 No AST diff data returned for ${file.path}`);
+          console.log(`📭 No hybrid customization data returned for ${file.path}`);
         }
       } catch (error) {
-        console.warn(`⚠️ Failed to fetch AST diff patches for ${file.path}:`, error.message);
-        // Don't block file selection if AST diff fetch fails
+        console.warn(`⚠️ Failed to fetch hybrid customization patches for ${file.path}:`, error.message);
+        // Don't block file selection if hybrid patch fetch fails
       }
     }
   }, [onFileSelect]);
