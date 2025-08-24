@@ -142,6 +142,7 @@ async function fetchAllFilesRecursively(dirPath = 'src') {
     const githubApiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${currentPath}?ref=${GITHUB_BRANCH}`;
     
     try {
+      console.log(`🌐 Fetching GitHub API: ${githubApiUrl}`);
       const response = await fetch(githubApiUrl, {
         headers: {
           'Accept': 'application/vnd.github.v3+json',
@@ -150,11 +151,17 @@ async function fetchAllFilesRecursively(dirPath = 'src') {
       });
       
       if (!response.ok) {
-        console.log(`GitHub API failed for ${currentPath}: ${response.status}`);
+        console.log(`❌ GitHub API failed for ${currentPath}: ${response.status} ${response.statusText}`);
+        // Log rate limit info if available
+        const rateLimit = response.headers.get('x-ratelimit-remaining');
+        if (rateLimit !== null) {
+          console.log(`📊 GitHub API rate limit remaining: ${rateLimit}`);
+        }
         return;
       }
       
       const data = await response.json();
+      console.log(`📂 GitHub API returned ${data.length} items for ${currentPath}`);
       
       for (const item of data) {
         if (item.type === 'file') {
@@ -171,7 +178,12 @@ async function fetchAllFilesRecursively(dirPath = 'src') {
         }
       }
     } catch (error) {
-      console.log(`Error fetching directory ${currentPath}:`, error.message);
+      console.error(`❌ Error fetching directory ${currentPath}:`, error.message);
+      console.error(`🔍 Error details:`, {
+        name: error.name,
+        cause: error.cause,
+        stack: error.stack?.split('\n')[0] // Just first line of stack
+      });
     }
   }
   
@@ -194,8 +206,16 @@ router.get('/list', authMiddleware, async (req, res) => {
 
     // For listing, we'll use recursive GitHub API to get ALL files
     try {
-      console.log(`Fetching recursive file listing for ${dirPath}...`);
+      console.log(`🔍 Fetching recursive file listing for ${dirPath}...`);
       const files = await fetchAllFilesRecursively(dirPath);
+      console.log(`📁 GitHub API returned ${files.length} files for ${dirPath}`);
+      
+      // Log some sample files if we got results
+      if (files.length > 0) {
+        console.log(`📋 Sample files: ${files.slice(0, 3).map(f => f.path).join(', ')}`);
+      } else {
+        console.log(`⚠️ No files returned from GitHub API for ${dirPath}`);
+      }
       
       res.json({
         success: true,
