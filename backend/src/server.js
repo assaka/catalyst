@@ -1576,9 +1576,9 @@ app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, 
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/ai-context', aiContextRoutes); // AI Context Window routes for natural language code editing
 app.use('/api/hybrid-patches', hybridPatchesRoutes); // Hybrid customization patches for code change tracking
+app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
-app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management
 
 // 404 handler
 app.use('*', (req, res) => {

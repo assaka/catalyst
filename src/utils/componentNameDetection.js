@@ -256,14 +256,14 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
       console.warn('⚠️ No token available for authentication - API call will be unauthenticated');
     }
     
-    // Use the new page name resolution API endpoint
+    // Try the authenticated endpoint first
     const response = await fetch(`/api/store-routes/find-by-page/${encodeURIComponent(pageName)}`, {
       method: 'GET',
       headers
     });
     
-    const data = await response.json();
-    console.log('📡 Route resolution API response:', response.status, data);
+    let data = await response.json();
+    console.log('📡 Route resolution API response (authenticated):', response.status, data);
     
     if (response.ok && data.success) {
       return {
@@ -273,6 +273,49 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
         allRoutes: data.data.routes || [data.data.route],
         pageName
       };
+    } else if (response.status === 401) {
+      // Authentication failed, try public endpoint as fallback
+      console.log('🔄 Authentication failed, trying public endpoint as fallback...');
+      
+      try {
+        // Get store ID for public endpoint (required parameter)
+        const storeId = apiConfig.storeId || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store ID
+        
+        const publicResponse = await fetch(`/api/store-routes/public/find-by-page/${encodeURIComponent(pageName)}?store_id=${storeId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...apiConfig.headers
+          }
+        });
+        
+        const publicData = await publicResponse.json();
+        console.log('📡 Public route resolution API response:', publicResponse.status, publicData);
+        
+        if (publicResponse.ok && publicData.success) {
+          return {
+            found: true,
+            route: publicData.data.route,
+            matchType: publicData.data.matchType,
+            allRoutes: publicData.data.routes || [publicData.data.route],
+            pageName,
+            source: 'public_endpoint'
+          };
+        } else {
+          return {
+            found: false,
+            error: publicData.message || 'Route not found in public endpoint',
+            pageName
+          };
+        }
+      } catch (publicError) {
+        console.error('Error with public endpoint fallback:', publicError);
+        return {
+          found: false,
+          error: data.message || 'Both authenticated and public endpoints failed',
+          pageName
+        };
+      }
     } else {
       return {
         found: false,

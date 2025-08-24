@@ -10,7 +10,60 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
  * Provides endpoints for managing both core routes and custom routes
  */
 
-// Apply authentication and store ownership checks to all routes
+/**
+ * PUBLIC ENDPOINTS (no authentication required)
+ * These endpoints are used by the BrowserPreview for route resolution
+ */
+
+/**
+ * GET /api/store-routes/public/find-by-page/:pageName
+ * Public endpoint to find routes by page name (for BrowserPreview)
+ * Requires store_id in query params or x-store-id header
+ */
+router.get('/public/find-by-page/:pageName', async (req, res) => {
+  try {
+    const { pageName } = req.params;
+    const { store_id, exact } = req.query;
+    const storeId = store_id || req.headers['x-store-id'];
+    
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'store_id is required (in query params or x-store-id header)'
+      });
+    }
+    
+    console.log(`🔍 PUBLIC: Resolving page "${pageName}" for store ${storeId}`);
+    
+    // Use the exact same logic as the authenticated endpoint
+    const resolution = await StoreRoute.resolveByPageName(storeId, pageName);
+    
+    if (resolution.found) {
+      res.json({
+        success: true,
+        data: {
+          route: resolution.route,
+          matchType: resolution.matchType,
+          routes: resolution.routes || [resolution.route]
+        }
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        message: `No route found for page "${pageName}"`
+      });
+    }
+  } catch (error) {
+    console.error('Error in public find-by-page:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to resolve route',
+      error: error.message
+    });
+  }
+});
+
+// Apply authentication and store ownership checks to all protected routes
 router.use(authMiddleware);
 router.use(checkStoreOwnership);
 
