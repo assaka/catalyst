@@ -233,6 +233,7 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
   try {
     // Get authentication token from localStorage
     const token = localStorage.getItem('token');
+    console.log('🔐 Token for route resolution:', token ? `${token.substring(0, 20)}...` : 'No token found');
     
     // Build headers with authentication
     const headers = {
@@ -243,6 +244,9 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
     // Add authentication if token exists
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('🔑 Added Authorization header to route resolution request');
+    } else {
+      console.warn('⚠️ No token available for authentication - API call will be unauthenticated');
     }
     
     // Use the new page name resolution API endpoint
@@ -252,6 +256,7 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
     });
     
     const data = await response.json();
+    console.log('📡 Route resolution API response:', response.status, data);
     
     if (response.ok && data.success) {
       return {
