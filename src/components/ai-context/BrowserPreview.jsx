@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
+import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
 import { detectComponentName, resolvePageNameToRoute } from '@/utils/componentNameDetection';
 
 /**
@@ -175,18 +175,86 @@ const BrowserPreview = ({
     };
   }, [fileName, currentCode, detectRouteFromFile]);
 
+  // Convert route path to page name for proper URL construction
+  const convertRouteToPageName = useCallback((routePath) => {
+    if (!routePath) return null;
+    
+    // Map common route paths to page names for createPublicUrl
+    const routeToPageMap = {
+      '/': 'STOREFRONT',
+      '/cart': 'CART',
+      '/checkout': 'CHECKOUT',
+      '/shop': 'SHOP',
+      '/search': 'SEARCH',
+      '/login': 'CUSTOMER_AUTH',
+      '/register': 'CUSTOMER_REGISTER',
+      '/account': 'CUSTOMER_DASHBOARD',
+      '/my-account': 'MY_ACCOUNT',
+      '/orders': 'CUSTOMER_ORDERS',
+      '/my-orders': 'MY_ORDERS',
+      '/profile': 'CUSTOMER_PROFILE'
+    };
+    
+    // Check direct mapping first
+    if (routeToPageMap[routePath]) {
+      return routeToPageMap[routePath];
+    }
+    
+    // Handle product detail routes like /product/:slug
+    if (routePath.startsWith('/product/')) {
+      return 'PRODUCT_DETAIL';
+    }
+    
+    // Handle category routes like /category/:slug
+    if (routePath.startsWith('/category/')) {
+      return 'CATEGORY';
+    }
+    
+    // Handle brand routes like /brand/:slug
+    if (routePath.startsWith('/brand/')) {
+      return 'BRAND';
+    }
+    
+    // For unmapped routes, try to extract the page name from the path
+    const pathParts = routePath.split('/').filter(Boolean);
+    if (pathParts.length > 0) {
+      return pathParts[0].toUpperCase().replace(/-/g, '_');
+    }
+    
+    return null;
+  }, []);
+
   // Update preview URL when route changes
   useEffect(() => {
-    if (detectedRoute) {
-      // Use current domain for preview
-      const baseUrl = window.location.origin;
-      setPreviewUrl(`${baseUrl}${detectedRoute}`);
-      setError(null);
+    if (detectedRoute && storeSlug) {
+      try {
+        const pageName = convertRouteToPageName(detectedRoute);
+        
+        if (pageName) {
+          // Use createPublicUrl to generate proper /public/:store_code/page format
+          const properUrl = createPublicUrl(storeSlug, pageName);
+          const baseUrl = window.location.origin;
+          setPreviewUrl(`${baseUrl}${properUrl}`);
+          console.log(`🎯 Generated preview URL: ${baseUrl}${properUrl} (route: ${detectedRoute} -> page: ${pageName})`);
+          setError(null);
+        } else {
+          // Fallback to direct URL construction if no page mapping found
+          const baseUrl = window.location.origin;
+          const fallbackUrl = `/public/${storeSlug}${detectedRoute}`;
+          setPreviewUrl(`${baseUrl}${fallbackUrl}`);
+          console.log(`⚠️ Using fallback URL construction: ${baseUrl}${fallbackUrl}`);
+          setError(null);
+        }
+      } catch (error) {
+        console.error('Error generating preview URL:', error);
+        setPreviewUrl(null);
+        setError('Failed to generate preview URL');
+      }
     } else if (!routeLoading) {
       setPreviewUrl(null);
       setError('Could not determine preview route for this file');
     }
-  }, [detectedRoute, routeLoading]);
+  }, [detectedRoute, routeLoading, storeSlug, convertRouteToPageName]);
 
   // Device view dimensions
   const deviceDimensions = {
