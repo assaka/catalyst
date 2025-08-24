@@ -445,3 +445,66 @@ WHERE NOT EXISTS (
     SELECT 1 FROM store_routes sr 
     WHERE sr.store_id = s.id AND sr.route_path = '/admin/ab-testing'
 );
+
+-- SEO Tools
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/seo-tools' as route_path,
+    'SEO Tools' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'SEOTools' as target_value,
+    'SEO Tools' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    13 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/seo-tools'
+);
+
+-- SEO Settings
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/seo-settings' as route_path,
+    'SEO Settings' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'SEOSettings' as target_value,
+    'SEO Settings' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    14 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/seo-settings'
+);
+
+-- Meta Tags
+INSERT INTO store_routes (store_id, route_path, route_name, route_type, target_type, target_value, title, requires_auth, allowed_roles, show_in_navigation, navigation_sort_order, created_at) 
+SELECT 
+    s.id as store_id,
+    '/admin/meta-tags' as route_path,
+    'Meta Tags' as route_name,
+    'core' as route_type,
+    'component' as target_type,
+    'MetaTags' as target_value,
+    'Meta Tags Management' as title,
+    true as requires_auth,
+    '["store_owner", "admin"]'::jsonb as allowed_roles,
+    true as show_in_navigation,
+    15 as navigation_sort_order,
+    CURRENT_TIMESTAMP as created_at
+FROM stores s
+WHERE NOT EXISTS (
+    SELECT 1 FROM store_routes sr 
+    WHERE sr.store_id = s.id AND sr.route_path = '/admin/meta-tags'
+);

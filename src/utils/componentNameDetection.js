@@ -40,7 +40,14 @@ export function extractComponentNameFromPath(filePath) {
     'cmspages': 'CMS Pages',
     'cms-blocks': 'CMS Blocks',
     'cmsblocks': 'CMS Blocks',
-    'integrations': 'Integrations'
+    'integrations': 'Integrations',
+    'seo-tools': 'SEO Tools',
+    'seotools': 'SEO Tools',
+    'seo-settings': 'SEO Settings',
+    'seosettings': 'SEO Settings',
+    'meta-tags': 'Meta Tags',
+    'metatags': 'Meta Tags',
+    'seo': 'SEO Tools'
   };
   
   // Check direct file name mapping
