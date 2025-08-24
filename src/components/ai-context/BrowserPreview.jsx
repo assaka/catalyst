@@ -189,11 +189,17 @@ const BrowserPreview = ({
       console.log(`🔍 Trying file-based page name: "${fileBasedPageName}"`);
       const fileBasedRoute = await resolveRouteFromPageName(fileBasedPageName);
       if (fileBasedRoute) {
+        console.log(`✅ Found file-based route: ${fileBasedRoute}`);
         return fileBasedRoute;
+      } else {
+        console.log(`❌ No file-based route found for: "${fileBasedPageName}"`);
       }
+    } else {
+      console.log(`⚠️ No valid file-based page name. fileBasedPageName: "${fileBasedPageName}"`);
     }
     
     // Check if it's a storefront component - but try to use the detected component name
+    console.log(`🏪 Checking if storefront component. Path: ${filePath}`);
     if (filePath.includes('/storefront/') || filePath.includes('/components/storefront/')) {
       // If we detected a specific page, try it first, otherwise fall back to Home
       const targetPageName = detectedPageName || fileBasedPageName || 'Home';
@@ -225,6 +231,7 @@ const BrowserPreview = ({
     }
     
     // Check if it's an admin component - but try to use the detected component name
+    console.log(`⚙️ Checking if admin component. Path: ${filePath}`);
     if (filePath.includes('/admin/') || filePath.includes('/components/admin/')) {
       const targetPageName = detectedPageName || fileBasedPageName || 'Dashboard';
       const adminRoute = await resolveRouteFromPageName(targetPageName);
@@ -232,16 +239,21 @@ const BrowserPreview = ({
     }
     
     // Default fallback - try detected page name first, then home page
+    console.log(`🎯 Reaching default fallback section. detectedPageName: "${detectedPageName}"`);
     if (detectedPageName) {
+      console.log(`🔍 Trying database route resolution for detected page: "${detectedPageName}"`);
       const detectedRoute = await resolveRouteFromPageName(detectedPageName);
       if (detectedRoute) {
+        console.log(`✅ Found database route for ${detectedPageName}: ${detectedRoute}`);
         return detectedRoute;
       }
       
       // If we have a detected page name but no database route, create direct URLs
       console.log(`🔧 Creating direct URL for detected page: "${detectedPageName}"`);
       if (detectedPageName === 'Cart') {
-        return `/public/${currentStoreSlug}/cart`;
+        const cartUrl = `/public/${currentStoreSlug}/cart`;
+        console.log(`🛒 Generated Cart URL: ${cartUrl}`);
+        return cartUrl;
       } else if (detectedPageName === 'Checkout') {
         return `/public/${currentStoreSlug}/checkout`;
       } else if (detectedPageName === 'Product Detail') {
