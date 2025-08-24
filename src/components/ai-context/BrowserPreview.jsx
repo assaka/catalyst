@@ -352,11 +352,20 @@ const BrowserPreview = ({
                   return false;
                 }
                 
-                // Only include elements with text content (leaf nodes or elements with minimal children)
-                const isTextNode = el.children.length === 0; // Pure text element
-                const hasMinimalChildren = el.children.length <= 2; // Allow elements with few children that might have text
+                // Check if element has direct text content (not just from children)
+                const hasDirectText = Array.from(el.childNodes).some(node => 
+                  node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0
+                );
                 
-                return hasText && (isTextNode || hasMinimalChildren);
+                // Include elements that either:
+                // 1. Have direct text content (regardless of children count)
+                // 2. Are text-only elements (no children at all)
+                // 3. Have minimal children but contain meaningful text
+                const isTextOnlyElement = el.children.length === 0;
+                const hasReasonableChildCount = el.children.length <= 5; // Increased from 2 to 5
+                
+                return hasText && (hasDirectText || isTextOnlyElement || 
+                  (hasReasonableChildCount && textContent.length >= 3)); // Allow elements with meaningful text
               });
               
               console.log('🔍 Filtered content elements:', contentElements.length, 'of', allElements.length, 'total elements');
