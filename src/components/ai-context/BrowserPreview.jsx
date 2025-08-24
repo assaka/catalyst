@@ -273,6 +273,22 @@ const BrowserPreview = ({
     try {
       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
       
+      // Clear any existing patches before applying new ones
+      const existingPatches = iframeDoc.querySelectorAll('[data-live-preview="true"]');
+      existingPatches.forEach(element => element.remove());
+      
+      // Restore original text content for elements that were modified
+      const modifiedElements = iframeDoc.querySelectorAll('[data-original-text]');
+      modifiedElements.forEach(element => {
+        const originalText = element.getAttribute('data-original-text');
+        if (originalText) {
+          element.textContent = originalText;
+          element.removeAttribute('data-original-text');
+        }
+      });
+      
+      console.log(`🧹 Cleared ${existingPatches.length} existing patch elements and restored ${modifiedElements.length} text elements`);
+      
       // Parse the current code to extract changes
       const changes = parseCodeChanges(currentCode, fileName);
       
@@ -364,6 +380,10 @@ const BrowserPreview = ({
                       if (hint.exact && hint.pattern.test(originalText)) {
                         const newText = originalText.replace(hint.pattern, hint.replacement);
                         if (newText !== originalText) {
+                          // Store original text for later restoration
+                          if (!element.hasAttribute('data-original-text')) {
+                            element.setAttribute('data-original-text', originalText);
+                          }
                           element.textContent = newText;
                           console.log('✅ Exact replacement made:', originalText, '->', newText, 'in', element.tagName);
                           replacementsMade++;
@@ -375,6 +395,10 @@ const BrowserPreview = ({
                       else if (hint.partial && originalText.match(hint.pattern)) {
                         const newText = originalText.replace(hint.pattern, hint.replacement);
                         if (newText !== originalText) {
+                          // Store original text for later restoration
+                          if (!element.hasAttribute('data-original-text')) {
+                            element.setAttribute('data-original-text', originalText);
+                          }
                           element.textContent = newText;
                           console.log('✅ Partial replacement made:', originalText, '->', newText, 'in', element.tagName);
                           replacementsMade++;
@@ -386,6 +410,10 @@ const BrowserPreview = ({
                       else if (!hint.exact && !hint.partial && originalText.match(hint.pattern)) {
                         const newText = originalText.replace(hint.pattern, hint.replacement);
                         if (newText !== originalText) {
+                          // Store original text for later restoration
+                          if (!element.hasAttribute('data-original-text')) {
+                            element.setAttribute('data-original-text', originalText);
+                          }
                           element.textContent = newText;
                           console.log('✅ Standard replacement made:', originalText, '->', newText, 'in', element.tagName);
                           replacementsMade++;
@@ -407,6 +435,10 @@ const BrowserPreview = ({
                     console.log('✅ Text already shows updated value:', originalText, '(simulating successful replacement)');
                     replacementsMade++;
                   } else {
+                    // Store original text for later restoration
+                    if (!element.hasAttribute('data-original-text')) {
+                      element.setAttribute('data-original-text', originalText);
+                    }
                     element.textContent = textToReplace;
                     console.log('✅ Direct text replacement:', originalText, '->', textToReplace);
                     replacementsMade++;
@@ -718,6 +750,22 @@ const BrowserPreview = ({
       applyCodePatches(iframe);
     }
   }, [applyCodePatches, currentCode, enablePatches]);
+
+  // Watch for currentCode changes and reapply patches
+  useEffect(() => {
+    const iframe = document.getElementById('browser-preview-iframe');
+    
+    // Only apply patches if iframe is loaded and we have code changes
+    if (iframe && currentCode && enablePatches && !isLoading) {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      
+      // Make sure iframe document is ready
+      if (iframeDoc) {
+        console.log('🔄 Code changes detected, reapplying patches...');
+        applyCodePatches(iframe);
+      }
+    }
+  }, [currentCode, enablePatches, applyCodePatches, isLoading]);
 
   // Handle iframe error
   const handleIframeError = useCallback(() => {
