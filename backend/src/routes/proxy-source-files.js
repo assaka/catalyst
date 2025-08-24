@@ -283,4 +283,35 @@ router.get('/list', authMiddleware, async (req, res) => {
   }
 });
 
+// Test endpoint to verify GitHub API functionality
+router.get('/test-github', async (req, res) => {
+  try {
+    console.log('🧪 Testing GitHub API direct access...');
+    const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/src?ref=${GITHUB_BRANCH}`;
+    
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'Catalyst-GitHub-Test'
+      }
+    });
+    
+    const data = await response.json();
+    
+    res.json({
+      success: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      rateLimit: response.headers.get('x-ratelimit-remaining'),
+      itemCount: Array.isArray(data) ? data.length : 0,
+      data: Array.isArray(data) ? data.slice(0, 5) : data // First 5 items for preview
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
