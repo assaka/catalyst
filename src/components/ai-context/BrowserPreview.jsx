@@ -136,7 +136,7 @@ const BrowserPreview = ({
     }
 
     return null;
-  }, [storeSlug, getStoreSlugFromPublicUrl, resolveRouteFromDatabase]);
+  }, [storeSlug, resolveRouteFromDatabase]);
 
   // Detect route from file path and content using new page name resolution
   const detectRouteFromFile = useCallback(async (filePath, fileContent = '') => {
@@ -185,7 +185,7 @@ const BrowserPreview = ({
     // Default fallback - show storefront/home page
     const homeRoute = await resolveRouteFromPageName('Home');
     return homeRoute || `/public/${currentStoreSlug}`;
-  }, [storeSlug, getStoreSlugFromPublicUrl, resolveRouteFromPageName, analyzeFileContentForRoute]);
+  }, [storeSlug, resolveRouteFromPageName, analyzeFileContentForRoute]);
 
   // State for detected route and page name
   const [detectedRoute, setDetectedRoute] = useState(null);
