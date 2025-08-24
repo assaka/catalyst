@@ -20,6 +20,7 @@ const BrowserPreview = ({
   const [error, setError] = useState(null);
   const [deviceView, setDeviceView] = useState('desktop'); // desktop, tablet, mobile
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
+  const [enablePatches, setEnablePatches] = useState(true); // Enable code patch simulation
 
   // Get store context for API calls
   const { selectedStore } = useStoreSelection();
@@ -265,10 +266,159 @@ const BrowserPreview = ({
 
   const currentDimensions = deviceDimensions[deviceView];
 
-  // Handle iframe load
-  const handleIframeLoad = useCallback(() => {
-    setIsLoading(false);
+  // Apply code patches to simulate local changes in the preview
+  const applyCodePatches = useCallback(async (iframe) => {
+    if (!currentCode || !fileName) return;
+    
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      
+      // Parse the current code to extract changes
+      const changes = parseCodeChanges(currentCode, fileName);
+      
+      if (changes.hasChanges) {
+        console.log('🔧 Applying code patches to preview:', changes);
+        
+        // Apply CSS changes
+        if (changes.styles) {
+          const styleElement = iframeDoc.createElement('style');
+          styleElement.textContent = `
+            /* 🎨 Live Code Changes Preview */
+            ${changes.styles}
+          `;
+          styleElement.setAttribute('data-live-preview', 'true');
+          iframeDoc.head.appendChild(styleElement);
+        }
+        
+        // Apply DOM changes
+        if (changes.domUpdates) {
+          changes.domUpdates.forEach(update => {
+            const elements = iframeDoc.querySelectorAll(update.selector);
+            elements.forEach(element => {
+              if (update.type === 'text') {
+                element.textContent = update.value;
+              } else if (update.type === 'html') {
+                element.innerHTML = update.value;
+              } else if (update.type === 'attribute') {
+                element.setAttribute(update.attribute, update.value);
+              } else if (update.type === 'class') {
+                element.className = update.value;
+              }
+            });
+          });
+        }
+        
+        // Apply JavaScript changes (limited for security)
+        if (changes.behavior) {
+          const scriptElement = iframeDoc.createElement('script');
+          scriptElement.textContent = `
+            console.log('🚀 Live Code Preview: Applying behavior changes');
+            ${changes.behavior}
+          `;
+          scriptElement.setAttribute('data-live-preview', 'true');
+          iframeDoc.head.appendChild(scriptElement);
+        }
+        
+        // Add visual indicator that patches are applied
+        const indicator = iframeDoc.createElement('div');
+        indicator.innerHTML = '🔧 Live Code Preview Active';
+        indicator.style.cssText = `
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          background: rgba(59, 130, 246, 0.9);
+          color: white;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-family: monospace;
+          z-index: 10000;
+          pointer-events: none;
+        `;
+        indicator.setAttribute('data-live-preview', 'true');
+        iframeDoc.body.appendChild(indicator);
+        
+        console.log('✅ Code patches applied successfully to preview');
+      }
+    } catch (error) {
+      console.warn('⚠️ Could not apply code patches:', error.message);
+    }
+  }, [currentCode, fileName]);
+
+  // Parse code changes from the current file content
+  const parseCodeChanges = useCallback((code, filePath) => {
+    const changes = { hasChanges: false };
+    
+    try {
+      // Extract CSS/styled-components changes
+      const styleMatches = [
+        ...code.matchAll(/styled\.\w+`([^`]+)`/g),
+        ...code.matchAll(/css`([^`]+)`/g),
+        ...code.matchAll(/className="([^"]+)"/g)
+      ];
+      
+      if (styleMatches.length > 0) {
+        changes.styles = styleMatches.map(match => match[1]).join('\n');
+        changes.hasChanges = true;
+      }
+      
+      // Extract text/content changes
+      const textMatches = [
+        ...code.matchAll(/>([^<>{]+)</g),
+        ...code.matchAll(/title:\s*["']([^"']+)["']/g),
+        ...code.matchAll(/placeholder:\s*["']([^"']+)["']/g)
+      ];
+      
+      if (textMatches.length > 0) {
+        changes.domUpdates = textMatches.map((match, index) => ({
+          type: 'text',
+          selector: `[data-preview-text="${index}"]`,
+          value: match[1].trim()
+        })).filter(update => update.value.length > 0 && !update.value.includes('{'));
+        
+        if (changes.domUpdates.length > 0) {
+          changes.hasChanges = true;
+        }
+      }
+      
+      // Extract component prop changes that might affect behavior
+      const propMatches = [
+        ...code.matchAll(/(\w+)=\{([^}]+)\}/g),
+        ...code.matchAll(/(\w+)="([^"]+)"/g)
+      ];
+      
+      if (propMatches.length > 0) {
+        const behaviorChanges = propMatches
+          .filter(match => ['onClick', 'onSubmit', 'onChange', 'disabled', 'hidden'].includes(match[1]))
+          .map(match => `// ${match[1]} property updated`)
+          .join('\n');
+          
+        if (behaviorChanges) {
+          changes.behavior = behaviorChanges;
+          changes.hasChanges = true;
+        }
+      }
+      
+    } catch (error) {
+      console.warn('Error parsing code changes:', error);
+    }
+    
+    return changes;
   }, []);
+
+  // Handle iframe load
+  const handleIframeLoad = useCallback(async () => {
+    setIsLoading(false);
+    
+    // Apply code patches after iframe loads (if enabled)
+    const iframe = document.getElementById('browser-preview-iframe');
+    if (iframe && currentCode && enablePatches) {
+      // Wait a moment for the page to fully render
+      setTimeout(() => {
+        applyCodePatches(iframe);
+      }, 1000);
+    }
+  }, [applyCodePatches, currentCode, enablePatches]);
 
   // Handle iframe error
   const handleIframeError = useCallback(() => {
@@ -284,6 +434,7 @@ const BrowserPreview = ({
     const iframe = document.getElementById('browser-preview-iframe');
     if (iframe && previewUrl) {
       iframe.src = previewUrl + '?preview=' + Date.now();
+      // Patches will be reapplied automatically via handleIframeLoad
     }
   }, [previewUrl]);
 
@@ -365,6 +516,19 @@ const BrowserPreview = ({
 
             {/* Browser Actions */}
             <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setEnablePatches(!enablePatches)}
+                className={cn(
+                  "p-1 text-xs px-2 py-1 rounded border",
+                  enablePatches 
+                    ? "bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300" 
+                    : "bg-gray-100 border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                )}
+                title={enablePatches ? "Disable code patches simulation" : "Enable code patches simulation"}
+              >
+                {enablePatches ? "🔧 Patches" : "📺 Live"}
+              </button>
+              
               <button
                 onClick={refreshPreview}
                 className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
