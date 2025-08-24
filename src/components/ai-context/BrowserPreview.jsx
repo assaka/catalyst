@@ -290,21 +290,76 @@ const BrowserPreview = ({
           iframeDoc.head.appendChild(styleElement);
         }
         
-        // Apply DOM changes
+        // Apply DOM changes - Smart text replacement
         if (changes.domUpdates) {
+          console.log('🔍 Applying DOM updates:', changes.domUpdates);
+          
           changes.domUpdates.forEach(update => {
-            const elements = iframeDoc.querySelectorAll(update.selector);
-            elements.forEach(element => {
-              if (update.type === 'text') {
-                element.textContent = update.value;
-              } else if (update.type === 'html') {
-                element.innerHTML = update.value;
-              } else if (update.type === 'attribute') {
-                element.setAttribute(update.attribute, update.value);
-              } else if (update.type === 'class') {
-                element.className = update.value;
+            if (update.type === 'text') {
+              // Smart text replacement using replacement hints
+              const allElements = iframeDoc.getElementsByTagName('*');
+              let replacementsMade = 0;
+              const textToReplace = update.value;
+              
+              console.log('🔍 Looking for text to replace with:', textToReplace);
+              console.log('🔍 Using replacement hints:', update.replacementHints);
+              
+              // Search through all text elements
+              for (let element of allElements) {
+                if (element.children.length === 0 && element.textContent.trim()) { // Only leaf elements with text
+                  const originalText = element.textContent.trim();
+                  
+                  // Try each replacement hint
+                  if (update.replacementHints) {
+                    for (let hint of update.replacementHints) {
+                      if (hint.pattern && originalText.match(hint.pattern)) {
+                        const newText = originalText.replace(hint.pattern, hint.replacement);
+                        if (newText !== originalText) {
+                          element.textContent = newText;
+                          console.log('✅ Smart replacement made:', originalText, '->', newText, 'in', element.tagName);
+                          replacementsMade++;
+                          break; // Stop after first successful replacement for this element
+                        }
+                      }
+                    }
+                  }
+                  
+                  // Fallback: direct text matching for exact matches
+                  if (replacementsMade === 0 && originalText === textToReplace) {
+                    element.textContent = textToReplace;
+                    console.log('✅ Direct text replacement:', originalText, '->', textToReplace);
+                    replacementsMade++;
+                  }
+                }
               }
-            });
+              
+              if (replacementsMade === 0) {
+                console.log('⚠️ No text replacements made for:', textToReplace);
+                console.log('🔍 Searched through', allElements.length, 'elements');
+                // Log some sample text content for debugging
+                const textElements = Array.from(allElements)
+                  .filter(el => el.children.length === 0 && el.textContent.trim())
+                  .slice(0, 10);
+                console.log('📋 Sample text elements found:', textElements.map(el => ({ 
+                  tag: el.tagName, 
+                  text: el.textContent.trim().substring(0, 50) 
+                })));
+              } else {
+                console.log('✅ Made', replacementsMade, 'text replacements');
+              }
+            } else {
+              // Handle other update types with original selector logic
+              const elements = iframeDoc.querySelectorAll(update.selector);
+              elements.forEach(element => {
+                if (update.type === 'html') {
+                  element.innerHTML = update.value;
+                } else if (update.type === 'attribute') {
+                  element.setAttribute(update.attribute, update.value);
+                } else if (update.type === 'class') {
+                  element.className = update.value;
+                }
+              });
+            }
           });
         }
         
@@ -321,7 +376,10 @@ const BrowserPreview = ({
         
         // Add visual indicator that patches are applied
         const indicator = iframeDoc.createElement('div');
-        indicator.innerHTML = '🔧 Live Code Preview Active';
+        const indicatorText = changes.genericPreview 
+          ? '🔧 Code Preview Active (Generic)' 
+          : '🔧 Live Code Preview Active';
+        indicator.innerHTML = indicatorText;
         indicator.style.cssText = `
           position: fixed;
           top: 10px;
@@ -338,6 +396,28 @@ const BrowserPreview = ({
         indicator.setAttribute('data-live-preview', 'true');
         iframeDoc.body.appendChild(indicator);
         
+        // For generic preview mode, add a more prominent indicator
+        if (changes.genericPreview) {
+          const genericIndicator = iframeDoc.createElement('div');
+          genericIndicator.innerHTML = '📝 Code file loaded - manual changes detected but specific DOM updates may not be visible';
+          genericIndicator.style.cssText = `
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: rgba(234, 179, 8, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: monospace;
+            z-index: 10000;
+            text-align: center;
+          `;
+          genericIndicator.setAttribute('data-live-preview', 'true');
+          iframeDoc.body.appendChild(genericIndicator);
+        }
+        
         console.log('✅ Code patches applied successfully to preview');
       }
     } catch (error) {
@@ -350,35 +430,84 @@ const BrowserPreview = ({
     const changes = { hasChanges: false };
     
     try {
+      console.log('🔍 Parsing code changes for file:', filePath);
+      console.log('📄 Code content length:', code.length);
+      
       // Extract CSS/styled-components changes
       const styleMatches = [
         ...code.matchAll(/styled\.\w+`([^`]+)`/g),
         ...code.matchAll(/css`([^`]+)`/g),
-        ...code.matchAll(/className="([^"]+)"/g)
+        ...code.matchAll(/className="([^"]+)"/g),
+        ...code.matchAll(/style=\{([^}]+)\}/g)
       ];
       
       if (styleMatches.length > 0) {
         changes.styles = styleMatches.map(match => match[1]).join('\n');
         changes.hasChanges = true;
+        console.log('🎨 Style changes detected:', styleMatches.length, 'matches');
       }
       
-      // Extract text/content changes
+      // Extract text/content changes (enhanced)
       const textMatches = [
         ...code.matchAll(/>([^<>{]+)</g),
         ...code.matchAll(/title:\s*["']([^"']+)["']/g),
-        ...code.matchAll(/placeholder:\s*["']([^"']+)["']/g)
+        ...code.matchAll(/placeholder:\s*["']([^"']+)["']/g),
+        ...code.matchAll(/alt:\s*["']([^"']+)["']/g),
+        ...code.matchAll(/label:\s*["']([^"']+)["']/g),
+        ...code.matchAll(/text:\s*["']([^"']+)["']/g),
+        ...code.matchAll(/value:\s*["']([^"']+)["']/g)
       ];
       
       if (textMatches.length > 0) {
-        changes.domUpdates = textMatches.map((match, index) => ({
-          type: 'text',
-          selector: `[data-preview-text="${index}"]`,
-          value: match[1].trim()
-        })).filter(update => update.value.length > 0 && !update.value.includes('{'));
+        changes.domUpdates = textMatches.map((match, index) => {
+          const extractedText = match[1].trim();
+          return {
+            type: 'text',
+            selector: `[data-preview-text="${index}"]`,
+            value: extractedText,
+            // Add intelligent replacement hints
+            replacementHints: generateReplacementHints(extractedText)
+          };
+        }).filter(update => update.value.length > 0 && !update.value.includes('{'));
         
         if (changes.domUpdates.length > 0) {
           changes.hasChanges = true;
+          console.log('📝 Text changes detected:', changes.domUpdates.length, 'updates');
+          console.log('📝 Text values found:', changes.domUpdates.map(u => u.value));
         }
+      }
+      
+      // Helper function to generate smart replacement patterns
+      function generateReplacementHints(text) {
+        const hints = [];
+        const lowerText = text.toLowerCase();
+        
+        // Cart-related patterns
+        if (lowerText.includes('cart')) {
+          hints.push({
+            pattern: /Your cart/gi,
+            replacement: text
+          });
+          hints.push({
+            pattern: /Your Cart/gi,
+            replacement: text
+          });
+          hints.push({
+            pattern: /YOUR CART/gi,
+            replacement: text.toUpperCase()
+          });
+        }
+        
+        // Generic word replacement
+        const words = text.split(' ');
+        if (words.length <= 3) { // Only for short phrases
+          hints.push({
+            pattern: new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+            directReplacement: text
+          });
+        }
+        
+        return hints;
       }
       
       // Extract component prop changes that might affect behavior
@@ -396,7 +525,33 @@ const BrowserPreview = ({
         if (behaviorChanges) {
           changes.behavior = behaviorChanges;
           changes.hasChanges = true;
+          console.log('⚡ Behavior changes detected:', propMatches.length, 'props');
         }
+      }
+      
+      // Add more comprehensive change detection
+      const detectedChanges = {
+        hasAnyCode: code.length > 0,
+        hasReactContent: code.includes('return') || code.includes('jsx') || code.includes('<'),
+        hasComponents: code.includes('Component') || code.includes('function') || code.includes('const'),
+        hasStyles: changes.styles !== undefined,
+        hasTextUpdates: changes.domUpdates && changes.domUpdates.length > 0,
+        hasBehavior: changes.behavior !== undefined
+      };
+      
+      console.log('🎯 Parsed code changes summary:', {
+        hasChanges: changes.hasChanges,
+        detectedChanges,
+        stylesCount: changes.styles ? 1 : 0,
+        domUpdatesCount: changes.domUpdates ? changes.domUpdates.length : 0,
+        behaviorCount: changes.behavior ? 1 : 0
+      });
+      
+      // If we have React content but no specific changes detected, mark as having changes anyway
+      if (!changes.hasChanges && detectedChanges.hasReactContent) {
+        console.log('🔧 No specific patterns matched, but React content detected - enabling generic preview mode');
+        changes.hasChanges = true;
+        changes.genericPreview = true;
       }
       
     } catch (error) {
@@ -519,14 +674,17 @@ const BrowserPreview = ({
               <button
                 onClick={() => setEnablePatches(!enablePatches)}
                 className={cn(
-                  "p-1 text-xs px-2 py-1 rounded border",
+                  "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
                   enablePatches 
-                    ? "bg-blue-100 border-blue-300 text-blue-700 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-300" 
-                    : "bg-gray-100 border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                    ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300" 
+                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
                 )}
-                title={enablePatches ? "Disable code patches simulation" : "Enable code patches simulation"}
+                title={enablePatches 
+                  ? "Currently showing: Live site + your local code changes. Click to show live site only." 
+                  : "Currently showing: Live site only. Click to include your local code changes."
+                }
               >
-                {enablePatches ? "🔧 Patches" : "📺 Live"}
+                {enablePatches ? "🔧 Patched Preview" : "📺 Live Preview"}
               </button>
               
               <button

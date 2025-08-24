@@ -724,7 +724,13 @@ const CodeEditor = ({
                     {patch.changeSummary || 'Manual edit'}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {new Date(patch.createdAt).toLocaleTimeString()} • {patch.status}
+                    {patch.createdAt ? 
+                      (() => {
+                        const date = new Date(patch.createdAt);
+                        return isNaN(date.getTime()) ? 'Recent' : date.toLocaleTimeString();
+                      })() 
+                      : 'Recent'
+                    } • {patch.status}
                   </div>
                 </div>
                 <div className="flex items-center space-x-1 ml-2">

@@ -47,6 +47,7 @@ const Job = require('./Job');
 const JobHistory = require('./JobHistory');
 const StoreSupabaseConnection = require('./StoreSupabaseConnection');
 const StoreDataMigration = require('./StoreDataMigration');
+const { HybridCustomization, CustomizationSnapshot, CustomizationRollback } = require('./HybridCustomization');
 
 // Define associations
 const defineAssociations = () => {
@@ -263,6 +264,26 @@ const defineAssociations = () => {
 
   StoreDataMigration.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(StoreDataMigration, { foreignKey: 'store_id' });
+
+  // HybridCustomization associations - defined manually to avoid timing issues
+  HybridCustomization.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  HybridCustomization.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  HybridCustomization.hasMany(CustomizationSnapshot, { foreignKey: 'customization_id', as: 'snapshots' });
+  HybridCustomization.hasMany(CustomizationRollback, { foreignKey: 'customization_id', as: 'rollbacks' });
+  
+  CustomizationSnapshot.belongsTo(HybridCustomization, { foreignKey: 'customization_id', as: 'customization' });
+  CustomizationSnapshot.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+  
+  CustomizationRollback.belongsTo(HybridCustomization, { foreignKey: 'customization_id', as: 'customization' });
+  CustomizationRollback.belongsTo(User, { foreignKey: 'performed_by', as: 'performer' });
+  
+  // User associations for hybrid customizations
+  User.hasMany(HybridCustomization, { foreignKey: 'user_id', as: 'hybridCustomizations' });
+  User.hasMany(CustomizationSnapshot, { foreignKey: 'created_by', as: 'createdSnapshots' });
+  User.hasMany(CustomizationRollback, { foreignKey: 'performed_by', as: 'performedRollbacks' });
+  
+  // Store associations for hybrid customizations
+  Store.hasMany(HybridCustomization, { foreignKey: 'store_id', as: 'hybridCustomizations' });
 };
 
 // Initialize associations
@@ -317,5 +338,8 @@ module.exports = {
   Job,
   JobHistory,
   StoreSupabaseConnection,
-  StoreDataMigration
+  StoreDataMigration,
+  HybridCustomization,
+  CustomizationSnapshot,
+  CustomizationRollback
 };
