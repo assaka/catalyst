@@ -304,45 +304,64 @@ const BrowserPreview = ({
               console.log('🔍 Looking for text to replace with:', textToReplace);
               console.log('🔍 Using replacement hints:', update.replacementHints);
               
-              // Search through all text elements
-              for (let element of allElements) {
-                if (element.children.length === 0 && element.textContent.trim()) { // Only leaf elements with text
-                  const originalText = element.textContent.trim();
-                  
-                  // Try each replacement hint
-                  if (update.replacementHints) {
-                    for (let hint of update.replacementHints) {
-                      if (hint.pattern && originalText.match(hint.pattern)) {
-                        const newText = originalText.replace(hint.pattern, hint.replacement);
-                        if (newText !== originalText) {
-                          element.textContent = newText;
-                          console.log('✅ Smart replacement made:', originalText, '->', newText, 'in', element.tagName);
-                          replacementsMade++;
-                          break; // Stop after first successful replacement for this element
-                        }
+              // Filter out non-content elements (CSS, scripts, etc.)
+              const excludedTags = ['STYLE', 'SCRIPT', 'NOSCRIPT', 'HEAD', 'META', 'LINK', 'TITLE'];
+              const contentElements = Array.from(allElements).filter(el => {
+                // Exclude non-content tags
+                if (excludedTags.includes(el.tagName)) {
+                  return false;
+                }
+                // Only include elements with text content (leaf nodes or elements with minimal children)
+                const hasText = el.textContent && el.textContent.trim();
+                const isTextNode = el.children.length === 0; // Pure text element
+                const hasMinimalChildren = el.children.length <= 2; // Allow elements with few children that might have text
+                
+                return hasText && (isTextNode || hasMinimalChildren);
+              });
+              
+              console.log('🔍 Filtered content elements:', contentElements.length, 'of', allElements.length, 'total elements');
+              
+              // Search through content text elements
+              for (let element of contentElements) {
+                const originalText = element.textContent.trim();
+                
+                // Skip empty text
+                if (!originalText) continue;
+                
+                console.log('🔍 Checking element:', element.tagName, 'text:', originalText.substring(0, 100));
+                
+                // Try each replacement hint
+                if (update.replacementHints) {
+                  for (let hint of update.replacementHints) {
+                    if (hint.pattern && originalText.match(hint.pattern)) {
+                      const newText = originalText.replace(hint.pattern, hint.replacement);
+                      if (newText !== originalText) {
+                        element.textContent = newText;
+                        console.log('✅ Smart replacement made:', originalText, '->', newText, 'in', element.tagName);
+                        replacementsMade++;
+                        break; // Stop after first successful replacement for this element
                       }
                     }
                   }
-                  
-                  // Fallback: direct text matching for exact matches
-                  if (replacementsMade === 0 && originalText === textToReplace) {
-                    element.textContent = textToReplace;
-                    console.log('✅ Direct text replacement:', originalText, '->', textToReplace);
-                    replacementsMade++;
-                  }
+                }
+                
+                // Fallback: direct text matching for exact matches
+                if (replacementsMade === 0 && originalText === textToReplace) {
+                  element.textContent = textToReplace;
+                  console.log('✅ Direct text replacement:', originalText, '->', textToReplace);
+                  replacementsMade++;
                 }
               }
               
               if (replacementsMade === 0) {
                 console.log('⚠️ No text replacements made for:', textToReplace);
-                console.log('🔍 Searched through', allElements.length, 'elements');
+                console.log('🔍 Searched through', contentElements.length, 'content elements');
                 // Log some sample text content for debugging
-                const textElements = Array.from(allElements)
-                  .filter(el => el.children.length === 0 && el.textContent.trim())
-                  .slice(0, 10);
-                console.log('📋 Sample text elements found:', textElements.map(el => ({ 
+                const textElements = contentElements.slice(0, 15);
+                console.log('📋 Sample content elements found:', textElements.map(el => ({ 
                   tag: el.tagName, 
-                  text: el.textContent.trim().substring(0, 50) 
+                  text: el.textContent.trim().substring(0, 80),
+                  children: el.children.length
                 })));
               } else {
                 console.log('✅ Made', replacementsMade, 'text replacements');
