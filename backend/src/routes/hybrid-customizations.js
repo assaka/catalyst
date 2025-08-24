@@ -4,6 +4,7 @@ const { HybridCustomization, CustomizationSnapshot, CustomizationRollback } = re
 const VersionControlService = require('../services/version-control-service');
 const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
+const { diffIntegrationService } = require('../services/diff-integration-service');
 
 // Initialize version control service
 const versionControl = new VersionControlService();
@@ -52,6 +53,15 @@ router.post('/', authMiddleware, async (req, res) => {
     });
 
     if (result.success) {
+      // Broadcast diff patches to existing Diff tab
+      if (result.snapshot && result.customization) {
+        await diffIntegrationService.handleSnapshotCreated(
+          result.snapshot, 
+          result.customization, 
+          req.io // Socket.io instance if available
+        );
+      }
+
       res.status(201).json({
         success: true,
         data: result.customization,
@@ -260,6 +270,15 @@ router.post('/:id/changes', authMiddleware, async (req, res) => {
     });
 
     if (result.success) {
+      // Broadcast diff patches to existing Diff tab
+      if (result.snapshot && customization) {
+        await diffIntegrationService.handleSnapshotCreated(
+          result.snapshot, 
+          customization, 
+          req.io // Socket.io instance if available
+        );
+      }
+
       res.json({
         success: true,
         data: {

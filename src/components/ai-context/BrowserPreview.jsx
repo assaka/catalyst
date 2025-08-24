@@ -53,116 +53,37 @@ const BrowserPreview = ({
     return null;
   }, [getApiConfig]);
 
-  // Legacy database route resolution for fallback
-  const resolveRouteFromDatabase = useCallback(async (targetComponent) => {
-    try {
-      const apiConfig = getApiConfig();
-      
-      // Query store routes API to find matching route
-      const response = await fetch(`/api/store-routes?target_value=${encodeURIComponent(targetComponent)}&active_only=true`, apiConfig);
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data.length > 0) {
-          // Return the first matching route
-          return data.data[0].route_path;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to resolve route from database:', error);
-    }
-    return null;
-  }, [getApiConfig]);
 
-  // Analyze file content to detect appropriate route
-  const analyzeFileContentForRoute = useCallback(async (filePath, fileContent) => {
-    if (!filePath) return null;
 
-    // Get current store slug with URL fallback
-    const currentStoreSlug = storeSlug || 
-                           getStoreSlugFromPublicUrl(window.location.pathname);
-
-    // Component mapping for database queries
-    const componentPatterns = [
-      { pattern: /path=["']\/public\/[^"']*\/product\/[^"']*["']/, component: 'ProductDetail' },
-      { pattern: /path=["']\/public\/[^"']*\/cart["']/, component: 'Cart' },
-      { pattern: /path=["']\/public\/[^"']*\/checkout["']/, component: 'Checkout' },
-      { pattern: /path=["']\/admin\/ab-testing["']/, component: 'ABTesting' },
-      { pattern: /path=["']\/admin\/dashboard["']/, component: 'Dashboard' },
-      { pattern: /path=["']\/admin\/products["']/, component: 'ProductListing' },
-      { pattern: /path=["']\/admin\/categories["']/, component: 'Categories' },
-      { pattern: /path=["']\/admin\/orders["']/, component: 'Orders' },
-      { pattern: /path=["']\/admin\/settings["']/, component: 'Settings' },
-      { pattern: /path=["']\/admin\/customers["']/, component: 'Customers' },
-      { pattern: /path=["']\/admin\/attributes["']/, component: 'Attributes' },
-      { pattern: /path=["']\/admin\/plugins["']/, component: 'Plugins' },
-      { pattern: /path=["']\/admin\/cms-pages["']/, component: 'CmsPages' },
-      { pattern: /path=["']\/admin\/cms-blocks["']/, component: 'CmsBlocks' },
-      { pattern: /path=["']\/public\/[^"']*["']/, component: 'Storefront' },
-    ];
-
-    // Check file content for route patterns and resolve from database
-    if (fileContent) {
-      for (const { pattern, component } of componentPatterns) {
-        if (pattern.test(fileContent)) {
-          const dbRoute = await resolveRouteFromDatabase(component);
-          if (dbRoute) {
-            return dbRoute;
-          }
-          // Fallback to legacy behavior if database lookup fails
-          return pattern.source.includes('admin') 
-            ? `/admin/${component.toLowerCase()}` 
-            : `/public/${currentStoreSlug}`;
-        }
-      }
-
-      // Check for specific component indicators in content
-      const contentIndicators = [
-        { keywords: ['ProductCard', 'ProductGrid'], component: 'Storefront' },
-        { keywords: ['CartSummary', 'cart'], component: 'Cart' },
-        { keywords: ['CheckoutForm', 'checkout'], component: 'Checkout' },
-        { keywords: ['CategoryGrid', 'category'], component: 'Categories' },
-        { keywords: ['ABTesting', 'ab-testing'], component: 'ABTesting' }
-      ];
-
-      for (const { keywords, component } of contentIndicators) {
-        if (keywords.some(keyword => fileContent.includes(keyword))) {
-          const dbRoute = await resolveRouteFromDatabase(component);
-          if (dbRoute) {
-            return dbRoute;
-          }
-        }
-      }
-    }
-
-    return null;
-  }, [storeSlug, resolveRouteFromDatabase]);
-
-  // Detect route from file path and content using new page name resolution
+  // Detect route from page files only
   const detectRouteFromFile = useCallback(async (filePath, fileContent = '') => {
     try {
       if (!filePath) {
         console.log(`❌ No file path provided`);
-        return `/public/amazing-store`; // Return a default route instead of null
+        return null;
       }
 
-    // Get current store slug with URL fallback - ensure we have a fallback
-    const currentStoreSlug = storeSlug || 
-                           getStoreSlugFromPublicUrl(window.location.pathname) ||
-                           'amazing-store'; // Default fallback store slug
+      // Get current store slug with fallback
+      const currentStoreSlug = storeSlug || 
+                             getStoreSlugFromPublicUrl(window.location.pathname) ||
+                             'amazing-store';
 
-    console.log(`🔍 Detecting route for file: ${filePath}`);
-    console.log(`📄 File content length: ${fileContent?.length || 0} characters`);
-    console.log(`🏪 Current store slug: "${currentStoreSlug}"`);
+      console.log(`🔍 Detecting route for file: ${filePath}`);
+      console.log(`🏪 Current store slug: "${currentStoreSlug}"`);
 
-    // Check if this is a page file (located in /src/pages/)
-    const isPageFile = filePath.includes('/pages/') || filePath.includes('\\pages\\');
-    console.log(`📑 Is page file: ${isPageFile}`);
+      // Only process page files (located in /src/pages/)
+      const isPageFile = filePath.includes('/pages/') || filePath.includes('\\pages\\');
+      console.log(`📑 Is page file: ${isPageFile}`);
 
-    // For page files, use direct route mapping based on known patterns
-    if (isPageFile) {
+      if (!isPageFile) {
+        console.log(`⚠️ Not a page file - preview only works for page files`);
+        return null;
+      }
+
       const fileName = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
-      console.log(`📄 Page file name: "${fileName}"`);
+      // Handle Windows paths
+      const finalFileName = fileName.split('\\').pop() || fileName;
+      console.log(`📄 Page file name: "${finalFileName}"`);
       
       // Direct page file to route mapping
       const pageRouteMapping = {
@@ -184,193 +105,27 @@ const BrowserPreview = ({
         'Integrations': `/admin/integrations`
       };
       
-      if (pageRouteMapping[fileName]) {
-        const pageRoute = pageRouteMapping[fileName];
-        console.log(`🎯 Found direct page route mapping: "${fileName}" -> "${pageRoute}"`);
+      if (pageRouteMapping[finalFileName]) {
+        const pageRoute = pageRouteMapping[finalFileName];
+        console.log(`🎯 Direct page route mapping: "${finalFileName}" -> "${pageRoute}"`);
         return pageRoute;
-      } else {
-        console.log(`⚠️ No direct mapping found for page "${fileName}", trying component name detection...`);
       }
-    }
 
-    // Use the new component name detection to get page name
-    const detectedPageName = detectComponentName(filePath, fileContent);
-    
-    if (detectedPageName) {
-      console.log(`📝 Detected page name: "${detectedPageName}"`);
-      
-      // Try to resolve using the new page name resolution API
-      const resolvedRoute = await resolveRouteFromPageName(detectedPageName);
-      if (resolvedRoute) {
-        console.log(`✅ Resolved page "${detectedPageName}" to route: ${resolvedRoute}`);
-        return resolvedRoute;
-      } else {
-        console.log(`⚠️ Could not resolve page "${detectedPageName}" to database route, trying fallbacks...`);
-      }
-    } else {
-      console.log(`⚠️ No page name detected from file path or content`);
-    }
-
-    // Fallback: Try to analyze file content for direct route patterns
-    const contentBasedRoute = await analyzeFileContentForRoute(filePath, fileContent);
-    if (contentBasedRoute) {
-      return contentBasedRoute;
-    }
-
-    // Legacy fallback logic for common file path patterns
-    const fileName = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
-    
-    // Try to extract page name from file name as a last resort
-    const fileBasedPageName = detectComponentName(filePath, '');
-    
-    if (fileBasedPageName && fileBasedPageName !== 'Home') {
-      console.log(`🔍 Trying file-based page name: "${fileBasedPageName}"`);
-      const fileBasedRoute = await resolveRouteFromPageName(fileBasedPageName);
-      if (fileBasedRoute) {
-        console.log(`✅ Found file-based route: ${fileBasedRoute}`);
-        return fileBasedRoute;
-      } else {
-        console.log(`❌ No file-based route found for: "${fileBasedPageName}"`);
-      }
-    } else {
-      console.log(`⚠️ No valid file-based page name. fileBasedPageName: "${fileBasedPageName}"`);
-    }
-    
-    // Check if it's a storefront component - but try to use the detected component name
-    console.log(`🏪 Checking if storefront component. Path: ${filePath}`);
-    if (filePath.includes('/storefront/') || filePath.includes('/components/storefront/')) {
-      // If we detected a specific page, try it first, otherwise fall back to Home
-      const targetPageName = detectedPageName || fileBasedPageName || 'Home';
-      console.log(`🏪 Storefront component detected. Target page: "${targetPageName}"`);
-      
-      const storefrontRoute = await resolveRouteFromPageName(targetPageName);
-      if (storefrontRoute) {
-        console.log(`✅ Found route for ${targetPageName}: ${storefrontRoute}`);
-        return storefrontRoute;
-      }
-      
-      // If no database route found, create direct public URL based on page name
-      if (targetPageName === 'Cart') {
-        // Ensure we always use the correct store slug
-        const cartStoreSlug = currentStoreSlug === 'undefined' ? 'amazing-store' : currentStoreSlug;
-        const directCartUrl = `/public/${cartStoreSlug}/cart`;
-        console.log(`🛒 Creating direct cart URL: ${directCartUrl} (store slug: ${cartStoreSlug})`);
-        return directCartUrl;
-      } else if (targetPageName === 'Checkout') {
-        const directCheckoutUrl = `/public/${currentStoreSlug}/checkout`;
-        console.log(`💳 Creating direct checkout URL: ${directCheckoutUrl}`);
-        return directCheckoutUrl;
-      } else if (targetPageName === 'Product Detail') {
-        const directProductUrl = `/public/${currentStoreSlug}/product/sample-product`;
-        console.log(`📦 Creating direct product URL: ${directProductUrl}`);
-        return directProductUrl;
-      }
-      
-      // Default to home
-      return `/public/${currentStoreSlug}`;
-    }
-    
-    // Check if it's an admin component - but try to use the detected component name
-    console.log(`⚙️ Checking if admin component. Path: ${filePath}`);
-    if (filePath.includes('/admin/') || filePath.includes('/components/admin/')) {
-      const targetPageName = detectedPageName || fileBasedPageName || 'Dashboard';
-      const adminRoute = await resolveRouteFromPageName(targetPageName);
-      return adminRoute || '/admin/dashboard';
-    }
-    
-    // Default fallback - try detected page name first, then home page
-    console.log(`🎯 Reaching default fallback section. detectedPageName: "${detectedPageName}"`);
-    if (detectedPageName) {
-      console.log(`🔍 Trying database route resolution for detected page: "${detectedPageName}"`);
-      const detectedRoute = await resolveRouteFromPageName(detectedPageName);
-      if (detectedRoute) {
-        console.log(`✅ Found database route for ${detectedPageName}: ${detectedRoute}`);
-        return detectedRoute;
-      }
-      
-      // If we have a detected page name but no database route, create direct URLs
-      console.log(`🔧 Creating direct URL for detected page: "${detectedPageName}"`);
-      if (detectedPageName === 'Cart') {
-        // Ensure we always use the correct store slug
-        const cartStoreSlug = currentStoreSlug === 'undefined' ? 'amazing-store' : currentStoreSlug;
-        const cartUrl = `/public/${cartStoreSlug}/cart`;
-        console.log(`🛒 Generated Cart URL: ${cartUrl} (store slug: ${cartStoreSlug})`);
-        return cartUrl;
-      } else if (detectedPageName === 'Checkout') {
-        return `/public/${currentStoreSlug}/checkout`;
-      } else if (detectedPageName === 'Product Detail') {
-        return `/public/${currentStoreSlug}/product/sample-product`;
-      } else if (detectedPageName === 'Products') {
-        return `/admin/products`;
-      } else if (detectedPageName === 'Dashboard') {
-        return `/admin/dashboard`;
-      } else if (detectedPageName === 'Orders') {
-        return `/admin/orders`;
-      } else if (detectedPageName === 'Customers') {
-        return `/admin/customers`;
-      } else if (detectedPageName === 'Settings') {
-        return `/admin/settings`;
-      }
-    }
-    
-    // Final fallback based on file name
-    const fileName = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
-    const lowerFileName = fileName.toLowerCase();
-    
-    console.log(`🔧 Final fallback for file name: "${fileName}"`);
-    
-    // Create URLs based on file name patterns
-    if (lowerFileName === 'cart') {
-      console.log(`🛒 Direct cart URL fallback`);
-      return `/public/${currentStoreSlug}/cart`;
-    } else if (lowerFileName === 'checkout') {
-      console.log(`💳 Direct checkout URL fallback`);
-      return `/public/${currentStoreSlug}/checkout`;
-    } else if (lowerFileName.includes('product') && !lowerFileName.includes('admin')) {
-      console.log(`📦 Direct product URL fallback`);
-      return `/public/${currentStoreSlug}/product/sample-product`;
-    } else if (lowerFileName.includes('admin') || filePath.includes('/admin/')) {
-      console.log(`⚙️ Admin dashboard fallback`);
-      return `/admin/dashboard`;
-    }
-    
-    // Final home page fallback
-    const homeRoute = await resolveRouteFromPageName('Home');
-    const finalRoute = homeRoute || `/public/${currentStoreSlug}`;
-    console.log(`🏠 Using final route: ${finalRoute}`);
-    
-    // Ensure we NEVER return null
-    if (!finalRoute) {
-      console.log(`🚨 Emergency fallback - returning basic store URL`);
-      return `/public/amazing-store`;
-    }
-    
-    return finalRoute;
+      console.log(`⚠️ No direct mapping found for page "${finalFileName}"`);
+      return null;
     
     } catch (error) {
       console.error(`🚨 Error in detectRouteFromFile:`, error);
-      const fallbackStoreSlug = storeSlug || 'amazing-store';
-      
-      // Try to determine route based on just the file name as emergency fallback
-      const fileName = filePath?.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
-      if (fileName.toLowerCase() === 'cart') {
-        return `/public/${fallbackStoreSlug}/cart`;
-      } else if (fileName.toLowerCase() === 'checkout') {
-        return `/public/${fallbackStoreSlug}/checkout`;
-      } else if (fileName.toLowerCase().includes('admin')) {
-        return `/admin/dashboard`;
-      }
-      
-      return `/public/${fallbackStoreSlug}`;
+      return null;
     }
-  }, [storeSlug, resolveRouteFromPageName, analyzeFileContentForRoute]);
+  }, [storeSlug]);
 
   // State for detected route and page name
   const [detectedRoute, setDetectedRoute] = useState(null);
   const [detectedPageName, setDetectedPageName] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
 
-  // Detect route asynchronously when file or content changes
+  // Detect route for page files only
   useEffect(() => {
     let isCancelled = false;
     
@@ -381,25 +136,42 @@ const BrowserPreview = ({
         return;
       }
 
+      // Check if this is a page file first
+      const isPageFile = fileName.includes('/pages/') || fileName.includes('\\pages\\');
+      
+      if (!isPageFile) {
+        setDetectedRoute(null);
+        setDetectedPageName(null);
+        setError('Preview only works for page files (located in /src/pages/)');
+        return;
+      }
+
       setRouteLoading(true);
       setError(null);
       
       try {
-        // Detect page name first
-        const pageName = detectComponentName(fileName, currentCode);
+        // Detect page name from file path
+        const fileNameOnly = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
+        const finalFileName = fileNameOnly.split('\\').pop() || fileNameOnly;
+        
         if (!isCancelled) {
-          setDetectedPageName(pageName);
+          setDetectedPageName(finalFileName);
         }
         
-        // Then resolve route
+        // Resolve route for page file
         const route = await detectRouteFromFile(fileName, currentCode);
         if (!isCancelled) {
-          setDetectedRoute(route);
+          if (route) {
+            setDetectedRoute(route);
+          } else {
+            setError(`No route mapping found for page "${finalFileName}"`);
+            setDetectedRoute(null);
+          }
         }
       } catch (error) {
         if (!isCancelled) {
           console.error('Route detection failed:', error);
-          setError('Failed to detect route from database');
+          setError('Failed to detect route for page file');
           setDetectedRoute(null);
           setDetectedPageName(null);
         }
