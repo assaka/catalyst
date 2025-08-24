@@ -80,6 +80,102 @@ router.post('/broadcast/:filePath(*)', authMiddleware, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/hybrid-patches/create
+ * @desc    Create a hybrid customization patch for auto-save functionality  
+ * @access  Private
+ */
+router.post('/create', authMiddleware, async (req, res) => {
+  try {
+    const { HybridCustomization } = require('../models/HybridCustomization');
+    const VersionControlService = require('../services/version-control-service');
+    const versionControl = new VersionControlService();
+    
+    const {
+      filePath,
+      originalCode,
+      modifiedCode,
+      changeSummary,
+      changeType = 'manual_edit'
+    } = req.body;
+    
+    const userId = req.user.id;
+    
+    console.log(`📝 Creating hybrid patch for: ${filePath}`);
+    
+    // Check if customization already exists for this file path
+    let customization = await HybridCustomization.findOne({
+      where: {
+        file_path: filePath,
+        user_id: userId,
+        status: 'active'
+      }
+    });
+    
+    if (!customization) {
+      // Create new customization
+      console.log(`🆕 Creating new customization for: ${filePath}`);
+      const result = await versionControl.createCustomization({
+        userId: userId,
+        name: `Auto-saved changes to ${filePath.split('/').pop()}`,
+        description: `Auto-generated from manual edits`,
+        componentType: 'component',
+        filePath: filePath,
+        baselineCode: originalCode,
+        initialCode: modifiedCode,
+        changeType: changeType,
+        changeSummary: changeSummary || 'Manual edits detected'
+      });
+      
+      if (result.success) {
+        customization = result.customization;
+      } else {
+        throw new Error(result.error || 'Failed to create customization');
+      }
+    } else {
+      // Add changes to existing customization
+      console.log(`📝 Adding changes to existing customization: ${customization.id}`);
+      const result = await versionControl.applyChanges(customization.id, {
+        modifiedCode: modifiedCode,
+        changeSummary: changeSummary || 'Manual edits detected',
+        changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
+        changeType: changeType,
+        createdBy: userId
+      });
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to apply changes');
+      }
+      
+      // Broadcast diff patches to Diff tab
+      if (result.snapshot && customization) {
+        await diffIntegrationService.handleSnapshotCreated(
+          result.snapshot, 
+          customization, 
+          req.io // Socket.io instance if available
+        );
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        id: customization.id,
+        filePath: filePath,
+        type: 'hybrid_customization',
+        message: 'Auto-saved as hybrid customization'
+      },
+      message: `Successfully saved hybrid customization for ${filePath}`
+    });
+  } catch (error) {
+    console.error('Error creating hybrid patch:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create hybrid customization patch'
+    });
+  }
+});
+
+/**
  * @route   GET /api/hybrid-patches/files/recent
  * @desc    Get recently modified files with hybrid customization patches
  * @access  Private

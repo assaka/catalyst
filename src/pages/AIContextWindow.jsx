@@ -287,20 +287,20 @@ export default ExampleComponent;`;
         // Calculate the modified code by applying the current patch
         const modifiedCode = applyPatchToCode(sourceCode, currentPatch);
         
-        // Create AST diff overlay in database
-        const response = await apiClient.post('ast-diffs/create', {
+        // Create hybrid customization patch in database
+        const response = await apiClient.post('hybrid-patches/create', {
           filePath: selectedFile.path,
           originalCode: sourceCode,
           modifiedCode: modifiedCode,
           changeSummary: `AI-generated changes for: ${selectedFile.path}`,
-          changeType: 'modification'
+          changeType: 'ai_modification'
         });
         
         if (response.success) {
-          console.log('AST diff overlay created:', response.data);
+          console.log('Hybrid customization patch created:', response.data);
           setAstDiffStatus({ 
             status: 'success', 
-            message: 'AST diff overlay saved successfully',
+            message: 'Hybrid customization patch saved successfully',
             data: response.data 
           });
           // Clear status after 3 seconds

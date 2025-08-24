@@ -161,19 +161,19 @@ const CodeEditor = ({
         const normalizedFileName = normalizeFilePath(fileName);
         const apiConfig = getApiConfig();
         
-        const response = await apiClient.post('ast-diffs/create', {
+        const response = await apiClient.post('hybrid-patches/create', {
           filePath: normalizedFileName,
           originalCode: originalCode,
           modifiedCode: currentCode,
           changeSummary: `Manual edit: ${diffResult.changeCount} changes (${diffResult.summary?.stats?.additions || 0} additions, ${diffResult.summary?.stats?.deletions || 0} deletions)`,
-          changeType: 'modification'
+          changeType: 'manual_edit'
         }, apiConfig);
 
         if (response.success) {
-          console.log('💾 Auto-saved patch:', response.data.id);
+          console.log('💾 Auto-saved hybrid customization:', response.data.id);
           setPatchSaveStatus({ 
             status: 'success', 
-            message: 'Patch auto-saved',
+            message: 'Changes auto-saved to hybrid customization',
             data: response.data 
           });
           
