@@ -140,11 +140,16 @@ const BrowserPreview = ({
 
   // Detect route from file path and content using new page name resolution
   const detectRouteFromFile = useCallback(async (filePath, fileContent = '') => {
-    if (!filePath) return null;
+    try {
+      if (!filePath) {
+        console.log(`❌ No file path provided`);
+        return `/public/amazing-store`; // Return a default route instead of null
+      }
 
-    // Get current store slug with URL fallback
+    // Get current store slug with URL fallback - ensure we have a fallback
     const currentStoreSlug = storeSlug || 
-                           getStoreSlugFromPublicUrl(window.location.pathname);
+                           getStoreSlugFromPublicUrl(window.location.pathname) ||
+                           'amazing-store'; // Default fallback store slug
 
     console.log(`🔍 Detecting route for file: ${filePath}`);
     console.log(`📄 File content length: ${fileContent?.length || 0} characters`);
@@ -232,10 +237,78 @@ const BrowserPreview = ({
       if (detectedRoute) {
         return detectedRoute;
       }
+      
+      // If we have a detected page name but no database route, create direct URLs
+      console.log(`🔧 Creating direct URL for detected page: "${detectedPageName}"`);
+      if (detectedPageName === 'Cart') {
+        return `/public/${currentStoreSlug}/cart`;
+      } else if (detectedPageName === 'Checkout') {
+        return `/public/${currentStoreSlug}/checkout`;
+      } else if (detectedPageName === 'Product Detail') {
+        return `/public/${currentStoreSlug}/product/sample-product`;
+      } else if (detectedPageName === 'Products') {
+        return `/admin/products`;
+      } else if (detectedPageName === 'Dashboard') {
+        return `/admin/dashboard`;
+      } else if (detectedPageName === 'Orders') {
+        return `/admin/orders`;
+      } else if (detectedPageName === 'Customers') {
+        return `/admin/customers`;
+      } else if (detectedPageName === 'Settings') {
+        return `/admin/settings`;
+      }
     }
     
+    // Final fallback based on file name
+    const fileName = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
+    const lowerFileName = fileName.toLowerCase();
+    
+    console.log(`🔧 Final fallback for file name: "${fileName}"`);
+    
+    // Create URLs based on file name patterns
+    if (lowerFileName === 'cart') {
+      console.log(`🛒 Direct cart URL fallback`);
+      return `/public/${currentStoreSlug}/cart`;
+    } else if (lowerFileName === 'checkout') {
+      console.log(`💳 Direct checkout URL fallback`);
+      return `/public/${currentStoreSlug}/checkout`;
+    } else if (lowerFileName.includes('product') && !lowerFileName.includes('admin')) {
+      console.log(`📦 Direct product URL fallback`);
+      return `/public/${currentStoreSlug}/product/sample-product`;
+    } else if (lowerFileName.includes('admin') || filePath.includes('/admin/')) {
+      console.log(`⚙️ Admin dashboard fallback`);
+      return `/admin/dashboard`;
+    }
+    
+    // Final home page fallback
     const homeRoute = await resolveRouteFromPageName('Home');
-    return homeRoute || `/public/${currentStoreSlug}`;
+    const finalRoute = homeRoute || `/public/${currentStoreSlug}`;
+    console.log(`🏠 Using final route: ${finalRoute}`);
+    
+    // Ensure we NEVER return null
+    if (!finalRoute) {
+      console.log(`🚨 Emergency fallback - returning basic store URL`);
+      return `/public/amazing-store`;
+    }
+    
+    return finalRoute;
+    
+    } catch (error) {
+      console.error(`🚨 Error in detectRouteFromFile:`, error);
+      const fallbackStoreSlug = storeSlug || 'amazing-store';
+      
+      // Try to determine route based on just the file name as emergency fallback
+      const fileName = filePath?.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
+      if (fileName.toLowerCase() === 'cart') {
+        return `/public/${fallbackStoreSlug}/cart`;
+      } else if (fileName.toLowerCase() === 'checkout') {
+        return `/public/${fallbackStoreSlug}/checkout`;
+      } else if (fileName.toLowerCase().includes('admin')) {
+        return `/admin/dashboard`;
+      }
+      
+      return `/public/${fallbackStoreSlug}`;
+    }
   }, [storeSlug, resolveRouteFromPageName, analyzeFileContentForRoute]);
 
   // State for detected route and page name
