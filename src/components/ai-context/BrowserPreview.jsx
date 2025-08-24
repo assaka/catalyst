@@ -85,33 +85,19 @@ const BrowserPreview = ({
       const finalFileName = fileName.split('\\').pop() || fileName;
       console.log(`📄 Page file name: "${finalFileName}"`);
       
-      // Direct page file to route mapping
-      const pageRouteMapping = {
-        'Cart': `/public/${currentStoreSlug}/cart`,
-        'Checkout': `/public/${currentStoreSlug}/checkout`,
-        'ProductDetail': `/public/${currentStoreSlug}/product/sample-product`,
-        'Storefront': `/public/${currentStoreSlug}`,
-        'Dashboard': `/admin/dashboard`,
-        'Products': `/admin/products`,
-        'Categories': `/admin/categories`,
-        'Orders': `/admin/orders`,
-        'Customers': `/admin/customers`,
-        'Settings': `/admin/settings`,
-        'Attributes': `/admin/attributes`,
-        'Plugins': `/admin/plugins`,
-        'CmsBlocks': `/admin/cms-blocks`,
-        'CmsPages': `/admin/cms-pages`,
-        'ABTesting': `/admin/ab-testing`,
-        'Integrations': `/admin/integrations`
-      };
+      // Use page name resolution API to get route from store_routes table
+      const detectedPageName = detectComponentName(filePath, fileContent);
+      const pageName = detectedPageName || finalFileName;
       
-      if (pageRouteMapping[finalFileName]) {
-        const pageRoute = pageRouteMapping[finalFileName];
-        console.log(`🎯 Direct page route mapping: "${finalFileName}" -> "${pageRoute}"`);
-        return pageRoute;
+      console.log(`🔍 Resolving page "${pageName}" using store_routes table`);
+      const resolvedRoute = await resolveRouteFromPageName(pageName);
+      
+      if (resolvedRoute) {
+        console.log(`🎯 Database route resolution: "${pageName}" -> "${resolvedRoute}"`);
+        return resolvedRoute;
       }
 
-      console.log(`⚠️ No direct mapping found for page "${finalFileName}"`);
+      console.log(`⚠️ No route found in store_routes table for page "${pageName}"`);
       return null;
     
     } catch (error) {

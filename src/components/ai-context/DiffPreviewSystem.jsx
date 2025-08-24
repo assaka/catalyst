@@ -7,14 +7,13 @@ import { cn } from '@/lib/utils';
  * Displays visual diffs for manual code edits with expandable hunks
  */
 const DiffPreviewSystem = ({ 
-  diffResult = null,
   fileName = '',
   className,
   onCopyDiff
 }) => {
   const [expandedHunks, setExpandedHunks] = useState(new Set());
   const [copiedHunks, setCopiedHunks] = useState(new Set());
-  const [astDiffResult, setAstDiffResult] = useState(null);
+  const [hybridPatches, setHybridPatches] = useState(null);
 
   // Toggle hunk expansion
   const toggleHunk = useCallback((hunkIndex) => {
@@ -56,10 +55,11 @@ const DiffPreviewSystem = ({
 
   // Copy entire diff to clipboard
   const copyEntireDiff = useCallback(async () => {
-    if (!diffResult?.diff) return;
+    if (!hybridPatches?.diffHunks) return;
 
     try {
-      const diffText = diffResult.diff
+      const diffText = hybridPatches.diffHunks
+        .flatMap(hunk => hunk.changes)
         .map(change => {
           const prefix = change.type === 'add' ? '+' : change.type === 'del' ? '-' : ' ';
           return `${prefix}${change.content}`;
@@ -71,7 +71,7 @@ const DiffPreviewSystem = ({
     } catch (error) {
       console.error('Failed to copy diff:', error);
     }
-  }, [diffResult, onCopyDiff]);
+  }, [hybridPatches, onCopyDiff]);
 
   // Memoized statistics - use AST diff result if available, otherwise manual diff result
   const stats = useMemo(() => {

@@ -349,6 +349,12 @@ router.post('/:id/rollback', authMiddleware, async (req, res) => {
     });
 
     if (result.success) {
+      // Broadcast diff patches after rollback
+      await diffIntegrationService.handleRollbackCompleted(
+        customization, 
+        req.io // Socket.io instance if available
+      );
+
       res.json({
         success: true,
         data: {
