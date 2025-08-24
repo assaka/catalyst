@@ -270,6 +270,50 @@ StoreRoute.createCustomRoute = async function(routeData) {
 };
 
 /**
+ * Static method: Find route by store and page name
+ * @param {string} storeId - Store ID
+ * @param {string} pageName - Page name to find (route_name)
+ * @returns {Object|null} Route object or null
+ */
+StoreRoute.findByPageName = async function(storeId, pageName) {
+  try {
+    return await this.findOne({
+      where: {
+        store_id: storeId,
+        route_name: pageName,
+        is_active: true
+      }
+    });
+  } catch (error) {
+    console.error('Error finding route by page name:', error);
+    return null;
+  }
+};
+
+/**
+ * Static method: Find routes by target component name
+ * @param {string} storeId - Store ID
+ * @param {string} componentName - Component name (target_value)
+ * @returns {Array} Array of routes serving this component
+ */
+StoreRoute.findByComponentName = async function(storeId, componentName) {
+  try {
+    return await this.findAll({
+      where: {
+        store_id: storeId,
+        target_type: 'component',
+        target_value: componentName,
+        is_active: true
+      },
+      order: [['navigation_sort_order', 'ASC'], ['route_name', 'ASC']]
+    });
+  } catch (error) {
+    console.error('Error finding routes by component name:', error);
+    return [];
+  }
+};
+
+/**
  * Static method: Resolve a path to a route with fallback logic
  * @param {string} storeId - Store ID
  * @param {string} path - Path to resolve
@@ -332,6 +376,79 @@ StoreRoute.resolvePath = async function(storeId, path) {
     return {
       found: false,
       route: null,
+      matchType: null,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Static method: Resolve a page name to route(s)
+ * @param {string} storeId - Store ID
+ * @param {string} pageName - Page name to resolve
+ * @returns {Object} Resolution result
+ */
+StoreRoute.resolveByPageName = async function(storeId, pageName) {
+  try {
+    // Try exact page name match first
+    let route = await this.findByPageName(storeId, pageName);
+    
+    if (route) {
+      return {
+        found: true,
+        route,
+        matchType: 'page_name',
+        routes: [route]
+      };
+    }
+
+    // Try partial page name match (case insensitive)
+    const partialMatches = await this.findAll({
+      where: {
+        store_id: storeId,
+        route_name: {
+          [Op.iLike]: `%${pageName}%`
+        },
+        is_active: true
+      },
+      order: [['navigation_sort_order', 'ASC'], ['route_name', 'ASC']]
+    });
+
+    if (partialMatches.length > 0) {
+      return {
+        found: true,
+        route: partialMatches[0], // Return first match as primary route
+        routes: partialMatches,
+        matchType: 'partial_page_name',
+        count: partialMatches.length
+      };
+    }
+
+    // Try component name match
+    const componentMatches = await this.findByComponentName(storeId, pageName);
+    
+    if (componentMatches.length > 0) {
+      return {
+        found: true,
+        route: componentMatches[0], // Return first match as primary route
+        routes: componentMatches,
+        matchType: 'component_name',
+        count: componentMatches.length
+      };
+    }
+
+    return {
+      found: false,
+      route: null,
+      routes: [],
+      matchType: null
+    };
+  } catch (error) {
+    console.error('Error resolving page name:', error);
+    return {
+      found: false,
+      route: null,
+      routes: [],
       matchType: null,
       error: error.message
     };

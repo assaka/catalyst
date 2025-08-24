@@ -136,6 +136,96 @@ router.get('/resolve/*', async (req, res) => {
 });
 
 /**
+ * GET /api/store-routes/find-by-page/:pageName
+ * Find route(s) serving a specific page by name
+ */
+router.get('/find-by-page/:pageName', async (req, res) => {
+  try {
+    const { pageName } = req.params;
+    const { exact = 'false' } = req.query;
+    
+    if (exact === 'true') {
+      // Only exact page name match
+      const route = await StoreRoute.findByPageName(req.storeId, pageName);
+      
+      if (!route) {
+        return res.status(404).json({
+          success: false,
+          message: 'Page not found',
+          pageName
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          route,
+          matchType: 'exact',
+          pageName
+        }
+      });
+    } else {
+      // Use fuzzy matching with fallback logic
+      const resolution = await StoreRoute.resolveByPageName(req.storeId, pageName);
+      
+      if (!resolution.found) {
+        return res.status(404).json({
+          success: false,
+          message: 'Page not found',
+          pageName,
+          resolution
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          route: resolution.route,
+          routes: resolution.routes,
+          matchType: resolution.matchType,
+          count: resolution.count || 1,
+          pageName
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error finding route by page name:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to find route by page name',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/store-routes/find-by-component/:componentName  
+ * Find all routes serving a specific component
+ */
+router.get('/find-by-component/:componentName', async (req, res) => {
+  try {
+    const { componentName } = req.params;
+    const routes = await StoreRoute.findByComponentName(req.storeId, componentName);
+    
+    res.json({
+      success: true,
+      data: {
+        routes,
+        count: routes.length,
+        componentName
+      }
+    });
+  } catch (error) {
+    console.error('Error finding routes by component name:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to find routes by component name',
+      error: error.message
+    });
+  }
+});
+
+/**
  * POST /api/store-routes
  * Create a new custom route
  */
