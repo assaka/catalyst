@@ -21,6 +21,7 @@ const CodeEditor = ({
   onCursorPositionChange,
   onSelectionChange,
   onManualEdit, // Callback for when manual edits are detected
+  onCodeChange, // Callback for when code changes (for preview updates)
   originalCode = '', // Original code baseline for diff detection
   enableDiffDetection = false // Enable manual edit detection
 }) => {
@@ -640,7 +641,10 @@ const CodeEditor = ({
     if (enableDiffDetection && diffDetectorRef.current) {
       diffDetectorRef.current(value);
     }
-  }, [onChange, enableDiffDetection]);
+    
+    // Notify about code changes for preview updates
+    onCodeChange?.(value, fileName);
+  }, [onChange, enableDiffDetection, onCodeChange, fileName]);
 
   // Get file language from extension
   const getLanguageFromFileName = useCallback((fileName) => {

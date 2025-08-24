@@ -3,6 +3,7 @@ import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Table
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl } from '@/utils/urlUtils';
+import { detectComponentName, resolvePageNameToRoute } from '@/utils/componentNameDetection';
 
 /**
  * Browser Preview Component
@@ -34,7 +35,25 @@ const BrowserPreview = ({
     return { headers };
   }, [storeId]);
 
-  // Query database for route resolution
+  // Resolve page name to route using the new API
+  const resolveRouteFromPageName = useCallback(async (pageName) => {
+    try {
+      const apiConfig = getApiConfig();
+      const resolution = await resolvePageNameToRoute(pageName, apiConfig);
+      
+      if (resolution.found && resolution.route) {
+        console.log(`🎯 Resolved "${pageName}" to route: ${resolution.route.route_path} (${resolution.matchType})`);
+        return resolution.route.route_path;
+      } else {
+        console.warn(`⚠️ Could not resolve page name "${pageName}" to route:`, resolution.error);
+      }
+    } catch (error) {
+      console.warn('Failed to resolve page name to route:', error);
+    }
+    return null;
+  }, [getApiConfig]);
+
+  // Legacy database route resolution for fallback
   const resolveRouteFromDatabase = useCallback(async (targetComponent) => {
     try {
       const apiConfig = getApiConfig();
@@ -117,9 +136,9 @@ const BrowserPreview = ({
     }
 
     return null;
-  }, [getStoreSlug, resolveRouteFromDatabase]);
+  }, [storeSlug, getStoreSlugFromPublicUrl, resolveRouteFromDatabase]);
 
-  // Detect route from file path and content (now async for database queries)
+  // Detect route from file path and content using new page name resolution
   const detectRouteFromFile = useCallback(async (filePath, fileContent = '') => {
     if (!filePath) return null;
 
@@ -127,85 +146,50 @@ const BrowserPreview = ({
     const currentStoreSlug = storeSlug || 
                            getStoreSlugFromPublicUrl(window.location.pathname);
 
-    // First try to analyze file content for route information
+    console.log(`🔍 Detecting route for file: ${filePath}`);
+
+    // Use the new component name detection to get page name
+    const detectedPageName = detectComponentName(filePath, fileContent);
+    
+    if (detectedPageName) {
+      console.log(`📝 Detected page name: "${detectedPageName}"`);
+      
+      // Try to resolve using the new page name resolution API
+      const resolvedRoute = await resolveRouteFromPageName(detectedPageName);
+      if (resolvedRoute) {
+        return resolvedRoute;
+      }
+    }
+
+    // Fallback: Try to analyze file content for direct route patterns
     const contentBasedRoute = await analyzeFileContentForRoute(filePath, fileContent);
     if (contentBasedRoute) {
       return contentBasedRoute;
     }
 
-    // Try to infer route from file name and resolve from database
-    const fileName = filePath.split('/').pop().replace(/\.(jsx?|tsx?)$/, '');
+    // Legacy fallback logic for common file path patterns
+    const fileName = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
     
     // Check if it's a storefront component
     if (filePath.includes('/storefront/') || filePath.includes('/components/storefront/')) {
-      const dbRoute = await resolveRouteFromDatabase('Storefront');
-      return dbRoute || `/public/${currentStoreSlug}`;
+      const homeRoute = await resolveRouteFromPageName('Home');
+      return homeRoute || `/public/${currentStoreSlug}`;
     }
     
     // Check if it's an admin component
     if (filePath.includes('/admin/') || filePath.includes('/components/admin/')) {
-      const dbRoute = await resolveRouteFromDatabase('Dashboard');
-      return dbRoute || '/admin/dashboard';
+      const dashboardRoute = await resolveRouteFromPageName('Dashboard');
+      return dashboardRoute || '/admin/dashboard';
     }
     
-    // Check if it's a page component
-    if (filePath.includes('/pages/')) {
-      const pageName = fileName.toLowerCase();
-      
-      // Map page names to components for database lookup
-      const pageComponentMap = {
-        'dashboard': 'Dashboard',
-        'products': 'ProductListing',  
-        'categories': 'Categories',
-        'orders': 'Orders',
-        'settings': 'Settings',
-        'customers': 'Customers',
-        'storefront': 'Storefront',
-        'shop': 'Storefront',
-        'home': 'Storefront',
-        'productdetail': 'ProductDetail',
-        'cart': 'Cart',
-        'checkout': 'Checkout',
-        'abtesting': 'ABTesting'
-      };
-      
-      const componentName = pageComponentMap[pageName];
-      if (componentName) {
-        const dbRoute = await resolveRouteFromDatabase(componentName);
-        if (dbRoute) {
-          return dbRoute;
-        }
-      }
-      
-      // Legacy fallbacks if database lookup fails
-      if (['dashboard', 'products', 'categories', 'orders', 'settings', 'customers'].includes(pageName)) {
-        return `/admin/${pageName}`;
-      }
-      
-      if (['storefront', 'shop', 'home'].includes(pageName)) {
-        return `/public/${currentStoreSlug}`;
-      }
-      
-      if (pageName === 'productdetail') {
-        return `/public/${currentStoreSlug}/product/sample-product`;
-      }
-      
-      if (pageName === 'cart') {
-        return `/public/${currentStoreSlug}/cart`;
-      }
-      
-      if (pageName === 'checkout') {
-        return `/public/${currentStoreSlug}/checkout`;
-      }
-    }
-    
-    // Default fallback - try to get home route from database or show storefront
-    const homeRoute = await resolveRouteFromDatabase('Storefront');
+    // Default fallback - show storefront/home page
+    const homeRoute = await resolveRouteFromPageName('Home');
     return homeRoute || `/public/${currentStoreSlug}`;
-  }, [getStoreSlug, analyzeFileContentForRoute, resolveRouteFromDatabase]);
+  }, [storeSlug, getStoreSlugFromPublicUrl, resolveRouteFromPageName, analyzeFileContentForRoute]);
 
-  // State for detected route
+  // State for detected route and page name
   const [detectedRoute, setDetectedRoute] = useState(null);
+  const [detectedPageName, setDetectedPageName] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
 
   // Detect route asynchronously when file or content changes
@@ -215,6 +199,7 @@ const BrowserPreview = ({
     const resolveRoute = async () => {
       if (!fileName) {
         setDetectedRoute(null);
+        setDetectedPageName(null);
         return;
       }
 
@@ -222,6 +207,13 @@ const BrowserPreview = ({
       setError(null);
       
       try {
+        // Detect page name first
+        const pageName = detectComponentName(fileName, currentCode);
+        if (!isCancelled) {
+          setDetectedPageName(pageName);
+        }
+        
+        // Then resolve route
         const route = await detectRouteFromFile(fileName, currentCode);
         if (!isCancelled) {
           setDetectedRoute(route);
@@ -231,6 +223,7 @@ const BrowserPreview = ({
           console.error('Route detection failed:', error);
           setError('Failed to detect route from database');
           setDetectedRoute(null);
+          setDetectedPageName(null);
         }
       } finally {
         if (!isCancelled) {
@@ -306,6 +299,11 @@ const BrowserPreview = ({
             {routeLoading ? 'Resolving route from database...' : 'Detecting preview route...'}
           </p>
           <p className="text-xs mt-1">Analyzing file path: {fileName}</p>
+          {detectedPageName && (
+            <p className="text-xs mt-1 text-blue-500 dark:text-blue-400">
+              📝 Detected page: "{detectedPageName}"
+            </p>
+          )}
           {routeLoading && (
             <p className="text-xs mt-1 text-blue-500 dark:text-blue-400">
               🔄 Querying store routes API
@@ -323,9 +321,17 @@ const BrowserPreview = ({
           <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm font-medium">{error}</p>
           <p className="text-xs mt-2 text-gray-500">File: {fileName}</p>
-          {detectedRoute && (
-            <p className="text-xs mt-1 text-gray-500">Detected route: {detectedRoute}</p>
+          {detectedPageName && (
+            <p className="text-xs mt-1 text-gray-500">
+              Detected page: "{detectedPageName}" (no route found)
+            </p>
           )}
+          {detectedRoute && (
+            <p className="text-xs mt-1 text-gray-500">Attempted route: {detectedRoute}</p>
+          )}
+          <p className="text-xs mt-2 text-gray-400">
+            💡 Try creating a route for "{detectedPageName || 'this page'}" in your store routes
+          </p>
         </div>
       </div>
     );
@@ -475,6 +481,9 @@ const BrowserPreview = ({
         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center space-x-4">
             <span>🌐 Live Preview</span>
+            {detectedPageName && (
+              <span>Page: {detectedPageName}</span>
+            )}
             <span>Route: {detectedRoute}</span>
             <span>Device: {deviceView}</span>
           </div>

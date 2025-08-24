@@ -13,6 +13,7 @@ const AIContextWindow = ({
   filePath = '',
   onPatchGenerated,
   onPreviewGenerated,
+  onCodeGenerated, // Callback for when AI generates new code (for preview updates)
   className 
 }) => {
   const [prompt, setPrompt] = useState('');
@@ -99,6 +100,11 @@ const AIContextWindow = ({
         // Generate preview
         if (data.data.preview) {
           onPreviewGenerated?.(data.data.preview);
+        }
+        
+        // Notify about generated code for preview updates
+        if (data.data.preview || data.data.patch) {
+          onCodeGenerated?.(data.data.preview || sourceCode, filePath);
         }
       } else {
         setError(data.message || 'Failed to generate patch');
