@@ -1,6 +1,6 @@
 const express = require('express');
 const { Customer } = require('../models');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { storeOwnerOnly } = require('../middleware/auth');
 const { Op } = require('sequelize');
 
@@ -63,7 +63,7 @@ router.get('/', storeOwnerOnly, async (req, res) => {
 // @route   GET /api/customers/:id
 // @desc    Get single customer
 // @access  Private
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.params.id);
 
@@ -90,7 +90,7 @@ router.get('/:id', auth, async (req, res) => {
 // @route   POST /api/customers
 // @desc    Create a new customer
 // @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const customer = await Customer.create(req.body);
     res.status(201).json({
@@ -109,7 +109,7 @@ router.post('/', auth, async (req, res) => {
 // @route   PUT /api/customers/:id
 // @desc    Update customer
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.params.id);
 
@@ -137,7 +137,7 @@ router.put('/:id', auth, async (req, res) => {
 // @route   DELETE /api/customers/:id
 // @desc    Delete customer
 // @access  Private
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const customer = await Customer.findByPk(req.params.id);
 

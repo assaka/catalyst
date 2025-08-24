@@ -462,7 +462,7 @@ router.post('/login', [
 // @route   GET /api/auth/me
 // @desc    Get current user
 // @access  Private
-router.get('/me', require('../middleware/auth'), async (req, res) => {
+router.get('/me', require('../middleware/auth').authMiddleware, async (req, res) => {
   res.json({
     success: true,
     data: req.user
@@ -472,7 +472,7 @@ router.get('/me', require('../middleware/auth'), async (req, res) => {
 // @route   PATCH /api/auth/me
 // @desc    Update current user
 // @access  Private
-router.patch('/me', require('../middleware/auth'), async (req, res) => {
+router.patch('/me', require('../middleware/auth').authMiddleware, async (req, res) => {
   try {
     const { role, account_type } = req.body;
     const updateData = {};
@@ -587,7 +587,7 @@ router.get('/google/callback', (req, res, next) => {
 // @route   POST /api/auth/logout
 // @desc    Logout user and log the event
 // @access  Private
-router.post('/logout', require('../middleware/auth'), async (req, res) => {
+router.post('/logout', require('../middleware/auth').authMiddleware, async (req, res) => {
   try {
     console.log('🔐 Logout request received for user:', req.user.email);
     

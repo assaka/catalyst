@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const supabaseIntegration = require('../services/supabase-integration');
 const supabaseStorage = require('../services/supabase-storage');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
@@ -55,7 +55,7 @@ const extractStoreId = (req, res, next) => {
 };
 
 // Get connection status and ensure buckets exist
-router.get('/status', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.get('/status', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const status = await supabaseIntegration.getConnectionStatus(req.storeId);
     
@@ -78,7 +78,7 @@ router.get('/status', auth, extractStoreId, checkStoreOwnership, async (req, res
 });
 
 // Initialize OAuth flow
-router.post('/connect', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/connect', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     console.log('Initiating Supabase OAuth connection for store:', req.storeId);
     console.log('OAuth configuration status:', {
@@ -365,7 +365,7 @@ router.get('/callback', async (req, res) => {
 });
 
 // Get available projects
-router.get('/projects', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.get('/projects', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const result = await supabaseIntegration.getProjects(req.storeId);
     res.json(result);
@@ -379,7 +379,7 @@ router.get('/projects', auth, extractStoreId, checkStoreOwnership, async (req, r
 });
 
 // Select a project
-router.post('/select-project', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/select-project', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const { projectId } = req.body;
     
@@ -421,7 +421,7 @@ router.post('/select-project', auth, extractStoreId, checkStoreOwnership, async 
 });
 
 // Test connection and ensure buckets exist
-router.post('/test', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/test', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const result = await supabaseIntegration.testConnection(req.storeId);
     
@@ -444,7 +444,7 @@ router.post('/test', auth, extractStoreId, checkStoreOwnership, async (req, res)
 });
 
 // Disconnect
-router.post('/disconnect', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/disconnect', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const result = await supabaseIntegration.disconnect(req.storeId);
     res.json(result);
@@ -462,8 +462,7 @@ router.post('/disconnect', auth, extractStoreId, checkStoreOwnership, async (req
 // =================
 
 // Upload image - handles both 'file' and 'image' fields for flexibility
-router.post('/storage/upload', 
-  auth, 
+router.post('/storage/upload', authMiddleware, 
   extractStoreId, 
   checkStoreOwnership, 
   upload.single('file') || upload.single('image'), // Accept both field names
@@ -508,8 +507,7 @@ router.post('/storage/upload',
 );
 
 // Test upload - upload a sample product image
-router.post('/storage/test-upload', 
-  auth, 
+router.post('/storage/test-upload', authMiddleware, 
   extractStoreId, 
   checkStoreOwnership,
   async (req, res) => {
@@ -576,8 +574,7 @@ router.post('/storage/test-upload',
 );
 
 // Upload multiple images
-router.post('/storage/upload-multiple',
-  auth,
+router.post('/storage/upload-multiple', authMiddleware,
   extractStoreId,
   checkStoreOwnership,
   upload.array('images', 10),
@@ -607,7 +604,7 @@ router.post('/storage/upload-multiple',
 );
 
 // List images
-router.get('/storage/list', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.get('/storage/list', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const result = await supabaseStorage.listImages(req.storeId, req.query.folder, {
       limit: parseInt(req.query.limit) || 100,
@@ -626,7 +623,7 @@ router.get('/storage/list', auth, extractStoreId, checkStoreOwnership, async (re
 });
 
 // Delete image
-router.delete('/storage/delete', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.delete('/storage/delete', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const { path, bucket } = req.body;
     
@@ -649,7 +646,7 @@ router.delete('/storage/delete', auth, extractStoreId, checkStoreOwnership, asyn
 });
 
 // Move image
-router.post('/storage/move', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/storage/move', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const { fromPath, toPath, bucket } = req.body;
     
@@ -672,7 +669,7 @@ router.post('/storage/move', auth, extractStoreId, checkStoreOwnership, async (r
 });
 
 // Copy image
-router.post('/storage/copy', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/storage/copy', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const { fromPath, toPath, bucket } = req.body;
     
@@ -695,7 +692,7 @@ router.post('/storage/copy', auth, extractStoreId, checkStoreOwnership, async (r
 });
 
 // Get signed URL
-router.post('/storage/signed-url', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/storage/signed-url', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const { path, expiresIn, bucket } = req.body;
     
@@ -718,7 +715,7 @@ router.post('/storage/signed-url', auth, extractStoreId, checkStoreOwnership, as
 });
 
 // Get storage statistics
-router.get('/storage/stats', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.get('/storage/stats', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const result = await supabaseStorage.getStorageStats(req.storeId);
     res.json(result);
@@ -732,7 +729,7 @@ router.get('/storage/stats', auth, extractStoreId, checkStoreOwnership, async (r
 });
 
 // Fetch and update API keys for current project
-router.post('/fetch-api-keys', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/fetch-api-keys', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     console.log('Fetching API keys for store:', req.storeId);
     const result = await supabaseIntegration.fetchAndUpdateApiKeys(req.storeId);
@@ -754,7 +751,7 @@ router.post('/fetch-api-keys', auth, extractStoreId, checkStoreOwnership, async 
 });
 
 // Manually update project configuration (for limited scope connections or when API doesn't provide keys)
-router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/update-config', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const { projectId, projectUrl, serviceRoleKey, databaseUrl, storageUrl, authUrl } = req.body;
     
@@ -821,7 +818,7 @@ router.post('/update-config', auth, extractStoreId, checkStoreOwnership, async (
 });
 
 // Ensure buckets exist - can be called anytime to create missing buckets
-router.post('/storage/ensure-buckets', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/storage/ensure-buckets', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const result = await supabaseStorage.ensureBucketsExist(req.storeId);
     res.json(result);
@@ -835,7 +832,7 @@ router.post('/storage/ensure-buckets', auth, extractStoreId, checkStoreOwnership
 });
 
 // Get storage buckets
-router.get('/storage/buckets', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.get('/storage/buckets', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const result = await supabaseStorage.listBuckets(req.storeId);
     res.json(result);
@@ -849,7 +846,7 @@ router.get('/storage/buckets', auth, extractStoreId, checkStoreOwnership, async 
 });
 
 // Create storage bucket
-router.post('/storage/buckets', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.post('/storage/buckets', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const { name, public: isPublic } = req.body;
     
@@ -875,7 +872,7 @@ router.post('/storage/buckets', auth, extractStoreId, checkStoreOwnership, async
 });
 
 // Delete storage bucket
-router.delete('/storage/buckets/:bucketId', auth, extractStoreId, checkStoreOwnership, async (req, res) => {
+router.delete('/storage/buckets/:bucketId', authMiddleware, extractStoreId, checkStoreOwnership, async (req, res) => {
   try {
     const { bucketId } = req.params;
     

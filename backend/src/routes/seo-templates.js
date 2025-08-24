@@ -1,6 +1,6 @@
 const express = require('express');
 const { SeoTemplate } = require('../models');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
 // @route   GET /api/seo-templates (main admin route)
 // @desc    Get SEO templates for a store (admin access)
 // @access  Private (admin only)
-router.get('/', auth, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 GET /api/seo-templates called');
     console.log('🔍 Query params:', req.query);
@@ -119,7 +119,7 @@ router.get('/', auth, async (req, res) => {
 // @route   GET /api/seo-templates/:id
 // @desc    Get single SEO template
 // @access  Private
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const template = await SeoTemplate.findByPk(req.params.id);
 
@@ -144,7 +144,7 @@ router.get('/:id', auth, async (req, res) => {
 // @route   POST /api/seo-templates
 // @desc    Create a new SEO template
 // @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const template = await SeoTemplate.create(req.body);
     // Return format that frontend expects
@@ -161,7 +161,7 @@ router.post('/', auth, async (req, res) => {
 // @route   PUT /api/seo-templates/:id
 // @desc    Update SEO template
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const template = await SeoTemplate.findByPk(req.params.id);
 
@@ -187,7 +187,7 @@ router.put('/:id', auth, async (req, res) => {
 // @route   DELETE /api/seo-templates/:id
 // @desc    Delete SEO template
 // @access  Private
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const template = await SeoTemplate.findByPk(req.params.id);
 

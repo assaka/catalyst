@@ -4,7 +4,7 @@ const { body, validationResult, query } = require('express-validator');
 const shopifyIntegration = require('../services/shopify-integration');
 const ShopifyImportService = require('../services/shopify-import-service');
 const IntegrationConfig = require('../models/IntegrationConfig');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Middleware to check if user is authenticated and has store access
@@ -42,7 +42,7 @@ const storeAuth = (req, res, next) => {
 };
 
 // Apply auth middleware to all routes
-router.use(auth);
+router.use(authMiddleware);
 
 /**
  * @route POST /api/shopify/configure-app

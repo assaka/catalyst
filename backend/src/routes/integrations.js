@@ -6,7 +6,7 @@ const AkeneoSyncService = require('../services/akeneo-sync-service');
 const IntegrationConfig = require('../models/IntegrationConfig');
 const AkeneoCustomMapping = require('../models/AkeneoCustomMapping');
 const creditService = require('../services/credit-service');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 // Debug route to test if integrations router is working
 router.get('/test', (req, res) => {
@@ -1266,7 +1266,7 @@ router.post('/akeneo/save-config',
  * Get custom mappings for a store
  * GET /api/integrations/akeneo/custom-mappings
  */
-router.get('/akeneo/custom-mappings', auth, storeAuth, async (req, res) => {
+router.get('/akeneo/custom-mappings', authMiddleware, storeAuth, async (req, res) => {
   try {
     const mappings = await AkeneoCustomMapping.getMappings(req.storeId);
     
@@ -1290,7 +1290,7 @@ router.get('/akeneo/custom-mappings', auth, storeAuth, async (req, res) => {
  * Save custom mappings for a store
  * POST /api/integrations/akeneo/custom-mappings
  */
-router.post('/akeneo/custom-mappings', auth, storeAuth, async (req, res) => {
+router.post('/akeneo/custom-mappings', authMiddleware, storeAuth, async (req, res) => {
   try {
     const { attributes, images, files } = req.body;
     const userId = req.user?.id || null;
@@ -1320,7 +1320,7 @@ router.post('/akeneo/custom-mappings', auth, storeAuth, async (req, res) => {
  * Save specific mapping type for a store
  * PUT /api/integrations/akeneo/custom-mappings/:type
  */
-router.put('/akeneo/custom-mappings/:type', auth, storeAuth, async (req, res) => {
+router.put('/akeneo/custom-mappings/:type', authMiddleware, storeAuth, async (req, res) => {
   try {
     const { type } = req.params;
     const { mappings } = req.body;
@@ -1359,7 +1359,7 @@ router.put('/akeneo/custom-mappings/:type', auth, storeAuth, async (req, res) =>
  * Delete custom mappings for a store
  * DELETE /api/integrations/akeneo/custom-mappings/:type?
  */
-router.delete('/akeneo/custom-mappings/:type?', auth, storeAuth, async (req, res) => {
+router.delete('/akeneo/custom-mappings/:type?', authMiddleware, storeAuth, async (req, res) => {
   try {
     const { type } = req.params;
     
@@ -1434,8 +1434,7 @@ const upload = multer({
  * Universal file upload endpoint for File Manager
  * POST /api/integrations/upload
  */
-router.post('/upload', 
-  auth,
+router.post('/upload', authMiddleware,
   upload.single('file'),
   async (req, res) => {
     try {
@@ -1507,7 +1506,7 @@ router.post('/upload',
 );
 
 // Debug route to analyze Akeneo product attributes and identify numeric conversion issues
-router.post('/akeneo/debug-attributes', auth, storeAuth, async (req, res) => {
+router.post('/akeneo/debug-attributes', authMiddleware, storeAuth, async (req, res) => {
   try {
     console.log('🔍 [DEBUG] Akeneo attribute debug request for store:', req.storeId);
     

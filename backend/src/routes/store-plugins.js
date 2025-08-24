@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pluginManager = require('../core/PluginManager');
 const PluginConfiguration = require('../models/PluginConfiguration');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // All routes require authentication and store access

@@ -4,7 +4,7 @@ const AkeneoSyncService = require('../services/akeneo-sync-service');
 const CloudflareImageService = require('../services/cloudflare-image-service');
 const supabaseProductImages = require('../services/supabase-product-images');
 const { SupabaseOAuthToken } = require('../models');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const multer = require('multer');
 
 // Configure multer for file uploads

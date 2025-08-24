@@ -1,6 +1,6 @@
 const express = require('express');
 const { Redirect } = require('../models');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -59,7 +59,7 @@ router.get('/check', async (req, res) => {
 // @route   GET /api/redirects
 // @desc    Get redirects for a store
 // @access  Private (admin only)
-router.get('/', auth, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.query;
 
@@ -109,7 +109,7 @@ router.get('/', auth, async (req, res) => {
 // @route   GET /api/redirects/:id
 // @desc    Get single redirect
 // @access  Private
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const redirect = await Redirect.findByPk(req.params.id);
 
@@ -134,7 +134,7 @@ router.get('/:id', auth, async (req, res) => {
 // @route   POST /api/redirects
 // @desc    Create a new redirect
 // @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const redirect = await Redirect.create(req.body);
     // Return format that frontend expects
@@ -151,7 +151,7 @@ router.post('/', auth, async (req, res) => {
 // @route   PUT /api/redirects/:id
 // @desc    Update redirect
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const redirect = await Redirect.findByPk(req.params.id);
 
@@ -177,7 +177,7 @@ router.put('/:id', auth, async (req, res) => {
 // @route   DELETE /api/redirects/:id
 // @desc    Delete redirect
 // @access  Private
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const redirect = await Redirect.findByPk(req.params.id);
 
@@ -205,7 +205,7 @@ router.delete('/:id', auth, async (req, res) => {
 // @route   POST /api/redirects/slug-change
 // @desc    Create redirect when slug changes
 // @access  Private
-router.post('/slug-change', auth, async (req, res) => {
+router.post('/slug-change', authMiddleware, async (req, res) => {
   try {
     const {
       store_id,

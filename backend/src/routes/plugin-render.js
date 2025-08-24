@@ -7,7 +7,7 @@ const pluginManager = require('../core/PluginManager');
 const PluginSandbox = require('../core/PluginSandbox');
 const PluginConfiguration = require('../models/PluginConfiguration');
 const Plugin = require('../models/Plugin');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 // Plugin sandbox instance
 const sandbox = new PluginSandbox({

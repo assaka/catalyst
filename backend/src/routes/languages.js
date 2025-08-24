@@ -1,6 +1,6 @@
 const express = require('express');
 const { Language } = require('../models');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -64,7 +64,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/languages
 // @desc    Create a new language
 // @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const language = await Language.create(req.body);
     res.status(201).json({
@@ -83,7 +83,7 @@ router.post('/', auth, async (req, res) => {
 // @route   PUT /api/languages/:id
 // @desc    Update language
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const language = await Language.findByPk(req.params.id);
 
@@ -111,7 +111,7 @@ router.put('/:id', auth, async (req, res) => {
 // @route   DELETE /api/languages/:id
 // @desc    Delete language
 // @access  Private
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const language = await Language.findByPk(req.params.id);
 

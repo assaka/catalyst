@@ -3,7 +3,7 @@ const router = express.Router();
 const heatmapTrackingService = require('../services/heatmap-tracking');
 const HeatmapInteraction = require('../models/HeatmapInteraction');
 const HeatmapSession = require('../models/HeatmapSession');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 // Track individual interaction

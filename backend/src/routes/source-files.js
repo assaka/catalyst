@@ -2,10 +2,10 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 // Get source file content
-router.get('/content', auth, async (req, res) => {
+router.get('/content', authMiddleware, async (req, res) => {
   try {
     const { path: filePath } = req.query;
     
@@ -63,7 +63,7 @@ router.get('/content', auth, async (req, res) => {
 });
 
 // List files in a directory (for file tree)
-router.get('/list', auth, async (req, res) => {
+router.get('/list', authMiddleware, async (req, res) => {
   try {
     const { path: dirPath = 'src' } = req.query;
     

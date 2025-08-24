@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs');
 const path = require('path');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 // GitHub raw file base URL for the repository
 // Note: This always fetches from the 'main' branch, so it automatically
@@ -63,7 +63,7 @@ function readLocalFile(filePath) {
 }
 
 // Get source file content with fallback strategy
-router.get('/content', auth, async (req, res) => {
+router.get('/content', authMiddleware, async (req, res) => {
   try {
     const { path: filePath } = req.query;
     
@@ -180,7 +180,7 @@ async function fetchAllFilesRecursively(dirPath = 'src') {
 }
 
 // List files in a directory with fallback strategy
-router.get('/list', auth, async (req, res) => {
+router.get('/list', authMiddleware, async (req, res) => {
   try {
     const { path: dirPath = 'src' } = req.query;
     

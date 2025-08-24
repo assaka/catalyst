@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { ProductTab, Store } = require('../models');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/product-tabs
@@ -78,7 +78,7 @@ router.get('/:id', async (req, res) => {
 // @route   POST /api/product-tabs
 // @desc    Create new product tab
 // @access  Private
-router.post('/', auth, [
+router.post('/', authMiddleware, [
   body('store_id').isUUID().withMessage('Store ID must be a valid UUID'),
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_sets']).withMessage('Invalid tab type'),
@@ -164,7 +164,7 @@ router.post('/', auth, [
 // @route   PUT /api/product-tabs/:id
 // @desc    Update product tab
 // @access  Private
-router.put('/:id', auth, [
+router.put('/:id', authMiddleware, [
   body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
   body('tab_type').optional().isIn(['text', 'description', 'attributes', 'attribute_sets']).withMessage('Invalid tab type'),
   body('content').optional().isString(),
@@ -225,7 +225,7 @@ router.put('/:id', auth, [
 // @route   DELETE /api/product-tabs/:id
 // @desc    Delete product tab
 // @access  Private
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const productTab = await ProductTab.findByPk(req.params.id, {
       include: [{ model: Store, attributes: ['user_id'] }]

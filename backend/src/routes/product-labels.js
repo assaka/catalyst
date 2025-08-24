@@ -1,6 +1,6 @@
 const express = require('express');
 const { ProductLabel } = require('../models');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -78,7 +78,7 @@ router.get('/', optionalAuth, async (req, res) => {
 // @route   GET /api/product-labels/:id
 // @desc    Get single product label
 // @access  Private
-router.get('/:id', auth, async (req, res) => {
+router.get('/:id', authMiddleware, async (req, res) => {
   try {
     const label = await ProductLabel.findByPk(req.params.id);
 
@@ -105,7 +105,7 @@ router.get('/:id', auth, async (req, res) => {
 // @route   POST /api/product-labels/test
 // @desc    Create a test product label for debugging
 // @access  Private
-router.post('/test', auth, async (req, res) => {
+router.post('/test', authMiddleware, async (req, res) => {
   try {
     console.log('🧪 Creating test product label...');
     
@@ -144,7 +144,7 @@ router.post('/test', auth, async (req, res) => {
 // @route   POST /api/product-labels
 // @desc    Create a new product label
 // @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 Creating product label with data:', req.body);
     console.log('🔍 Priority field debug (backend):', {
@@ -190,7 +190,7 @@ router.post('/', auth, async (req, res) => {
 // @route   PUT /api/product-labels/:id
 // @desc    Update product label
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 Updating product label with data:', req.body);
     console.log('🔍 Priority field debug (backend update):', {
@@ -230,7 +230,7 @@ router.put('/:id', auth, async (req, res) => {
 // @route   DELETE /api/product-labels/:id
 // @desc    Delete product label
 // @access  Private
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const label = await ProductLabel.findByPk(req.params.id);
 

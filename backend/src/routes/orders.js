@@ -2,7 +2,7 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { Order, OrderItem, Store, Product } = require('../models');
 const { Op } = require('sequelize');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const router = express.Router();
 
 // @route   GET /api/orders/test
@@ -208,7 +208,7 @@ router.get('/test-direct/:orderId', async (req, res) => {
 // @route   GET /api/orders/customer-orders
 // @desc    Get orders for authenticated customer with full details (temporary workaround)
 // @access  Private (customer authentication required)
-router.get('/customer-orders', auth, async (req, res) => {
+router.get('/customer-orders', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 Customer orders request from user:', req.user?.id, 'role:', req.user?.role);
     console.log('🔍 Full user object:', JSON.stringify(req.user, null, 2));
@@ -327,7 +327,7 @@ router.get('/customer-orders', auth, async (req, res) => {
 // @route   PUT /api/orders/customer-orders/:orderId/status
 // @desc    Update order status for customer orders
 // @access  Private (customer authentication required)
-router.put('/customer-orders/:orderId/status', auth, async (req, res) => {
+router.put('/customer-orders/:orderId/status', authMiddleware, async (req, res) => {
   try {
     const { orderId } = req.params;
     const { status, notes } = req.body;
@@ -429,7 +429,7 @@ router.put('/customer-orders/:orderId/status', auth, async (req, res) => {
 // @route   GET /api/orders/my-orders
 // @desc    Get orders for authenticated customer
 // @access  Private (customer authentication required)
-router.get('/my-orders', auth, async (req, res) => {
+router.get('/my-orders', authMiddleware, async (req, res) => {
   try {
     console.log('🔍 Customer orders request from user:', req.user?.id, 'role:', req.user?.role);
     console.log('🔍 Full user object:', JSON.stringify(req.user, null, 2));

@@ -1,7 +1,7 @@
 const express = require('express');
 const { AttributeSet } = require('../models');
 const { Op } = require('sequelize');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -113,7 +113,7 @@ router.get('/:id', conditionalAuth, async (req, res) => {
 // @route   POST /api/attribute-sets
 // @desc    Create a new attribute set
 // @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     const attributeSet = await AttributeSet.create(req.body);
     res.status(201).json({
@@ -132,7 +132,7 @@ router.post('/', auth, async (req, res) => {
 // @route   PUT /api/attribute-sets/:id
 // @desc    Update attribute set
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const attributeSet = await AttributeSet.findByPk(req.params.id);
 
@@ -160,7 +160,7 @@ router.put('/:id', auth, async (req, res) => {
 // @route   DELETE /api/attribute-sets/:id
 // @desc    Delete attribute set
 // @access  Private
-router.delete('/:id', auth, async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const attributeSet = await AttributeSet.findByPk(req.params.id);
 

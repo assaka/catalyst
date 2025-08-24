@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const storageManager = require('../services/storage-manager');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const path = require('path');
 
@@ -51,8 +51,7 @@ const extractStoreId = (req, res, next) => {
 };
 
 // Upload file with organized structure
-router.post('/upload',
-  auth,
+router.post('/upload', authMiddleware,
   extractStoreId,
   checkStoreOwnership,
   upload.single('file'),
@@ -118,8 +117,7 @@ router.post('/upload',
 );
 
 // Upload multiple files
-router.post('/upload-multiple',
-  auth,
+router.post('/upload-multiple', authMiddleware,
   extractStoreId,
   checkStoreOwnership,
   upload.array('files', 10),
@@ -199,8 +197,7 @@ router.post('/upload-multiple',
 );
 
 // List files in a directory
-router.get('/list',
-  auth,
+router.get('/list', authMiddleware,
   extractStoreId,
   checkStoreOwnership,
   async (req, res) => {
@@ -241,8 +238,7 @@ router.get('/list',
 );
 
 // Delete a file
-router.delete('/delete',
-  auth,
+router.delete('/delete', authMiddleware,
   extractStoreId,
   checkStoreOwnership,
   async (req, res) => {
@@ -274,8 +270,7 @@ router.delete('/delete',
 );
 
 // Get storage statistics
-router.get('/stats',
-  auth,
+router.get('/stats', authMiddleware,
   extractStoreId,
   checkStoreOwnership,
   async (req, res) => {

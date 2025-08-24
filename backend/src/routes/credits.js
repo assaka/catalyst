@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 const creditService = require('../services/credit-service');
 
@@ -43,7 +43,7 @@ const storeAuth = (req, res, next) => {
  * Get credit balance and information
  * GET /api/credits/balance
  */
-router.get('/balance', auth, storeAuth, async (req, res) => {
+router.get('/balance', authMiddleware, storeAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const storeId = req.storeId;
@@ -68,7 +68,7 @@ router.get('/balance', auth, storeAuth, async (req, res) => {
  * Check if user can run specific Akeneo schedule
  * GET /api/credits/check-schedule/:scheduleId
  */
-router.get('/check-schedule/:scheduleId', auth, storeAuth, async (req, res) => {
+router.get('/check-schedule/:scheduleId', authMiddleware, storeAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const storeId = req.storeId;
@@ -94,7 +94,7 @@ router.get('/check-schedule/:scheduleId', auth, storeAuth, async (req, res) => {
  * Get credit pricing options
  * GET /api/credits/pricing
  */
-router.get('/pricing', auth, (req, res) => {
+router.get('/pricing', authMiddleware, (req, res) => {
   try {
     const pricing = creditService.getCreditPricing();
 
@@ -118,7 +118,7 @@ router.get('/pricing', auth, (req, res) => {
  * Get usage analytics
  * GET /api/credits/analytics
  */
-router.get('/analytics', auth, storeAuth, async (req, res) => {
+router.get('/analytics', authMiddleware, storeAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const storeId = req.storeId;
@@ -151,8 +151,7 @@ router.get('/analytics', auth, storeAuth, async (req, res) => {
  * Create credit purchase intent (for Stripe integration)
  * POST /api/credits/create-purchase
  */
-router.post('/create-purchase', 
-  auth, 
+router.post('/create-purchase', authMiddleware, 
   storeAuth,
   body('amount_usd').isFloat({ min: 1 }).withMessage('Amount must be at least $1'),
   body('credits_amount').isFloat({ min: 1 }).withMessage('Credits amount must be at least 1'),
@@ -298,8 +297,7 @@ router.post('/fail-purchase',
  * Award bonus credits (admin only)
  * POST /api/credits/award-bonus
  */
-router.post('/award-bonus',
-  auth,
+router.post('/award-bonus', authMiddleware,
   storeAuth,
   body('credits_amount').isFloat({ min: 0.1 }).withMessage('Credits amount must be at least 0.1'),
   body('description').optional().isString(),
@@ -356,7 +354,7 @@ router.post('/award-bonus',
  * Get transaction history
  * GET /api/credits/transactions
  */
-router.get('/transactions', auth, storeAuth, async (req, res) => {
+router.get('/transactions', authMiddleware, storeAuth, async (req, res) => {
   try {
     const userId = req.user.id;
     const storeId = req.storeId;

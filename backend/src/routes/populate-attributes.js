@@ -1,6 +1,6 @@
 const express = require('express');
 const { Product, Attribute, AttributeSet } = require('../models');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { authorize } = require('../middleware/auth');
 
 const router = express.Router();

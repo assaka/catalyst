@@ -1,5 +1,5 @@
 const express = require('express');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { Store, Order, OrderItem, Product } = require('../models');
 
 const router = express.Router();
@@ -10,7 +10,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 // @route   GET /api/payments/connect-status
 // @desc    Get Stripe Connect status
 // @access  Private
-router.get('/connect-status', auth, async (req, res) => {
+router.get('/connect-status', authMiddleware, async (req, res) => {
   try {
     const { store_id } = req.query;
 
@@ -106,7 +106,7 @@ router.get('/connect-status', auth, async (req, res) => {
 // @route   POST /api/payments/connect-account
 // @desc    Create Stripe Connect account
 // @access  Private
-router.post('/connect-account', auth, async (req, res) => {
+router.post('/connect-account', authMiddleware, async (req, res) => {
   try {
     const { store_id, country = 'US', business_type = 'company' } = req.body;
 
@@ -190,7 +190,7 @@ router.post('/connect-account', auth, async (req, res) => {
 // @route   POST /api/payments/connect-link
 // @desc    Create Stripe Connect account link for onboarding
 // @access  Private
-router.post('/connect-link', auth, async (req, res) => {
+router.post('/connect-link', authMiddleware, async (req, res) => {
   try {
     const { return_url, refresh_url, store_id } = req.body;
 

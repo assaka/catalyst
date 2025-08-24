@@ -1,6 +1,6 @@
 const express = require('express');
 const { SeoSettings, Store } = require('../models');
-const auth = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -115,7 +115,7 @@ router.get('/', async (req, res) => {
 // @route   POST /api/seo-settings
 // @desc    Create or update SEO settings
 // @access  Private
-router.post('/', auth, async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
     console.log('🚀 POST /api/seo-settings INCOMING REQUEST');
     console.log('🐛 POST /api/seo-settings DEBUG:', {
@@ -179,7 +179,7 @@ router.post('/', auth, async (req, res) => {
 // @route   PUT /api/seo-settings/:id
 // @desc    Update SEO settings
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     console.log('🚀 PUT /api/seo-settings/:id INCOMING REQUEST');
     console.log('🐛 PUT /api/seo-settings/:id DEBUG:', {

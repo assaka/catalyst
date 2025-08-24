@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const renderIntegration = require('../services/render-integration');
 const StoreDataMigration = require('../services/store-data-migration');
-const authMiddleware = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 const storeDataMigration = new StoreDataMigration();
