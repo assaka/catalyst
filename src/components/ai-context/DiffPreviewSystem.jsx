@@ -73,71 +73,58 @@ const DiffPreviewSystem = ({
     }
   }, [hybridPatches, onCopyDiff]);
 
-  // Memoized statistics - use AST diff result if available, otherwise manual diff result
+  // Memoized statistics from hybrid patches
   const stats = useMemo(() => {
-    const activeResult = astDiffResult || diffResult;
-    if (!activeResult?.summary?.stats) return null;
-    return activeResult.summary.stats;
-  }, [diffResult, astDiffResult]);
+    if (!hybridPatches?.diffHunks) return null;
+    
+    const additions = hybridPatches.diffHunks.reduce((acc, hunk) => 
+      acc + hunk.changes.filter(c => c.type === 'add').length, 0);
+    const deletions = hybridPatches.diffHunks.reduce((acc, hunk) => 
+      acc + hunk.changes.filter(c => c.type === 'del').length, 0);
+    const modifications = hybridPatches.diffHunks.reduce((acc, hunk) => 
+      acc + hunk.changes.filter(c => c.type === 'normal').length, 0);
+    
+    return { additions, deletions, modifications };
+  }, [hybridPatches]);
 
-  // Clear AST diff result when file changes
+  // Clear hybrid patches when file changes
   useEffect(() => {
-    setAstDiffResult(null);
+    setHybridPatches(null);
   }, [fileName]);
 
-  // Listen for AST patches loaded from database
+  // Listen for hybrid customization patches loaded from database
   useEffect(() => {
-    const handleAstPatchesLoaded = (event) => {
+    const handleHybridPatchesLoaded = (event) => {
       const { file, patches } = event.detail;
       if (file.path === fileName && patches.length > 0) {
-        console.log('📋 AST patches loaded in DiffPreviewSystem:', patches);
+        console.log('📋 Hybrid patches loaded in DiffPreviewSystem:', patches);
         const latestPatch = patches[0];
         
-        // Transform AST patch to diff result format that DiffPreviewSystem expects
         if (latestPatch.diffHunks && latestPatch.diffHunks.length > 0) {
-          const transformedDiff = {
-            hasChanges: true,
-            changeCount: latestPatch.diffHunks.reduce((acc, hunk) => acc + hunk.changes.length, 0),
-            timestamp: latestPatch.created_at || new Date().toISOString(),
-            summary: {
-              stats: {
-                additions: latestPatch.diffHunks.reduce((acc, hunk) => 
-                  acc + hunk.changes.filter(c => c.type === 'add').length, 0),
-                deletions: latestPatch.diffHunks.reduce((acc, hunk) => 
-                  acc + hunk.changes.filter(c => c.type === 'del').length, 0),
-                modifications: latestPatch.diffHunks.reduce((acc, hunk) => 
-                  acc + hunk.changes.filter(c => c.type === 'normal').length, 0)
-              },
-              hunks: latestPatch.diffHunks
-            }
-          };
-          setAstDiffResult(transformedDiff);
+          setHybridPatches(latestPatch);
         }
       } else if (file.path === fileName && patches.length === 0) {
-        // Clear AST diff result if no patches found for this file
-        setAstDiffResult(null);
+        setHybridPatches(null);
       }
     };
 
-    window.addEventListener('astPatchesLoaded', handleAstPatchesLoaded);
-    return () => window.removeEventListener('astPatchesLoaded', handleAstPatchesLoaded);
+    window.addEventListener('hybridPatchesLoaded', handleHybridPatchesLoaded);
+    return () => window.removeEventListener('hybridPatchesLoaded', handleHybridPatchesLoaded);
   }, [fileName]);
 
-  // Memoized hunks - use AST diff result if available, otherwise manual diff result
+  // Memoized hunks from hybrid patches
   const hunks = useMemo(() => {
-    const activeResult = astDiffResult || diffResult;
-    if (!activeResult?.summary?.hunks) return [];
-    return activeResult.summary.hunks;
-  }, [diffResult, astDiffResult]);
+    if (!hybridPatches?.diffHunks) return [];
+    return hybridPatches.diffHunks;
+  }, [hybridPatches]);
 
-  const activeResult = astDiffResult || diffResult;
-  if (!activeResult || !activeResult.hasChanges) {
+  if (!hybridPatches || !hybridPatches.diffHunks || hybridPatches.diffHunks.length === 0) {
     return (
       <div className={cn("h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900", className)}>
         <div className="text-center text-gray-500 dark:text-gray-400">
           <AlertCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-          <p className="text-sm">No changes detected</p>
-          <p className="text-xs mt-1">Select a file with changes or edit code to see diff patches</p>
+          <p className="text-sm">No hybrid customizations detected</p>
+          <p className="text-xs mt-1">Create a customization or select a file with version history to see patches</p>
         </div>
       </div>
     );
@@ -149,7 +136,7 @@ const DiffPreviewSystem = ({
       <div className="p-4 border-b bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            {astDiffResult ? 'AST Diff Patches' : 'Manual Edit Preview'}
+            Hybrid Customization Diff
           </h3>
           <button
             onClick={copyEntireDiff}
@@ -270,8 +257,13 @@ const DiffPreviewSystem = ({
       {/* Footer */}
       <div className="p-2 border-t bg-gray-50 dark:bg-gray-800">
         <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          {astDiffResult ? 'AST patches from database' : 'Manual edits'} • Detected at {activeResult.timestamp ? new Date(activeResult.timestamp).toLocaleTimeString() : 'unknown time'}
+          Hybrid customization v{hybridPatches?.metadata?.version_number || 1} • {hybridPatches?.change_type || 'Unknown'} • {hybridPatches?.created_at ? new Date(hybridPatches.created_at).toLocaleTimeString() : 'unknown time'}
         </div>
+        {hybridPatches?.metadata?.customization_name && (
+          <div className="text-xs text-gray-400 text-center mt-1">
+            {hybridPatches.metadata.customization_name} ({hybridPatches.metadata.component_type})
+          </div>
+        )}
       </div>
     </div>
   );

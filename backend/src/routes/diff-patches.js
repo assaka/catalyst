@@ -1,7 +1,7 @@
 /**
- * Diff Patches API Routes
- * Provides endpoints for the existing DiffPreviewSystem.jsx component
- * Bridges hybrid customization system with the Diff tab UI
+ * Hybrid Customization Patches API Routes
+ * Provides endpoints for the DiffPreviewSystem.jsx component
+ * Pure hybrid customization system - no backward compatibility
  */
 
 const express = require('express');
@@ -10,8 +10,8 @@ const { authMiddleware } = require('../middleware/auth');
 const { diffIntegrationService } = require('../services/diff-integration-service');
 
 /**
- * @route   GET /api/diff-patches/:filePath
- * @desc    Get diff patches for a specific file path
+ * @route   GET /api/hybrid-patches/:filePath
+ * @desc    Get hybrid customization patches for a specific file path
  * @access  Private
  */
 router.get('/:filePath(*)', authMiddleware, async (req, res) => {
@@ -19,7 +19,7 @@ router.get('/:filePath(*)', authMiddleware, async (req, res) => {
     const { filePath } = req.params;
     const userId = req.user.id;
     
-    console.log(`📋 Loading diff patches for file: ${filePath}`);
+    console.log(`📋 Loading hybrid patches for file: ${filePath}`);
     
     const patches = await diffIntegrationService.getDiffPatchesForFile(filePath, userId);
     
@@ -28,22 +28,23 @@ router.get('/:filePath(*)', authMiddleware, async (req, res) => {
       data: {
         file: { path: filePath },
         patches: patches,
-        count: patches.length
+        count: patches.length,
+        type: 'hybrid_customization'
       },
-      message: `Loaded ${patches.length} diff patches for ${filePath}`
+      message: `Loaded ${patches.length} hybrid customization patches for ${filePath}`
     });
   } catch (error) {
-    console.error('Error loading diff patches:', error);
+    console.error('Error loading hybrid patches:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to load diff patches'
+      error: 'Failed to load hybrid customization patches'
     });
   }
 });
 
 /**
- * @route   POST /api/diff-patches/broadcast/:filePath
- * @desc    Manually broadcast diff patches for a file to connected clients
+ * @route   POST /api/hybrid-patches/broadcast/:filePath
+ * @desc    Manually broadcast hybrid customization patches for a file to connected clients
  * @access  Private
  */
 router.post('/broadcast/:filePath(*)', authMiddleware, async (req, res) => {
@@ -51,9 +52,9 @@ router.post('/broadcast/:filePath(*)', authMiddleware, async (req, res) => {
     const { filePath } = req.params;
     const userId = req.user.id;
     
-    console.log(`📡 Broadcasting diff patches for file: ${filePath}`);
+    console.log(`📡 Broadcasting hybrid patches for file: ${filePath}`);
     
-    const patches = await diffIntegrationService.loadAndBroadcastDiffPatches(
+    const patches = await diffIntegrationService.loadAndBroadcastHybridPatches(
       filePath, 
       userId, 
       req.io // Socket.io instance if available
@@ -64,22 +65,23 @@ router.post('/broadcast/:filePath(*)', authMiddleware, async (req, res) => {
       data: {
         file: { path: filePath },
         patches: patches,
-        broadcasted: true
+        broadcasted: true,
+        type: 'hybrid_customization'
       },
-      message: `Broadcasted ${patches.length} diff patches for ${filePath}`
+      message: `Broadcasted ${patches.length} hybrid customization patches for ${filePath}`
     });
   } catch (error) {
-    console.error('Error broadcasting diff patches:', error);
+    console.error('Error broadcasting hybrid patches:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to broadcast diff patches'
+      error: 'Failed to broadcast hybrid customization patches'
     });
   }
 });
 
 /**
- * @route   GET /api/diff-patches/files/recent
- * @desc    Get recently modified files with diff patches
+ * @route   GET /api/hybrid-patches/files/recent
+ * @desc    Get recently modified files with hybrid customization patches
  * @access  Private
  */
 router.get('/files/recent', authMiddleware, async (req, res) => {
@@ -88,12 +90,19 @@ router.get('/files/recent', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 10;
     
-    // Get recently modified customizations
+    // Get recently modified hybrid customizations
     const recentCustomizations = await HybridCustomization.findAll({
       where: { user_id: userId, status: 'active' },
       order: [['updated_at', 'DESC']],
       limit: limit,
-      attributes: ['id', 'name', 'file_path', 'component_type', 'updated_at']
+      attributes: ['id', 'name', 'file_path', 'component_type', 'version_number', 'updated_at'],
+      include: [{
+        association: 'snapshots',
+        separate: true,
+        limit: 1,
+        order: [['snapshot_number', 'DESC']],
+        attributes: ['id', 'change_type', 'created_at']
+      }]
     });
     
     const filesList = recentCustomizations.map(customization => ({
@@ -101,22 +110,26 @@ router.get('/files/recent', authMiddleware, async (req, res) => {
       name: customization.name,
       filePath: customization.file_path,
       componentType: customization.component_type,
-      lastModified: customization.updated_at
+      version: customization.version_number,
+      lastModified: customization.updated_at,
+      lastChangeType: customization.snapshots?.[0]?.change_type || 'unknown',
+      hasSnapshots: customization.snapshots && customization.snapshots.length > 0
     }));
     
     res.json({
       success: true,
       data: {
         files: filesList,
-        count: filesList.length
+        count: filesList.length,
+        type: 'hybrid_customization'
       },
-      message: `Found ${filesList.length} recently modified files`
+      message: `Found ${filesList.length} recently modified hybrid customization files`
     });
   } catch (error) {
-    console.error('Error loading recent files:', error);
+    console.error('Error loading recent hybrid files:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to load recent files'
+      error: 'Failed to load recent hybrid customization files'
     });
   }
 });

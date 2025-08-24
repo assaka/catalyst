@@ -202,13 +202,13 @@ class DiffIntegrationService {
   }
 
   /**
-   * Broadcast diff patches loaded event for the frontend
+   * Broadcast hybrid customization patches loaded event for the frontend
    * This is what DiffPreviewSystem.jsx listens for
    * @param {string} filePath - File path
-   * @param {Array} patches - Array of diff patches
+   * @param {Array} patches - Array of hybrid diff patches
    * @param {Object} io - Socket.io instance (optional)
    */
-  broadcastDiffPatchesLoaded(filePath, patches, io = null) {
+  broadcastHybridPatchesLoaded(filePath, patches, io = null) {
     const eventData = {
       file: { path: filePath },
       patches: patches
@@ -216,31 +216,31 @@ class DiffIntegrationService {
 
     // Emit to WebSocket clients if available
     if (io) {
-      io.emit('astPatchesLoaded', eventData);
+      io.emit('hybridPatchesLoaded', eventData);
     }
 
     // Emit to Node.js event emitter if available
     if (this.eventEmitter) {
-      this.eventEmitter.emit('astPatchesLoaded', eventData);
+      this.eventEmitter.emit('hybridPatchesLoaded', eventData);
     }
 
-    console.log(`📡 Broadcasted ${patches.length} diff patches for file: ${filePath}`);
+    console.log(`📡 Broadcasted ${patches.length} hybrid patches for file: ${filePath}`);
   }
 
   /**
-   * Get diff patches and broadcast them
+   * Get hybrid customization patches and broadcast them
    * @param {string} filePath - File path to get diffs for
    * @param {string} userId - User ID for filtering
    * @param {Object} io - Socket.io instance (optional)
    */
-  async loadAndBroadcastDiffPatches(filePath, userId, io = null) {
+  async loadAndBroadcastHybridPatches(filePath, userId, io = null) {
     try {
       const patches = await this.getDiffPatchesForFile(filePath, userId);
-      this.broadcastDiffPatchesLoaded(filePath, patches, io);
+      this.broadcastHybridPatchesLoaded(filePath, patches, io);
       return patches;
     } catch (error) {
-      console.error('Error loading and broadcasting diff patches:', error);
-      this.broadcastDiffPatchesLoaded(filePath, [], io);
+      console.error('Error loading and broadcasting hybrid patches:', error);
+      this.broadcastHybridPatchesLoaded(filePath, [], io);
       return [];
     }
   }
@@ -254,10 +254,10 @@ class DiffIntegrationService {
    */
   async handleSnapshotCreated(snapshot, customization, io = null) {
     try {
-      console.log(`📸 New snapshot created for ${customization.file_path}`);
+      console.log(`📸 New hybrid snapshot created for ${customization.file_path}`);
       
       // Reload and broadcast patches for this file
-      await this.loadAndBroadcastDiffPatches(
+      await this.loadAndBroadcastHybridPatches(
         customization.file_path,
         customization.user_id,
         io
@@ -274,10 +274,10 @@ class DiffIntegrationService {
    */
   async handleRollbackCompleted(customization, io = null) {
     try {
-      console.log(`↩️ Rollback completed for ${customization.file_path}`);
+      console.log(`↩️ Hybrid rollback completed for ${customization.file_path}`);
       
       // Reload and broadcast patches for this file
-      await this.loadAndBroadcastDiffPatches(
+      await this.loadAndBroadcastHybridPatches(
         customization.file_path,
         customization.user_id,
         io
