@@ -19,6 +19,12 @@ router.get('/:filePath(*)', authMiddleware, async (req, res) => {
     const { filePath } = req.params;
     const userId = req.user.id;
     
+    console.log(`🔍 API Request Debug:`);
+    console.log(`   File: ${filePath}`);
+    console.log(`   User ID from req.user.id: ${userId}`);
+    console.log(`   User email: ${req.user.email || "N/A"}`);
+    console.log(`   User role: ${req.user.role || "N/A"}`);
+    
     console.log(`📋 Loading hybrid patches for file: ${filePath}`);
     
     const patches = await diffIntegrationService.getDiffPatchesForFile(filePath, userId);

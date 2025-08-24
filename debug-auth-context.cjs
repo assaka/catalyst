@@ -24,7 +24,7 @@ const { HybridCustomization } = require('./backend/src/models');
     
     // 2. Check what other users exist and test with them
     console.log('\n2. Testing service with different user IDs:');
-    const [users] = await sequelize.query(
+    const users = await sequelize.query(
       'SELECT id, email FROM users WHERE role = \'store_owner\' LIMIT 5',
       { type: sequelize.QueryTypes.SELECT }
     );
@@ -38,37 +38,13 @@ const { HybridCustomization } = require('./backend/src/models');
       }
     }
     
-    // 3. Check JWT token format (if any environment variables exist)
+    // 3. Check authentication setup
     console.log('\n3. Checking authentication setup:');
     console.log(`   JWT_SECRET exists: ${!!process.env.JWT_SECRET}`);
     console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
     
-    // 4. Check if there are any session tokens or cookies that might indicate current user
-    console.log('\n4. Testing token validation:');
-    if (process.env.JWT_SECRET) {
-      // Create a test token for the correct user to see what it would look like
-      const testToken = jwt.sign(
-        { 
-          id: expectedUserId, 
-          email: 'playamin998@gmail.com',
-          role: 'store_owner' 
-        }, 
-        process.env.JWT_SECRET, 
-        { expiresIn: '24h' }
-      );
-      console.log(`   Test token for correct user: ${testToken.substring(0, 50)}...`);
-      
-      // Verify it can be decoded
-      try {
-        const decoded = jwt.verify(testToken, process.env.JWT_SECRET);
-        console.log(`   Token decodes to user ID: ${decoded.id}`);
-      } catch (error) {
-        console.log(`   Token verification failed: ${error.message}`);
-      }
-    }
-    
-    // 5. Simulate the exact API call
-    console.log('\n5. Simulating exact API call logic:');
+    // 4. Simulate the exact API call
+    console.log('\n4. Simulating exact API call logic:');
     
     // Mock request object like the API endpoint receives it
     const mockReq = {
