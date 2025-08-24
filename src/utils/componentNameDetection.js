@@ -231,9 +231,16 @@ export async function resolvePageNameToRoute(pageName, apiConfig = {}) {
   }
   
   try {
-    // Get authentication token from localStorage
-    const token = localStorage.getItem('token');
+    // Get authentication token from localStorage - check multiple possible keys
+    const token = localStorage.getItem('store_owner_auth_token') || 
+                  localStorage.getItem('token') || 
+                  localStorage.getItem('customer_auth_token');
     console.log('🔐 Token for route resolution:', token ? `${token.substring(0, 20)}...` : 'No token found');
+    console.log('🔍 Token sources checked:', {
+      store_owner_auth_token: !!localStorage.getItem('store_owner_auth_token'),
+      token: !!localStorage.getItem('token'),
+      customer_auth_token: !!localStorage.getItem('customer_auth_token')
+    });
     
     // Build headers with authentication
     const headers = {
