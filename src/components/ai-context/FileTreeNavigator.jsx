@@ -333,8 +333,14 @@ const FileTreeNavigator = ({
       // Then, fetch hybrid customization patches from database for this file
       try {
         console.log(`🔍 Fetching hybrid customization patches for file: ${file.path}`);
+        console.log(`📡 API URL: hybrid-patches/${encodeURIComponent(file.path)}`);
+        console.log(`🔐 Auth token available: ${!!apiClient.getToken()}`);
         
         const hybridPatchData = await apiClient.get(`hybrid-patches/${encodeURIComponent(file.path)}`);
+        
+        console.log(`📡 API Response received:`, hybridPatchData);
+        console.log(`📋 Response type: ${typeof hybridPatchData}`);
+        console.log(`📋 Response keys: ${hybridPatchData ? Object.keys(hybridPatchData) : 'null'}`);
         
         if (hybridPatchData && hybridPatchData.success && hybridPatchData.data) {
           const patches = hybridPatchData.data.patches || [];
@@ -375,9 +381,19 @@ const FileTreeNavigator = ({
           }
         } else {
           console.log(`📭 No hybrid customization data returned for ${file.path}`);
+          console.log(`📋 Condition check results:`);
+          console.log(`   - hybridPatchData exists: ${!!hybridPatchData}`);
+          console.log(`   - hybridPatchData.success: ${hybridPatchData?.success}`);
+          console.log(`   - hybridPatchData.data exists: ${!!hybridPatchData?.data}`);
+          console.log(`   - hybridPatchData.data.patches: ${hybridPatchData?.data?.patches}`);
         }
       } catch (error) {
-        console.warn(`⚠️ Failed to fetch hybrid customization patches for ${file.path}:`, error.message);
+        console.error(`❌ Failed to fetch hybrid customization patches for ${file.path}:`, error);
+        console.error(`❌ Error details:`, {
+          message: error.message,
+          status: error.status,
+          stack: error.stack?.split('\n').slice(0, 3).join('\n')
+        });
         // Don't block file selection if hybrid patch fetch fails
       }
     }

@@ -95,16 +95,40 @@ const DiffPreviewSystem = ({
   // Listen for hybrid customization patches loaded from database
   useEffect(() => {
     const handleHybridPatchesLoaded = (event) => {
+      console.log('🎯 DiffPreviewSystem received hybridPatchesLoaded event:', {
+        currentFileName: fileName,
+        eventFilePath: event.detail?.file?.path,
+        patchesCount: event.detail?.patches?.length || 0,
+        eventDetail: event.detail
+      });
+      
       const { file, patches } = event.detail;
       if (file.path === fileName && patches.length > 0) {
         console.log('📋 Hybrid patches loaded in DiffPreviewSystem:', patches);
         const latestPatch = patches[0];
         
+        console.log('🔍 Checking latest patch for diffHunks:', {
+          patchId: latestPatch.id,
+          hasDiffHunks: !!latestPatch.diffHunks,
+          diffHunksCount: latestPatch.diffHunks?.length || 0
+        });
+        
         if (latestPatch.diffHunks && latestPatch.diffHunks.length > 0) {
+          console.log('✅ Setting hybrid patches in DiffPreviewSystem');
           setHybridPatches(latestPatch);
+        } else {
+          console.log('❌ Latest patch has no diffHunks, not setting patches');
+          setHybridPatches(null);
         }
       } else if (file.path === fileName && patches.length === 0) {
+        console.log('📭 No patches for current file, clearing hybrid patches');
         setHybridPatches(null);
+      } else {
+        console.log('🔄 Event is for different file or no match:', {
+          eventForFile: file.path,
+          currentFile: fileName,
+          pathsMatch: file.path === fileName
+        });
       }
     };
 
