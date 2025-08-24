@@ -18,16 +18,19 @@ router.get('/:filePath(*)', authMiddleware, async (req, res) => {
   try {
     const { filePath } = req.params;
     const userId = req.user.id;
+    const storeId = req.user.store_id || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store for now
     
     console.log(`🔍 API Request Debug:`);
     console.log(`   File: ${filePath}`);
     console.log(`   User ID from req.user.id: ${userId}`);
     console.log(`   User email: ${req.user.email || "N/A"}`);
     console.log(`   User role: ${req.user.role || "N/A"}`);
+    console.log(`   Store ID: ${storeId}`);
     
     console.log(`📋 Loading hybrid patches for file: ${filePath}`);
     
-    const patches = await diffIntegrationService.getDiffPatchesForFile(filePath, userId);
+    // Use store-scoped patches instead of user-scoped
+    const patches = await diffIntegrationService.getDiffPatchesForFile(filePath, userId, storeId);
     
     res.json({
       success: true,

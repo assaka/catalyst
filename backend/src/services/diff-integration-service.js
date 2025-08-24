@@ -25,17 +25,28 @@ class DiffIntegrationService {
    * Transforms hybrid system data into DiffPreviewSystem format
    * @param {string} filePath - File path to get diffs for
    * @param {string} userId - User ID for filtering
+   * @param {string} storeId - Store ID for filtering (store-scoped patches)
    * @returns {Array} Array of patches in DiffPreviewSystem format
    */
-  async getDiffPatchesForFile(filePath, userId) {
+  async getDiffPatchesForFile(filePath, userId, storeId = null) {
     try {
-      // Find all customizations for this file path
+      // Find all customizations for this file path (store-scoped)
+      const whereCondition = {
+        file_path: filePath,
+        status: 'active'
+      };
+      
+      // Use store-scoped filtering if storeId provided, otherwise fall back to user-scoped
+      if (storeId) {
+        whereCondition.store_id = storeId;
+        console.log(`🏪 Using store-scoped patches for store: ${storeId}`);
+      } else {
+        whereCondition.user_id = userId;
+        console.log(`👤 Using user-scoped patches for user: ${userId}`);
+      }
+      
       const customizations = await HybridCustomization.findAll({
-        where: {
-          file_path: filePath,
-          user_id: userId,
-          status: 'active'
-        },
+        where: whereCondition,
         include: [{
           association: 'snapshots',
           separate: true,
