@@ -38,14 +38,14 @@ class CustomizationInjector {
 
   // Load customizations from database
   async loadCustomizations(userId, storeId) {
-    const { CodeCustomization } = require('../models');
+    const { HybridCustomization } = require('../models');
     
-    const customizations = await CodeCustomization.findAll({
+    const customizations = await HybridCustomization.findAll({
       where: {
-        user_id: userId,
-        store_id: storeId,
-        is_active: true,
-      }
+        store_id: storeId,  // Use store-scoped instead of user-scoped
+        status: 'active'
+      },
+      order: [['created_at', 'DESC']]
     });
 
     this.customizations.clear();

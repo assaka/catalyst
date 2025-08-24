@@ -11,7 +11,7 @@ const RenderDeployment = sequelize.define('RenderDeployment', {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'code_customizations',
+      model: 'hybrid_customizations',
       key: 'id'
     },
     onDelete: 'CASCADE'
@@ -110,7 +110,7 @@ const RenderDeployment = sequelize.define('RenderDeployment', {
 
 // Define associations
 RenderDeployment.associate = (models) => {
-  RenderDeployment.belongsTo(models.CodeCustomization, {
+  RenderDeployment.belongsTo(models.HybridCustomization, {
     foreignKey: 'customization_id',
     as: 'customization'
   });
@@ -158,7 +158,7 @@ RenderDeployment.findByUser = function(userId, options = {}) {
     },
     include: options.include || [
       {
-        model: this.sequelize.models.CodeCustomization,
+        model: this.sequelize.models.HybridCustomization,
         as: 'customization',
         attributes: ['id', 'name', 'description', 'component_type']
       }
@@ -187,7 +187,7 @@ RenderDeployment.findActiveDeployments = function(options = {}) {
     },
     include: options.include || [
       {
-        model: this.sequelize.models.CodeCustomization,
+        model: this.sequelize.models.HybridCustomization,
         as: 'customization',
         attributes: ['id', 'name']
       },

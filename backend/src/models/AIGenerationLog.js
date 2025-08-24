@@ -20,7 +20,7 @@ const AIGenerationLog = sequelize.define('AIGenerationLog', {
     type: DataTypes.UUID,
     allowNull: true,
     references: {
-      model: 'code_customizations',
+      model: 'hybrid_customizations',
       key: 'id'
     },
     onDelete: 'CASCADE'
@@ -106,7 +106,7 @@ AIGenerationLog.associate = (models) => {
     as: 'user'
   });
   
-  AIGenerationLog.belongsTo(models.CodeCustomization, {
+  AIGenerationLog.belongsTo(models.HybridCustomization, {
     foreignKey: 'customization_id',
     as: 'customization'
   });
@@ -207,7 +207,7 @@ AIGenerationLog.getRecentGenerations = function(userId, limit = 20) {
     where: { user_id: userId },
     include: [
       {
-        model: this.sequelize.models.CodeCustomization,
+        model: this.sequelize.models.HybridCustomization,
         as: 'customization',
         attributes: ['id', 'name', 'component_type'],
         required: false

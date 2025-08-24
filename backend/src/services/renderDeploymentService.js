@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { RenderDeployment, CodeCustomization, RenderOAuthToken } = require('../models');
+const { RenderDeployment, HybridCustomization, RenderOAuthToken } = require('../models');
 
 /**
  * Render.com Deployment Service
@@ -20,7 +20,7 @@ class RenderDeploymentService {
       console.log(`🚀 Starting deployment for customization ${customizationId}`);
       
       // Get customization and user's Render credentials
-      const customization = await CodeCustomization.findByPk(customizationId);
+      const customization = await HybridCustomization.findByPk(customizationId);
       if (!customization) {
         throw new Error('Customization not found');
       }
@@ -203,7 +203,7 @@ class RenderDeploymentService {
               await deployment.addBuildLog('Deployment completed successfully! 🎉');
               
               // Update the customization record
-              const customization = await CodeCustomization.findByPk(deployment.customization_id);
+              const customization = await HybridCustomization.findByPk(deployment.customization_id);
               if (customization) {
                 await customization.deploy(deployment.render_service_id, status.url);
               }
