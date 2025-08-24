@@ -262,6 +262,14 @@ const FileTreeNavigator = ({
         }
       } else {
         console.log('❌ No valid files or unsuccessful response, falling back to demo');
+        
+        // Log diagnostic information for debugging
+        if (success) {
+          console.log(`🔍 Response was successful but files array was ${Array.isArray(files) ? 'empty' : 'invalid'}`);
+          console.log(`📊 Files data:`, files);
+        } else {
+          console.log(`❌ Response was not successful. Data:`, data);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch file tree from API, using demo structure:', error);
@@ -542,6 +550,23 @@ const FileTreeNavigator = ({
           File Explorer
         </h3>
         <div className="flex items-center space-x-1">
+          {/* Debug buttons - remove in production */}
+          <button
+            onClick={async () => {
+              console.log('🧪 Testing GitHub API...');
+              try {
+                const testData = await apiClient.get('proxy-source-files/test-github');
+                console.log('🧪 Test GitHub API response:', testData);
+              } catch (error) {
+                console.error('🧪 Test GitHub API failed:', error);
+              }
+            }}
+            className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600"
+            title="Test GitHub API"
+          >
+            Test
+          </button>
+          
           <button
             onClick={handleRefresh}
             disabled={loading}
