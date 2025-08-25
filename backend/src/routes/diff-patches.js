@@ -118,7 +118,8 @@ router.post('/create', authMiddleware, async (req, res) => {
     
     const userId = req.user.id;
     const storeId = req.user.store_id || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store for now
-    const requestTimestamp = new Date().toISOString();
+    const requestStartTime = new Date();
+    const requestTimestamp = requestStartTime.toISOString();
     const requestId = Math.random().toString(36).substring(2, 15);
     
     console.log(`🚀 ============= AUTO-SAVE REQUEST START [${requestId}] =============`);
@@ -562,7 +563,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     };
     
     const endTimestamp = new Date().toISOString();
-    const processingTimeMs = Date.now() - new Date(requestTimestamp).getTime();
+    const processingTimeMs = Date.now() - requestStartTime.getTime();
     
     console.log(`🎉 ============= AUTO-SAVE REQUEST SUCCESS [${requestId}] =============`);
     console.log(`   Processing time: ${processingTimeMs}ms`);
@@ -573,7 +574,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     res.json(responseData);
   } catch (error) {
     const errorTimestamp = new Date().toISOString();
-    const processingTimeMs = Date.now() - new Date(requestTimestamp).getTime();
+    const processingTimeMs = Date.now() - requestStartTime.getTime();
     
     console.error(`❌ ============= AUTO-SAVE REQUEST ERROR [${requestId}] =============`);
     console.error(`   Processing time: ${processingTimeMs}ms`);
