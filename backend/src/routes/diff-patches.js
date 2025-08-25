@@ -105,12 +105,23 @@ router.post('/create', authMiddleware, async (req, res) => {
       changeType = 'manual_edit'
     } = req.body;
     
+    // Validate change type against database constraint
+    const validChangeTypes = ['initial', 'ai_modification', 'manual_edit', 'rollback', 'merge'];
+    if (!validChangeTypes.includes(changeType)) {
+      return res.status(400).json({
+        success: false,
+        error: `Invalid changeType '${changeType}'. Must be one of: ${validChangeTypes.join(', ')}`
+      });
+    }
+    
     const userId = req.user.id;
     const storeId = req.user.store_id || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store for now
     
     console.log(`📝 Auto-saving changes for: ${filePath}`);
     console.log(`   User ID: ${userId}`);
     console.log(`   Store ID: ${storeId}`);
+    console.log(`   Original code length: ${originalCode?.length || 0}`);
+    console.log(`   Modified code length: ${modifiedCode?.length || 0}`);
     
     // Check if customization already exists for this file path (store-scoped)
     let customization = await HybridCustomization.findOne({
@@ -173,30 +184,94 @@ router.post('/create', authMiddleware, async (req, res) => {
       
       // Use the createSnapshot method to ensure proper AST diff generation
       await existingOpenSnapshot.destroy(); // Remove the old one
-      snapshot = await HybridCustomization.createSnapshot({
+      console.log(`🔧 Creating snapshot with data:`, {
         customizationId: customization.id,
         changeType: changeType,
         changeSummary: changeSummary || 'Auto-saved changes',
-        changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
-        codeBefore: originalCode,
-        codeAfter: modifiedCode,
-        createdBy: userId,
-        status: 'open' // Keep open for editing and undo capability
+        hasOriginalCode: !!originalCode,
+        hasModifiedCode: !!modifiedCode,
+        userId: userId
       });
+      
+      try {
+        snapshot = await HybridCustomization.createSnapshot({
+          customizationId: customization.id,
+          changeType: changeType,
+          changeSummary: changeSummary || 'Auto-saved changes',
+          changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
+          codeBefore: originalCode,
+          codeAfter: modifiedCode,
+          createdBy: userId,
+          status: 'open' // Keep open for editing and undo capability
+        });
+      } catch (snapshotError) {
+        console.error(`❌ Error creating snapshot:`, snapshotError.message);
+        console.error(`❌ Error details:`, {
+          customizationId: customization.id,
+          changeType,
+          userId,
+          hasOriginalCode: !!originalCode,
+          hasModifiedCode: !!modifiedCode
+        });
+        console.error(`❌ Full stack trace:`, snapshotError.stack);
+        
+        // Check for specific constraint violations
+        if (snapshotError.message.includes('violates check constraint')) {
+          throw new Error(`Database constraint violation: ${snapshotError.message}. Check that changeType '${changeType}' is valid.`);
+        } else if (snapshotError.message.includes('foreign key')) {
+          throw new Error(`Foreign key constraint violation: ${snapshotError.message}. Check that customizationId and userId exist.`);
+        } else {
+          throw snapshotError;
+        }
+      }
+      
+      console.log(`✅ Snapshot created successfully:`, snapshot.id);
     } else {
       // Create new open snapshot with full AST analysis
       console.log(`🆕 Creating new open snapshot for customization: ${customization.id}`);
       
-      snapshot = await HybridCustomization.createSnapshot({
+      console.log(`🔧 Creating NEW snapshot with data:`, {
         customizationId: customization.id,
         changeType: changeType,
         changeSummary: changeSummary || 'Initial auto-save',
-        changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
-        codeBefore: originalCode,
-        codeAfter: modifiedCode,
-        createdBy: userId,
-        status: 'open' // Keep open for editing and undo capability
+        hasOriginalCode: !!originalCode,
+        hasModifiedCode: !!modifiedCode,
+        userId: userId
       });
+      
+      try {
+        snapshot = await HybridCustomization.createSnapshot({
+          customizationId: customization.id,
+          changeType: changeType,
+          changeSummary: changeSummary || 'Initial auto-save',
+          changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
+          codeBefore: originalCode,
+          codeAfter: modifiedCode,
+          createdBy: userId,
+          status: 'open' // Keep open for editing and undo capability
+        });
+      } catch (snapshotError) {
+        console.error(`❌ Error creating NEW snapshot:`, snapshotError.message);
+        console.error(`❌ Error details:`, {
+          customizationId: customization.id,
+          changeType,
+          userId,
+          hasOriginalCode: !!originalCode,
+          hasModifiedCode: !!modifiedCode
+        });
+        console.error(`❌ Full stack trace:`, snapshotError.stack);
+        
+        // Check for specific constraint violations
+        if (snapshotError.message.includes('violates check constraint')) {
+          throw new Error(`Database constraint violation: ${snapshotError.message}. Check that changeType '${changeType}' is valid.`);
+        } else if (snapshotError.message.includes('foreign key')) {
+          throw new Error(`Foreign key constraint violation: ${snapshotError.message}. Check that customizationId and userId exist.`);
+        } else {
+          throw snapshotError;
+        }
+      }
+      
+      console.log(`✅ NEW Snapshot created successfully:`, snapshot.id);
     }
     
     console.log(`📸 Managed open snapshot: ${snapshot.id} (status: ${snapshot.status}) with AST diff`);
