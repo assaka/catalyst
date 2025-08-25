@@ -776,6 +776,200 @@ class ASTAnalyzer {
     });
     return count;
   }
+
+  /**
+   * Calculate diff between two code analyses
+   * @param {Object} beforeAnalysis - Analysis of code before changes
+   * @param {Object} afterAnalysis - Analysis of code after changes
+   * @returns {Object} Diff object with changes
+   */
+  calculateDiff(beforeAnalysis, afterAnalysis) {
+    try {
+      const diff = {
+        type: 'ast_diff',
+        timestamp: new Date().toISOString(),
+        changes: {
+          functions: this._calculateSymbolDiff(beforeAnalysis.functions || [], afterAnalysis.functions || []),
+          variables: this._calculateSymbolDiff(beforeAnalysis.variables || [], afterAnalysis.variables || []),
+          classes: this._calculateSymbolDiff(beforeAnalysis.classes || [], afterAnalysis.classes || []),
+          imports: this._calculateSymbolDiff(beforeAnalysis.imports || [], afterAnalysis.imports || []),
+          exports: this._calculateSymbolDiff(beforeAnalysis.exports || [], afterAnalysis.exports || []),
+          jsx: this._calculateSymbolDiff(beforeAnalysis.jsx || [], afterAnalysis.jsx || []),
+          types: this._calculateSymbolDiff(beforeAnalysis.types || [], afterAnalysis.types || [])
+        },
+        summary: {
+          hasChanges: false,
+          additionsCount: 0,
+          modificationsCount: 0,
+          deletionsCount: 0
+        }
+      };
+
+      // Calculate summary statistics
+      Object.values(diff.changes).forEach(symbolDiff => {
+        if (symbolDiff.added.length > 0 || symbolDiff.modified.length > 0 || symbolDiff.removed.length > 0) {
+          diff.summary.hasChanges = true;
+        }
+        diff.summary.additionsCount += symbolDiff.added.length;
+        diff.summary.modificationsCount += symbolDiff.modified.length;
+        diff.summary.deletionsCount += symbolDiff.removed.length;
+      });
+
+      return diff;
+    } catch (error) {
+      console.warn('Error calculating AST diff:', error.message);
+      return {
+        type: 'ast_diff',
+        timestamp: new Date().toISOString(),
+        changes: {},
+        summary: { hasChanges: false, additionsCount: 0, modificationsCount: 0, deletionsCount: 0 },
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Extract affected symbols from a diff
+   * @param {Object} astDiff - The AST diff object
+   * @returns {Array} Array of affected symbols
+   */
+  extractAffectedSymbols(astDiff) {
+    try {
+      const affectedSymbols = [];
+
+      if (!astDiff || !astDiff.changes) {
+        return affectedSymbols;
+      }
+
+      Object.entries(astDiff.changes).forEach(([symbolType, symbolDiff]) => {
+        // Add symbols that were added
+        symbolDiff.added?.forEach(symbol => {
+          affectedSymbols.push({
+            name: symbol.name || symbol.tagName || symbol.modulePath || 'unknown',
+            type: symbolType,
+            changeType: 'added',
+            line: symbol.line,
+            raw: symbol.raw
+          });
+        });
+
+        // Add symbols that were modified
+        symbolDiff.modified?.forEach(symbol => {
+          affectedSymbols.push({
+            name: symbol.name || symbol.tagName || symbol.modulePath || 'unknown',
+            type: symbolType,
+            changeType: 'modified',
+            line: symbol.line,
+            raw: symbol.raw
+          });
+        });
+
+        // Add symbols that were removed
+        symbolDiff.removed?.forEach(symbol => {
+          affectedSymbols.push({
+            name: symbol.name || symbol.tagName || symbol.modulePath || 'unknown',
+            type: symbolType,
+            changeType: 'removed',
+            line: symbol.line,
+            raw: symbol.raw
+          });
+        });
+      });
+
+      return affectedSymbols;
+    } catch (error) {
+      console.warn('Error extracting affected symbols:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Calculate diff for specific symbol types
+   * @private
+   */
+  _calculateSymbolDiff(beforeSymbols, afterSymbols) {
+    const diff = {
+      added: [],
+      modified: [],
+      removed: []
+    };
+
+    // Create maps for efficient lookup
+    const beforeMap = new Map();
+    const afterMap = new Map();
+
+    beforeSymbols.forEach(symbol => {
+      const key = this._getSymbolKey(symbol);
+      beforeMap.set(key, symbol);
+    });
+
+    afterSymbols.forEach(symbol => {
+      const key = this._getSymbolKey(symbol);
+      afterMap.set(key, symbol);
+    });
+
+    // Find added symbols (in after but not in before)
+    afterMap.forEach((symbol, key) => {
+      if (!beforeMap.has(key)) {
+        diff.added.push(symbol);
+      }
+    });
+
+    // Find removed symbols (in before but not in after)
+    beforeMap.forEach((symbol, key) => {
+      if (!afterMap.has(key)) {
+        diff.removed.push(symbol);
+      }
+    });
+
+    // Find modified symbols (in both but different)
+    beforeMap.forEach((beforeSymbol, key) => {
+      const afterSymbol = afterMap.get(key);
+      if (afterSymbol && this._symbolsAreDifferent(beforeSymbol, afterSymbol)) {
+        diff.modified.push({
+          before: beforeSymbol,
+          after: afterSymbol,
+          ...afterSymbol // Use after symbol as the base for modified symbol
+        });
+      }
+    });
+
+    return diff;
+  }
+
+  /**
+   * Get a unique key for a symbol for comparison
+   * @private
+   */
+  _getSymbolKey(symbol) {
+    // Different symbol types use different identifiers
+    return symbol.name || symbol.tagName || symbol.modulePath || symbol.raw || JSON.stringify(symbol);
+  }
+
+  /**
+   * Check if two symbols are different
+   * @private
+   */
+  _symbolsAreDifferent(before, after) {
+    // Compare key properties based on symbol type
+    const compareProps = ['parameters', 'initialValue', 'extends', 'namedImports', 'defaultImport'];
+    
+    for (const prop of compareProps) {
+      if (before[prop] !== after[prop]) {
+        // For arrays, do a deep comparison
+        if (Array.isArray(before[prop]) && Array.isArray(after[prop])) {
+          if (JSON.stringify(before[prop]) !== JSON.stringify(after[prop])) {
+            return true;
+          }
+        } else if (before[prop] !== after[prop]) {
+          return true;
+        }
+      }
+    }
+
+    // Compare line numbers (indicates position changes)
+    return before.line !== after.line;
+  }
 }
 
 module.exports = ASTAnalyzer;

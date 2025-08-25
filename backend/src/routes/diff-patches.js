@@ -123,24 +123,71 @@ router.post('/create', authMiddleware, async (req, res) => {
     
     let result;
     
+    // Use upsert approach for both customization and snapshot creation
+    console.log(`📝 Upserting customization and open snapshot for: ${filePath}`);
+    
+    // Find or create customization (simpler than upsert due to constraints)
+    customization = await HybridCustomization.findOne({
+      where: { file_path: filePath, store_id: storeId, status: 'active' }
+    });
+    
+    let wasCreated = false;
     if (!customization) {
-      // Create new customization with initial open snapshot
-      console.log(`🆕 Creating new customization with open snapshot for: ${filePath}`);
-      
+      // Create new customization
       customization = await HybridCustomization.create({
+        file_path: filePath,
+        store_id: storeId,
+        user_id: userId,
         name: `Auto-saved changes to ${filePath.split('/').pop()}`,
         description: 'Auto-generated from manual edits',
         component_type: 'component',
-        file_path: filePath,
-        user_id: userId,
-        store_id: storeId,
         baseline_code: originalCode,
+        current_code: modifiedCode,
         status: 'active',
         version_number: 1
       });
+      wasCreated = true;
+    } else {
+      // Update current_code for existing customization
+      await customization.update({ current_code: modifiedCode });
+    }
+    
+    console.log(`${wasCreated ? '🆕 Created' : '📝 Updated'} customization: ${customization.id}`);
+    
+    // Get next snapshot number for this customization
+    const { CustomizationSnapshot } = require('../models/HybridCustomization');
+    const maxSnapshot = await CustomizationSnapshot.max('snapshot_number', {
+      where: { customization_id: customization.id }
+    });
+    const nextSnapshotNumber = (maxSnapshot || 0) + 1;
+    
+    // Check for existing open snapshot
+    let existingOpenSnapshot = await CustomizationSnapshot.findOne({
+      where: { customization_id: customization.id, status: 'open' }
+    });
+    
+    let snapshot;
+    if (existingOpenSnapshot) {
+      // Update existing open snapshot with new code and AST diff
+      console.log(`📝 Updating existing open snapshot: ${existingOpenSnapshot.id}`);
       
-      // Create initial open snapshot
-      const snapshot = await HybridCustomization.createSnapshot({
+      // Use the createSnapshot method to ensure proper AST diff generation
+      await existingOpenSnapshot.destroy(); // Remove the old one
+      snapshot = await HybridCustomization.createSnapshot({
+        customizationId: customization.id,
+        changeType: changeType,
+        changeSummary: changeSummary || 'Auto-saved changes',
+        changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
+        codeBefore: originalCode,
+        codeAfter: modifiedCode,
+        createdBy: userId,
+        status: 'open' // Keep open for editing and undo capability
+      });
+    } else {
+      // Create new open snapshot with full AST analysis
+      console.log(`🆕 Creating new open snapshot for customization: ${customization.id}`);
+      
+      snapshot = await HybridCustomization.createSnapshot({
         customizationId: customization.id,
         changeType: changeType,
         changeSummary: changeSummary || 'Initial auto-save',
@@ -150,21 +197,11 @@ router.post('/create', authMiddleware, async (req, res) => {
         createdBy: userId,
         status: 'open' // Keep open for editing and undo capability
       });
-      
-      result = { success: true, customization, snapshot };
-    } else {
-      // Use new open snapshot management method for existing customizations
-      console.log(`📝 Updating open snapshot for existing customization: ${customization.id}`);
-      
-      result = await HybridCustomization.createOrUpdateOpenSnapshot(customization.id, {
-        changeType: changeType,
-        changeSummary: changeSummary || 'Auto-saved changes',
-        changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
-        codeBefore: originalCode,
-        codeAfter: modifiedCode,
-        createdBy: userId
-      });
     }
+    
+    console.log(`📸 Managed open snapshot: ${snapshot.id} (status: ${snapshot.status}) with AST diff`);
+    
+    result = { success: true, customization, snapshot };
     
     if (!result.success) {
       throw new Error(result.error || 'Failed to create or update open snapshot');
