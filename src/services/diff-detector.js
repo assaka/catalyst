@@ -308,7 +308,8 @@ export function createDebouncedDiffDetector(callback, delay = 500, initialOrigin
       if (originalCode) {
         const result = detectManualEdit(originalCode, currentCode);
         // Always call callback - it will indicate hasChanges: false when reverted to original
-        callback(result);
+        // Pass both the result AND the currentCode used in diff detection
+        callback(result, currentCode);
       }
     }, delay);
   };

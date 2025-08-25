@@ -75,7 +75,7 @@ const CodeEditor = ({
         diffDetectorRef.current = null;
       }
       
-      diffDetectorRef.current = createDebouncedDiffDetector((diffResult) => {
+      diffDetectorRef.current = createDebouncedDiffDetector((diffResult, currentCodeUsedInDiff) => {
         setDiffResult(diffResult);
         onManualEdit?.(diffResult);
         
@@ -101,21 +101,20 @@ const CodeEditor = ({
           },
           currentEditor: {
             available: !!editorInstance,
-            method: 'editorInstance?.getValue()'
+            method: 'passed from diff detector'
           }
         });
         
-        // Get current editor content for additional verification
-        const currentEditorContent = editorInstance?.getValue() || value;
-        const isIdenticalToOriginal = originalCode === currentEditorContent;
+        // Use the SAME content that was used in diff detection for comparison
+        const isIdenticalToOriginal = originalCode === currentCodeUsedInDiff;
         
-        console.log('🔍 CONTENT COMPARISON CHECK:', {
+        console.log('🔍 CONTENT COMPARISON CHECK (using diff detector content):', {
           originalLength: originalCode?.length || 0,
-          currentLength: currentEditorContent?.length || 0,
-          lengthDifference: Math.abs((originalCode?.length || 0) - (currentEditorContent?.length || 0)),
+          currentLength: currentCodeUsedInDiff?.length || 0,
+          lengthDifference: Math.abs((originalCode?.length || 0) - (currentCodeUsedInDiff?.length || 0)),
           isIdentical: isIdenticalToOriginal,
           firstLineOriginal: originalCode?.split('\n')[0] || 'null',
-          firstLineCurrent: currentEditorContent?.split('\n')[0] || 'null',
+          firstLineCurrent: currentCodeUsedInDiff?.split('\n')[0] || 'null',
           diagnosis: isIdenticalToOriginal ? '❌ FRONTEND ISSUE: Editor content = original baseline' : '✅ Content differs, should detect changes'
         });
 
