@@ -242,6 +242,13 @@ const CustomizationSnapshot = sequelize.define('CustomizationSnapshot', {
       model: 'users',
       key: 'id'
     }
+  },
+  
+  // Snapshot status for 'open' during editing vs 'finalized' after publish
+  status: {
+    type: DataTypes.ENUM('open', 'finalized'),
+    defaultValue: 'open',
+    comment: 'Status: open (allows undo during editing), finalized (locked for rollback after publish)'
   }
 }, {
   tableName: 'customization_snapshots',
@@ -458,7 +465,8 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
     aiPrompt = null,
     aiExplanation = null,
     createdBy,
-    aiMetadata = null
+    aiMetadata = null,
+    status = 'open' // Default to 'open' for undo capability during editing
   } = params;
 
   // Get next snapshot number
@@ -521,7 +529,8 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
     ai_prompt: aiPrompt,
     ai_explanation: aiExplanation,
     ai_metadata: aiMetadata,
-    created_by: createdBy
+    created_by: createdBy,
+    status: status // Add snapshot status for open/finalized state management
   }, { transaction });
 };
 
@@ -858,6 +867,149 @@ HybridCustomization.generatePatchPreview = function(astDiff, patchOperations) {
   if (removeOps > 0) summary.push(`- ${removeOps} deletion(s)`);
 
   return summary.join(', ') || 'Code modifications applied';
+};
+
+/**
+ * Get the current open snapshot for a customization
+ * @param {string} customizationId - Customization ID
+ * @returns {Object|null} Current open snapshot or null
+ */
+HybridCustomization.getCurrentOpenSnapshot = async function(customizationId) {
+  return await CustomizationSnapshot.findOne({
+    where: {
+      customization_id: customizationId,
+      status: 'open'
+    },
+    order: [['snapshot_number', 'DESC']]
+  });
+};
+
+/**
+ * Update the current open snapshot with new code (for auto-save during editing)
+ * @param {string} customizationId - Customization ID
+ * @param {string} modifiedCode - Current code state
+ * @param {string} userId - User making the change
+ * @returns {Object} Result of the update
+ */
+HybridCustomization.updateOpenSnapshot = async function(customizationId, modifiedCode, userId) {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const openSnapshot = await this.getCurrentOpenSnapshot(customizationId);
+    
+    if (!openSnapshot) {
+      throw new Error('No open snapshot found for this customization');
+    }
+
+    // Update the open snapshot with new code
+    await openSnapshot.update({
+      code_after: modifiedCode,
+      modified_hash: require('crypto').createHash('sha256').update(modifiedCode).digest('hex'),
+      change_description: `Auto-saved at ${new Date().toLocaleTimeString()}`
+    }, { transaction });
+
+    // Update the customization's current code
+    const customization = await HybridCustomization.findByPk(customizationId, { transaction });
+    if (customization) {
+      await customization.update({
+        current_code: modifiedCode
+      }, { transaction });
+    }
+
+    await transaction.commit();
+    
+    return {
+      success: true,
+      snapshot: openSnapshot,
+      message: 'Open snapshot updated with auto-save'
+    };
+  } catch (error) {
+    await transaction.rollback();
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Finalize the current open snapshot (called on 'Publish')
+ * @param {string} customizationId - Customization ID
+ * @param {string} userId - User performing the finalization
+ * @returns {Object} Result of the finalization
+ */
+HybridCustomization.finalizeOpenSnapshot = async function(customizationId, userId) {
+  const transaction = await sequelize.transaction();
+  
+  try {
+    const openSnapshot = await this.getCurrentOpenSnapshot(customizationId);
+    
+    if (!openSnapshot) {
+      return {
+        success: true,
+        message: 'No open snapshot to finalize'
+      };
+    }
+
+    // Change status from 'open' to 'finalized'
+    await openSnapshot.update({
+      status: 'finalized',
+      change_description: `${openSnapshot.change_description || ''} - Finalized on publish at ${new Date().toLocaleTimeString()}`
+    }, { transaction });
+
+    await transaction.commit();
+    
+    return {
+      success: true,
+      snapshot: openSnapshot,
+      message: 'Snapshot finalized successfully'
+    };
+  } catch (error) {
+    await transaction.rollback();
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+};
+
+/**
+ * Create or update open snapshot for continuous editing
+ * @param {Object} params - Snapshot parameters
+ * @returns {Object} Result of create/update operation
+ */
+HybridCustomization.createOrUpdateOpenSnapshot = async function(params) {
+  const { customizationId, modifiedCode, changeSummary, createdBy } = params;
+  
+  const existingOpenSnapshot = await this.getCurrentOpenSnapshot(customizationId);
+  
+  if (existingOpenSnapshot) {
+    // Update existing open snapshot
+    return await this.updateOpenSnapshot(customizationId, modifiedCode, createdBy);
+  } else {
+    // Create new open snapshot
+    const customization = await HybridCustomization.findByPk(customizationId);
+    if (!customization) {
+      return { success: false, error: 'Customization not found' };
+    }
+
+    const snapshot = await this.createSnapshot({
+      customizationId,
+      changeType: 'manual_edit',
+      changeSummary: changeSummary || 'Auto-save during editing',
+      changeDescription: 'Open snapshot for continuous editing',
+      codeBefore: customization.current_code,
+      codeAfter: modifiedCode,
+      createdBy,
+      status: 'open' // Create as open for undo capability
+    });
+
+    return {
+      success: true,
+      snapshot,
+      message: 'New open snapshot created'
+    };
+  }
 };
 
 // Static methods for querying

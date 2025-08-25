@@ -90,14 +90,12 @@ router.post('/broadcast/:filePath(*)', authMiddleware, async (req, res) => {
 
 /**
  * @route   POST /api/hybrid-patches/create
- * @desc    Create a hybrid customization patch for auto-save functionality  
+ * @desc    Create a hybrid customization patch for auto-save functionality with open snapshot management
  * @access  Private
  */
 router.post('/create', authMiddleware, async (req, res) => {
   try {
     const { HybridCustomization } = require('../models/HybridCustomization');
-    const VersionControlService = require('../services/version-control-service');
-    const versionControl = new VersionControlService();
     
     const {
       filePath,
@@ -110,7 +108,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const storeId = req.user.store_id || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store for now
     
-    console.log(`📝 Creating hybrid patch for: ${filePath}`);
+    console.log(`📝 Auto-saving changes for: ${filePath}`);
     console.log(`   User ID: ${userId}`);
     console.log(`   Store ID: ${storeId}`);
     
@@ -123,50 +121,62 @@ router.post('/create', authMiddleware, async (req, res) => {
       }
     });
     
+    let result;
+    
     if (!customization) {
-      // Create new customization
-      console.log(`🆕 Creating new customization for: ${filePath}`);
-      const result = await versionControl.createCustomization({
-        userId: userId,
-        storeId: storeId,
+      // Create new customization with initial open snapshot
+      console.log(`🆕 Creating new customization with open snapshot for: ${filePath}`);
+      
+      customization = await HybridCustomization.create({
         name: `Auto-saved changes to ${filePath.split('/').pop()}`,
-        description: `Auto-generated from manual edits`,
-        componentType: 'component',
-        filePath: filePath,
-        baselineCode: originalCode,
-        initialCode: modifiedCode,
-        changeType: changeType,
-        changeSummary: changeSummary || 'Manual edits detected'
+        description: 'Auto-generated from manual edits',
+        component_type: 'component',
+        file_path: filePath,
+        user_id: userId,
+        store_id: storeId,
+        baseline_code: originalCode,
+        status: 'active',
+        version_number: 1
       });
       
-      if (result.success) {
-        customization = result.customization;
-      } else {
-        throw new Error(result.error || 'Failed to create customization');
-      }
-    } else {
-      // Add changes to existing customization
-      console.log(`📝 Adding changes to existing customization: ${customization.id}`);
-      const result = await versionControl.applyChanges(customization.id, {
-        modifiedCode: modifiedCode,
-        changeSummary: changeSummary || 'Manual edits detected',
-        changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
+      // Create initial open snapshot
+      const snapshot = await HybridCustomization.createSnapshot({
+        customizationId: customization.id,
         changeType: changeType,
+        changeSummary: changeSummary || 'Initial auto-save',
+        changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
+        codeBefore: originalCode,
+        codeAfter: modifiedCode,
+        createdBy: userId,
+        status: 'open' // Keep open for editing and undo capability
+      });
+      
+      result = { success: true, customization, snapshot };
+    } else {
+      // Use new open snapshot management method for existing customizations
+      console.log(`📝 Updating open snapshot for existing customization: ${customization.id}`);
+      
+      result = await HybridCustomization.createOrUpdateOpenSnapshot(customization.id, {
+        changeType: changeType,
+        changeSummary: changeSummary || 'Auto-saved changes',
+        changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
+        codeBefore: originalCode,
+        codeAfter: modifiedCode,
         createdBy: userId
       });
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to apply changes');
-      }
-      
-      // Broadcast diff patches to Diff tab
-      if (result.snapshot && customization) {
-        await diffIntegrationService.handleSnapshotCreated(
-          result.snapshot, 
-          customization, 
-          req.io // Socket.io instance if available
-        );
-      }
+    }
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Failed to create or update open snapshot');
+    }
+    
+    // Broadcast diff patches to Diff tab if snapshot was created/updated
+    if (result.snapshot && customization) {
+      await diffIntegrationService.handleSnapshotCreated(
+        result.snapshot, 
+        customization, 
+        req.io // Socket.io instance if available
+      );
     }
     
     res.json({
@@ -175,15 +185,80 @@ router.post('/create', authMiddleware, async (req, res) => {
         id: customization.id,
         filePath: filePath,
         type: 'hybrid_customization',
-        message: 'Auto-saved as hybrid customization'
+        snapshotId: result.snapshot?.id,
+        snapshotStatus: result.snapshot?.status || 'open',
+        message: result.isNewSnapshot ? 'Created new open snapshot' : 'Updated existing open snapshot'
       },
-      message: `Successfully saved hybrid customization for ${filePath}`
+      message: `Successfully auto-saved changes for ${filePath} with open snapshot management`
     });
   } catch (error) {
-    console.error('Error creating hybrid patch:', error);
+    console.error('Error creating hybrid patch with open snapshot:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to create hybrid customization patch'
+      error: 'Failed to create hybrid customization patch with open snapshot management'
+    });
+  }
+});
+
+/**
+ * @route   POST /api/hybrid-patches/finalize/:filePath
+ * @desc    Finalize open snapshots when "Publish" is clicked to enable rollback later
+ * @access  Private
+ */
+router.post('/finalize/:filePath(*)', authMiddleware, async (req, res) => {
+  try {
+    const { HybridCustomization } = require('../models/HybridCustomization');
+    const { filePath } = req.params;
+    const userId = req.user.id;
+    const storeId = req.user.store_id || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store for now
+    
+    console.log(`🔒 Finalizing open snapshots for: ${filePath}`);
+    console.log(`   User ID: ${userId}`);
+    console.log(`   Store ID: ${storeId}`);
+    
+    // Find the customization for this file
+    const customization = await HybridCustomization.findOne({
+      where: {
+        file_path: filePath,
+        store_id: storeId,
+        status: 'active'
+      }
+    });
+    
+    if (!customization) {
+      return res.status(404).json({
+        success: false,
+        error: 'No active customization found for this file path'
+      });
+    }
+    
+    // Finalize any open snapshots for this customization
+    const result = await HybridCustomization.finalizeOpenSnapshot(customization.id);
+    
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        error: result.error || 'Failed to finalize open snapshot'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        customizationId: customization.id,
+        filePath: filePath,
+        finalizedSnapshots: result.finalizedCount,
+        message: result.finalizedCount > 0 
+          ? `Finalized ${result.finalizedCount} open snapshot(s) - rollback now available`
+          : 'No open snapshots found to finalize'
+      },
+      message: `Successfully processed snapshot finalization for ${filePath}`
+    });
+  } catch (error) {
+    console.error('Error finalizing snapshots:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to finalize open snapshots'
     });
   }
 });
