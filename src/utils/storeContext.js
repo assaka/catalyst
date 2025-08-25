@@ -105,13 +105,15 @@ export const getStoreContextUtils = () => {
 };
 
 /**
- * Utility to normalize file paths for API calls that require src/ prefix
+ * Utility to normalize file paths for API calls - returns the actual file path as-is
  * @param {string} filePath - The file path to normalize
- * @returns {string} Normalized file path with src/ prefix
+ * @returns {string} The actual file path without modifications
  */
 export const normalizeFilePath = (filePath) => {
   if (!filePath) return '';
-  return filePath.startsWith('src/') ? filePath : `src/${filePath}`;
+  // Return the actual file path as-is from the file tree
+  // This makes the system flexible for any directory structure
+  return filePath;
 };
 
 /**
