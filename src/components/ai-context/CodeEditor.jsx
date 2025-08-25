@@ -5,6 +5,7 @@ import { detectManualEdit, createDebouncedDiffDetector } from '@/services/diff-d
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { normalizeFilePath } from '@/utils/storeContext';
 import apiClient from '@/api/client';
+import crypto from 'crypto-js';
 
 /**
  * Monaco Code Editor with AST-aware autocomplete
@@ -74,6 +75,40 @@ const CodeEditor = ({
           setTimeout(() => setShowRevertedIndicator(false), 3000); // Hide after 3 seconds
         }
         
+        // ENHANCED DEBUGGING: Log detailed comparison info
+        console.log('🔍 DETAILED AUTO-SAVE DEBUG:', {
+          fileName,
+          diffResult: {
+            hasChanges: diffResult.hasChanges,
+            changeCount: diffResult.changeCount,
+            revertedToOriginal: diffResult.revertedToOriginal,
+            summary: diffResult.summary?.stats
+          },
+          originalCode: {
+            length: originalCode.length,
+            hash: originalCode ? crypto.MD5(originalCode).toString().substring(0, 8) : 'null',
+            preview: originalCode?.substring(0, 100) + '...'
+          },
+          currentEditor: {
+            available: !!editorInstance,
+            method: 'editorInstance?.getValue()'
+          }
+        });
+        
+        // Get current editor content for additional verification
+        const currentEditorContent = editorInstance?.getValue() || value;
+        const isIdenticalToOriginal = originalCode === currentEditorContent;
+        
+        console.log('🔍 CONTENT COMPARISON CHECK:', {
+          originalLength: originalCode?.length || 0,
+          currentLength: currentEditorContent?.length || 0,
+          lengthDifference: Math.abs((originalCode?.length || 0) - (currentEditorContent?.length || 0)),
+          isIdentical: isIdenticalToOriginal,
+          firstLineOriginal: originalCode?.split('\n')[0] || 'null',
+          firstLineCurrent: currentEditorContent?.split('\n')[0] || 'null',
+          diagnosis: isIdenticalToOriginal ? '❌ FRONTEND ISSUE: Editor content = original baseline' : '✅ Content differs, should detect changes'
+        });
+
         // Auto-save patch only if there are actual changes (not when reverted to original)
         if (diffResult.hasChanges && diffResult.changeCount > 0) {
           console.log('🔥 Auto-save triggered:', {
@@ -89,7 +124,13 @@ const CodeEditor = ({
             fileName,
             hasChanges: diffResult.hasChanges,
             changeCount: diffResult.changeCount,
-            reason: !diffResult.hasChanges ? 'No changes detected' : 'Change count is 0'
+            reason: !diffResult.hasChanges ? 'No changes detected' : 'Change count is 0',
+            troubleshooting: {
+              check1: 'Is originalCode prop set to the correct database baseline?',
+              check2: 'Is the editor content actually different from originalCode?',
+              check3: 'Is diff detection logic working correctly?',
+              check4: 'Are there JS errors preventing proper diff calculation?'
+            }
           });
         }
       }, 500, originalCode);
