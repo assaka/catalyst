@@ -312,7 +312,12 @@ const BrowserPreview = ({
         return;
       }
       
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+      
+      if (!iframeDoc) {
+        console.log('🔄 BrowserPreview: Iframe document not accessible, skipping patch application');
+        return;
+      }
       
       // Clear any existing patches before applying new ones
       const existingPatches = iframeDoc.querySelectorAll('[data-live-preview="true"]');
@@ -758,7 +763,7 @@ const BrowserPreview = ({
           
           const checkContent = () => {
             attempts++;
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
             
             if (!iframeDoc) {
               console.log('🔄 Iframe document not ready, retrying...');
@@ -807,7 +812,7 @@ const BrowserPreview = ({
     
     // Only apply patches if iframe is loaded and we have code changes
     if (iframe && currentCode && enablePatches && !isLoading) {
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
       
       // Make sure iframe document is ready
       if (iframeDoc) {
