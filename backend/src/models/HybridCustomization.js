@@ -460,7 +460,8 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
     aiExplanation = null,
     createdBy,
     aiMetadata = null,
-    status = 'open' // Default to 'open' for undo capability during editing
+    status = 'open', // Default to 'open' for undo capability during editing
+    astDiff = null // Add astDiff parameter for direct patch storage
   } = params;
 
   // Get next snapshot number
@@ -472,22 +473,22 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
   
   const snapshotNumber = (lastSnapshot?.snapshot_number || 0) + 1;
 
-  // Calculate hashes
+  // Calculate hashes (handle null values for patch-based storage)
   const beforeHash = codeBefore ? crypto.createHash('sha256').update(codeBefore).digest('hex') : null;
-  const afterHash = crypto.createHash('sha256').update(codeAfter).digest('hex');
+  const afterHash = codeAfter ? crypto.createHash('sha256').update(codeAfter).digest('hex') : null;
 
-  // Generate line diff instead of full code storage (optimization)
-  let astDiff = null, affectedSymbols = null;
+  // Handle AST diff - either provided or generated from code
+  let finalAstDiff = astDiff;
+  let affectedSymbols = null;
   
-  try {
-    const { generateLineDiff } = require('../utils/line-diff');
-    
-    if (codeBefore && codeAfter) {
-      // Use line diff for efficient storage
+  if (!finalAstDiff && codeBefore && codeAfter) {
+    // Generate line diff if not provided (fallback for legacy usage)
+    try {
+      const { generateLineDiff } = require('../utils/line-diff');
       const lineDiff = generateLineDiff(codeBefore, codeAfter);
       
       // Store line diff as AST diff for compatibility
-      astDiff = {
+      finalAstDiff = {
         type: 'line_diff',
         hasChanges: lineDiff.hasChanges,
         changes: lineDiff.changes,
@@ -496,25 +497,29 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
         timestamp: lineDiff.timestamp
       };
       
-      // Extract affected lines as symbols for compatibility
-      affectedSymbols = lineDiff.changes.map(change => ({
-        name: `line-${change.lineNumber}`,
-        type: 'line',
-        changeType: change.type,
-        line: change.lineNumber,
-        content: change.content || change.oldContent
-      }));
-      
-      console.log(`📊 Line diff: ${lineDiff.stats.totalChanges} changes (${lineDiff.stats.additions}+, ${lineDiff.stats.deletions}-, ${lineDiff.stats.modifications}~)`);
+      console.log(`📊 Generated line diff: ${lineDiff.stats.totalChanges} changes (${lineDiff.stats.additions}+, ${lineDiff.stats.deletions}-, ${lineDiff.stats.modifications}~)`);
+    } catch (error) {
+      console.error('Error generating line diff:', error);
     }
-  } catch (error) {
-    console.warn('Line diff generation failed, continuing without:', error.message);
+  } else if (finalAstDiff) {
+    console.log(`📊 Using provided AST diff: ${finalAstDiff.stats?.totalChanges || 0} changes`);
+  }
+  
+  // Extract affected symbols from AST diff if available
+  if (finalAstDiff && finalAstDiff.changes) {
+    affectedSymbols = finalAstDiff.changes.map(change => ({
+      name: `line-${change.lineNumber}`,
+      type: 'line',
+      changeType: change.type,
+      line: change.lineNumber,
+      content: change.content || change.oldContent
+    }));
   }
 
   // Generate patch operations
-  const patchOperations = this.generatePatchOperations(codeBefore, codeAfter, astDiff);
-  const reversePatchOperations = this.generateReversePatchOperations(codeBefore, codeAfter, astDiff);
-  const patchPreview = this.generatePatchPreview(astDiff, patchOperations);
+  const patchOperations = this.generatePatchOperations(codeBefore, codeAfter, finalAstDiff);
+  const reversePatchOperations = this.generateReversePatchOperations(codeBefore, codeAfter, finalAstDiff);
+  const patchPreview = this.generatePatchPreview(finalAstDiff, patchOperations);
 
   return await CustomizationSnapshot.create({
     customization_id: customizationId,
@@ -526,7 +531,7 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
     modified_hash: afterHash,
     original_ast: null, // Don't store full AST during auto-save
     modified_ast: null,  // Don't store full AST during auto-save
-    ast_diff: astDiff,   // Store line diff (compact) - this is all we need!
+    ast_diff: finalAstDiff,   // Store line diff (compact) - this is all we need!
     affected_symbols: affectedSymbols,
     patch_operations: patchOperations,
     reverse_patch_operations: reversePatchOperations,

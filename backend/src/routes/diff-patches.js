@@ -220,21 +220,51 @@ router.post('/create', authMiddleware, async (req, res) => {
         // Use baseline_code from database as the codeBefore for accurate diffs
         const actualCodeBefore = customization.baseline_code || originalCode;
         
-        console.log(`🔧 Creating snapshot with baseline comparison:`);
+        console.log(`🔧 Creating snapshot with patch-based storage:`);
         console.log(`   Baseline from DB: ${customization.baseline_code ? 'SET' : 'NULL'} (${customization.baseline_code?.length || 0} chars)`);
         console.log(`   Original from frontend: ${originalCode ? 'SET' : 'NULL'} (${originalCode?.length || 0} chars)`);
         console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
         console.log(`   Using codeBefore: ${actualCodeBefore === customization.baseline_code ? 'DB baseline' : 'Frontend original'}`);
         
+        // Generate line diff patch BEFORE creating snapshot
+        const { generateLineDiff } = require('../utils/line-diff');
+        const lineDiff = generateLineDiff(actualCodeBefore, modifiedCode);
+        
+        console.log(`🔧 Generated line diff patch:`);
+        console.log(`   Has changes: ${lineDiff.hasChanges}`);
+        console.log(`   Total changes: ${lineDiff.stats?.totalChanges || 0}`);
+        console.log(`   Additions: +${lineDiff.stats?.additions || 0}`);
+        console.log(`   Deletions: -${lineDiff.stats?.deletions || 0}`);
+        console.log(`   Modifications: ~${lineDiff.stats?.modifications || 0}`);
+        
+        if (!lineDiff.hasChanges) {
+          console.log(`⚠️  No changes detected in line diff - skipping snapshot creation`);
+          return res.json({
+            success: true,
+            data: {
+              id: customization.id,
+              filePath: filePath,
+              type: 'hybrid_customization',
+              snapshotId: null,
+              snapshotStatus: 'no_changes',
+              message: 'No changes detected - snapshot not created'
+            },
+            message: `No changes detected for ${filePath} - no snapshot needed`
+          });
+        }
+        
+        // Create snapshot with patch data instead of full code
         snapshot = await HybridCustomization.createSnapshot({
           customizationId: customization.id,
           changeType: changeType,
-          changeSummary: changeSummary || 'Auto-saved changes',
+          changeSummary: changeSummary || `Manual edit: ${lineDiff.stats.totalChanges} changes (${lineDiff.stats.additions} additions, ${lineDiff.stats.deletions} deletions)`,
           changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
-          codeBefore: actualCodeBefore,
-          codeAfter: modifiedCode,
+          codeBefore: null, // Don't store full code - use patch only
+          codeAfter: null,  // Don't store full code - use patch only  
           createdBy: userId,
-          status: 'open' // Keep open for editing and undo capability
+          status: 'open', // Keep open for editing and undo capability
+          // Store the line diff as the AST diff field (optimized storage)
+          astDiff: lineDiff
         });
       } catch (snapshotError) {
         console.error(`❌ Error creating snapshot:`, snapshotError.message);
@@ -275,21 +305,51 @@ router.post('/create', authMiddleware, async (req, res) => {
         // Use baseline_code from database as the codeBefore for accurate diffs
         const actualCodeBefore = customization.baseline_code || originalCode;
         
-        console.log(`🔧 Creating NEW snapshot with baseline comparison:`);
+        console.log(`🔧 Creating NEW snapshot with patch-based storage:`);
         console.log(`   Baseline from DB: ${customization.baseline_code ? 'SET' : 'NULL'} (${customization.baseline_code?.length || 0} chars)`);
         console.log(`   Original from frontend: ${originalCode ? 'SET' : 'NULL'} (${originalCode?.length || 0} chars)`);
         console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
         console.log(`   Using codeBefore: ${actualCodeBefore === customization.baseline_code ? 'DB baseline' : 'Frontend original'}`);
         
+        // Generate line diff patch BEFORE creating snapshot
+        const { generateLineDiff } = require('../utils/line-diff');
+        const lineDiff = generateLineDiff(actualCodeBefore, modifiedCode);
+        
+        console.log(`🔧 Generated line diff patch for NEW snapshot:`);
+        console.log(`   Has changes: ${lineDiff.hasChanges}`);
+        console.log(`   Total changes: ${lineDiff.stats?.totalChanges || 0}`);
+        console.log(`   Additions: +${lineDiff.stats?.additions || 0}`);
+        console.log(`   Deletions: -${lineDiff.stats?.deletions || 0}`);
+        console.log(`   Modifications: ~${lineDiff.stats?.modifications || 0}`);
+        
+        if (!lineDiff.hasChanges) {
+          console.log(`⚠️  No changes detected in line diff - skipping NEW snapshot creation`);
+          return res.json({
+            success: true,
+            data: {
+              id: customization.id,
+              filePath: filePath,
+              type: 'hybrid_customization',
+              snapshotId: null,
+              snapshotStatus: 'no_changes',
+              message: 'No changes detected - snapshot not created'
+            },
+            message: `No changes detected for ${filePath} - no snapshot needed`
+          });
+        }
+        
+        // Create snapshot with patch data instead of full code
         snapshot = await HybridCustomization.createSnapshot({
           customizationId: customization.id,
           changeType: changeType,
-          changeSummary: changeSummary || 'Initial auto-save',
+          changeSummary: changeSummary || `Initial edit: ${lineDiff.stats.totalChanges} changes (${lineDiff.stats.additions} additions, ${lineDiff.stats.deletions} deletions)`,
           changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
-          codeBefore: actualCodeBefore,
-          codeAfter: modifiedCode,
+          codeBefore: null, // Don't store full code - use patch only
+          codeAfter: null,  // Don't store full code - use patch only
           createdBy: userId,
-          status: 'open' // Keep open for editing and undo capability
+          status: 'open', // Keep open for editing and undo capability
+          // Store the line diff as the AST diff field (optimized storage)
+          astDiff: lineDiff
         });
       } catch (snapshotError) {
         console.error(`❌ Error creating NEW snapshot:`, snapshotError.message);
