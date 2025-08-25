@@ -78,6 +78,7 @@ class BackgroundJobManager extends EventEmitter {
     this.registerJobType('system:cleanup', require('./jobs/SystemCleanupJob'));
     this.registerJobType('system:backup', require('./jobs/SystemBackupJob'));
     this.registerJobType('system:daily_credit_deduction', require('./jobs/DailyCreditDeductionJob'));
+    this.registerJobType('system:dynamic_cron', require('./jobs/DynamicCronJob'));
   }
 
   /**
@@ -516,6 +517,10 @@ class BackgroundJobManager extends EventEmitter {
       } else {
         console.log('ℹ️ Daily credit deduction job already scheduled');
       }
+
+      // Start the cron scheduler for database-driven jobs
+      const cronScheduler = require('../services/cron-scheduler');
+      await cronScheduler.start();
 
     } catch (error) {
       console.error('❌ Failed to schedule system jobs:', error.message);

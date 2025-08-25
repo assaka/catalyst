@@ -482,26 +482,39 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
   const beforeHash = codeBefore ? crypto.createHash('sha256').update(codeBefore).digest('hex') : null;
   const afterHash = crypto.createHash('sha256').update(codeAfter).digest('hex');
 
-  // Get AST analyzer (if available)
-  let originalAst = null, modifiedAst = null, astDiff = null, affectedSymbols = null;
+  // Generate line diff instead of full code storage (optimization)
+  let astDiff = null, affectedSymbols = null;
   
   try {
-    const ASTAnalyzer = require('../services/ast-analyzer');
-    const analyzer = new ASTAnalyzer();
+    const { generateLineDiff } = require('../utils/line-diff');
     
-    if (codeBefore) {
-      const beforeAnalysis = await analyzer.analyzeCode(codeBefore);
-      const afterAnalysis = await analyzer.analyzeCode(codeAfter);
+    if (codeBefore && codeAfter) {
+      // Use line diff for efficient storage
+      const lineDiff = generateLineDiff(codeBefore, codeAfter);
       
-      if (beforeAnalysis.success && afterAnalysis.success) {
-        originalAst = beforeAnalysis.ast;
-        modifiedAst = afterAnalysis.ast;
-        astDiff = analyzer.calculateDiff(beforeAnalysis, afterAnalysis);
-        affectedSymbols = analyzer.extractAffectedSymbols(astDiff);
-      }
+      // Store line diff as AST diff for compatibility
+      astDiff = {
+        type: 'line_diff',
+        hasChanges: lineDiff.hasChanges,
+        changes: lineDiff.changes,
+        stats: lineDiff.stats,
+        metadata: lineDiff.metadata,
+        timestamp: lineDiff.timestamp
+      };
+      
+      // Extract affected lines as symbols for compatibility
+      affectedSymbols = lineDiff.changes.map(change => ({
+        name: `line-${change.lineNumber}`,
+        type: 'line',
+        changeType: change.type,
+        line: change.lineNumber,
+        content: change.content || change.oldContent
+      }));
+      
+      console.log(`📊 Line diff: ${lineDiff.stats.totalChanges} changes (${lineDiff.stats.additions}+, ${lineDiff.stats.deletions}-, ${lineDiff.stats.modifications}~)`);
     }
   } catch (error) {
-    console.warn('AST analysis failed, continuing without:', error.message);
+    console.warn('Line diff generation failed, continuing without:', error.message);
   }
 
   // Generate patch operations
@@ -517,21 +530,81 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
     change_description: changeDescription,
     original_hash: beforeHash,
     modified_hash: afterHash,
-    original_ast: originalAst,
-    modified_ast: modifiedAst,
-    ast_diff: astDiff,
+    original_ast: null, // Don't store full AST during auto-save
+    modified_ast: null,  // Don't store full AST during auto-save
+    ast_diff: astDiff,   // Store line diff (compact)
     affected_symbols: affectedSymbols,
     patch_operations: patchOperations,
     reverse_patch_operations: reversePatchOperations,
     patch_preview: patchPreview,
-    code_before: codeBefore,
-    code_after: codeAfter,
+    code_before: status === 'finalized' ? codeBefore : null, // Only store full code when finalized
+    code_after: status === 'finalized' ? codeAfter : null,   // Only store full code when finalized
     ai_prompt: aiPrompt,
     ai_explanation: aiExplanation,
     ai_metadata: aiMetadata,
     created_by: createdBy,
     status: status // Add snapshot status for open/finalized state management
   }, { transaction });
+};
+
+/**
+ * Reconstruct full code from baseline + line diffs (for Preview)
+ */
+HybridCustomization.prototype.reconstructCode = async function() {
+  try {
+    // Get the latest open snapshot
+    const openSnapshot = await CustomizationSnapshot.findOne({
+      where: { 
+        customization_id: this.id,
+        status: 'open'
+      },
+      order: [['snapshot_number', 'DESC']]
+    });
+    
+    if (!openSnapshot || !openSnapshot.ast_diff) {
+      return this.baseline_code; // Return original if no changes
+    }
+    
+    const { applyLineDiff } = require('../utils/line-diff');
+    
+    // Apply line diff to reconstruct modified code
+    const reconstructedCode = applyLineDiff(this.baseline_code, openSnapshot.ast_diff);
+    
+    return reconstructedCode;
+  } catch (error) {
+    console.error('Error reconstructing code from line diffs:', error.message);
+    return this.baseline_code; // Fallback to original
+  }
+};
+
+/**
+ * Store full code after Preview (finalize open snapshot)
+ */
+HybridCustomization.prototype.finalizeSnapshot = async function(snapshotId) {
+  try {
+    const snapshot = await CustomizationSnapshot.findByPk(snapshotId);
+    if (!snapshot) {
+      throw new Error('Snapshot not found');
+    }
+    
+    // Reconstruct full code
+    const fullCode = await this.reconstructCode();
+    
+    // Update snapshot with full code and finalized status
+    await snapshot.update({
+      status: 'finalized',
+      code_after: fullCode
+    });
+    
+    // Update customization with full code
+    await this.update({
+      current_code: fullCode
+    });
+    
+    return { success: true, snapshot, fullCode };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
 };
 
 /**

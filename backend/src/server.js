@@ -106,6 +106,7 @@ const storeMediaStorageRoutes = require('./routes/store-mediastorage');
 const storeRoutesManagement = require('./routes/store-routes');
 const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
+const cronJobRoutes = require('./routes/cron-jobs');
 const aiContextRoutes = require('./routes/ai-context');
 
 const app = express();
@@ -1574,6 +1575,7 @@ app.use('/api/stores/:store_id/domains', domainsRoutes);
 app.use('/api/stores', domainSettingsRoutes); // Domain settings for Store -> Settings -> Domain
 app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
+app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/ai-context', aiContextRoutes); // AI Context Window routes for natural language code editing
 app.use('/api/hybrid-patches', hybridPatchesRoutes); // Hybrid customization patches for code change tracking
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware

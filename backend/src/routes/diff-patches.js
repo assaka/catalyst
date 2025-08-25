@@ -126,14 +126,14 @@ router.post('/create', authMiddleware, async (req, res) => {
     // Use upsert approach for both customization and snapshot creation
     console.log(`📝 Upserting customization and open snapshot for: ${filePath}`);
     
-    // Find or create customization (simpler than upsert due to constraints)
+    // Find or create customization (lightweight - no full code storage yet)
     customization = await HybridCustomization.findOne({
       where: { file_path: filePath, store_id: storeId, status: 'active' }
     });
     
     let wasCreated = false;
     if (!customization) {
-      // Create new customization
+      // Create new customization - only store metadata, no full code
       customization = await HybridCustomization.create({
         file_path: filePath,
         store_id: storeId,
@@ -141,15 +141,15 @@ router.post('/create', authMiddleware, async (req, res) => {
         name: `Auto-saved changes to ${filePath.split('/').pop()}`,
         description: 'Auto-generated from manual edits',
         component_type: 'component',
-        baseline_code: originalCode,
-        current_code: modifiedCode,
+        baseline_code: null, // Only store after Preview
+        current_code: null,  // Only store after Preview
         status: 'active',
         version_number: 1
       });
       wasCreated = true;
     } else {
-      // Update current_code for existing customization
-      await customization.update({ current_code: modifiedCode });
+      // Don't update current_code during auto-save - only after Preview
+      console.log(`📝 Using existing customization for ${filePath} (no full code update)`);
     }
     
     console.log(`${wasCreated ? '🆕 Created' : '📝 Updated'} customization: ${customization.id}`);
