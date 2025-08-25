@@ -38,6 +38,9 @@ class BackgroundJobManager extends EventEmitter {
     // Start the job processor
     await this.start();
 
+    // Schedule recurring system jobs
+    await this.scheduleSystemJobs();
+
     this.initialized = true;
     console.log('✅ Background Job Manager initialized');
   }
@@ -74,6 +77,7 @@ class BackgroundJobManager extends EventEmitter {
     // System maintenance jobs
     this.registerJobType('system:cleanup', require('./jobs/SystemCleanupJob'));
     this.registerJobType('system:backup', require('./jobs/SystemBackupJob'));
+    this.registerJobType('system:daily_credit_deduction', require('./jobs/DailyCreditDeductionJob'));
   }
 
   /**
@@ -482,6 +486,41 @@ class BackgroundJobManager extends EventEmitter {
       ...job.toJSON(),
       history
     };
+  }
+
+  /**
+   * Schedule system-level recurring jobs
+   */
+  async scheduleSystemJobs() {
+    console.log('📅 Scheduling system jobs...');
+
+    try {
+      // Check if daily credit deduction job is already scheduled
+      const existingJob = await Job.findOne({
+        where: {
+          type: 'system:daily_credit_deduction',
+          status: 'pending'
+        }
+      });
+
+      if (!existingJob) {
+        // Schedule daily credit deduction job
+        await this.scheduleRecurringJob({
+          type: 'system:daily_credit_deduction',
+          payload: {},
+          priority: 'high', // High priority for billing-related tasks
+          maxRetries: 3
+        }, 'daily');
+
+        console.log('✅ Scheduled daily credit deduction job');
+      } else {
+        console.log('ℹ️ Daily credit deduction job already scheduled');
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to schedule system jobs:', error.message);
+      // Don't throw error to prevent server startup failure
+    }
   }
 }
 

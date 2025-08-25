@@ -76,7 +76,21 @@ const CodeEditor = ({
         
         // Auto-save patch only if there are actual changes (not when reverted to original)
         if (diffResult.hasChanges && diffResult.changeCount > 0) {
+          console.log('🔥 Auto-save triggered:', {
+            fileName,
+            hasChanges: diffResult.hasChanges,
+            changeCount: diffResult.changeCount,
+            originalCodeLength: originalCode.length,
+            summary: diffResult.summary?.stats
+          });
           autoSavePatch(diffResult);
+        } else {
+          console.log('🔇 Auto-save skipped:', {
+            fileName,
+            hasChanges: diffResult.hasChanges,
+            changeCount: diffResult.changeCount,
+            reason: !diffResult.hasChanges ? 'No changes detected' : 'Change count is 0'
+          });
         }
       }, 500, originalCode);
       
@@ -142,7 +156,22 @@ const CodeEditor = ({
 
   // Auto-save patches when manual edits are detected
   const autoSavePatch = useCallback(async (diffResult) => {
-    if (!fileName || !diffResult.hasChanges || !originalCode) return;
+    console.log('🚀 AutoSavePatch called:', {
+      fileName: fileName || 'NO_FILENAME',
+      hasChanges: diffResult?.hasChanges || false,
+      originalCodeLength: originalCode?.length || 0,
+      storeId: storeId || 'NO_STORE_ID',
+      diffResult: diffResult ? 'PROVIDED' : 'MISSING'
+    });
+    
+    if (!fileName || !diffResult.hasChanges || !originalCode) {
+      console.log('❌ AutoSavePatch early return:', {
+        fileName: !fileName ? 'MISSING' : 'OK',
+        hasChanges: !diffResult.hasChanges ? 'FALSE' : 'TRUE',
+        originalCode: !originalCode ? 'MISSING' : 'OK'
+      });
+      return;
+    }
 
     // Clear previous timeout
     if (autoSaveTimeoutRef.current) {
@@ -152,6 +181,7 @@ const CodeEditor = ({
     // Debounce auto-save by 3 seconds to avoid too frequent saves
     autoSaveTimeoutRef.current = setTimeout(async () => {
       try {
+        console.log('⏰ Auto-save timeout triggered for:', fileName);
         setPatchSaveStatus({ status: 'saving', message: 'Auto-saving patch...' });
         
         // Get current code from the editor
@@ -161,14 +191,27 @@ const CodeEditor = ({
         const normalizedFileName = normalizeFilePath(fileName);
         const apiConfig = getApiConfig();
         
-        const response = await apiClient.post('hybrid-patches/create', {
+        const payload = {
           filePath: normalizedFileName,
           originalCode: originalCode,
           modifiedCode: currentCode,
           changeSummary: `Manual edit: ${diffResult.changeCount} changes (${diffResult.summary?.stats?.additions || 0} additions, ${diffResult.summary?.stats?.deletions || 0} deletions)`,
           changeType: 'manual_edit'
-        }, apiConfig);
+        };
+        
+        console.log('📤 Sending auto-save request:', {
+          endpoint: 'hybrid-patches/create',
+          filePath: normalizedFileName,
+          originalCodeLength: originalCode.length,
+          modifiedCodeLength: currentCode.length,
+          changeSummary: payload.changeSummary,
+          apiConfig: apiConfig
+        });
+        
+        const response = await apiClient.post('hybrid-patches/create', payload, apiConfig);
 
+        console.log('📥 Auto-save API response:', response);
+        
         if (response.success) {
           console.log('💾 Auto-saved hybrid customization:', response.data.id);
           setPatchSaveStatus({ 
@@ -183,13 +226,20 @@ const CodeEditor = ({
           // Clear status after 2 seconds
           setTimeout(() => setPatchSaveStatus(null), 2000);
         } else {
+          console.error('❌ Auto-save failed:', response);
           setPatchSaveStatus({ 
             status: 'error', 
             message: `Save failed: ${response.message}` 
           });
         }
       } catch (error) {
-        console.error('Error auto-saving patch:', error);
+        console.error('❌ Error auto-saving patch:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        });
         setPatchSaveStatus({ 
           status: 'error', 
           message: `Save error: ${error.message}` 
