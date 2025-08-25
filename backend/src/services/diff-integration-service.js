@@ -21,7 +21,7 @@ class DiffIntegrationService {
   }
 
   /**
-   * Get diff patches for a specific file path
+   * Get diff patches for a specific file path (optimized for line-diff storage)
    * Transforms hybrid system data into DiffPreviewSystem format
    * @param {string} filePath - File path to get diffs for
    * @param {string} userId - User ID for filtering
@@ -30,6 +30,8 @@ class DiffIntegrationService {
    */
   async getDiffPatchesForFile(filePath, userId, storeId = null) {
     try {
+      console.log(`🔍 Retrieving patches for: ${filePath} (${storeId ? `store: ${storeId}` : `user: ${userId}`})`);
+      
       // Find all customizations for this file path (store-scoped)
       const whereCondition = {
         file_path: filePath,
@@ -45,29 +47,51 @@ class DiffIntegrationService {
         console.log(`👤 Using user-scoped patches for user: ${userId}`);
       }
       
+      // Optimized query: only get snapshots with line diffs, sorted by latest first
       const customizations = await HybridCustomization.findAll({
         where: whereCondition,
         include: [{
           association: 'snapshots',
           separate: true,
+          where: {
+            ast_diff: { [Op.ne]: null }, // Only get snapshots with diff data
+            [Op.or]: [
+              { status: 'open' }, // Current editing session
+              { status: 'finalized' } // Published changes
+            ]
+          },
           order: [['snapshot_number', 'DESC']],
-          limit: 10 // Get latest 10 snapshots
+          limit: 20, // Get latest 20 snapshots with diffs
+          attributes: [
+            'id', 'customization_id', 'snapshot_number', 'change_type', 
+            'change_summary', 'change_description', 'ast_diff', 'affected_symbols',
+            'patch_preview', 'ai_prompt', 'created_at', 'status'
+          ]
         }],
-        order: [['updated_at', 'DESC']]
+        order: [['updated_at', 'DESC']],
+        attributes: [
+          'id', 'name', 'component_type', 'file_path', 'version_number',
+          'baseline_code', 'created_at', 'updated_at'
+        ]
       });
+
+      console.log(`📊 Found ${customizations.length} customizations with ${customizations.reduce((total, c) => total + (c.snapshots?.length || 0), 0)} snapshots`);
 
       const patches = [];
 
       for (const customization of customizations) {
-        for (const snapshot of customization.snapshots) {
-          // Transform snapshot into DiffPreviewSystem format
-          const patch = await this.transformSnapshotToDiffPatch(snapshot, customization);
-          if (patch && patch.diffHunks && patch.diffHunks.length > 0) {
-            patches.push(patch);
+        for (const snapshot of customization.snapshots || []) {
+          // Only process snapshots with valid line diff data
+          if (snapshot.ast_diff && snapshot.ast_diff.type === 'line_diff' && snapshot.ast_diff.hasChanges) {
+            const patch = await this.transformSnapshotToDiffPatch(snapshot, customization);
+            if (patch && patch.diffHunks && patch.diffHunks.length > 0) {
+              patches.push(patch);
+            }
           }
         }
       }
 
+      console.log(`📦 Generated ${patches.length} patches for Diff tab`);
       return patches;
     } catch (error) {
       console.error('Error getting diff patches for file:', error);
@@ -90,13 +114,13 @@ class DiffIntegrationService {
         console.log(`📄 Using line diff data for snapshot ${snapshot.id}`);
         diffHunks = this.convertLineDiffToDiffHunks(snapshot.ast_diff);
       } else {
-        // Fallback for older snapshots with full code (legacy format)
-        console.log(`📄 Using legacy full code diff for snapshot ${snapshot.id}`);
+        // Fallback for older snapshots without line diff (legacy format)
+        console.log(`📄 Using legacy patch operations for snapshot ${snapshot.id}`);
         const patchOps = snapshot.patch_operations || [];
         diffHunks = this.convertPatchOperationsToDiffHunks(
           patchOps, 
-          snapshot.code_before || customization.baseline_code,
-          snapshot.code_after
+          customization.baseline_code || '',
+          '' // No code_after column - reconstruct from operations if needed
         );
       }
 
@@ -144,7 +168,7 @@ class DiffIntegrationService {
       let currentHunk = null;
       
       for (const change of lineDiff.changes) {
-        const lineNumber = change.line;
+        const lineNumber = change.lineNumber; // Fixed: use correct property name
         
         // Start a new hunk if needed
         if (!currentHunk || lineNumber > (currentHunk.lastLine + 2)) {
@@ -164,7 +188,7 @@ class DiffIntegrationService {
           };
         }
         
-        // Add change to current hunk
+        // Add change to current hunk with correct change type mappings
         if (change.type === 'add') {
           currentHunk.changes.push({
             type: 'add',
@@ -172,23 +196,23 @@ class DiffIntegrationService {
             newLine: lineNumber
           });
           currentHunk.newLines++;
-        } else if (change.type === 'delete') {
+        } else if (change.type === 'del') {
           currentHunk.changes.push({
             type: 'del',
-            content: change.content,
+            content: change.oldContent || change.content,
             oldLine: lineNumber
           });
           currentHunk.oldLines++;
-        } else if (change.type === 'modify') {
+        } else if (change.type === 'mod') { // Fixed: use 'mod' not 'modify'
           // For modify, show as delete + add
           currentHunk.changes.push({
             type: 'del',
-            content: change.from,
+            content: change.oldContent,
             oldLine: lineNumber
           });
           currentHunk.changes.push({
             type: 'add',
-            content: change.to,
+            content: change.content,
             newLine: lineNumber
           });
           currentHunk.oldLines++;
@@ -439,11 +463,19 @@ class DiffIntegrationService {
       for (const customization of customizations) {
         if (customization.snapshots && customization.snapshots.length > 0) {
           const latestSnapshot = customization.snapshots[0];
-          console.log(`   ✅ Found latest snapshot (${latestSnapshot.snapshot_number}) with modified code`);
+          console.log(`   ✅ Found latest snapshot (${latestSnapshot.snapshot_number}) with line diff`);
           console.log(`   📋 Change: ${latestSnapshot.change_summary}`);
           
-          // Return the code_after from the latest snapshot
-          return latestSnapshot.code_after || customization.baseline_code;
+          // Reconstruct code from baseline + line diff
+          if (latestSnapshot.ast_diff && latestSnapshot.ast_diff.type === 'line_diff') {
+            const { applyLineDiff } = require('../utils/line-diff');
+            const modifiedCode = applyLineDiff(customization.baseline_code || '', latestSnapshot.ast_diff);
+            console.log(`   🔧 Reconstructed code from line diff (${latestSnapshot.ast_diff.changes?.length || 0} changes)`);
+            return modifiedCode;
+          }
+          
+          // Fallback to baseline if no line diff available
+          return customization.baseline_code;
         }
       }
 

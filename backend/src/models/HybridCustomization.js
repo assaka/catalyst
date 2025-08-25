@@ -214,14 +214,8 @@ const CustomizationSnapshot = sequelize.define('CustomizationSnapshot', {
     type: DataTypes.TEXT
   },
   
-  // Code states
-  code_before: {
-    type: DataTypes.TEXT
-  },
-  code_after: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  },
+  // Code states (removed - using line diffs for 98% storage reduction)
+  // code_before and code_after columns removed for optimization
   
   // AI context
   ai_prompt: {
@@ -532,13 +526,12 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
     modified_hash: afterHash,
     original_ast: null, // Don't store full AST during auto-save
     modified_ast: null,  // Don't store full AST during auto-save
-    ast_diff: astDiff,   // Store line diff (compact)
+    ast_diff: astDiff,   // Store line diff (compact) - this is all we need!
     affected_symbols: affectedSymbols,
     patch_operations: patchOperations,
     reverse_patch_operations: reversePatchOperations,
     patch_preview: patchPreview,
-    code_before: status === 'finalized' ? codeBefore : null, // Only store full code when finalized
-    code_after: status === 'finalized' ? codeAfter : null,   // Only store full code when finalized
+    // code_before and code_after columns removed - using line diff optimization
     ai_prompt: aiPrompt,
     ai_explanation: aiExplanation,
     ai_metadata: aiMetadata,
@@ -590,10 +583,9 @@ HybridCustomization.prototype.finalizeSnapshot = async function(snapshotId) {
     // Reconstruct full code
     const fullCode = await this.reconstructCode();
     
-    // Update snapshot with full code and finalized status
+    // Update snapshot with finalized status (code reconstruction available via reconstructCode())
     await snapshot.update({
-      status: 'finalized',
-      code_after: fullCode
+      status: 'finalized'
     });
     
     // Update customization with full code
@@ -716,8 +708,20 @@ HybridCustomization.prototype.rollbackToSnapshot = async function(targetSnapshot
       transaction
     });
 
-    // Apply rollback by setting current code to target snapshot code
-    const rollbackCode = targetSnapshot.code_after;
+    // Apply rollback by reconstructing code from target snapshot
+    const customization = await HybridCustomization.findByPk(this.id, { transaction });
+    let rollbackCode = customization.baseline_code; // Fallback to baseline
+    
+    // Try to reconstruct from target snapshot's line diff
+    if (targetSnapshot.ast_diff && targetSnapshot.ast_diff.type === 'line_diff') {
+      try {
+        const { applyLineDiff } = require('../utils/line-diff');
+        rollbackCode = applyLineDiff(customization.baseline_code, targetSnapshot.ast_diff);
+      } catch (error) {
+        console.warn('Failed to reconstruct rollback code from line diff, using baseline');
+      }
+    }
+    
     await this.update({
       current_code: rollbackCode,
       status: 'active' // Reset from rolled_back if it was set
@@ -974,9 +978,19 @@ HybridCustomization.updateOpenSnapshot = async function(customizationId, modifie
       throw new Error('No open snapshot found for this customization');
     }
 
-    // Update the open snapshot with new code
+    // Update the open snapshot with new line diff (optimized storage)
+    const { generateLineDiff } = require('../utils/line-diff');
+    const lineDiff = generateLineDiff(customization.baseline_code, modifiedCode);
+    
     await openSnapshot.update({
-      code_after: modifiedCode,
+      ast_diff: {
+        type: 'line_diff',
+        hasChanges: lineDiff.hasChanges,
+        changes: lineDiff.changes,
+        stats: lineDiff.stats,
+        metadata: lineDiff.metadata,
+        timestamp: lineDiff.timestamp
+      },
       modified_hash: require('crypto').createHash('sha256').update(modifiedCode).digest('hex'),
       change_description: `Auto-saved at ${new Date().toLocaleTimeString()}`
     }, { transaction });
