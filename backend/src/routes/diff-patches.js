@@ -161,7 +161,7 @@ router.post('/create', authMiddleware, async (req, res) => {
     
     let wasCreated = false;
     if (!customization) {
-      // Create new customization - only store metadata, no full code
+      // Create new customization - store baseline code for proper diffs
       customization = await HybridCustomization.create({
         file_path: filePath,
         store_id: storeId,
@@ -169,15 +169,21 @@ router.post('/create', authMiddleware, async (req, res) => {
         name: `Auto-saved changes to ${filePath.split('/').pop()}`,
         description: 'Auto-generated from manual edits',
         component_type: 'component',
-        baseline_code: null, // Only store after Preview
+        baseline_code: originalCode, // Store original as baseline for diff comparisons
         current_code: null,  // Only store after Preview
         status: 'active',
         version_number: 1
       });
       wasCreated = true;
+      console.log(`🔧 Set baseline_code for new customization (${originalCode?.length || 0} chars)`);
     } else {
-      // Don't update current_code during auto-save - only after Preview
-      console.log(`📝 Using existing customization for ${filePath} (no full code update)`);
+      // Update baseline_code if not set (for backward compatibility)
+      if (!customization.baseline_code && originalCode) {
+        await customization.update({ baseline_code: originalCode });
+        console.log(`🔧 Updated baseline_code for existing customization (${originalCode?.length || 0} chars)`);
+      } else {
+        console.log(`📝 Using existing customization with baseline_code: ${customization.baseline_code ? 'SET' : 'NULL'}`);
+      }
     }
     
     console.log(`${wasCreated ? '🆕 Created' : '📝 Updated'} customization: ${customization.id}`);
@@ -211,12 +217,21 @@ router.post('/create', authMiddleware, async (req, res) => {
       });
       
       try {
+        // Use baseline_code from database as the codeBefore for accurate diffs
+        const actualCodeBefore = customization.baseline_code || originalCode;
+        
+        console.log(`🔧 Creating snapshot with baseline comparison:`);
+        console.log(`   Baseline from DB: ${customization.baseline_code ? 'SET' : 'NULL'} (${customization.baseline_code?.length || 0} chars)`);
+        console.log(`   Original from frontend: ${originalCode ? 'SET' : 'NULL'} (${originalCode?.length || 0} chars)`);
+        console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
+        console.log(`   Using codeBefore: ${actualCodeBefore === customization.baseline_code ? 'DB baseline' : 'Frontend original'}`);
+        
         snapshot = await HybridCustomization.createSnapshot({
           customizationId: customization.id,
           changeType: changeType,
           changeSummary: changeSummary || 'Auto-saved changes',
           changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
-          codeBefore: originalCode,
+          codeBefore: actualCodeBefore,
           codeAfter: modifiedCode,
           createdBy: userId,
           status: 'open' // Keep open for editing and undo capability
@@ -257,12 +272,21 @@ router.post('/create', authMiddleware, async (req, res) => {
       });
       
       try {
+        // Use baseline_code from database as the codeBefore for accurate diffs
+        const actualCodeBefore = customization.baseline_code || originalCode;
+        
+        console.log(`🔧 Creating NEW snapshot with baseline comparison:`);
+        console.log(`   Baseline from DB: ${customization.baseline_code ? 'SET' : 'NULL'} (${customization.baseline_code?.length || 0} chars)`);
+        console.log(`   Original from frontend: ${originalCode ? 'SET' : 'NULL'} (${originalCode?.length || 0} chars)`);
+        console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
+        console.log(`   Using codeBefore: ${actualCodeBefore === customization.baseline_code ? 'DB baseline' : 'Frontend original'}`);
+        
         snapshot = await HybridCustomization.createSnapshot({
           customizationId: customization.id,
           changeType: changeType,
           changeSummary: changeSummary || 'Initial auto-save',
           changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
-          codeBefore: originalCode,
+          codeBefore: actualCodeBefore,
           codeAfter: modifiedCode,
           createdBy: userId,
           status: 'open' // Keep open for editing and undo capability
