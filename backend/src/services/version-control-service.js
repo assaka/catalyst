@@ -100,7 +100,7 @@ class VersionControlService {
         throw new Error('Customization not found');
       }
 
-      const codeBefore = customization.current_code;
+      const codeBefore = customization.current_code || customization.baseline_code;
 
       // Analyze changes with AST if available
       let analysisResult = null;

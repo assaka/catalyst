@@ -193,8 +193,7 @@ const CodeEditor = ({
         
         const payload = {
           filePath: normalizedFileName,
-          originalCode: originalCode,
-          modifiedCode: currentCode,
+          modified_code: currentCode,  // Simplified: only send the current/modified code
           changeSummary: `Manual edit: ${diffResult.changeCount} changes (${diffResult.summary?.stats?.additions || 0} additions, ${diffResult.summary?.stats?.deletions || 0} deletions)`,
           changeType: 'manual_edit'
         };
@@ -202,7 +201,6 @@ const CodeEditor = ({
         console.log('📤 Sending auto-save request:', {
           endpoint: 'hybrid-patches/create',
           filePath: normalizedFileName,
-          originalCodeLength: originalCode.length,
           modifiedCodeLength: currentCode.length,
           changeSummary: payload.changeSummary,
           apiConfig: apiConfig

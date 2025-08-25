@@ -99,11 +99,13 @@ router.post('/create', authMiddleware, async (req, res) => {
     
     const {
       filePath,
-      originalCode,
-      modifiedCode,
+      modified_code,  // Simplified: only the new/current code
       changeSummary,
       changeType = 'manual_edit'
     } = req.body;
+    
+    // For backward compatibility, also accept modifiedCode
+    const modifiedCode = modified_code || req.body.modifiedCode;
     
     // Validate change type against database constraint
     const validChangeTypes = ['initial', 'ai_modification', 'manual_edit', 'rollback', 'merge'];
@@ -125,7 +127,6 @@ router.post('/create', authMiddleware, async (req, res) => {
     console.log(`   Timestamp: ${requestTimestamp}`);
     console.log(`   User ID: ${userId}`);
     console.log(`   Store ID: ${storeId}`);
-    console.log(`   Original code length: ${originalCode?.length || 0}`);
     console.log(`   Modified code length: ${modifiedCode?.length || 0}`);
     console.log(`   Change summary: ${changeSummary}`);
     
@@ -143,120 +144,31 @@ router.post('/create', authMiddleware, async (req, res) => {
     
     // ULTRA DETAILED debugging: Analyze request payload structure
     console.log(`🔍 ULTRA DETAILED PAYLOAD ANALYSIS:`);
-    console.log(`   originalCode type: ${typeof req.body.originalCode}`);
+    console.log(`   modified_code type: ${typeof req.body.modified_code}`);
     console.log(`   modifiedCode type: ${typeof req.body.modifiedCode}`);
-    console.log(`   originalCode is string: ${typeof req.body.originalCode === 'string'}`);
+    console.log(`   modified_code is string: ${typeof req.body.modified_code === 'string'}`);
     console.log(`   modifiedCode is string: ${typeof req.body.modifiedCode === 'string'}`);
-    console.log(`   originalCode is null: ${req.body.originalCode === null}`);
+    console.log(`   modified_code is null: ${req.body.modified_code === null}`);
     console.log(`   modifiedCode is null: ${req.body.modifiedCode === null}`);
-    console.log(`   originalCode is undefined: ${req.body.originalCode === undefined}`);
+    console.log(`   modified_code is undefined: ${req.body.modified_code === undefined}`);
     console.log(`   modifiedCode is undefined: ${req.body.modifiedCode === undefined}`);
     
-    if (originalCode && modifiedCode) {
-      // Generate hash signatures for comparison
-      const crypto = require('crypto');
-      const originalHash = crypto.createHash('md5').update(originalCode).digest('hex');
-      const modifiedHash = crypto.createHash('md5').update(modifiedCode).digest('hex');
-      
-      console.log(`🔍 HASH COMPARISON:`);
-      console.log(`   Original code hash: ${originalHash}`);
-      console.log(`   Modified code hash: ${modifiedHash}`);
-      console.log(`   Hashes identical: ${originalHash === modifiedHash ? '❌ YES' : '✅ NO'}`);
-      
-      const areIdentical = originalCode === modifiedCode;
-      console.log(`🔍 Code comparison: ${areIdentical ? '❌ IDENTICAL' : '✅ DIFFERENT'}`);
-      
-      // DEEP FRONTEND SOURCE ANALYSIS
-      console.log(`🔍 FRONTEND SOURCE ANALYSIS:`);
-      console.log(`   Original code starts with: "${originalCode.substring(0, 200).replace(/\n/g, '\\n')}"`);
-      console.log(`   Modified code starts with: "${modifiedCode.substring(0, 200).replace(/\n/g, '\\n')}"`);
-      console.log(`   Original code ends with: "${originalCode.substring(originalCode.length - 200).replace(/\n/g, '\\n')}"`);
-      console.log(`   Modified code ends with: "${modifiedCode.substring(modifiedCode.length - 200).replace(/\n/g, '\\n')}"`);
-      
-      // Check for invisible characters that might cause issues
-      const originalBytes = Buffer.from(originalCode, 'utf8');
-      const modifiedBytes = Buffer.from(modifiedCode, 'utf8');
-      console.log(`   Original code byte length: ${originalBytes.length}`);
-      console.log(`   Modified code byte length: ${modifiedBytes.length}`);
-      console.log(`   Byte length match: ${originalBytes.length === modifiedBytes.length ? '✅ YES' : '❌ NO'}`);
-      
-      if (areIdentical) {
-        console.log(`⚠️  CRITICAL WARNING: originalCode and modifiedCode are identical!`);
-        console.log(`   This will result in hasChanges: false in the line diff.`);
-        console.log(`   Frontend is sending identical content - this is the root issue.`);
-        console.log(`   Expected: Frontend should send baseline vs current edited code.`);
-        console.log(`   Actual: Frontend sent identical code for both parameters.`);
-        console.log(`   🔍 POTENTIAL CAUSES:`);
-        console.log(`     1. Frontend is not capturing current editor content correctly`);
-        console.log(`     2. Frontend is sending the same baseline code for both parameters`);
-        console.log(`     3. Frontend editor content is not being detected as changed`);
-        console.log(`     4. Frontend auto-save logic is comparing wrong values`);
-        
-        // Calculate character differences for analysis
-        let diffCount = 0;
-        const minLength = Math.min(originalCode.length, modifiedCode.length);
-        for (let i = 0; i < minLength; i++) {
-          if (originalCode[i] !== modifiedCode[i]) {
-            diffCount++;
-          }
-        }
-        console.log(`   Character-by-character diff count: ${diffCount}`);
-        console.log(`   Length difference: ${Math.abs(originalCode.length - modifiedCode.length)}`);
-        
-        // Try JSON serialization test
-        try {
-          const originalJson = JSON.stringify(originalCode);
-          const modifiedJson = JSON.stringify(modifiedCode);
-          console.log(`   JSON serialized original length: ${originalJson.length}`);
-          console.log(`   JSON serialized modified length: ${modifiedJson.length}`);
-          console.log(`   JSON versions identical: ${originalJson === modifiedJson ? '❌ YES' : '✅ NO'}`);
-        } catch (jsonError) {
-          console.log(`   JSON serialization error: ${jsonError.message}`);
-        }
-      } else {
-        console.log(`✅ CODES ARE DIFFERENT - this is correct!`);
-        
-        // Find the first difference for analysis
-        let firstDiffIndex = -1;
-        const minLength = Math.min(originalCode.length, modifiedCode.length);
-        for (let i = 0; i < minLength; i++) {
-          if (originalCode[i] !== modifiedCode[i]) {
-            firstDiffIndex = i;
-            break;
-          }
-        }
-        
-        if (firstDiffIndex >= 0) {
-          console.log(`   First difference at character index: ${firstDiffIndex}`);
-          const contextStart = Math.max(0, firstDiffIndex - 20);
-          const contextEnd = Math.min(originalCode.length, firstDiffIndex + 20);
-          console.log(`   Original context: "${originalCode.substring(contextStart, contextEnd)}"`);
-          console.log(`   Modified context: "${modifiedCode.substring(contextStart, contextEnd)}"`);
-        }
-      }
-      
-      // Show first and last 100 characters for detailed comparison
-      console.log(`🔍 Code Content Analysis:`);
-      console.log(`   Original FIRST 100 chars: "${originalCode.substring(0, 100)}"`);
-      console.log(`   Modified FIRST 100 chars: "${modifiedCode.substring(0, 100)}"`);
-      console.log(`   Original LAST  100 chars: "${originalCode.substring(originalCode.length - 100)}"`);
-      console.log(`   Modified LAST  100 chars: "${modifiedCode.substring(modifiedCode.length - 100)}"`);
-      
-      // Show lines around potential differences
-      const originalLines = originalCode.split('\n');
-      const modifiedLines = modifiedCode.split('\n');
-      console.log(`   Original line count: ${originalLines.length}`);
-      console.log(`   Modified line count: ${modifiedLines.length}`);
-      
-      // Check first 5 lines for differences
-      for (let i = 0; i < Math.min(5, originalLines.length, modifiedLines.length); i++) {
-        if (originalLines[i] !== modifiedLines[i]) {
-          console.log(`   DIFF Line ${i + 1}:`);
-          console.log(`     Original: "${originalLines[i]}"`);
-          console.log(`     Modified: "${modifiedLines[i]}"`);
-        }
-      }
+    // Validate required parameters
+    if (!filePath) {
+      return res.status(400).json({
+        success: false,
+        error: 'filePath is required'
+      });
     }
+    
+    if (!modifiedCode) {
+      return res.status(400).json({
+        success: false,
+        error: 'modified_code (or modifiedCode for backward compatibility) is required'
+      });
+    }
+    
+    console.log(`✅ API validation passed - modified code received (${modifiedCode.length} characters)`);
     
     // Check if customization already exists for this file path (store-scoped)
     let customization = await HybridCustomization.findOne({
@@ -287,18 +199,18 @@ router.post('/create', authMiddleware, async (req, res) => {
         name: `Auto-saved changes to ${filePath.split('/').pop()}`,
         description: 'Auto-generated from manual edits',
         component_type: 'component',
-        baseline_code: originalCode, // Store original as baseline for diff comparisons
+        baseline_code: modifiedCode, // For new files, first save becomes the baseline
         current_code: null,  // Only store after Preview
         status: 'active',
         version_number: 1
       });
       wasCreated = true;
-      console.log(`🔧 Set baseline_code for new customization (${originalCode?.length || 0} chars)`);
+      console.log(`🔧 Set baseline_code for new customization (${modifiedCode?.length || 0} chars)`);
     } else {
-      // Update baseline_code if not set (for backward compatibility)
-      if (!customization.baseline_code && originalCode) {
-        await customization.update({ baseline_code: originalCode });
-        console.log(`🔧 Updated baseline_code for existing customization (${originalCode?.length || 0} chars)`);
+      // Update baseline_code if not set (use current modified code as baseline)
+      if (!customization.baseline_code) {
+        await customization.update({ baseline_code: modifiedCode });
+        console.log(`🔧 Updated baseline_code for existing customization (${modifiedCode?.length || 0} chars)`);
       } else {
         console.log(`📝 Using existing customization with baseline_code: ${customization.baseline_code ? 'SET' : 'NULL'}`);
       }
@@ -336,13 +248,13 @@ router.post('/create', authMiddleware, async (req, res) => {
       
       try {
         // Use baseline_code from database as the codeBefore for accurate diffs
-        const actualCodeBefore = customization.baseline_code || originalCode;
+        const actualCodeBefore = customization.baseline_code;
         
         console.log(`🔧 Creating snapshot with patch-based storage:`);
         console.log(`   Baseline from DB: ${customization.baseline_code ? 'SET' : 'NULL'} (${customization.baseline_code?.length || 0} chars)`);
-        console.log(`   Original from frontend: ${originalCode ? 'SET' : 'NULL'} (${originalCode?.length || 0} chars)`);
         console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
-        console.log(`   Using codeBefore: ${actualCodeBefore === customization.baseline_code ? 'DB baseline' : 'Frontend original'}`);
+        console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
+        console.log(`   Using codeBefore: DB baseline (${actualCodeBefore?.length || 0} chars)`);
         
         // Enhanced comparison logging
         if (customization.baseline_code && modifiedCode) {
@@ -490,7 +402,7 @@ router.post('/create', authMiddleware, async (req, res) => {
           customizationId: customization.id,
           changeType,
           userId,
-          hasOriginalCode: !!originalCode,
+          hasModifiedCode: !!modifiedCode,
           hasModifiedCode: !!modifiedCode
         });
         console.error(`❌ Full stack trace:`, snapshotError.stack);
@@ -521,13 +433,13 @@ router.post('/create', authMiddleware, async (req, res) => {
       
       try {
         // Use baseline_code from database as the codeBefore for accurate diffs
-        const actualCodeBefore = customization.baseline_code || originalCode;
+        const actualCodeBefore = customization.baseline_code;
         
         console.log(`🔧 Creating NEW snapshot with patch-based storage:`);
         console.log(`   Baseline from DB: ${customization.baseline_code ? 'SET' : 'NULL'} (${customization.baseline_code?.length || 0} chars)`);
-        console.log(`   Original from frontend: ${originalCode ? 'SET' : 'NULL'} (${originalCode?.length || 0} chars)`);
         console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
-        console.log(`   Using codeBefore: ${actualCodeBefore === customization.baseline_code ? 'DB baseline' : 'Frontend original'}`);
+        console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
+        console.log(`   Using codeBefore: DB baseline (${actualCodeBefore?.length || 0} chars)`);
         
         // Generate unified diff patch BEFORE creating snapshot (consistent with update path)
         const { generateUnifiedDiff } = require('../utils/unified-diff');
@@ -601,7 +513,7 @@ router.post('/create', authMiddleware, async (req, res) => {
           customizationId: customization.id,
           changeType,
           userId,
-          hasOriginalCode: !!originalCode,
+          hasModifiedCode: !!modifiedCode,
           hasModifiedCode: !!modifiedCode
         });
         console.error(`❌ Full stack trace:`, snapshotError.stack);
