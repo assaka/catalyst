@@ -116,28 +116,146 @@ router.post('/create', authMiddleware, async (req, res) => {
     
     const userId = req.user.id;
     const storeId = req.user.store_id || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store for now
+    const requestTimestamp = new Date().toISOString();
+    const requestId = Math.random().toString(36).substring(2, 15);
     
+    console.log(`🚀 ============= AUTO-SAVE REQUEST START [${requestId}] =============`);
     console.log(`📝 Auto-saving changes for: ${filePath}`);
+    console.log(`   Request ID: ${requestId}`);
+    console.log(`   Timestamp: ${requestTimestamp}`);
     console.log(`   User ID: ${userId}`);
     console.log(`   Store ID: ${storeId}`);
     console.log(`   Original code length: ${originalCode?.length || 0}`);
     console.log(`   Modified code length: ${modifiedCode?.length || 0}`);
     console.log(`   Change summary: ${changeSummary}`);
     
-    // Debug: Check if codes are identical
+    // Enhanced debugging: Log request body details
+    console.log(`🔍 ENHANCED DEBUGGING - Request Analysis:`);
+    console.log(`   Request method: ${req.method}`);
+    console.log(`   Request URL: ${req.originalUrl}`);
+    console.log(`   Request headers - Content-Type: ${req.headers['content-type']}`);
+    console.log(`   Request headers - User-Agent: ${req.headers['user-agent']?.substring(0, 50)}...`);
+    console.log(`   Request body keys: ${Object.keys(req.body)}`);
+    console.log(`   Request body size: ${JSON.stringify(req.body).length} chars`);
+    console.log(`   FilePath from body: "${req.body.filePath}"`);
+    console.log(`   ChangeSummary from body: "${req.body.changeSummary}"`);
+    console.log(`   ChangeType from body: "${req.body.changeType}"`);
+    
+    // ULTRA DETAILED debugging: Analyze request payload structure
+    console.log(`🔍 ULTRA DETAILED PAYLOAD ANALYSIS:`);
+    console.log(`   originalCode type: ${typeof req.body.originalCode}`);
+    console.log(`   modifiedCode type: ${typeof req.body.modifiedCode}`);
+    console.log(`   originalCode is string: ${typeof req.body.originalCode === 'string'}`);
+    console.log(`   modifiedCode is string: ${typeof req.body.modifiedCode === 'string'}`);
+    console.log(`   originalCode is null: ${req.body.originalCode === null}`);
+    console.log(`   modifiedCode is null: ${req.body.modifiedCode === null}`);
+    console.log(`   originalCode is undefined: ${req.body.originalCode === undefined}`);
+    console.log(`   modifiedCode is undefined: ${req.body.modifiedCode === undefined}`);
+    
     if (originalCode && modifiedCode) {
+      // Generate hash signatures for comparison
+      const crypto = require('crypto');
+      const originalHash = crypto.createHash('md5').update(originalCode).digest('hex');
+      const modifiedHash = crypto.createHash('md5').update(modifiedCode).digest('hex');
+      
+      console.log(`🔍 HASH COMPARISON:`);
+      console.log(`   Original code hash: ${originalHash}`);
+      console.log(`   Modified code hash: ${modifiedHash}`);
+      console.log(`   Hashes identical: ${originalHash === modifiedHash ? '❌ YES' : '✅ NO'}`);
+      
       const areIdentical = originalCode === modifiedCode;
       console.log(`🔍 Code comparison: ${areIdentical ? '❌ IDENTICAL' : '✅ DIFFERENT'}`);
       
+      // DEEP FRONTEND SOURCE ANALYSIS
+      console.log(`🔍 FRONTEND SOURCE ANALYSIS:`);
+      console.log(`   Original code starts with: "${originalCode.substring(0, 200).replace(/\n/g, '\\n')}"`);
+      console.log(`   Modified code starts with: "${modifiedCode.substring(0, 200).replace(/\n/g, '\\n')}"`);
+      console.log(`   Original code ends with: "${originalCode.substring(originalCode.length - 200).replace(/\n/g, '\\n')}"`);
+      console.log(`   Modified code ends with: "${modifiedCode.substring(modifiedCode.length - 200).replace(/\n/g, '\\n')}"`);
+      
+      // Check for invisible characters that might cause issues
+      const originalBytes = Buffer.from(originalCode, 'utf8');
+      const modifiedBytes = Buffer.from(modifiedCode, 'utf8');
+      console.log(`   Original code byte length: ${originalBytes.length}`);
+      console.log(`   Modified code byte length: ${modifiedBytes.length}`);
+      console.log(`   Byte length match: ${originalBytes.length === modifiedBytes.length ? '✅ YES' : '❌ NO'}`);
+      
       if (areIdentical) {
-        console.log(`⚠️  WARNING: originalCode and modifiedCode are identical!`);
+        console.log(`⚠️  CRITICAL WARNING: originalCode and modifiedCode are identical!`);
         console.log(`   This will result in hasChanges: false in the line diff.`);
-        console.log(`   Frontend may be sending wrong data or baseline comparison needed.`);
+        console.log(`   Frontend is sending identical content - this is the root issue.`);
+        console.log(`   Expected: Frontend should send baseline vs current edited code.`);
+        console.log(`   Actual: Frontend sent identical code for both parameters.`);
+        console.log(`   🔍 POTENTIAL CAUSES:`);
+        console.log(`     1. Frontend is not capturing current editor content correctly`);
+        console.log(`     2. Frontend is sending the same baseline code for both parameters`);
+        console.log(`     3. Frontend editor content is not being detected as changed`);
+        console.log(`     4. Frontend auto-save logic is comparing wrong values`);
+        
+        // Calculate character differences for analysis
+        let diffCount = 0;
+        const minLength = Math.min(originalCode.length, modifiedCode.length);
+        for (let i = 0; i < minLength; i++) {
+          if (originalCode[i] !== modifiedCode[i]) {
+            diffCount++;
+          }
+        }
+        console.log(`   Character-by-character diff count: ${diffCount}`);
+        console.log(`   Length difference: ${Math.abs(originalCode.length - modifiedCode.length)}`);
+        
+        // Try JSON serialization test
+        try {
+          const originalJson = JSON.stringify(originalCode);
+          const modifiedJson = JSON.stringify(modifiedCode);
+          console.log(`   JSON serialized original length: ${originalJson.length}`);
+          console.log(`   JSON serialized modified length: ${modifiedJson.length}`);
+          console.log(`   JSON versions identical: ${originalJson === modifiedJson ? '❌ YES' : '✅ NO'}`);
+        } catch (jsonError) {
+          console.log(`   JSON serialization error: ${jsonError.message}`);
+        }
+      } else {
+        console.log(`✅ CODES ARE DIFFERENT - this is correct!`);
+        
+        // Find the first difference for analysis
+        let firstDiffIndex = -1;
+        const minLength = Math.min(originalCode.length, modifiedCode.length);
+        for (let i = 0; i < minLength; i++) {
+          if (originalCode[i] !== modifiedCode[i]) {
+            firstDiffIndex = i;
+            break;
+          }
+        }
+        
+        if (firstDiffIndex >= 0) {
+          console.log(`   First difference at character index: ${firstDiffIndex}`);
+          const contextStart = Math.max(0, firstDiffIndex - 20);
+          const contextEnd = Math.min(originalCode.length, firstDiffIndex + 20);
+          console.log(`   Original context: "${originalCode.substring(contextStart, contextEnd)}"`);
+          console.log(`   Modified context: "${modifiedCode.substring(contextStart, contextEnd)}"`);
+        }
       }
       
-      // Show first 100 characters of each for comparison
-      console.log(`   Original preview: ${originalCode.substring(0, 100)}...`);
-      console.log(`   Modified preview: ${modifiedCode.substring(0, 100)}...`);
+      // Show first and last 100 characters for detailed comparison
+      console.log(`🔍 Code Content Analysis:`);
+      console.log(`   Original FIRST 100 chars: "${originalCode.substring(0, 100)}"`);
+      console.log(`   Modified FIRST 100 chars: "${modifiedCode.substring(0, 100)}"`);
+      console.log(`   Original LAST  100 chars: "${originalCode.substring(originalCode.length - 100)}"`);
+      console.log(`   Modified LAST  100 chars: "${modifiedCode.substring(modifiedCode.length - 100)}"`);
+      
+      // Show lines around potential differences
+      const originalLines = originalCode.split('\n');
+      const modifiedLines = modifiedCode.split('\n');
+      console.log(`   Original line count: ${originalLines.length}`);
+      console.log(`   Modified line count: ${modifiedLines.length}`);
+      
+      // Check first 5 lines for differences
+      for (let i = 0; i < Math.min(5, originalLines.length, modifiedLines.length); i++) {
+        if (originalLines[i] !== modifiedLines[i]) {
+          console.log(`   DIFF Line ${i + 1}:`);
+          console.log(`     Original: "${originalLines[i]}"`);
+          console.log(`     Modified: "${modifiedLines[i]}"`);
+        }
+      }
     }
     
     // Check if customization already exists for this file path (store-scoped)
@@ -225,6 +343,80 @@ router.post('/create', authMiddleware, async (req, res) => {
         console.log(`   Original from frontend: ${originalCode ? 'SET' : 'NULL'} (${originalCode?.length || 0} chars)`);
         console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
         console.log(`   Using codeBefore: ${actualCodeBefore === customization.baseline_code ? 'DB baseline' : 'Frontend original'}`);
+        
+        // Enhanced comparison logging
+        if (customization.baseline_code && modifiedCode) {
+          const baselineVsModified = customization.baseline_code === modifiedCode;
+          console.log(`🔍 CRITICAL COMPARISON CHECK:`);
+          console.log(`   DB baseline === Modified code: ${baselineVsModified ? '❌ IDENTICAL' : '✅ DIFFERENT'}`);
+          console.log(`   This is the comparison that will generate the line diff.`);
+          
+          // ULTRA DETAILED DATABASE BASELINE ANALYSIS
+          console.log(`🔍 DATABASE BASELINE DEEP ANALYSIS:`);
+          console.log(`   DB baseline code length: ${customization.baseline_code.length}`);
+          console.log(`   Frontend modified length: ${modifiedCode.length}`);
+          console.log(`   Length difference: ${Math.abs(customization.baseline_code.length - modifiedCode.length)}`);
+          
+          // Hash comparison for baseline vs modified
+          const crypto = require('crypto');
+          const baselineHash = crypto.createHash('md5').update(customization.baseline_code).digest('hex');
+          const modifiedHash = crypto.createHash('md5').update(modifiedCode).digest('hex');
+          console.log(`   DB baseline hash: ${baselineHash}`);
+          console.log(`   Frontend modified hash: ${modifiedHash}`);
+          console.log(`   Hashes match: ${baselineHash === modifiedHash ? '❌ YES' : '✅ NO'}`);
+          
+          // Character-by-character analysis
+          let charDiffCount = 0;
+          const minLen = Math.min(customization.baseline_code.length, modifiedCode.length);
+          for (let i = 0; i < minLen; i++) {
+            if (customization.baseline_code[i] !== modifiedCode[i]) {
+              charDiffCount++;
+            }
+          }
+          console.log(`   Character differences found: ${charDiffCount}`);
+          console.log(`   Length difference: ${Math.abs(customization.baseline_code.length - modifiedCode.length)}`);
+          console.log(`   Total character changes: ${charDiffCount + Math.abs(customization.baseline_code.length - modifiedCode.length)}`);
+          
+          if (baselineVsModified) {
+            console.log(`   🚨 ROOT CAUSE IDENTIFIED: DB baseline and frontend modified code are identical!`);
+            console.log(`   This means the frontend is NOT sending the actual edited code.`);
+            console.log(`   The frontend should send the current editor content as 'modifiedCode'.`);
+            console.log(`   🔍 DEBUG QUESTIONS FOR FRONTEND:`);
+            console.log(`     - Is the editor capturing the current content correctly?`);
+            console.log(`     - Is the auto-save logic getting the baseline from the wrong source?`);
+            console.log(`     - Is the editor state being updated after manual changes?`);
+            console.log(`     - Are the frontend references pointing to the same object?`);
+          } else {
+            // Show first few lines to verify they're actually different
+            const baselineLines = customization.baseline_code.split('\n');
+            const modifiedLines = modifiedCode.split('\n');
+            console.log(`   🔍 Line count comparison: baseline=${baselineLines.length}, modified=${modifiedLines.length}`);
+            
+            // Find first differing line and show context
+            let foundDiff = false;
+            for (let i = 0; i < Math.min(10, baselineLines.length, modifiedLines.length); i++) {
+              if (baselineLines[i] !== modifiedLines[i]) {
+                console.log(`   ✅ Found difference at line ${i + 1}:`);
+                console.log(`      Baseline: "${baselineLines[i]}"`);
+                console.log(`      Modified: "${modifiedLines[i]}"`);
+                console.log(`      Line length diff: ${Math.abs(baselineLines[i].length - modifiedLines[i].length)}`);
+                foundDiff = true;
+                break;
+              }
+            }
+            
+            if (!foundDiff && baselineLines.length !== modifiedLines.length) {
+              console.log(`   ✅ Difference found in line count only:`);
+              console.log(`      Baseline lines: ${baselineLines.length}`);
+              console.log(`      Modified lines: ${modifiedLines.length}`);
+              if (baselineLines.length < modifiedLines.length) {
+                console.log(`      Extra lines in modified starting at line ${baselineLines.length + 1}`);
+              } else {
+                console.log(`      Extra lines in baseline starting at line ${modifiedLines.length + 1}`);
+              }
+            }
+          }
+        }
         
         // Generate line diff patch BEFORE creating snapshot
         const { generateLineDiff } = require('../utils/line-diff');
@@ -392,7 +584,7 @@ router.post('/create', authMiddleware, async (req, res) => {
       );
     }
     
-    res.json({
+    const responseData = {
       success: true,
       data: {
         id: customization.id,
@@ -403,12 +595,34 @@ router.post('/create', authMiddleware, async (req, res) => {
         message: result.isNewSnapshot ? 'Created new open snapshot' : 'Updated existing open snapshot'
       },
       message: `Successfully auto-saved changes for ${filePath} with open snapshot management`
-    });
+    };
+    
+    const endTimestamp = new Date().toISOString();
+    const processingTimeMs = Date.now() - new Date(requestTimestamp).getTime();
+    
+    console.log(`🎉 ============= AUTO-SAVE REQUEST SUCCESS [${requestId}] =============`);
+    console.log(`   Processing time: ${processingTimeMs}ms`);
+    console.log(`   End timestamp: ${endTimestamp}`);
+    console.log(`   Response data: ${JSON.stringify(responseData.data, null, 2)}`);
+    console.log(`🏁 ============= REQUEST COMPLETE [${requestId}] =============`);
+    
+    res.json(responseData);
   } catch (error) {
-    console.error('Error creating hybrid patch with open snapshot:', error);
+    const errorTimestamp = new Date().toISOString();
+    const processingTimeMs = Date.now() - new Date(requestTimestamp).getTime();
+    
+    console.error(`❌ ============= AUTO-SAVE REQUEST ERROR [${requestId}] =============`);
+    console.error(`   Processing time: ${processingTimeMs}ms`);
+    console.error(`   Error timestamp: ${errorTimestamp}`);
+    console.error(`   Error message: ${error.message}`);
+    console.error(`   Error stack: ${error.stack}`);
+    console.error(`   Request data: filePath=${filePath}, userId=${userId}, storeId=${storeId}`);
+    console.error(`💥 ============= REQUEST FAILED [${requestId}] =============`);
+    
     res.status(500).json({
       success: false,
-      error: 'Failed to create hybrid customization patch with open snapshot management'
+      error: 'Failed to create hybrid customization patch with open snapshot management',
+      requestId: requestId // Include request ID for debugging
     });
   }
 });
