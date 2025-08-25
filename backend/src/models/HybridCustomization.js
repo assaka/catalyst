@@ -461,7 +461,10 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
     createdBy,
     aiMetadata = null,
     status = 'open', // Default to 'open' for undo capability during editing
-    astDiff = null // Add astDiff parameter for direct patch storage
+    astDiff = null, // Add astDiff parameter for direct patch storage
+    patchOperations = null, // Direct patch operations from API
+    reversePatchOperations = null, // Direct reverse patch operations from API  
+    patchPreview = null // Direct patch preview from API
   } = params;
 
   // Get next snapshot number
@@ -516,10 +519,17 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
     }));
   }
 
-  // Generate patch operations
-  const patchOperations = this.generatePatchOperations(codeBefore, codeAfter, finalAstDiff);
-  const reversePatchOperations = this.generateReversePatchOperations(codeBefore, codeAfter, finalAstDiff);
-  const patchPreview = this.generatePatchPreview(finalAstDiff, patchOperations);
+  // Use provided patch operations or generate them if not provided
+  const finalPatchOperations = patchOperations || this.generatePatchOperations(codeBefore, codeAfter, finalAstDiff);
+  const finalReversePatchOperations = reversePatchOperations || this.generateReversePatchOperations(codeBefore, codeAfter, finalAstDiff);
+  const finalPatchPreview = patchPreview || this.generatePatchPreview(finalAstDiff, finalPatchOperations);
+
+  console.log(`🔧 SNAPSHOT CREATION DEBUG:`);
+  console.log(`   AST Diff provided: ${astDiff ? 'YES' : 'NO'}`);
+  console.log(`   Patch Operations provided: ${patchOperations ? 'YES' : 'NO'}`);
+  console.log(`   Reverse Patch Operations provided: ${reversePatchOperations ? 'YES' : 'NO'}`);
+  console.log(`   Patch Preview provided: ${patchPreview ? 'YES' : 'NO'}`);
+  console.log(`   Final AST Diff: ${finalAstDiff ? 'SET' : 'NULL'}`);
 
   return await CustomizationSnapshot.create({
     customization_id: customizationId,
@@ -533,9 +543,9 @@ HybridCustomization.createSnapshot = async function(params, transaction = null) 
     modified_ast: null,  // Don't store full AST during auto-save
     ast_diff: finalAstDiff,   // Store line diff (compact) - this is all we need!
     affected_symbols: affectedSymbols,
-    patch_operations: patchOperations,
-    reverse_patch_operations: reversePatchOperations,
-    patch_preview: patchPreview,
+    patch_operations: finalPatchOperations,
+    reverse_patch_operations: finalReversePatchOperations,
+    patch_preview: finalPatchPreview,
     // code_before and code_after columns removed - using line diff optimization
     ai_prompt: aiPrompt,
     ai_explanation: aiExplanation,

@@ -391,8 +391,8 @@ router.post('/create', authMiddleware, async (req, res) => {
           codeAfter: null,  // Don't store full code - use patch only  
           createdBy: userId,
           status: 'open', // Keep open for editing and undo capability
-          // Store unified diff data in proper database fields
           astDiff: unifiedDiff, // Store full unified diff object for metadata
+          // Additional patch data for the new snapshot structure
           patchOperations: patchOperations,
           reversePatchOperations: reversePatchOperations,
           patchPreview: unifiedDiff.patch.substring(0, 1000) // Store truncated patch for quick preview
@@ -502,8 +502,8 @@ router.post('/create', authMiddleware, async (req, res) => {
           codeAfter: null,  // Don't store full code - use patch only
           createdBy: userId,
           status: 'open', // Keep open for editing and undo capability
-          // Store unified diff data in proper database fields (consistent with update path)
           astDiff: unifiedDiff, // Store full unified diff object for metadata
+          // Additional patch data for the new snapshot structure
           patchOperations: patchOperations,
           reversePatchOperations: reversePatchOperations,
           patchPreview: unifiedDiff.patch.substring(0, 1000) // Store truncated patch for quick preview
