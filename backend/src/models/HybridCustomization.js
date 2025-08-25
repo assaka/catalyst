@@ -74,7 +74,7 @@ const HybridCustomization = sequelize.define('HybridCustomization', {
   },
   current_code: {
     type: DataTypes.TEXT,
-    allowNull: false,
+    allowNull: true, // Allow null during editing phase - only populate after Preview
     comment: 'Current state after all modifications'
   },
   
