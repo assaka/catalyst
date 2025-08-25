@@ -122,6 +122,23 @@ router.post('/create', authMiddleware, async (req, res) => {
     console.log(`   Store ID: ${storeId}`);
     console.log(`   Original code length: ${originalCode?.length || 0}`);
     console.log(`   Modified code length: ${modifiedCode?.length || 0}`);
+    console.log(`   Change summary: ${changeSummary}`);
+    
+    // Debug: Check if codes are identical
+    if (originalCode && modifiedCode) {
+      const areIdentical = originalCode === modifiedCode;
+      console.log(`🔍 Code comparison: ${areIdentical ? '❌ IDENTICAL' : '✅ DIFFERENT'}`);
+      
+      if (areIdentical) {
+        console.log(`⚠️  WARNING: originalCode and modifiedCode are identical!`);
+        console.log(`   This will result in hasChanges: false in the line diff.`);
+        console.log(`   Frontend may be sending wrong data or baseline comparison needed.`);
+      }
+      
+      // Show first 100 characters of each for comparison
+      console.log(`   Original preview: ${originalCode.substring(0, 100)}...`);
+      console.log(`   Modified preview: ${modifiedCode.substring(0, 100)}...`);
+    }
     
     // Check if customization already exists for this file path (store-scoped)
     let customization = await HybridCustomization.findOne({
