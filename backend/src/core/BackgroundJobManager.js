@@ -79,6 +79,9 @@ class BackgroundJobManager extends EventEmitter {
     this.registerJobType('system:backup', require('./jobs/SystemBackupJob'));
     this.registerJobType('system:daily_credit_deduction', require('./jobs/DailyCreditDeductionJob'));
     this.registerJobType('system:dynamic_cron', require('./jobs/DynamicCronJob'));
+    
+    // Custom job types
+    this.registerJobType('custom:store_analytics', require('./jobs/CustomStoreAnalyticsJob'));
   }
 
   /**

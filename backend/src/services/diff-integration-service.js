@@ -83,13 +83,22 @@ class DiffIntegrationService {
    */
   async transformSnapshotToDiffPatch(snapshot, customization) {
     try {
-      // Parse patch operations to create diff hunks
-      const patchOps = snapshot.patch_operations || [];
-      const diffHunks = this.convertPatchOperationsToDiffHunks(
-        patchOps, 
-        snapshot.code_before || customization.baseline_code,
-        snapshot.code_after
-      );
+      let diffHunks = [];
+      
+      // Check if we have line diff data (new optimized format)
+      if (snapshot.ast_diff && snapshot.ast_diff.type === 'line_diff') {
+        console.log(`📄 Using line diff data for snapshot ${snapshot.id}`);
+        diffHunks = this.convertLineDiffToDiffHunks(snapshot.ast_diff);
+      } else {
+        // Fallback for older snapshots with full code (legacy format)
+        console.log(`📄 Using legacy full code diff for snapshot ${snapshot.id}`);
+        const patchOps = snapshot.patch_operations || [];
+        diffHunks = this.convertPatchOperationsToDiffHunks(
+          patchOps, 
+          snapshot.code_before || customization.baseline_code,
+          snapshot.code_after
+        );
+      }
 
       return {
         id: snapshot.id,
@@ -115,6 +124,102 @@ class DiffIntegrationService {
       console.error('Error transforming snapshot to diff patch:', error);
       return null;
     }
+  }
+
+  /**
+   * Convert line diff data to diff hunks format expected by DiffPreviewSystem
+   * @param {Object} lineDiff - Line diff data from ast_diff column
+   * @returns {Array} Array of diff hunks
+   */
+  convertLineDiffToDiffHunks(lineDiff) {
+    try {
+      if (!lineDiff || !lineDiff.changes || lineDiff.changes.length === 0) {
+        return [];
+      }
+
+      console.log(`📄 Converting line diff with ${lineDiff.changes.length} changes`);
+      
+      // Group consecutive line changes into hunks
+      const hunks = [];
+      let currentHunk = null;
+      
+      for (const change of lineDiff.changes) {
+        const lineNumber = change.line;
+        
+        // Start a new hunk if needed
+        if (!currentHunk || lineNumber > (currentHunk.lastLine + 2)) {
+          // Finish current hunk if exists
+          if (currentHunk) {
+            hunks.push(this.finalizeHunk(currentHunk));
+          }
+          
+          // Start new hunk
+          currentHunk = {
+            oldStart: lineNumber,
+            oldLines: 0,
+            newStart: lineNumber,
+            newLines: 0,
+            changes: [],
+            lastLine: lineNumber
+          };
+        }
+        
+        // Add change to current hunk
+        if (change.type === 'add') {
+          currentHunk.changes.push({
+            type: 'add',
+            content: change.content,
+            newLine: lineNumber
+          });
+          currentHunk.newLines++;
+        } else if (change.type === 'delete') {
+          currentHunk.changes.push({
+            type: 'del',
+            content: change.content,
+            oldLine: lineNumber
+          });
+          currentHunk.oldLines++;
+        } else if (change.type === 'modify') {
+          // For modify, show as delete + add
+          currentHunk.changes.push({
+            type: 'del',
+            content: change.from,
+            oldLine: lineNumber
+          });
+          currentHunk.changes.push({
+            type: 'add',
+            content: change.to,
+            newLine: lineNumber
+          });
+          currentHunk.oldLines++;
+          currentHunk.newLines++;
+        }
+        
+        currentHunk.lastLine = lineNumber;
+      }
+      
+      // Finalize last hunk
+      if (currentHunk) {
+        hunks.push(this.finalizeHunk(currentHunk));
+      }
+      
+      console.log(`📄 Generated ${hunks.length} diff hunks from line diff data`);
+      return hunks;
+    } catch (error) {
+      console.error('Error converting line diff to diff hunks:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Finalize a hunk by cleaning up line numbers and ensuring proper format
+   * @param {Object} hunk - Hunk to finalize
+   * @returns {Object} Finalized hunk
+   */
+  finalizeHunk(hunk) {
+    // Clean up the hunk object by removing helper properties
+    const { lastLine, ...finalHunk } = hunk;
+    return finalHunk;
   }
 
   /**
