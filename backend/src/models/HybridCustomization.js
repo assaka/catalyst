@@ -978,9 +978,25 @@ HybridCustomization.updateOpenSnapshot = async function(customizationId, modifie
       throw new Error('No open snapshot found for this customization');
     }
 
+    // Get the customization to access baseline_code
+    const customization = await HybridCustomization.findByPk(customizationId, { transaction });
+    if (!customization) {
+      throw new Error('Customization not found');
+    }
+
     // Update the open snapshot with new line diff (optimized storage)
     const { generateLineDiff } = require('../utils/line-diff');
+    
+    console.log(`🔍 Auto-save diff generation for customization ${customizationId}:`);
+    console.log(`   Baseline code length: ${customization.baseline_code?.length || 0}`);
+    console.log(`   Modified code length: ${modifiedCode?.length || 0}`);
+    console.log(`   Codes are identical: ${customization.baseline_code === modifiedCode}`);
+    
     const lineDiff = generateLineDiff(customization.baseline_code, modifiedCode);
+    
+    console.log(`   Generated diff stats:`, lineDiff.stats);
+    console.log(`   Has changes: ${lineDiff.hasChanges}`);
+    console.log(`   Number of changes: ${lineDiff.changes?.length || 0}`);
     
     await openSnapshot.update({
       ast_diff: {
@@ -996,12 +1012,9 @@ HybridCustomization.updateOpenSnapshot = async function(customizationId, modifie
     }, { transaction });
 
     // Update the customization's current code
-    const customization = await HybridCustomization.findByPk(customizationId, { transaction });
-    if (customization) {
-      await customization.update({
-        current_code: modifiedCode
-      }, { transaction });
-    }
+    await customization.update({
+      current_code: modifiedCode
+    }, { transaction });
 
     await transaction.commit();
     
