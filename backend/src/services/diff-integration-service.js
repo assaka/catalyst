@@ -297,6 +297,58 @@ class DiffIntegrationService {
       console.error('Error handling rollback completed:', error);
     }
   }
+
+  /**
+   * Get modified code with all patches applied for a file
+   * This is what BrowserPreview needs to display the patched content
+   * @param {string} filePath - File path to get modified code for
+   * @param {string} storeId - Store ID for filtering patches
+   * @returns {string|null} Modified code with patches applied, or null if no patches
+   */
+  async getModifiedCode(filePath, storeId) {
+    try {
+      console.log(`📄 Getting modified code for: ${filePath} (store: ${storeId})`);
+      
+      // Find all active customizations for this file path (store-scoped)
+      const customizations = await HybridCustomization.findAll({
+        where: {
+          file_path: filePath,
+          store_id: storeId,
+          status: 'active'
+        },
+        include: [{
+          association: 'snapshots',
+          separate: true,
+          order: [['snapshot_number', 'DESC']],
+          limit: 1 // Get latest snapshot only
+        }],
+        order: [['updated_at', 'DESC']]
+      });
+
+      if (customizations.length === 0) {
+        console.log(`   📄 No customizations found for ${filePath}`);
+        return null;
+      }
+
+      // Get the most recent customization with snapshots
+      for (const customization of customizations) {
+        if (customization.snapshots && customization.snapshots.length > 0) {
+          const latestSnapshot = customization.snapshots[0];
+          console.log(`   ✅ Found latest snapshot (${latestSnapshot.snapshot_number}) with modified code`);
+          console.log(`   📋 Change: ${latestSnapshot.change_summary}`);
+          
+          // Return the code_after from the latest snapshot
+          return latestSnapshot.code_after || customization.baseline_code;
+        }
+      }
+
+      console.log(`   📄 No snapshots found, returning baseline code`);
+      return customizations[0].baseline_code;
+    } catch (error) {
+      console.error('Error getting modified code:', error);
+      return null;
+    }
+  }
 }
 
 // Export singleton instance

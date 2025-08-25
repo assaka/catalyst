@@ -243,4 +243,52 @@ router.get('/files/recent', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/hybrid-patches/modified-code/:filePath
+ * @desc    Get modified code for a file with all patches applied (for BrowserPreview)
+ * @access  Private
+ */
+router.get('/modified-code/:filePath(*)', authMiddleware, async (req, res) => {
+  try {
+    const { filePath } = req.params;
+    const storeId = req.user.store_id || '157d4590-49bf-4b0b-bd77-abe131909528'; // Default store for now
+    
+    console.log(`🌐 BrowserPreview API Request:`);
+    console.log(`   File: ${filePath}`);
+    console.log(`   Store ID: ${storeId}`);
+    
+    // Get modified code from diff integration service
+    const modifiedCode = await diffIntegrationService.getModifiedCode(filePath, storeId);
+    
+    if (modifiedCode === null) {
+      // No patches found, return null to indicate BrowserPreview should use original code
+      return res.json({
+        success: true,
+        data: {
+          filePath: filePath,
+          modifiedCode: null,
+          hasPatches: false
+        },
+        message: `No patches found for ${filePath} - using original code`
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        filePath: filePath,
+        modifiedCode: modifiedCode,
+        hasPatches: true
+      },
+      message: `Modified code loaded for ${filePath} with patches applied`
+    });
+  } catch (error) {
+    console.error('Error getting modified code:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get modified code for BrowserPreview'
+    });
+  }
+});
+
 module.exports = router;

@@ -268,9 +268,50 @@ const BrowserPreview = ({
 
   // Apply code patches to simulate local changes in the preview
   const applyCodePatches = useCallback(async (iframe) => {
-    if (!currentCode || !fileName) return;
+    if (!fileName) return;
     
     try {
+      console.log(`🧪 BrowserPreview: Fetching modified code for: ${fileName}`);
+      
+      // Fetch modified code from the database via API
+      let modifiedCode = currentCode; // Default to current code if API call fails
+      
+      try {
+        const apiConfig = getApiConfig();
+        const response = await fetch(`/api/hybrid-patches/modified-code/${encodeURIComponent(fileName)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            ...apiConfig.headers
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data.hasPatches && data.data.modifiedCode) {
+            modifiedCode = data.data.modifiedCode;
+            console.log(`✅ BrowserPreview: Got modified code from database (${modifiedCode.length} chars)`);
+            
+            // Check if it contains Hamid Cart
+            if (modifiedCode.includes('Hamid Cart')) {
+              console.log(`🎯 BrowserPreview: Modified code contains "Hamid Cart" - patches will be applied!`);
+            }
+          } else {
+            console.log(`📄 BrowserPreview: No database patches found, using currentCode prop`);
+          }
+        } else {
+          console.warn(`⚠️ BrowserPreview: API call failed (${response.status}), using currentCode prop`);
+        }
+      } catch (apiError) {
+        console.warn(`⚠️ BrowserPreview: API error, using currentCode prop:`, apiError.message);
+      }
+      
+      // If we have no code to work with, skip patch application
+      if (!modifiedCode) {
+        console.log(`📄 BrowserPreview: No code available for patching`);
+        return;
+      }
+      
       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
       
       // Clear any existing patches before applying new ones
@@ -289,8 +330,8 @@ const BrowserPreview = ({
       
       console.log(`🧹 Cleared ${existingPatches.length} existing patch elements and restored ${modifiedElements.length} text elements`);
       
-      // Parse the current code to extract changes
-      const changes = parseCodeChanges(currentCode, fileName);
+      // Parse the modified code (from database) to extract changes
+      const changes = parseCodeChanges(modifiedCode, fileName);
       
       if (changes.hasChanges) {
         console.log('🔧 Applying code patches to preview:', changes);
@@ -544,7 +585,7 @@ const BrowserPreview = ({
     } catch (error) {
       console.warn('⚠️ Could not apply code patches:', error.message);
     }
-  }, [currentCode, fileName]);
+  }, [currentCode, fileName, getApiConfig]);
 
   // Parse code changes from the current file content
   const parseCodeChanges = useCallback((code, filePath) => {
