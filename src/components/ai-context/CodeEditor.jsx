@@ -5,7 +5,17 @@ import { detectManualEdit, createDebouncedDiffDetector } from '@/services/diff-d
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { normalizeFilePath } from '@/utils/storeContext';
 import apiClient from '@/api/client';
-import crypto from 'crypto-js';
+// Simple hash function to replace crypto-js for debugging
+const simpleHash = (str) => {
+  let hash = 0;
+  if (!str || str.length === 0) return 'null';
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(16).substring(0, 8);
+};
 
 /**
  * Monaco Code Editor with AST-aware autocomplete
@@ -86,7 +96,7 @@ const CodeEditor = ({
           },
           originalCode: {
             length: originalCode.length,
-            hash: originalCode ? crypto.MD5(originalCode).toString().substring(0, 8) : 'null',
+            hash: simpleHash(originalCode),
             preview: originalCode?.substring(0, 100) + '...'
           },
           currentEditor: {

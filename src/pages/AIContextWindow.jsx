@@ -95,6 +95,23 @@ const AIContextWindowPage = () => {
     }
   }, [searchParams]);
 
+  // Helper function to fetch baseline code from database
+  const fetchBaselineCode = useCallback(async (filePath, fallbackContent) => {
+    try {
+      const baselineData = await apiClient.get(`diff-patches/baseline/${encodeURIComponent(filePath)}`);
+      if (baselineData && baselineData.success && baselineData.data.hasBaseline) {
+        console.log(`📋 Using database baseline for ${filePath} (${baselineData.data.baselineCode.length} chars)`);
+        return baselineData.data.baselineCode;
+      } else {
+        console.log(`📋 No database baseline found for ${filePath}, using current content as baseline`);
+        return fallbackContent;
+      }
+    } catch (baselineError) {
+      console.error('Failed to fetch baseline, using current content:', baselineError);
+      return fallbackContent;
+    }
+  }, []);
+
   // Load file content
   const loadFileContent = useCallback(async (filePath) => {
     setIsFileLoading(true);
@@ -104,7 +121,10 @@ const AIContextWindowPage = () => {
 
       if (data && data.success) {
         setSourceCode(data.content);
-        setOriginalCode(data.content); // Set baseline for diff detection
+        
+        // Fetch the database baseline for proper diff detection
+        const baselineCode = await fetchBaselineCode(filePath, data.content);
+        setOriginalCode(baselineCode);
         setSelectedFile({
           path: filePath,
           name: filePath.split('/').pop(),
@@ -145,7 +165,8 @@ const DiagnosticComponent = () => {
 export default DiagnosticComponent;`;
         
         setSourceCode(diagnosticInfo);
-        setOriginalCode(diagnosticInfo); // Set baseline for diff detection
+        const baselineCode = await fetchBaselineCode(filePath, diagnosticInfo);
+        setOriginalCode(baselineCode); // Set baseline for diff detection
         setSelectedFile({
           path: filePath,
           name: filePath.split('/').pop() || 'unknown.js',
@@ -232,7 +253,8 @@ const ExampleComponent = () => {
 export default ExampleComponent;`;
       
       setSourceCode(fallbackContent);
-      setOriginalCode(fallbackContent); // Set baseline for diff detection
+      const baselineCode = await fetchBaselineCode(filePath, fallbackContent);
+      setOriginalCode(baselineCode); // Set baseline for diff detection
       
       setSelectedFile({
         path: filePath,

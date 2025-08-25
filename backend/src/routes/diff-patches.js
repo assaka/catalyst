@@ -758,4 +758,60 @@ router.get('/modified-code/:filePath(*)', authMiddleware, async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/diff-patches/baseline/:filePath
+ * @desc    Get baseline code for a file from database (for proper diff detection in frontend)
+ * @access  Private
+ */
+router.get('/baseline/:filePath(*)', authMiddleware, async (req, res) => {
+  try {
+    const { filePath } = req.params;
+    const storeId = req.user.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    
+    console.log(`📋 Baseline API Request:`);
+    console.log(`   File: ${filePath}`);
+    console.log(`   Store ID: ${storeId}`);
+    
+    // Find existing customization for this file
+    const customization = await HybridCustomization.findOne({
+      where: {
+        file_path: filePath,
+        user_id: req.user.user_id,
+        status: 'active'
+      }
+    });
+    
+    if (!customization || !customization.baseline_code) {
+      // No customization or no baseline - return null to indicate no baseline exists
+      return res.json({
+        success: true,
+        data: {
+          filePath: filePath,
+          baselineCode: null,
+          hasBaseline: false
+        },
+        message: `No baseline found for ${filePath} - file not yet customized`
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        filePath: filePath,
+        baselineCode: customization.baseline_code,
+        hasBaseline: true,
+        customizationId: customization.id,
+        lastModified: customization.updated_at
+      },
+      message: `Baseline code loaded for ${filePath}`
+    });
+  } catch (error) {
+    console.error('Error getting baseline code:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get baseline code'
+    });
+  }
+});
+
 module.exports = router;
