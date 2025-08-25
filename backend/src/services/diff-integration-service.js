@@ -81,8 +81,8 @@ class DiffIntegrationService {
 
       for (const customization of customizations) {
         for (const snapshot of customization.snapshots || []) {
-          // Only process snapshots with valid line diff data
-          if (snapshot.ast_diff && snapshot.ast_diff.type === 'line_diff' && snapshot.ast_diff.hasChanges) {
+          // Process snapshots with valid diff data (both unified_diff and line_diff formats)
+          if (snapshot.ast_diff && snapshot.ast_diff.hasChanges) {
             const patch = await this.transformSnapshotToDiffPatch(snapshot, customization);
             if (patch && patch.diffHunks && patch.diffHunks.length > 0) {
               patches.push(patch);
@@ -109,12 +109,15 @@ class DiffIntegrationService {
     try {
       let diffHunks = [];
       
-      // Check if we have line diff data (new optimized format)
-      if (snapshot.ast_diff && snapshot.ast_diff.type === 'line_diff') {
+      // Check if we have unified diff data (latest format)
+      if (snapshot.ast_diff && snapshot.ast_diff.type === 'unified_diff') {
+        console.log(`📄 Using unified diff data for snapshot ${snapshot.id}`);
+        diffHunks = this.convertUnifiedDiffToDiffHunks(snapshot.ast_diff);
+      } else if (snapshot.ast_diff && snapshot.ast_diff.type === 'line_diff') {
         console.log(`📄 Using line diff data for snapshot ${snapshot.id}`);
         diffHunks = this.convertLineDiffToDiffHunks(snapshot.ast_diff);
       } else {
-        // Fallback for older snapshots without line diff (legacy format)
+        // Fallback for older snapshots without diff data (legacy format)
         console.log(`📄 Using legacy patch operations for snapshot ${snapshot.id}`);
         const patchOps = snapshot.patch_operations || [];
         diffHunks = this.convertPatchOperationsToDiffHunks(
@@ -244,6 +247,94 @@ class DiffIntegrationService {
     // Clean up the hunk object by removing helper properties
     const { lastLine, ...finalHunk } = hunk;
     return finalHunk;
+  }
+
+  /**
+   * Convert unified diff data to diff hunks format expected by DiffPreviewSystem
+   * @param {Object} unifiedDiff - Unified diff data from ast_diff column
+   * @returns {Array} Array of diff hunks
+   */
+  convertUnifiedDiffToDiffHunks(unifiedDiff) {
+    try {
+      if (!unifiedDiff || !unifiedDiff.patch) {
+        return [];
+      }
+
+      console.log(`📄 Converting unified diff patch with ${unifiedDiff.patch.length} characters`);
+      
+      // Parse the unified diff patch into hunks
+      const hunks = [];
+      const lines = unifiedDiff.patch.split('\n');
+      let currentHunk = null;
+      
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
+        if (line.startsWith('@@')) {
+          // Hunk header: @@ -oldStart,oldCount +newStart,newCount @@
+          const hunkMatch = line.match(/@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/);
+          if (hunkMatch) {
+            // Finish previous hunk if exists
+            if (currentHunk) {
+              hunks.push(currentHunk);
+            }
+            
+            // Start new hunk
+            const oldStart = parseInt(hunkMatch[1]);
+            const oldCount = parseInt(hunkMatch[2] || '1');
+            const newStart = parseInt(hunkMatch[3]);
+            const newCount = parseInt(hunkMatch[4] || '1');
+            
+            currentHunk = {
+              oldStart: oldStart,
+              oldLines: oldCount,
+              newStart: newStart,
+              newLines: newCount,
+              changes: []
+            };
+          }
+        } else if (currentHunk && (line.startsWith(' ') || line.startsWith('+') || line.startsWith('-'))) {
+          // Diff content line
+          const changeType = line.charAt(0);
+          const content = line.substring(1);
+          
+          if (changeType === ' ') {
+            // Context line (unchanged)
+            currentHunk.changes.push({
+              type: 'normal',
+              content: content,
+              oldLine: currentHunk.changes.length + currentHunk.oldStart,
+              newLine: currentHunk.changes.length + currentHunk.newStart
+            });
+          } else if (changeType === '-') {
+            // Deleted line
+            currentHunk.changes.push({
+              type: 'del',
+              content: content,
+              oldLine: currentHunk.changes.filter(c => c.type !== 'add').length + currentHunk.oldStart
+            });
+          } else if (changeType === '+') {
+            // Added line
+            currentHunk.changes.push({
+              type: 'add',
+              content: content,
+              newLine: currentHunk.changes.filter(c => c.type !== 'del').length + currentHunk.newStart
+            });
+          }
+        }
+      }
+      
+      // Add final hunk
+      if (currentHunk) {
+        hunks.push(currentHunk);
+      }
+      
+      console.log(`📄 Generated ${hunks.length} diff hunks from unified diff patch`);
+      return hunks;
+    } catch (error) {
+      console.error('Error converting unified diff to diff hunks:', error);
+      return [];
+    }
   }
 
   /**
@@ -463,10 +554,18 @@ class DiffIntegrationService {
       for (const customization of customizations) {
         if (customization.snapshots && customization.snapshots.length > 0) {
           const latestSnapshot = customization.snapshots[0];
-          console.log(`   ✅ Found latest snapshot (${latestSnapshot.snapshot_number}) with line diff`);
+          console.log(`   ✅ Found latest snapshot (${latestSnapshot.snapshot_number})`);
           console.log(`   📋 Change: ${latestSnapshot.change_summary}`);
           
-          // Reconstruct code from baseline + line diff
+          // Check for unified diff format first (new format)
+          if (latestSnapshot.patch_operations && latestSnapshot.patch_operations.type === 'unified_diff') {
+            const { applyUnifiedDiff } = require('../utils/unified-diff');
+            const modifiedCode = applyUnifiedDiff(customization.baseline_code || '', latestSnapshot.patch_operations.patch);
+            console.log(`   🔧 Reconstructed code from unified diff patch`);
+            return modifiedCode;
+          }
+          
+          // Fallback to line diff format (legacy format)
           if (latestSnapshot.ast_diff && latestSnapshot.ast_diff.type === 'line_diff') {
             const { applyLineDiff } = require('../utils/line-diff');
             const modifiedCode = applyLineDiff(customization.baseline_code || '', latestSnapshot.ast_diff);
@@ -474,7 +573,8 @@ class DiffIntegrationService {
             return modifiedCode;
           }
           
-          // Fallback to baseline if no line diff available
+          // Final fallback to baseline if no diff data available
+          console.log(`   ⚠️ No diff data found in snapshot, returning baseline code`);
           return customization.baseline_code;
         }
       }

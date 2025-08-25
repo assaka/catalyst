@@ -418,19 +418,20 @@ router.post('/create', authMiddleware, async (req, res) => {
           }
         }
         
-        // Generate line diff patch BEFORE creating snapshot
-        const { generateLineDiff } = require('../utils/line-diff');
-        const lineDiff = generateLineDiff(actualCodeBefore, modifiedCode);
+        // Generate unified diff patch BEFORE creating snapshot
+        const { generateUnifiedDiff } = require('../utils/unified-diff');
+        const fileName = filePath.split('/').pop() || 'file'; // Extract filename for diff header
+        const unifiedDiff = generateUnifiedDiff(actualCodeBefore, modifiedCode, fileName);
         
-        console.log(`🔧 Generated line diff patch:`);
-        console.log(`   Has changes: ${lineDiff.hasChanges}`);
-        console.log(`   Total changes: ${lineDiff.stats?.totalChanges || 0}`);
-        console.log(`   Additions: +${lineDiff.stats?.additions || 0}`);
-        console.log(`   Deletions: -${lineDiff.stats?.deletions || 0}`);
-        console.log(`   Modifications: ~${lineDiff.stats?.modifications || 0}`);
+        console.log(`🔧 Generated unified diff patch:`);
+        console.log(`   Has changes: ${unifiedDiff.hasChanges}`);
+        console.log(`   Total changes: ${unifiedDiff.stats?.totalChanges || 0}`);
+        console.log(`   Additions: +${unifiedDiff.stats?.additions || 0}`);
+        console.log(`   Deletions: -${unifiedDiff.stats?.deletions || 0}`);
+        console.log(`   Patch size: ${unifiedDiff.patch?.length || 0} characters`);
         
-        if (!lineDiff.hasChanges) {
-          console.log(`⚠️  No changes detected in line diff - skipping snapshot creation`);
+        if (!unifiedDiff.hasChanges) {
+          console.log(`⚠️  No changes detected in unified diff - skipping snapshot creation`);
           return res.json({
             success: true,
             data: {
@@ -445,18 +446,43 @@ router.post('/create', authMiddleware, async (req, res) => {
           });
         }
         
-        // Create snapshot with patch data instead of full code
+        // Prepare patch operations for database storage
+        const patchOperations = {
+          type: 'unified_diff',
+          patch: unifiedDiff.patch,
+          stats: unifiedDiff.stats,
+          metadata: unifiedDiff.metadata,
+          created_at: unifiedDiff.timestamp
+        };
+        
+        // Create reverse patch for rollback capability
+        const reversePatchOperations = {
+          type: 'unified_diff',
+          patch: generateUnifiedDiff(modifiedCode, actualCodeBefore, fileName).patch,
+          stats: {
+            additions: unifiedDiff.stats.deletions, // Reverse the stats
+            deletions: unifiedDiff.stats.additions,
+            modifications: unifiedDiff.stats.modifications,
+            totalChanges: unifiedDiff.stats.totalChanges
+          },
+          created_at: unifiedDiff.timestamp
+        };
+        
+        // Create snapshot with unified diff patch data
         snapshot = await HybridCustomization.createSnapshot({
           customizationId: customization.id,
           changeType: changeType,
-          changeSummary: changeSummary || `Manual edit: ${lineDiff.stats.totalChanges} changes (${lineDiff.stats.additions} additions, ${lineDiff.stats.deletions} deletions)`,
+          changeSummary: changeSummary || `Manual edit: ${unifiedDiff.stats.totalChanges} changes (+${unifiedDiff.stats.additions} -${unifiedDiff.stats.deletions})`,
           changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
           codeBefore: null, // Don't store full code - use patch only
           codeAfter: null,  // Don't store full code - use patch only  
           createdBy: userId,
           status: 'open', // Keep open for editing and undo capability
-          // Store the line diff as the AST diff field (optimized storage)
-          astDiff: lineDiff
+          // Store unified diff data in proper database fields
+          astDiff: unifiedDiff, // Store full unified diff object for metadata
+          patchOperations: patchOperations,
+          reversePatchOperations: reversePatchOperations,
+          patchPreview: unifiedDiff.patch.substring(0, 1000) // Store truncated patch for quick preview
         });
       } catch (snapshotError) {
         console.error(`❌ Error creating snapshot:`, snapshotError.message);
@@ -503,19 +529,20 @@ router.post('/create', authMiddleware, async (req, res) => {
         console.log(`   Modified from frontend: ${modifiedCode ? 'SET' : 'NULL'} (${modifiedCode?.length || 0} chars)`);
         console.log(`   Using codeBefore: ${actualCodeBefore === customization.baseline_code ? 'DB baseline' : 'Frontend original'}`);
         
-        // Generate line diff patch BEFORE creating snapshot
-        const { generateLineDiff } = require('../utils/line-diff');
-        const lineDiff = generateLineDiff(actualCodeBefore, modifiedCode);
+        // Generate unified diff patch BEFORE creating snapshot (consistent with update path)
+        const { generateUnifiedDiff } = require('../utils/unified-diff');
+        const fileName = filePath.split('/').pop() || 'file'; // Extract filename for diff header
+        const unifiedDiff = generateUnifiedDiff(actualCodeBefore, modifiedCode, fileName);
         
-        console.log(`🔧 Generated line diff patch for NEW snapshot:`);
-        console.log(`   Has changes: ${lineDiff.hasChanges}`);
-        console.log(`   Total changes: ${lineDiff.stats?.totalChanges || 0}`);
-        console.log(`   Additions: +${lineDiff.stats?.additions || 0}`);
-        console.log(`   Deletions: -${lineDiff.stats?.deletions || 0}`);
-        console.log(`   Modifications: ~${lineDiff.stats?.modifications || 0}`);
+        console.log(`🔧 Generated unified diff patch for NEW snapshot:`);
+        console.log(`   Has changes: ${unifiedDiff.hasChanges}`);
+        console.log(`   Total changes: ${unifiedDiff.stats?.totalChanges || 0}`);
+        console.log(`   Additions: +${unifiedDiff.stats?.additions || 0}`);
+        console.log(`   Deletions: -${unifiedDiff.stats?.deletions || 0}`);
+        console.log(`   Patch size: ${unifiedDiff.patch?.length || 0} characters`);
         
-        if (!lineDiff.hasChanges) {
-          console.log(`⚠️  No changes detected in line diff - skipping NEW snapshot creation`);
+        if (!unifiedDiff.hasChanges) {
+          console.log(`⚠️  No changes detected in unified diff - skipping NEW snapshot creation`);
           return res.json({
             success: true,
             data: {
@@ -530,18 +557,43 @@ router.post('/create', authMiddleware, async (req, res) => {
           });
         }
         
-        // Create snapshot with patch data instead of full code
+        // Prepare patch operations for database storage (consistent with update path)
+        const patchOperations = {
+          type: 'unified_diff',
+          patch: unifiedDiff.patch,
+          stats: unifiedDiff.stats,
+          metadata: unifiedDiff.metadata,
+          created_at: unifiedDiff.timestamp
+        };
+        
+        // Create reverse patch for rollback capability (consistent with update path)
+        const reversePatchOperations = {
+          type: 'unified_diff',
+          patch: generateUnifiedDiff(modifiedCode, actualCodeBefore, fileName).patch,
+          stats: {
+            additions: unifiedDiff.stats.deletions, // Reverse the stats
+            deletions: unifiedDiff.stats.additions,
+            modifications: unifiedDiff.stats.modifications,
+            totalChanges: unifiedDiff.stats.totalChanges
+          },
+          created_at: unifiedDiff.timestamp
+        };
+        
+        // Create snapshot with unified diff patch data (consistent with update path)
         snapshot = await HybridCustomization.createSnapshot({
           customizationId: customization.id,
           changeType: changeType,
-          changeSummary: changeSummary || `Initial edit: ${lineDiff.stats.totalChanges} changes (${lineDiff.stats.additions} additions, ${lineDiff.stats.deletions} deletions)`,
+          changeSummary: changeSummary || `Initial edit: ${unifiedDiff.stats.totalChanges} changes (+${unifiedDiff.stats.additions} -${unifiedDiff.stats.deletions})`,
           changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
           codeBefore: null, // Don't store full code - use patch only
           codeAfter: null,  // Don't store full code - use patch only
           createdBy: userId,
           status: 'open', // Keep open for editing and undo capability
-          // Store the line diff as the AST diff field (optimized storage)
-          astDiff: lineDiff
+          // Store unified diff data in proper database fields (consistent with update path)
+          astDiff: unifiedDiff, // Store full unified diff object for metadata
+          patchOperations: patchOperations,
+          reversePatchOperations: reversePatchOperations,
+          patchPreview: unifiedDiff.patch.substring(0, 1000) // Store truncated patch for quick preview
         });
       } catch (snapshotError) {
         console.error(`❌ Error creating NEW snapshot:`, snapshotError.message);
