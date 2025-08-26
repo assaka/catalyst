@@ -54,11 +54,15 @@ const BrowserPreviewOverlay = ({
           changeType: 'live_edit',
           changeSummary: 'Live editing changes'
         });
+        
+        // Notify parent component about the code change
+        const newAppliedCode = getMergedContent(filePath);
+        onCodeChange?.(newAppliedCode);
       }
       
       updateOverlayData();
     }
-  }, [filePath, coreCode, currentEditedCode, setOriginalCode, createOverlay]);
+  }, [filePath, coreCode, currentEditedCode, setOriginalCode, createOverlay, getMergedContent, onCodeChange]);
 
   // Update overlay data
   const updateOverlayData = () => {
