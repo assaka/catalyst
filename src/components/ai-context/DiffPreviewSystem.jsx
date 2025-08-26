@@ -85,6 +85,87 @@ const resolvePageURL = async (pageName, storeId) => {
   }
 };
 
+// Function to fetch AST diff data from hybrid patches API
+const fetchAstDiffData = async (filePath) => {
+  try {
+    // Get the auth token from localStorage or context
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+    
+    // Fetch patches for the file
+    const patchResponse = await fetch(`/api/hybrid-patches/${encodeURIComponent(filePath)}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!patchResponse.ok) {
+      throw new Error(`Failed to fetch patches: ${patchResponse.status}`);
+    }
+    
+    const patchData = await patchResponse.json();
+    
+    if (patchData.success && patchData.patches && patchData.patches.length > 0) {
+      // Use the most recent patch (first in array as they're ordered by creation time DESC)
+      const latestPatch = patchData.patches[0];
+      
+      // Also get the baseline code
+      const baselineResponse = await fetch(`/api/hybrid-patches/baseline/${encodeURIComponent(filePath)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      let baselineCode = null;
+      if (baselineResponse.ok) {
+        const baselineData = await baselineResponse.json();
+        if (baselineData.success && baselineData.data.hasBaseline) {
+          baselineCode = baselineData.data.baselineCode;
+        }
+      }
+      
+      // Get the modified code
+      const modifiedResponse = await fetch(`/api/hybrid-patches/modified-code/${encodeURIComponent(filePath)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      let modifiedCode = null;
+      if (modifiedResponse.ok) {
+        const modifiedData = await modifiedResponse.json();
+        if (modifiedData.success && modifiedData.data.modifiedCode) {
+          modifiedCode = modifiedData.data.modifiedCode;
+        }
+      }
+      
+      return {
+        success: true,
+        patch: latestPatch,
+        baselineCode,
+        modifiedCode,
+        astDiff: latestPatch.astDiff,
+        customization: patchData.customization
+      };
+    } else {
+      return {
+        success: false,
+        message: 'No patches found for this file',
+        patches: []
+      };
+    }
+  } catch (error) {
+    console.error('Error fetching AST diff data:', error);
+    return {
+      success: false,
+      error: error.message,
+      patches: []
+    };
+  }
+};
+
 // SplitViewPane component for enhanced split view
 const SplitViewPane = ({ 
   lines, 
@@ -187,7 +268,9 @@ const DiffPreviewSystem = ({
   className = '',
   onCodeChange,
   onDiffStatsChange, // New callback to notify parent about diff state changes
-  storeId = '157d4590-49bf-4b0b-bd77-abe131909528' // Store ID for route resolution
+  storeId = '157d4590-49bf-4b0b-bd77-abe131909528', // Store ID for route resolution
+  filePath = null, // File path for fetching AST diff data from API
+  useAstDiff = true // Whether to use AST diff data from API
 }) => {
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
@@ -197,6 +280,9 @@ const DiffPreviewSystem = ({
   const [currentModifiedCode, setCurrentModifiedCode] = useState(modifiedCode);
   const [copyStatus, setCopyStatus] = useState({ copied: false, error: null });
   const [previewStatus, setPreviewStatus] = useState({ loading: false, error: null, url: null });
+  const [astDiffData, setAstDiffData] = useState(null);
+  const [fetchingAstDiff, setFetchingAstDiff] = useState(false);
+  const [astDiffError, setAstDiffError] = useState(null);
 
   const diffServiceRef = useRef(new DiffService());
   const originalBaseCodeRef = useRef(originalCode); // Preserve original base code
