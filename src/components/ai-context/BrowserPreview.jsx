@@ -27,22 +27,22 @@ const BrowserPreview = ({
   // Overlay state management using existing overlay manager
   const [showOverlay, setShowOverlay] = useState(false);
   const [coreCode, setCoreCode] = useState(''); // Immutable base code
-  const overlayManager = useOverlayManager();
+  const { manager: overlayManager, getMergedContent, setOriginalCode, createOverlay, clearFileOverlays } = useOverlayManager();
 
   // Initialize overlay system when file changes
   useEffect(() => {
     if (fileName && currentCode) {
       // Set original code in overlay manager
-      overlayManager.setOriginalCode(fileName, currentCode);
+      setOriginalCode(fileName, currentCode);
       setCoreCode(currentCode);
     }
-  }, [fileName, currentCode, overlayManager]);
+  }, [fileName, currentCode, setOriginalCode]);
 
   // Apply live code changes as overlays
   useEffect(() => {
     if (fileName && currentCode && coreCode && currentCode !== coreCode) {
       // Create or update overlay with current changes
-      const overlay = overlayManager.createOverlay(fileName, currentCode, {
+      const overlay = createOverlay(fileName, currentCode, {
         changeType: 'live_edit',
         changeSummary: 'Live code editing',
         priority: 1
@@ -52,7 +52,7 @@ const BrowserPreview = ({
         console.log('🔄 Applied live code change as overlay');
       }
     }
-  }, [currentCode, coreCode, fileName, overlayManager]);
+  }, [currentCode, coreCode, fileName, createOverlay]);
 
   const handleOverlayCodeChange = useCallback((newCode) => {
     // This callback is called when overlay code changes
@@ -78,7 +78,7 @@ const BrowserPreview = ({
     console.log('↩️ Overlay rolled back to core code');
     // Clear all overlays for this file
     if (fileName) {
-      overlayManager.clearFileOverlays(fileName);
+      clearFileOverlays(fileName);
     }
     // Force preview refresh to show rolled back state
     const iframe = document.getElementById('browser-preview-iframe');
@@ -87,7 +87,7 @@ const BrowserPreview = ({
         applyCodePatches(iframe);
       }, 100);
     }
-  }, [fileName, overlayManager, applyCodePatches]);
+  }, [fileName, clearFileOverlays, applyCodePatches]);
 
   // Get store context for API calls
   const { selectedStore } = useStoreSelection();
@@ -341,7 +341,7 @@ const BrowserPreview = ({
       console.log(`🧪 BrowserPreview: Applying overlay patches for: ${fileName}`);
       
       // Get applied code from overlay system (core + patches)
-      let modifiedCode = overlayManager.getMergedContent(fileName) || currentCode;
+      let modifiedCode = getMergedContent(fileName) || currentCode;
       
       try {
         const apiConfig = getApiConfig();
@@ -657,7 +657,7 @@ const BrowserPreview = ({
     } catch (error) {
       console.warn('⚠️ Could not apply code patches:', error.message);
     }
-  }, [currentCode, fileName, getApiConfig]);
+  }, [currentCode, fileName, getApiConfig, getMergedContent]);
 
   // Parse code changes from the current file content
   const parseCodeChanges = useCallback((code, filePath) => {
