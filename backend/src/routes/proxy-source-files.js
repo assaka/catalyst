@@ -200,34 +200,62 @@ function fetchAllFilesLocallyRecursive(dirPath = '.') {
   
   if (dirPath === 'src') {
     // Special handling for 'src' - look for root-level src first
+    console.log(`📂 Special handling for 'src' directory requested...`);
+    console.log(`📍 Current __dirname: ${__dirname}`);
+    console.log(`📍 Current process.cwd(): ${process.cwd()}`);
+    
     const rootSrcPaths = [
       path.resolve(__dirname, '../../../src'), // Local development - root level src
       path.resolve(__dirname, '../../../../src'), // Render with backend subdirectory - root level src  
       path.resolve(process.cwd(), 'src'), // Process working directory - root level src
-      path.resolve('/', 'opt/render/project/repo/src') // Render default structure - root level src
+      path.resolve('/', 'opt/render/project/repo/src'), // Render default structure - root level src
+      path.resolve(__dirname, '../../../frontend/src'), // Alternative frontend structure
+      path.resolve(__dirname, '../../../../frontend/src'), // Alternative frontend structure with backend subdir
     ];
     
     for (const testPath of rootSrcPaths) {
+      console.log(`🔍 Testing root src path: ${testPath}`);
       if (fs.existsSync(testPath)) {
         basePath = testPath;
-        console.log(`📂 Found root-level src directory: ${basePath}`);
+        console.log(`✅ Found root-level src directory: ${basePath}`);
         break;
+      } else {
+        console.log(`❌ Path does not exist: ${testPath}`);
       }
     }
   }
   
   // If not found or not 'src' path, use the general resolution
   if (!basePath) {
-    const possiblePaths = [
-      path.resolve(__dirname, '../../../', dirPath), // Local development
-      path.resolve(__dirname, '../../../../', dirPath), // Render with backend subdirectory
-      path.resolve(process.cwd(), dirPath), // Process working directory
-      path.resolve('/', 'opt/render/project/repo', dirPath) // Render default structure
-    ];
+    let possiblePaths;
+    
+    if (dirPath === 'src') {
+      // Even in fallback, still prioritize root-level src over backend/src
+      possiblePaths = [
+        path.resolve(__dirname, '../../../', dirPath), // Local development - should find root src
+        path.resolve(__dirname, '../../../../', dirPath), // Render with backend subdirectory - should find root src
+        path.resolve(process.cwd(), dirPath), // Process working directory - should find root src
+        path.resolve('/', 'opt/render/project/repo', dirPath), // Render default structure - should find root src
+        // Only include backend/src as absolute last resort
+        path.resolve(__dirname, '../', dirPath), // backend/src as final fallback
+        path.resolve(__dirname, '../../', dirPath) // Another backend/src fallback
+      ];
+      console.log(`📂 Fallback: searching for src directory in prioritized paths...`);
+    } else {
+      // For other paths, use standard resolution
+      possiblePaths = [
+        path.resolve(__dirname, '../../../', dirPath), // Local development
+        path.resolve(__dirname, '../../../../', dirPath), // Render with backend subdirectory
+        path.resolve(process.cwd(), dirPath), // Process working directory
+        path.resolve('/', 'opt/render/project/repo', dirPath) // Render default structure
+      ];
+    }
     
     for (const testPath of possiblePaths) {
+      console.log(`🔍 Testing path: ${testPath}`);
       if (fs.existsSync(testPath)) {
         basePath = testPath;
+        console.log(`✅ Found directory at: ${basePath}`);
         break;
       }
     }
