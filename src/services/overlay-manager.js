@@ -3,6 +3,8 @@
  * Manages temporary overlays for real-time code preview without affecting the main codebase
  */
 
+import { useState, useEffect } from 'react';
+
 // Overlay storage and management
 class OverlayStorage {
   constructor() {
