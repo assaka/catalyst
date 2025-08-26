@@ -97,8 +97,6 @@ const categoryImageRoutes = require('./routes/category-images');
 const fileManagerRoutes = require('./routes/file-manager');
 const sourceFilesRoutes = require('./routes/source-files');
 const proxySourceFilesRoutes = require('./routes/proxy-source-files');
-const hybridPatchesRoutes = require('./routes/diff-patches');
-const simpleHybridPatchesRoutes = require('./routes/simple-diff-patches');
 const storeDataMigrationRoutes = require('./routes/store-data-migration');
 const storeProvisioningRoutes = require('./routes/store-provisioning');
 const domainsRoutes = require('./routes/domains');
@@ -108,7 +106,6 @@ const storeRoutesManagement = require('./routes/store-routes');
 const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
 const cronJobRoutes = require('./routes/cron-jobs');
-const aiContextRoutes = require('./routes/ai-context');
 
 const app = express();
 
@@ -1582,9 +1579,6 @@ app.use('/api/stores', domainSettingsRoutes); // Domain settings for Store -> Se
 app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
-app.use('/api/ai-context', aiContextRoutes); // AI Context Window routes for natural language code editing
-app.use('/api/hybrid-patches', hybridPatchesRoutes); // Hybrid customization patches for code change tracking
-app.use('/api/simple-hybrid-patches', simpleHybridPatchesRoutes); // Simplified hybrid patches for basic auto-save functionality
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes

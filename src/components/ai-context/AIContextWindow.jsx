@@ -1,405 +1,459 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Send, RefreshCw, AlertCircle, CheckCircle, Code, Lightbulb } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import apiClient from '@/api/client';
+import React, { useState, useEffect, useRef } from 'react';
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  Send, 
+  Bot, 
+  User, 
+  Code, 
+  FileText, 
+  Settings, 
+  Play,
+  Square,
+  RefreshCw,
+  Download,
+  Upload,
+  Zap,
+  Cpu,
+  Database,
+  Globe
+} from 'lucide-react';
 
-/**
- * AI Context Window Component
- * Natural language to RFC 6902 JSON Patch converter
- * Integrates with AST analysis for safe code modifications
- */
-const AIContextWindow = ({ 
-  sourceCode = '', 
-  filePath = '',
-  onPatchGenerated,
-  onPreviewGenerated,
-  onCodeGenerated, // Callback for when AI generates new code (for preview updates)
-  className 
-}) => {
-  const [prompt, setPrompt] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [lastResult, setLastResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [suggestions, setSuggestions] = useState([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const textareaRef = useRef(null);
+import StorefrontPreview from './StorefrontPreview';
+import CodeEditor from './CodeEditor';
+import FileTreeNavigator from './FileTreeNavigator';
+import BrowserPreview from './BrowserPreview';
+import DiffPreviewSystem from './DiffPreviewSystem';
 
-  // Auto-resize textarea
+const AIContextWindow = () => {
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [activeTab, setActiveTab] = useState('chat');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [fileContent, setFileContent] = useState('');
+  const [patches, setPatches] = useState([]);
+  const [previewMode, setPreviewMode] = useState('visual');
+  const [context, setContext] = useState({
+    codebase: {},
+    currentTask: '',
+    modifications: []
+  });
+
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
-    }
-  }, [prompt]);
+    scrollToBottom();
+  }, [messages]);
 
-  // Check authentication status on component mount and when needed
+  // Initialize with welcome message
   useEffect(() => {
-    const checkAuth = () => {
-      const authToken = apiClient.getToken();
-      setIsAuthenticated(!!authToken);
-    };
-    
-    checkAuth();
-    
-    // Check auth status when localStorage changes (e.g., user logs in/out)
-    const handleStorageChange = () => checkAuth();
-    window.addEventListener('storage', handleStorageChange);
-    
-    return () => window.removeEventListener('storage', handleStorageChange);
+    setMessages([
+      {
+        id: 1,
+        type: 'assistant',
+        content: 'Hello! I\'m your AI development assistant. I can help you modify your storefront code, create components, and make improvements. What would you like to work on today?',
+        timestamp: new Date()
+      }
+    ]);
   }, []);
 
-  // Generate patch from natural language
-  const generatePatch = useCallback(async () => {
-    if (!prompt.trim() || !sourceCode.trim()) return;
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
 
-    setIsProcessing(true);
-    setError(null);
+    const userMessage = {
+      id: Date.now(),
+      type: 'user',
+      content: inputMessage,
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsGenerating(true);
 
     try {
-      // Check if user has valid authentication token
-      const authToken = apiClient.getToken();
-      if (!authToken) {
-        setError('Authentication required. Please log in to use AI features.');
-        setIsAuthenticated(false);
-        return;
+      // Simulate AI processing delay
+      await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+
+      // Generate response based on message content
+      const response = await generateAIResponse(inputMessage, context);
+      
+      const assistantMessage = {
+        id: Date.now() + 1,
+        type: 'assistant',
+        content: response.content,
+        patches: response.patches,
+        suggestions: response.suggestions,
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, assistantMessage]);
+      
+      // Update patches if provided
+      if (response.patches) {
+        setPatches(prev => [...prev, ...response.patches]);
       }
+      
+      // Update context
+      setContext(prev => ({
+        ...prev,
+        currentTask: inputMessage,
+        modifications: [...prev.modifications, response]
+      }));
 
-      const response = await fetch('/api/ai-context/nl-to-patch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          prompt: prompt.trim(),
-          sourceCode,
-          filePath,
-          context: {
-            timestamp: new Date().toISOString()
-          }
-        })
-      });
-
-      const data = await response.json();
-
-      // Handle authentication errors
-      if (response.status === 401) {
-        setError('Authentication expired. Please log in again to use AI features.');
-        // Clear invalid token and update auth status
-        apiClient.setToken(null);
-        setIsAuthenticated(false);
-        return;
-      }
-
-      if (data.success) {
-        setLastResult(data.data);
-        setSuggestions(data.data.suggestions || []);
-        onPatchGenerated?.(data.data.patch);
-        
-        // Generate preview
-        if (data.data.preview) {
-          onPreviewGenerated?.(data.data.preview);
-        }
-        
-        // Notify about generated code for preview updates
-        if (data.data.preview || data.data.patch) {
-          onCodeGenerated?.(data.data.preview || sourceCode, filePath);
-        }
-      } else {
-        setError(data.message || 'Failed to generate patch');
-      }
     } catch (error) {
-      setError(`Request failed: ${error.message}`);
-    } finally {
-      setIsProcessing(false);
+      const errorMessage = {
+        id: Date.now() + 1,
+        type: 'assistant',
+        content: `I apologize, but I encountered an error: ${error.message}. Please try again.`,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
     }
-  }, [prompt, sourceCode, filePath, onPatchGenerated, onPreviewGenerated]);
 
-  // Handle Enter key press
-  const handleKeyPress = useCallback((e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    setIsGenerating(false);
+  };
+
+  const generateAIResponse = async (message, context) => {
+    // Simulate AI response generation
+    const responses = {
+      // UI/Component related
+      'button': {
+        content: 'I can help you create or modify buttons. Here are some patches to improve your button components with better styling and accessibility.',
+        patches: [
+          {
+            name: 'Enhanced Button Styling',
+            type: 'json-patch',
+            description: 'Add hover effects and improved accessibility',
+            operations: [
+              { op: 'replace', path: '/className', value: 'px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2' }
+            ]
+          }
+        ]
+      },
+
+      // E-commerce related
+      'cart': {
+        content: 'I can help optimize your shopping cart functionality. Here are some improvements for better user experience.',
+        patches: [
+          {
+            name: 'Cart State Management',
+            type: 'unified-diff',
+            description: 'Improve cart state handling and persistence',
+            diff: `@@ -1,5 +1,8 @@
+ const [cartItems, setCartItems] = useState([]);
++const [cartTotal, setCartTotal] = useState(0);
++
++useEffect(() => {
++  setCartTotal(cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0));
++}, [cartItems]);`
+          }
+        ]
+      },
+
+      // Performance related
+      'performance': {
+        content: 'I can help optimize your storefront performance. Here are some patches to implement lazy loading and memoization.',
+        patches: [
+          {
+            name: 'React.memo Optimization',
+            type: 'json-patch',
+            description: 'Add memoization to prevent unnecessary re-renders',
+            operations: [
+              { op: 'replace', path: '/export', value: 'React.memo(Component)' }
+            ]
+          }
+        ]
+      },
+
+      // Default response
+      'default': {
+        content: 'I understand you want to work on your storefront. Could you be more specific about what you\'d like to modify? For example:\n\n• Update a specific component\n• Improve performance\n• Add new features\n• Fix styling issues\n• Optimize for mobile\n\nI can generate code patches and show you a preview of the changes.',
+        patches: []
+      }
+    };
+
+    // Simple keyword matching for demo
+    const lowerMessage = message.toLowerCase();
+    let selectedResponse = responses.default;
+
+    for (const [key, response] of Object.entries(responses)) {
+      if (lowerMessage.includes(key)) {
+        selectedResponse = response;
+        break;
+      }
+    }
+
+    return selectedResponse;
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      generatePatch();
+      handleSendMessage();
     }
-  }, [generatePatch]);
+  };
 
-  // Clear current state
-  const clearState = useCallback(() => {
-    setLastResult(null);
-    setError(null);
-    setSuggestions([]);
-    setPrompt('');
-  }, []);
+  const handleFileSelect = (file) => {
+    setSelectedFile(file);
+    // In a real implementation, this would load the actual file content
+    setFileContent(`// Content of ${file.name}\n// This is a placeholder for the actual file content`);
+  };
 
-  // Apply suggestion to prompt
-  const applySuggestion = useCallback((suggestion) => {
-    setPrompt(suggestion);
-  }, []);
+  const handleCodeChange = (newCode) => {
+    setFileContent(newCode);
+  };
 
-  // Common prompt templates
-  const promptTemplates = [
-    "Add a new function called {name} that {description}",
-    "Remove the {element} named {name}",
-    "Change the variable {oldName} to {newName}",
-    "Move the {element} to {location}",
-    "Add error handling to the {function} function",
-    "Refactor this code to use async/await",
-    "Add TypeScript types to this function",
-    "Extract this logic into a separate function",
-    "Add JSDoc comments to all functions",
-    "Convert this class component to hooks"
-  ];
+  const handlePatchToggle = (selectedPatchIndices) => {
+    // Handle patch selection changes
+    console.log('Selected patches:', selectedPatchIndices);
+  };
 
-  return (
-    <div className={cn("h-full flex flex-col bg-white dark:bg-gray-900 border-l", className)}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b bg-gray-50 dark:bg-gray-800">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            AI Context Window
-          </h3>
-          {/* Authentication Status */}
-          <div className={cn(
-            "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs",
-            isAuthenticated 
-              ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-          )}>
-            <div className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              isAuthenticated ? "bg-green-500" : "bg-red-500"
-            )} />
-            {isAuthenticated ? "Auth OK" : "Auth Required"}
+  const applyPatches = () => {
+    // Apply selected patches to the codebase
+    alert('Patches would be applied in a real implementation');
+  };
+
+  const MessageItem = ({ message }) => {
+    const isUser = message.type === 'user';
+    
+    return (
+      <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+        <div className={`flex ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start space-x-2 max-w-3xl`}>
+          <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+            isUser ? 'bg-blue-500 ml-2' : 'bg-green-500 mr-2'
+          }`}>
+            {isUser ? (
+              <User className="w-4 h-4 text-white" />
+            ) : (
+              <Bot className="w-4 h-4 text-white" />
+            )}
+          </div>
+          
+          <div className={`rounded-lg p-3 ${
+            isUser 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-muted'
+          }`}>
+            <p className="whitespace-pre-wrap">{message.content}</p>
+            
+            {message.patches && message.patches.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <p className="text-sm font-medium">Generated patches:</p>
+                {message.patches.map((patch, index) => (
+                  <Badge key={index} variant="secondary" className="mr-1">
+                    {patch.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
+            <p className="text-xs opacity-70 mt-2">
+              {message.timestamp.toLocaleTimeString()}
+            </p>
           </div>
         </div>
-        <button
-          onClick={clearState}
-          className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          title="Clear"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header */}
+      <div className="border-b p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Zap className="w-6 h-6 text-blue-500" />
+            <h1 className="text-xl font-semibold">AI Context Window</h1>
+            <Badge variant="outline">v2.0</Badge>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm">
+              <Download className="w-4 h-4 mr-1" />
+              Export
+            </Button>
+            <Button variant="outline" size="sm">
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Prompt Input Area */}
-        <div className="p-3 border-b bg-gray-50 dark:bg-gray-800">
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Describe your changes in natural language:
-          </label>
-          
-          <div className="relative">
-            <textarea
-              ref={textareaRef}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="e.g., Add a new async function called fetchUserData that takes a userId parameter and returns user information..."
-              className={cn(
-                "w-full p-2 text-sm border rounded-md resize-none",
-                "focus:ring-2 focus:ring-blue-500 focus:border-blue-500",
-                "dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100",
-                "placeholder-gray-400 dark:placeholder-gray-500"
-              )}
-              rows={1}
-              disabled={isProcessing}
-            />
-            
-            <button
-              onClick={generatePatch}
-              disabled={!prompt.trim() || !sourceCode.trim() || isProcessing}
-              className={cn(
-                "absolute right-2 bottom-2 p-1.5 rounded-md",
-                "bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300",
-                "text-white disabled:text-gray-500",
-                "transition-colors duration-150"
-              )}
-              title="Generate patch (Ctrl+Enter)"
-            >
-              {isProcessing ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <Send className="w-4 h-4" />
-              )}
-            </button>
-          </div>
+      <div className="flex-1 flex">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="chat" className="flex items-center">
+              <Bot className="w-4 h-4 mr-1" />
+              Chat
+            </TabsTrigger>
+            <TabsTrigger value="code" className="flex items-center">
+              <Code className="w-4 h-4 mr-1" />
+              Code
+            </TabsTrigger>
+            <TabsTrigger value="preview" className="flex items-center">
+              <Globe className="w-4 h-4 mr-1" />
+              Preview
+            </TabsTrigger>
+            <TabsTrigger value="files" className="flex items-center">
+              <FileText className="w-4 h-4 mr-1" />
+              Files
+            </TabsTrigger>
+            <TabsTrigger value="diff" className="flex items-center">
+              <Database className="w-4 h-4 mr-1" />
+              Diff
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-            Press Ctrl+Enter to generate patch
-          </div>
-        </div>
-
-        {/* Prompt Templates */}
-        <div className="p-3 border-b">
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Quick Templates:
-          </label>
-          <div className="flex flex-wrap gap-1">
-            {promptTemplates.slice(0, 5).map((template, index) => (
-              <button
-                key={index}
-                onClick={() => applySuggestion(template)}
-                className={cn(
-                  "px-2 py-1 text-xs rounded border",
-                  "bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600",
-                  "text-gray-700 dark:text-gray-300 transition-colors"
-                )}
-                disabled={isProcessing}
-              >
-                {template.split(' ').slice(0, 4).join(' ')}...
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Results Area */}
-        <div className="flex-1 overflow-auto">
-          {/* Authentication Help */}
-          {!isAuthenticated && !error && !lastResult && (
-            <div className="p-3 m-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
-              <div className="flex items-start">
-                <AlertCircle className="w-4 h-4 text-blue-500 mr-2 mt-0.5" />
-                <div>
-                  <span className="text-sm font-medium text-blue-700 dark:text-blue-400 block mb-1">
-                    Authentication Required
-                  </span>
-                  <span className="text-xs text-blue-600 dark:text-blue-500">
-                    Please log in to use AI code generation features. You'll need a valid store owner account to access these tools.
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Error Display */}
-          {error && (
-            <div className="p-3 m-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <div className="flex items-center">
-                <AlertCircle className="w-4 h-4 text-red-500 mr-2" />
-                <span className="text-sm text-red-700 dark:text-red-400">{error}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Success Result */}
-          {lastResult && (
-            <div className="p-3 space-y-3">
-              {/* Summary */}
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md p-3">
-                <div className="flex items-center mb-2">
-                  <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                  <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                    Patch Generated Successfully
-                  </span>
-                </div>
-                <div className="text-xs text-green-600 dark:text-green-500">
-                  Confidence: {Math.round((lastResult.confidence || 0.8) * 100)}%
-                  {lastResult.patch && (
-                    <span className="ml-2">
-                      • {lastResult.patch.length} operation{lastResult.patch.length !== 1 ? 's' : ''}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Patch Operations */}
-              {lastResult.patch && lastResult.patch.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-md p-3">
-                  <div className="flex items-center mb-2">
-                    <Code className="w-4 h-4 text-gray-500 mr-2" />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      RFC 6902 Patch Operations
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {lastResult.patch.map((operation, index) => (
-                      <div 
-                        key={index}
-                        className="bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded p-2"
-                      >
-                        <div className="font-mono text-xs">
-                          <span className="text-blue-600 dark:text-blue-400">{operation.op}</span>
-                          <span className="text-gray-500 mx-1">•</span>
-                          <span className="text-gray-700 dark:text-gray-300">{operation.path}</span>
+          <div className="flex-1 flex">
+            <TabsContent value="chat" className="flex-1 flex flex-col m-0">
+              {/* Chat Messages */}
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <MessageItem key={message.id} message={message} />
+                  ))}
+                  
+                  {isGenerating && (
+                    <div className="flex justify-start mb-4">
+                      <div className="flex items-start space-x-2 max-w-3xl">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center mr-2">
+                          <Bot className="w-4 h-4 text-white" />
                         </div>
-                        {operation.value && (
-                          <div className="mt-1 text-xs text-gray-600 dark:text-gray-400 font-mono bg-gray-50 dark:bg-gray-800 p-1 rounded">
-                            {typeof operation.value === 'string' 
-                              ? operation.value.length > 50 
-                                ? operation.value.substring(0, 50) + '...'
-                                : operation.value
-                              : JSON.stringify(operation.value)
-                            }
+                        <div className="bg-muted rounded-lg p-3">
+                          <div className="flex items-center space-x-2">
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>AI is thinking...</span>
                           </div>
-                        )}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
                 </div>
-              )}
+              </ScrollArea>
 
-              {/* Conflicts */}
-              {lastResult.conflicts && lastResult.conflicts.length > 0 && (
-                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md p-3">
-                  <div className="flex items-center mb-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-500 mr-2" />
-                    <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
-                      Potential Conflicts Detected
-                    </span>
-                  </div>
-                  <div className="space-y-1">
-                    {lastResult.conflicts.map((conflict, index) => (
-                      <div key={index} className="text-xs text-yellow-600 dark:text-yellow-500">
-                        • {conflict.message || conflict}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Suggestions */}
-          {suggestions.length > 0 && (
-            <div className="p-3 border-t">
-              <div className="flex items-center mb-2">
-                <Lightbulb className="w-4 h-4 text-blue-500 mr-2" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Suggestions
-                </span>
-              </div>
-              <div className="space-y-1">
-                {suggestions.map((suggestion, index) => (
-                  <div 
-                    key={index}
-                    className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded"
+              {/* Message Input */}
+              <div className="border-t p-4">
+                <div className="flex space-x-2">
+                  <Textarea
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="Ask me to modify your storefront code..."
+                    className="resize-none"
+                    rows={2}
+                  />
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={!inputMessage.trim() || isGenerating}
+                    size="lg"
                   >
-                    {suggestion.message || suggestion}
-                  </div>
-                ))}
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
+            </TabsContent>
 
-          {/* Empty State */}
-          {!lastResult && !error && !isProcessing && (
-            <div className="flex-1 flex items-center justify-center p-6">
-              <div className="text-center text-gray-500 dark:text-gray-400">
-                <Code className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Describe the changes you want to make</p>
-                <p className="text-xs mt-1">I'll generate RFC 6902 JSON patches for safe code modification</p>
+            <TabsContent value="code" className="flex-1 m-0">
+              <div className="h-full flex">
+                <div className="w-1/4 border-r">
+                  <FileTreeNavigator 
+                    onFileSelect={handleFileSelect}
+                    selectedFile={selectedFile}
+                  />
+                </div>
+                <div className="flex-1">
+                  <CodeEditor 
+                    code={fileContent}
+                    onChange={handleCodeChange}
+                    language="javascript"
+                    fileName={selectedFile?.name}
+                  />
+                </div>
               </div>
-            </div>
-          )}
-        </div>
+            </TabsContent>
+
+            <TabsContent value="preview" className="flex-1 m-0">
+              <div className="h-full flex flex-col">
+                <div className="border-b p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">Storefront Preview</h3>
+                    <div className="flex items-center space-x-2">
+                      <Button variant="outline" size="sm" onClick={applyPatches}>
+                        <Play className="w-4 h-4 mr-1" />
+                        Apply Changes
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1">
+                  <div className="grid grid-cols-2 h-full">
+                    <div className="border-r">
+                      <StorefrontPreview 
+                        patches={patches}
+                        originalCode={fileContent}
+                        onPatchToggle={handlePatchToggle}
+                        previewMode={previewMode}
+                      />
+                    </div>
+                    <div>
+                      <BrowserPreview />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="files" className="flex-1 m-0 p-4">
+              <FileTreeNavigator 
+                onFileSelect={handleFileSelect}
+                selectedFile={selectedFile}
+                showDetails={true}
+              />
+            </TabsContent>
+
+            <TabsContent value="diff" className="flex-1 m-0">
+              <DiffPreviewSystem 
+                patches={patches}
+                originalCode={fileContent}
+                modifiedCode={fileContent} // Would be the patched code
+              />
+            </TabsContent>
+          </div>
+        </Tabs>
       </div>
 
-      {/* Footer */}
-      <div className="p-2 border-t bg-gray-50 dark:bg-gray-800">
-        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          Powered by AST analysis and AI-driven code understanding
+      {/* Status Bar */}
+      <div className="border-t px-4 py-2 bg-muted/50">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <div className="flex items-center space-x-4">
+            <span>Context: {context.currentTask || 'Ready'}</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span>Patches: {patches.length}</span>
+            <Separator orientation="vertical" className="h-4" />
+            <span>File: {selectedFile?.name || 'None'}</span>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Cpu className="w-4 h-4" />
+            <span>AI Ready</span>
+          </div>
         </div>
       </div>
     </div>
