@@ -377,50 +377,66 @@ const DiffPreviewSystem = ({
     isScrollingRef.current = true;
     
     requestAnimationFrame(() => {
-      if (source === 'original' && modifiedScrollRef.current) {
-        modifiedScrollRef.current.scrollTop = scrollTop;
-        modifiedScrollRef.current.scrollLeft = scrollLeft;
-      } else if (source === 'modified' && originalScrollRef.current) {
-        originalScrollRef.current.scrollTop = scrollTop;
-        originalScrollRef.current.scrollLeft = scrollLeft;
+      try {
+        if (source === 'original' && modifiedScrollRef.current) {
+          modifiedScrollRef.current.scrollTop = scrollTop;
+          modifiedScrollRef.current.scrollLeft = scrollLeft;
+        } else if (source === 'modified' && originalScrollRef.current) {
+          originalScrollRef.current.scrollTop = scrollTop;
+          originalScrollRef.current.scrollLeft = scrollLeft;
+        }
+      } catch (error) {
+        console.warn('Scroll sync error:', error);
       }
       
       setTimeout(() => {
         isScrollingRef.current = false;
-      }, 16);
+      }, 10);
     });
   }, []);
 
   // Set up scroll event listeners for synchronized scrolling
   useEffect(() => {
-    const originalViewport = originalScrollRef.current;
-    const modifiedViewport = modifiedScrollRef.current;
+    let cleanup = null;
     
-    const handleOriginalScroll = (e) => {
-      handleSyncScroll('original', e.target.scrollTop, e.target.scrollLeft);
-    };
-    
-    const handleModifiedScroll = (e) => {
-      handleSyncScroll('modified', e.target.scrollTop, e.target.scrollLeft);
-    };
-    
-    if (originalViewport) {
-      originalViewport.addEventListener('scroll', handleOriginalScroll);
-    }
-    
-    if (modifiedViewport) {
-      modifiedViewport.addEventListener('scroll', handleModifiedScroll);
-    }
+    // Use a small delay to ensure refs are properly attached
+    const timeoutId = setTimeout(() => {
+      const originalViewport = originalScrollRef.current;
+      const modifiedViewport = modifiedScrollRef.current;
+      
+      if (!originalViewport || !modifiedViewport) {
+        return;
+      }
+      
+      const handleOriginalScroll = (e) => {
+        if (!isScrollingRef.current) {
+          handleSyncScroll('original', e.target.scrollTop, e.target.scrollLeft);
+        }
+      };
+      
+      const handleModifiedScroll = (e) => {
+        if (!isScrollingRef.current) {
+          handleSyncScroll('modified', e.target.scrollTop, e.target.scrollLeft);
+        }
+      };
+      
+      originalViewport.addEventListener('scroll', handleOriginalScroll, { passive: true });
+      modifiedViewport.addEventListener('scroll', handleModifiedScroll, { passive: true });
+      
+      // Set cleanup function
+      cleanup = () => {
+        originalViewport.removeEventListener('scroll', handleOriginalScroll);
+        modifiedViewport.removeEventListener('scroll', handleModifiedScroll);
+      };
+    }, 100);
     
     return () => {
-      if (originalViewport) {
-        originalViewport.removeEventListener('scroll', handleOriginalScroll);
-      }
-      if (modifiedViewport) {
-        modifiedViewport.removeEventListener('scroll', handleModifiedScroll);
+      clearTimeout(timeoutId);
+      if (cleanup) {
+        cleanup();
       }
     };
-  }, [handleSyncScroll]);
+  }, [handleSyncScroll, selectedView]);
 
   // Handle line revert functionality
   const handleLineRevert = useCallback((lineIndex, originalLine) => {

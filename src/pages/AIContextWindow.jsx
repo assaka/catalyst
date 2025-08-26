@@ -712,7 +712,7 @@ export default ExampleComponent;`;
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0" style={{ height: 'calc(100vh - 140px)' }}>
+      <div className="flex-1 min-h-0 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           {/* AI Context Window - Now First Column */}
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
