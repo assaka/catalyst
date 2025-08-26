@@ -345,17 +345,23 @@ export default ExampleComponent;`;
   }, [selectedFile, sourceCode, currentPatch]);
 
   // Handle manual edit detection
-  const handleManualEdit = useCallback((diffResult) => {
-    setManualEditResult(diffResult);
+  const handleManualEdit = useCallback((newCode, originalCode, options = {}) => {
+    const manualEdit = {
+      newCode,
+      originalCode,
+      hasChanges: newCode !== originalCode,
+      options
+    };
     
-    if (diffResult.hasChanges) {
-      console.log(`🔍 Manual changes detected: ${diffResult.changeCount} modifications`);
-      console.log('📋 Diff summary:', diffResult.summary);
+    setManualEditResult(manualEdit);
+    
+    if (manualEdit.hasChanges) {
+      console.log(`🔍 Manual changes detected in ${selectedFile?.name || 'file'}`);
+      console.log('📋 Changes detected:', { originalLength: originalCode.length, newLength: newCode.length });
     } else {
       console.log('✅ Changes undone - code returned to original state');
-      // Clear any manual edit indicators when returning to original state
     }
-  }, []);
+  }, [selectedFile?.name]);
 
   // Handle download in Preview mode
   const handleDownload = useCallback(() => {
@@ -729,7 +735,8 @@ export default ExampleComponent;`;
                     ) : previewMode === 'patch' ? (
                       // Diff View - Always use DiffPreviewSystem for showing diffs
                       <DiffPreviewSystem
-                        diffResult={manualEditResult}
+                        originalCode={manualEditResult?.originalCode || originalCode}
+                        modifiedCode={manualEditResult?.newCode || sourceCode}
                         fileName={selectedFile?.path || ''}
                         className="h-full"
                       />
