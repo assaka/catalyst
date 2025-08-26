@@ -4,7 +4,6 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
-import CodeEditor from '@/components/ai-context/CodeEditor';
 import AdvancedCodeEditor from '@/components/ai-context/AdvancedCodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import StorefrontPreview from '@/components/ai-context/StorefrontPreview';
@@ -87,7 +86,6 @@ const AIContextWindowPage = () => {
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
   const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
-  const [editorMode, setEditorMode] = useState('legacy'); // Track editor mode: 'legacy', 'advanced'
 
   // Load file from URL parameter on mount
   useEffect(() => {
@@ -679,24 +677,6 @@ export default ExampleComponent;`;
                           Preview
                         </button>
                       </div>
-                      
-                      {/* Editor Mode Toggle - Only show in Code tab */}
-                      {previewMode === 'code' && (
-                        <div className="flex items-center space-x-2 px-4">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Editor:</span>
-                          <button
-                            onClick={() => setEditorMode(editorMode === 'legacy' ? 'advanced' : 'legacy')}
-                            className={cn(
-                              "px-3 py-1 text-xs font-medium rounded transition-colors",
-                              editorMode === 'advanced'
-                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
-                                : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
-                            )}
-                          >
-                            {editorMode === 'advanced' ? 'Advanced' : 'Legacy'}
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -732,33 +712,19 @@ export default ExampleComponent;`;
                   {/* Single Content Area - Tab-based Content */}
                   <div className="flex-1">
                     {previewMode === 'code' ? (
-                      // Code Editor View - Conditional rendering based on editorMode
-                      editorMode === 'advanced' ? (
-                        <AdvancedCodeEditor
-                          value={sourceCode}
-                          onChange={handleCodeChange}
-                          fileName={selectedFile.name}
-                          filePath={selectedFile.path}
-                          onCursorPositionChange={setCursorPosition}
-                          onSelectionChange={setSelection}
-                          onManualEdit={handleManualEdit}
-                          originalCode={originalCode}
-                          enableDiffDetection={true}
-                          className="h-full"
-                        />
-                      ) : (
-                        <CodeEditor
-                          value={sourceCode}
-                          onChange={handleCodeChange}
-                          fileName={selectedFile.name}
-                          onCursorPositionChange={setCursorPosition}
-                          onSelectionChange={setSelection}
-                          onManualEdit={handleManualEdit}
-                          originalCode={originalCode}
-                          enableDiffDetection={true}
-                          className="h-full"
-                        />
-                      )
+                      // Advanced Code Editor with Database Persistence
+                      <AdvancedCodeEditor
+                        value={sourceCode}
+                        onChange={handleCodeChange}
+                        fileName={selectedFile.name}
+                        filePath={selectedFile.path}
+                        onCursorPositionChange={setCursorPosition}
+                        onSelectionChange={setSelection}
+                        onManualEdit={handleManualEdit}
+                        originalCode={originalCode}
+                        enableDiffDetection={true}
+                        className="h-full"
+                      />
                     ) : previewMode === 'patch' ? (
                       // Diff View - Always use DiffPreviewSystem for showing diffs
                       <DiffPreviewSystem
