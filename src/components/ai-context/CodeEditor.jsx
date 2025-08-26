@@ -30,7 +30,8 @@ const CodeEditor = ({
   onSelectionChange,
   onManualEdit,
   enableDiffDetection = false,
-  initialContent = ''
+  initialContent = '',
+  originalCode = ''
 }) => {
   const [localCode, setLocalCode] = useState(value);
   const [isModified, setIsModified] = useState(false);
