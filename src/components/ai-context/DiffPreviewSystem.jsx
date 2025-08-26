@@ -546,7 +546,7 @@ const DiffPreviewSystem = ({
                 </div>
               </div>
               
-              <div className={`flex-1 grid ${(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className="flex-1 grid grid-cols-2">
                 <div className={`${(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? 'border-r' : ''} flex flex-col`}>
                   <div className="border-b p-2 bg-red-50">
                     <h4 className="font-medium text-red-900">Original ({originalBaseCodeRef.current.split('\n').length} lines)</h4>
@@ -572,7 +572,9 @@ const DiffPreviewSystem = ({
                       </div>
                     </ScrollArea>
                   ) :
-                      <div className="flex-1">No modifications</div>
+                      <pre className="p-4 text-sm font-mono whitespace-pre">
+                          No modifications
+                      </pre>
                   }
                 </div>
                 <div className="flex flex-col">
@@ -600,7 +602,9 @@ const DiffPreviewSystem = ({
                         </div>
                       </ScrollArea>
                    ) :
-                      <div className="flex-1">No modifications</div>
+                       <pre className="p-4 text-sm font-mono whitespace-pre">
+                          No modifications
+                      </pre>
                   }
                 </div>
               </div>
