@@ -33,16 +33,24 @@ const BrowserPreviewOverlay = ({
   const [visualDiff, setVisualDiff] = useState(null);
   const dragRef = useRef(null);
   const overlayRef = useRef(null);
-  const overlayManager = useOverlayManager();
+  const { 
+    manager: overlayManager, 
+    stats: managerStats, 
+    getMergedContent, 
+    createOverlay, 
+    setOriginalCode,
+    clearFileOverlays,
+    removeOverlay 
+  } = useOverlayManager();
 
   // Initialize overlay when component mounts or filePath changes
   useEffect(() => {
     if (filePath && coreCode) {
-      overlayManager.setOriginalCode(filePath, coreCode);
+      setOriginalCode(filePath, coreCode);
       
       // Apply current edited code as overlay if different from core
       if (currentEditedCode && currentEditedCode !== coreCode) {
-        overlayManager.createOverlay(filePath, currentEditedCode, {
+        createOverlay(filePath, currentEditedCode, {
           changeType: 'live_edit',
           changeSummary: 'Live editing changes'
         });
@@ -50,15 +58,15 @@ const BrowserPreviewOverlay = ({
       
       updateOverlayData();
     }
-  }, [filePath, coreCode, currentEditedCode, overlayManager]);
+  }, [filePath, coreCode, currentEditedCode, setOriginalCode, createOverlay]);
 
   // Update overlay data
   const updateOverlayData = () => {
     if (!filePath) return;
     
     const fileOverlays = overlayManager.getFileOverlays(filePath);
-    const stats = overlayManager.stats;
-    const mergedContent = overlayManager.getMergedContent(filePath);
+    const stats = managerStats;
+    const mergedContent = getMergedContent(filePath);
     
     setOverlays(fileOverlays);
     setOverlayStats({
@@ -82,9 +90,9 @@ const BrowserPreviewOverlay = ({
 
   // Handle overlay operations
   const handleRemoveOverlay = (overlayId) => {
-    if (overlayManager.removeOverlay(overlayId)) {
+    if (removeOverlay(overlayId)) {
       updateOverlayData();
-      const newAppliedCode = overlayManager.getMergedContent(filePath);
+      const newAppliedCode = getMergedContent(filePath);
       onCodeChange?.(newAppliedCode);
     }
   };
@@ -98,10 +106,10 @@ const BrowserPreviewOverlay = ({
     if (targetIndex >= 0) {
       // Remove overlays after the target
       fileOverlays.slice(0, targetIndex).forEach(overlay => {
-        overlayManager.removeOverlay(overlay.id);
+        removeOverlay(overlay.id);
       });
       updateOverlayData();
-      const newAppliedCode = overlayManager.getMergedContent(filePath);
+      const newAppliedCode = getMergedContent(filePath);
       onCodeChange?.(newAppliedCode);
     }
   };
@@ -110,7 +118,7 @@ const BrowserPreviewOverlay = ({
     // For overlay manager, publish means we have finalized the overlay
     const publishedData = {
       filePath,
-      appliedCode: overlayManager.getMergedContent(filePath),
+      appliedCode: getMergedContent(filePath),
       overlayCount: overlayManager.getFileOverlays(filePath).length
     };
     
@@ -120,7 +128,7 @@ const BrowserPreviewOverlay = ({
 
   const handleRollback = () => {
     // Clear all overlays for this file to rollback to core
-    overlayManager.clearFileOverlays(filePath);
+    clearFileOverlays(filePath);
     updateOverlayData();
     onRollback?.(coreCode);
     onCodeChange?.(coreCode);
@@ -437,7 +445,7 @@ const BrowserPreviewOverlay = ({
                     </div>
                     <div className="flex-1 overflow-auto p-4 bg-blue-50">
                       <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap">
-                        {overlayManager.getMergedContent(filePath) || currentEditedCode || 'No applied code available'}
+                        {getMergedContent(filePath) || currentEditedCode || 'No applied code available'}
                       </pre>
                     </div>
                   </div>
