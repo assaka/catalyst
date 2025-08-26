@@ -5,6 +5,7 @@
 
 const { CustomizationOverlay, CustomizationSnapshot, AstDiff } = require('../models');
 const DiffService = require('../../src/services/diff-service');
+const { parse } = require('@babel/parser');
 
 class VersionControlService {
   constructor(options = {}) {
@@ -190,14 +191,19 @@ class VersionControlService {
         }
       }
 
-      // AST diff would be created here if AST parsing is enabled
-      // This would require the frontend AST utilities to be available on backend
+      // AST diff creation if AST parsing is enabled
       if (this.options.enableASTParsing) {
-        // Placeholder for AST diff - would need to integrate AST parsing
-        result.ast_diff = {
-          placeholder: true,
-          message: 'AST parsing not yet integrated with backend service'
-        };
+        try {
+          const astDiff = await this.createASTDiff(oldCode, newCode);
+          result.ast_diff = astDiff;
+        } catch (astError) {
+          console.warn('AST diff creation failed, using fallback:', astError.message);
+          result.ast_diff = {
+            error: true,
+            message: 'AST parsing failed - likely invalid JavaScript/JSX syntax',
+            fallback_used: true
+          };
+        }
       }
 
       return result;
@@ -205,6 +211,228 @@ class VersionControlService {
       console.error('Error creating code diff:', error);
       return { line_diff: null, unified_diff: null, ast_diff: null, stats: {} };
     }
+  }
+
+  /**
+   * Create AST-based diff between two code versions
+   */
+  async createASTDiff(oldCode, newCode) {
+    // Parse both code versions into ASTs
+    const parseOptions = {
+      sourceType: 'module',
+      allowImportExportEverywhere: true,
+      allowReturnOutsideFunction: true,
+      plugins: [
+        'jsx',
+        'typescript',
+        'decorators-legacy',
+        'classProperties',
+        'objectRestSpread',
+        'functionBind',
+        'exportDefaultFrom',
+        'exportNamespaceFrom',
+        'dynamicImport',
+        'nullishCoalescingOperator',
+        'optionalChaining'
+      ]
+    };
+
+    const oldAST = parse(oldCode, parseOptions);
+    const newAST = parse(newCode, parseOptions);
+
+    // Extract key structural information for comparison
+    const oldStructure = this.extractASTStructure(oldAST);
+    const newStructure = this.extractASTStructure(newAST);
+
+    // Calculate structural differences
+    const structuralChanges = this.compareASTStructures(oldStructure, newStructure);
+
+    return {
+      success: true,
+      oldStructure,
+      newStructure,
+      structuralChanges,
+      metadata: {
+        oldNodeCount: this.countNodes(oldAST),
+        newNodeCount: this.countNodes(newAST),
+        hasStructuralChanges: structuralChanges.length > 0,
+        changeTypes: [...new Set(structuralChanges.map(c => c.type))]
+      }
+    };
+  }
+
+  /**
+   * Extract key structural information from AST
+   */
+  extractASTStructure(ast) {
+    const structure = {
+      imports: [],
+      exports: [],
+      functions: [],
+      classes: [],
+      components: [],
+      hooks: [],
+      variables: []
+    };
+
+    const traverse = (node, path = '') => {
+      if (!node || typeof node !== 'object') return;
+
+      switch (node.type) {
+        case 'ImportDeclaration':
+          structure.imports.push({
+            source: node.source?.value,
+            specifiers: node.specifiers?.map(s => ({
+              type: s.type,
+              name: s.local?.name || s.imported?.name
+            }))
+          });
+          break;
+
+        case 'ExportDefaultDeclaration':
+        case 'ExportNamedDeclaration':
+          if (node.declaration) {
+            const name = node.declaration.id?.name || node.declaration.name || 'default';
+            structure.exports.push({
+              name,
+              type: node.type,
+              declaration: node.declaration.type
+            });
+          }
+          break;
+
+        case 'FunctionDeclaration':
+        case 'ArrowFunctionExpression':
+        case 'FunctionExpression':
+          const funcName = node.id?.name || (node.key ? node.key.name : 'anonymous');
+          const isComponent = funcName && /^[A-Z]/.test(funcName);
+          const isHook = funcName && funcName.startsWith('use');
+          
+          const funcInfo = {
+            name: funcName,
+            type: node.type,
+            params: node.params?.length || 0,
+            isAsync: node.async || false,
+            path
+          };
+
+          if (isComponent) {
+            structure.components.push(funcInfo);
+          } else if (isHook) {
+            structure.hooks.push(funcInfo);
+          } else {
+            structure.functions.push(funcInfo);
+          }
+          break;
+
+        case 'ClassDeclaration':
+          structure.classes.push({
+            name: node.id?.name,
+            superClass: node.superClass?.name,
+            methods: node.body?.body?.filter(m => m.type === 'MethodDefinition').length || 0
+          });
+          break;
+
+        case 'VariableDeclarator':
+          if (node.id?.name) {
+            structure.variables.push({
+              name: node.id.name,
+              kind: node.kind,
+              hasInitializer: !!node.init
+            });
+          }
+          break;
+      }
+
+      // Recursively traverse child nodes
+      Object.values(node).forEach(value => {
+        if (Array.isArray(value)) {
+          value.forEach(item => traverse(item, path));
+        } else if (value && typeof value === 'object' && value.type) {
+          traverse(value, path);
+        }
+      });
+    };
+
+    traverse(ast.body ? ast : { body: [ast] });
+    return structure;
+  }
+
+  /**
+   * Compare two AST structures and identify changes
+   */
+  compareASTStructures(oldStructure, newStructure) {
+    const changes = [];
+
+    // Compare imports
+    const oldImports = new Set(oldStructure.imports.map(i => i.source));
+    const newImports = new Set(newStructure.imports.map(i => i.source));
+    
+    [...oldImports].filter(i => !newImports.has(i)).forEach(removed => {
+      changes.push({ type: 'import_removed', name: removed });
+    });
+    
+    [...newImports].filter(i => !oldImports.has(i)).forEach(added => {
+      changes.push({ type: 'import_added', name: added });
+    });
+
+    // Compare functions/components
+    const oldFuncs = new Set(oldStructure.functions.map(f => f.name));
+    const newFuncs = new Set(newStructure.functions.map(f => f.name));
+    
+    [...oldFuncs].filter(f => !newFuncs.has(f)).forEach(removed => {
+      changes.push({ type: 'function_removed', name: removed });
+    });
+    
+    [...newFuncs].filter(f => !oldFuncs.has(f)).forEach(added => {
+      changes.push({ type: 'function_added', name: added });
+    });
+
+    // Compare components
+    const oldComponents = new Set(oldStructure.components.map(c => c.name));
+    const newComponents = new Set(newStructure.components.map(c => c.name));
+    
+    [...oldComponents].filter(c => !newComponents.has(c)).forEach(removed => {
+      changes.push({ type: 'component_removed', name: removed });
+    });
+    
+    [...newComponents].filter(c => !oldComponents.has(c)).forEach(added => {
+      changes.push({ type: 'component_added', name: added });
+    });
+
+    // Compare classes
+    const oldClasses = new Set(oldStructure.classes.map(c => c.name));
+    const newClasses = new Set(newStructure.classes.map(c => c.name));
+    
+    [...oldClasses].filter(c => !newClasses.has(c)).forEach(removed => {
+      changes.push({ type: 'class_removed', name: removed });
+    });
+    
+    [...newClasses].filter(c => !oldClasses.has(c)).forEach(added => {
+      changes.push({ type: 'class_added', name: added });
+    });
+
+    return changes;
+  }
+
+  /**
+   * Count total nodes in AST
+   */
+  countNodes(ast) {
+    let count = 0;
+    const traverse = (node) => {
+      if (!node || typeof node !== 'object') return;
+      count++;
+      Object.values(node).forEach(value => {
+        if (Array.isArray(value)) {
+          value.forEach(traverse);
+        } else if (value && typeof value === 'object' && value.type) {
+          traverse(value);
+        }
+      });
+    };
+    traverse(ast);
+    return count;
   }
 
   /**
