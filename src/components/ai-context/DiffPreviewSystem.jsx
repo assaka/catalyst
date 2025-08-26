@@ -20,8 +20,7 @@ import {
   Zap,
   Settings,
   Eye,
-  EyeOff,
-  RotateCcw
+  EyeOff
 } from 'lucide-react';
 
 // Import diff service
@@ -96,16 +95,16 @@ const SplitViewPane = ({
                 {formatLine(line) || ' '}
               </span>
               
-              {/* Show revert button for modified lines on the modified side */}
-              {side === 'modified' && diffType === 'addition' && onLineRevert && originalLines && (
+              {/* Show permanent right arrow for modified lines on the original side */}
+              {side === 'original' && diffType === 'deletion' && onLineRevert && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-6 px-2"
-                  onClick={() => onLineRevert(index, originalLines[index] || '')}
-                  title="Revert to original line"
+                  className="ml-2 h-6 px-2 text-blue-600 hover:text-blue-800"
+                  onClick={() => onLineRevert(index, line)}
+                  title="Undo this change"
                 >
-                  <RotateCcw className="w-3 h-3" />
+                  <ArrowRight className="w-3 h-3" />
                 </Button>
               )}
             </div>
