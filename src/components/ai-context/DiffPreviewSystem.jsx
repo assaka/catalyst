@@ -23,11 +23,68 @@ import {
   Eye,
   EyeOff,
   Check,
-  RotateCcw
+  RotateCcw,
+  ExternalLink
 } from 'lucide-react';
 
 // Import diff service
 import DiffService from '../../services/diff-service';
+
+// Utility function to extract component name from file path or code
+const extractComponentName = (fileName, code) => {
+  // Try to extract from file name first
+  if (fileName && fileName.includes('.')) {
+    const nameWithoutExt = fileName.split('.')[0];
+    const componentName = nameWithoutExt.replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+    if (componentName) return componentName;
+  }
+  
+  // Try to extract from code (look for component export or class name)
+  const exportMatches = code.match(/export\s+(?:default\s+)?(?:function|class|const)\s+(\w+)|const\s+(\w+)\s*=.*=>/);
+  if (exportMatches) {
+    const componentName = exportMatches[1] || exportMatches[2];
+    return componentName.replace(/([a-z])([A-Z])/g, '$1 $2').trim();
+  }
+  
+  return fileName || 'Unknown';
+};
+
+// Function to resolve page URL using store routes API
+const resolvePageURL = async (pageName, storeId) => {
+  try {
+    const response = await fetch(`/api/store-routes/public/find-by-page/${encodeURIComponent(pageName)}?store_id=${storeId}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.data.route) {
+        return {
+          success: true,
+          path: data.data.route.route_path,
+          url: `${window.location.origin}${data.data.route.route_path}`
+        };
+      }
+    }
+    
+    // Fallback: create a generic path based on page name
+    const fallbackPath = `/${pageName.toLowerCase().replace(/\s+/g, '-')}`;
+    return {
+      success: false,
+      path: fallbackPath,
+      url: `${window.location.origin}${fallbackPath}`,
+      fallback: true
+    };
+  } catch (error) {
+    console.error('Error resolving page URL:', error);
+    const fallbackPath = `/${pageName.toLowerCase().replace(/\s+/g, '-')}`;
+    return {
+      success: false,
+      path: fallbackPath,
+      url: `${window.location.origin}${fallbackPath}`,
+      fallback: true,
+      error: error.message
+    };
+  }
+};
 
 // SplitViewPane component for enhanced split view
 const SplitViewPane = ({ 
@@ -130,7 +187,8 @@ const DiffPreviewSystem = ({
   fileName = 'file',
   className = '',
   onCodeChange,
-  onDiffStatsChange // New callback to notify parent about diff state changes
+  onDiffStatsChange, // New callback to notify parent about diff state changes
+  storeId = '157d4590-49bf-4b0b-bd77-abe131909528' // Store ID for route resolution
 }) => {
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
@@ -139,6 +197,7 @@ const DiffPreviewSystem = ({
   const [showWhitespace, setShowWhitespace] = useState(false);
   const [currentModifiedCode, setCurrentModifiedCode] = useState(modifiedCode);
   const [copyStatus, setCopyStatus] = useState({ copied: false, error: null });
+  const [previewStatus, setPreviewStatus] = useState({ loading: false, error: null, url: null });
 
   const diffServiceRef = useRef(new DiffService());
   const originalBaseCodeRef = useRef(originalCode); // Preserve original base code
@@ -236,6 +295,60 @@ const DiffPreviewSystem = ({
       }
     }
   }, [currentModifiedCode, onCodeChange]);
+
+  // Handle preview functionality
+  const handlePreview = useCallback(async () => {
+    setPreviewStatus({ loading: true, error: null, url: null });
+    
+    try {
+      // Extract component name from file name or code
+      const componentName = extractComponentName(fileName, currentModifiedCode);
+      
+      // Get store ID from context or props (assuming it's available)
+      const storeId = '157d4590-49bf-4b0b-bd77-abe131909528'; // TODO: Get this from context/props
+      
+      // Resolve page URL
+      const urlResult = await resolvePageURL(componentName, storeId);
+      
+      // Create temporary API endpoint to serve the modified code
+      // This would typically involve:
+      // 1. Creating a temporary file or memory cache with the modified code
+      // 2. Setting up a temporary route to serve this modified version
+      // 3. Opening the resolved URL with the temporary code applied
+      
+      if (urlResult.success || urlResult.fallback) {
+        // For now, we'll open the URL in a new tab
+        // In a full implementation, you'd want to:
+        // 1. Send the modified code to a preview API endpoint
+        // 2. Get back a preview URL that serves the modified version
+        // 3. Open that preview URL
+        
+        const previewUrl = urlResult.url + '?preview=true&patch=' + encodeURIComponent(btoa(currentModifiedCode));
+        window.open(previewUrl, '_blank', 'width=1200,height=800');
+        
+        setPreviewStatus({ 
+          loading: false, 
+          error: null, 
+          url: previewUrl 
+        });
+      } else {
+        throw new Error('Could not resolve page URL');
+      }
+      
+    } catch (error) {
+      console.error('Preview error:', error);
+      setPreviewStatus({ 
+        loading: false, 
+        error: error.message || 'Failed to generate preview', 
+        url: null 
+      });
+      
+      // Reset error after 3 seconds
+      setTimeout(() => {
+        setPreviewStatus(prev => ({ ...prev, error: null }));
+      }, 3000);
+    }
+  }, [fileName, currentModifiedCode]);
 
   // Calculate diff using DiffService (always compare against original base code)
   const diffResult = useMemo(() => {
@@ -527,16 +640,51 @@ const DiffPreviewSystem = ({
               <Download className="w-4 h-4 mr-1" />
               Export
             </Button>
+            
+            <Button 
+              variant="default" 
+              size="sm" 
+              onClick={handlePreview}
+              className={`transition-all duration-200 ${
+                previewStatus.loading 
+                  ? 'bg-blue-50 border-blue-200 text-blue-700' 
+                  : previewStatus.error 
+                    ? 'bg-red-50 border-red-200 text-red-700'
+                    : ''
+              }`}
+              disabled={previewStatus.loading || !currentModifiedCode}
+            >
+              {previewStatus.loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                  Opening...
+                </>
+              ) : (
+                <>
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  Preview
+                </>
+              )}
+            </Button>
           </div>
         </div>
       </div>
 
-      {/* Error Alert */}
+      {/* Error Alerts */}
       {copyStatus.error && (
         <Alert className="mx-4 mb-2 border-red-200 bg-red-50">
           <XCircle className="h-4 w-4 text-red-600" />
           <AlertDescription className="text-red-800">
             {copyStatus.error}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {previewStatus.error && (
+        <Alert className="mx-4 mb-2 border-red-200 bg-red-50">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            Preview Error: {previewStatus.error}
           </AlertDescription>
         </Alert>
       )}
