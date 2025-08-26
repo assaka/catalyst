@@ -753,8 +753,9 @@ const DiffPreviewSystem = ({
               </div>
               
               {/* Diff Content */}
-              <ScrollArea className="flex-1 w-full h-full overflow-auto" type="always">
-                <div className="min-w-max w-fit">
+              <div className="flex-1 min-h-0">
+                <ScrollArea className="h-full w-full" type="always" style={{ height: '100%' }}>
+                  <div className="min-w-max w-fit">
                   {displayLines.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center text-muted-foreground">
@@ -772,8 +773,9 @@ const DiffPreviewSystem = ({
                       ))}
                     </div>
                   )}
-                </div>
-              </ScrollArea>
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
           </TabsContent>
 
@@ -801,51 +803,24 @@ const DiffPreviewSystem = ({
                 </div>
               </div>
               
-              <div className="flex-1 grid grid-cols-2">
-                <div className={`${(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? 'border-r' : ''} flex flex-col`}>
-                  <div className="border-b p-2 bg-red-50">
+              <div className="flex-1 grid grid-cols-2 min-h-0">
+                <div className={`${(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? 'border-r' : ''} flex flex-col min-h-0`}>
+                  <div className="border-b p-2 bg-red-50 flex-shrink-0">
                     <h4 className="font-medium text-red-900">Original ({originalBaseCodeRef.current.split('\n').length} lines)</h4>
                   </div>
                   {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
-                    <ScrollArea 
-                      className="flex-1 w-full h-full overflow-auto" 
-                      type="always"
-                      ref={originalScrollRef}
-                    >
-                      <div className="min-w-max w-fit">
-                        <SplitViewPane
-                          lines={originalBaseCodeRef.current.split('\n')}
-                          diffLines={displayLines}
-                          side="original"
-                          showLineNumbers={lineNumbers}
-                          showWhitespace={showWhitespace}
-                          onLineRevert={handleLineRevert}
-                          originalLines={originalBaseCodeRef.current.split('\n')}
-                          modifiedLines={currentModifiedCode.split('\n')}
-                        />
-                      </div>
-                    </ScrollArea>
-                  ) :
-                      <pre className="p-4 text-sm font-mono whitespace-pre">
-                          No modifications
-                      </pre>
-                  }
-                </div>
-                <div className="flex flex-col">
-                  <div className="border-b p-2 bg-green-50 flex justify-between items-center">
-                    <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
-                  </div>
-                   {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
+                    <div className="flex-1 min-h-0">
                       <ScrollArea 
-                        className="flex-1 w-full h-full overflow-auto" 
+                        className="h-full w-full" 
                         type="always"
-                        ref={modifiedScrollRef}
+                        ref={originalScrollRef}
+                        style={{ height: '100%' }}
                       >
                         <div className="min-w-max w-fit">
                           <SplitViewPane
-                            lines={currentModifiedCode.split('\n')}
+                            lines={originalBaseCodeRef.current.split('\n')}
                             diffLines={displayLines}
-                            side="modified"
+                            side="original"
                             showLineNumbers={lineNumbers}
                             showWhitespace={showWhitespace}
                             onLineRevert={handleLineRevert}
@@ -854,6 +829,39 @@ const DiffPreviewSystem = ({
                           />
                         </div>
                       </ScrollArea>
+                    </div>
+                  ) :
+                      <pre className="p-4 text-sm font-mono whitespace-pre">
+                          No modifications
+                      </pre>
+                  }
+                </div>
+                <div className="flex flex-col min-h-0">
+                  <div className="border-b p-2 bg-green-50 flex justify-between items-center flex-shrink-0">
+                    <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
+                  </div>
+                   {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
+                      <div className="flex-1 min-h-0">
+                        <ScrollArea 
+                          className="h-full w-full" 
+                          type="always"
+                          ref={modifiedScrollRef}
+                          style={{ height: '100%' }}
+                        >
+                          <div className="min-w-max w-fit">
+                            <SplitViewPane
+                              lines={currentModifiedCode.split('\n')}
+                              diffLines={displayLines}
+                              side="modified"
+                              showLineNumbers={lineNumbers}
+                              showWhitespace={showWhitespace}
+                              onLineRevert={handleLineRevert}
+                              originalLines={originalBaseCodeRef.current.split('\n')}
+                              modifiedLines={currentModifiedCode.split('\n')}
+                            />
+                          </div>
+                        </ScrollArea>
+                      </div>
                    ) :
                        <pre className="p-4 text-sm font-mono whitespace-pre">
                           No modifications
@@ -894,13 +902,15 @@ const DiffPreviewSystem = ({
                   </Button>
                 </div>
               </div>
-              <ScrollArea className="flex-1 w-full h-full overflow-auto" type="always">
-                <div className="min-w-max w-fit">
-                  <pre className="p-4 text-sm font-mono whitespace-pre">
-                    {diffResult.unifiedDiff || 'No differences to display'}
-                  </pre>
-                </div>
-              </ScrollArea>
+              <div className="flex-1 min-h-0">
+                <ScrollArea className="h-full w-full" type="always" style={{ height: '100%' }}>
+                  <div className="min-w-max w-fit">
+                    <pre className="p-4 text-sm font-mono whitespace-pre">
+                      {diffResult.unifiedDiff || 'No differences to display'}
+                    </pre>
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
           </TabsContent>
 
