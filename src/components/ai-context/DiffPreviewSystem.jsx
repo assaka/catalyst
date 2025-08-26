@@ -970,7 +970,7 @@ const DiffPreviewSystem = ({
                     border: '1px solid #e2e8f0'
                   }}
                 >
-                  <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '800px' }}>
+                  <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '800px', height: '200px' }}>
                   {displayLines.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center text-muted-foreground">
@@ -1036,7 +1036,7 @@ const DiffPreviewSystem = ({
                         border: '1px solid #e2e8f0'
                       }}
                     >
-                      <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '600px' }}>
+                      <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '600px', height: '200px' }}>
                         <SplitViewPane
                           lines={originalBaseCodeRef.current.split('\n')}
                           diffLines={displayLines}
@@ -1072,7 +1072,7 @@ const DiffPreviewSystem = ({
                           border: '1px solid #e2e8f0'
                         }}
                       >
-                        <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '600px' }}>
+                        <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '600px', height: '200px' }}>
                           <SplitViewPane
                             lines={currentModifiedCode.split('\n')}
                             diffLines={displayLines}
@@ -1137,7 +1137,7 @@ const DiffPreviewSystem = ({
                     border: '1px solid #e2e8f0'
                   }}
                 >
-                  <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '800px' }}>
+                  <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '800px', height: '200px' }}>
                     <pre className="p-4 text-sm font-mono whitespace-pre">
                       {diffResult.unifiedDiff || 'No differences to display'}
                     </pre>
