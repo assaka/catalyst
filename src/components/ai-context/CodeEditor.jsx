@@ -2,88 +2,78 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import Editor from '@monaco-editor/react';
 import { 
   Save, 
   Undo, 
   Redo, 
   Search, 
-  Replace, 
-  Settings,
   Maximize2,
   Minimize2,
-  Code,
-  FileText,
-  Zap
+  Code
 } from 'lucide-react';
 
 const CodeEditor = ({ 
-  code = '', 
+  value = '', 
   onChange, 
   language = 'javascript',
   fileName = '',
   className = '',
-  readOnly = false 
+  readOnly = false,
+  onCursorPositionChange,
+  onSelectionChange,
+  onManualEdit,
+  originalCode = '',
+  enableDiffDetection = false
 }) => {
-  const [localCode, setLocalCode] = useState(code);
+  const [localCode, setLocalCode] = useState(value);
   const [isModified, setIsModified] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [replaceTerm, setReplaceTerm] = useState('');
-  const [showSearch, setShowSearch] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
-  const [undoStack, setUndoStack] = useState([code]);
-  const [redoStack, setRedoStack] = useState([]);
-  const [currentStackIndex, setCurrentStackIndex] = useState(0);
 
-  const textareaRef = useRef(null);
-  const searchInputRef = useRef(null);
+  const editorRef = useRef(null);
 
   useEffect(() => {
-    setLocalCode(code);
+    setLocalCode(value);
     setIsModified(false);
-  }, [code]);
+  }, [value]);
 
-  useEffect(() => {
-    if (showSearch && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [showSearch]);
 
   const handleCodeChange = (newCode) => {
     setLocalCode(newCode);
-    setIsModified(newCode !== code);
+    setIsModified(newCode !== value);
     
-    // Update undo stack
-    if (undoStack[currentStackIndex] !== newCode) {
-      const newStack = undoStack.slice(0, currentStackIndex + 1);
-      newStack.push(newCode);
-      setUndoStack(newStack);
-      setCurrentStackIndex(newStack.length - 1);
-      setRedoStack([]);
+    // Detect if this was a manual edit (not from undo/redo)
+    if (onManualEdit && newCode !== value) {
+      onManualEdit(newCode, value, { enableDiffDetection });
     }
     
     onChange && onChange(newCode);
   };
 
-  const handleUndo = () => {
-    if (currentStackIndex > 0) {
-      const newIndex = currentStackIndex - 1;
-      setCurrentStackIndex(newIndex);
-      const newCode = undoStack[newIndex];
-      setLocalCode(newCode);
-      onChange && onChange(newCode);
-    }
-  };
-
-  const handleRedo = () => {
-    if (currentStackIndex < undoStack.length - 1) {
-      const newIndex = currentStackIndex + 1;
-      setCurrentStackIndex(newIndex);
-      const newCode = undoStack[newIndex];
-      setLocalCode(newCode);
-      onChange && onChange(newCode);
-    }
+  const handleEditorDidMount = (editor, monaco) => {
+    editorRef.current = editor;
+    
+    // Set up cursor position tracking
+    editor.onDidChangeCursorPosition((e) => {
+      const position = { line: e.position.lineNumber, column: e.position.column };
+      setCursorPosition(position);
+      if (onCursorPositionChange) {
+        onCursorPositionChange(position);
+      }
+    });
+    
+    // Set up selection change tracking
+    editor.onDidChangeCursorSelection((e) => {
+      if (onSelectionChange) {
+        onSelectionChange({
+          startLine: e.selection.startLineNumber,
+          startColumn: e.selection.startColumn,
+          endLine: e.selection.endLineNumber,
+          endColumn: e.selection.endColumn
+        });
+      }
+    });
   };
 
   const handleSave = () => {
@@ -94,61 +84,41 @@ const CodeEditor = ({
   };
 
   const handleSearch = () => {
-    if (!searchTerm || !textareaRef.current) return;
-    
-    const textarea = textareaRef.current;
-    const text = textarea.value.toLowerCase();
-    const search = searchTerm.toLowerCase();
-    const index = text.indexOf(search);
-    
-    if (index !== -1) {
-      textarea.focus();
-      textarea.setSelectionRange(index, index + searchTerm.length);
-      textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (editorRef.current) {
+      editorRef.current.getAction('actions.find').run();
     }
   };
 
   const handleReplace = () => {
-    if (!searchTerm || !textareaRef.current) return;
-    
-    const newCode = localCode.replaceAll(searchTerm, replaceTerm);
-    handleCodeChange(newCode);
-  };
-
-  const updateCursorPosition = () => {
-    if (!textareaRef.current) return;
-    
-    const textarea = textareaRef.current;
-    const text = textarea.value.substring(0, textarea.selectionStart);
-    const lines = text.split('\n');
-    const line = lines.length;
-    const column = lines[lines.length - 1].length + 1;
-    
-    setCursorPosition({ line, column });
-  };
-
-  const handleKeyDown = (e) => {
-    // Handle keyboard shortcuts
-    if (e.ctrlKey || e.metaKey) {
-      switch (e.key) {
-        case 's':
-          e.preventDefault();
-          handleSave();
-          break;
-        case 'z':
-          e.preventDefault();
-          if (e.shiftKey) {
-            handleRedo();
-          } else {
-            handleUndo();
-          }
-          break;
-        case 'f':
-          e.preventDefault();
-          setShowSearch(true);
-          break;
-      }
+    if (editorRef.current) {
+      editorRef.current.getAction('editor.action.startFindReplaceAction').run();
     }
+  };
+
+  // Language detection based on filename extension
+  const getMonacoLanguage = () => {
+    if (!fileName) return language;
+    
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const languageMap = {
+      'js': 'javascript',
+      'jsx': 'javascript',
+      'ts': 'typescript',
+      'tsx': 'typescript',
+      'json': 'json',
+      'css': 'css',
+      'scss': 'scss',
+      'less': 'less',
+      'html': 'html',
+      'xml': 'xml',
+      'md': 'markdown',
+      'py': 'python',
+      'java': 'java',
+      'cpp': 'cpp',
+      'c': 'c'
+    };
+    
+    return languageMap[extension] || language || 'javascript';
   };
 
   const getLanguageIcon = () => {
@@ -170,9 +140,16 @@ const CodeEditor = ({
     }
   };
 
-  const getLineNumbers = () => {
-    const lines = localCode.split('\n');
-    return lines.map((_, index) => index + 1);
+  const handleUndo = () => {
+    if (editorRef.current) {
+      editorRef.current.getAction('undo').run();
+    }
+  };
+
+  const handleRedo = () => {
+    if (editorRef.current) {
+      editorRef.current.getAction('redo').run();
+    }
   };
 
   return (
@@ -192,7 +169,7 @@ const CodeEditor = ({
               variant="ghost"
               size="sm"
               onClick={handleUndo}
-              disabled={currentStackIndex === 0 || readOnly}
+              disabled={readOnly}
             >
               <Undo className="w-4 h-4" />
             </Button>
@@ -201,7 +178,7 @@ const CodeEditor = ({
               variant="ghost"
               size="sm"
               onClick={handleRedo}
-              disabled={currentStackIndex === undoStack.length - 1 || readOnly}
+              disabled={readOnly}
             >
               <Redo className="w-4 h-4" />
             </Button>
@@ -209,7 +186,8 @@ const CodeEditor = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowSearch(!showSearch)}
+              onClick={handleSearch}
+              title="Search (Ctrl+F)"
             >
               <Search className="w-4 h-4" />
             </Button>
@@ -233,79 +211,53 @@ const CodeEditor = ({
           </div>
         </div>
 
-        {/* Search Bar */}
-        {showSearch && (
-          <div className="mt-2 flex items-center space-x-2 p-2 bg-muted rounded">
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-2 py-1 text-sm border rounded"
-            />
-            <input
-              type="text"
-              placeholder="Replace..."
-              value={replaceTerm}
-              onChange={(e) => setReplaceTerm(e.target.value)}
-              className="flex-1 px-2 py-1 text-sm border rounded"
-            />
-            <Button size="sm" variant="outline" onClick={handleSearch}>
-              <Search className="w-3 h-3" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={handleReplace} disabled={readOnly}>
-              <Replace className="w-3 h-3" />
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Editor Content */}
-      <div className="flex-1 flex">
-        {/* Line Numbers */}
-        <div className="w-12 bg-muted/50 border-r text-right text-sm text-muted-foreground py-2">
-          <div className="space-y-0.5">
-            {getLineNumbers().map((lineNum) => (
-              <div key={lineNum} className="px-2 leading-5">
-                {lineNum}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Code Area */}
-        <div className="flex-1 relative">
-          <textarea
-            ref={textareaRef}
-            value={localCode}
-            onChange={(e) => handleCodeChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onSelect={updateCursorPosition}
-            onFocus={updateCursorPosition}
-            readOnly={readOnly}
-            className="w-full h-full p-2 font-mono text-sm bg-transparent border-none outline-none resize-none leading-5"
-            style={{
-              lineHeight: '1.25',
-              tabSize: 2,
-              whiteSpace: 'pre',
-              overflowWrap: 'break-word'
-            }}
-            spellCheck={false}
-          />
-          
-          {localCode === '' && !readOnly && (
-            <div className="absolute inset-2 flex items-center justify-center text-muted-foreground pointer-events-none">
-              <div className="text-center">
-                <Code className="w-8 h-8 mx-auto mb-2" />
-                <p>Start typing your code here...</p>
-                <p className="text-sm mt-1">
-                  Use Ctrl+S to save, Ctrl+F to search, Ctrl+Z to undo
-                </p>
+      <div className="flex-1">
+        <Editor
+          height="100%"
+          language={getMonacoLanguage()}
+          value={localCode}
+          onChange={handleCodeChange}
+          onMount={handleEditorDidMount}
+          options={{
+            readOnly: readOnly,
+            minimap: { enabled: false },
+            scrollBeyondLastLine: false,
+            fontSize: 14,
+            lineHeight: 20,
+            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+            tabSize: 2,
+            insertSpaces: true,
+            wordWrap: 'on',
+            automaticLayout: true,
+            lineNumbers: 'on',
+            glyphMargin: false,
+            folding: true,
+            lineDecorationsWidth: 0,
+            lineNumbersMinChars: 4,
+            renderLineHighlight: 'line',
+            selectionHighlight: true,
+            bracketPairColorization: { enabled: true },
+            guides: { indentation: true },
+            suggest: { showWords: false },
+            quickSuggestions: {
+              other: true,
+              comments: false,
+              strings: false
+            }
+          }}
+          theme="vs-dark"
+          loading={
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-muted-foreground">
+                <Code className="w-8 h-8 mx-auto mb-2 animate-pulse" />
+                <p>Loading editor...</p>
               </div>
             </div>
-          )}
-        </div>
+          }
+        />
       </div>
 
       {/* Status Bar */}
@@ -319,7 +271,7 @@ const CodeEditor = ({
           
           <div className="flex items-center space-x-2">
             {isModified && <span className="text-orange-600">Unsaved changes</span>}
-            <span>{language.toUpperCase()}</span>
+            <span>{getMonacoLanguage().toUpperCase()}</span>
           </div>
         </div>
       </div>
