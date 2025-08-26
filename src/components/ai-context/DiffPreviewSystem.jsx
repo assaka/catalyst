@@ -34,7 +34,8 @@ const SplitViewPane = ({
   showLineNumbers, 
   showWhitespace, 
   onLineRevert, 
-  originalLines 
+  originalLines,
+  modifiedLines
 }) => {
   // Create a mapping of line numbers to diff types for highlighting
   const getDiffTypeForLine = (lineIndex) => {
@@ -96,7 +97,8 @@ const SplitViewPane = ({
               </span>
               
               {/* Show permanent right arrow for modified lines on the original side */}
-              {side === 'original' && diffType === 'deletion' && onLineRevert && (
+              {side === 'original' && onLineRevert && modifiedLines && 
+               modifiedLines[index] && modifiedLines[index] !== line && (
                 <Button
                   variant="ghost"
                   size="sm"
@@ -534,26 +536,27 @@ const DiffPreviewSystem = ({
                       side="original" 
                       showLineNumbers={lineNumbers}
                       showWhitespace={showWhitespace}
+                      onLineRevert={handleLineRevert}
+                      originalLines={originalBaseCodeRef.current.split('\n')}
+                      modifiedLines={currentModifiedCode.split('\n')}
                     />
                   </ScrollArea>
                 </div>
                 
-                <div className="flex flex-col">
+               <div className="flex flex-col">
                   <div className="border-b p-2 bg-green-50 flex justify-between items-center">
                     <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
-                    <div className="text-xs text-green-700">
-                      Hover over changed lines to revert
-                    </div>
                   </div>
                   <ScrollArea className="flex-1">
-                    <SplitViewPane 
-                      lines={currentModifiedCode.split('\n')} 
+                    <SplitViewPane
+                      lines={currentModifiedCode.split('\n')}
                       diffLines={displayLines}
-                      side="modified" 
+                      side="modified"
                       showLineNumbers={lineNumbers}
                       showWhitespace={showWhitespace}
                       onLineRevert={handleLineRevert}
                       originalLines={originalBaseCodeRef.current.split('\n')}
+                      modifiedLines={currentModifiedCode.split('\n')}
                     />
                   </ScrollArea>
                 </div>

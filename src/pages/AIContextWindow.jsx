@@ -550,9 +550,6 @@ export default ExampleComponent;`;
                 <span className="inline-block w-2 h-2 bg-orange-500 rounded-full mr-1 animate-pulse"></span>
                 Manual Edit Detected
               </div>
-              <div className="mt-1 text-xs">
-                {manualEditResult.changeCount} change{manualEditResult.changeCount !== 1 ? 's' : ''} • {manualEditResult.summary?.stats?.additions || 0} additions, {manualEditResult.summary?.stats?.deletions || 0} deletions
-              </div>
             </div>
           )}
 
