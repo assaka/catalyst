@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,134 +17,197 @@ import {
   Copy,
   Download,
   RefreshCw,
-  Zap
+  Zap,
+  Settings,
+  Eye,
+  EyeOff
 } from 'lucide-react';
+
+// Import diff service
+import DiffService from '../../services/diff-service';
+
+// SplitViewPane component for enhanced split view
+const SplitViewPane = ({ lines, diffLines, side, showLineNumbers, showWhitespace }) => {
+  // Create a mapping of line numbers to diff types for highlighting
+  const getDiffTypeForLine = (lineIndex) => {
+    const diffLine = diffLines.find(dl => {
+      if (side === 'original') {
+        return dl.lineNumber === lineIndex + 1;
+      } else {
+        return dl.newLineNumber === lineIndex + 1;
+      }
+    });
+    
+    return diffLine?.type || 'context';
+  };
+
+  const getLineStyle = (lineIndex, diffType) => {
+    switch (diffType) {
+      case 'addition':
+        return side === 'modified' ? 'bg-green-50 border-l-4 border-green-500' : 'bg-gray-100';
+      case 'deletion':
+        return side === 'original' ? 'bg-red-50 border-l-4 border-red-500' : 'bg-gray-100';
+      case 'context':
+      default:
+        return 'bg-background hover:bg-muted/30';
+    }
+  };
+
+  const formatLine = (line) => {
+    if (!showWhitespace) return line;
+    return line.replace(/ /g, '·').replace(/\t/g, '→   ');
+  };
+
+  return (
+    <div className="font-mono">
+      {lines.map((line, index) => {
+        const diffType = getDiffTypeForLine(index);
+        const shouldShow = side === 'original' 
+          ? diffType !== 'addition' 
+          : diffType !== 'deletion';
+
+        if (!shouldShow && diffType !== 'context') {
+          return null;
+        }
+
+        return (
+          <div
+            key={index}
+            className={`flex items-center px-2 py-1 text-sm ${getLineStyle(index, diffType)}`}
+          >
+            {showLineNumbers && (
+              <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
+                {index + 1}
+              </div>
+            )}
+            <div className="flex-1 pl-2">
+              <span className={`${diffType === 'addition' && side === 'modified' ? 'text-green-700' : 
+                                diffType === 'deletion' && side === 'original' ? 'text-red-700' : 
+                                'text-foreground'}`}>
+                {formatLine(line) || ' '}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const DiffPreviewSystem = ({ 
   patches = [], 
   originalCode = '', 
   modifiedCode = '',
+  fileName = 'file',
   className = '' 
 }) => {
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
   const [contextLines, setContextLines] = useState(3);
+  const [algorithm, setAlgorithm] = useState('myers');
+  const [showWhitespace, setShowWhitespace] = useState(false);
 
-  // Calculate line-by-line diff
-  const diffData = useMemo(() => {
+  const diffServiceRef = useRef(new DiffService());
+
+  // Calculate diff using DiffService
+  const diffResult = useMemo(() => {
     if (!originalCode && !modifiedCode) {
-      return { lines: [], stats: { additions: 0, deletions: 0, changes: 0 } };
+      return { 
+        success: true,
+        diff: [], 
+        stats: { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+        unifiedDiff: '',
+        metadata: null
+      };
     }
 
+    const result = diffServiceRef.current.createDiff(originalCode, modifiedCode, { algorithm });
+    const stats = diffServiceRef.current.getDiffStats(result.diff);
+    const unifiedDiff = diffServiceRef.current.createUnifiedDiff(originalCode, modifiedCode, fileName);
+    
+    return {
+      ...result,
+      stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+      unifiedDiff
+    };
+  }, [originalCode, modifiedCode, algorithm, fileName]);
+
+  // Convert DiffService diff to displayable lines for UI
+  const convertDiffToDisplayLines = (diff) => {
     const originalLines = originalCode.split('\n');
     const modifiedLines = modifiedCode.split('\n');
+    const displayLines = [];
     
-    // Simple line-by-line diff algorithm
-    const diff = calculateLineDiff(originalLines, modifiedLines);
-    const stats = calculateStats(diff);
+    let originalIndex = 0;
+    let modifiedIndex = 0;
     
-    return { lines: diff, stats };
-  }, [originalCode, modifiedCode]);
-
-  const calculateLineDiff = (original, modified) => {
-    const result = [];
-    const maxLength = Math.max(original.length, modified.length);
-    
-    for (let i = 0; i < maxLength; i++) {
-      const originalLine = original[i];
-      const modifiedLine = modified[i];
-      
-      if (originalLine === undefined) {
-        // Line added
-        result.push({
-          type: 'addition',
-          lineNumber: null,
-          newLineNumber: i + 1,
-          content: modifiedLine,
-          originalContent: null
-        });
-      } else if (modifiedLine === undefined) {
-        // Line deleted
-        result.push({
-          type: 'deletion',
-          lineNumber: i + 1,
-          newLineNumber: null,
-          content: originalLine,
-          originalContent: originalLine
-        });
-      } else if (originalLine !== modifiedLine) {
-        // Line changed
-        result.push({
-          type: 'modification',
-          lineNumber: i + 1,
-          newLineNumber: i + 1,
-          content: modifiedLine,
-          originalContent: originalLine
-        });
-      } else {
-        // Line unchanged
-        result.push({
-          type: 'context',
-          lineNumber: i + 1,
-          newLineNumber: i + 1,
-          content: originalLine,
-          originalContent: originalLine
-        });
-      }
-    }
-    
-    return result;
-  };
-
-  const calculateStats = (diffLines) => {
-    const stats = { additions: 0, deletions: 0, changes: 0 };
-    
-    diffLines.forEach(line => {
-      switch (line.type) {
-        case 'addition':
-          stats.additions++;
+    diff.forEach((change, index) => {
+      switch (change.type) {
+        case 'equal':
+          displayLines.push({
+            type: 'context',
+            lineNumber: originalIndex + 1,
+            newLineNumber: modifiedIndex + 1,
+            content: change.value,
+            originalContent: change.value
+          });
+          originalIndex++;
+          modifiedIndex++;
           break;
-        case 'deletion':
-          stats.deletions++;
+          
+        case 'delete':
+          const deleteValues = Array.isArray(change.value) ? change.value : [change.value];
+          deleteValues.forEach(value => {
+            displayLines.push({
+              type: 'deletion',
+              lineNumber: originalIndex + 1,
+              newLineNumber: null,
+              content: value,
+              originalContent: value
+            });
+            originalIndex++;
+          });
           break;
-        case 'modification':
-          stats.changes++;
+          
+        case 'insert':
+          const insertValues = Array.isArray(change.value) ? change.value : [change.value];
+          insertValues.forEach(value => {
+            displayLines.push({
+              type: 'addition',
+              lineNumber: null,
+              newLineNumber: modifiedIndex + 1,
+              content: value,
+              originalContent: null
+            });
+            modifiedIndex++;
+          });
           break;
       }
     });
     
-    return stats;
+    return displayLines;
   };
 
-  const generateUnifiedDiff = () => {
-    let diff = `--- Original\n+++ Modified\n`;
-    let hunkStart = 0;
-    let hunkLines = [];
-    
-    diffData.lines.forEach((line, index) => {
-      if (line.type === 'context') {
-        hunkLines.push(` ${line.content}`);
-      } else if (line.type === 'deletion') {
-        hunkLines.push(`-${line.content}`);
-      } else if (line.type === 'addition') {
-        hunkLines.push(`+${line.content}`);
-      } else if (line.type === 'modification') {
-        hunkLines.push(`-${line.originalContent}`);
-        hunkLines.push(`+${line.content}`);
-      }
-    });
-    
-    if (hunkLines.length > 0) {
-      diff += `@@ -1,${originalCode.split('\n').length} +1,${modifiedCode.split('\n').length} @@\n`;
-      diff += hunkLines.join('\n');
-    }
-    
-    return diff;
-  };
+  // Get display lines from diff
+  const displayLines = useMemo(() => {
+    if (!diffResult.diff || diffResult.diff.length === 0) return [];
+    return convertDiffToDisplayLines(diffResult.diff);
+  }, [diffResult.diff, originalCode, modifiedCode]);
 
   const copyDiff = () => {
-    const unifiedDiff = generateUnifiedDiff();
-    navigator.clipboard.writeText(unifiedDiff);
+    navigator.clipboard.writeText(diffResult.unifiedDiff);
+  };
+
+  const exportDiff = () => {
+    const blob = new Blob([diffResult.unifiedDiff], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileName || 'file'}.diff`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const DiffLine = ({ line, index }) => {
@@ -264,15 +327,19 @@ const DiffPreviewSystem = ({
             <div className="flex items-center space-x-4 text-sm">
               <div className="flex items-center text-green-600">
                 <Plus className="w-3 h-3 mr-1" />
-                +{diffData.stats.additions}
+                +{diffResult.stats.additions}
               </div>
               <div className="flex items-center text-red-600">
                 <Minus className="w-3 h-3 mr-1" />
-                -{diffData.stats.deletions}
+                -{diffResult.stats.deletions}
               </div>
               <div className="flex items-center text-yellow-600">
                 <ArrowRight className="w-3 h-3 mr-1" />
-                ~{diffData.stats.changes}
+                ~{diffResult.stats.modifications}
+              </div>
+              <div className="flex items-center text-blue-600 text-xs">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                {diffResult.stats.unchanged}
               </div>
             </div>
             
@@ -283,7 +350,7 @@ const DiffPreviewSystem = ({
               Copy
             </Button>
             
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={exportDiff}>
               <Download className="w-4 h-4 mr-1" />
               Export
             </Button>
@@ -294,9 +361,10 @@ const DiffPreviewSystem = ({
       {/* Content */}
       <div className="flex-1">
         <Tabs value={selectedView} onValueChange={setSelectedView} className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="unified">Unified Diff</TabsTrigger>
             <TabsTrigger value="split">Split View</TabsTrigger>
+            <TabsTrigger value="raw">Raw Diff</TabsTrigger>
             <TabsTrigger value="patches">Patches</TabsTrigger>
           </TabsList>
 
@@ -304,27 +372,50 @@ const DiffPreviewSystem = ({
             <div className="h-full flex flex-col">
               {/* Controls */}
               <div className="border-b p-2 bg-muted/50">
-                <div className="flex items-center space-x-4 text-sm">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={lineNumbers}
-                      onChange={(e) => setLineNumbers(e.target.checked)}
-                    />
-                    <span>Show line numbers</span>
-                  </label>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4 text-sm">
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={lineNumbers}
+                        onChange={(e) => setLineNumbers(e.target.checked)}
+                      />
+                      <span>Line numbers</span>
+                    </label>
+                    
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={showWhitespace}
+                        onChange={(e) => setShowWhitespace(e.target.checked)}
+                      />
+                      <span>Whitespace</span>
+                    </label>
+                    
+                    <div className="flex items-center space-x-2">
+                      <span>Context:</span>
+                      <select
+                        value={contextLines}
+                        onChange={(e) => setContextLines(Number(e.target.value))}
+                        className="px-2 py-1 border rounded text-xs"
+                      >
+                        <option value={1}>1</option>
+                        <option value={3}>3</option>
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                      </select>
+                    </div>
+                  </div>
                   
-                  <div className="flex items-center space-x-2">
-                    <span>Context lines:</span>
+                  <div className="flex items-center space-x-2 text-sm">
+                    <span>Algorithm:</span>
                     <select
-                      value={contextLines}
-                      onChange={(e) => setContextLines(Number(e.target.value))}
-                      className="px-2 py-1 border rounded"
+                      value={algorithm}
+                      onChange={(e) => setAlgorithm(e.target.value)}
+                      className="px-2 py-1 border rounded text-xs"
                     >
-                      <option value={1}>1</option>
-                      <option value={3}>3</option>
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
+                      <option value="myers">Myers</option>
+                      <option value="patience">Patience</option>
                     </select>
                   </div>
                 </div>
@@ -332,7 +423,7 @@ const DiffPreviewSystem = ({
               
               {/* Diff Content */}
               <ScrollArea className="flex-1">
-                {diffData.lines.length === 0 ? (
+                {displayLines.length === 0 ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center text-muted-foreground">
                       <FileText className="w-8 h-8 mx-auto mb-2" />
@@ -344,7 +435,7 @@ const DiffPreviewSystem = ({
                   </div>
                 ) : (
                   <div className="font-mono">
-                    {diffData.lines.map((line, index) => (
+                    {displayLines.map((line, index) => (
                       <DiffLine key={index} line={line} index={index} />
                     ))}
                   </div>
@@ -354,28 +445,81 @@ const DiffPreviewSystem = ({
           </TabsContent>
 
           <TabsContent value="split" className="flex-1 m-0">
-            <div className="h-full grid grid-cols-2">
-              <div className="border-r">
-                <div className="border-b p-2 bg-red-50">
-                  <h4 className="font-medium text-red-900">Original</h4>
+            <div className="h-full flex flex-col">
+              {/* Split View Controls */}
+              <div className="border-b p-2 bg-muted/50">
+                <div className="flex items-center space-x-4 text-sm">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={lineNumbers}
+                      onChange={(e) => setLineNumbers(e.target.checked)}
+                    />
+                    <span>Line numbers</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={showWhitespace}
+                      onChange={(e) => setShowWhitespace(e.target.checked)}
+                    />
+                    <span>Whitespace</span>
+                  </label>
                 </div>
-                <ScrollArea className="h-full">
-                  <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
-                    {originalCode || 'No original code'}
-                  </pre>
-                </ScrollArea>
               </div>
               
-              <div>
-                <div className="border-b p-2 bg-green-50">
-                  <h4 className="font-medium text-green-900">Modified</h4>
+              <div className="flex-1 grid grid-cols-2">
+                <div className="border-r flex flex-col">
+                  <div className="border-b p-2 bg-red-50">
+                    <h4 className="font-medium text-red-900">Original ({originalCode.split('\n').length} lines)</h4>
+                  </div>
+                  <ScrollArea className="flex-1">
+                    <SplitViewPane 
+                      lines={originalCode.split('\n')} 
+                      diffLines={displayLines}
+                      side="original" 
+                      showLineNumbers={lineNumbers}
+                      showWhitespace={showWhitespace}
+                    />
+                  </ScrollArea>
                 </div>
-                <ScrollArea className="h-full">
-                  <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
-                    {modifiedCode || 'No modified code'}
-                  </pre>
-                </ScrollArea>
+                
+                <div className="flex flex-col">
+                  <div className="border-b p-2 bg-green-50">
+                    <h4 className="font-medium text-green-900">Modified ({modifiedCode.split('\n').length} lines)</h4>
+                  </div>
+                  <ScrollArea className="flex-1">
+                    <SplitViewPane 
+                      lines={modifiedCode.split('\n')} 
+                      diffLines={displayLines}
+                      side="modified" 
+                      showLineNumbers={lineNumbers}
+                      showWhitespace={showWhitespace}
+                    />
+                  </ScrollArea>
+                </div>
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="raw" className="flex-1 m-0">
+            <div className="h-full flex flex-col">
+              <div className="border-b p-2 bg-muted/50 flex items-center justify-between">
+                <h4 className="font-medium">Git-style Unified Diff</h4>
+                <div className="flex items-center space-x-2">
+                  <Badge variant="secondary" className="text-xs">
+                    {diffResult.metadata?.algorithm || algorithm}
+                  </Badge>
+                  <Button variant="ghost" size="sm" onClick={copyDiff}>
+                    <Copy className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+              <ScrollArea className="flex-1">
+                <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
+                  {diffResult.unifiedDiff || 'No differences to display'}
+                </pre>
+              </ScrollArea>
             </div>
           </TabsContent>
 
