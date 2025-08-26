@@ -29,7 +29,7 @@ const FileTreeNavigator = ({
   onRefresh,
   className = '' 
 }) => {
-  const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'backend', 'src/components', 'src/pages', 'backend/src']));
+  const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'src/components', 'src/pages']));
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTree, setFileTree] = useState(null);
 
