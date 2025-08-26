@@ -342,17 +342,19 @@ const DiffPreviewSystem = ({
     
     isScrollingRef.current = true;
     
-    if (source === 'original' && modifiedScrollRef.current) {
-      modifiedScrollRef.current.scrollTop = scrollTop;
-      modifiedScrollRef.current.scrollLeft = scrollLeft;
-    } else if (source === 'modified' && originalScrollRef.current) {
-      originalScrollRef.current.scrollTop = scrollTop;
-      originalScrollRef.current.scrollLeft = scrollLeft;
-    }
-    
-    setTimeout(() => {
-      isScrollingRef.current = false;
-    }, 50);
+    requestAnimationFrame(() => {
+      if (source === 'original' && modifiedScrollRef.current) {
+        modifiedScrollRef.current.scrollTop = scrollTop;
+        modifiedScrollRef.current.scrollLeft = scrollLeft;
+      } else if (source === 'modified' && originalScrollRef.current) {
+        originalScrollRef.current.scrollTop = scrollTop;
+        originalScrollRef.current.scrollLeft = scrollLeft;
+      }
+      
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 16);
+    });
   }, []);
 
   // Set up scroll event listeners for synchronized scrolling
@@ -384,7 +386,7 @@ const DiffPreviewSystem = ({
         modifiedViewport.removeEventListener('scroll', handleModifiedScroll);
       }
     };
-  }, [handleSyncScroll, selectedView]);
+  }, [handleSyncScroll]);
 
   // Handle line revert functionality
   const handleLineRevert = useCallback((lineIndex, originalLine) => {
@@ -970,7 +972,7 @@ const DiffPreviewSystem = ({
                     border: '1px solid #e2e8f0'
                   }}
                 >
-                  <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '800px', height: '200px' }}>
+                  <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 300px)', minWidth: '800px', height: 'calc(100vh - 300px)' }}>
                   {displayLines.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center text-muted-foreground">
@@ -1036,7 +1038,7 @@ const DiffPreviewSystem = ({
                         border: '1px solid #e2e8f0'
                       }}
                     >
-                      <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '600px', height: '200px' }}>
+                      <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 350px)', minWidth: '600px', height: 'calc(100vh - 350px)' }}>
                         <SplitViewPane
                           lines={originalBaseCodeRef.current.split('\n')}
                           diffLines={displayLines}
@@ -1072,7 +1074,7 @@ const DiffPreviewSystem = ({
                           border: '1px solid #e2e8f0'
                         }}
                       >
-                        <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '600px', height: '200px' }}>
+                        <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 350px)', minWidth: '600px', height: 'calc(100vh - 350px)' }}>
                           <SplitViewPane
                             lines={currentModifiedCode.split('\n')}
                             diffLines={displayLines}
@@ -1137,7 +1139,7 @@ const DiffPreviewSystem = ({
                     border: '1px solid #e2e8f0'
                   }}
                 >
-                  <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '800px', height: '200px' }}>
+                  <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 300px)', minWidth: '800px', height: 'calc(100vh - 300px)' }}>
                     <pre className="p-4 text-sm font-mono whitespace-pre">
                       {diffResult.unifiedDiff || 'No differences to display'}
                     </pre>
