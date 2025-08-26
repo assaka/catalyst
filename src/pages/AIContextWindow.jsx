@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import {Code, Diff, Download, Eye} from 'lucide-react';
@@ -86,6 +86,9 @@ const AIContextWindowPage = () => {
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
   const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
+  
+  // Auto-save debounce timer
+  const autoSaveTimeoutRef = useRef(null);
 
   // Load file from URL parameter on mount
   useEffect(() => {
@@ -94,6 +97,15 @@ const AIContextWindowPage = () => {
       loadFileContent(filePath);
     }
   }, [searchParams]);
+  
+  // Cleanup auto-save timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Helper function to fetch baseline code from database
   const fetchBaselineCode = useCallback(async (filePath, fallbackContent) => {
@@ -363,8 +375,8 @@ export default ExampleComponent;`;
     }
   }, [selectedFile, sourceCode, currentPatch]);
 
-  // Handle manual edit detection
-  const handleManualEdit = useCallback((newCode, originalCode, options = {}) => {
+  // Handle manual edit detection with auto-save
+  const handleManualEdit = useCallback(async (newCode, originalCode, options = {}) => {
     const manualEdit = {
       newCode,
       originalCode,
@@ -377,10 +389,63 @@ export default ExampleComponent;`;
     if (manualEdit.hasChanges) {
       console.log(`🔍 Manual changes detected in ${selectedFile?.name || 'file'}`);
       console.log('📋 Changes detected:', { originalLength: originalCode.length, newLength: newCode.length });
+      
+      // Auto-save patch to database with debouncing
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      
+      autoSaveTimeoutRef.current = setTimeout(async () => {
+        try {
+          const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+          if (!token) {
+            console.warn('⚠️ No auth token found - skipping auto-save');
+            return;
+          }
+
+          const filePath = selectedFile?.path || selectedFile?.name;
+          if (!filePath) {
+            console.warn('⚠️ No file path available - skipping auto-save');
+            return;
+          }
+
+          console.log('💾 Auto-saving patch to database...');
+          
+          const response = await fetch('/api/hybrid-patches/create', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              filePath: filePath,
+              originalCode: originalCode,
+              modifiedCode: newCode,
+              changeSummary: 'Auto-saved changes',
+              changeType: 'manual_edit',
+              metadata: {
+                source: 'ai_context_window',
+                fileName: selectedFile?.name,
+                timestamp: new Date().toISOString()
+              }
+            })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Patch auto-saved successfully:', result);
+          } else {
+            const error = await response.text();
+            console.error('❌ Failed to auto-save patch:', response.status, error);
+          }
+        } catch (error) {
+          console.error('❌ Error during auto-save:', error);
+        }
+      }, 2000); // 2 second debounce
     } else {
       console.log('✅ Changes undone - code returned to original state');
     }
-  }, [selectedFile?.name]);
+  }, [selectedFile?.name, selectedFile?.path]);
 
   // Handle diff stats changes from DiffPreviewSystem
   const handleDiffStatsChange = useCallback((diffStats) => {
@@ -780,21 +845,26 @@ export default ExampleComponent;`;
                         className="h-full"
                       />
                     ) : previewMode === 'patch' ? (
-                      // Diff View - Always use DiffPreviewSystem for showing diffs
+                      // Diff View - Enhanced with AST diff functionality
                       <DiffPreviewSystem
                         originalCode={manualEditResult?.originalCode || originalCode}
                         modifiedCode={manualEditResult?.newCode || sourceCode}
                         fileName={selectedFile?.path || ''}
+                        filePath={selectedFile?.path}
+                        useAstDiff={true}
                         className="h-full"
                         onCodeChange={handleCodeChange}
                         onDiffStatsChange={handleDiffStatsChange}
                       />
                     ) : (
-                      // Live Preview View - Browser-like rendering of actual routes
+                      // Live Preview View - Enhanced with AST diff and route resolution
                       <BrowserPreview
                         fileName={selectedFile?.path || ''}
+                        filePath={selectedFile?.path}
                         currentCode={sourceCode}
                         previewMode="live"
+                        useAstDiff={true}
+                        astDiffData={astDiffStatus?.data}
                         className="h-full"
                       />
                     )}

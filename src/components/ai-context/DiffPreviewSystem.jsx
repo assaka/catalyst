@@ -750,6 +750,28 @@ const DiffPreviewSystem = ({
           <div className="flex items-center space-x-2">
             <GitCompare className="w-5 h-5" />
             <h3 className="text-lg font-semibold">Diff Preview</h3>
+            
+            {/* AST Diff Data Status Indicators */}
+            {useAstDiff && filePath && (
+              <div className="flex items-center space-x-2 ml-4">
+                {fetchingAstDiff ? (
+                  <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+                    <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                    Loading AST
+                  </Badge>
+                ) : astDiffError ? (
+                  <Badge variant="destructive" className="text-red-600 border-red-200 bg-red-50" title={astDiffError}>
+                    <XCircle className="w-3 h-3 mr-1" />
+                    AST Error
+                  </Badge>
+                ) : astDiffData ? (
+                  <Badge variant="default" className="text-green-600 border-green-200 bg-green-50">
+                    <Zap className="w-3 h-3 mr-1" />
+                    AST Ready
+                  </Badge>
+                ) : null}
+              </div>
+            )}
           </div>
           
           <div className="flex items-center space-x-2">
@@ -852,6 +874,25 @@ const DiffPreviewSystem = ({
           </AlertDescription>
         </Alert>
       )}
+      
+      {astDiffError && (
+        <Alert className="mx-4 mb-2 border-yellow-200 bg-yellow-50">
+          <XCircle className="h-4 w-4 text-yellow-600" />
+          <AlertDescription className="text-yellow-800">
+            <div className="flex items-center justify-between">
+              <span>AST Diff Error: {astDiffError}</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setAstDiffError(null)}
+                className="text-yellow-600 hover:text-yellow-800"
+              >
+                <XCircle className="w-3 h-3" />
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Content */}
       <div className="flex-1">
@@ -921,7 +962,6 @@ const DiffPreviewSystem = ({
                 <div 
                   className="h-full w-full"
                   style={{ 
-                    height: '100%',
                     overflowX: 'scroll',
                     overflowY: 'scroll',
                     scrollbarWidth: 'auto',
@@ -988,7 +1028,6 @@ const DiffPreviewSystem = ({
                       className="flex-1 min-h-0"
                       ref={originalScrollRef}
                       style={{ 
-                        height: '100%',
                         overflowX: 'scroll',
                         overflowY: 'scroll',
                         scrollbarWidth: 'auto',
@@ -1025,7 +1064,6 @@ const DiffPreviewSystem = ({
                         className="flex-1 min-h-0"
                         ref={modifiedScrollRef}
                         style={{ 
-                          height: '100%',
                           overflowX: 'scroll',
                           overflowY: 'scroll',
                           scrollbarWidth: 'auto',
@@ -1091,7 +1129,6 @@ const DiffPreviewSystem = ({
                 <div 
                   className="h-full w-full"
                   style={{ 
-                    height: '100%',
                     overflowX: 'scroll',
                     overflowY: 'scroll',
                     scrollbarWidth: 'auto',
@@ -1112,12 +1149,49 @@ const DiffPreviewSystem = ({
 
           <TabsContent value="patches" className="flex-1 m-0 p-4">
             <div className="space-y-4">
-              {patches.length === 0 ? (
+              {/* Show AST Diff Data if available */}
+              {astDiffData && astDiffData.patch && (
+                <Card className="p-4 border-blue-200 bg-blue-50">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-medium flex items-center">
+                        <Zap className="w-4 h-4 mr-2 text-blue-600" />
+                        AST Diff Patch
+                      </h4>
+                      <p className="text-sm text-blue-700 mt-1">
+                        {astDiffData.patch.changeSummary || 'Auto-saved changes with AST analysis'}
+                      </p>
+                      {astDiffData.patch.changeDescription && (
+                        <p className="text-xs text-blue-600 mt-1">
+                          {astDiffData.patch.changeDescription}
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant="outline" className="text-blue-600 border-blue-300">
+                      AST
+                    </Badge>
+                  </div>
+                  
+                  {astDiffData.patch.astDiff && (
+                    <div className="mt-3 text-sm">
+                      <div className="text-blue-700 font-medium mb-2">AST Changes:</div>
+                      <pre className="text-xs text-blue-600 bg-blue-100 p-2 rounded overflow-x-auto max-h-32">
+                        {JSON.stringify(astDiffData.patch.astDiff, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+                </Card>
+              )}
+              
+              {patches.length === 0 && !astDiffData ? (
                 <Card className="p-8 text-center">
                   <Zap className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-muted-foreground">No patches available</p>
                   <p className="text-sm mt-1">
-                    Patches will appear here when generated by the AI
+                    {useAstDiff && filePath ? 
+                      'AST patches will appear here when code changes are detected' :
+                      'Patches will appear here when generated by the AI'
+                    }
                   </p>
                 </Card>
               ) : (

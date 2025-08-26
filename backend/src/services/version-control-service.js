@@ -42,11 +42,27 @@ class VersionControlService {
         }
       });
 
-      // Create initial snapshot
+      // Create initial snapshot with diff if baseline and initial code differ
+      let diffData = {
+        ast_diff: null,
+        line_diff: null,
+        unified_diff: null,
+        diff_stats: {}
+      };
+
+      if (baselineCode && initialCode && baselineCode !== initialCode) {
+        // Calculate diff between baseline and initial code
+        diffData = await this.createCodeDiff(baselineCode, initialCode);
+      }
+
       const snapshot = await this.createSnapshot(customization.id, {
         change_summary: changeSummary || 'Initial version',
         change_description: 'Baseline version of the customization',
         change_type: 'initial',
+        ast_diff: diffData.ast_diff,
+        line_diff: diffData.line_diff,
+        unified_diff: diffData.unified_diff,
+        diff_stats: diffData.stats,
         createdBy: userId
       });
 
