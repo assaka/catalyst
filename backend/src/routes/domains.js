@@ -7,7 +7,76 @@ const { v4: uuidv4 } = require('uuid');
 const dns = require('dns').promises;
 const https = require('https');
 
-// All routes require authentication and store ownership
+/**
+ * GET /api/stores/:store_id/storefront-url
+ * Get the primary storefront URL for a store (public endpoint for preview system)
+ */
+router.get('/storefront-url', async (req, res) => {
+  try {
+    const storeId = req.params.store_id;
+    
+    const store = await Store.findByPk(storeId);
+    if (!store) {
+      return res.status(404).json({
+        success: false,
+        error: 'Store not found'
+      });
+    }
+
+    // Priority order for storefront URL:
+    // 1. Primary custom domain (verified)
+    // 2. Any verified custom domain
+    // 3. Render service URL
+    // 4. Fallback to slug-based URL
+    
+    let storefrontUrl = null;
+    let source = 'fallback';
+    
+    // Check for custom domains first
+    const domains = store.settings?.custom_domains || [];
+    const primaryDomain = store.settings?.domain?.primary_domain;
+    
+    // Try primary domain from domain configuration
+    if (primaryDomain && store.settings?.domain?.verification_status === 'verified') {
+      storefrontUrl = `https://${primaryDomain}`;
+      source = 'primary_domain';
+    } else {
+      // Check custom domains array for verified domains
+      const verifiedDomain = domains.find(d => d.status === 'verified' || d.status === 'active');
+      if (verifiedDomain) {
+        storefrontUrl = `https://${verifiedDomain.domain}`;
+        source = 'custom_domain';
+      }
+    }
+    
+    // Fallback to Render service URL
+    if (!storefrontUrl && store.render_service_url) {
+      storefrontUrl = store.render_service_url;
+      source = 'render_service';
+    }
+    
+    // Final fallback to slug-based URL
+    if (!storefrontUrl) {
+      storefrontUrl = `https://${store.slug}.catalyst.com`;
+      source = 'slug_fallback';
+    }
+
+    res.json({
+      success: true,
+      storefront_url: storefrontUrl,
+      source: source,
+      store_slug: store.slug
+    });
+  } catch (error) {
+    console.error('Get storefront URL error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// All routes below require authentication and store ownership
 router.use(authMiddleware);
 router.use(checkStoreOwnership);
 

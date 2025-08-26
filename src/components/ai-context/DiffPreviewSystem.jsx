@@ -49,8 +49,38 @@ const extractComponentName = (fileName, code) => {
 };
 
 // Function to resolve page URL using store routes API
+// Helper function to fetch the storefront URL for a store
+const fetchStorefrontURL = async (storeId) => {
+  try {
+    const response = await fetch(`/api/stores/${storeId}/domains/storefront-url`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.storefront_url) {
+        return {
+          success: true,
+          url: data.storefront_url,
+          source: data.source
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching storefront URL:', error);
+  }
+  
+  // Fallback to localhost for development/preview
+  return {
+    success: false,
+    url: window.location.origin,
+    source: 'localhost_fallback'
+  };
+};
+
 const resolvePageURL = async (pageName, storeId) => {
   try {
+    // Get the storefront URL first
+    const storefrontResult = await fetchStorefrontURL(storeId);
+    const baseUrl = storefrontResult.url;
+    
     const response = await fetch(`/api/store-routes/public/find-by-page/${encodeURIComponent(pageName)}?store_id=${storeId}`);
     
     if (response.ok) {
@@ -59,7 +89,8 @@ const resolvePageURL = async (pageName, storeId) => {
         return {
           success: true,
           path: data.data.route.route_path,
-          url: `${window.location.origin}${data.data.route.route_path}`
+          url: `${baseUrl}${data.data.route.route_path}`,
+          storefront_source: storefrontResult.source
         };
       }
     }
@@ -69,18 +100,21 @@ const resolvePageURL = async (pageName, storeId) => {
     return {
       success: false,
       path: fallbackPath,
-      url: `${window.location.origin}${fallbackPath}`,
-      fallback: true
+      url: `${baseUrl}${fallbackPath}`,
+      fallback: true,
+      storefront_source: storefrontResult.source
     };
   } catch (error) {
     console.error('Error resolving page URL:', error);
     const fallbackPath = `/${pageName.toLowerCase().replace(/\s+/g, '-')}`;
+    // Use localhost as final fallback if storefront URL fetch fails
     return {
       success: false,
       path: fallbackPath,
       url: `${window.location.origin}${fallbackPath}`,
       fallback: true,
-      error: error.message
+      error: error.message,
+      storefront_source: 'error_fallback'
     };
   }
 };
@@ -482,10 +516,16 @@ const DiffPreviewSystem = ({
         );
         
         if (previewWindow) {
+          // Log the storefront URL source for debugging
+          if (urlResult.storefront_source) {
+            console.log(`Preview opened using ${urlResult.storefront_source} URL:`, urlResult.url.split('?')[0]);
+          }
+          
           setPreviewStatus({ 
             loading: false, 
             error: null, 
-            url: previewUrl 
+            url: previewUrl,
+            storefrontSource: urlResult.storefront_source
           });
         } else {
           throw new Error('Failed to open preview window (popup blocked?)');
@@ -873,6 +913,36 @@ const DiffPreviewSystem = ({
           <XCircle className="h-4 w-4 text-red-600" />
           <AlertDescription className="text-red-800">
             Preview Error: {previewStatus.error}
+          </AlertDescription>
+        </Alert>
+      )}
+      
+      {previewStatus.url && !previewStatus.loading && !previewStatus.error && (
+        <Alert className="mx-4 mb-2 border-green-200 bg-green-50">
+          <ExternalLink className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">
+            <div className="flex items-center justify-between">
+              <span>
+                Preview opened successfully
+                {previewStatus.storefrontSource && (
+                  <span className="ml-1 text-green-700">
+                    (using {previewStatus.storefrontSource === 'localhost_fallback' ? 'localhost' : 
+                           previewStatus.storefrontSource === 'primary_domain' ? 'custom domain' :
+                           previewStatus.storefrontSource === 'render_service' ? 'Render service' :
+                           previewStatus.storefrontSource === 'slug_fallback' ? 'default domain' :
+                           previewStatus.storefrontSource})
+                  </span>
+                )}
+              </span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setPreviewStatus(prev => ({ ...prev, url: null }))}
+                className="h-6 w-6 p-0 text-green-600 hover:text-green-800"
+              >
+                <XCircle className="h-3 w-3" />
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       )}

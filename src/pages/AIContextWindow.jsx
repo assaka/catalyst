@@ -629,7 +629,7 @@ export default ExampleComponent;`;
   }, []);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
       
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-white dark:bg-gray-800">
@@ -712,7 +712,7 @@ export default ExampleComponent;`;
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 min-h-0" style={{ height: 'calc(100vh - 140px)' }}>
         <ResizablePanelGroup direction="horizontal" className="h-full">
           {/* AI Context Window - Now First Column */}
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
