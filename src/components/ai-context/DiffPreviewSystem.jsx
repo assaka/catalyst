@@ -20,7 +20,8 @@ import {
   Zap,
   Settings,
   Eye,
-  EyeOff
+  EyeOff,
+  Check
 } from 'lucide-react';
 
 // Import diff service
@@ -68,7 +69,7 @@ const SplitViewPane = ({
   };
 
   return (
-    <div className="font-mono">
+    <div className="font-mono min-w-max">
       {lines.map((line, index) => {
         const diffType = getDiffTypeForLine(index);
         const shouldShow = side === 'original' 
@@ -82,29 +83,30 @@ const SplitViewPane = ({
         return (
           <div
             key={index}
-            className={`flex items-center px-2 py-1 text-sm ${getLineStyle(index, diffType)} group`}
+            className={`flex items-center px-2 py-1 text-sm min-w-max ${getLineStyle(index, diffType)} group`}
           >
             {showLineNumbers && (
               <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
                 {index + 1}
               </div>
             )}
-            <div className="flex-1 pl-2 flex items-center justify-between relative">
+            <div className="flex-1 pl-2 flex items-center justify-between relative min-w-0">
               <span className={`${diffType === 'addition' && side === 'modified' ? 'text-green-700' : 
                                 diffType === 'deletion' && side === 'original' ? 'text-red-700' : 
-                                'text-foreground'} pr-10`}>
+                                'text-foreground'} pr-10 whitespace-nowrap block`}>
                 {formatLine(line) || ' '}
               </span>
               
               {/* Show permanent right arrow for modified lines on the original side - positioned absolutely */}
-              {side === 'original' && onLineRevert && modifiedLines && 
-               modifiedLines[index] && modifiedLines[index] !== line && (
+              {side === 'original' && onLineRevert && originalLines && modifiedLines && 
+               originalLines[index] !== undefined && modifiedLines[index] !== undefined &&
+               originalLines[index] !== modifiedLines[index] && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                  className="absolute right-0 top-0 h-full px-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0"
                   onClick={() => onLineRevert(index, line)}
-                  title="Undo this change"
+                  title="Revert this line to original"
                 >
                   <ArrowRight className="w-3 h-3" />
                 </Button>
@@ -131,6 +133,7 @@ const DiffPreviewSystem = ({
   const [algorithm, setAlgorithm] = useState('myers');
   const [showWhitespace, setShowWhitespace] = useState(false);
   const [currentModifiedCode, setCurrentModifiedCode] = useState(modifiedCode);
+  const [copyStatus, setCopyStatus] = useState({ copied: false, error: null });
 
   const diffServiceRef = useRef(new DiffService());
   const originalBaseCodeRef = useRef(originalCode); // Preserve original base code
@@ -149,21 +152,60 @@ const DiffPreviewSystem = ({
   }, [originalCode]);
 
   // Handle synchronized scrolling between split view panes
-  const handleSyncScroll = useCallback((source, scrollTop) => {
+  const handleSyncScroll = useCallback((source, scrollTop, scrollLeft) => {
     if (isScrollingRef.current) return;
     
     isScrollingRef.current = true;
     
     if (source === 'original' && modifiedScrollRef.current) {
-      modifiedScrollRef.current.scrollTop = scrollTop;
+      const viewport = modifiedScrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = scrollTop;
+        viewport.scrollLeft = scrollLeft;
+      }
     } else if (source === 'modified' && originalScrollRef.current) {
-      originalScrollRef.current.scrollTop = scrollTop;
+      const viewport = originalScrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTop = scrollTop;
+        viewport.scrollLeft = scrollLeft;
+      }
     }
     
     setTimeout(() => {
       isScrollingRef.current = false;
     }, 50);
   }, []);
+
+  // Set up scroll event listeners for synchronized scrolling
+  useEffect(() => {
+    const originalViewport = originalScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    const modifiedViewport = modifiedScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    
+    const handleOriginalScroll = (e) => {
+      handleSyncScroll('original', e.target.scrollTop, e.target.scrollLeft);
+    };
+    
+    const handleModifiedScroll = (e) => {
+      handleSyncScroll('modified', e.target.scrollTop, e.target.scrollLeft);
+    };
+    
+    if (originalViewport) {
+      originalViewport.addEventListener('scroll', handleOriginalScroll);
+    }
+    
+    if (modifiedViewport) {
+      modifiedViewport.addEventListener('scroll', handleModifiedScroll);
+    }
+    
+    return () => {
+      if (originalViewport) {
+        originalViewport.removeEventListener('scroll', handleOriginalScroll);
+      }
+      if (modifiedViewport) {
+        modifiedViewport.removeEventListener('scroll', handleModifiedScroll);
+      }
+    };
+  }, [handleSyncScroll, selectedView]);
 
   // Handle line revert functionality
   const handleLineRevert = useCallback((lineIndex, originalLine) => {
@@ -270,8 +312,30 @@ const DiffPreviewSystem = ({
     return convertDiffToDisplayLines(diffResult.diff);
   }, [diffResult.diff, originalCode, modifiedCode]);
 
-  const copyDiff = () => {
-    navigator.clipboard.writeText(diffResult.unifiedDiff);
+  const copyDiff = async () => {
+    try {
+      setCopyStatus({ copied: false, error: null });
+      
+      if (!diffResult.unifiedDiff || diffResult.unifiedDiff.trim() === '') {
+        setCopyStatus({ copied: false, error: 'No diff content to copy' });
+        setTimeout(() => setCopyStatus({ copied: false, error: null }), 3000);
+        return;
+      }
+
+      await navigator.clipboard.writeText(diffResult.unifiedDiff);
+      setCopyStatus({ copied: true, error: null });
+      
+      // Reset the copied status after 2 seconds
+      setTimeout(() => {
+        setCopyStatus({ copied: false, error: null });
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to copy diff:', error);
+      setCopyStatus({ copied: false, error: 'Failed to copy to clipboard' });
+      
+      // Reset error status after 3 seconds
+      setTimeout(() => setCopyStatus({ copied: false, error: null }), 3000);
+    }
   };
 
   const exportDiff = () => {
@@ -314,38 +378,38 @@ const DiffPreviewSystem = ({
     };
 
     return (
-      <div className={`flex items-center px-2 py-1 text-sm font-mono ${getLineStyle()}`}>
+      <div className={`flex items-center px-2 py-1 text-sm font-mono min-w-max ${getLineStyle()}`}>
         {lineNumbers && (
           <>
-            <div className="w-12 text-muted-foreground text-right pr-2">
+            <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
               {line.lineNumber || ''}
             </div>
-            <div className="w-12 text-muted-foreground text-right pr-2">
+            <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
               {line.newLineNumber || ''}
             </div>
           </>
         )}
         
-        <div className="w-6 flex items-center justify-center">
+        <div className="w-6 flex items-center justify-center flex-shrink-0">
           {getLineIcon()}
         </div>
         
-        <div className="flex-1 pl-2">
+        <div className="pl-2 whitespace-nowrap">
           {line.type === 'modification' ? (
             <div className="space-y-1">
-              <div className="text-red-600 line-through">
+              <div className="text-red-600 line-through whitespace-nowrap">
                 {line.originalContent}
               </div>
-              <div className="text-green-600">
+              <div className="text-green-600 whitespace-nowrap">
                 {line.content}
               </div>
             </div>
           ) : (
-            <span className={
+            <span className={`whitespace-nowrap ${
               line.type === 'addition' ? 'text-green-600' :
               line.type === 'deletion' ? 'text-red-600' :
               'text-foreground'
-            }>
+            }`}>
               {line.content}
             </span>
           )}
@@ -421,9 +485,30 @@ const DiffPreviewSystem = ({
             
             <Separator orientation="vertical" className="h-6" />
             
-            <Button variant="outline" size="sm" onClick={copyDiff}>
-              <Copy className="w-4 h-4 mr-1" />
-              Copy
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={copyDiff}
+              className={`transition-all duration-200 ${
+                copyStatus.copied 
+                  ? 'bg-green-50 border-green-200 text-green-700' 
+                  : copyStatus.error 
+                    ? 'bg-red-50 border-red-200 text-red-700'
+                    : ''
+              }`}
+              disabled={!diffResult.unifiedDiff || diffResult.unifiedDiff.trim() === ''}
+            >
+              {copyStatus.copied ? (
+                <>
+                  <Check className="w-4 h-4 mr-1" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-1" />
+                  Copy
+                </>
+              )}
             </Button>
             
             <Button variant="outline" size="sm" onClick={exportDiff}>
@@ -433,6 +518,16 @@ const DiffPreviewSystem = ({
           </div>
         </div>
       </div>
+
+      {/* Error Alert */}
+      {copyStatus.error && (
+        <Alert className="mx-4 mb-2 border-red-200 bg-red-50">
+          <XCircle className="h-4 w-4 text-red-600" />
+          <AlertDescription className="text-red-800">
+            {copyStatus.error}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Content */}
       <div className="flex-1">
@@ -556,7 +651,6 @@ const DiffPreviewSystem = ({
                       className="flex-1" 
                       type="both"
                       ref={originalScrollRef}
-                      onScroll={(e) => handleSyncScroll('original', e.target.scrollTop)}
                     >
                       <div className="min-w-max">
                         <SplitViewPane
@@ -586,7 +680,6 @@ const DiffPreviewSystem = ({
                         className="flex-1" 
                         type="both"
                         ref={modifiedScrollRef}
-                        onScroll={(e) => handleSyncScroll('modified', e.target.scrollTop)}
                       >
                         <div className="min-w-max">
                           <SplitViewPane
@@ -619,8 +712,25 @@ const DiffPreviewSystem = ({
                   <Badge variant="secondary" className="text-xs">
                     {diffResult.metadata?.algorithm || algorithm}
                   </Badge>
-                  <Button variant="ghost" size="sm" onClick={copyDiff}>
-                    <Copy className="w-3 h-3" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={copyDiff}
+                    className={`transition-all duration-200 ${
+                      copyStatus.copied 
+                        ? 'bg-green-50 text-green-700' 
+                        : copyStatus.error 
+                          ? 'bg-red-50 text-red-700'
+                          : ''
+                    }`}
+                    disabled={!diffResult.unifiedDiff || diffResult.unifiedDiff.trim() === ''}
+                    title={copyStatus.error || (copyStatus.copied ? 'Copied!' : 'Copy to clipboard')}
+                  >
+                    {copyStatus.copied ? (
+                      <Check className="w-3 h-3" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
                   </Button>
                 </div>
               </div>
