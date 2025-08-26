@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code, Layers } from 'lucide-react';
 import BrowserPreviewOverlay from './BrowserPreviewOverlay';
-import overlayPatchSystem from '../services/overlay-patch-system';
+import overlayPatchSystem from '../../services/overlay-patch-system';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
