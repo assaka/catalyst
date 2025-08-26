@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code, Layers } from 'lucide-react';
 import BrowserPreviewOverlay from './BrowserPreviewOverlay';
-import overlayPatchSystem from '../../services/overlay-patch-system';
+import { useOverlayManager } from '@/services/overlay-manager';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
@@ -24,47 +24,38 @@ const BrowserPreview = ({
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
   const [enablePatches, setEnablePatches] = useState(true); // Enable code patch simulation
   
-  // Overlay state management
+  // Overlay state management using existing overlay manager
   const [showOverlay, setShowOverlay] = useState(false);
   const [coreCode, setCoreCode] = useState(''); // Immutable base code
-  const [overlayStats, setOverlayStats] = useState(null);
+  const overlayManager = useOverlayManager();
 
   // Initialize overlay system when file changes
   useEffect(() => {
     if (fileName && currentCode) {
-      // Initialize overlay with current code as core
-      overlayPatchSystem.initializeOverlay(fileName, currentCode);
+      // Set original code in overlay manager
+      overlayManager.setOriginalCode(fileName, currentCode);
       setCoreCode(currentCode);
-      updateOverlayStats();
     }
-  }, [fileName]);
+  }, [fileName, currentCode, overlayManager]);
 
-  // Apply live code changes as patches
+  // Apply live code changes as overlays
   useEffect(() => {
     if (fileName && currentCode && coreCode && currentCode !== coreCode) {
-      // Add patch for live changes
-      const patch = overlayPatchSystem.addPatch(fileName, currentCode, {
+      // Create or update overlay with current changes
+      const overlay = overlayManager.createOverlay(fileName, currentCode, {
         changeType: 'live_edit',
-        changeSummary: 'Live code editing'
+        changeSummary: 'Live code editing',
+        priority: 1
       });
       
-      if (patch) {
-        updateOverlayStats();
-        console.log('🔄 Applied live code change as overlay patch');
+      if (overlay) {
+        console.log('🔄 Applied live code change as overlay');
       }
     }
-  }, [currentCode, coreCode, fileName]);
-
-  const updateOverlayStats = () => {
-    if (fileName) {
-      const stats = overlayPatchSystem.getOverlayStats(fileName);
-      setOverlayStats(stats);
-    }
-  };
+  }, [currentCode, coreCode, fileName, overlayManager]);
 
   const handleOverlayCodeChange = useCallback((newCode) => {
-    // This callback is called when overlay patches change the code
-    // The newCode should be applied to the preview
+    // This callback is called when overlay code changes
     console.log('🔄 Overlay code changed, updating preview');
     
     // Force iframe refresh to apply new code
@@ -77,17 +68,18 @@ const BrowserPreview = ({
     }
   }, [applyCodePatches, enablePatches]);
 
-  const handleOverlayPublish = useCallback((publishedOverlay) => {
-    console.log('🚀 Overlay published:', publishedOverlay.id);
-    // Update core code to published state
-    setCoreCode(publishedOverlay.publishedCode);
-    updateOverlayStats();
-    // Could save the published overlay to the backend here
+  const handleOverlayPublish = useCallback((publishedData) => {
+    console.log('🚀 Overlay published');
+    // For the overlay manager, we don't need to track published state
+    // The overlay system handles merging automatically
   }, []);
 
-  const handleOverlayRollback = useCallback((rolledBackCode) => {
+  const handleOverlayRollback = useCallback(() => {
     console.log('↩️ Overlay rolled back to core code');
-    updateOverlayStats();
+    // Clear all overlays for this file
+    if (fileName) {
+      overlayManager.clearFileOverlays(fileName);
+    }
     // Force preview refresh to show rolled back state
     const iframe = document.getElementById('browser-preview-iframe');
     if (iframe) {
@@ -95,7 +87,7 @@ const BrowserPreview = ({
         applyCodePatches(iframe);
       }, 100);
     }
-  }, [applyCodePatches]);
+  }, [fileName, overlayManager, applyCodePatches]);
 
   // Get store context for API calls
   const { selectedStore } = useStoreSelection();

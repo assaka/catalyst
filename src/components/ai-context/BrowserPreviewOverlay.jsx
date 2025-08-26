@@ -7,10 +7,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, Code, GitBranch, Eye, EyeOff, Maximize2, Minimize2, 
-  Layers, Save, RotateCcw, History, Upload, Download 
+  Layers, Save, RotateCcw, History, Upload, Download,
+  FileCode, Trash2
 } from 'lucide-react';
 import DiffPreviewSystem from './DiffPreviewSystem';
-import overlayPatchSystem from '../../services/overlay-patch-system';
+import { useOverlayManager } from '../../services/overlay-manager';
 
 const BrowserPreviewOverlay = ({
   isVisible,
@@ -28,19 +29,20 @@ const BrowserPreviewOverlay = ({
   const [overlayPosition, setOverlayPosition] = useState({ x: 20, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const [overlayStats, setOverlayStats] = useState(null);
-  const [patches, setPatches] = useState([]);
+  const [overlays, setOverlays] = useState([]);
   const [visualDiff, setVisualDiff] = useState(null);
   const dragRef = useRef(null);
   const overlayRef = useRef(null);
+  const overlayManager = useOverlayManager();
 
   // Initialize overlay when component mounts or filePath changes
   useEffect(() => {
     if (filePath && coreCode) {
-      overlayPatchSystem.initializeOverlay(filePath, coreCode);
+      overlayManager.setOriginalCode(filePath, coreCode);
       
-      // Apply current edited code as a patch if different from core
+      // Apply current edited code as overlay if different from core
       if (currentEditedCode && currentEditedCode !== coreCode) {
-        overlayPatchSystem.addPatch(filePath, currentEditedCode, {
+        overlayManager.createOverlay(filePath, currentEditedCode, {
           changeType: 'live_edit',
           changeSummary: 'Live editing changes'
         });
@@ -48,65 +50,91 @@ const BrowserPreviewOverlay = ({
       
       updateOverlayData();
     }
-  }, [filePath, coreCode, currentEditedCode]);
+  }, [filePath, coreCode, currentEditedCode, overlayManager]);
 
   // Update overlay data
   const updateOverlayData = () => {
     if (!filePath) return;
     
-    const stats = overlayPatchSystem.getOverlayStats(filePath);
-    const patchList = overlayPatchSystem.getPatches(filePath);
-    const diff = overlayPatchSystem.getVisualDiff(filePath);
+    const fileOverlays = overlayManager.getFileOverlays(filePath);
+    const stats = overlayManager.stats;
+    const mergedContent = overlayManager.getMergedContent(filePath);
     
-    setOverlayStats(stats);
-    setPatches(patchList);
-    setVisualDiff(diff);
+    setOverlays(fileOverlays);
+    setOverlayStats({
+      filePath,
+      patchCount: fileOverlays.length,
+      isDirty: fileOverlays.length > 0,
+      hasChanges: mergedContent !== coreCode,
+      coreSize: coreCode.length,
+      appliedSize: mergedContent.length,
+      sizeDiff: mergedContent.length - coreCode.length,
+      lastModified: fileOverlays.length > 0 ? fileOverlays[0].updatedAt : Date.now()
+    });
+    
+    setVisualDiff({
+      filePath,
+      coreCode: coreCode,
+      appliedCode: mergedContent,
+      overlays: fileOverlays
+    });
   };
 
-  // Handle patch operations
-  const handleRemovePatch = (patchId) => {
-    if (overlayPatchSystem.removePatch(filePath, patchId)) {
+  // Handle overlay operations
+  const handleRemoveOverlay = (overlayId) => {
+    if (overlayManager.removeOverlay(overlayId)) {
       updateOverlayData();
-      const newAppliedCode = overlayPatchSystem.getAppliedCode(filePath);
+      const newAppliedCode = overlayManager.getMergedContent(filePath);
       onCodeChange?.(newAppliedCode);
     }
   };
 
-  const handleRevertToPatch = (patchId) => {
-    if (overlayPatchSystem.revertToPatch(filePath, patchId)) {
+  const handleRevertToOverlay = (overlayId) => {
+    // For overlay manager, we can't revert to a specific overlay easily
+    // Instead, remove all overlays created after this one
+    const fileOverlays = overlayManager.getFileOverlays(filePath);
+    const targetIndex = fileOverlays.findIndex(o => o.id === overlayId);
+    
+    if (targetIndex >= 0) {
+      // Remove overlays after the target
+      fileOverlays.slice(0, targetIndex).forEach(overlay => {
+        overlayManager.removeOverlay(overlay.id);
+      });
       updateOverlayData();
-      const newAppliedCode = overlayPatchSystem.getAppliedCode(filePath);
+      const newAppliedCode = overlayManager.getMergedContent(filePath);
       onCodeChange?.(newAppliedCode);
     }
   };
 
   const handlePublish = () => {
-    const publishedOverlay = overlayPatchSystem.publishOverlay(filePath, {
-      publishedBy: 'user',
-      reason: 'Manual publish from overlay'
-    });
+    // For overlay manager, publish means we have finalized the overlay
+    const publishedData = {
+      filePath,
+      appliedCode: overlayManager.getMergedContent(filePath),
+      overlayCount: overlayManager.getFileOverlays(filePath).length
+    };
     
-    if (publishedOverlay) {
-      updateOverlayData();
-      onPublish?.(publishedOverlay);
-    }
+    updateOverlayData();
+    onPublish?.(publishedData);
   };
 
   const handleRollback = () => {
-    if (overlayPatchSystem.rollbackToCore(filePath)) {
-      updateOverlayData();
-      const coreCode = overlayPatchSystem.getCoreCode(filePath);
-      onRollback?.(coreCode);
-      onCodeChange?.(coreCode);
-    }
+    // Clear all overlays for this file to rollback to core
+    overlayManager.clearFileOverlays(filePath);
+    updateOverlayData();
+    onRollback?.(coreCode);
+    onCodeChange?.(coreCode);
   };
 
   const handleCreateSnapshot = () => {
-    const snapshot = overlayPatchSystem.createSnapshot(filePath, `Snapshot ${new Date().toLocaleTimeString()}`);
-    if (snapshot) {
-      updateOverlayData();
-      console.log('📸 Created snapshot:', snapshot.id);
-    }
+    // Overlay manager doesn't have snapshots, but we can log the current state
+    const snapshot = {
+      id: `snapshot_${Date.now()}`,
+      filePath,
+      overlayCount: overlayManager.getFileOverlays(filePath).length,
+      timestamp: Date.now()
+    };
+    console.log('📸 Created snapshot reference:', snapshot.id);
   };
 
   // Handle dragging functionality
@@ -337,61 +365,62 @@ const BrowserPreviewOverlay = ({
                     </div>
                   </div>
 
-                  {/* Patches Section */}
+                  {/* Overlays Section */}
                   <div className="w-1/3 border-r border-gray-200 flex flex-col">
                     <div className="px-4 py-2 bg-yellow-50 border-b border-gray-200 font-medium text-sm text-yellow-700 flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Layers className="w-3 h-3" />
-                        Patches ({patches.length})
+                        Overlays ({overlays.length})
                       </div>
                     </div>
                     <div className="flex-1 overflow-auto">
-                      {patches.length === 0 ? (
+                      {overlays.length === 0 ? (
                         <div className="p-4 text-sm text-gray-500 italic">
-                          No patches applied. Edit code to create overlays.
+                          No overlays applied. Edit code to create overlays.
                         </div>
                       ) : (
                         <div className="space-y-2 p-2">
-                          {patches.map((patch, index) => (
-                            <div key={patch.id} className="bg-white border border-gray-200 rounded-lg p-3">
+                          {overlays.map((overlay, index) => (
+                            <div key={overlay.id} className="bg-white border border-gray-200 rounded-lg p-3">
                               <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                   <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
                                     #{index + 1}
                                   </span>
                                   <span className="text-xs text-gray-600">
-                                    {new Date(patch.timestamp).toLocaleTimeString()}
+                                    {new Date(overlay.createdAt).toLocaleTimeString()}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <button
-                                    onClick={() => handleRevertToPatch(patch.id)}
+                                    onClick={() => handleRevertToOverlay(overlay.id)}
                                     className="p-1 text-xs text-blue-600 hover:bg-blue-100 rounded"
-                                    title="Revert to this patch"
+                                    title="Revert to this overlay"
                                   >
                                     ↻
                                   </button>
                                   <button
-                                    onClick={() => handleRemovePatch(patch.id)}
+                                    onClick={() => handleRemoveOverlay(overlay.id)}
                                     className="p-1 text-xs text-red-600 hover:bg-red-100 rounded"
-                                    title="Remove this patch"
+                                    title="Remove this overlay"
                                   >
                                     ×
                                   </button>
                                 </div>
                               </div>
                               <div className="text-xs text-gray-600 mb-1">
-                                {patch.metadata.changeSummary}
+                                {overlay.metadata?.changeSummary || overlay.metadata?.source || 'Code overlay'}
                               </div>
                               <div className="text-xs font-mono bg-gray-50 p-2 rounded max-h-20 overflow-auto">
-                                {patch.rawDiff.slice(0, 3).map((line, i) => (
-                                  <div key={i} className={
-                                    line.added ? 'text-green-600' : 
-                                    line.removed ? 'text-red-600' : 'text-gray-600'
-                                  }>
-                                    {line.added ? '+' : line.removed ? '-' : ' '}{line.value.slice(0, 50)}
-                                  </div>
-                                ))}
+                                <div className="text-gray-600">
+                                  Size: {overlay.metadata?.size || overlay.tmpCode?.length || 0} chars
+                                </div>
+                                <div className="text-gray-600">
+                                  Lines: {overlay.metadata?.lineCount || overlay.tmpCode?.split('\n').length || 0}
+                                </div>
+                                <div className="text-gray-600">
+                                  Version: {overlay.metadata?.version || 1}
+                                </div>
                               </div>
                             </div>
                           ))}
@@ -400,7 +429,7 @@ const BrowserPreviewOverlay = ({
                     </div>
                   </div>
 
-                  {/* Applied Code Section (Core + Patches) */}
+                  {/* Applied Code Section (Core + Overlays) */}
                   <div className="w-1/3 flex flex-col">
                     <div className="px-4 py-2 bg-blue-50 border-b border-gray-200 font-medium text-sm text-blue-700 flex items-center gap-2">
                       <Code className="w-3 h-3" />
@@ -408,7 +437,7 @@ const BrowserPreviewOverlay = ({
                     </div>
                     <div className="flex-1 overflow-auto p-4 bg-blue-50">
                       <pre className="text-sm font-mono text-gray-800 whitespace-pre-wrap">
-                        {overlayPatchSystem.getAppliedCode(filePath) || currentEditedCode || 'No applied code available'}
+                        {overlayManager.getMergedContent(filePath) || currentEditedCode || 'No applied code available'}
                       </pre>
                     </div>
                   </div>
