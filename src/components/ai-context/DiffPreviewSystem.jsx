@@ -14,6 +14,7 @@ import {
   Plus,
   Minus,
   ArrowRight,
+  ArrowLeft,
   Copy,
   Download,
   RefreshCw,
@@ -21,7 +22,8 @@ import {
   Settings,
   Eye,
   EyeOff,
-  Check
+  Check,
+  RotateCcw
 } from 'lucide-react';
 
 // Import diff service
@@ -85,32 +87,34 @@ const SplitViewPane = ({
             key={index}
             className={`flex items-center px-2 py-1 text-sm min-w-max ${getLineStyle(index, diffType)} group`}
           >
+            {/* Show revert button before line numbers for modified lines on the original side */}
+            {side === 'original' && onLineRevert && originalLines && modifiedLines && 
+             originalLines[index] !== undefined && modifiedLines[index] !== undefined &&
+             originalLines[index] !== modifiedLines[index] ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0"
+                onClick={() => onLineRevert(index, line)}
+                title="Revert this line to original"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </Button>
+            ) : (
+              <div className="w-8 mr-1 flex-shrink-0" />
+            )}
+            
             {showLineNumbers && (
               <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
                 {index + 1}
               </div>
             )}
-            <div className="flex-1 pl-2 flex items-center justify-between relative min-w-0">
+            <div className="flex-1 pl-2 min-w-0">
               <span className={`${diffType === 'addition' && side === 'modified' ? 'text-green-700' : 
                                 diffType === 'deletion' && side === 'original' ? 'text-red-700' : 
-                                'text-foreground'} pr-10 whitespace-nowrap block`}>
+                                'text-foreground'} whitespace-nowrap block`}>
                 {formatLine(line) || ' '}
               </span>
-              
-              {/* Show permanent right arrow for modified lines on the original side - positioned absolutely */}
-              {side === 'original' && onLineRevert && originalLines && modifiedLines && 
-               originalLines[index] !== undefined && modifiedLines[index] !== undefined &&
-               originalLines[index] !== modifiedLines[index] && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0"
-                  onClick={() => onLineRevert(index, line)}
-                  title="Revert this line to original"
-                >
-                  <ArrowRight className="w-3 h-3" />
-                </Button>
-              )}
             </div>
           </div>
         );
@@ -593,8 +597,8 @@ const DiffPreviewSystem = ({
               </div>
               
               {/* Diff Content */}
-              <ScrollArea className="flex-1" type="both">
-                <div className="min-w-max">
+              <ScrollArea className="flex-1 w-full h-full overflow-auto" type="always">
+                <div className="min-w-max w-fit">
                   {displayLines.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center text-muted-foreground">
@@ -648,11 +652,11 @@ const DiffPreviewSystem = ({
                   </div>
                   {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
                     <ScrollArea 
-                      className="flex-1" 
-                      type="both"
+                      className="flex-1 w-full h-full overflow-auto" 
+                      type="always"
                       ref={originalScrollRef}
                     >
-                      <div className="min-w-max">
+                      <div className="min-w-max w-fit">
                         <SplitViewPane
                           lines={originalBaseCodeRef.current.split('\n')}
                           diffLines={displayLines}
@@ -677,11 +681,11 @@ const DiffPreviewSystem = ({
                   </div>
                    {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
                       <ScrollArea 
-                        className="flex-1" 
-                        type="both"
+                        className="flex-1 w-full h-full overflow-auto" 
+                        type="always"
                         ref={modifiedScrollRef}
                       >
-                        <div className="min-w-max">
+                        <div className="min-w-max w-fit">
                           <SplitViewPane
                             lines={currentModifiedCode.split('\n')}
                             diffLines={displayLines}
@@ -734,8 +738,8 @@ const DiffPreviewSystem = ({
                   </Button>
                 </div>
               </div>
-              <ScrollArea className="flex-1" type="both">
-                <div className="min-w-max">
+              <ScrollArea className="flex-1 w-full h-full overflow-auto" type="always">
+                <div className="min-w-max w-fit">
                   <pre className="p-4 text-sm font-mono whitespace-pre">
                     {diffResult.unifiedDiff || 'No differences to display'}
                   </pre>
