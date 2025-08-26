@@ -181,6 +181,15 @@ const AdvancedCodeEditor = ({
   }, [fileId, initialContent, language, fileName, enableAST, enableVersionControl]);
 
   /**
+   * Update content when initialContent prop changes (for file switching)
+   */
+  useEffect(() => {
+    if (initialContent !== content) {
+      setContent(initialContent);
+    }
+  }, [initialContent]);
+
+  /**
    * Handle content changes from Monaco Editor
    */
   const handleContentChange = useCallback(async (newContent) => {

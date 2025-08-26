@@ -714,10 +714,10 @@ export default ExampleComponent;`;
                     {previewMode === 'code' ? (
                       // Advanced Code Editor with Database Persistence
                       <AdvancedCodeEditor
-                        value={sourceCode}
-                        onChange={handleCodeChange}
+                        initialContent={sourceCode}
+                        onContentChange={handleCodeChange}
                         fileName={selectedFile.name}
-                        filePath={selectedFile.path}
+                        fileId={selectedFile.path}
                         onCursorPositionChange={setCursorPosition}
                         onSelectionChange={setSelection}
                         onManualEdit={handleManualEdit}
