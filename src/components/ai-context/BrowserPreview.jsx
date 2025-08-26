@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code, Layers } from 'lucide-react';
 import BrowserPreviewOverlay from './BrowserPreviewOverlay';
 import { useOverlayManager } from '../../services/overlay-manager';
@@ -28,6 +28,9 @@ const BrowserPreview = ({
   const [showOverlay, setShowOverlay] = useState(false);
   const [coreCode, setCoreCode] = useState(''); // Immutable base code
   const { manager: overlayManager, getMergedContent, setOriginalCode, createOverlay, clearFileOverlays } = useOverlayManager();
+  
+  // Use ref to break circular dependencies
+  const applyCodePatchesRef = useRef(null);
 
   // Initialize overlay system when file changes
   useEffect(() => {
@@ -60,13 +63,13 @@ const BrowserPreview = ({
     
     // Force iframe refresh to apply new code
     const iframe = document.getElementById('browser-preview-iframe');
-    if (iframe && newCode && enablePatches) {
+    if (iframe && newCode && enablePatches && applyCodePatchesRef.current) {
       // Apply the new code to the preview
       setTimeout(() => {
-        applyCodePatches(iframe);
+        applyCodePatchesRef.current(iframe);
       }, 100);
     }
-  }, [applyCodePatches, enablePatches]);
+  }, [enablePatches]);
 
   const handleOverlayPublish = useCallback((publishedData) => {
     console.log('🚀 Overlay published');
@@ -82,12 +85,12 @@ const BrowserPreview = ({
     }
     // Force preview refresh to show rolled back state
     const iframe = document.getElementById('browser-preview-iframe');
-    if (iframe) {
+    if (iframe && applyCodePatchesRef.current) {
       setTimeout(() => {
-        applyCodePatches(iframe);
+        applyCodePatchesRef.current(iframe);
       }, 100);
     }
-  }, [fileName, clearFileOverlays, applyCodePatches]);
+  }, [fileName, clearFileOverlays]);
 
   // Get store context for API calls
   const { selectedStore } = useStoreSelection();
@@ -659,6 +662,11 @@ const BrowserPreview = ({
     }
   }, [currentCode, fileName, getApiConfig, getMergedContent]);
 
+  // Assign function to ref to break circular dependencies
+  useEffect(() => {
+    applyCodePatchesRef.current = applyCodePatches;
+  }, [applyCodePatches]);
+
   // Parse code changes from the current file content
   const parseCodeChanges = useCallback((code, filePath) => {
     const changes = { hasChanges: false };
@@ -869,9 +877,11 @@ const BrowserPreview = ({
       
       // Wait for content to be ready, then apply patches
       await waitForPageContent();
-      applyCodePatches(iframe);
+      if (applyCodePatchesRef.current) {
+        applyCodePatchesRef.current(iframe);
+      }
     }
-  }, [applyCodePatches, currentCode, enablePatches]);
+  }, [currentCode, enablePatches]);
 
   // Watch for currentCode changes and reapply patches
   useEffect(() => {
@@ -882,12 +892,12 @@ const BrowserPreview = ({
       const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
       
       // Make sure iframe document is ready
-      if (iframeDoc) {
+      if (iframeDoc && applyCodePatchesRef.current) {
         console.log('🔄 Code changes detected, reapplying patches...');
-        applyCodePatches(iframe);
+        applyCodePatchesRef.current(iframe);
       }
     }
-  }, [currentCode, enablePatches, applyCodePatches, isLoading]);
+  }, [currentCode, enablePatches, isLoading]);
 
   // Handle iframe error
   const handleIframeError = useCallback(() => {
