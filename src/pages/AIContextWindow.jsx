@@ -713,7 +713,7 @@ export default ExampleComponent;`;
 
       {/* Main Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
+        <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
           {/* AI Context Window - Now First Column */}
           <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
             <AIContextWindow
@@ -734,7 +734,7 @@ export default ExampleComponent;`;
               selectedFile={selectedFile}
               modifiedFiles={modifiedFiles}
               onRefresh={handleFileTreeRefresh}
-              className="h-full"
+              className="h-[calc(100vh-200px)]"
             />
           </ResizablePanel>
 
@@ -742,7 +742,7 @@ export default ExampleComponent;`;
 
           {/* Code Editor and Preview Panel */}
           <ResizablePanel defaultSize={55} minSize={30}>
-            <div className="h-full flex flex-col">
+            <div className="h-[calc(100vh-200px)] flex flex-col">
               {selectedFile ? (
                 <>
                   {/* Tab Interface Above File Name */}
