@@ -300,6 +300,42 @@ const DiffPreviewSystem = ({
     originalBaseCodeRef.current = originalCode;
   }, [originalCode]);
 
+  // Fetch AST diff data when filePath changes and useAstDiff is enabled
+  useEffect(() => {
+    if (useAstDiff && filePath && filePath.trim() !== '') {
+      const fetchData = async () => {
+        setFetchingAstDiff(true);
+        setAstDiffError(null);
+        
+        try {
+          const result = await fetchAstDiffData(filePath);
+          
+          if (result.success) {
+            setAstDiffData(result);
+            
+            // Update the codes if they were fetched from the API
+            if (result.baselineCode && !originalCode) {
+              originalBaseCodeRef.current = result.baselineCode;
+            }
+            if (result.modifiedCode && !modifiedCode) {
+              setCurrentModifiedCode(result.modifiedCode);
+            }
+          } else {
+            setAstDiffError(result.error || result.message || 'Failed to fetch AST diff data');
+            setAstDiffData(null);
+          }
+        } catch (error) {
+          setAstDiffError(error.message);
+          setAstDiffData(null);
+        } finally {
+          setFetchingAstDiff(false);
+        }
+      };
+      
+      fetchData();
+    }
+  }, [filePath, useAstDiff, originalCode, modifiedCode]);
+
   // Handle synchronized scrolling between split view panes
   const handleSyncScroll = useCallback((source, scrollTop, scrollLeft) => {
     if (isScrollingRef.current) return;
@@ -368,7 +404,7 @@ const DiffPreviewSystem = ({
     }
   }, [currentModifiedCode, onCodeChange]);
 
-  // Handle preview functionality
+  // Handle preview functionality with enhanced route resolution
   const handlePreview = useCallback(async () => {
     setPreviewStatus({ loading: true, error: null, url: null });
     
@@ -376,35 +412,84 @@ const DiffPreviewSystem = ({
       // Extract component name from file name or code
       const componentName = extractComponentName(fileName, currentModifiedCode);
       
-      // Get store ID from context or props (assuming it's available)
-      const storeId = '157d4590-49bf-4b0b-bd77-abe131909528'; // TODO: Get this from context/props
+      // Try multiple resolution strategies for better page name matching
+      const resolutionStrategies = [
+        componentName, // Original name
+        componentName.replace(/([a-z])([A-Z])/g, '$1 $2'), // CamelCase to spaces
+        componentName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase(), // CamelCase to kebab-case
+        componentName.replace(/(Component|Page)$/, ''), // Remove common suffixes
+        componentName.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/(Component|Page)$/, '').trim() // Combined transformations
+      ];
       
-      // Resolve page URL
-      const urlResult = await resolvePageURL(componentName, storeId);
+      let urlResult = null;
+      let lastError = null;
       
-      // Create temporary API endpoint to serve the modified code
-      // This would typically involve:
-      // 1. Creating a temporary file or memory cache with the modified code
-      // 2. Setting up a temporary route to serve this modified version
-      // 3. Opening the resolved URL with the temporary code applied
+      // Try each resolution strategy until one succeeds
+      for (const pageName of resolutionStrategies) {
+        if (pageName && pageName.trim() !== '') {
+          try {
+            urlResult = await resolvePageURL(pageName.trim(), storeId);
+            if (urlResult.success) {
+              break; // Found a successful resolution
+            }
+            lastError = urlResult.error;
+          } catch (error) {
+            lastError = error.message;
+            continue;
+          }
+        }
+      }
       
-      if (urlResult.success || urlResult.fallback) {
-        // For now, we'll open the URL in a new tab
-        // In a full implementation, you'd want to:
-        // 1. Send the modified code to a preview API endpoint
-        // 2. Get back a preview URL that serves the modified version
-        // 3. Open that preview URL
+      // If no exact match found but we have a fallback, use it
+      if (!urlResult?.success && urlResult?.fallback) {
+        console.log('Using fallback URL for preview:', urlResult.url);
+      }
+      
+      if (urlResult && (urlResult.success || urlResult.fallback)) {
+        // Enhanced preview URL with AST diff data if available
+        let previewUrl = urlResult.url;
         
-        const previewUrl = urlResult.url + '?preview=true&patch=' + encodeURIComponent(btoa(currentModifiedCode));
-        window.open(previewUrl, '_blank', 'width=1200,height=800');
-        
-        setPreviewStatus({ 
-          loading: false, 
-          error: null, 
-          url: previewUrl 
+        // Add preview parameters
+        const previewParams = new URLSearchParams({
+          preview: 'true',
+          editor: 'true'
         });
+        
+        // Include AST diff data if available
+        if (astDiffData && astDiffData.astDiff) {
+          previewParams.set('ast_patch', encodeURIComponent(JSON.stringify(astDiffData.astDiff)));
+        }
+        
+        // Include modified code
+        if (currentModifiedCode) {
+          previewParams.set('patch', encodeURIComponent(btoa(currentModifiedCode)));
+        }
+        
+        // Include file path for context
+        if (filePath) {
+          previewParams.set('file_path', encodeURIComponent(filePath));
+        }
+        
+        previewUrl += '?' + previewParams.toString();
+        
+        // Open preview with enhanced features
+        const previewWindow = window.open(
+          previewUrl, 
+          '_blank', 
+          'width=1200,height=800,menubar=no,toolbar=no,location=no,status=no'
+        );
+        
+        if (previewWindow) {
+          setPreviewStatus({ 
+            loading: false, 
+            error: null, 
+            url: previewUrl 
+          });
+        } else {
+          throw new Error('Failed to open preview window (popup blocked?)');
+        }
       } else {
-        throw new Error('Could not resolve page URL');
+        throw new Error(lastError || 'Could not resolve page URL for any component name variant');
       }
       
     } catch (error) {
@@ -420,7 +505,7 @@ const DiffPreviewSystem = ({
         setPreviewStatus(prev => ({ ...prev, error: null }));
       }, 3000);
     }
-  }, [fileName, currentModifiedCode]);
+  }, [fileName, currentModifiedCode, storeId, astDiffData, filePath]);
 
   // Calculate diff using DiffService (always compare against original base code)
   const diffResult = useMemo(() => {
@@ -834,15 +919,18 @@ const DiffPreviewSystem = ({
               {/* Diff Content */}
               <div className="flex-1 min-h-0">
                 <div 
-                  className="h-full w-full overflow-auto"
+                  className="h-full w-full"
                   style={{ 
                     height: '100%',
-                    overflowX: 'auto',
-                    overflowY: 'auto',
-                    scrollbarWidth: 'thin'
+                    overflowX: 'scroll',
+                    overflowY: 'scroll',
+                    scrollbarWidth: 'auto',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarColor: '#cbd5e1 #f8fafc',
+                    border: '1px solid #e2e8f0'
                   }}
                 >
-                  <div className="min-w-max w-fit">
+                  <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '800px' }}>
                   {displayLines.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center text-muted-foreground">
@@ -897,16 +985,19 @@ const DiffPreviewSystem = ({
                   </div>
                   {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
                     <div 
-                      className="flex-1 min-h-0 overflow-auto"
+                      className="flex-1 min-h-0"
                       ref={originalScrollRef}
                       style={{ 
                         height: '100%',
-                        overflowX: 'auto',
-                        overflowY: 'auto',
-                        scrollbarWidth: 'thin'
+                        overflowX: 'scroll',
+                        overflowY: 'scroll',
+                        scrollbarWidth: 'auto',
+                        WebkitOverflowScrolling: 'touch',
+                        scrollbarColor: '#cbd5e1 #f8fafc',
+                        border: '1px solid #e2e8f0'
                       }}
                     >
-                      <div className="min-w-max w-fit">
+                      <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '600px' }}>
                         <SplitViewPane
                           lines={originalBaseCodeRef.current.split('\n')}
                           diffLines={displayLines}
@@ -931,16 +1022,19 @@ const DiffPreviewSystem = ({
                   </div>
                    {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
                       <div 
-                        className="flex-1 min-h-0 overflow-auto"
+                        className="flex-1 min-h-0"
                         ref={modifiedScrollRef}
                         style={{ 
                           height: '100%',
-                          overflowX: 'auto',
-                          overflowY: 'auto',
-                          scrollbarWidth: 'thin'
+                          overflowX: 'scroll',
+                          overflowY: 'scroll',
+                          scrollbarWidth: 'auto',
+                          WebkitOverflowScrolling: 'touch',
+                          scrollbarColor: '#cbd5e1 #f8fafc',
+                          border: '1px solid #e2e8f0'
                         }}
                       >
-                        <div className="min-w-max w-fit">
+                        <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '600px' }}>
                           <SplitViewPane
                             lines={currentModifiedCode.split('\n')}
                             diffLines={displayLines}
@@ -995,15 +1089,18 @@ const DiffPreviewSystem = ({
               </div>
               <div className="flex-1 min-h-0">
                 <div 
-                  className="h-full w-full overflow-auto"
+                  className="h-full w-full"
                   style={{ 
                     height: '100%',
-                    overflowX: 'auto',
-                    overflowY: 'auto',
-                    scrollbarWidth: 'thin'
+                    overflowX: 'scroll',
+                    overflowY: 'scroll',
+                    scrollbarWidth: 'auto',
+                    WebkitOverflowScrolling: 'touch',
+                    scrollbarColor: '#cbd5e1 #f8fafc',
+                    border: '1px solid #e2e8f0'
                   }}
                 >
-                  <div className="min-w-max w-fit">
+                  <div className="min-w-max w-fit" style={{ minHeight: '400px', minWidth: '800px' }}>
                     <pre className="p-4 text-sm font-mono whitespace-pre">
                       {diffResult.unifiedDiff || 'No differences to display'}
                     </pre>
