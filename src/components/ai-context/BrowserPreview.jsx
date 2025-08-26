@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code, Layers } from 'lucide-react';
+import BrowserPreviewOverlay from './BrowserPreviewOverlay';
+import overlayPatchSystem from '../services/overlay-patch-system';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
@@ -21,6 +23,79 @@ const BrowserPreview = ({
   const [deviceView, setDeviceView] = useState('desktop'); // desktop, tablet, mobile
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
   const [enablePatches, setEnablePatches] = useState(true); // Enable code patch simulation
+  
+  // Overlay state management
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [coreCode, setCoreCode] = useState(''); // Immutable base code
+  const [overlayStats, setOverlayStats] = useState(null);
+
+  // Initialize overlay system when file changes
+  useEffect(() => {
+    if (fileName && currentCode) {
+      // Initialize overlay with current code as core
+      overlayPatchSystem.initializeOverlay(fileName, currentCode);
+      setCoreCode(currentCode);
+      updateOverlayStats();
+    }
+  }, [fileName]);
+
+  // Apply live code changes as patches
+  useEffect(() => {
+    if (fileName && currentCode && coreCode && currentCode !== coreCode) {
+      // Add patch for live changes
+      const patch = overlayPatchSystem.addPatch(fileName, currentCode, {
+        changeType: 'live_edit',
+        changeSummary: 'Live code editing'
+      });
+      
+      if (patch) {
+        updateOverlayStats();
+        console.log('🔄 Applied live code change as overlay patch');
+      }
+    }
+  }, [currentCode, coreCode, fileName]);
+
+  const updateOverlayStats = () => {
+    if (fileName) {
+      const stats = overlayPatchSystem.getOverlayStats(fileName);
+      setOverlayStats(stats);
+    }
+  };
+
+  const handleOverlayCodeChange = useCallback((newCode) => {
+    // This callback is called when overlay patches change the code
+    // The newCode should be applied to the preview
+    console.log('🔄 Overlay code changed, updating preview');
+    
+    // Force iframe refresh to apply new code
+    const iframe = document.getElementById('browser-preview-iframe');
+    if (iframe && newCode && enablePatches) {
+      // Apply the new code to the preview
+      setTimeout(() => {
+        applyCodePatches(iframe);
+      }, 100);
+    }
+  }, [applyCodePatches, enablePatches]);
+
+  const handleOverlayPublish = useCallback((publishedOverlay) => {
+    console.log('🚀 Overlay published:', publishedOverlay.id);
+    // Update core code to published state
+    setCoreCode(publishedOverlay.publishedCode);
+    updateOverlayStats();
+    // Could save the published overlay to the backend here
+  }, []);
+
+  const handleOverlayRollback = useCallback((rolledBackCode) => {
+    console.log('↩️ Overlay rolled back to core code');
+    updateOverlayStats();
+    // Force preview refresh to show rolled back state
+    const iframe = document.getElementById('browser-preview-iframe');
+    if (iframe) {
+      setTimeout(() => {
+        applyCodePatches(iframe);
+      }, 100);
+    }
+  }, [applyCodePatches]);
 
   // Get store context for API calls
   const { selectedStore } = useStoreSelection();
@@ -271,10 +346,10 @@ const BrowserPreview = ({
     if (!fileName) return;
     
     try {
-      console.log(`🧪 BrowserPreview: Fetching modified code for: ${fileName}`);
+      console.log(`🧪 BrowserPreview: Applying overlay patches for: ${fileName}`);
       
-      // Fetch modified code from the database via API
-      let modifiedCode = currentCode; // Default to current code if API call fails
+      // Get applied code from overlay system (core + patches)
+      let modifiedCode = overlayPatchSystem.getAppliedCode(fileName) || currentCode;
       
       try {
         const apiConfig = getApiConfig();
@@ -918,6 +993,24 @@ const BrowserPreview = ({
 
             {/* Browser Actions */}
             <div className="flex items-center space-x-2">
+              {/* Overlay Toggle */}
+              <button
+                onClick={() => setShowOverlay(!showOverlay)}
+                className={cn(
+                  "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
+                  showOverlay || overlayStats?.hasChanges
+                    ? "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/50 dark:border-purple-700 dark:text-purple-300" 
+                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                )}
+                title={overlayStats?.hasChanges 
+                  ? `Show overlay system (${overlayStats.patchCount} patches, ${overlayStats.sizeDiff > 0 ? '+' : ''}${overlayStats.sizeDiff} chars)`
+                  : "Show overlay system (non-destructive code patches)"
+                }
+              >
+                <Layers className="w-3 h-3 mr-1 inline" />
+                {overlayStats?.hasChanges ? `Overlay (${overlayStats.patchCount})` : "Overlay"}
+              </button>
+
               <button
                 onClick={() => setEnablePatches(!enablePatches)}
                 className={cn(
@@ -1065,6 +1158,18 @@ const BrowserPreview = ({
           </div>
         </div>
       </div>
+
+      {/* Overlay System */}
+      <BrowserPreviewOverlay
+        isVisible={showOverlay}
+        onClose={() => setShowOverlay(false)}
+        filePath={fileName}
+        coreCode={coreCode}
+        currentEditedCode={currentCode}
+        onCodeChange={handleOverlayCodeChange}
+        onPublish={handleOverlayPublish}
+        onRollback={handleOverlayRollback}
+      />
     </div>
   );
 };

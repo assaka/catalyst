@@ -78,6 +78,7 @@ class ApiClient {
                           currentPath === '/dashboard' || 
                           currentPath === '/auth' ||
                           currentPath === '/ai-context-window' ||
+                          currentPath.startsWith('/editor/') ||
                           // Legacy paths for backward compatibility
                           currentPath.includes('/dashboard') || 
                           currentPath.includes('/products') || 

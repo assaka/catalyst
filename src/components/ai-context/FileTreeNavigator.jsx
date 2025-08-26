@@ -40,15 +40,24 @@ const FileTreeNavigator = ({
 
   const loadFileTree = async () => {
     try {
+      console.log('🔍 FileTreeNavigator: Loading file tree from API...');
       // Fetch file listing from API
       const data = await apiClient.get('proxy-source-files/list?path=src');
       
+      console.log('📡 FileTreeNavigator: API Response:', data);
+      
       if (data && data.success && data.files) {
+        console.log('✅ FileTreeNavigator: Got', data.files.length, 'files from API');
+        console.log('📁 FileTreeNavigator: Sample files:', data.files.slice(0, 5).map(f => f.path));
+        console.log('📊 FileTreeNavigator: API source:', data.source);
+        
         // Convert flat file list to hierarchical tree structure
         const tree = buildFileTree(data.files);
+        console.log('🌳 FileTreeNavigator: Built tree with', tree.children?.length || 0, 'children');
         setFileTree(tree);
       } else {
-        console.error('Failed to load file tree:', data?.message || 'Unknown error');
+        console.error('❌ FileTreeNavigator: Failed to load file tree:', data?.message || 'Unknown error');
+        console.error('❌ FileTreeNavigator: Full response:', data);
         // Fallback to a simple error state
         setFileTree({
           name: 'src',
@@ -59,7 +68,8 @@ const FileTreeNavigator = ({
         });
       }
     } catch (error) {
-      console.error('Error loading file tree:', error);
+      console.error('❌ FileTreeNavigator: Error loading file tree:', error);
+      console.error('❌ FileTreeNavigator: Error details:', error.response || error.message);
       // Fallback to error state
       setFileTree({
         name: 'src',
