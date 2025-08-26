@@ -152,7 +152,7 @@ const AIContextWindow = ({
   ];
 
   return (
-    <div className={cn("h-full flex flex-col bg-white dark:bg-gray-900 border-l", className)}>
+    <div className={cn("h-[100vh-200px] flex flex-col bg-white dark:bg-gray-900 border-l", className)}>
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center gap-2">
