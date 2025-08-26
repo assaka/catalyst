@@ -529,31 +529,12 @@ const DiffPreviewSystem = ({
                   <div className="border-b p-2 bg-red-50">
                     <h4 className="font-medium text-red-900">Original ({originalBaseCodeRef.current.split('\n').length} lines)</h4>
                   </div>
-                  <ScrollArea className="flex-1">
-                    <SplitViewPane 
-                      lines={originalBaseCodeRef.current.split('\n')} 
-                      diffLines={displayLines}
-                      side="original" 
-                      showLineNumbers={lineNumbers}
-                      showWhitespace={showWhitespace}
-                      onLineRevert={handleLineRevert}
-                      originalLines={originalBaseCodeRef.current.split('\n')}
-                      modifiedLines={currentModifiedCode.split('\n')}
-                    />
-                  </ScrollArea>
-                </div>
-                
-               {/* Only show Modified pane when there are actual differences */}
-               {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) && (
-                 <div className="flex flex-col">
-                    <div className="border-b p-2 bg-green-50 flex justify-between items-center">
-                      <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
-                    </div>
+                  {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
                     <ScrollArea className="flex-1">
                       <SplitViewPane
-                        lines={currentModifiedCode.split('\n')}
+                        lines={originalBaseCodeRef.current.split('\n')}
                         diffLines={displayLines}
-                        side="modified"
+                        side="original"
                         showLineNumbers={lineNumbers}
                         showWhitespace={showWhitespace}
                         onLineRevert={handleLineRevert}
@@ -561,8 +542,31 @@ const DiffPreviewSystem = ({
                         modifiedLines={currentModifiedCode.split('\n')}
                       />
                     </ScrollArea>
+                  ) :
+                    'No modifications'
+                  }
+                </div>
+                <div className="flex flex-col">
+                  <div className="border-b p-2 bg-green-50 flex justify-between items-center">
+                    <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
                   </div>
-                )}
+                   {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
+                      <ScrollArea className="flex-1">
+                        <SplitViewPane
+                          lines={currentModifiedCode.split('\n')}
+                          diffLines={displayLines}
+                          side="modified"
+                          showLineNumbers={lineNumbers}
+                          showWhitespace={showWhitespace}
+                          onLineRevert={handleLineRevert}
+                          originalLines={originalBaseCodeRef.current.split('\n')}
+                          modifiedLines={currentModifiedCode.split('\n')}
+                        />
+                      </ScrollArea>
+                   ) :
+                   'No modifications'
+                  }
+                </div>
               </div>
             </div>
           </TabsContent>
