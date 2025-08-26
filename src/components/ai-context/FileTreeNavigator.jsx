@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import apiClient from '@/api/client';
 import { 
   Folder,
   FolderOpen,
@@ -17,134 +18,115 @@ import {
   Image,
   Settings,
   Database,
-  Globe
+  Globe,
+  RefreshCw
 } from 'lucide-react';
 
 const FileTreeNavigator = ({ 
   onFileSelect, 
   selectedFile = null, 
   showDetails = false,
+  onRefresh,
   className = '' 
 }) => {
   const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'src/components', 'src/pages']));
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTree, setFileTree] = useState(null);
 
-  // Mock file tree data - in a real implementation, this would come from an API
+  // Load real file tree data from API
   useEffect(() => {
-    const mockFileTree = {
-      name: 'catalyst',
-      type: 'folder',
-      children: [
-        {
+    loadFileTree();
+  }, []);
+
+  const loadFileTree = async () => {
+    try {
+      // Fetch file listing from API
+      const data = await apiClient.get('proxy-source-files/list?path=src');
+      
+      if (data && data.success && data.files) {
+        // Convert flat file list to hierarchical tree structure
+        const tree = buildFileTree(data.files);
+        setFileTree(tree);
+      } else {
+        console.error('Failed to load file tree:', data?.message || 'Unknown error');
+        // Fallback to a simple error state
+        setFileTree({
           name: 'src',
           type: 'folder',
           children: [
-            {
-              name: 'components',
-              type: 'folder',
-              children: [
-                {
-                  name: 'ui',
-                  type: 'folder',
-                  children: [
-                    { name: 'button.jsx', type: 'file', size: '2.1kb', modified: '2 hours ago' },
-                    { name: 'card.jsx', type: 'file', size: '1.8kb', modified: '3 hours ago' },
-                    { name: 'input.jsx', type: 'file', size: '1.5kb', modified: '1 day ago' },
-                    { name: 'tabs.jsx', type: 'file', size: '3.2kb', modified: '2 days ago' }
-                  ]
-                },
-                {
-                  name: 'ai-context',
-                  type: 'folder',
-                  children: [
-                    { name: 'AIContextWindow.jsx', type: 'file', size: '8.7kb', modified: '1 hour ago' },
-                    { name: 'StorefrontPreview.jsx', type: 'file', size: '6.3kb', modified: '2 hours ago' },
-                    { name: 'CodeEditor.jsx', type: 'file', size: '5.1kb', modified: '1 hour ago' },
-                    { name: 'FileTreeNavigator.jsx', type: 'file', size: '4.9kb', modified: '30 min ago' },
-                    { name: 'DiffPreviewSystem.jsx', type: 'file', size: '7.2kb', modified: '45 min ago' },
-                    { name: 'BrowserPreview.jsx', type: 'file', size: '3.8kb', modified: '1 hour ago' }
-                  ]
-                },
-                {
-                  name: 'layout',
-                  type: 'folder',
-                  children: [
-                    { name: 'Header.jsx', type: 'file', size: '4.2kb', modified: '1 day ago' },
-                    { name: 'Footer.jsx', type: 'file', size: '2.8kb', modified: '2 days ago' },
-                    { name: 'Sidebar.jsx', type: 'file', size: '3.5kb', modified: '1 day ago' }
-                  ]
-                }
-              ]
-            },
-            {
-              name: 'pages',
-              type: 'folder',
-              children: [
-                { name: 'index.jsx', type: 'file', size: '12.4kb', modified: '3 hours ago' },
-                { name: 'Dashboard.jsx', type: 'file', size: '8.9kb', modified: '1 day ago' },
-                { name: 'Products.jsx', type: 'file', size: '15.2kb', modified: '2 hours ago' },
-                { name: 'Cart.jsx', type: 'file', size: '6.7kb', modified: '4 hours ago' },
-                { name: 'AIContextWindow.jsx', type: 'file', size: '9.1kb', modified: '1 hour ago' }
-              ]
-            },
-            {
-              name: 'services',
-              type: 'folder',
-              children: [
-                { name: 'api.js', type: 'file', size: '3.4kb', modified: '1 day ago' },
-                { name: 'auth.js', type: 'file', size: '2.1kb', modified: '3 days ago' },
-                { name: 'storage.js', type: 'file', size: '1.9kb', modified: '2 days ago' }
-              ]
-            },
-            {
-              name: 'styles',
-              type: 'folder',
-              children: [
-                { name: 'globals.css', type: 'file', size: '2.8kb', modified: '1 week ago' },
-                { name: 'components.css', type: 'file', size: '4.1kb', modified: '3 days ago' }
-              ]
-            }
+            { name: 'Error loading files', type: 'file', isError: true }
           ]
-        },
-        {
-          name: 'backend',
-          type: 'folder',
-          children: [
-            {
-              name: 'src',
-              type: 'folder',
-              children: [
-                {
-                  name: 'routes',
-                  type: 'folder',
-                  children: [
-                    { name: 'auth.js', type: 'file', size: '5.6kb', modified: '2 days ago' },
-                    { name: 'products.js', type: 'file', size: '8.3kb', modified: '1 day ago' },
-                    { name: 'users.js', type: 'file', size: '4.7kb', modified: '3 days ago' }
-                  ]
-                },
-                {
-                  name: 'models',
-                  type: 'folder',
-                  children: [
-                    { name: 'Product.js', type: 'file', size: '3.2kb', modified: '2 days ago' },
-                    { name: 'User.js', type: 'file', size: '2.8kb', modified: '1 week ago' },
-                    { name: 'Order.js', type: 'file', size: '4.1kb', modified: '3 days ago' }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        { name: 'package.json', type: 'file', size: '1.2kb', modified: '1 day ago' },
-        { name: 'README.md', type: 'file', size: '3.4kb', modified: '1 week ago' },
-        { name: '.gitignore', type: 'file', size: '0.8kb', modified: '2 weeks ago' }
-      ]
+        });
+      }
+    } catch (error) {
+      console.error('Error loading file tree:', error);
+      // Fallback to error state
+      setFileTree({
+        name: 'src',
+        type: 'folder', 
+        children: [
+          { name: 'API Error - Check console', type: 'file', isError: true }
+        ]
+      });
+    }
+  };
+
+  // Convert flat file list to hierarchical tree structure
+  const buildFileTree = (files) => {
+    const tree = {
+      name: 'src',
+      type: 'folder',
+      children: []
     };
 
-    setFileTree(mockFileTree);
-  }, []);
+    // Create a map to store folder references
+    const folderMap = new Map();
+    folderMap.set('src', tree);
+
+    // Sort files by path to ensure folders are created before their children
+    const sortedFiles = files.sort((a, b) => a.path.localeCompare(b.path));
+
+    sortedFiles.forEach(file => {
+      const pathParts = file.path.split('/');
+      let currentPath = '';
+      let currentParent = tree;
+
+      // Process each path segment
+      for (let i = 0; i < pathParts.length; i++) {
+        const segment = pathParts[i];
+        currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+
+        if (i === pathParts.length - 1) {
+          // This is the file itself
+          currentParent.children.push({
+            name: segment,
+            type: 'file',
+            path: file.path,
+            extension: file.extension
+          });
+        } else {
+          // This is a folder
+          if (!folderMap.has(currentPath)) {
+            const folderNode = {
+              name: segment,
+              type: 'folder',
+              path: currentPath,
+              children: []
+            };
+            currentParent.children.push(folderNode);
+            folderMap.set(currentPath, folderNode);
+          }
+          currentParent = folderMap.get(currentPath);
+        }
+      }
+    });
+
+    return tree;
+  };
+
+  const refreshFileTree = () => {
+    loadFileTree();
+  };
 
   const toggleFolder = (path) => {
     const newExpanded = new Set(expandedFolders);
@@ -292,6 +274,9 @@ const FileTreeNavigator = ({
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">Files</h3>
           <div className="flex items-center space-x-1">
+            <Button variant="ghost" size="sm" onClick={refreshFileTree} title="Refresh file tree">
+              <RefreshCw className="w-4 h-4" />
+            </Button>
             <Button variant="ghost" size="sm">
               <Plus className="w-4 h-4" />
             </Button>
