@@ -89,20 +89,20 @@ const SplitViewPane = ({
                 {index + 1}
               </div>
             )}
-            <div className="flex-1 pl-2 flex items-center justify-between">
+            <div className="flex-1 pl-2 flex items-center justify-between relative">
               <span className={`${diffType === 'addition' && side === 'modified' ? 'text-green-700' : 
                                 diffType === 'deletion' && side === 'original' ? 'text-red-700' : 
-                                'text-foreground'}`}>
+                                'text-foreground'} pr-10`}>
                 {formatLine(line) || ' '}
               </span>
               
-              {/* Show permanent right arrow for modified lines on the original side */}
+              {/* Show permanent right arrow for modified lines on the original side - positioned absolutely */}
               {side === 'original' && onLineRevert && modifiedLines && 
                modifiedLines[index] && modifiedLines[index] !== line && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-2 h-6 px-2 text-blue-600 hover:text-blue-800"
+                  className="absolute right-0 top-0 h-full px-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50"
                   onClick={() => onLineRevert(index, line)}
                   title="Undo this change"
                 >
@@ -134,6 +134,9 @@ const DiffPreviewSystem = ({
 
   const diffServiceRef = useRef(new DiffService());
   const originalBaseCodeRef = useRef(originalCode); // Preserve original base code
+  const originalScrollRef = useRef(null);
+  const modifiedScrollRef = useRef(null);
+  const isScrollingRef = useRef(false);
   
   // Update current modified code when props change
   useEffect(() => {
@@ -144,6 +147,23 @@ const DiffPreviewSystem = ({
   useEffect(() => {
     originalBaseCodeRef.current = originalCode;
   }, [originalCode]);
+
+  // Handle synchronized scrolling between split view panes
+  const handleSyncScroll = useCallback((source, scrollTop) => {
+    if (isScrollingRef.current) return;
+    
+    isScrollingRef.current = true;
+    
+    if (source === 'original' && modifiedScrollRef.current) {
+      modifiedScrollRef.current.scrollTop = scrollTop;
+    } else if (source === 'modified' && originalScrollRef.current) {
+      originalScrollRef.current.scrollTop = scrollTop;
+    }
+    
+    setTimeout(() => {
+      isScrollingRef.current = false;
+    }, 50);
+  }, []);
 
   // Handle line revert functionality
   const handleLineRevert = useCallback((lineIndex, originalLine) => {
@@ -478,24 +498,26 @@ const DiffPreviewSystem = ({
               </div>
               
               {/* Diff Content */}
-              <ScrollArea className="flex-1">
-                {displayLines.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center text-muted-foreground">
-                      <FileText className="w-8 h-8 mx-auto mb-2" />
-                      <p>No differences to display</p>
-                      <p className="text-sm mt-1">
-                        The original and modified code are identical
-                      </p>
+              <ScrollArea className="flex-1" type="both">
+                <div className="min-w-max">
+                  {displayLines.length === 0 ? (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center text-muted-foreground">
+                        <FileText className="w-8 h-8 mx-auto mb-2" />
+                        <p>No differences to display</p>
+                        <p className="text-sm mt-1">
+                          The original and modified code are identical
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div className="font-mono">
-                    {displayLines.map((line, index) => (
-                      <DiffLine key={index} line={line} index={index} />
-                    ))}
-                  </div>
-                )}
+                  ) : (
+                    <div className="font-mono">
+                      {displayLines.map((line, index) => (
+                        <DiffLine key={index} line={line} index={index} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </ScrollArea>
             </div>
           </TabsContent>
@@ -530,17 +552,24 @@ const DiffPreviewSystem = ({
                     <h4 className="font-medium text-red-900">Original ({originalBaseCodeRef.current.split('\n').length} lines)</h4>
                   </div>
                   {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
-                    <ScrollArea className="flex-1">
-                      <SplitViewPane
-                        lines={originalBaseCodeRef.current.split('\n')}
-                        diffLines={displayLines}
-                        side="original"
-                        showLineNumbers={lineNumbers}
-                        showWhitespace={showWhitespace}
-                        onLineRevert={handleLineRevert}
-                        originalLines={originalBaseCodeRef.current.split('\n')}
-                        modifiedLines={currentModifiedCode.split('\n')}
-                      />
+                    <ScrollArea 
+                      className="flex-1" 
+                      type="both"
+                      ref={originalScrollRef}
+                      onScroll={(e) => handleSyncScroll('original', e.target.scrollTop)}
+                    >
+                      <div className="min-w-max">
+                        <SplitViewPane
+                          lines={originalBaseCodeRef.current.split('\n')}
+                          diffLines={displayLines}
+                          side="original"
+                          showLineNumbers={lineNumbers}
+                          showWhitespace={showWhitespace}
+                          onLineRevert={handleLineRevert}
+                          originalLines={originalBaseCodeRef.current.split('\n')}
+                          modifiedLines={currentModifiedCode.split('\n')}
+                        />
+                      </div>
                     </ScrollArea>
                   ) :
                       <div className="flex-1">No modifications</div>
@@ -551,17 +580,24 @@ const DiffPreviewSystem = ({
                     <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
                   </div>
                    {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
-                      <ScrollArea className="flex-1">
-                        <SplitViewPane
-                          lines={currentModifiedCode.split('\n')}
-                          diffLines={displayLines}
-                          side="modified"
-                          showLineNumbers={lineNumbers}
-                          showWhitespace={showWhitespace}
-                          onLineRevert={handleLineRevert}
-                          originalLines={originalBaseCodeRef.current.split('\n')}
-                          modifiedLines={currentModifiedCode.split('\n')}
-                        />
+                      <ScrollArea 
+                        className="flex-1" 
+                        type="both"
+                        ref={modifiedScrollRef}
+                        onScroll={(e) => handleSyncScroll('modified', e.target.scrollTop)}
+                      >
+                        <div className="min-w-max">
+                          <SplitViewPane
+                            lines={currentModifiedCode.split('\n')}
+                            diffLines={displayLines}
+                            side="modified"
+                            showLineNumbers={lineNumbers}
+                            showWhitespace={showWhitespace}
+                            onLineRevert={handleLineRevert}
+                            originalLines={originalBaseCodeRef.current.split('\n')}
+                            modifiedLines={currentModifiedCode.split('\n')}
+                          />
+                        </div>
                       </ScrollArea>
                    ) :
                       <div className="flex-1">No modifications</div>
@@ -584,10 +620,12 @@ const DiffPreviewSystem = ({
                   </Button>
                 </div>
               </div>
-              <ScrollArea className="flex-1">
-                <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
-                  {diffResult.unifiedDiff || 'No differences to display'}
-                </pre>
+              <ScrollArea className="flex-1" type="both">
+                <div className="min-w-max">
+                  <pre className="p-4 text-sm font-mono whitespace-pre">
+                    {diffResult.unifiedDiff || 'No differences to display'}
+                  </pre>
+                </div>
               </ScrollArea>
             </div>
           </TabsContent>
