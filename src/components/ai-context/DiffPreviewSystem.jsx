@@ -122,8 +122,42 @@ const resolvePageURL = async (pageName, storeId) => {
 // Function to fetch AST diff data from hybrid patches API
 const fetchAstDiffData = async (filePath) => {
   try {
-    // Get the auth token from localStorage or context
-    const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+    // Get the auth token using the same logic as FileTreeNavigator fix
+    const getAuthToken = () => {
+      const loggedOut = localStorage.getItem('user_logged_out') === 'true';
+      if (loggedOut) return null;
+      
+      const currentPath = window.location.pathname.toLowerCase();
+      const isAdminContext = currentPath.startsWith('/admin/') ||
+                            currentPath === '/dashboard' || 
+                            currentPath === '/auth' ||
+                            currentPath === '/ai-context-window' ||
+                            currentPath.startsWith('/editor/') ||
+                            currentPath.includes('/dashboard') || 
+                            currentPath.includes('/products') || 
+                            currentPath.includes('/categories') || 
+                            currentPath.includes('/settings') ||
+                            currentPath.includes('/file-library');
+      
+      const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+      const customerToken = localStorage.getItem('customer_auth_token');
+      
+      if (isAdminContext && storeOwnerToken) {
+        return storeOwnerToken;
+      } else if (storeOwnerToken) {
+        return storeOwnerToken;
+      } else if (customerToken) {
+        return customerToken;
+      }
+      
+      return null;
+    };
+    
+    const token = getAuthToken();
+    
+    if (!token) {
+      throw new Error('No authentication token available. Please log in.');
+    }
     
     // Fetch patches for the file
     const patchResponse = await fetch(`/api/hybrid-patches/${encodeURIComponent(filePath)}`, {
