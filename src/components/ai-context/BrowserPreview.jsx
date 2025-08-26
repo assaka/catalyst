@@ -27,7 +27,7 @@ const BrowserPreview = ({
   // Overlay state management using existing overlay manager
   const [showOverlay, setShowOverlay] = useState(false);
   const [coreCode, setCoreCode] = useState(''); // Immutable base code
-  const { manager: overlayManager, getMergedContent, setOriginalCode, createOverlay, clearFileOverlays } = useOverlayManager();
+  const { manager: overlayManager, stats: overlayStats, getMergedContent, setOriginalCode, createOverlay, clearFileOverlays } = useOverlayManager();
   
   // Use ref to break circular dependencies
   const applyCodePatchesRef = useRef(null);
@@ -1000,17 +1000,17 @@ const BrowserPreview = ({
                 onClick={() => setShowOverlay(!showOverlay)}
                 className={cn(
                   "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
-                  showOverlay || overlayStats?.hasChanges
+                  showOverlay || (overlayStats?.activeOverlays > 0)
                     ? "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/50 dark:border-purple-700 dark:text-purple-300" 
                     : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
                 )}
-                title={overlayStats?.hasChanges 
-                  ? `Show overlay system (${overlayStats.patchCount} patches, ${overlayStats.sizeDiff > 0 ? '+' : ''}${overlayStats.sizeDiff} chars)`
+                title={overlayStats?.activeOverlays > 0
+                  ? `Show overlay system (${overlayStats.activeOverlays} active, ${overlayStats.totalSize} chars)`
                   : "Show overlay system (non-destructive code patches)"
                 }
               >
                 <Layers className="w-3 h-3 mr-1 inline" />
-                {overlayStats?.hasChanges ? `Overlay (${overlayStats.patchCount})` : "Overlay"}
+                {overlayStats?.activeOverlays > 0 ? `Overlay (${overlayStats.activeOverlays})` : "Overlay"}
               </button>
 
               <button
