@@ -37,6 +37,7 @@ const CodeEditor = ({
   const [isModified, setIsModified] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+  const [diffData, setDiffData] = useState(null);
 
   const editorRef = useRef(null);
   const diffServiceRef = useRef(new DiffService());
