@@ -960,7 +960,7 @@ const DiffPreviewSystem = ({
               {/* Diff Content */}
               <div className="flex-1 min-h-0">
                 <div 
-                  className="h-full w-full"
+                  className="w-full"
                   style={{ 
                     overflowX: 'scroll',
                     overflowY: 'scroll',
@@ -1127,7 +1127,7 @@ const DiffPreviewSystem = ({
               </div>
               <div className="flex-1 min-h-0">
                 <div 
-                  className="h-full w-full"
+                  className="w-full"
                   style={{ 
                     overflowX: 'scroll',
                     overflowY: 'scroll',
