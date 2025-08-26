@@ -341,7 +341,7 @@ const BrowserPreview = ({
       console.log(`🧪 BrowserPreview: Applying overlay patches for: ${fileName}`);
       
       // Get applied code from overlay system (core + patches)
-      let modifiedCode = overlayPatchSystem.getAppliedCode(fileName) || currentCode;
+      let modifiedCode = overlayManager.getMergedContent(fileName) || currentCode;
       
       try {
         const apiConfig = getApiConfig();
