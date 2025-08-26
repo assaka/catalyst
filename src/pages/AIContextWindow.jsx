@@ -5,6 +5,7 @@ import { Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
+import AdvancedCodeEditor from '@/components/ai-context/AdvancedCodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import StorefrontPreview from '@/components/ai-context/StorefrontPreview';
 import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
@@ -86,6 +87,7 @@ const AIContextWindowPage = () => {
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
   const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
+  const [editorMode, setEditorMode] = useState('legacy'); // Track editor mode: 'legacy', 'advanced'
 
   // Load file from URL parameter on mount
   useEffect(() => {
@@ -632,49 +634,69 @@ export default ExampleComponent;`;
                 <>
                   {/* Tab Interface Above File Name */}
                   <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
-                    <div className="flex border-b border-gray-200 dark:border-gray-700">
-                      <button
-                        onClick={() => {
-                          setPreviewMode('code');
-                          handlePreviewModeChange('code');
-                        }}
-                        className={cn(
-                          "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                          previewMode === 'code' 
-                            ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                        )}
-                      >
-                        Code
-                      </button>
-                      <button
-                        onClick={() => {
-                          setPreviewMode('patch');
-                          handlePreviewModeChange('patch');
-                        }}
-                        className={cn(
-                          "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                          previewMode === 'patch' 
-                            ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                        )}
-                      >
-                        Diff
-                      </button>
-                      <button
-                        onClick={() => {
-                          setPreviewMode('live');
-                          handlePreviewModeChange('live');
-                        }}
-                        className={cn(
-                          "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                          previewMode === 'live' 
-                            ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                        )}
-                      >
-                        Preview
-                      </button>
+                    <div className="flex justify-between border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex">
+                        <button
+                          onClick={() => {
+                            setPreviewMode('code');
+                            handlePreviewModeChange('code');
+                          }}
+                          className={cn(
+                            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            previewMode === 'code' 
+                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                          )}
+                        >
+                          Code
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPreviewMode('patch');
+                            handlePreviewModeChange('patch');
+                          }}
+                          className={cn(
+                            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            previewMode === 'patch' 
+                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                          )}
+                        >
+                          Diff
+                        </button>
+                        <button
+                          onClick={() => {
+                            setPreviewMode('live');
+                            handlePreviewModeChange('live');
+                          }}
+                          className={cn(
+                            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            previewMode === 'live' 
+                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                          )}
+                        >
+                          Preview
+                        </button>
+                      </div>
+                      
+                      {/* Editor Mode Toggle - Only show in Code tab */}
+                      {previewMode === 'code' && (
+                        <div className="flex items-center space-x-2 px-4">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Editor:</span>
+                          <button
+                            onClick={() => setEditorMode(editorMode === 'legacy' ? 'advanced' : 'legacy')}
+                            className={cn(
+                              "px-3 py-1 text-xs font-medium rounded transition-colors",
+                              editorMode === 'advanced'
+                                ? "bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                                : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                            )}
+                          >
+                            {editorMode === 'advanced' ? 'Advanced' : 'Legacy'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -710,18 +732,33 @@ export default ExampleComponent;`;
                   {/* Single Content Area - Tab-based Content */}
                   <div className="flex-1">
                     {previewMode === 'code' ? (
-                      // Code Editor View
-                      <CodeEditor
-                        value={sourceCode}
-                        onChange={handleCodeChange}
-                        fileName={selectedFile.name}
-                        onCursorPositionChange={setCursorPosition}
-                        onSelectionChange={setSelection}
-                        onManualEdit={handleManualEdit}
-                        originalCode={originalCode}
-                        enableDiffDetection={true}
-                        className="h-full"
-                      />
+                      // Code Editor View - Conditional rendering based on editorMode
+                      editorMode === 'advanced' ? (
+                        <AdvancedCodeEditor
+                          value={sourceCode}
+                          onChange={handleCodeChange}
+                          fileName={selectedFile.name}
+                          filePath={selectedFile.path}
+                          onCursorPositionChange={setCursorPosition}
+                          onSelectionChange={setSelection}
+                          onManualEdit={handleManualEdit}
+                          originalCode={originalCode}
+                          enableDiffDetection={true}
+                          className="h-full"
+                        />
+                      ) : (
+                        <CodeEditor
+                          value={sourceCode}
+                          onChange={handleCodeChange}
+                          fileName={selectedFile.name}
+                          onCursorPositionChange={setCursorPosition}
+                          onSelectionChange={setSelection}
+                          onManualEdit={handleManualEdit}
+                          originalCode={originalCode}
+                          enableDiffDetection={true}
+                          className="h-full"
+                        />
+                      )
                     ) : previewMode === 'patch' ? (
                       // Diff View - Always use DiffPreviewSystem for showing diffs
                       <DiffPreviewSystem

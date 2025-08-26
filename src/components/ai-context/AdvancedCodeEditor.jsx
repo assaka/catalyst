@@ -29,7 +29,7 @@ import CodeEditor from './CodeEditor';
 import PreviewPane from './PreviewPane';
 import useAutoSave from '../../hooks/useAutoSave';
 import { useVersionControl } from '../../services/version-control-service';
-import { useOverlayManager } from '../../services/overlay-manager';
+import { useAdvancedOverlayManager } from '../../hooks/useAdvancedOverlayManager';
 import { astParser, astValidator } from '../../utils/ast-utils';
 import DiffService from '../../services/diff-service';
 
@@ -101,12 +101,24 @@ const AdvancedCodeEditor = ({
   });
 
   const {
-    manager: overlayManager,
+    overlayManager,
     stats: overlayStats,
+    syncStatus,
+    lastSync,
     createOverlay,
+    updateOverlay,
+    removeOverlay,
     getMergedContent,
-    setOriginalCode
-  } = useOverlayManager({
+    setOriginalCode,
+    loadOverlayFromDatabase,
+    finalizeOverlay,
+    syncAllOverlays
+  } = useAdvancedOverlayManager({
+    enableDatabaseSync: true,
+    autoSave: true,
+    autoSaveInterval: 5000, // 5 seconds for demo
+    enableVersionControl: enableVersionControl,
+    storeId: null, // Could be passed from parent component
     defaultTTL: 30 * 60 * 1000, // 30 minutes
     maxOverlaysPerFile: 3
   });
@@ -134,9 +146,23 @@ const AdvancedCodeEditor = ({
         // Set original content for overlay system
         if (fileId && initialContent) {
           setOriginalCode(fileId, initialContent);
+
+          // Try to load existing overlay from database
+          try {
+            const overlayResult = await loadOverlayFromDatabase(fileId);
+            if (overlayResult.success && overlayResult.overlay) {
+              console.log('Loaded overlay from database:', overlayResult.overlay.id);
+              // Use the overlay content if it's more recent than initial content
+              if (overlayResult.overlay.tmpCode !== initialContent) {
+                setContent(overlayResult.overlay.tmpCode);
+              }
+            }
+          } catch (error) {
+            console.warn('Failed to load overlay from database:', error);
+          }
         }
 
-        // Check for offline recovery
+        // Check for offline recovery (this takes precedence over database)
         const recovered = recoverOfflineContent();
         if (recovered && recovered.isRecovered) {
           setContent(recovered.content);
@@ -238,6 +264,19 @@ const AdvancedCodeEditor = ({
           author: 'user',
           isManualSave: true
         });
+      }
+
+      // Finalize any active overlays on manual save
+      if (fileId && overlayStats?.local?.activeOverlays > 0) {
+        try {
+          const overlays = overlayManager.getFileOverlays(fileId);
+          for (const overlay of overlays) {
+            await finalizeOverlay(overlay.id);
+          }
+          console.log(`Finalized ${overlays.length} overlays on manual save`);
+        } catch (error) {
+          console.warn('Failed to finalize overlays:', error);
+        }
       }
 
     } catch (error) {
@@ -353,10 +392,26 @@ const AdvancedCodeEditor = ({
             )}
             
             {/* Overlay Stats */}
-            {overlayStats.activeOverlays > 0 && (
+            {overlayStats?.local?.activeOverlays > 0 && (
               <Badge variant="outline" className="text-xs">
                 <Layers className="w-3 h-3 mr-1" />
-                {overlayStats.activeOverlays}
+                {overlayStats.local.activeOverlays}
+                {overlayStats.database?.activeOverlays > 0 && 
+                  `/${overlayStats.database.activeOverlays}`}
+              </Badge>
+            )}
+
+            {/* Database Sync Status */}
+            {syncStatus === 'syncing' && (
+              <Badge variant="secondary" className="text-xs">
+                <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                Syncing...
+              </Badge>
+            )}
+            {syncStatus === 'error' && (
+              <Badge variant="destructive" className="text-xs">
+                <AlertCircle className="w-3 h-3 mr-1" />
+                Sync Error
               </Badge>
             )}
             
@@ -384,6 +439,26 @@ const AdvancedCodeEditor = ({
             >
               <Save className="w-4 h-4" />
             </Button>
+            
+            {/* Database Sync Button */}
+            {overlayStats?.local?.activeOverlays > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    await syncAllOverlays();
+                    console.log('Manual sync completed');
+                  } catch (error) {
+                    console.error('Manual sync failed:', error);
+                  }
+                }}
+                disabled={syncStatus === 'syncing'}
+                title="Sync overlays to database"
+              >
+                <Zap className="w-4 h-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -549,6 +624,11 @@ const AdvancedCodeEditor = ({
               <span className="text-red-600">
                 {astErrors.filter(e => e.severity === 'error').length} errors,
                 {astErrors.filter(e => e.severity === 'warning').length} warnings
+              </span>
+            )}
+            {lastSync && (
+              <span className="text-green-600">
+                DB sync: {new Date(lastSync).toLocaleTimeString()}
               </span>
             )}
             <span>{language.toUpperCase()}</span>

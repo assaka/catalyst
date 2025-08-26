@@ -47,6 +47,9 @@ const Job = require('./Job');
 const JobHistory = require('./JobHistory');
 const StoreSupabaseConnection = require('./StoreSupabaseConnection');
 const StoreDataMigration = require('./StoreDataMigration');
+const CustomizationOverlay = require('./CustomizationOverlay');
+const CustomizationSnapshot = require('./CustomizationSnapshot');
+const AstDiff = require('./AstDiff');
 
 // Define associations
 const defineAssociations = () => {
@@ -264,6 +267,24 @@ const defineAssociations = () => {
   StoreDataMigration.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(StoreDataMigration, { foreignKey: 'store_id' });
 
+  // CustomizationOverlay associations
+  CustomizationOverlay.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  CustomizationOverlay.belongsTo(Store, { foreignKey: 'store_id', as: 'store' });
+  CustomizationOverlay.hasMany(CustomizationSnapshot, { foreignKey: 'customization_id', as: 'snapshots' });
+  
+  User.hasMany(CustomizationOverlay, { foreignKey: 'user_id', as: 'customizations' });
+  Store.hasMany(CustomizationOverlay, { foreignKey: 'store_id', as: 'customizations' });
+
+  // CustomizationSnapshot associations
+  CustomizationSnapshot.belongsTo(CustomizationOverlay, { foreignKey: 'customization_id', as: 'customization' });
+  CustomizationSnapshot.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+  CustomizationSnapshot.hasMany(AstDiff, { foreignKey: 'snapshot_id', as: 'astDiffs' });
+  
+  User.hasMany(CustomizationSnapshot, { foreignKey: 'created_by', as: 'snapshots' });
+
+  // AstDiff associations
+  AstDiff.belongsTo(CustomizationSnapshot, { foreignKey: 'snapshot_id', as: 'snapshot' });
+
 };
 
 // Initialize associations
@@ -319,4 +340,7 @@ module.exports = {
   JobHistory,
   StoreSupabaseConnection,
   StoreDataMigration,
+  CustomizationOverlay,
+  CustomizationSnapshot,
+  AstDiff,
 };

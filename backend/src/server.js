@@ -106,6 +106,7 @@ const storeRoutesManagement = require('./routes/store-routes');
 const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
 const cronJobRoutes = require('./routes/cron-jobs');
+const customizationOverlayRoutes = require('./routes/customization-overlays');
 
 const app = express();
 
@@ -1579,6 +1580,7 @@ app.use('/api/stores', domainSettingsRoutes); // Domain settings for Store -> Se
 app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
+app.use('/api/customization-overlays', customizationOverlayRoutes); // Overlay persistence and version control routes
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
