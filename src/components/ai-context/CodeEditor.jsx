@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Editor from '@monaco-editor/react';
 import { 
   Save, 
@@ -10,8 +11,13 @@ import {
   Search, 
   Maximize2,
   Minimize2,
-  Code
+  Code,
+  Diff,
+  Eye
 } from 'lucide-react';
+
+// Import diff service
+import DiffService from '../../services/diff-service';
 
 const CodeEditor = ({ 
   value = '', 
@@ -24,19 +30,37 @@ const CodeEditor = ({
   onSelectionChange,
   onManualEdit,
   originalCode = '',
-  enableDiffDetection = false
+  enableDiffDetection = false,
+  enableTabs = false,
+  initialContent = ''
 }) => {
   const [localCode, setLocalCode] = useState(value);
   const [isModified, setIsModified] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+  const [activeTab, setActiveTab] = useState('editor');
+  const [diffData, setDiffData] = useState(null);
 
   const editorRef = useRef(null);
+  const diffServiceRef = useRef(new DiffService());
 
   useEffect(() => {
     setLocalCode(value);
     setIsModified(false);
   }, [value]);
+
+  // Generate diff when content changes
+  useEffect(() => {
+    if (enableDiffDetection && initialContent) {
+      const contentToCompare = initialContent || originalCode || '';
+      if (localCode !== contentToCompare) {
+        const diffResult = diffServiceRef.current.createDiff(contentToCompare, localCode);
+        setDiffData(diffResult);
+      } else {
+        setDiffData(null);
+      }
+    }
+  }, [localCode, initialContent, originalCode, enableDiffDetection]);
 
 
   const handleCodeChange = (newCode) => {
@@ -152,6 +176,135 @@ const CodeEditor = ({
     }
   };
 
+  if (!enableTabs) {
+    // Simple editor mode without tabs
+    return (
+      <div className={`h-full flex flex-col bg-background ${className} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
+        {/* Header */}
+        <div className="border-b p-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-lg">{getLanguageIcon()}</span>
+              <span className="font-medium">{fileName || 'Untitled'}</span>
+              {isModified && <Badge variant="outline" className="text-xs">Modified</Badge>}
+              <Badge variant="secondary" className="text-xs">{language}</Badge>
+            </div>
+            
+            <div className="flex items-center space-x-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleUndo}
+                disabled={readOnly}
+              >
+                <Undo className="w-4 h-4" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRedo}
+                disabled={readOnly}
+              >
+                <Redo className="w-4 h-4" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSearch}
+                title="Search (Ctrl+F)"
+              >
+                <Search className="w-4 h-4" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                disabled={!isModified || readOnly}
+              >
+                <Save className="w-4 h-4" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+              >
+                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Editor Content */}
+        <div className="flex-1">
+          <Editor
+            height="100%"
+            language={getMonacoLanguage()}
+            value={localCode}
+            onChange={handleCodeChange}
+            onMount={handleEditorDidMount}
+            options={{
+              readOnly: readOnly,
+              minimap: { enabled: false },
+              scrollBeyondLastLine: false,
+              fontSize: 14,
+              lineHeight: 20,
+              fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+              tabSize: 2,
+              insertSpaces: true,
+              wordWrap: 'on',
+              automaticLayout: true,
+              lineNumbers: 'on',
+              glyphMargin: false,
+              folding: true,
+              lineDecorationsWidth: 0,
+              lineNumbersMinChars: 4,
+              renderLineHighlight: 'line',
+              selectionHighlight: true,
+              bracketPairColorization: { enabled: true },
+              guides: { indentation: true },
+              suggest: { showWords: false },
+              quickSuggestions: {
+                other: true,
+                comments: false,
+                strings: false
+              }
+            }}
+            theme="vs-dark"
+            loading={
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center text-muted-foreground">
+                  <Code className="w-8 h-8 mx-auto mb-2 animate-pulse" />
+                  <p>Loading editor...</p>
+                </div>
+              </div>
+            }
+          />
+        </div>
+
+        {/* Status Bar */}
+        <div className="border-t px-4 py-1 bg-muted/50 text-xs text-muted-foreground">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <span>Line {cursorPosition.line}, Column {cursorPosition.column}</span>
+              <span>{localCode.length} characters</span>
+              <span>{localCode.split('\n').length} lines</span>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {isModified && <span className="text-orange-600">Unsaved changes</span>}
+              <span>{getMonacoLanguage().toUpperCase()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Tabbed editor mode with diff support
   return (
     <div className={`h-full flex flex-col bg-background ${className} ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
       {/* Header */}
@@ -168,112 +321,169 @@ const CodeEditor = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleUndo}
-              disabled={readOnly}
-            >
-              <Undo className="w-4 h-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRedo}
-              disabled={readOnly}
-            >
-              <Redo className="w-4 h-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSearch}
-              title="Search (Ctrl+F)"
-            >
-              <Search className="w-4 h-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSave}
-              disabled={!isModified || readOnly}
-            >
-              <Save className="w-4 h-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
               onClick={() => setIsFullscreen(!isFullscreen)}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </Button>
           </div>
         </div>
-
       </div>
 
-      {/* Editor Content */}
+      {/* Tabbed Content */}
       <div className="flex-1">
-        <Editor
-          height="100%"
-          language={getMonacoLanguage()}
-          value={localCode}
-          onChange={handleCodeChange}
-          onMount={handleEditorDidMount}
-          options={{
-            readOnly: readOnly,
-            minimap: { enabled: false },
-            scrollBeyondLastLine: false,
-            fontSize: 14,
-            lineHeight: 20,
-            fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-            tabSize: 2,
-            insertSpaces: true,
-            wordWrap: 'on',
-            automaticLayout: true,
-            lineNumbers: 'on',
-            glyphMargin: false,
-            folding: true,
-            lineDecorationsWidth: 0,
-            lineNumbersMinChars: 4,
-            renderLineHighlight: 'line',
-            selectionHighlight: true,
-            bracketPairColorization: { enabled: true },
-            guides: { indentation: true },
-            suggest: { showWords: false },
-            quickSuggestions: {
-              other: true,
-              comments: false,
-              strings: false
-            }
-          }}
-          theme="vs-dark"
-          loading={
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center text-muted-foreground">
-                <Code className="w-8 h-8 mx-auto mb-2 animate-pulse" />
-                <p>Loading editor...</p>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="editor" className="flex items-center space-x-2">
+              <Code className="w-4 h-4" />
+              <span>Editor</span>
+            </TabsTrigger>
+            <TabsTrigger value="diff" className="flex items-center space-x-2">
+              <Diff className="w-4 h-4" />
+              <span>Diff</span>
+              {diffData && (
+                <Badge variant="outline" className="ml-2">
+                  {diffServiceRef.current.getDiffStats(diffData.diff)?.additions || 0}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Editor Tab */}
+          <TabsContent value="editor" className="h-full m-0 p-0 flex flex-col">
+            <div className="border-b p-2">
+              <div className="flex items-center space-x-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleUndo}
+                  disabled={readOnly}
+                >
+                  <Undo className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRedo}
+                  disabled={readOnly}
+                >
+                  <Redo className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSearch}
+                  title="Search (Ctrl+F)"
+                >
+                  <Search className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={!isModified || readOnly}
+                >
+                  <Save className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-          }
-        />
-      </div>
 
-      {/* Status Bar */}
-      <div className="border-t px-4 py-1 bg-muted/50 text-xs text-muted-foreground">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <span>Line {cursorPosition.line}, Column {cursorPosition.column}</span>
-            <span>{localCode.length} characters</span>
-            <span>{localCode.split('\n').length} lines</span>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            {isModified && <span className="text-orange-600">Unsaved changes</span>}
-            <span>{getMonacoLanguage().toUpperCase()}</span>
-          </div>
-        </div>
+            <div className="flex-1">
+              <Editor
+                height="100%"
+                language={getMonacoLanguage()}
+                value={localCode}
+                onChange={handleCodeChange}
+                onMount={handleEditorDidMount}
+                options={{
+                  readOnly: readOnly,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                  tabSize: 2,
+                  insertSpaces: true,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                  lineNumbers: 'on',
+                  glyphMargin: false,
+                  folding: true,
+                  lineDecorationsWidth: 0,
+                  lineNumbersMinChars: 4,
+                  renderLineHighlight: 'line',
+                  selectionHighlight: true,
+                  bracketPairColorization: { enabled: true },
+                  guides: { indentation: true },
+                  suggest: { showWords: false },
+                  quickSuggestions: {
+                    other: true,
+                    comments: false,
+                    strings: false
+                  }
+                }}
+                theme="vs-dark"
+                loading={
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-muted-foreground">
+                      <Code className="w-8 h-8 mx-auto mb-2 animate-pulse" />
+                      <p>Loading editor...</p>
+                    </div>
+                  </div>
+                }
+              />
+            </div>
+
+            {/* Status Bar */}
+            <div className="border-t px-4 py-1 bg-muted/50 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <span>Line {cursorPosition.line}, Column {cursorPosition.column}</span>
+                  <span>{localCode.length} characters</span>
+                  <span>{localCode.split('\n').length} lines</span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  {isModified && <span className="text-orange-600">Unsaved changes</span>}
+                  <span>{getMonacoLanguage().toUpperCase()}</span>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Diff Tab */}
+          <TabsContent value="diff" className="h-full m-0 p-0">
+            <div className="h-full p-4">
+              {diffData ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium">Changes</h3>
+                    <div className="flex space-x-2">
+                      <Badge variant="outline">
+                        +{diffServiceRef.current.getDiffStats(diffData.diff)?.additions || 0}
+                      </Badge>
+                      <Badge variant="outline">
+                        -{diffServiceRef.current.getDiffStats(diffData.diff)?.deletions || 0}
+                      </Badge>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg overflow-auto max-h-96">
+                    <pre className="p-4 text-sm font-mono whitespace-pre-wrap">
+                      {diffServiceRef.current.createUnifiedDiff(initialContent || originalCode || '', localCode, fileName)}
+                    </pre>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground">
+                  No changes to display
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/componen
 import { Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
-import AdvancedCodeEditor from '@/components/ai-context/AdvancedCodeEditor';
+import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import StorefrontPreview from '@/components/ai-context/StorefrontPreview';
 import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
@@ -713,16 +713,17 @@ export default ExampleComponent;`;
                   <div className="flex-1">
                     {previewMode === 'code' ? (
                       // Advanced Code Editor with Database Persistence
-                      <AdvancedCodeEditor
-                        initialContent={sourceCode}
-                        onContentChange={handleCodeChange}
+                      <CodeEditor
+                        value={sourceCode}
+                        onChange={handleCodeChange}
                         fileName={selectedFile.name}
-                        fileId={selectedFile.path}
                         onCursorPositionChange={setCursorPosition}
                         onSelectionChange={setSelection}
                         onManualEdit={handleManualEdit}
                         originalCode={originalCode}
+                        initialContent={originalCode}
                         enableDiffDetection={true}
+                        enableTabs={true}
                         className="h-full"
                       />
                     ) : previewMode === 'patch' ? (
