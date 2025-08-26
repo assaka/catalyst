@@ -3,7 +3,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
@@ -222,17 +221,11 @@ const DiffPreviewSystem = ({
     isScrollingRef.current = true;
     
     if (source === 'original' && modifiedScrollRef.current) {
-      const viewport = modifiedScrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (viewport) {
-        viewport.scrollTop = scrollTop;
-        viewport.scrollLeft = scrollLeft;
-      }
+      modifiedScrollRef.current.scrollTop = scrollTop;
+      modifiedScrollRef.current.scrollLeft = scrollLeft;
     } else if (source === 'modified' && originalScrollRef.current) {
-      const viewport = originalScrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (viewport) {
-        viewport.scrollTop = scrollTop;
-        viewport.scrollLeft = scrollLeft;
-      }
+      originalScrollRef.current.scrollTop = scrollTop;
+      originalScrollRef.current.scrollLeft = scrollLeft;
     }
     
     setTimeout(() => {
@@ -242,8 +235,8 @@ const DiffPreviewSystem = ({
 
   // Set up scroll event listeners for synchronized scrolling
   useEffect(() => {
-    const originalViewport = originalScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
-    const modifiedViewport = modifiedScrollRef.current?.querySelector('[data-radix-scroll-area-viewport]');
+    const originalViewport = originalScrollRef.current;
+    const modifiedViewport = modifiedScrollRef.current;
     
     const handleOriginalScroll = (e) => {
       handleSyncScroll('original', e.target.scrollTop, e.target.scrollLeft);
@@ -754,7 +747,15 @@ const DiffPreviewSystem = ({
               
               {/* Diff Content */}
               <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full w-full" type="always" style={{ height: '100%' }}>
+                <div 
+                  className="h-full w-full overflow-auto"
+                  style={{ 
+                    height: '100%',
+                    overflowX: 'auto',
+                    overflowY: 'auto',
+                    scrollbarWidth: 'thin'
+                  }}
+                >
                   <div className="min-w-max w-fit">
                   {displayLines.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
@@ -774,7 +775,7 @@ const DiffPreviewSystem = ({
                     </div>
                   )}
                   </div>
-                </ScrollArea>
+                </div>
               </div>
             </div>
           </TabsContent>
@@ -809,26 +810,28 @@ const DiffPreviewSystem = ({
                     <h4 className="font-medium text-red-900">Original ({originalBaseCodeRef.current.split('\n').length} lines)</h4>
                   </div>
                   {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
-                    <div className="flex-1 min-h-0">
-                      <ScrollArea 
-                        className="h-full w-full" 
-                        type="always"
-                        ref={originalScrollRef}
-                        style={{ height: '100%' }}
-                      >
-                        <div className="min-w-max w-fit">
-                          <SplitViewPane
-                            lines={originalBaseCodeRef.current.split('\n')}
-                            diffLines={displayLines}
-                            side="original"
-                            showLineNumbers={lineNumbers}
-                            showWhitespace={showWhitespace}
-                            onLineRevert={handleLineRevert}
-                            originalLines={originalBaseCodeRef.current.split('\n')}
-                            modifiedLines={currentModifiedCode.split('\n')}
-                          />
-                        </div>
-                      </ScrollArea>
+                    <div 
+                      className="flex-1 min-h-0 overflow-auto"
+                      ref={originalScrollRef}
+                      style={{ 
+                        height: '100%',
+                        overflowX: 'auto',
+                        overflowY: 'auto',
+                        scrollbarWidth: 'thin'
+                      }}
+                    >
+                      <div className="min-w-max w-fit">
+                        <SplitViewPane
+                          lines={originalBaseCodeRef.current.split('\n')}
+                          diffLines={displayLines}
+                          side="original"
+                          showLineNumbers={lineNumbers}
+                          showWhitespace={showWhitespace}
+                          onLineRevert={handleLineRevert}
+                          originalLines={originalBaseCodeRef.current.split('\n')}
+                          modifiedLines={currentModifiedCode.split('\n')}
+                        />
+                      </div>
                     </div>
                   ) :
                       <pre className="p-4 text-sm font-mono whitespace-pre">
@@ -841,26 +844,28 @@ const DiffPreviewSystem = ({
                     <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
                   </div>
                    {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? (
-                      <div className="flex-1 min-h-0">
-                        <ScrollArea 
-                          className="h-full w-full" 
-                          type="always"
-                          ref={modifiedScrollRef}
-                          style={{ height: '100%' }}
-                        >
-                          <div className="min-w-max w-fit">
-                            <SplitViewPane
-                              lines={currentModifiedCode.split('\n')}
-                              diffLines={displayLines}
-                              side="modified"
-                              showLineNumbers={lineNumbers}
-                              showWhitespace={showWhitespace}
-                              onLineRevert={handleLineRevert}
-                              originalLines={originalBaseCodeRef.current.split('\n')}
-                              modifiedLines={currentModifiedCode.split('\n')}
-                            />
-                          </div>
-                        </ScrollArea>
+                      <div 
+                        className="flex-1 min-h-0 overflow-auto"
+                        ref={modifiedScrollRef}
+                        style={{ 
+                          height: '100%',
+                          overflowX: 'auto',
+                          overflowY: 'auto',
+                          scrollbarWidth: 'thin'
+                        }}
+                      >
+                        <div className="min-w-max w-fit">
+                          <SplitViewPane
+                            lines={currentModifiedCode.split('\n')}
+                            diffLines={displayLines}
+                            side="modified"
+                            showLineNumbers={lineNumbers}
+                            showWhitespace={showWhitespace}
+                            onLineRevert={handleLineRevert}
+                            originalLines={originalBaseCodeRef.current.split('\n')}
+                            modifiedLines={currentModifiedCode.split('\n')}
+                          />
+                        </div>
                       </div>
                    ) :
                        <pre className="p-4 text-sm font-mono whitespace-pre">
@@ -903,13 +908,21 @@ const DiffPreviewSystem = ({
                 </div>
               </div>
               <div className="flex-1 min-h-0">
-                <ScrollArea className="h-full w-full" type="always" style={{ height: '100%' }}>
+                <div 
+                  className="h-full w-full overflow-auto"
+                  style={{ 
+                    height: '100%',
+                    overflowX: 'auto',
+                    overflowY: 'auto',
+                    scrollbarWidth: 'thin'
+                  }}
+                >
                   <div className="min-w-max w-fit">
                     <pre className="p-4 text-sm font-mono whitespace-pre">
                       {diffResult.unifiedDiff || 'No differences to display'}
                     </pre>
                   </div>
-                </ScrollArea>
+                </div>
               </div>
             </div>
           </TabsContent>
