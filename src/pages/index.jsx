@@ -124,7 +124,7 @@ import MonitoringDashboard from "./MonitoringDashboard";
 
 import ScheduledJobs from "./ScheduledJobs";
 
-import AIContextWindow from "../components/ai-context/AIContextWindow";
+import AIContextWindow from "./AIContextWindow";
 
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
