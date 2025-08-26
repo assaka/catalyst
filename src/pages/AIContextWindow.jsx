@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import { Download } from 'lucide-react';
+import {Code, Diff, Download, Eye} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
@@ -662,6 +662,7 @@ export default ExampleComponent;`;
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
                           )}
                         >
+                          <Code className="w-4 h-4" />
                           Code
                         </button>
                         <button
@@ -676,6 +677,7 @@ export default ExampleComponent;`;
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
                           )}
                         >
+                          <Diff className="w-4 h-4" />
                           Diff
                         </button>
                         <button
@@ -690,6 +692,7 @@ export default ExampleComponent;`;
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
                           )}
                         >
+                          <Eye className="w-4 h-4" />
                           Preview
                         </button>
                       </div>
