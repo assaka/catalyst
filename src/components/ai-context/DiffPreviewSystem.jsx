@@ -215,13 +215,6 @@ const DiffPreviewSystem = ({
     originalBaseCodeRef.current = originalCode;
   }, [originalCode]);
 
-  // Notify parent when diff stats change
-  useEffect(() => {
-    if (onDiffStatsChange) {
-      onDiffStatsChange(diffResult.stats);
-    }
-  }, [diffResult.stats, onDiffStatsChange]);
-
   // Handle synchronized scrolling between split view panes
   const handleSyncScroll = useCallback((source, scrollTop, scrollLeft) => {
     if (isScrollingRef.current) return;
@@ -374,6 +367,13 @@ const DiffPreviewSystem = ({
       unifiedDiff
     };
   }, [currentModifiedCode, algorithm, fileName]);
+
+  // Notify parent when diff stats change
+  useEffect(() => {
+    if (onDiffStatsChange) {
+      onDiffStatsChange(diffResult.stats);
+    }
+  }, [diffResult.stats, onDiffStatsChange]);
 
   // Convert DiffService diff to displayable lines for UI
   const convertDiffToDisplayLines = (diff) => {
