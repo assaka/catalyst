@@ -36,13 +36,27 @@ async function fetchFromGitHub(filePath) {
 // Helper function to check local filesystem (fallback)
 function readLocalFile(filePath) {
   try {
-    // Try multiple possible base paths for different deployment scenarios
-    const possiblePaths = [
-      path.resolve(__dirname, '../../../', filePath), // Local development
-      path.resolve(__dirname, '../../../../', filePath), // Render with backend subdirectory
-      path.resolve(process.cwd(), filePath), // Process working directory
-      path.resolve('/', 'opt/render/project/repo', filePath) // Render default structure
-    ];
+    let possiblePaths;
+    
+    // For files in 'src/', prioritize root-level src over backend/src
+    if (filePath.startsWith('src/')) {
+      possiblePaths = [
+        path.resolve(__dirname, '../../../', filePath), // Local development - root level
+        path.resolve(__dirname, '../../../../', filePath), // Render with backend subdirectory - root level
+        path.resolve(process.cwd(), filePath), // Process working directory - root level
+        path.resolve('/', 'opt/render/project/repo', filePath), // Render default structure - root level
+        path.resolve(__dirname, '../../../backend/', filePath), // Backend src as fallback
+        path.resolve(__dirname, '../../../../backend/', filePath) // Backend src fallback
+      ];
+    } else {
+      // For other paths, use standard resolution
+      possiblePaths = [
+        path.resolve(__dirname, '../../../', filePath), // Local development
+        path.resolve(__dirname, '../../../../', filePath), // Render with backend subdirectory
+        path.resolve(process.cwd(), filePath), // Process working directory
+        path.resolve('/', 'opt/render/project/repo', filePath) // Render default structure
+      ];
+    }
     
     for (const fullPath of possiblePaths) {
       if (fs.existsSync(fullPath)) {
@@ -181,19 +195,41 @@ function fetchAllFilesLocallyRecursive(dirPath = '.') {
     }
   }
   
-  // Try multiple possible base paths for different deployment scenarios
-  const possiblePaths = [
-    path.resolve(__dirname, '../../../', dirPath), // Local development
-    path.resolve(__dirname, '../../../../', dirPath), // Render with backend subdirectory
-    path.resolve(process.cwd(), dirPath), // Process working directory
-    path.resolve('/', 'opt/render/project/repo', dirPath) // Render default structure
-  ];
-  
+  // For the 'src' path, we want to prioritize the root-level src directory over backend/src
   let basePath;
-  for (const testPath of possiblePaths) {
-    if (fs.existsSync(testPath)) {
-      basePath = testPath;
-      break;
+  
+  if (dirPath === 'src') {
+    // Special handling for 'src' - look for root-level src first
+    const rootSrcPaths = [
+      path.resolve(__dirname, '../../../src'), // Local development - root level src
+      path.resolve(__dirname, '../../../../src'), // Render with backend subdirectory - root level src  
+      path.resolve(process.cwd(), 'src'), // Process working directory - root level src
+      path.resolve('/', 'opt/render/project/repo/src') // Render default structure - root level src
+    ];
+    
+    for (const testPath of rootSrcPaths) {
+      if (fs.existsSync(testPath)) {
+        basePath = testPath;
+        console.log(`📂 Found root-level src directory: ${basePath}`);
+        break;
+      }
+    }
+  }
+  
+  // If not found or not 'src' path, use the general resolution
+  if (!basePath) {
+    const possiblePaths = [
+      path.resolve(__dirname, '../../../', dirPath), // Local development
+      path.resolve(__dirname, '../../../../', dirPath), // Render with backend subdirectory
+      path.resolve(process.cwd(), dirPath), // Process working directory
+      path.resolve('/', 'opt/render/project/repo', dirPath) // Render default structure
+    ];
+    
+    for (const testPath of possiblePaths) {
+      if (fs.existsSync(testPath)) {
+        basePath = testPath;
+        break;
+      }
     }
   }
   
