@@ -29,7 +29,7 @@ const FileTreeNavigator = ({
   onRefresh,
   className = '' 
 }) => {
-  const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'src/components', 'src/pages']));
+  const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'backend', 'src/components', 'src/pages', 'backend/src']));
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTree, setFileTree] = useState(null);
 
@@ -40,8 +40,8 @@ const FileTreeNavigator = ({
 
   const loadFileTree = async () => {
     try {
-      // Fetch file listing from API
-      const data = await apiClient.get('proxy-source-files/list?path=src');
+      // Fetch file listing from API - now loads the entire codebase from root
+      const data = await apiClient.get('proxy-source-files/list?path=.');
       
       if (data && data.success && data.files) {
         // Convert flat file list to hierarchical tree structure
@@ -51,10 +51,11 @@ const FileTreeNavigator = ({
         console.error('Failed to load file tree:', data?.message || 'Unknown error');
         // Fallback to a simple error state
         setFileTree({
-          name: 'src',
+          name: 'Catalyst Project',
           type: 'folder',
+          path: '',
           children: [
-            { name: 'Error loading files', type: 'file', isError: true }
+            { name: 'Error loading files', type: 'file', isError: true, path: 'error' }
           ]
         });
       }
@@ -62,10 +63,11 @@ const FileTreeNavigator = ({
       console.error('Error loading file tree:', error);
       // Fallback to error state
       setFileTree({
-        name: 'src',
-        type: 'folder', 
+        name: 'Catalyst Project',
+        type: 'folder',
+        path: '',
         children: [
-          { name: 'API Error - Check console', type: 'file', isError: true }
+          { name: 'API Error - Check console', type: 'file', isError: true, path: 'error' }
         ]
       });
     }
@@ -74,14 +76,15 @@ const FileTreeNavigator = ({
   // Convert flat file list to hierarchical tree structure
   const buildFileTree = (files) => {
     const tree = {
-      name: 'src',
+      name: 'Catalyst Project',
       type: 'folder',
+      path: '',
       children: []
     };
 
     // Create a map to store folder references
     const folderMap = new Map();
-    folderMap.set('src', tree);
+    folderMap.set('', tree);
 
     // Sort files by path to ensure folders are created before their children
     const sortedFiles = files.sort((a, b) => a.path.localeCompare(b.path));
@@ -154,6 +157,22 @@ const FileTreeNavigator = ({
     }
 
     const extension = file.name.split('.').pop()?.toLowerCase();
+    const fileName = file.name.toLowerCase();
+    
+    // Special file names
+    if (fileName === 'package.json') {
+      return <Settings className="w-4 h-4 text-green-600" />;
+    }
+    if (fileName === 'readme.md' || fileName === 'claude.md') {
+      return <FileText className="w-4 h-4 text-blue-600" />;
+    }
+    if (fileName.startsWith('.env')) {
+      return <Settings className="w-4 h-4 text-yellow-600" />;
+    }
+    if (fileName === 'dockerfile' || fileName.endsWith('.dockerfile')) {
+      return <Database className="w-4 h-4 text-blue-700" />;
+    }
+    
     switch (extension) {
       case 'jsx':
       case 'js':
@@ -163,20 +182,47 @@ const FileTreeNavigator = ({
       case 'css':
       case 'scss':
       case 'less':
+      case 'sass':
         return <Settings className="w-4 h-4 text-pink-500" />;
       case 'json':
+      case 'jsonl':
         return <Database className="w-4 h-4 text-green-500" />;
       case 'md':
       case 'txt':
+      case 'log':
         return <FileText className="w-4 h-4 text-gray-500" />;
       case 'png':
       case 'jpg':
       case 'jpeg':
       case 'gif':
       case 'svg':
+      case 'webp':
+      case 'ico':
         return <Image className="w-4 h-4 text-purple-500" />;
       case 'html':
+      case 'htm':
         return <Globe className="w-4 h-4 text-orange-500" />;
+      case 'yml':
+      case 'yaml':
+        return <Settings className="w-4 h-4 text-red-500" />;
+      case 'xml':
+        return <Code className="w-4 h-4 text-orange-600" />;
+      case 'sql':
+        return <Database className="w-4 h-4 text-blue-500" />;
+      case 'py':
+        return <Code className="w-4 h-4 text-blue-400" />;
+      case 'php':
+        return <Code className="w-4 h-4 text-purple-600" />;
+      case 'java':
+        return <Code className="w-4 h-4 text-red-600" />;
+      case 'go':
+        return <Code className="w-4 h-4 text-cyan-500" />;
+      case 'rs':
+        return <Code className="w-4 h-4 text-orange-700" />;
+      case 'sh':
+      case 'bash':
+      case 'zsh':
+        return <Settings className="w-4 h-4 text-gray-600" />;
       default:
         return <FileText className="w-4 h-4 text-gray-500" />;
     }
@@ -272,7 +318,7 @@ const FileTreeNavigator = ({
       {/* Header */}
       <div className="border-b p-3">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Files</h3>
+          <h3 className="font-semibold">Project Files</h3>
           <div className="flex items-center space-x-1">
             <Button variant="ghost" size="sm" onClick={refreshFileTree} title="Refresh file tree">
               <RefreshCw className="w-4 h-4" />

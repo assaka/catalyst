@@ -74,11 +74,16 @@ router.get('/content', authMiddleware, async (req, res) => {
       });
     }
 
-    // Security: Only allow reading files from src directory
-    if (!filePath.startsWith('src/')) {
+    // Security: Block access to sensitive directories and files
+    const blockedPaths = ['node_modules', '.git', 'coverage', 'tmp', 'temp'];
+    const isBlockedPath = blockedPaths.some(blocked => 
+      filePath.includes(blocked) || filePath.startsWith(blocked)
+    );
+    
+    if (isBlockedPath) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied: Only src/ directory files are allowed'
+        message: 'Access denied: Cannot access system or build directories'
       });
     }
 
@@ -86,29 +91,29 @@ router.get('/content', authMiddleware, async (req, res) => {
     let source;
     
     try {
-      // Strategy 1: Try GitHub first (most reliable for Render deployment)
-      console.log(`Attempting to fetch ${filePath} from GitHub...`);
-      result = await fetchFromGitHub(filePath);
-      source = 'github';
-    } catch (githubError) {
-      console.log(`GitHub fetch failed: ${githubError.message}`);
+      // Strategy 1: Try local filesystem first (most current)
+      console.log(`Attempting to read ${filePath} from local filesystem...`);
+      result = readLocalFile(filePath);
+      source = 'local';
+    } catch (localError) {
+      console.log(`Local read failed: ${localError.message}`);
       
       try {
-        // Strategy 2: Fallback to local filesystem
-        console.log(`Attempting to read ${filePath} from local filesystem...`);
-        result = readLocalFile(filePath);
-        source = 'local';
-      } catch (localError) {
-        console.log(`Local read failed: ${localError.message}`);
+        // Strategy 2: Fallback to GitHub
+        console.log(`Attempting to fetch ${filePath} from GitHub...`);
+        result = await fetchFromGitHub(filePath);
+        source = 'github';
+      } catch (githubError) {
+        console.log(`GitHub fetch failed: ${githubError.message}`);
         
         return res.status(404).json({
           success: false,
           message: 'File not found',
           details: {
             filePath,
-            githubError: githubError.message,
             localError: localError.message,
-            attempted: ['github', 'local']
+            githubError: githubError.message,
+            attempted: ['local', 'github']
           }
         });
       }
@@ -134,7 +139,75 @@ router.get('/content', authMiddleware, async (req, res) => {
   }
 });
 
-// Helper function to recursively fetch all files from GitHub
+// Helper function to recursively fetch all files from local filesystem
+function fetchAllFilesLocallyRecursive(dirPath = '.') {
+  const allFiles = [];
+  
+  function scanDirectory(currentPath, relativePath = '') {
+    try {
+      const items = fs.readdirSync(currentPath, { withFileTypes: true });
+      
+      for (const item of items) {
+        const itemPath = path.join(currentPath, item.name);
+        const relativeItemPath = relativePath ? `${relativePath}/${item.name}` : item.name;
+        
+        // Skip common directories that shouldn't be included
+        const skipDirs = ['node_modules', '.git', 'dist', 'build', '.next', 'coverage', 'tmp', 'temp'];
+        if (item.isDirectory() && skipDirs.includes(item.name)) {
+          continue;
+        }
+        
+        // Skip hidden files and directories (starting with .)
+        if (item.name.startsWith('.') && item.name !== '.env') {
+          continue;
+        }
+        
+        if (item.isFile()) {
+          // Add file to our list
+          allFiles.push({
+            name: item.name,
+            type: 'file',
+            path: relativeItemPath,
+            extension: path.extname(item.name),
+            size: fs.statSync(itemPath).size
+          });
+        } else if (item.isDirectory()) {
+          // Recursively scan subdirectory
+          scanDirectory(itemPath, relativeItemPath);
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error scanning directory ${currentPath}:`, error.message);
+    }
+  }
+  
+  // Try multiple possible base paths for different deployment scenarios
+  const possiblePaths = [
+    path.resolve(__dirname, '../../../', dirPath), // Local development
+    path.resolve(__dirname, '../../../../', dirPath), // Render with backend subdirectory
+    path.resolve(process.cwd(), dirPath), // Process working directory
+    path.resolve('/', 'opt/render/project/repo', dirPath) // Render default structure
+  ];
+  
+  let basePath;
+  for (const testPath of possiblePaths) {
+    if (fs.existsSync(testPath)) {
+      basePath = testPath;
+      break;
+    }
+  }
+  
+  if (!basePath) {
+    throw new Error(`Directory not found: ${dirPath}`);
+  }
+  
+  console.log(`📂 Scanning local filesystem from: ${basePath}`);
+  scanDirectory(basePath, '');
+  
+  return allFiles;
+}
+
+// Helper function to recursively fetch all files from GitHub (fallback)
 async function fetchAllFilesRecursively(dirPath = 'src') {
   const allFiles = [];
   
@@ -194,82 +267,66 @@ async function fetchAllFilesRecursively(dirPath = 'src') {
 // List files in a directory with fallback strategy
 router.get('/list', authMiddleware, async (req, res) => {
   try {
-    const { path: dirPath = 'src' } = req.query;
+    const { path: dirPath = '.' } = req.query;
     
-    // Security: Only allow listing files from src directory
-    if (!dirPath.startsWith('src')) {
+    // Security: Block access to sensitive directories, but allow broader access than just src/
+    const blockedPaths = ['node_modules', '.git', 'coverage', 'tmp', 'temp'];
+    const isBlockedPath = blockedPaths.some(blocked => 
+      dirPath.includes(blocked) || dirPath.startsWith(blocked)
+    );
+    
+    if (isBlockedPath) {
       return res.status(403).json({
         success: false,
-        message: 'Access denied: Only src/ directory listing is allowed'
+        message: 'Access denied: Cannot access system or build directories'
       });
     }
 
-    // For listing, we'll use recursive GitHub API to get ALL files
+    // Strategy 1: Try local filesystem first (most current and complete)
     try {
-      console.log(`🔍 Fetching recursive file listing for ${dirPath}...`);
-      const files = await fetchAllFilesRecursively(dirPath);
-      console.log(`📁 GitHub API returned ${files.length} files for ${dirPath}`);
+      console.log(`🔍 Fetching recursive file listing for ${dirPath} from local filesystem...`);
+      const files = await fetchAllFilesLocallyRecursive(dirPath);
+      console.log(`📁 Local filesystem returned ${files.length} files for ${dirPath}`);
       
       // Log some sample files if we got results
       if (files.length > 0) {
         console.log(`📋 Sample files: ${files.slice(0, 3).map(f => f.path).join(', ')}`);
       } else {
-        console.log(`⚠️ No files returned from GitHub API for ${dirPath}`);
+        console.log(`⚠️ No files returned from local filesystem for ${dirPath}`);
       }
       
       res.json({
         success: true,
         files: files,
         path: dirPath,
-        source: 'github-api-recursive',
+        source: 'local-filesystem-recursive',
         totalFiles: files.length
       });
-    } catch (githubError) {
-      // Fallback to local filesystem for directory listing
+    } catch (localError) {
+      console.log(`Local filesystem failed: ${localError.message}`);
+      
+      // Strategy 2: Fallback to GitHub API for recursive listing
       try {
-        const possiblePaths = [
-          path.resolve(__dirname, '../../../', dirPath),
-          path.resolve(__dirname, '../../../../', dirPath),
-          path.resolve(process.cwd(), dirPath),
-          path.resolve('/', 'opt/render/project/repo', dirPath)
-        ];
-        
-        let fullPath;
-        for (const testPath of possiblePaths) {
-          if (fs.existsSync(testPath)) {
-            fullPath = testPath;
-            break;
-          }
-        }
-        
-        if (!fullPath) {
-          throw new Error('Directory not found in any local path');
-        }
-        
-        const items = fs.readdirSync(fullPath, { withFileTypes: true });
-        
-        const files = items.map(item => ({
-          name: item.name,
-          type: item.isDirectory() ? 'folder' : 'file',
-          path: path.join(dirPath, item.name).replace(/\\/g, '/'),
-          extension: item.isFile() ? path.extname(item.name) : null
-        }));
+        console.log(`🌐 Falling back to GitHub API for ${dirPath}...`);
+        const files = await fetchAllFilesRecursively(dirPath);
+        console.log(`📁 GitHub API returned ${files.length} files for ${dirPath}`);
         
         res.json({
           success: true,
           files: files,
           path: dirPath,
-          source: 'local'
+          source: 'github-api-recursive',
+          totalFiles: files.length
         });
-      } catch (localError) {
+      } catch (githubError) {
         return res.status(404).json({
           success: false,
           message: 'Directory not found',
           details: {
             dirPath,
-            githubError: githubError.message,
             localError: localError.message,
-            attempted: ['github-api', 'local']
+            githubError: githubError.message,
+            attempted: ['local-filesystem', 'github-api']
           }
         });
       }
