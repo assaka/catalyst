@@ -205,20 +205,51 @@ function fetchAllFilesLocallyRecursive(dirPath = '.') {
     console.log(`📍 Current process.cwd(): ${process.cwd()}`);
     
     const rootSrcPaths = [
-      path.resolve(__dirname, '../../../src'), // Local development - root level src
-      path.resolve(__dirname, '../../../../src'), // Render with backend subdirectory - root level src  
-      path.resolve(process.cwd(), 'src'), // Process working directory - root level src
-      path.resolve('/', 'opt/render/project/repo/src'), // Render default structure - root level src
-      path.resolve(__dirname, '../../../frontend/src'), // Alternative frontend structure
-      path.resolve(__dirname, '../../../../frontend/src'), // Alternative frontend structure with backend subdir
+      path.resolve(__dirname, '../../../src'), // Local development - root level src (PRIORITY: has main app)
+      path.resolve(__dirname, '../../../../src'), // Render with backend subdirectory - root level src (PRIORITY: has main app)  
+      path.resolve('/', 'opt/render/project/repo/src'), // Render default structure - root level src (PRIORITY: has main app)
+      path.resolve(__dirname, '../../../frontend/src'), // Alternative frontend structure (LOWER priority: subset only)
+      path.resolve(__dirname, '../../../../frontend/src'), // Alternative frontend structure with backend subdir (LOWER priority: subset only)
+      path.resolve(process.cwd(), 'src'), // Process working directory - MOVED TO END (could be backend/src)
     ];
     
     for (const testPath of rootSrcPaths) {
       console.log(`🔍 Testing root src path: ${testPath}`);
       if (fs.existsSync(testPath)) {
-        basePath = testPath;
-        console.log(`✅ Found root-level src directory: ${basePath}`);
-        break;
+        // Validate that this is actually frontend src, not backend src
+        try {
+          const items = fs.readdirSync(testPath, { withFileTypes: true });
+          const dirs = items.filter(item => item.isDirectory()).map(item => item.name);
+          const files = items.filter(item => item.isFile()).map(item => item.name);
+          
+          // Check if this looks like frontend src (prioritize paths with main app files)
+          const hasMainAppFiles = files.some(file => ['App.jsx', 'App.js', 'main.jsx', 'index.js'].includes(file));
+          const hasFrontendDirs = dirs.some(dir => ['components', 'pages', 'hooks', 'utils', 'contexts'].includes(dir));
+          const isFrontendSrc = hasMainAppFiles || hasFrontendDirs;
+          
+          // Check if this looks like backend src (has models, routes, etc) - but exclude if has main app files
+          const hasBackendDirs = dirs.some(dir => ['models', 'routes', 'controllers', 'middleware'].includes(dir));
+          const hasServicesDir = dirs.includes('services');
+          // If has main app files, it's frontend even with services directory (frontend services vs backend services)
+          const isBackendSrc = hasBackendDirs || (hasServicesDir && !hasMainAppFiles && !hasFrontendDirs);
+          
+          // Prefer paths with main app files (App.jsx, main.jsx) over just directories
+          const priority = hasMainAppFiles ? 1 : (hasFrontendDirs ? 2 : 3);
+          
+          if (isFrontendSrc && !isBackendSrc) {
+            basePath = testPath;
+            console.log(`✅ Found FRONTEND src directory: ${basePath}`);
+            console.log(`   📁 Directories: ${dirs.slice(0, 3).join(', ')} (${dirs.length} total)`);
+            console.log(`   📄 Files: ${files.slice(0, 3).join(', ')} (${files.length} total)`);
+            break;
+          } else if (isBackendSrc) {
+            console.log(`❌ Skipping backend src: ${testPath} (has ${dirs.filter(d => ['models', 'routes', 'controllers', 'middleware', 'services'].includes(d)).join(', ')})`);
+          } else {
+            console.log(`❌ Skipping unrecognized src: ${testPath} (dirs: ${dirs.slice(0, 3).join(', ')})`);
+          }
+        } catch (err) {
+          console.log(`❌ Error reading directory ${testPath}: ${err.message}`);
+        }
       } else {
         console.log(`❌ Path does not exist: ${testPath}`);
       }
@@ -252,11 +283,47 @@ function fetchAllFilesLocallyRecursive(dirPath = '.') {
     }
     
     for (const testPath of possiblePaths) {
-      console.log(`🔍 Testing path: ${testPath}`);
+      console.log(`🔍 Testing fallback path: ${testPath}`);
       if (fs.existsSync(testPath)) {
-        basePath = testPath;
-        console.log(`✅ Found directory at: ${basePath}`);
-        break;
+        if (dirPath === 'src') {
+          // For src directory, validate this is frontend src, not backend src
+          try {
+            const items = fs.readdirSync(testPath, { withFileTypes: true });
+            const dirs = items.filter(item => item.isDirectory()).map(item => item.name);
+            const files = items.filter(item => item.isFile()).map(item => item.name);
+            
+            // Check if this looks like frontend src
+            const hasMainAppFiles = files.some(file => ['App.jsx', 'App.js', 'main.jsx', 'index.js'].includes(file));
+            const hasFrontendDirs = dirs.some(dir => ['components', 'pages', 'hooks', 'utils', 'contexts'].includes(dir));
+            const isFrontendSrc = hasMainAppFiles || hasFrontendDirs;
+            
+            // Check if this looks like backend src - improved logic like above
+            const hasBackendDirs = dirs.some(dir => ['models', 'routes', 'controllers', 'middleware'].includes(dir));
+            const hasServicesDir = dirs.includes('services');
+            const isBackendSrc = hasBackendDirs || (hasServicesDir && !hasMainAppFiles && !hasFrontendDirs);
+            
+            if (isFrontendSrc && !isBackendSrc) {
+              basePath = testPath;
+              console.log(`✅ Found FRONTEND src directory: ${basePath}`);
+              break;
+            } else if (isBackendSrc) {
+              console.log(`❌ Skipping backend src in fallback: ${testPath}`);
+              // Continue to next path instead of using backend src
+              continue;
+            } else {
+              console.log(`❌ Skipping unrecognized src in fallback: ${testPath}`);
+              continue;
+            }
+          } catch (err) {
+            console.log(`❌ Error reading fallback directory ${testPath}: ${err.message}`);
+            continue;
+          }
+        } else {
+          // For non-src paths, use as-is
+          basePath = testPath;
+          console.log(`✅ Found directory at: ${basePath}`);
+          break;
+        }
       }
     }
   }
