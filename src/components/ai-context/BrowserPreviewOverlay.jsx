@@ -10,7 +10,7 @@ import {
   Layers, Save, RotateCcw, History, Upload, Download 
 } from 'lucide-react';
 import { DiffPreviewSystem } from './DiffPreviewSystem';
-import overlayPatchSystem from '../services/overlay-patch-system';
+import overlayPatchSystem from '../../services/overlay-patch-system';
 
 const BrowserPreviewOverlay = ({
   isVisible,
