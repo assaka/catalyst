@@ -662,13 +662,13 @@ export default ExampleComponent;`;
                             handlePreviewModeChange('code');
                           }}
                           className={cn(
-                            "flex px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                             previewMode === 'code' 
                               ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
                           )}
                         >
-                          <Code className="w-4 h-4" />
+                          <Code className="w-4 h-4 mr-2" />
                           Code
                         </button>
                         <button
@@ -677,13 +677,13 @@ export default ExampleComponent;`;
                             handlePreviewModeChange('patch');
                           }}
                           className={cn(
-                            "flex px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                             previewMode === 'patch' 
                               ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
                           )}
                         >
-                          <Diff className="w-4 h-4" />
+                          <Diff className="w-4 h-4 mr-2" />
                           Diff
                         </button>
                         <button
@@ -692,13 +692,13 @@ export default ExampleComponent;`;
                             handlePreviewModeChange('live');
                           }}
                           className={cn(
-                            "flex px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                             previewMode === 'live' 
                               ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
                           )}
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-4 h-4 mr-2" />
                           Preview
                         </button>
                       </div>

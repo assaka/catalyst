@@ -543,7 +543,7 @@ const DiffPreviewSystem = ({
                       />
                     </ScrollArea>
                   ) :
-                    'No modifications'
+                      <div className="flex-1">No modifications</div>
                   }
                 </div>
                 <div className="flex flex-col">
@@ -564,7 +564,7 @@ const DiffPreviewSystem = ({
                         />
                       </ScrollArea>
                    ) :
-                   'No modifications'
+                      <div className="flex-1">No modifications</div>
                   }
                 </div>
               </div>
