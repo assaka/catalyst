@@ -134,6 +134,12 @@ class VersionControlService {
    */
   async createSnapshot(customizationId, { change_summary, change_description, change_type, ast_diff, line_diff, unified_diff, diff_stats, createdBy }) {
     try {
+      // Get the customization overlay to retrieve file_path
+      const customization = await CustomizationOverlay.findByPk(customizationId);
+      if (!customization) {
+        throw new Error('Customization not found');
+      }
+
       // Get next version number
       const lastSnapshot = await CustomizationSnapshot.findOne({
         where: { customization_id: customizationId },
@@ -142,7 +148,7 @@ class VersionControlService {
 
       const nextVersion = lastSnapshot ? lastSnapshot.version_number + 1 : 1;
 
-      // Create snapshot
+      // Create snapshot with file_path
       const snapshot = await CustomizationSnapshot.create({
         customization_id: customizationId,
         version_number: nextVersion,
@@ -154,7 +160,8 @@ class VersionControlService {
         unified_diff,
         diff_stats: diff_stats || {},
         status: 'open',
-        created_by: createdBy
+        created_by: createdBy,
+        file_path: customization.file_path // Store file path for efficient retrieval
       });
 
       return snapshot;
