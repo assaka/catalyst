@@ -98,7 +98,7 @@ const AIContextWindowPage = () => {
   // Helper function to fetch baseline code from database
   const fetchBaselineCode = useCallback(async (filePath, fallbackContent) => {
     try {
-      const baselineData = await apiClient.get(`diff-patches/baseline/${encodeURIComponent(filePath)}`);
+      const baselineData = await apiClient.get(`hybrid-patches/baseline/${encodeURIComponent(filePath)}`);
       if (baselineData && baselineData.success && baselineData.data.hasBaseline) {
         console.log(`📋 Using database baseline for ${filePath} (${baselineData.data.baselineCode.length} chars)`);
         return baselineData.data.baselineCode;

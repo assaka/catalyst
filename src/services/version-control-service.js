@@ -3,6 +3,7 @@
  * Advanced versioning system for code changes with branching, merging, and patch application
  */
 
+import { useState, useEffect } from 'react';
 import DiffService from './diff-service.js';
 import { astParser, ASTDiffer } from '../utils/ast-utils.js';
 
