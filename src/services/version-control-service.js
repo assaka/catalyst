@@ -124,14 +124,14 @@ export class VersionControlService {
     // Services
     this.diffService = new DiffService();
     
+    // Event listeners
+    this.eventListeners = new Map();
+    
     // Initialize default branch
     this.createBranch(this.options.defaultBranch, null, {
       description: 'Main development branch',
       protected: true
     });
-
-    // Event listeners
-    this.eventListeners = new Map();
   }
 
   /**
