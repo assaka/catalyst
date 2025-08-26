@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,14 +20,23 @@ import {
   Zap,
   Settings,
   Eye,
-  EyeOff
+  EyeOff,
+  RotateCcw
 } from 'lucide-react';
 
 // Import diff service
 import DiffService from '../../services/diff-service';
 
 // SplitViewPane component for enhanced split view
-const SplitViewPane = ({ lines, diffLines, side, showLineNumbers, showWhitespace }) => {
+const SplitViewPane = ({ 
+  lines, 
+  diffLines, 
+  side, 
+  showLineNumbers, 
+  showWhitespace, 
+  onLineRevert, 
+  originalLines 
+}) => {
   // Create a mapping of line numbers to diff types for highlighting
   const getDiffTypeForLine = (lineIndex) => {
     const diffLine = diffLines.find(dl => {
@@ -73,19 +82,32 @@ const SplitViewPane = ({ lines, diffLines, side, showLineNumbers, showWhitespace
         return (
           <div
             key={index}
-            className={`flex items-center px-2 py-1 text-sm ${getLineStyle(index, diffType)}`}
+            className={`flex items-center px-2 py-1 text-sm ${getLineStyle(index, diffType)} group`}
           >
             {showLineNumbers && (
               <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
                 {index + 1}
               </div>
             )}
-            <div className="flex-1 pl-2">
+            <div className="flex-1 pl-2 flex items-center justify-between">
               <span className={`${diffType === 'addition' && side === 'modified' ? 'text-green-700' : 
                                 diffType === 'deletion' && side === 'original' ? 'text-red-700' : 
                                 'text-foreground'}`}>
                 {formatLine(line) || ' '}
               </span>
+              
+              {/* Show revert button for modified lines on the modified side */}
+              {side === 'modified' && diffType === 'addition' && onLineRevert && originalLines && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity ml-2 h-6 px-2"
+                  onClick={() => onLineRevert(index, originalLines[index] || '')}
+                  title="Revert to original line"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                </Button>
+              )}
             </div>
           </div>
         );
@@ -99,19 +121,52 @@ const DiffPreviewSystem = ({
   originalCode = '', 
   modifiedCode = '',
   fileName = 'file',
-  className = '' 
+  className = '',
+  onCodeChange
 }) => {
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
   const [contextLines, setContextLines] = useState(3);
   const [algorithm, setAlgorithm] = useState('myers');
   const [showWhitespace, setShowWhitespace] = useState(false);
+  const [currentModifiedCode, setCurrentModifiedCode] = useState(modifiedCode);
 
   const diffServiceRef = useRef(new DiffService());
+  const originalBaseCodeRef = useRef(originalCode); // Preserve original base code
+  
+  // Update current modified code when props change
+  useEffect(() => {
+    setCurrentModifiedCode(modifiedCode);
+  }, [modifiedCode]);
+  
+  // Preserve original base code reference
+  useEffect(() => {
+    originalBaseCodeRef.current = originalCode;
+  }, [originalCode]);
 
-  // Calculate diff using DiffService
+  // Handle line revert functionality
+  const handleLineRevert = useCallback((lineIndex, originalLine) => {
+    const currentLines = currentModifiedCode.split('\n');
+    const originalLines = originalBaseCodeRef.current.split('\n');
+    
+    // Revert the specific line to its original content
+    if (lineIndex < currentLines.length) {
+      currentLines[lineIndex] = originalLines[lineIndex] || '';
+      const newCode = currentLines.join('\n');
+      setCurrentModifiedCode(newCode);
+      
+      // Notify parent component of the change
+      if (onCodeChange) {
+        onCodeChange(newCode);
+      }
+    }
+  }, [currentModifiedCode, onCodeChange]);
+
+  // Calculate diff using DiffService (always compare against original base code)
   const diffResult = useMemo(() => {
-    if (!originalCode && !modifiedCode) {
+    const baseCode = originalBaseCodeRef.current;
+    
+    if (!baseCode && !currentModifiedCode) {
       return { 
         success: true,
         diff: [], 
@@ -121,21 +176,21 @@ const DiffPreviewSystem = ({
       };
     }
 
-    const result = diffServiceRef.current.createDiff(originalCode, modifiedCode, { algorithm });
+    const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode, { algorithm });
     const stats = diffServiceRef.current.getDiffStats(result.diff);
-    const unifiedDiff = diffServiceRef.current.createUnifiedDiff(originalCode, modifiedCode, fileName);
+    const unifiedDiff = diffServiceRef.current.createUnifiedDiff(baseCode, currentModifiedCode, fileName);
     
     return {
       ...result,
       stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
       unifiedDiff
     };
-  }, [originalCode, modifiedCode, algorithm, fileName]);
+  }, [currentModifiedCode, algorithm, fileName]);
 
   // Convert DiffService diff to displayable lines for UI
   const convertDiffToDisplayLines = (diff) => {
-    const originalLines = originalCode.split('\n');
-    const modifiedLines = modifiedCode.split('\n');
+    const originalLines = originalBaseCodeRef.current.split('\n');
+    const modifiedLines = currentModifiedCode.split('\n');
     const displayLines = [];
     
     let originalIndex = 0;
@@ -471,11 +526,11 @@ const DiffPreviewSystem = ({
               <div className="flex-1 grid grid-cols-2">
                 <div className="border-r flex flex-col">
                   <div className="border-b p-2 bg-red-50">
-                    <h4 className="font-medium text-red-900">Original ({originalCode.split('\n').length} lines)</h4>
+                    <h4 className="font-medium text-red-900">Original ({originalBaseCodeRef.current.split('\n').length} lines)</h4>
                   </div>
                   <ScrollArea className="flex-1">
                     <SplitViewPane 
-                      lines={originalCode.split('\n')} 
+                      lines={originalBaseCodeRef.current.split('\n')} 
                       diffLines={displayLines}
                       side="original" 
                       showLineNumbers={lineNumbers}
@@ -485,16 +540,21 @@ const DiffPreviewSystem = ({
                 </div>
                 
                 <div className="flex flex-col">
-                  <div className="border-b p-2 bg-green-50">
-                    <h4 className="font-medium text-green-900">Modified ({modifiedCode.split('\n').length} lines)</h4>
+                  <div className="border-b p-2 bg-green-50 flex justify-between items-center">
+                    <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
+                    <div className="text-xs text-green-700">
+                      Hover over changed lines to revert
+                    </div>
                   </div>
                   <ScrollArea className="flex-1">
                     <SplitViewPane 
-                      lines={modifiedCode.split('\n')} 
+                      lines={currentModifiedCode.split('\n')} 
                       diffLines={displayLines}
                       side="modified" 
                       showLineNumbers={lineNumbers}
                       showWhitespace={showWhitespace}
+                      onLineRevert={handleLineRevert}
+                      originalLines={originalBaseCodeRef.current.split('\n')}
                     />
                   </ScrollArea>
                 </div>

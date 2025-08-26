@@ -289,7 +289,17 @@ export default ExampleComponent;`;
         return prev;
       });
     }
-  }, [selectedFile, sourceCode]);
+    
+    // Update manual edit result when code changes (e.g., from line revert)
+    if (manualEditResult) {
+      const updatedManualEdit = {
+        ...manualEditResult,
+        newCode: newCode,
+        hasChanges: newCode !== (manualEditResult.originalCode || originalCode)
+      };
+      setManualEditResult(updatedManualEdit);
+    }
+  }, [selectedFile, sourceCode, manualEditResult, originalCode]);
 
   // Handle patch generation from AI Context Window
   const handlePatchGenerated = useCallback((patch) => {
@@ -739,6 +749,7 @@ export default ExampleComponent;`;
                         modifiedCode={manualEditResult?.newCode || sourceCode}
                         fileName={selectedFile?.path || ''}
                         className="h-full"
+                        onCodeChange={handleCodeChange}
                       />
                     ) : (
                       // Live Preview View - Browser-like rendering of actual routes

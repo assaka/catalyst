@@ -31,7 +31,7 @@ const CodeEditor = ({
   onManualEdit,
   originalCode = '',
   enableDiffDetection = false,
-  enableTabs = false,
+  enableTabs = true,
   initialContent = ''
 }) => {
   const [localCode, setLocalCode] = useState(value);
