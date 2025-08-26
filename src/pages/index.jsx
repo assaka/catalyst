@@ -124,6 +124,7 @@ import MonitoringDashboard from "./MonitoringDashboard";
 
 import ScheduledJobs from "./ScheduledJobs";
 
+import AIContextWindow from "../components/ai-context/AIContextWindow";
 
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
@@ -249,6 +250,8 @@ const PAGES = {
     MonitoringDashboard: MonitoringDashboard,
     
     ScheduledJobs: ScheduledJobs,
+    
+    AIContextWindow: AIContextWindow,
 }
 
 function _getCurrentPage(url) {
@@ -302,6 +305,7 @@ function _getCurrentPage(url) {
         'ab-testing': 'ABTesting',
         'monitoring-dashboard': 'MonitoringDashboard',
         'scheduled-jobs': 'ScheduledJobs',
+        'ai-context': 'AIContextWindow',
     };
 
     // First try direct mapping for admin URLs
@@ -776,6 +780,11 @@ function PagesContent() {
                 {/* EDITOR ROUTES */}
                 {/* =========================== */}
                 
+                <Route path="/editor/ai-context" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <AIContextWindow />
+                    </RoleProtectedRoute>
+                } />
                 
                 {/* =========================== */}
                 {/* PUBLIC CONTENT ROUTES */}
@@ -1161,6 +1170,11 @@ function PagesContent() {
                 {/* EDITOR ROUTES */}
                 {/* =========================== */}
                 
+                <Route path="/editor/ai-context" element={
+                    <RoleProtectedRoute allowedRoles={['store_owner', 'admin']}>
+                        <AIContextWindow />
+                    </RoleProtectedRoute>
+                } />
                 
                 {/* =========================== */}
                 {/* SPECIAL ROUTES */}
