@@ -6,10 +6,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { OverlayManager } from '../services/overlay-manager';
 import OverlayDatabaseBridge from '../services/overlay-database-bridge';
-import { useAuth } from '../contexts/AuthContext';
+import { getCurrentUser } from '../utils/auth';
 
 export function useAdvancedOverlayManager(options = {}) {
-  const { user } = useAuth();
+  const user = getCurrentUser();
   const {
     enableDatabaseSync = true,
     autoSave = true,

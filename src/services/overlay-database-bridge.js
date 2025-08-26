@@ -3,7 +3,7 @@
  * Bridges frontend OverlayManager with backend database persistence
  */
 
-import { apiClient } from '../lib/api-client';
+import apiClient from '../api/client';
 
 class OverlayDatabaseBridge {
   constructor(options = {}) {
