@@ -129,7 +129,8 @@ const DiffPreviewSystem = ({
   modifiedCode = '',
   fileName = 'file',
   className = '',
-  onCodeChange
+  onCodeChange,
+  onDiffStatsChange // New callback to notify parent about diff state changes
 }) => {
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
@@ -154,6 +155,13 @@ const DiffPreviewSystem = ({
   useEffect(() => {
     originalBaseCodeRef.current = originalCode;
   }, [originalCode]);
+
+  // Notify parent when diff stats change
+  useEffect(() => {
+    if (onDiffStatsChange) {
+      onDiffStatsChange(diffResult.stats);
+    }
+  }, [diffResult.stats, onDiffStatsChange]);
 
   // Handle synchronized scrolling between split view panes
   const handleSyncScroll = useCallback((source, scrollTop, scrollLeft) => {

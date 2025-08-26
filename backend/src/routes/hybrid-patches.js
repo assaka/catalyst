@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/auth');
 const VersionControlService = require('../services/version-control-service');
-const { HybridCustomization } = require('../models');
+const { CustomizationOverlay, CustomizationSnapshot } = require('../models');
 
 // Initialize version control service
 const versionControl = new VersionControlService();
@@ -37,12 +37,20 @@ router.post('/create', authMiddleware, async (req, res) => {
     }
 
     // Check if customization already exists for this file path
-    let customization = await HybridCustomization.findOne({
+    let customization = await CustomizationOverlay.findOne({
       where: {
         file_path: filePath,
         user_id: userId,
         status: 'active'
-      }
+      },
+      include: [{
+        model: CustomizationSnapshot,
+        as: 'snapshots',
+        where: { status: 'open' },
+        required: false,
+        order: [['created_at', 'DESC']],
+        limit: 1
+      }]
     });
 
     let result;
@@ -60,14 +68,48 @@ router.post('/create', authMiddleware, async (req, res) => {
         changeSummary
       });
     } else {
-      // Add changes to existing customization
-      result = await versionControl.applyChanges(customization.id, {
-        modifiedCode,
-        changeSummary,
-        changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
-        changeType,
-        createdBy: userId
-      });
+      // Check if there's an open snapshot to upsert
+      const openSnapshot = customization.snapshots && customization.snapshots.length > 0 
+        ? customization.snapshots[0] 
+        : null;
+
+      if (openSnapshot) {
+        // UPSERT: Update the existing open snapshot
+        const diffResult = await versionControl.createCodeDiff(customization.current_code, modifiedCode);
+        
+        await openSnapshot.update({
+          change_summary: changeSummary,
+          change_description: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
+          ast_diff: diffResult.ast_diff,
+          line_diff: diffResult.line_diff,
+          unified_diff: diffResult.unified_diff,
+          diff_stats: diffResult.stats,
+          updated_at: new Date()
+        });
+
+        // Update customization current code
+        await customization.update({
+          current_code: modifiedCode,
+          updated_at: new Date()
+        });
+
+        result = {
+          success: true,
+          customization,
+          snapshot: openSnapshot,
+          upserted: true,
+          message: 'Open patch updated via upsert'
+        };
+      } else {
+        // Create new snapshot since no open one exists
+        result = await versionControl.applyChanges(customization.id, {
+          modifiedCode,
+          changeSummary,
+          changeDescription: `Auto-saved changes at ${new Date().toLocaleTimeString()}`,
+          changeType,
+          createdBy: userId
+        });
+      }
     }
 
     if (result.success) {
@@ -104,7 +146,7 @@ router.get('/:filePath', authMiddleware, async (req, res) => {
     console.log(`🔍 Fetching patches for ${filePath} (user: ${userId})`);
 
     // Find active customization for this file path and user
-    const customization = await HybridCustomization.findOne({
+    const customization = await CustomizationOverlay.findOne({
       where: {
         file_path: filePath,
         user_id: userId,
@@ -112,7 +154,8 @@ router.get('/:filePath', authMiddleware, async (req, res) => {
       },
       include: [
         {
-          association: 'snapshots',
+          model: CustomizationSnapshot,
+          as: 'snapshots',
           where: { status: 'open' },
           required: false,
           order: [['created_at', 'DESC']]
@@ -169,7 +212,7 @@ router.get('/baseline/:filePath', authMiddleware, async (req, res) => {
     console.log(`🔍 Fetching baseline for ${filePath} (user: ${userId})`);
 
     // Find active customization for this file path and user
-    const customization = await HybridCustomization.findOne({
+    const customization = await CustomizationOverlay.findOne({
       where: {
         file_path: filePath,
         user_id: userId,
@@ -217,7 +260,7 @@ router.post('/finalize/:filePath', authMiddleware, async (req, res) => {
     console.log(`🔒 Finalizing patches for ${filePath} (user: ${userId})`);
 
     // Find active customization for this file path and user
-    const customization = await HybridCustomization.findOne({
+    const customization = await CustomizationOverlay.findOne({
       where: {
         file_path: filePath,
         user_id: userId,
@@ -225,7 +268,8 @@ router.post('/finalize/:filePath', authMiddleware, async (req, res) => {
       },
       include: [
         {
-          association: 'snapshots',
+          model: CustomizationSnapshot,
+          as: 'snapshots',
           where: { status: 'open' },
           required: false
         }
@@ -250,11 +294,23 @@ router.post('/finalize/:filePath', authMiddleware, async (req, res) => {
       }
     }
 
+    // Create overlay by marking the customization as published
+    await customization.update({
+      status: 'published',
+      published_at: new Date(),
+      metadata: {
+        ...customization.metadata,
+        published_via: 'hybrid_patches_api',
+        finalized_snapshots: finalizedSnapshots
+      }
+    });
+
     res.json({
       success: true,
       customizationId: customization.id,
       finalizedSnapshots,
-      message: `Finalized ${finalizedSnapshots.length} snapshots for ${filePath}`
+      overlayCreated: true,
+      message: `Finalized ${finalizedSnapshots.length} snapshots and created overlay for ${filePath}`
     });
   } catch (error) {
     console.error('Error finalizing patches:', error);
@@ -274,7 +330,7 @@ router.get('/files/recent', authMiddleware, async (req, res) => {
     const userId = req.user.id;
     const limit = parseInt(req.query.limit) || 10;
 
-    const recentCustomizations = await HybridCustomization.findAll({
+    const recentCustomizations = await CustomizationOverlay.findAll({
       where: {
         user_id: userId,
         status: 'active'
@@ -283,7 +339,8 @@ router.get('/files/recent', authMiddleware, async (req, res) => {
       limit,
       include: [
         {
-          association: 'snapshots',
+          model: CustomizationSnapshot,
+          as: 'snapshots',
           where: { status: 'open' },
           required: false,
           attributes: ['id', 'change_summary', 'created_at'],
@@ -323,7 +380,7 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
     const filePath = decodeURIComponent(req.params.filePath);
     const userId = req.user.id;
 
-    const customization = await HybridCustomization.findOne({
+    const customization = await CustomizationOverlay.findOne({
       where: {
         file_path: filePath,
         user_id: userId,
@@ -351,6 +408,140 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message || 'Failed to fetch modified code'
+    });
+  }
+});
+
+/**
+ * Create overlay from published patches
+ * POST /api/hybrid-patches/create-overlay/:filePath
+ */
+router.post('/create-overlay/:filePath', authMiddleware, async (req, res) => {
+  try {
+    const filePath = decodeURIComponent(req.params.filePath);
+    const userId = req.user.id;
+    const { overlayName, description } = req.body;
+
+    console.log(`🔨 Creating overlay for ${filePath} (user: ${userId})`);
+
+    // Find the active customization that should become an overlay
+    const customization = await CustomizationOverlay.findOne({
+      where: {
+        file_path: filePath,
+        user_id: userId,
+        status: 'active'
+      },
+      include: [
+        {
+          model: CustomizationSnapshot,
+          as: 'snapshots',
+          where: { status: 'finalized' },
+          required: false
+        }
+      ]
+    });
+
+    if (!customization) {
+      return res.status(404).json({
+        success: false,
+        error: 'No active customization found for this file'
+      });
+    }
+
+    // Check if there are finalized snapshots
+    const finalizedSnapshots = customization.snapshots || [];
+    if (finalizedSnapshots.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'No finalized patches found. Please finalize patches before creating overlay.'
+      });
+    }
+
+    // Create overlay by updating the customization
+    await customization.update({
+      name: overlayName || customization.name + ' (Overlay)',
+      description: description || 'Overlay created from published patches',
+      status: 'published',
+      published_at: new Date(),
+      metadata: {
+        ...customization.metadata,
+        overlay_created_at: new Date().toISOString(),
+        finalized_snapshots_count: finalizedSnapshots.length,
+        created_via: 'create_overlay_api'
+      }
+    });
+
+    res.json({
+      success: true,
+      overlay: {
+        id: customization.id,
+        name: customization.name,
+        filePath: customization.file_path,
+        status: customization.status,
+        publishedAt: customization.published_at,
+        finalizedSnapshotsCount: finalizedSnapshots.length
+      },
+      message: `Overlay created successfully for ${filePath}`
+    });
+  } catch (error) {
+    console.error('Error creating overlay:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create overlay'
+    });
+  }
+});
+
+/**
+ * Get all overlays for a user
+ * GET /api/hybrid-patches/overlays
+ */
+router.get('/overlays', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const limit = parseInt(req.query.limit) || 20;
+
+    const overlays = await CustomizationOverlay.findAll({
+      where: {
+        user_id: userId,
+        status: 'published'
+      },
+      order: [['published_at', 'DESC']],
+      limit,
+      include: [
+        {
+          model: CustomizationSnapshot,
+          as: 'snapshots',
+          where: { status: 'finalized' },
+          required: false,
+          attributes: ['id', 'change_summary', 'version_number', 'finalized_at']
+        }
+      ]
+    });
+
+    const formattedOverlays = overlays.map(overlay => ({
+      id: overlay.id,
+      name: overlay.name,
+      description: overlay.description,
+      filePath: overlay.file_path,
+      componentType: overlay.component_type,
+      publishedAt: overlay.published_at,
+      finalizedSnapshots: overlay.snapshots ? overlay.snapshots.length : 0,
+      lastSnapshot: overlay.snapshots && overlay.snapshots.length > 0 
+        ? overlay.snapshots[overlay.snapshots.length - 1] 
+        : null
+    }));
+
+    res.json({
+      success: true,
+      overlays: formattedOverlays,
+      total: overlays.length
+    });
+  } catch (error) {
+    console.error('Error fetching overlays:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to fetch overlays'
     });
   }
 });

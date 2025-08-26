@@ -280,17 +280,17 @@ export default ExampleComponent;`;
   const handleCodeChange = useCallback((newCode) => {
     setSourceCode(newCode);
     
-    // Track modified files - add when different, remove when same
+    // Track modified files - compare against original baseline, not just previous sourceCode
     if (selectedFile) {
       setModifiedFiles(prev => {
-        const hasChanges = newCode !== sourceCode;
+        const hasChanges = newCode !== originalCode;
         const isCurrentlyModified = prev.includes(selectedFile.path);
         
         if (hasChanges && !isCurrentlyModified) {
-          // File has changes and is not yet in the modified list - add it
+          // File has changes from original and is not yet in the modified list - add it
           return [...prev, selectedFile.path];
         } else if (!hasChanges && isCurrentlyModified) {
-          // File has no changes but is in the modified list - remove it
+          // File has no changes from original but is in the modified list - remove it
           return prev.filter(path => path !== selectedFile.path);
         }
         
@@ -381,6 +381,34 @@ export default ExampleComponent;`;
       console.log('✅ Changes undone - code returned to original state');
     }
   }, [selectedFile?.name]);
+
+  // Handle diff stats changes from DiffPreviewSystem
+  const handleDiffStatsChange = useCallback((diffStats) => {
+    if (!selectedFile) return;
+    
+    // Check if there are any actual changes in the diff stats
+    const hasChanges = diffStats && (
+      diffStats.addedLines > 0 ||
+      diffStats.removedLines > 0 ||
+      diffStats.modifiedLines > 0
+    );
+    
+    setModifiedFiles(prev => {
+      const isCurrentlyModified = prev.includes(selectedFile.path);
+      
+      if (hasChanges && !isCurrentlyModified) {
+        // File has changes and is not yet in the modified list - add it
+        return [...prev, selectedFile.path];
+      } else if (!hasChanges && isCurrentlyModified) {
+        // File has no changes but is in the modified list - remove it
+        console.log(`✅ Removing ${selectedFile.name} from modified files - all changes reverted`);
+        return prev.filter(path => path !== selectedFile.path);
+      }
+      
+      // No change needed
+      return prev;
+    });
+  }, [selectedFile]);
 
   // Handle download in Preview mode
   const handleDownload = useCallback(() => {
@@ -759,6 +787,7 @@ export default ExampleComponent;`;
                         fileName={selectedFile?.path || ''}
                         className="h-full"
                         onCodeChange={handleCodeChange}
+                        onDiffStatsChange={handleDiffStatsChange}
                       />
                     ) : (
                       // Live Preview View - Browser-like rendering of actual routes
