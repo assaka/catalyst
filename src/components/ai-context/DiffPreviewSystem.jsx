@@ -524,8 +524,8 @@ const DiffPreviewSystem = ({
                 </div>
               </div>
               
-              <div className="flex-1 grid grid-cols-2">
-                <div className="border-r flex flex-col">
+              <div className={`flex-1 grid ${(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                <div className={`${(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) ? 'border-r' : ''} flex flex-col`}>
                   <div className="border-b p-2 bg-red-50">
                     <h4 className="font-medium text-red-900">Original ({originalBaseCodeRef.current.split('\n').length} lines)</h4>
                   </div>
@@ -543,23 +543,26 @@ const DiffPreviewSystem = ({
                   </ScrollArea>
                 </div>
                 
-               <div className="flex flex-col">
-                  <div className="border-b p-2 bg-green-50 flex justify-between items-center">
-                    <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
+               {/* Only show Modified pane when there are actual differences */}
+               {(diffResult.stats.additions > 0 || diffResult.stats.deletions > 0) && (
+                 <div className="flex flex-col">
+                    <div className="border-b p-2 bg-green-50 flex justify-between items-center">
+                      <h4 className="font-medium text-green-900">Modified ({currentModifiedCode.split('\n').length} lines)</h4>
+                    </div>
+                    <ScrollArea className="flex-1">
+                      <SplitViewPane
+                        lines={currentModifiedCode.split('\n')}
+                        diffLines={displayLines}
+                        side="modified"
+                        showLineNumbers={lineNumbers}
+                        showWhitespace={showWhitespace}
+                        onLineRevert={handleLineRevert}
+                        originalLines={originalBaseCodeRef.current.split('\n')}
+                        modifiedLines={currentModifiedCode.split('\n')}
+                      />
+                    </ScrollArea>
                   </div>
-                  <ScrollArea className="flex-1">
-                    <SplitViewPane
-                      lines={currentModifiedCode.split('\n')}
-                      diffLines={displayLines}
-                      side="modified"
-                      showLineNumbers={lineNumbers}
-                      showWhitespace={showWhitespace}
-                      onLineRevert={handleLineRevert}
-                      originalLines={originalBaseCodeRef.current.split('\n')}
-                      modifiedLines={currentModifiedCode.split('\n')}
-                    />
-                  </ScrollArea>
-                </div>
+                )}
               </div>
             </div>
           </TabsContent>

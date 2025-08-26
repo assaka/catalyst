@@ -280,12 +280,21 @@ export default ExampleComponent;`;
   const handleCodeChange = useCallback((newCode) => {
     setSourceCode(newCode);
     
-    // Track modified files
-    if (selectedFile && newCode !== sourceCode) {
+    // Track modified files - add when different, remove when same
+    if (selectedFile) {
       setModifiedFiles(prev => {
-        if (!prev.includes(selectedFile.path)) {
+        const hasChanges = newCode !== sourceCode;
+        const isCurrentlyModified = prev.includes(selectedFile.path);
+        
+        if (hasChanges && !isCurrentlyModified) {
+          // File has changes and is not yet in the modified list - add it
           return [...prev, selectedFile.path];
+        } else if (!hasChanges && isCurrentlyModified) {
+          // File has no changes but is in the modified list - remove it
+          return prev.filter(path => path !== selectedFile.path);
         }
+        
+        // No change needed
         return prev;
       });
     }
@@ -653,7 +662,7 @@ export default ExampleComponent;`;
                             handlePreviewModeChange('code');
                           }}
                           className={cn(
-                            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            "flex px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                             previewMode === 'code' 
                               ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
@@ -668,7 +677,7 @@ export default ExampleComponent;`;
                             handlePreviewModeChange('patch');
                           }}
                           className={cn(
-                            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            "flex px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                             previewMode === 'patch' 
                               ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
@@ -683,7 +692,7 @@ export default ExampleComponent;`;
                             handlePreviewModeChange('live');
                           }}
                           className={cn(
-                            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            "flex px-4 py-2 text-sm font-medium border-b-2 transition-colors",
                             previewMode === 'live' 
                               ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
