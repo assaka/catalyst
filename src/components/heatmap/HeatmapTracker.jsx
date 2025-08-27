@@ -50,8 +50,6 @@ class HeatmapTracker {
     this.updateViewport();
     this.setupEventListeners();
     this.isTracking = true;
-
-    console.log('🔥 Heatmap tracking initialized for store:', this.config.storeId);
   }
 
   // Stop tracking and flush remaining data
@@ -61,8 +59,6 @@ class HeatmapTracker {
     this.removeEventListeners();
     this.flushBatch();
     this.isTracking = false;
-
-    console.log('🔥 Heatmap tracking destroyed');
   }
 
   // Generate a unique session ID

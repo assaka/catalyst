@@ -83,12 +83,6 @@ export const trackActivity = async (activityType, data = {}) => {
         // Use direct fetch instead of CustomerActivity.create to avoid auth issues
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
         const apiUrl = `${apiBaseUrl}/api/customer-activity`;
-        
-        console.log('🌐 Environment variables check:', {
-          VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
-          apiBaseUrl: apiBaseUrl,
-          finalApiUrl: apiUrl
-        });
 
         const response = await fetch(apiUrl, {
           method: 'POST',
