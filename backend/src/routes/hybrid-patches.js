@@ -450,10 +450,12 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
 
     if (overlay && overlay.current_code) {
       console.log(`✅ Found simple overlay for: ${filePath}`);
+      console.log(`📋 DEBUG: Overlay data - baseline_code: ${overlay.baseline_code ? overlay.baseline_code.length + ' chars' : 'null'}, current_code: ${overlay.current_code.length} chars`);
       res.json({
         success: true,
         data: {
           modifiedCode: overlay.current_code,
+          baselineCode: overlay.baseline_code,
           customizationId: overlay.id,
           lastModified: overlay.updated_at,
           matchedPath: filePath,

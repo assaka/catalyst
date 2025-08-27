@@ -28,7 +28,9 @@ const BrowserPreview = ({
   
   // Overlay state management using existing overlay manager
   const [showOverlay, setShowOverlay] = useState(false);
+  const [overlayMode, setOverlayMode] = useState('current'); // 'baseline', 'current', 'editor'
   const [coreCode, setCoreCode] = useState(''); // Immutable base code
+  const [overlayData, setOverlayData] = useState({ baseline: null, current: null, hasOverlay: false });
   const { manager: overlayManager, stats: overlayStats, getMergedContent, setOriginalCode, createOverlay, clearFileOverlays } = useOverlayManager();
   
   // Use ref to break circular dependencies
@@ -445,7 +447,7 @@ const BrowserPreview = ({
     }
   }, [fileName]);
 
-  // Direct overlay lookup function - matches filename to customization_overlays table
+  // Enhanced overlay lookup function - fetches both baseline and current data for dynamic toggling
   const fetchOverlayForFile = useCallback(async (fileName) => {
     try {
       console.log(`🔍 BrowserPreview: Looking for overlay for file: ${fileName}`);
@@ -456,13 +458,25 @@ const BrowserPreview = ({
         customHeaders['x-store-id'] = storeId;
       }
       
+      // Fetch both current overlay data and baseline data
       const data = await apiClient.get(`hybrid-patches/modified-code/${encodeURIComponent(fileName)}`, customHeaders);
       
       if (data && data.success && data.data && data.data.modifiedCode) {
         console.log(`✅ BrowserPreview: Found overlay for ${fileName} using path: ${data.data.matchedPath}`);
+        
+        // Update overlay data state with both baseline and current content
+        const overlayResult = {
+          baseline: data.data.baselineCode || null,
+          current: data.data.modifiedCode,
+          hasOverlay: true
+        };
+        
+        setOverlayData(overlayResult);
+        
         return {
           hasOverlay: true,
           modifiedCode: data.data.modifiedCode,
+          baselineCode: data.data.baselineCode,
           customizationId: data.data.customizationId,
           lastModified: data.data.lastModified,
           matchedPath: data.data.matchedPath,
@@ -472,6 +486,8 @@ const BrowserPreview = ({
       
       // Handle case where no overlay found
       console.log(`❌ BrowserPreview: No overlay found for ${fileName}. Tried paths: ${data?.triedPaths?.join(', ') || 'unknown'}`);
+      
+      setOverlayData({ baseline: null, current: null, hasOverlay: false });
       
       return {
         hasOverlay: false,
@@ -483,6 +499,7 @@ const BrowserPreview = ({
       // Handle 404 and other errors
       if (error.status === 404) {
         console.log(`❌ BrowserPreview: No overlay found for ${fileName}. Tried paths: ${error.data?.triedPaths?.join(', ') || 'unknown'}`);
+        setOverlayData({ baseline: null, current: null, hasOverlay: false });
         return {
           hasOverlay: false,
           message: error.data?.error || `No overlay found for: ${fileName}`,
@@ -491,6 +508,7 @@ const BrowserPreview = ({
       }
       
       console.warn(`⚠️ BrowserPreview: Error fetching overlay for ${fileName}:`, error.message);
+      setOverlayData({ baseline: null, current: null, hasOverlay: false });
       return {
         hasOverlay: false,
         error: error.message
@@ -498,17 +516,17 @@ const BrowserPreview = ({
     }
   }, [storeId]);
 
-  // Apply overlay by directly matching filename to database overlay - no content checking loop
+  // Apply overlay with dynamic mode switching - supports baseline, current, and editor content
   const applyCodePatches = useCallback(async (iframe) => {
     if (!fileName) return;
     
     try {
-      console.log(`🔄 BrowserPreview: Direct overlay lookup for: ${fileName}`);
+      console.log(`🔄 BrowserPreview: Direct overlay lookup for: ${fileName} (mode: ${overlayMode})`);
       
       // Get baseline code (original file content)
-      const baselineCode = getMergedContent(fileName) || currentCode;
-      if (!baselineCode) {
-        console.warn('⚠️ BrowserPreview: No baseline code available');
+      const editorBaselineCode = getMergedContent(fileName) || currentCode;
+      if (!editorBaselineCode) {
+        console.warn('⚠️ BrowserPreview: No editor baseline code available');
         return;
       }
       
@@ -516,20 +534,43 @@ const BrowserPreview = ({
       const overlayResult = await fetchOverlayForFile(fileName);
       
       if (overlayResult.hasOverlay) {
-        console.log(`✅ BrowserPreview: Found overlay for ${fileName} (${overlayResult.modifiedCode.length} chars)`);
+        console.log(`✅ BrowserPreview: Found overlay for ${fileName}. Available modes: baseline, current, editor`);
         
-        // Apply overlay directly to iframe - no merging service needed for single overlay
-        const success = await applyMergedCodeToIframe(iframe, overlayResult.modifiedCode);
+        // Determine which content to use based on overlay mode
+        let contentToApply;
+        let modeDescription;
+        
+        switch (overlayMode) {
+          case 'baseline':
+            contentToApply = overlayResult.baselineCode || editorBaselineCode;
+            modeDescription = 'database baseline';
+            console.log(`🔧 BrowserPreview: Using ${modeDescription} content (${contentToApply.length} chars)`);
+            break;
+          case 'current':
+            contentToApply = overlayResult.modifiedCode;
+            modeDescription = 'database current/overlay';
+            console.log(`🔧 BrowserPreview: Using ${modeDescription} content (${contentToApply.length} chars)`);
+            break;
+          case 'editor':
+          default:
+            contentToApply = editorBaselineCode;
+            modeDescription = 'editor';
+            console.log(`🔧 BrowserPreview: Using ${modeDescription} content (${contentToApply.length} chars)`);
+            break;
+        }
+        
+        // Apply selected content to iframe
+        const success = await applyMergedCodeToIframe(iframe, contentToApply);
         
         if (success) {
-          console.log('✅ BrowserPreview: Overlay applied successfully');
+          console.log(`✅ BrowserPreview: ${modeDescription} content applied successfully`);
         } else {
-          console.warn('⚠️ BrowserPreview: Failed to apply overlay, using baseline');
-          await applyMergedCodeToIframe(iframe, baselineCode);
+          console.warn(`⚠️ BrowserPreview: Failed to apply ${modeDescription} content, falling back to editor`);
+          await applyMergedCodeToIframe(iframe, editorBaselineCode);
         }
       } else {
-        console.log(`📄 BrowserPreview: No overlay found for ${fileName}, using baseline code`);
-        await applyMergedCodeToIframe(iframe, baselineCode);
+        console.log(`📄 BrowserPreview: No overlay found for ${fileName}, using editor baseline code`);
+        await applyMergedCodeToIframe(iframe, editorBaselineCode);
       }
       
     } catch (error) {
@@ -545,12 +586,27 @@ const BrowserPreview = ({
         console.error('❌ BrowserPreview: Fallback also failed:', fallbackError);
       }
     }
-  }, [fileName, currentCode, getMergedContent, applyMergedCodeToIframe]);
+  }, [fileName, currentCode, getMergedContent, applyMergedCodeToIframe, overlayMode, fetchOverlayForFile]);
 
   // Assign function to ref to break circular dependencies
   useEffect(() => {
     applyCodePatchesRef.current = applyCodePatches;
   }, [applyCodePatches]);
+
+  // Trigger overlay reapplication when overlay mode changes
+  useEffect(() => {
+    if (overlayData.hasOverlay && enablePatches) {
+      const iframe = document.getElementById('browser-preview-iframe');
+      if (iframe && applyCodePatchesRef.current) {
+        console.log(`🔄 BrowserPreview: Overlay mode changed to ${overlayMode}, reapplying...`);
+        setTimeout(() => {
+          if (applyCodePatchesRef.current) {
+            applyCodePatchesRef.current(iframe);
+          }
+        }, 100);
+      }
+    }
+  }, [overlayMode, overlayData.hasOverlay, enablePatches]);
 
   // Parse code changes from the current file content
 
@@ -684,23 +740,39 @@ const BrowserPreview = ({
 
             {/* Browser Actions */}
             <div className="flex items-center space-x-2">
-              {/* Overlay Toggle */}
-              <button
-                onClick={() => setShowOverlay(!showOverlay)}
-                className={cn(
-                  "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
-                  showOverlay || (overlayStats?.activeOverlays > 0)
-                    ? "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/50 dark:border-purple-700 dark:text-purple-300" 
-                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+              {/* Overlay Toggle with Mode Selector */}
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={() => setShowOverlay(!showOverlay)}
+                  className={cn(
+                    "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
+                    showOverlay || (overlayData.hasOverlay && overlayStats?.activeOverlays > 0)
+                      ? "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/50 dark:border-purple-700 dark:text-purple-300" 
+                      : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                  )}
+                  title={overlayData.hasOverlay
+                    ? `Show overlay system (database overlay available)`
+                    : "Show overlay system (non-destructive code patches)"
+                  }
+                >
+                  <Layers className="w-3 h-3 mr-1 inline" />
+                  {overlayData.hasOverlay ? "Overlay" : "Overlay"}
+                </button>
+                
+                {/* Overlay Mode Selector - only show when overlay data is available */}
+                {overlayData.hasOverlay && (
+                  <select
+                    value={overlayMode}
+                    onChange={(e) => setOverlayMode(e.target.value)}
+                    className="px-2 py-1 text-xs rounded-md border bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 focus:border-purple-300 dark:focus:border-purple-600 focus:ring-1 focus:ring-purple-200 dark:focus:ring-purple-800"
+                    title="Switch between different content versions"
+                  >
+                    <option value="editor">Editor</option>
+                    <option value="baseline">DB Baseline</option>
+                    <option value="current">DB Current</option>
+                  </select>
                 )}
-                title={overlayStats?.activeOverlays > 0
-                  ? `Show overlay system (${overlayStats.activeOverlays} active, ${overlayStats.totalSize} chars)`
-                  : "Show overlay system (non-destructive code patches)"
-                }
-              >
-                <Layers className="w-3 h-3 mr-1 inline" />
-                {overlayStats?.activeOverlays > 0 ? `Overlay (${overlayStats.activeOverlays})` : "Overlay"}
-              </button>
+              </div>
 
               <button
                 onClick={() => setEnablePatches(!enablePatches)}
