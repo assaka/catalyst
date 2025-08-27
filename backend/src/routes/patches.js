@@ -29,6 +29,13 @@ router.get('/apply/:filePath(*)', async (req, res) => {
 
     const result = await patchService.applyPatches(filePath, options);
 
+    // Set cache control headers to prevent unwanted caching for patch applications
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+
     if (result.success) {
       res.json({
         success: true,
@@ -56,6 +63,14 @@ router.get('/apply/:filePath(*)', async (req, res) => {
 
   } catch (error) {
     console.error('❌ Patches API: Error applying patches:', error);
+    
+    // Set cache control headers for error responses too
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     res.status(500).json({
       success: false,
       error: error.message,
@@ -499,6 +514,13 @@ router.get('/baseline/:filePath(*)', async (req, res) => {
     
     const result = await patchService.getBaseline(filePath, storeId);
     
+    // Set cache control headers to prevent unwanted caching
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
     if (result.success) {
       res.json({
         success: true,
@@ -536,6 +558,13 @@ router.get('/modified-code/:filePath(*)', async (req, res) => {
     const result = await patchService.applyPatches(filePath, {
       storeId,
       previewMode: true
+    });
+    
+    // Set cache control headers to prevent unwanted caching
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     });
     
     if (result.success) {
