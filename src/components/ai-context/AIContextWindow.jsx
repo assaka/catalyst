@@ -179,11 +179,14 @@ const AIContextWindow = ({
     <div className={cn(
       "flex flex-col bg-white dark:bg-gray-900 border-l transition-all duration-300",
       isMaximized && "fixed inset-0 z-50",
-      isFolded ? "w-12" : "w-auto",
+      isFolded ? "w-12 min-w-12 max-w-12" : "w-80 min-w-80",
       className
     )}>
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b bg-gray-50 dark:bg-gray-800">
+      <div className={cn(
+        "flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800",
+        isFolded ? "p-2" : "p-3"
+      )}>
         <div className="flex items-center gap-2 min-w-0 flex-1">
           {!isFolded && (
             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
