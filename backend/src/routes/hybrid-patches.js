@@ -13,6 +13,24 @@ const { CustomizationOverlay, CustomizationSnapshot } = require('../models');
 const versionControl = new VersionControlService();
 
 /**
+ * Test endpoint to verify routing works without auth
+ * GET /api/hybrid-patches/test
+ */
+router.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Hybrid patches route is accessible without authentication',
+    timestamp: new Date().toISOString(),
+    requestInfo: {
+      method: req.method,
+      url: req.url,
+      path: req.path,
+      hasAuth: !!req.headers.authorization
+    }
+  });
+});
+
+/**
  * Create/Update patch (auto-save endpoint)
  * POST /api/hybrid-patches/create
  */
