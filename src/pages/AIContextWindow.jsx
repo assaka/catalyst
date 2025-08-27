@@ -630,7 +630,7 @@ export default ExampleComponent;`;
   }, []);
 
   return (
-    <div className="min-h-[calc(100vh-100px)] flex flex-col bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-[calc(100vh-100px)] hidden flex-col bg-gray-50 dark:bg-gray-900">
       
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-white dark:bg-gray-800">
@@ -714,9 +714,9 @@ export default ExampleComponent;`;
 
       {/* Main Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="hidden h-[calc(100vh-200px)] ">
+        <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
           {/* AI Context Window - First Column */}
-          <ResizablePanel 
+          <ResizablePanel
             size={25}
             minSize={15}
             maxSize={30}
