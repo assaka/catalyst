@@ -148,7 +148,7 @@ const AIContextWindowPage = () => {
       } else if (data && data.success && !data.data.hasBaseline) {
         // No baseline found, try the apply patches endpoint to get the current version
         try {
-          const patchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}`);
+          const patchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}?preview=true`);
           if (patchedData && patchedData.success) {
             setSourceCode(patchedData.data.patchedCode);
             setOriginalCode(patchedData.data.baselineCode || patchedData.data.patchedCode);
