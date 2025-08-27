@@ -15,6 +15,7 @@ class PatchService {
   constructor() {
     this.dmp = new diff_match_patch();
     this.cache = new Map();
+    this.sequelize = sequelize; // Expose sequelize instance for routes
     
     // Configure diff-match-patch for better performance
     this.dmp.Diff_Timeout = 1.0;

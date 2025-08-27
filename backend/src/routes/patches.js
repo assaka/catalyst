@@ -577,9 +577,7 @@ router.get('/baselines', async (req, res) => {
         version,
         file_type,
         file_size,
-        last_modified,
-        created_at,
-        updated_at
+        last_modified
       FROM file_baselines 
       WHERE store_id = :storeId
       ORDER BY file_path ASC
