@@ -820,9 +820,6 @@ export default ExampleComponent;`;
                       {modifiedFiles.includes(selectedFile.path) && (
                         <span className="w-2 h-2 bg-yellow-500 rounded-full" title="Modified" />
                       )}
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded dark:bg-blue-900 dark:text-blue-300">
-                        Preview Ready
-                      </span>
                       {/* Download Button - Only show in Preview mode */}
                       {previewMode === 'live' && (
                         <button

@@ -164,18 +164,6 @@ const AIContextWindow = ({
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
             AI Context Window
           </h3>
-          <div className={cn(
-            "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs",
-            isAuthenticated 
-              ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-          )}>
-            <div className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              isAuthenticated ? "bg-green-500" : "bg-red-500"
-            )} />
-            {isAuthenticated ? "Auth OK" : "Auth Required"}
-          </div>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <button
