@@ -562,4 +562,107 @@ router.get('/modified-code/:filePath(*)', async (req, res) => {
   }
 });
 
+// Get file baselines for tree navigation
+router.get('/baselines', async (req, res) => {
+  try {
+    const storeId = req.query.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    
+    console.log(`📋 Getting file baselines for store: ${storeId}`);
+    
+    const [files] = await patchService.sequelize.query(`
+      SELECT 
+        file_path,
+        baseline_code,
+        code_hash,
+        version,
+        file_type,
+        file_size,
+        last_modified,
+        created_at,
+        updated_at
+      FROM file_baselines 
+      WHERE store_id = :storeId
+      ORDER BY file_path ASC
+    `, {
+      replacements: { storeId },
+      type: patchService.sequelize.QueryTypes.SELECT
+    });
+    
+    res.json({
+      success: true,
+      data: {
+        files: files || [],
+        totalFiles: (files || []).length
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getting file baselines:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get patches for a specific file (catch-all route for frontend compatibility)
+// This route must be at the end to avoid conflicts with other routes
+router.get('/:filePath(*)', async (req, res) => {
+  try {
+    const filePath = req.params.filePath;
+    const storeId = req.query.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    const status = req.query.status || 'all';
+    const releaseVersion = req.query.version || null;
+
+    console.log(`🔍 Getting patches for file: ${filePath}`);
+
+    let query = `
+      SELECT 
+        cp.*,
+        pr.version_name,
+        pr.status as release_status,
+        u.email as created_by_email
+      FROM patch_diffs cp
+      LEFT JOIN patch_releases pr ON cp.release_id = pr.id
+      LEFT JOIN users u ON cp.created_by = u.id
+      WHERE cp.store_id = :storeId AND cp.file_path = :filePath
+    `;
+
+    const replacements = { storeId, filePath };
+
+    if (status !== 'all') {
+      query += ` AND cp.status = :status`;
+      replacements.status = status;
+    }
+
+    if (releaseVersion) {
+      query += ` AND pr.version_name = :releaseVersion`;
+      replacements.releaseVersion = releaseVersion;
+    }
+
+    query += ` ORDER BY cp.priority ASC, cp.created_at DESC`;
+
+    const [patches] = await patchService.sequelize.query(query, {
+      replacements,
+      type: patchService.sequelize.QueryTypes.SELECT
+    });
+
+    res.json({
+      success: true,
+      data: {
+        patches: patches || [],
+        filePath,
+        totalPatches: (patches || []).length
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error getting patches for file:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;
