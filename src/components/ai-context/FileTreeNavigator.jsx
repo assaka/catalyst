@@ -19,11 +19,7 @@ import {
   Settings,
   Database,
   Globe,
-  RefreshCw,
-  Minimize2,
-  Maximize2,
-  Square,
-  ChevronLeft
+  RefreshCw
 } from 'lucide-react';
 
 const FileTreeNavigator = ({ 
@@ -31,16 +27,11 @@ const FileTreeNavigator = ({
   selectedFile = null, 
   showDetails = false,
   onRefresh,
-  onFoldChange, // Callback when fold state changes
-  onMaximizeChange, // Callback when maximize state changes
   className = '' 
 }) => {
   const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'src/components', 'src/pages']));
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTree, setFileTree] = useState(null);
-  const [isFolded, setIsFolded] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [isMaximized, setIsMaximized] = useState(false);
 
   // Load real file tree data from API
   useEffect(() => {
@@ -145,29 +136,6 @@ const FileTreeNavigator = ({
 
   const refreshFileTree = () => {
     loadFileTree();
-  };
-
-  const toggleFold = () => {
-    setIsFolded(prev => {
-      const newFolded = !prev;
-      onFoldChange?.(newFolded);
-      return newFolded;
-    });
-  };
-
-  const toggleMinimize = () => {
-    setIsMinimized(prev => !prev);
-  };
-
-  const toggleMaximize = () => {
-    setIsMaximized(prev => {
-      const newMaximized = !prev;
-      onMaximizeChange?.(newMaximized);
-      return newMaximized;
-    });
-    if (isMinimized) {
-      setIsMinimized(false);
-    }
   };
 
   const toggleFolder = (path) => {
@@ -310,85 +278,49 @@ const FileTreeNavigator = ({
   const filteredTree = fileTree ? filterFiles(fileTree, searchTerm) : null;
 
   return (
-    <Card className={`h-full flex flex-col transition-all duration-300 ${isFolded ? 'w-12 min-w-12 max-w-12' : 'w-80 min-w-80'} ${className}`}>
+    <Card className={`h-full flex flex-col w-80 min-w-80 ${className}`}>
       {/* Header */}
-      <div className={`border-b ${isFolded ? 'p-2' : 'p-3'}`}>
-        <div className={`flex items-center ${isFolded ? 'justify-center' : 'justify-between'} mb-3`}>
-          {!isFolded && <h3 className="font-semibold">Files</h3>}
+      <div className="border-b p-3">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">Files</h3>
           <div className="flex items-center space-x-1 flex-shrink-0">
-            {/* Fold Button - Always visible */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleFold}
-              title={isFolded ? "Unfold" : "Fold"}
-            >
-              {isFolded ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            <Button variant="ghost" size="sm">
+              <Plus className="w-4 h-4" />
             </Button>
-            {/* Window controls - Only show when not folded */}
-            {!isFolded && (
-              <>
-                {isMaximized && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleMinimize}
-                    title="Minimize"
-                  >
-                    <Minimize2 className="w-4 h-4" />
-                  </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleMaximize}
-                  title={isMaximized ? "Restore" : "Maximize"}
-                >
-                  {isMaximized ? <Square className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <Plus className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </>
-            )}
+            <Button variant="ghost" size="sm">
+              <MoreHorizontal className="w-4 h-4" />
+            </Button>
           </div>
         </div>
         
         {/* Search */}
-        {!isFolded && (
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search files..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-        )}
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search files..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8"
+          />
+        </div>
       </div>
 
       {/* File Tree */}
-      {!isFolded && (
-        <ScrollArea className="flex-1">
-          <div className="p-1">
-            {filteredTree ? (
-              renderFileTreeNode(filteredTree)
-            ) : (
-              <div className="text-center text-muted-foreground py-8">
-                <FileText className="w-8 h-8 mx-auto mb-2" />
-                <p>Loading files...</p>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-      )}
+      <ScrollArea className="flex-1">
+        <div className="p-1">
+          {filteredTree ? (
+            renderFileTreeNode(filteredTree)
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              <FileText className="w-8 h-8 mx-auto mb-2" />
+              <p>Loading files...</p>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
 
       {/* Footer */}
-      {showDetails && !isFolded && (
+      {showDetails && (
         <div className="border-t p-3 text-xs text-muted-foreground">
           <div className="flex items-center justify-between">
             <span>

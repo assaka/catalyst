@@ -398,10 +398,10 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
     console.log(`🔍 Simple overlay lookup for: ${filePath} (user: ${userId})`);
 
     // Simple approach: Just get the latest current_code for this file_path
+    // Note: Removed user_id filter for preview functionality - overlays should be visible to all users
     const overlay = await CustomizationOverlay.findOne({
       where: {
         file_path: filePath,
-        user_id: userId,
         status: 'active',
         current_code: {
           [require('sequelize').Op.ne]: null // current_code is not null

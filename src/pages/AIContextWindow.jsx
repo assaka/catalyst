@@ -86,10 +86,6 @@ const AIContextWindowPage = () => {
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
   const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
-  const [aiContextFolded, setAiContextFolded] = useState(false); // Track AI Context fold state
-  const [fileTreeFolded, setFileTreeFolded] = useState(false); // Track FileTree fold state
-  const [aiContextMaximized, setAiContextMaximized] = useState(false); // Track AI Context maximize state
-  const [fileTreeMaximized, setFileTreeMaximized] = useState(false); // Track FileTree maximize state
   
   // Auto-save debounce timer
   const autoSaveTimeoutRef = useRef(null);
@@ -292,31 +288,6 @@ export default ExampleComponent;`;
     }
   }, [selectedFile, loadFileContent]);
 
-  // Handle fold state changes for dynamic panel sizing
-  const handleAiContextFoldChange = useCallback((folded) => {
-    setAiContextFolded(folded);
-  }, []);
-
-  const handleFileTreeFoldChange = useCallback((folded) => {
-    setFileTreeFolded(folded);
-  }, []);
-
-  // Handle maximize state changes for dynamic panel sizing
-  const handleAiContextMaximizeChange = useCallback((maximized) => {
-    setAiContextMaximized(maximized);
-    // When one component maximizes, ensure the other doesn't interfere
-    if (maximized) {
-      setFileTreeMaximized(false);
-    }
-  }, []);
-
-  const handleFileTreeMaximizeChange = useCallback((maximized) => {
-    setFileTreeMaximized(maximized);
-    // When one component maximizes, ensure the other doesn't interfere  
-    if (maximized) {
-      setAiContextMaximized(false);
-    }
-  }, []);
 
   // Handle code changes in editor
   const handleCodeChange = useCallback((newCode) => {
@@ -746,23 +717,15 @@ export default ExampleComponent;`;
         <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
           {/* AI Context Window - First Column */}
           <ResizablePanel 
-            size={(() => {
-              if (aiContextMaximized) return 85;
-              if (fileTreeMaximized) return 8;
-              if (aiContextFolded) return 8;
-              return 25;
-            })()} 
-            minSize={aiContextMaximized ? 80 : (aiContextFolded ? 6 : 15)} 
-            maxSize={aiContextMaximized ? 90 : (aiContextFolded ? 12 : 50)} 
-            data-panel-size={aiContextMaximized ? "ai-context-maximized" : (aiContextFolded ? "ai-context-folded" : "ai-context")}
+            size={25}
+            minSize={15}
+            maxSize={50}
           >
             <AIContextWindow
               sourceCode={sourceCode}
               filePath={selectedFile?.path || ''}
               onPatchGenerated={handlePatchGenerated}
               onPreviewGenerated={handlePreviewGenerated}
-              onFoldChange={handleAiContextFoldChange}
-              onMaximizeChange={handleAiContextMaximizeChange}
               className="h-full"
             />
           </ResizablePanel>
@@ -771,23 +734,15 @@ export default ExampleComponent;`;
 
           {/* File Tree Navigator */}
           <ResizablePanel 
-            size={(() => {
-              if (fileTreeMaximized) return 85;
-              if (aiContextMaximized) return 8;
-              if (fileTreeFolded) return 8;
-              return 15;
-            })()} 
-            minSize={fileTreeMaximized ? 80 : (fileTreeFolded ? 6 : 10)} 
-            maxSize={fileTreeMaximized ? 90 : (fileTreeFolded ? 12 : 30)} 
-            data-panel-size={fileTreeMaximized ? "file-tree-maximized" : (fileTreeFolded ? "file-tree-folded" : "file-tree")}
+            size={15}
+            minSize={10}
+            maxSize={30}
           >
             <FileTreeNavigator
               onFileSelect={handleFileSelect}
               selectedFile={selectedFile}
               modifiedFiles={modifiedFiles}
               onRefresh={handleFileTreeRefresh}
-              onFoldChange={handleFileTreeFoldChange}
-              onMaximizeChange={handleFileTreeMaximizeChange}
               className="h-[calc(100vh-200px)]"
             />
           </ResizablePanel>
@@ -796,15 +751,9 @@ export default ExampleComponent;`;
 
           {/* Code Editor and Preview Panel */}
           <ResizablePanel 
-            size={(() => {
-              if (aiContextMaximized) return 7; // 85 + 8 + 7 = 100
-              if (fileTreeMaximized) return 7; // 8 + 85 + 7 = 100
-              if (aiContextFolded && fileTreeFolded) return 84; // 8 + 8 + 84 = 100
-              if (aiContextFolded) return 77; // 8 + 15 + 77 = 100
-              if (fileTreeFolded) return 67; // 25 + 8 + 67 = 100
-              return 60; // 25 + 15 + 60 = 100
-            })()}
-            minSize={aiContextMaximized || fileTreeMaximized ? 5 : 40}
+            size={60}
+            minSize={40}
+            maxSize={85}
           >
             <div className="h-[calc(100vh-200px)] flex flex-col">
               {selectedFile ? (
