@@ -396,7 +396,7 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
     const userId = req.user.id;
 
     console.log(`🔍 Simple overlay lookup for: ${filePath} (user: ${userId})`);
-    console.log(`🧪 DEBUG: Testing overlay query execution...`);
+    console.log(`🧪 DEBUG: Testing overlay query execution for ${filePath}...`);
 
     // Simple approach: Just get the latest current_code for this file_path
     // Note: Removed user_id filter for preview functionality - overlays should be visible to all users
