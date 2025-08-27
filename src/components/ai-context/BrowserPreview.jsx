@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code, Layers } from 'lucide-react';
-import BrowserPreviewOverlay from './BrowserPreviewOverlay';
 import { useOverlayManager } from '../../services/overlay-manager';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
@@ -59,41 +58,6 @@ const BrowserPreview = ({
       }
     }
   }, [currentCode, coreCode, fileName, createOverlay]);
-
-  const handleOverlayCodeChange = useCallback((newCode) => {
-    // This callback is called when overlay code changes
-    console.log('🔄 Overlay code changed, updating preview');
-    
-    // Force iframe refresh to apply new code
-    const iframe = document.getElementById('browser-preview-iframe');
-    if (iframe && newCode && enablePatches && applyCodePatchesRef.current) {
-      // Apply the new code to the preview
-      setTimeout(() => {
-        applyCodePatchesRef.current(iframe);
-      }, 100);
-    }
-  }, [enablePatches]);
-
-  const handleOverlayPublish = useCallback((publishedData) => {
-    console.log('🚀 Overlay published');
-    // For the overlay manager, we don't need to track published state
-    // The overlay system handles merging automatically
-  }, []);
-
-  const handleOverlayRollback = useCallback(() => {
-    console.log('↩️ Overlay rolled back to core code');
-    // Clear all overlays for this file
-    if (fileName) {
-      clearFileOverlays(fileName);
-    }
-    // Force preview refresh to show rolled back state
-    const iframe = document.getElementById('browser-preview-iframe');
-    if (iframe && applyCodePatchesRef.current) {
-      setTimeout(() => {
-        applyCodePatchesRef.current(iframe);
-      }, 100);
-    }
-  }, [fileName, clearFileOverlays]);
 
   // Get store context for API calls
   const { selectedStore } = useStoreSelection();
@@ -829,17 +793,6 @@ const BrowserPreview = ({
         </div>
       </div>
 
-      {/* Overlay System */}
-      <BrowserPreviewOverlay
-        isVisible={showOverlay}
-        onClose={() => setShowOverlay(false)}
-        filePath={fileName}
-        coreCode={coreCode}
-        currentEditedCode={currentCode}
-        onCodeChange={handleOverlayCodeChange}
-        onPublish={handleOverlayPublish}
-        onRollback={handleOverlayRollback}
-      />
     </div>
   );
 };
