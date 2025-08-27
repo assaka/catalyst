@@ -400,7 +400,15 @@ router.get('/modified-code/:filePath', async (req, res) => {
     const userId = req.headers.authorization ? 
       (req.user ? req.user.id : null) : null;
 
-    console.log(`🔄 Enhanced overlay lookup for: ${filePath} (mode: ${mode}, user: ${userId || 'public'})`);
+    console.log(`🔄 Enhanced overlay lookup for: ${filePath}`);
+    console.log(`🔍 Request parameters:`, { 
+      mode, 
+      includePending, 
+      processed, 
+      userId: userId || 'public',
+      hasAuth: !!req.headers.authorization,
+      userObj: req.user ? { id: req.user.id, role: req.user.role } : null
+    });
 
     const enhancedOverlayService = require('../services/enhanced-overlay-service');
 
@@ -408,6 +416,13 @@ router.get('/modified-code/:filePath', async (req, res) => {
     const result = await enhancedOverlayService.getMergedCode(filePath, userId, {
       includePending: includePending === 'true',
       maxSnapshots: 20
+    });
+
+    console.log(`🔄 Enhanced overlay service result:`, {
+      success: result.success,
+      hasOverlay: result.hasOverlay,
+      appliedSnapshots: result.appliedSnapshots,
+      error: result.error
     });
 
     if (!result.success) {

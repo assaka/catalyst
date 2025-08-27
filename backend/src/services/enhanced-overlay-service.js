@@ -45,10 +45,14 @@ class EnhancedOverlayService {
       }
 
       // Find the baseline customization
+      // For public access (userId = null), find any active overlay for this file
+      // For authenticated users, filter by user ID
       const whereCondition = { file_path: filePath, status: 'active' };
       if (userId) {
         whereCondition.user_id = userId;
       }
+
+      console.log(`🔍 Enhanced Overlay: Looking for overlay with conditions:`, whereCondition);
 
       const customization = await CustomizationOverlay.findOne({
         where: whereCondition,
@@ -65,6 +69,7 @@ class EnhancedOverlayService {
       });
 
       if (!customization) {
+        console.log(`❌ Enhanced Overlay: No customization found for ${filePath} with conditions:`, whereCondition);
         return {
           success: false,
           error: 'No customization found for file',
@@ -73,6 +78,14 @@ class EnhancedOverlayService {
           mergedCode: null
         };
       }
+
+      console.log(`✅ Enhanced Overlay: Found customization for ${filePath}:`, {
+        id: customization.id,
+        userId: customization.user_id,
+        storeId: customization.store_id,
+        status: customization.status,
+        snapshotCount: customization.snapshots?.length || 0
+      });
 
       const baselineCode = customization.baseline_code;
       if (!baselineCode) {
