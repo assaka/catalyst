@@ -569,7 +569,7 @@ router.get('/baselines', async (req, res) => {
     
     console.log(`📋 Getting file baselines for store: ${storeId}`);
     
-    const [files] = await patchService.sequelize.query(`
+    const files = await patchService.sequelize.query(`
       SELECT 
         file_path,
         baseline_code,
