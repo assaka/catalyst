@@ -719,7 +719,7 @@ export default ExampleComponent;`;
           <ResizablePanel 
             size={25}
             minSize={15}
-            maxSize={50}
+            maxSize={30}
           >
             <AIContextWindow
               sourceCode={sourceCode}
