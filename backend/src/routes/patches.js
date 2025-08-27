@@ -67,7 +67,7 @@ router.get('/apply/:filePath(*)', async (req, res) => {
   }
 });
 
-// Create a new patch (requires authentication)
+// Create a new patch or update existing one in edit session (requires authentication)
 router.post('/create', authMiddleware, async (req, res) => {
   try {
     const {
@@ -78,12 +78,14 @@ router.post('/create', authMiddleware, async (req, res) => {
       changeSummary,
       changeDescription = '',
       priority = 0,
-      releaseId = null
+      releaseId = null,
+      sessionId = null,     // NEW: session ID for edit session tracking
+      useUpsert = true      // NEW: enable upsert strategy by default
     } = req.body;
 
     const storeId = req.headers['x-store-id'] || '157d4590-49bf-4b0b-bd77-abe131909528';
 
-    console.log(`📝 Creating new patch: ${patchName} for ${filePath}`);
+    console.log(`📝 Creating/updating patch for ${filePath} (session: ${sessionId || 'none'})`);
 
     const result = await patchService.createPatch(filePath, modifiedCode, {
       storeId,
@@ -93,17 +95,22 @@ router.post('/create', authMiddleware, async (req, res) => {
       changeSummary,
       changeDescription,
       createdBy: req.user.id,
-      priority
+      priority,
+      sessionId,
+      useUpsert
     });
 
     if (result.success) {
       res.json({
         success: true,
-        message: 'Patch created successfully',
+        message: result.action === 'updated' ? 'Patch updated successfully' : 'Patch created successfully',
         data: {
           patchId: result.patchId,
           diff: result.diff,
-          createdAt: result.createdAt
+          createdAt: result.createdAt,
+          action: result.action,
+          sessionId: result.sessionId,
+          accumulatedChanges: result.accumulatedChanges
         }
       });
     } else {
@@ -136,7 +143,7 @@ router.get('/file/:filePath(*)', async (req, res) => {
         pr.version_name,
         pr.status as release_status,
         u.email as created_by_email
-      FROM code_patches cp
+      FROM patch_diffs cp
       LEFT JOIN patch_releases pr ON cp.release_id = pr.id
       LEFT JOIN users u ON cp.created_by = u.id
       WHERE cp.store_id = :storeId AND cp.file_path = :filePath
@@ -263,7 +270,7 @@ router.get('/releases', async (req, res) => {
         COUNT(cp.id) as patch_count
       FROM patch_releases pr
       LEFT JOIN users u ON pr.created_by = u.id
-      LEFT JOIN code_patches cp ON pr.id = cp.release_id
+      LEFT JOIN patch_diffs cp ON pr.id = cp.release_id
       WHERE pr.store_id = :storeId
     `;
 
@@ -380,7 +387,7 @@ router.get('/stats', async (req, res) => {
         COUNT(CASE WHEN cp.status = 'published' THEN 1 END) as published_patches,
         COUNT(CASE WHEN cp.status = 'open' THEN 1 END) as open_patches,
         COUNT(CASE WHEN pr.status = 'published' THEN 1 END) as published_releases
-      FROM code_patches cp
+      FROM patch_diffs cp
       LEFT JOIN patch_releases pr ON cp.release_id = pr.id
       WHERE cp.store_id = :storeId
     `, {
@@ -414,6 +421,55 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// Finalize edit session - move patches from 'open' to 'ready_for_review' status
+router.post('/finalize-session', authMiddleware, async (req, res) => {
+  try {
+    const { sessionId, releaseId = null, changeSummary = '' } = req.body;
+    const storeId = req.headers['x-store-id'] || '157d4590-49bf-4b0b-bd77-abe131909528';
+
+    if (!sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Session ID is required'
+      });
+    }
+
+    console.log(`🏁 Finalizing edit session: ${sessionId}`);
+
+    const result = await patchService.finalizeEditSession(sessionId, {
+      storeId,
+      releaseId,
+      changeSummary,
+      createdBy: req.user.id
+    });
+
+    if (result.success) {
+      res.json({
+        success: true,
+        message: 'Edit session finalized successfully',
+        data: {
+          sessionId,
+          finalizedPatches: result.finalizedPatches,
+          totalPatches: result.totalPatches,
+          finalizedAt: new Date().toISOString()
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error finalizing edit session:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Clear cache endpoint - for debugging
 router.post('/cache/clear', async (req, res) => {
   try {
@@ -425,6 +481,79 @@ router.post('/cache/clear', async (req, res) => {
       success: true,
       message: filePath ? `Cache cleared for ${filePath}` : 'All cache cleared'
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get baseline code for a file (for AI chat integration)
+router.get('/baseline/:filePath(*)', async (req, res) => {
+  try {
+    const filePath = req.params.filePath;
+    const storeId = req.query.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    
+    console.log(`📋 Getting baseline code for ${filePath}`);
+    
+    const result = await patchService.getBaseline(filePath, storeId);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: {
+          hasBaseline: true,
+          baselineCode: result.code,
+          filePath: filePath
+        }
+      });
+    } else {
+      res.json({
+        success: true,
+        data: {
+          hasBaseline: false,
+          message: result.error
+        }
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get modified code for a file (applies all patches to get final result)
+router.get('/modified-code/:filePath(*)', async (req, res) => {
+  try {
+    const filePath = req.params.filePath;
+    const storeId = req.query.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    
+    console.log(`🔧 Getting modified code for ${filePath}`);
+    
+    const result = await patchService.applyPatches(filePath, {
+      storeId,
+      previewMode: true
+    });
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: {
+          modifiedCode: result.finalCode || result.patchedCode,
+          hasPatches: result.hasPatches,
+          appliedPatches: result.appliedPatches?.length || 0,
+          filePath: filePath
+        }
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: result.error
+      });
+    }
   } catch (error) {
     res.status(500).json({
       success: false,

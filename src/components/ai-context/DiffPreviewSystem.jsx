@@ -119,7 +119,7 @@ const resolvePageURL = async (pageName, storeId) => {
   }
 };
 
-// Function to fetch AST diff data from hybrid patches API
+// Function to fetch AST diff data from patches API
 const fetchAstDiffData = async (filePath) => {
   try {
     // Get the auth token using the same logic as FileTreeNavigator fix
@@ -160,7 +160,7 @@ const fetchAstDiffData = async (filePath) => {
     }
     
     // Fetch patches for the file
-    const patchResponse = await fetch(`/api/hybrid-patches/${encodeURIComponent(filePath)}`, {
+    const patchResponse = await fetch(`/api/patches/${encodeURIComponent(filePath)}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -178,7 +178,7 @@ const fetchAstDiffData = async (filePath) => {
       const latestPatch = patchData.patches[0];
       
       // Also get the baseline code
-      const baselineResponse = await fetch(`/api/hybrid-patches/baseline/${encodeURIComponent(filePath)}`, {
+      const baselineResponse = await fetch(`/api/patches/baseline/${encodeURIComponent(filePath)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -193,8 +193,8 @@ const fetchAstDiffData = async (filePath) => {
         }
       }
       
-      // Get the modified code
-      const modifiedResponse = await fetch(`/api/hybrid-patches/modified-code/${encodeURIComponent(filePath)}`, {
+      // Get the modified code  
+      const modifiedResponse = await fetch(`/api/patches/modified-code/${encodeURIComponent(filePath)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

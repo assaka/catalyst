@@ -110,7 +110,7 @@ const AIContextWindowPage = () => {
   // Helper function to fetch baseline code from database
   const fetchBaselineCode = useCallback(async (filePath, fallbackContent) => {
     try {
-      const baselineData = await apiClient.get(`hybrid-patches/baseline/${encodeURIComponent(filePath)}`);
+      const baselineData = await apiClient.get(`patches/baseline/${encodeURIComponent(filePath)}`);
       if (baselineData && baselineData.success && baselineData.data.hasBaseline) {
         console.log(`📋 Using database baseline for ${filePath} (${baselineData.data.baselineCode.length} chars)`);
         return baselineData.data.baselineCode;
@@ -341,36 +341,35 @@ export default ExampleComponent;`;
         // Calculate the modified code by applying the current patch
         const modifiedCode = applyPatchToCode(sourceCode, currentPatch);
         
-        // Create hybrid customization patch in database
-        const response = await apiClient.post('hybrid-patches/create', {
+        // Create patch in database
+        const response = await apiClient.post('patches/create', {
           filePath: selectedFile.path,
-          originalCode: sourceCode,
           modifiedCode: modifiedCode,
           changeSummary: `AI-generated changes for: ${selectedFile.path}`,
           changeType: 'ai_modification'
         });
         
         if (response.success) {
-          console.log('Hybrid customization patch created:', response.data);
+          console.log('Patch created:', response.data);
           setAstDiffStatus({ 
             status: 'success', 
-            message: 'Hybrid customization patch saved successfully',
+            message: 'Patch saved successfully',
             data: response.data 
           });
           // Clear status after 3 seconds
           setTimeout(() => setAstDiffStatus(null), 3000);
         } else {
-          console.error('Failed to create AST diff overlay:', response.message);
+          console.error('Failed to create patch:', response.message);
           setAstDiffStatus({ 
             status: 'error', 
-            message: `Failed to save overlay: ${response.message}` 
+            message: `Failed to save patch: ${response.message}` 
           });
         }
       } catch (error) {
-        console.error('Error creating AST diff overlay:', error);
+        console.error('Error creating patch:', error);
         setAstDiffStatus({ 
           status: 'error', 
-          message: `Error saving overlay: ${error.message}` 
+          message: `Error saving patch: ${error.message}` 
         });
       }
     }
@@ -412,7 +411,7 @@ export default ExampleComponent;`;
 
           console.log('💾 Auto-saving patch to database...');
           
-          const response = await fetch('/api/hybrid-patches/create', {
+          const response = await fetch('/api/patches/create', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -420,15 +419,11 @@ export default ExampleComponent;`;
             },
             body: JSON.stringify({
               filePath: filePath,
-              originalCode: originalCode,
               modifiedCode: newCode,
               changeSummary: 'Auto-saved changes',
               changeType: 'manual_edit',
-              metadata: {
-                source: 'ai_context_window',
-                fileName: selectedFile?.name,
-                timestamp: new Date().toISOString()
-              }
+              sessionId: `ai_context_${Date.now()}`,
+              useUpsert: true
             })
           });
 
@@ -512,13 +507,13 @@ export default ExampleComponent;`;
     // If switching to patch mode and we have a selected file, ensure hybrid patches are loaded
     if (mode === 'patch' && selectedFile?.path) {
       try {
-        console.log(`🔍 Loading hybrid customization patches for Diff tab: ${selectedFile.path}`);
+        console.log(`🔍 Loading patches for Diff tab: ${selectedFile.path}`);
         
-        const hybridPatchData = await apiClient.get(`hybrid-patches/${encodeURIComponent(selectedFile.path)}`);
+        const patchData = await apiClient.get(`patches/${encodeURIComponent(selectedFile.path)}`);
         
-        if (hybridPatchData && hybridPatchData.success && hybridPatchData.data) {
-          const patches = hybridPatchData.data.patches || [];
-          console.log(`📋 Found ${patches.length} hybrid customization patches for ${selectedFile.path}:`, patches);
+        if (patchData && patchData.success && patchData.data) {
+          const patches = patchData.data.patches || [];
+          console.log(`📋 Found ${patches.length} patches for ${selectedFile.path}:`, patches);
           
           if (patches.length > 0) {
             const fileWithPatches = {
@@ -526,8 +521,8 @@ export default ExampleComponent;`;
               hybridPatches: patches
             };
             
-            // Dispatch the hybridPatchesLoaded event to update DiffPreviewSystem
-            window.dispatchEvent(new CustomEvent('hybridPatchesLoaded', {
+            // Dispatch the patchesLoaded event to update DiffPreviewSystem
+            window.dispatchEvent(new CustomEvent('patchesLoaded', {
               detail: {
                 file: fileWithPatches,
                 patches: patches
@@ -538,7 +533,7 @@ export default ExampleComponent;`;
           }
         }
       } catch (error) {
-        console.warn(`⚠️ Failed to reload hybrid customization patches for ${selectedFile.path}:`, error.message);
+        console.warn(`⚠️ Failed to reload patches for ${selectedFile.path}:`, error.message);
       }
     }
   }, [selectedFile]);

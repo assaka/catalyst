@@ -159,7 +159,7 @@ class PatchService {
           pr.version_name,
           pr.status as release_status,
           pr.ab_test_config
-        FROM code_patches cp
+        FROM patch_diffs cp
         LEFT JOIN patch_releases pr ON cp.release_id = pr.id
         WHERE cp.store_id = :storeId 
           AND cp.file_path = :filePath
@@ -357,7 +357,8 @@ class PatchService {
   }
 
   /**
-   * Create a new patch from baseline to modified code
+   * Create or update a patch using upsert strategy for edit sessions
+   * This accumulates changes during an edit session rather than creating multiple patches
    */
   async createPatch(filePath, modifiedCode, options = {}) {
     try {
@@ -369,7 +370,9 @@ class PatchService {
         changeSummary,
         changeDescription = '',
         createdBy,
-        priority = 0
+        priority = 0,
+        sessionId = null,  // NEW: session ID for edit session grouping
+        useUpsert = true   // NEW: flag to enable/disable upsert behavior
       } = options;
 
       // Get baseline code
@@ -384,9 +387,71 @@ class PatchService {
         return { success: false, error: 'Could not create diff - no changes detected' };
       }
 
-      // Insert patch into database
-      const [result] = await sequelize.query(`
-        INSERT INTO code_patches (
+      let result;
+
+      if (useUpsert && sessionId && changeType === 'manual_edit') {
+        // UPSERT STRATEGY: Look for existing open patch in this edit session
+        console.log(`🔄 Using upsert strategy for session ${sessionId} on ${filePath}`);
+        
+        const existingPatch = await sequelize.query(`
+          SELECT id, change_description, updated_at 
+          FROM patch_diffs 
+          WHERE store_id = :storeId 
+            AND file_path = :filePath 
+            AND status = 'open'
+            AND change_type = 'manual_edit'
+            AND created_by = :createdBy
+          ORDER BY updated_at DESC 
+          LIMIT 1
+        `, {
+          replacements: { storeId, filePath, createdBy },
+          type: sequelize.QueryTypes.SELECT
+        });
+
+        if (existingPatch.length > 0) {
+          // UPDATE existing patch - accumulate changes
+          const patchId = existingPatch[0].id;
+          const existingDescription = existingPatch[0].change_description || '';
+          const accumulatedDescription = existingDescription 
+            ? `${existingDescription}\\n\\n[${new Date().toLocaleTimeString()}] ${changeDescription || 'Auto-save'}` 
+            : changeDescription || 'Auto-save';
+
+          await sequelize.query(`
+            UPDATE patch_diffs 
+            SET 
+              unified_diff = :unifiedDiff,
+              ast_diff = :astDiff,
+              change_summary = :changeSummary,
+              change_description = :changeDescription,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE id = :patchId
+          `, {
+            replacements: {
+              patchId,
+              unifiedDiff: diff.unifiedDiff,
+              astDiff: diff.astDiff ? JSON.stringify(diff.astDiff) : null,
+              changeSummary,
+              changeDescription: accumulatedDescription
+            },
+            type: sequelize.QueryTypes.UPDATE
+          });
+
+          console.log(`✅ Updated existing patch ${patchId} for ${filePath} (session ${sessionId})`);
+
+          return {
+            success: true,
+            patchId,
+            diff: diff.stats,
+            action: 'updated',
+            sessionId,
+            accumulatedChanges: true
+          };
+        }
+      }
+
+      // CREATE new patch (default behavior or no existing patch found)
+      [result] = await sequelize.query(`
+        INSERT INTO patch_diffs (
           release_id, store_id, file_path, patch_name, change_type,
           unified_diff, ast_diff, change_summary, change_description,
           baseline_version, priority, created_by
@@ -400,7 +465,7 @@ class PatchService {
           releaseId,
           storeId,
           filePath,
-          patchName,
+          patchName: patchName || `Auto-save ${filePath.split('/').pop()} (${new Date().toLocaleTimeString()})`,
           changeType,
           unifiedDiff: diff.unifiedDiff,
           astDiff: diff.astDiff ? JSON.stringify(diff.astDiff) : null,
@@ -413,17 +478,80 @@ class PatchService {
         type: sequelize.QueryTypes.INSERT
       });
 
-      console.log(`✅ Created patch ${patchName} for ${filePath}`);
+      console.log(`✅ Created new patch ${patchName || 'auto-save'} for ${filePath}`);
 
       return {
         success: true,
         patchId: result[0].id,
         diff: diff.stats,
-        createdAt: result[0].created_at
+        createdAt: result[0].created_at,
+        action: 'created',
+        sessionId,
+        accumulatedChanges: false
       };
 
     } catch (error) {
-      console.error('❌ Error creating patch:', error);
+      console.error('❌ Error creating/updating patch:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Finalize an edit session by marking patches as ready for review
+   * This is called when the user stops editing or explicitly saves
+   */
+  async finalizeEditSession(sessionId, options = {}) {
+    try {
+      const { storeId, filePath, createdBy, finalizeAll = false } = options;
+
+      let query = `
+        UPDATE patch_diffs 
+        SET 
+          status = 'ready_for_review',
+          change_description = CONCAT(
+            COALESCE(change_description, ''), 
+            CASE 
+              WHEN change_description IS NOT NULL THEN '\n\n'
+              ELSE ''
+            END,
+            '[Finalized at ' || TO_CHAR(NOW(), 'HH24:MI:SS') || ']'
+          ),
+          updated_at = CURRENT_TIMESTAMP
+        WHERE status = 'open' 
+          AND change_type = 'manual_edit'
+      `;
+
+      const replacements = {};
+
+      if (!finalizeAll) {
+        query += ` AND store_id = :storeId AND created_by = :createdBy`;
+        replacements.storeId = storeId;
+        replacements.createdBy = createdBy;
+
+        if (filePath) {
+          query += ` AND file_path = :filePath`;
+          replacements.filePath = filePath;
+        }
+      }
+
+      query += ` RETURNING id, file_path, patch_name`;
+
+      const finalizedPatches = await sequelize.query(query, {
+        replacements,
+        type: sequelize.QueryTypes.UPDATE
+      });
+
+      console.log(`✅ Finalized ${finalizedPatches[1]?.rowCount || 0} edit session patches`);
+
+      return {
+        success: true,
+        finalizedPatches: finalizedPatches[0] || [],
+        totalPatches: finalizedPatches[1]?.rowCount || 0,
+        sessionId
+      };
+
+    } catch (error) {
+      console.error('❌ Error finalizing edit session:', error);
       return { success: false, error: error.message };
     }
   }
@@ -437,7 +565,7 @@ class PatchService {
 
       // Update patch status and release status
       await sequelize.query(`
-        UPDATE code_patches 
+        UPDATE patch_diffs 
         SET status = 'published', updated_at = CURRENT_TIMESTAMP
         WHERE release_id = :releaseId AND status = 'open'
       `, {
@@ -488,7 +616,7 @@ class PatchService {
 
       // Update patch status
       await sequelize.query(`
-        UPDATE code_patches 
+        UPDATE patch_diffs 
         SET status = 'rolled_back', updated_at = CURRENT_TIMESTAMP
         WHERE release_id = :releaseId
       `, {
@@ -671,7 +799,7 @@ class PatchService {
         const logEntry = result.applicationLog.find(log => log.patchId === patch.id);
         
         await sequelize.query(`
-          INSERT INTO patch_applications (
+          INSERT INTO patch_logs (
             store_id, patch_id, release_id, applied_by, user_id, session_id,
             ab_variant, file_path, baseline_code_hash, result_code_hash,
             application_status, error_message, duration_ms
