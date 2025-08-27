@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Send, RefreshCw, AlertCircle, CheckCircle, Code, Lightbulb } from 'lucide-react';
+import { Send, RefreshCw, AlertCircle, CheckCircle, Code, Lightbulb, Maximize2, Minimize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
 
@@ -22,6 +22,7 @@ const AIContextWindow = ({
   const [error, setError] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const textareaRef = useRef(null);
 
   // Auto-resize textarea
@@ -154,6 +155,7 @@ const AIContextWindow = ({
   return (
     <div className={cn(
       "flex flex-col bg-white dark:bg-gray-900 border-l",
+      isFullscreen ? 'fixed inset-0 z-50' : '',
       className
     )}>
       {/* Header */}
@@ -182,6 +184,13 @@ const AIContextWindow = ({
             title="Clear"
           >
             <RefreshCw className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+          >
+            {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
         </div>
       </div>
