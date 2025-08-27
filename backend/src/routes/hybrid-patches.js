@@ -398,8 +398,24 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
     console.log(`🔍 Simple overlay lookup for: ${filePath} (user: ${userId})`);
     console.log(`🧪 DEBUG: Testing overlay query execution for ${filePath}...`);
 
+    // Debug: First check if any overlays exist for this file without conditions
+    const allOverlaysForFile = await CustomizationOverlay.count({
+      where: { file_path: filePath }
+    });
+    console.log(`📊 DEBUG: Found ${allOverlaysForFile} total overlays for ${filePath}`);
+
+    // Debug: Check active overlays
+    const activeOverlaysForFile = await CustomizationOverlay.count({
+      where: { 
+        file_path: filePath,
+        status: 'active'
+      }
+    });
+    console.log(`📊 DEBUG: Found ${activeOverlaysForFile} active overlays for ${filePath}`);
+
     // Simple approach: Just get the latest current_code for this file_path
     // Note: Removed user_id filter for preview functionality - overlays should be visible to all users
+    console.log(`🔍 DEBUG: Executing main query with conditions: file_path='${filePath}', status='active', current_code IS NOT NULL`);
     const overlay = await CustomizationOverlay.findOne({
       where: {
         file_path: filePath,
@@ -410,6 +426,27 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
       },
       order: [['updated_at', 'DESC']] // Get the latest one
     });
+
+    if (overlay) {
+      console.log(`✅ DEBUG: Overlay found! ID=${overlay.id}, status=${overlay.status}, current_code length=${overlay.current_code ? overlay.current_code.length : 'null'}`);
+    } else {
+      console.log(`❌ DEBUG: No overlay found with full conditions. Testing without current_code condition...`);
+      
+      // Test without the current_code condition to see if that's the issue
+      const overlayWithoutCodeCheck = await CustomizationOverlay.findOne({
+        where: {
+          file_path: filePath,
+          status: 'active'
+        },
+        order: [['updated_at', 'DESC']]
+      });
+      
+      if (overlayWithoutCodeCheck) {
+        console.log(`🔍 DEBUG: Found overlay without current_code check - current_code is: ${overlayWithoutCodeCheck.current_code === null ? 'NULL' : (overlayWithoutCodeCheck.current_code === '' ? 'EMPTY STRING' : 'HAS CONTENT')}`);
+      } else {
+        console.log(`❌ DEBUG: No overlay found even without current_code condition`);
+      }
+    }
 
     if (overlay && overlay.current_code) {
       console.log(`✅ Found simple overlay for: ${filePath}`);
