@@ -375,40 +375,67 @@ const BrowserPreview = ({
           const extractedTexts = textMatches.map(match => match.replace(/[<>]/g, '').trim()).filter(text => text.length > 0);
           
           console.log('🔍 Extracted texts from merged code:', extractedTexts);
+          console.log('📊 Code length analysis:', {
+            totalChars: mergedCode.length,
+            totalTexts: extractedTexts.length,
+            cartTexts: extractedTexts.filter(t => t.toLowerCase().includes('cart')).length
+          });
           
-          // Apply text changes to existing DOM elements
-          extractedTexts.forEach(newText => {
-            // Find elements with similar or matching text content
-            const allElements = document.getElementsByTagName('*');
-            const textElements = Array.from(allElements).filter(el => {
-              const textContent = el.textContent ? el.textContent.trim() : '';
-              return textContent.length > 0 && textContent.length < 100 && el.children.length <= 2;
+          // Apply text changes to existing DOM elements - IMPROVED LOGIC
+          // Group texts by category to avoid conflicts
+          const cartTexts = extractedTexts.filter(text => text.toLowerCase().includes('cart'));
+          const otherTexts = extractedTexts.filter(text => !text.toLowerCase().includes('cart'));
+          
+          console.log('🔍 Categorized texts - Cart:', cartTexts, 'Other:', otherTexts);
+          
+          // Find all elements that could be updated
+          const allElements = document.getElementsByTagName('*');
+          const textElements = Array.from(allElements).filter(el => {
+            const textContent = el.textContent ? el.textContent.trim() : '';
+            return textContent.length > 0 && textContent.length < 100 && el.children.length <= 2;
+          });
+          
+          // For cart elements, use the MOST SPECIFIC cart text (longest match)
+          const cartElements = textElements.filter(el => 
+            el.textContent.toLowerCase().includes('cart') && !el.hasAttribute('data-overlay-preview')
+          );
+          
+          if (cartElements.length > 0 && cartTexts.length > 0) {
+            // Find the most comprehensive cart text (likely contains the most recent changes)
+            const bestCartText = cartTexts.reduce((best, current) => 
+              current.length > best.length ? current : best
+            );
+            
+            cartElements.forEach(element => {
+              const currentText = element.textContent.trim();
+              if (!element.hasAttribute('data-overlay-original')) {
+                element.setAttribute('data-overlay-original', currentText);
+              }
+              element.textContent = bestCartText;
+              element.setAttribute('data-overlay-preview', 'text-updated');
+              console.log('✅ Updated cart text with best match:', currentText, '->', bestCartText);
+            });
+          }
+          
+          // Handle other text replacements normally
+          otherTexts.forEach(newText => {
+            const matchingElements = textElements.filter(el => {
+              const currentText = el.textContent.trim();
+              return !el.hasAttribute('data-overlay-preview') && (
+                currentText === newText || 
+                currentText.toLowerCase() === newText.toLowerCase() ||
+                (currentText.includes(newText) || newText.includes(currentText))
+              );
             });
             
-            // Smart text replacement
-            textElements.forEach(element => {
+            matchingElements.forEach(element => {
               const currentText = element.textContent.trim();
-              
-              // Handle Cart-specific replacements
-              if (newText.toLowerCase().includes('cart') && currentText.toLowerCase().includes('cart')) {
-                if (!element.hasAttribute('data-overlay-original')) {
-                  element.setAttribute('data-overlay-original', currentText);
-                }
-                element.textContent = newText;
-                element.setAttribute('data-overlay-preview', 'text-updated');
-                console.log('✅ Updated cart text:', currentText, '->', newText);
+              if (!element.hasAttribute('data-overlay-original')) {
+                element.setAttribute('data-overlay-original', currentText);
               }
-              // Handle exact matches for other text
-              else if (currentText === newText || 
-                       currentText.toLowerCase() === newText.toLowerCase() ||
-                       currentText.includes(newText) || newText.includes(currentText)) {
-                if (!element.hasAttribute('data-overlay-original')) {
-                  element.setAttribute('data-overlay-original', currentText);
-                }
-                element.textContent = newText;
-                element.setAttribute('data-overlay-preview', 'text-updated');
-                console.log('✅ Updated text element:', currentText, '->', newText);
-              }
+              element.textContent = newText;
+              element.setAttribute('data-overlay-preview', 'text-updated');
+              console.log('✅ Updated other text element:', currentText, '->', newText);
             });
           });
           
