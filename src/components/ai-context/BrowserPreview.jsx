@@ -272,8 +272,19 @@ const BrowserPreview = ({
           // Use createPublicUrl to generate proper /public/:store_code/page format
           const properUrl = createPublicUrl(storeSlug, pageName);
           const baseUrl = window.location.origin;
-          setPreviewUrl(`${baseUrl}${properUrl}`);
-          console.log(`🎯 Generated preview URL: ${baseUrl}${properUrl} (route: ${detectedRoute} -> page: ${pageName})`);
+          const fullPreviewUrl = `${baseUrl}${properUrl}`;
+          
+          console.log(`🔍 BrowserPreview: URL generation details:`);
+          console.log(`  - storeSlug: ${storeSlug}`);
+          console.log(`  - pageName: ${pageName}`);
+          console.log(`  - detectedRoute: ${detectedRoute}`);
+          console.log(`  - fileName: ${fileName}`);
+          console.log(`  - properUrl: ${properUrl}`);
+          console.log(`  - baseUrl: ${baseUrl}`);
+          console.log(`  - fullPreviewUrl: ${fullPreviewUrl}`);
+          
+          setPreviewUrl(fullPreviewUrl);
+          console.log(`🎯 Generated preview URL: ${fullPreviewUrl} (route: ${detectedRoute} -> page: ${pageName})`);
           setError(null);
         } else {
           // Fallback to direct URL construction if no page mapping found
@@ -308,6 +319,7 @@ const BrowserPreview = ({
   const checkOverlayStatus = useCallback(async (fileName) => {
     try {
       console.log(`🔍 BrowserPreview: Checking overlay status for file: ${fileName}`);
+      console.log(`🔍 BrowserPreview: StoreId: ${storeId}, fileName: ${fileName}`);
       
       // Use authenticated API client to check if overlay exists
       const customHeaders = {};
@@ -315,11 +327,24 @@ const BrowserPreview = ({
         customHeaders['x-store-id'] = storeId;
       }
       
+      console.log(`🔍 BrowserPreview: Custom headers:`, customHeaders);
+      
       // Check overlay status with both baseline and merged modes
+      const encodedFileName = encodeURIComponent(fileName);
+      const mergedUrl = `hybrid-patches/modified-code/${encodedFileName}?mode=merged&processed=false`;
+      const baselineUrl = `hybrid-patches/modified-code/${encodedFileName}?mode=baseline&processed=false`;
+      
+      console.log(`🔍 BrowserPreview: API URLs:`, { mergedUrl, baselineUrl });
+      
       const [mergedData, baselineData] = await Promise.all([
-        apiClient.get(`hybrid-patches/modified-code/${encodeURIComponent(fileName)}?mode=merged&processed=false`, customHeaders),
-        apiClient.get(`hybrid-patches/modified-code/${encodeURIComponent(fileName)}?mode=baseline&processed=false`, customHeaders)
+        apiClient.get(mergedUrl, customHeaders),
+        apiClient.get(baselineUrl, customHeaders)
       ]);
+      
+      console.log(`🔍 BrowserPreview: API responses:`, {
+        merged: { success: mergedData?.success, hasOverlay: mergedData?.data?.hasOverlay, appliedSnapshots: mergedData?.data?.appliedSnapshots },
+        baseline: { success: baselineData?.success }
+      });
       
       const hasOverlay = mergedData?.success && mergedData?.data?.hasOverlay;
       
@@ -374,13 +399,19 @@ const BrowserPreview = ({
 
   // Server-side overlay application using URL parameters - no DOM manipulation needed
   const applyCodePatches = useCallback(async (iframe) => {
-    if (!fileName) return;
+    if (!fileName) {
+      console.log(`🔍 BrowserPreview: applyCodePatches called but fileName is empty: ${fileName}`);
+      return;
+    }
     
     try {
       console.log(`🔄 BrowserPreview: Server-side overlay application for: ${fileName} (mode: ${overlayMode})`);
+      console.log(`🔍 BrowserPreview: Current iframe src:`, iframe.src);
+      console.log(`🔍 BrowserPreview: Preview URL:`, previewUrl);
       
       // Check if overlay exists for this file
       const overlayStatus = await checkOverlayStatus(fileName);
+      console.log(`🔍 BrowserPreview: Overlay status result:`, overlayStatus);
       
       if (overlayStatus.hasOverlay) {
         console.log(`✅ BrowserPreview: Server-side overlay found for ${fileName}. Mode: ${overlayMode}`);
@@ -389,8 +420,11 @@ const BrowserPreview = ({
         // Instead of DOM manipulation, refresh the iframe with overlay parameters
         // The server will serve the properly merged code based on the mode
         const currentUrl = iframe.src || previewUrl;
+        console.log(`🔍 BrowserPreview: Current URL before modification:`, currentUrl);
+        
         if (currentUrl) {
           const url = new URL(currentUrl);
+          console.log(`🔍 BrowserPreview: URL object created:`, url.toString());
           
           // Add overlay mode parameter to tell server which version to serve
           if (overlayMode === 'baseline') {
@@ -402,8 +436,20 @@ const BrowserPreview = ({
           // Add file parameter so server knows which file's overlay to apply
           url.searchParams.set('overlay_file', fileName);
           
+          const newUrl = url.toString();
+          console.log(`🔍 BrowserPreview: New URL with overlay parameters:`, newUrl);
+          console.log(`🔍 BrowserPreview: Overlay mode set to:`, overlayMode);
+          console.log(`🔍 BrowserPreview: Overlay file set to:`, fileName);
+          
           console.log(`🔄 BrowserPreview: Refreshing iframe with server-side overlay mode: ${overlayMode}`);
-          iframe.src = url.toString();
+          iframe.src = newUrl;
+          
+          // Verify the iframe src was actually set
+          setTimeout(() => {
+            console.log(`🔍 BrowserPreview: Iframe src after setting:`, iframe.src);
+          }, 100);
+        } else {
+          console.log(`❌ BrowserPreview: No current URL available for overlay application`);
         }
       } else {
         console.log(`❌ BrowserPreview: No server-side overlay found for ${fileName} - showing editor content`);
@@ -412,12 +458,17 @@ const BrowserPreview = ({
         const currentUrl = iframe.src || previewUrl;
         if (currentUrl) {
           const url = new URL(currentUrl);
+          const hadOverlayParams = url.searchParams.has('overlay_mode') || url.searchParams.has('overlay_file');
+          
           url.searchParams.delete('overlay_mode');
           url.searchParams.delete('overlay_file');
           
-          if (url.toString() !== currentUrl) {
+          const newUrl = url.toString();
+          console.log(`🔍 BrowserPreview: Cleaned URL:`, newUrl);
+          
+          if (newUrl !== currentUrl || hadOverlayParams) {
             console.log(`🔄 BrowserPreview: Refreshing iframe without overlay parameters`);
-            iframe.src = url.toString();
+            iframe.src = newUrl;
           }
         }
       }
@@ -455,10 +506,26 @@ const BrowserPreview = ({
     }
   }, [overlayMode, overlayData.hasOverlay, enablePatches]);
 
+  // Debug: Track overlayData changes
+  useEffect(() => {
+    console.log(`🔍 BrowserPreview: overlayData changed:`, overlayData);
+    console.log(`🔍 BrowserPreview: overlayData.hasOverlay:`, overlayData.hasOverlay);
+    if (overlayData.hasOverlay) {
+      console.log(`✅ BrowserPreview: Overlay is available for ${fileName}`);
+    } else {
+      console.log(`❌ BrowserPreview: No overlay found for ${fileName}`);
+    }
+  }, [overlayData, fileName]);
+
   // Parse code changes from the current file content
 
   // Handle iframe load - simplified approach
   const handleIframeLoad = useCallback(async () => {
+    console.log(`🔍 BrowserPreview: Iframe loaded! URL:`, document.getElementById('browser-preview-iframe')?.src);
+    console.log(`🔍 BrowserPreview: enablePatches:`, enablePatches);
+    console.log(`🔍 BrowserPreview: currentCode exists:`, !!currentCode);
+    console.log(`🔍 BrowserPreview: fileName:`, fileName);
+    
     setIsLoading(false);
     
     // Apply code patches immediately after iframe loads (if enabled)
@@ -469,11 +536,18 @@ const BrowserPreview = ({
       // Simple delay to ensure iframe document is accessible
       setTimeout(() => {
         if (applyCodePatchesRef.current) {
+          console.log(`🔄 BrowserPreview: Calling applyCodePatches after iframe load`);
           applyCodePatchesRef.current(iframe);
         }
       }, 100);
+    } else {
+      console.log(`❌ BrowserPreview: Not applying patches after iframe load - missing requirements`);
+      console.log(`  - iframe exists:`, !!iframe);
+      console.log(`  - currentCode exists:`, !!currentCode);
+      console.log(`  - enablePatches:`, enablePatches);
+      console.log(`  - applyCodePatchesRef.current exists:`, !!applyCodePatchesRef.current);
     }
-  }, [currentCode, enablePatches]);
+  }, [currentCode, enablePatches, fileName]);
 
   // Watch for currentCode changes and reapply patches
   useEffect(() => {
@@ -591,11 +665,17 @@ const BrowserPreview = ({
               <div className="flex items-center space-x-1">
                 <button
                   onClick={() => {
+                    console.log(`🔍 BrowserPreview: Overlay button clicked!`);
+                    console.log(`🔍 BrowserPreview: Current overlay data:`, overlayData);
+                    console.log(`🔍 BrowserPreview: Current overlay mode:`, overlayMode);
+                    console.log(`🔍 BrowserPreview: Has overlay:`, overlayData.hasOverlay);
+                    console.log(`🔍 BrowserPreview: File name:`, fileName);
+                    
                     if (overlayData.hasOverlay) {
                       // Toggle between baseline and merged modes
                       const newMode = overlayMode === 'baseline' ? 'merged' : 'baseline';
+                      console.log(`🔄 BrowserPreview: Toggling overlay from ${overlayMode} to ${newMode} mode`);
                       setOverlayMode(newMode);
-                      console.log(`🔄 BrowserPreview: Toggled overlay to ${newMode} mode`);
                     } else {
                       // No overlay data available, just show overlay system
                       setShowOverlay(!showOverlay);
