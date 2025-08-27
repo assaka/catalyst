@@ -714,7 +714,7 @@ export default ExampleComponent;`;
 
       {/* Main Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
-        <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
+        <ResizablePanelGroup direction="horizontal" className="hidden h-[calc(100vh-200px)] ">
           {/* AI Context Window - First Column */}
           <ResizablePanel 
             size={25}
