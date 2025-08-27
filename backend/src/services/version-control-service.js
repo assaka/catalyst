@@ -103,11 +103,14 @@ class VersionControlService {
         updated_at: new Date()
       });
 
+      // Map overlay change_type to snapshot change_type
+      const snapshotChangeType = this.mapChangeTypeForSnapshot(changeType);
+
       // Create new snapshot with diff data
       const snapshot = await this.createSnapshot(customizationId, {
         change_summary: changeSummary,
         change_description: changeDescription,
-        change_type: changeType,
+        change_type: snapshotChangeType,
         ast_diff: diffResult.ast_diff,
         line_diff: diffResult.line_diff,
         unified_diff: diffResult.unified_diff,
@@ -664,6 +667,26 @@ class VersionControlService {
         averageSnapshotsPerCustomization: 0
       };
     }
+  }
+
+  /**
+   * Map overlay change_type to snapshot change_type
+   * Overlays: ['manual_edit', 'ai_generated', 'merge', 'rollback']
+   * Snapshots: ['initial', 'modification', 'merge', 'rollback', 'auto_save']
+   */
+  mapChangeTypeForSnapshot(overlayChangeType) {
+    const typeMapping = {
+      'manual_edit': 'modification',
+      'ai_generated': 'modification',
+      'merge': 'merge',
+      'rollback': 'rollback',
+      // Default fallback
+      'modification': 'modification',
+      'initial': 'initial',
+      'auto_save': 'auto_save'
+    };
+
+    return typeMapping[overlayChangeType] || 'modification';
   }
 }
 

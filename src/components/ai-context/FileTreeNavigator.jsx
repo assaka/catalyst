@@ -19,7 +19,8 @@ import {
   Settings,
   Database,
   Globe,
-  RefreshCw
+  RefreshCw,
+  Minimize2
 } from 'lucide-react';
 
 const FileTreeNavigator = ({ 
@@ -32,6 +33,7 @@ const FileTreeNavigator = ({
   const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'src/components', 'src/pages']));
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTree, setFileTree] = useState(null);
+  const [isMinimized, setIsMinimized] = useState(false);
 
   // Load real file tree data from API
   useEffect(() => {
@@ -136,6 +138,10 @@ const FileTreeNavigator = ({
 
   const refreshFileTree = () => {
     loadFileTree();
+  };
+
+  const toggleMinimize = () => {
+    setIsMinimized(prev => !prev);
   };
 
   const toggleFolder = (path) => {
@@ -278,49 +284,65 @@ const FileTreeNavigator = ({
   const filteredTree = fileTree ? filterFiles(fileTree, searchTerm) : null;
 
   return (
-    <Card className={`h-full flex flex-col ${className}`}>
+    <Card className={`h-full flex flex-col transition-all duration-300 ${isMinimized ? 'h-12 overflow-hidden' : ''} ${className}`}>
       {/* Header */}
       <div className="border-b p-3">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold">Files</h3>
           <div className="flex items-center space-x-1">
-            <Button variant="ghost" size="sm">
-              <Plus className="w-4 h-4" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleMinimize}
+              title={isMinimized ? "Restore" : "Minimize"}
+            >
+              <Minimize2 className="w-4 h-4" />
             </Button>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
+            {!isMinimized && (
+              <>
+                <Button variant="ghost" size="sm">
+                  <Plus className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="sm">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
         
         {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search files..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
-        </div>
+        {!isMinimized && (
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search files..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-8"
+            />
+          </div>
+        )}
       </div>
 
       {/* File Tree */}
-      <ScrollArea className="flex-1">
-        <div className="p-1">
-          {filteredTree ? (
-            renderFileTreeNode(filteredTree)
-          ) : (
-            <div className="text-center text-muted-foreground py-8">
-              <FileText className="w-8 h-8 mx-auto mb-2" />
-              <p>Loading files...</p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
+      {!isMinimized && (
+        <ScrollArea className="flex-1">
+          <div className="p-1">
+            {filteredTree ? (
+              renderFileTreeNode(filteredTree)
+            ) : (
+              <div className="text-center text-muted-foreground py-8">
+                <FileText className="w-8 h-8 mx-auto mb-2" />
+                <p>Loading files...</p>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+      )}
 
       {/* Footer */}
-      {showDetails && (
+      {showDetails && !isMinimized && (
         <div className="border-t p-3 text-xs text-muted-foreground">
           <div className="flex items-center justify-between">
             <span>

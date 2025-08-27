@@ -73,6 +73,11 @@ const CustomizationSnapshot = sequelize.define('CustomizationSnapshot', {
     type: DataTypes.JSON,
     defaultValue: {}
   },
+  file_path: {
+    type: DataTypes.STRING(512),
+    allowNull: true,
+    comment: 'Denormalized file path for efficient querying without JOINs'
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW
@@ -102,6 +107,12 @@ const CustomizationSnapshot = sequelize.define('CustomizationSnapshot', {
     {
       fields: ['customization_id', 'version_number'],
       unique: true // Ensure version numbers are unique per customization
+    },
+    {
+      fields: ['file_path'] // For efficient direct queries by file path
+    },
+    {
+      fields: ['file_path', 'status'] // For efficient queries of open snapshots by file
     }
   ]
 });

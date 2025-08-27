@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code, Layers } from 'lucide-react';
 import BrowserPreviewOverlay from './BrowserPreviewOverlay';
 import { useOverlayManager } from '../../services/overlay-manager';
+import { overlayMergeService } from '../../services/overlay-merge-service';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
@@ -336,16 +337,125 @@ const BrowserPreview = ({
 
   const currentDimensions = deviceDimensions[deviceView];
 
-  // Apply code patches to simulate local changes in the preview
+  // Helper function to apply merged code to iframe using data-level merging
+  const applyMergedCodeToIframe = useCallback(async (iframe, mergedCode) => {
+    try {
+      const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+      
+      if (!iframeDoc) {
+        console.log('🔄 BrowserPreview: Iframe document not accessible for code injection');
+        return false;
+      }
+
+      // Clear any existing overlay patches before applying new ones
+      const existingPatches = iframeDoc.querySelectorAll('[data-overlay-preview="true"]');
+      existingPatches.forEach(element => element.remove());
+      
+      console.log(`🧹 Cleared ${existingPatches.length} existing overlay elements`);
+
+      // Create preview-safe code that can be injected into iframe
+      const previewCode = overlayMergeService.createPreviewCode(mergedCode, fileName);
+      
+      // Inject merged code as a script that updates the page content
+      const overlayScript = iframeDoc.createElement('script');
+      overlayScript.type = 'text/javascript';
+      overlayScript.setAttribute('data-overlay-preview', 'true');
+      overlayScript.textContent = `
+        console.log('🎭 BrowserPreview: Applying merged overlay code');
+        
+        // Extract changes from merged code and apply them intelligently
+        try {
+          const mergedCode = ${JSON.stringify(previewCode)};
+          
+          // Parse text content changes from merged code
+          const textMatches = mergedCode.match(/>([^<>{]+)</g) || [];
+          const extractedTexts = textMatches.map(match => match.replace(/[<>]/g, '').trim()).filter(text => text.length > 0);
+          
+          console.log('🔍 Extracted texts from merged code:', extractedTexts);
+          
+          // Apply text changes to existing DOM elements
+          extractedTexts.forEach(newText => {
+            // Find elements with similar or matching text content
+            const allElements = document.getElementsByTagName('*');
+            const textElements = Array.from(allElements).filter(el => {
+              const textContent = el.textContent ? el.textContent.trim() : '';
+              return textContent.length > 0 && textContent.length < 100 && el.children.length <= 2;
+            });
+            
+            // Smart text replacement
+            textElements.forEach(element => {
+              const currentText = element.textContent.trim();
+              
+              // Handle Cart-specific replacements
+              if (newText.toLowerCase().includes('cart') && currentText.toLowerCase().includes('cart')) {
+                if (!element.hasAttribute('data-overlay-original')) {
+                  element.setAttribute('data-overlay-original', currentText);
+                }
+                element.textContent = newText;
+                element.setAttribute('data-overlay-preview', 'text-updated');
+                console.log('✅ Updated cart text:', currentText, '->', newText);
+              }
+              // Handle exact matches for other text
+              else if (currentText === newText || 
+                       currentText.toLowerCase() === newText.toLowerCase() ||
+                       currentText.includes(newText) || newText.includes(currentText)) {
+                if (!element.hasAttribute('data-overlay-original')) {
+                  element.setAttribute('data-overlay-original', currentText);
+                }
+                element.textContent = newText;
+                element.setAttribute('data-overlay-preview', 'text-updated');
+                console.log('✅ Updated text element:', currentText, '->', newText);
+              }
+            });
+          });
+          
+          // Add visual indicator
+          const indicator = document.createElement('div');
+          indicator.innerHTML = '🎭 Overlay Preview Active (Data-Level Merge)';
+          indicator.style.cssText = \`
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(34, 197, 94, 0.9);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: monospace;
+            z-index: 10000;
+            pointer-events: none;
+          \`;
+          indicator.setAttribute('data-overlay-preview', 'true');
+          document.body.appendChild(indicator);
+          
+        } catch (error) {
+          console.error('Error applying merged overlay code:', error);
+        }
+      `;
+      
+      iframeDoc.head.appendChild(overlayScript);
+      
+      console.log('✅ BrowserPreview: Merged code injected successfully into iframe');
+      return true;
+      
+    } catch (error) {
+      console.error('❌ BrowserPreview: Error injecting merged code into iframe:', error);
+      return false;
+    }
+  }, [fileName]);
+
+  // Apply code patches using data-level merging instead of DOM manipulation
   const applyCodePatches = useCallback(async (iframe) => {
     if (!fileName) return;
     
     try {
-      console.log(`🧪 BrowserPreview: Applying overlay patches for: ${fileName}`);
+      console.log(`🔄 BrowserPreview: Applying data-level overlay merging for: ${fileName}`);
       
-      // Get applied code from overlay system (core + patches)
-      let modifiedCode = getMergedContent(fileName) || currentCode;
+      // Step 1: Get baseline code (original file content)
+      let baselineCode = getMergedContent(fileName) || currentCode;
       
+      // Step 2: Fetch database overlays for this file
+      let databaseOverlays = [];
       try {
         const apiConfig = getApiConfig();
         const response = await fetch(`/api/hybrid-patches/modified-code/${encodeURIComponent(fileName)}`, {
@@ -359,308 +469,72 @@ const BrowserPreview = ({
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.data && data.data.modifiedCode) {
-            modifiedCode = data.data.modifiedCode;
-            console.log(`✅ BrowserPreview: Got modified code from database (${modifiedCode.length} chars)`);
+            // Convert the API response to overlay format for merging
+            databaseOverlays = [{
+              name: 'Database Overlay',
+              current_code: data.data.modifiedCode,
+              status: 'active',
+              priority: 1,
+              updatedAt: data.data.lastModified
+            }];
+            console.log(`✅ BrowserPreview: Found database overlay (${data.data.modifiedCode.length} chars)`);
             
-            // Check if it contains Hamid Cart
-            if (modifiedCode.includes('Hamid Cart')) {
-              console.log(`🎯 BrowserPreview: Modified code contains "Hamid Cart" - patches will be applied!`);
+            // Check if it contains expected changes
+            if (data.data.modifiedCode.includes('Hamid Cart')) {
+              console.log(`🎯 BrowserPreview: Database overlay contains "Hamid Cart" - will be merged!`);
             }
           } else {
-            console.log(`📄 BrowserPreview: No database patches found, using currentCode prop`);
+            console.log(`📄 BrowserPreview: No database overlays found, using baseline code`);
           }
         } else {
-          console.warn(`⚠️ BrowserPreview: API call failed (${response.status}), using currentCode prop`);
+          console.warn(`⚠️ BrowserPreview: Overlay API call failed (${response.status}), using baseline code`);
         }
       } catch (apiError) {
-        console.warn(`⚠️ BrowserPreview: API error, using currentCode prop:`, apiError.message);
+        console.warn(`⚠️ BrowserPreview: Overlay API error, using baseline code:`, apiError.message);
       }
       
-      // If we have no code to work with, skip patch application
-      if (!modifiedCode) {
-        console.log(`📄 BrowserPreview: No code available for patching`);
-        return;
+      // Step 3: Merge baseline code with overlays using OverlayMergeService
+      const mergeResult = await overlayMergeService.mergeCodeWithOverlays(
+        baselineCode, 
+        databaseOverlays, 
+        fileName
+      );
+      
+      if (mergeResult.success) {
+        console.log(`🔄 BrowserPreview: Successfully merged ${mergeResult.appliedOverlays} overlays`);
+        console.log(`   Baseline length: ${mergeResult.baselineLength} chars`);
+        console.log(`   Merged length: ${mergeResult.mergedLength} chars`);
+        
+        // Step 4: Apply merged code to iframe using data-level injection
+        const success = await applyMergedCodeToIframe(iframe, mergeResult.mergedCode);
+        
+        if (success) {
+          console.log('✅ BrowserPreview: Data-level overlay merging completed successfully');
+        } else {
+          console.warn('⚠️ BrowserPreview: Failed to inject merged code into iframe');
+        }
+      } else {
+        console.error('❌ BrowserPreview: Code merging failed:', mergeResult.error);
+        // Fallback to baseline code if merging fails
+        if (baselineCode) {
+          await applyMergedCodeToIframe(iframe, baselineCode);
+        }
       }
       
-      const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
-      
-      if (!iframeDoc) {
-        console.log('🔄 BrowserPreview: Iframe document not accessible, skipping patch application');
-        return;
-      }
-      
-      // Clear any existing patches before applying new ones
-      const existingPatches = iframeDoc.querySelectorAll('[data-live-preview="true"]');
-      existingPatches.forEach(element => element.remove());
-      
-      // Restore original text content for elements that were modified
-      const modifiedElements = iframeDoc.querySelectorAll('[data-original-text]');
-      modifiedElements.forEach(element => {
-        const originalText = element.getAttribute('data-original-text');
-        if (originalText) {
-          element.textContent = originalText;
-          element.removeAttribute('data-original-text');
-        }
-      });
-      
-      console.log(`🧹 Cleared ${existingPatches.length} existing patch elements and restored ${modifiedElements.length} text elements`);
-      
-      // Parse the modified code (from database) to extract changes
-      const changes = parseCodeChanges(modifiedCode, fileName);
-      
-      if (changes.hasChanges) {
-        console.log('🔧 Applying code patches to preview:', changes);
-        
-        // Apply CSS changes
-        if (changes.styles) {
-          const styleElement = iframeDoc.createElement('style');
-          styleElement.textContent = `
-            /* 🎨 Live Code Changes Preview */
-            ${changes.styles}
-          `;
-          styleElement.setAttribute('data-live-preview', 'true');
-          iframeDoc.head.appendChild(styleElement);
-        }
-        
-        // Apply DOM changes - Smart text replacement
-        if (changes.domUpdates) {
-          console.log('🔍 Applying DOM updates:', changes.domUpdates);
-          
-          changes.domUpdates.forEach(update => {
-            if (update.type === 'text') {
-              // Smart text replacement using replacement hints
-              const allElements = iframeDoc.getElementsByTagName('*');
-              let replacementsMade = 0;
-              const textToReplace = update.value;
-              
-              console.log('🔍 Looking for text to replace with:', textToReplace);
-              console.log('🔍 Using replacement hints:', update.replacementHints);
-              
-              // Filter out non-content elements (CSS, scripts, etc.)
-              const excludedTags = ['STYLE', 'SCRIPT', 'NOSCRIPT', 'HEAD', 'META', 'LINK', 'TITLE'];
-              const contentElements = Array.from(allElements).filter(el => {
-                // Exclude non-content tags
-                if (excludedTags.includes(el.tagName)) {
-                  return false;
-                }
-                
-                // Exclude elements with inline styles that contain transforms or other CSS properties
-                if (el.hasAttribute('style')) {
-                  const styleAttr = el.getAttribute('style');
-                  if (styleAttr && (styleAttr.includes('transform') || styleAttr.includes('translate') || styleAttr.includes('opacity') || styleAttr.includes('position'))) {
-                    return false;
-                  }
-                }
-                
-                // Only include elements with text content that doesn't look like CSS
-                const textContent = el.textContent ? el.textContent.trim() : '';
-                const hasText = textContent.length > 0;
-                
-                // Skip elements with CSS-like text content
-                const isCssContent = textContent.includes('translate(') || 
-                                   textContent.includes('px') || 
-                                   textContent.includes('%') ||
-                                   textContent.includes('rgb(') ||
-                                   textContent.includes('transform:') ||
-                                   textContent.includes('position:');
-                
-                if (!hasText || isCssContent) {
-                  return false;
-                }
-                
-                // Check if element has direct text content (not just from children)
-                const hasDirectText = Array.from(el.childNodes).some(node => 
-                  node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0
-                );
-                
-                // Include elements that either:
-                // 1. Have direct text content (regardless of children count)
-                // 2. Are text-only elements (no children at all)
-                // 3. Have minimal children but contain meaningful text
-                const isTextOnlyElement = el.children.length === 0;
-                const hasReasonableChildCount = el.children.length <= 5; // Increased from 2 to 5
-                
-                return hasText && (hasDirectText || isTextOnlyElement || 
-                  (hasReasonableChildCount && textContent.length >= 3)); // Allow elements with meaningful text
-              });
-              
-              console.log('🔍 Filtered content elements:', contentElements.length, 'of', allElements.length, 'total elements');
-              
-              // Search through content text elements
-              for (let element of contentElements) {
-                const originalText = element.textContent.trim();
-                
-                // Skip empty text
-                if (!originalText) continue;
-                
-                console.log('🔍 Checking element:', element.tagName, 'text:', originalText.substring(0, 100));
-                
-                let replacementMadeForElement = false;
-                
-                // Try each replacement hint
-                if (update.replacementHints) {
-                  for (let hint of update.replacementHints) {
-                    if (hint.pattern) {
-                      // For exact matches, ensure the whole text matches
-                      if (hint.exact && hint.pattern.test(originalText)) {
-                        const newText = originalText.replace(hint.pattern, hint.replacement);
-                        if (newText !== originalText) {
-                          // Store original text for later restoration
-                          if (!element.hasAttribute('data-original-text')) {
-                            element.setAttribute('data-original-text', originalText);
-                          }
-                          element.textContent = newText;
-                          console.log('✅ Exact replacement made:', originalText, '->', newText, 'in', element.tagName);
-                          replacementsMade++;
-                          replacementMadeForElement = true;
-                          break; // Stop after first successful replacement for this element
-                        }
-                      }
-                      // For partial matches, check if pattern is found
-                      else if (hint.partial && originalText.match(hint.pattern)) {
-                        const newText = originalText.replace(hint.pattern, hint.replacement);
-                        if (newText !== originalText) {
-                          // Store original text for later restoration
-                          if (!element.hasAttribute('data-original-text')) {
-                            element.setAttribute('data-original-text', originalText);
-                          }
-                          element.textContent = newText;
-                          console.log('✅ Partial replacement made:', originalText, '->', newText, 'in', element.tagName);
-                          replacementsMade++;
-                          replacementMadeForElement = true;
-                          break; // Stop after first successful replacement for this element
-                        }
-                      }
-                      // Standard pattern matching
-                      else if (!hint.exact && !hint.partial && originalText.match(hint.pattern)) {
-                        const newText = originalText.replace(hint.pattern, hint.replacement);
-                        if (newText !== originalText) {
-                          // Store original text for later restoration
-                          if (!element.hasAttribute('data-original-text')) {
-                            element.setAttribute('data-original-text', originalText);
-                          }
-                          element.textContent = newText;
-                          console.log('✅ Standard replacement made:', originalText, '->', newText, 'in', element.tagName);
-                          replacementsMade++;
-                          replacementMadeForElement = true;
-                          break; // Stop after first successful replacement for this element
-                        }
-                      }
-                    }
-                  }
-                }
-                
-                // Fallback: direct text matching for exact matches
-                if (!replacementMadeForElement && originalText === textToReplace) {
-                  // For demo purposes, if the text is already the new text, don't replace it again
-                  console.log('🔍 Text already matches target, checking if we should simulate toggle');
-                  
-                  // For Cart example: if we see "My Cart", show it as successfully "replaced"
-                  if (textToReplace === 'My Cart' || textToReplace === 'My cart') {
-                    console.log('✅ Text already shows updated value:', originalText, '(simulating successful replacement)');
-                    replacementsMade++;
-                  } else {
-                    // Store original text for later restoration
-                    if (!element.hasAttribute('data-original-text')) {
-                      element.setAttribute('data-original-text', originalText);
-                    }
-                    element.textContent = textToReplace;
-                    console.log('✅ Direct text replacement:', originalText, '->', textToReplace);
-                    replacementsMade++;
-                  }
-                }
-              }
-              
-              if (replacementsMade === 0) {
-                console.log('⚠️ No text replacements made for:', textToReplace);
-                console.log('🔍 Searched through', contentElements.length, 'content elements');
-                // Log some sample text content for debugging
-                const textElements = contentElements.slice(0, 15);
-                console.log('📋 Sample content elements found:', textElements.map(el => ({ 
-                  tag: el.tagName, 
-                  text: el.textContent.trim().substring(0, 80),
-                  children: el.children.length
-                })));
-              } else {
-                console.log('✅ Made', replacementsMade, 'text replacements');
-              }
-            } else {
-              // Handle other update types with original selector logic
-              const elements = iframeDoc.querySelectorAll(update.selector);
-              elements.forEach(element => {
-                if (update.type === 'html') {
-                  element.innerHTML = update.value;
-                } else if (update.type === 'attribute') {
-                  element.setAttribute(update.attribute, update.value);
-                } else if (update.type === 'class') {
-                  element.className = update.value;
-                }
-              });
-            }
-          });
-        }
-        
-        // Apply JavaScript changes (limited for security)
-        if (changes.behavior) {
-          const scriptElement = iframeDoc.createElement('script');
-          scriptElement.textContent = `
-            console.log('🚀 Live Code Preview: Applying behavior changes');
-            ${changes.behavior}
-          `;
-          scriptElement.setAttribute('data-live-preview', 'true');
-          iframeDoc.head.appendChild(scriptElement);
-        }
-        
-        // Add visual indicator that patches are applied
-        const indicator = iframeDoc.createElement('div');
-        const indicatorText = changes.genericPreview 
-          ? '🔧 Code Preview Active (Generic)' 
-          : '🔧 Live Code Preview Active';
-        indicator.innerHTML = indicatorText;
-        indicator.style.cssText = `
-          position: fixed;
-          top: 10px;
-          right: 10px;
-          background: rgba(59, 130, 246, 0.9);
-          color: white;
-          padding: 6px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-          font-family: monospace;
-          z-index: 10000;
-          pointer-events: none;
-        `;
-        indicator.setAttribute('data-live-preview', 'true');
-        iframeDoc.body.appendChild(indicator);
-        
-        // For generic preview mode, add a more prominent indicator
-        if (changes.genericPreview) {
-          const genericIndicator = iframeDoc.createElement('div');
-          genericIndicator.innerHTML = '📝 Code file loaded - manual changes detected but specific DOM updates may not be visible';
-          genericIndicator.style.cssText = `
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
-            background: rgba(234, 179, 8, 0.9);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-family: monospace;
-            z-index: 10000;
-            text-align: center;
-          `;
-          genericIndicator.setAttribute('data-live-preview', 'true');
-          iframeDoc.body.appendChild(genericIndicator);
-        }
-        
-        console.log('✅ Code patches applied successfully to preview');
-      }
     } catch (error) {
-      console.warn('⚠️ Could not apply code patches:', error.message);
+      console.error('❌ BrowserPreview: Error in data-level overlay system:', error);
+      // Fallback to baseline code
+      try {
+        const fallbackCode = getMergedContent(fileName) || currentCode;
+        if (fallbackCode) {
+          await applyMergedCodeToIframe(iframe, fallbackCode);
+          console.log('🔄 BrowserPreview: Fallback to baseline code successful');
+        }
+      } catch (fallbackError) {
+        console.error('❌ BrowserPreview: Fallback also failed:', fallbackError);
+      }
     }
-  }, [currentCode, fileName, getApiConfig, getMergedContent]);
+  }, [fileName, currentCode, getApiConfig, getMergedContent, applyMergedCodeToIframe]);
 
   // Assign function to ref to break circular dependencies
   useEffect(() => {
@@ -668,160 +542,6 @@ const BrowserPreview = ({
   }, [applyCodePatches]);
 
   // Parse code changes from the current file content
-  const parseCodeChanges = useCallback((code, filePath) => {
-    const changes = { hasChanges: false };
-    
-    try {
-      console.log('🔍 Parsing code changes for file:', filePath);
-      console.log('📄 Code content length:', code.length);
-      
-      // Extract CSS/styled-components changes
-      const styleMatches = [
-        ...code.matchAll(/styled\.\w+`([^`]+)`/g),
-        ...code.matchAll(/css`([^`]+)`/g),
-        ...code.matchAll(/className="([^"]+)"/g),
-        ...code.matchAll(/style=\{([^}]+)\}/g)
-      ];
-      
-      if (styleMatches.length > 0) {
-        changes.styles = styleMatches.map(match => match[1]).join('\n');
-        changes.hasChanges = true;
-        console.log('🎨 Style changes detected:', styleMatches.length, 'matches');
-      }
-      
-      // Extract text/content changes (enhanced)
-      const textMatches = [
-        ...code.matchAll(/>([^<>{]+)</g),
-        ...code.matchAll(/title:\s*["']([^"']+)["']/g),
-        ...code.matchAll(/placeholder:\s*["']([^"']+)["']/g),
-        ...code.matchAll(/alt:\s*["']([^"']+)["']/g),
-        ...code.matchAll(/label:\s*["']([^"']+)["']/g),
-        ...code.matchAll(/text:\s*["']([^"']+)["']/g),
-        ...code.matchAll(/value:\s*["']([^"']+)["']/g)
-      ];
-      
-      if (textMatches.length > 0) {
-        changes.domUpdates = textMatches.map((match, index) => {
-          const extractedText = match[1].trim();
-          return {
-            type: 'text',
-            selector: `[data-preview-text="${index}"]`,
-            value: extractedText,
-            // Add intelligent replacement hints
-            replacementHints: generateReplacementHints(extractedText)
-          };
-        }).filter(update => update.value.length > 0 && !update.value.includes('{'));
-        
-        if (changes.domUpdates.length > 0) {
-          changes.hasChanges = true;
-          console.log('📝 Text changes detected:', changes.domUpdates.length, 'updates');
-          console.log('📝 Text values found:', changes.domUpdates.map(u => u.value));
-        }
-      }
-      
-      // Helper function to generate smart replacement patterns
-      function generateReplacementHints(text) {
-        const hints = [];
-        const lowerText = text.toLowerCase();
-        
-        // Cart-related patterns - handle both directions for proper toggle simulation
-        if (lowerText.includes('cart')) {
-          // If we see "My Cart", simulate replacing "Your Cart" with "My Cart"
-          if (text.includes('My Cart')) {
-            hints.push({
-              pattern: /Your Cart/gi,
-              replacement: text
-            });
-            hints.push({
-              pattern: /Your cart/gi,
-              replacement: text.replace('My Cart', 'My cart') // Match case
-            });
-            // Also handle direct replacement when the text is already "My Cart"
-            hints.push({
-              pattern: /My Cart/gi,
-              replacement: text
-            });
-          }
-          // If we see "Your Cart", simulate replacing it with "My Cart"  
-          if (text.includes('Your Cart')) {
-            hints.push({
-              pattern: /Your Cart/gi,
-              replacement: text.replace('Your Cart', 'My Cart')
-            });
-          }
-        }
-        
-        // Generic word replacement with exact matching
-        const words = text.split(' ');
-        if (words.length <= 4 && text.length >= 3) { // Only for reasonable phrases
-          // Add exact pattern matching
-          const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          hints.push({
-            pattern: new RegExp(`^${escapedText}$`, 'gi'),
-            replacement: text,
-            exact: true
-          });
-          // Also add looser matching for partial matches
-          hints.push({
-            pattern: new RegExp(escapedText, 'gi'),
-            replacement: text,
-            partial: true
-          });
-        }
-        
-        return hints;
-      }
-      
-      // Extract component prop changes that might affect behavior
-      const propMatches = [
-        ...code.matchAll(/(\w+)=\{([^}]+)\}/g),
-        ...code.matchAll(/(\w+)="([^"]+)"/g)
-      ];
-      
-      if (propMatches.length > 0) {
-        const behaviorChanges = propMatches
-          .filter(match => ['onClick', 'onSubmit', 'onChange', 'disabled', 'hidden'].includes(match[1]))
-          .map(match => `// ${match[1]} property updated`)
-          .join('\n');
-          
-        if (behaviorChanges) {
-          changes.behavior = behaviorChanges;
-          changes.hasChanges = true;
-          console.log('⚡ Behavior changes detected:', propMatches.length, 'props');
-        }
-      }
-      
-      // Add more comprehensive change detection
-      const detectedChanges = {
-        hasAnyCode: code.length > 0,
-        hasReactContent: code.includes('return') || code.includes('jsx') || code.includes('<'),
-        hasComponents: code.includes('Component') || code.includes('function') || code.includes('const'),
-        hasStyles: changes.styles !== undefined,
-        hasTextUpdates: changes.domUpdates && changes.domUpdates.length > 0,
-        hasBehavior: changes.behavior !== undefined
-      };
-      
-      console.log('🎯 Parsed code changes summary:', {
-        hasChanges: changes.hasChanges,
-        detectedChanges,
-        stylesCount: changes.styles ? 1 : 0,
-        domUpdatesCount: changes.domUpdates ? changes.domUpdates.length : 0,
-        behaviorCount: changes.behavior ? 1 : 0
-      });
-      
-      // If we have React content but no specific changes detected, mark as having changes anyway
-      if (!changes.hasChanges && detectedChanges.hasReactContent) {
-        console.log('🔧 No specific patterns matched, but React content detected - enabling generic preview mode');
-        changes.hasChanges = true;
-        changes.genericPreview = true;
-      }
-      
-    } catch (error) {
-      console.warn('Error parsing code changes:', error);
-    }
-    
-    return changes;
-  }, []);
 
   // Handle iframe load
   const handleIframeLoad = useCallback(async () => {

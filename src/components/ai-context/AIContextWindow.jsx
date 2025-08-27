@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Send, RefreshCw, AlertCircle, CheckCircle, Code, Lightbulb } from 'lucide-react';
+import { Send, RefreshCw, AlertCircle, CheckCircle, Code, Lightbulb, Minimize2, Maximize2, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
 
@@ -22,6 +22,8 @@ const AIContextWindow = ({
   const [error, setError] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const textareaRef = useRef(null);
 
   // Auto-resize textarea
@@ -137,6 +139,22 @@ const AIContextWindow = ({
     setPrompt(suggestion);
   }, []);
 
+  // Toggle minimize state
+  const toggleMinimize = useCallback(() => {
+    setIsMinimized(prev => !prev);
+    if (isMaximized) {
+      setIsMaximized(false);
+    }
+  }, [isMaximized]);
+
+  // Toggle maximize state
+  const toggleMaximize = useCallback(() => {
+    setIsMaximized(prev => !prev);
+    if (isMinimized) {
+      setIsMinimized(false);
+    }
+  }, [isMinimized]);
+
   // Common prompt templates
   const promptTemplates = [
     "Add a new function called {name} that {description}",
@@ -152,38 +170,61 @@ const AIContextWindow = ({
   ];
 
   return (
-    <div className={cn("flex flex-col bg-white dark:bg-gray-900 border-l", className)}>
+    <div className={cn(
+      "flex flex-col bg-white dark:bg-gray-900 border-l transition-all duration-300",
+      isMaximized && "fixed inset-0 z-50",
+      isMinimized && "h-12 overflow-hidden",
+      className
+    )}>
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b bg-gray-50 dark:bg-gray-800">
         <div className="flex items-center gap-2">
           <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
             AI Context Window
           </h3>
-          {/* Authentication Status */}
-          <div className={cn(
-            "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs",
-            isAuthenticated 
-              ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-              : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
-          )}>
+          {!isMinimized && (
             <div className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              isAuthenticated ? "bg-green-500" : "bg-red-500"
-            )} />
-            {isAuthenticated ? "Auth OK" : "Auth Required"}
-          </div>
+              "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs",
+              isAuthenticated 
+                ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                : "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+            )}>
+              <div className={cn(
+                "w-1.5 h-1.5 rounded-full",
+                isAuthenticated ? "bg-green-500" : "bg-red-500"
+              )} />
+              {isAuthenticated ? "Auth OK" : "Auth Required"}
+            </div>
+          )}
         </div>
-        <button
-          onClick={clearState}
-          className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          title="Clear"
-        >
-          <RefreshCw className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={toggleMinimize}
+            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            title={isMinimized ? "Restore" : "Minimize"}
+          >
+            <Minimize2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={toggleMaximize}
+            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            title={isMaximized ? "Restore" : "Maximize"}
+          >
+            {isMaximized ? <Square className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          </button>
+          <button
+            onClick={clearState}
+            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            title="Clear"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {!isMinimized && (
+        <div className="flex-1 flex flex-col overflow-hidden">
         {/* Prompt Input Area */}
         <div className="p-3 border-b bg-gray-50 dark:bg-gray-800">
           <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -394,14 +435,17 @@ const AIContextWindow = ({
             </div>
           )}
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Footer */}
-      <div className="p-2 border-t bg-gray-50 dark:bg-gray-800">
-        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          Powered by AST analysis and AI-driven code understanding
+      {!isMinimized && (
+        <div className="p-2 border-t bg-gray-50 dark:bg-gray-800">
+          <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+            Powered by AST analysis and AI-driven code understanding
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
