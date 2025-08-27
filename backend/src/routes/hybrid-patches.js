@@ -17,6 +17,7 @@ const versionControl = new VersionControlService();
  * GET /api/hybrid-patches/test
  */
 router.get('/test', (req, res) => {
+  console.log('🔍 Test endpoint called - no auth middleware should be applied');
   res.json({
     success: true,
     message: 'Hybrid patches route is accessible without authentication',
@@ -25,7 +26,11 @@ router.get('/test', (req, res) => {
       method: req.method,
       url: req.url,
       path: req.path,
-      hasAuth: !!req.headers.authorization
+      hasAuth: !!req.headers.authorization,
+      headers: {
+        auth: req.headers.authorization || 'none',
+        storeId: req.headers['x-store-id'] || 'none'
+      }
     }
   });
 });

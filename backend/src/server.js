@@ -107,7 +107,7 @@ const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
 const cronJobRoutes = require('./routes/cron-jobs');
 const customizationOverlayRoutes = require('./routes/customization-overlays');
-const hybridPatchesRoutes = require('./routes/hybrid-patches');
+const patchesRoutes = require('./routes/patches');
 
 const app = express();
 
@@ -1582,7 +1582,7 @@ app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, 
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/customization-overlays', customizationOverlayRoutes); // Overlay persistence and version control routes
-app.use('/api/hybrid-patches', hybridPatchesRoutes); // Unified hybrid patches API with auto-save and version control
+app.use('/api/patches', patchesRoutes); // Versioned patches API with A/B testing and rollback support
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes

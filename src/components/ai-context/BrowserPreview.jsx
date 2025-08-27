@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code, Layers } from 'lucide-react';
-import { useOverlayManager } from '../../services/overlay-manager';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
@@ -22,42 +21,15 @@ const BrowserPreview = ({
   const [error, setError] = useState(null);
   const [deviceView, setDeviceView] = useState('desktop'); // desktop, tablet, mobile
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
-  const [enablePatches, setEnablePatches] = useState(true); // Enable code patch simulation
+  const [enablePatches, setEnablePatches] = useState(true); // Enable server-side patch application
   
-  // Overlay state management using existing overlay manager
-  const [showOverlay, setShowOverlay] = useState(false);
-  const [overlayMode, setOverlayMode] = useState('merged'); // 'baseline', 'merged', 'editor'
-  const [coreCode, setCoreCode] = useState(''); // Immutable base code
-  const [overlayData, setOverlayData] = useState({ baseline: null, current: null, hasOverlay: false });
-  const { manager: overlayManager, stats: overlayStats, getMergedContent, setOriginalCode, createOverlay, clearFileOverlays } = useOverlayManager();
-  
-  // Use ref to break circular dependencies
+  // Patch state management - simplified for server-side merging
+  const [showPatchControls, setShowPatchControls] = useState(false);
+  const [patchMode, setPatchMode] = useState('merged'); // 'baseline', 'merged'
+  const [patchData, setPatchData] = useState({ baseline: null, current: null, hasPatches: false });
+
+  // Server-side patch system - no client-side code merging needed
   const applyCodePatchesRef = useRef(null);
-
-  // Initialize overlay system when file changes
-  useEffect(() => {
-    if (fileName && currentCode) {
-      // Set original code in overlay manager
-      setOriginalCode(fileName, currentCode);
-      setCoreCode(currentCode);
-    }
-  }, [fileName, currentCode, setOriginalCode]);
-
-  // Apply live code changes as overlays
-  useEffect(() => {
-    if (fileName && currentCode && coreCode && currentCode !== coreCode) {
-      // Create or update overlay with current changes
-      const overlay = createOverlay(fileName, currentCode, {
-        changeType: 'live_edit',
-        changeSummary: 'Live code editing',
-        priority: 1
-      });
-      
-      if (overlay) {
-        console.log('🔄 Applied live code change as overlay');
-      }
-    }
-  }, [currentCode, coreCode, fileName, createOverlay]);
 
   // Get store context for API calls
   const { selectedStore } = useStoreSelection();
@@ -315,13 +287,13 @@ const BrowserPreview = ({
   const currentDimensions = deviceDimensions[deviceView];
 
 
-  // Enhanced overlay status check - now uses server-side merged code
-  const checkOverlayStatus = useCallback(async (fileName) => {
+  // Enhanced patch status check - now uses server-side patches API
+  const checkPatchStatus = useCallback(async (fileName) => {
     try {
-      console.log(`🔍 BrowserPreview: Checking overlay status for file: ${fileName}`);
+      console.log(`🔍 BrowserPreview: Checking patch status for file: ${fileName}`);
       console.log(`🔍 BrowserPreview: StoreId: ${storeId}, fileName: ${fileName}`);
       
-      // Use authenticated API client to check if overlay exists
+      // Use authenticated API client to check if patches exist
       const customHeaders = {};
       if (storeId && storeId !== 'undefined') {
         customHeaders['x-store-id'] = storeId;
@@ -329,75 +301,75 @@ const BrowserPreview = ({
       
       console.log(`🔍 BrowserPreview: Custom headers:`, customHeaders);
       
-      // Check overlay status with both baseline and merged modes
+      // Check patch status with both baseline and patched modes
       const encodedFileName = encodeURIComponent(fileName);
-      const mergedUrl = `hybrid-patches/modified-code/${encodedFileName}?mode=merged&processed=false`;
-      const baselineUrl = `hybrid-patches/modified-code/${encodedFileName}?mode=baseline&processed=false`;
+      const patchedUrl = `patches/apply/${encodedFileName}?preview=true&store_id=${storeId}`;
+      const baselineUrl = `patches/apply/${encodedFileName}?preview=false&store_id=${storeId}`;
       
-      console.log(`🔍 BrowserPreview: API URLs:`, { mergedUrl, baselineUrl });
+      console.log(`🔍 BrowserPreview: API URLs:`, { patchedUrl, baselineUrl });
       
-      const [mergedData, baselineData] = await Promise.all([
-        apiClient.get(mergedUrl, customHeaders),
+      const [patchedData, baselineData] = await Promise.all([
+        apiClient.get(patchedUrl, customHeaders),
         apiClient.get(baselineUrl, customHeaders)
       ]);
       
       console.log(`🔍 BrowserPreview: API responses:`, {
-        merged: { success: mergedData?.success, hasOverlay: mergedData?.data?.hasOverlay, appliedSnapshots: mergedData?.data?.appliedSnapshots },
+        patched: { success: patchedData?.success, hasPatches: patchedData?.data?.hasPatches, totalPatches: patchedData?.data?.totalPatches },
         baseline: { success: baselineData?.success }
       });
       
-      const hasOverlay = mergedData?.success && mergedData?.data?.hasOverlay;
+      const hasPatches = patchedData?.success && patchedData?.data?.hasPatches;
       
-      if (hasOverlay) {
-        console.log(`✅ BrowserPreview: Found server-side overlay for ${fileName}`);
-        console.log(`📊 Overlay stats: ${mergedData.data.appliedSnapshots || 0} snapshots applied`);
+      if (hasPatches) {
+        console.log(`✅ BrowserPreview: Found server-side patches for ${fileName}`);
+        console.log(`📊 Patch stats: ${patchedData.data.totalPatches || 0} patches applied`);
         
-        // Update overlay data state for UI toggle
-        const overlayResult = {
-          baseline: baselineData?.data?.modifiedCode || null,
-          current: mergedData?.data?.modifiedCode || null,
-          hasOverlay: true,
-          appliedSnapshots: mergedData.data.appliedSnapshots || 0,
-          customizationId: mergedData.data.customizationId,
-          lastModified: mergedData.data.lastModified
+        // Update patch data state for UI toggle
+        const patchResult = {
+          baseline: baselineData?.data?.baselineCode || null,
+          current: patchedData?.data?.patchedCode || null,
+          hasPatches: true,
+          appliedPatches: patchedData.data.totalPatches || patchedData.data.appliedPatches || 0,
+          patchDetails: patchedData.data.patchDetails || [],
+          cacheKey: patchedData.data.cacheKey
         };
         
-        setOverlayData(overlayResult);
+        setPatchData(patchResult);
         
         return {
-          hasOverlay: true,
-          appliedSnapshots: mergedData.data.appliedSnapshots || 0,
-          customizationId: mergedData.data.customizationId,
-          lastModified: mergedData.data.lastModified,
+          hasPatches: true,
+          appliedPatches: patchedData.data.totalPatches || patchedData.data.appliedPatches || 0,
+          patchDetails: patchedData.data.patchDetails || [],
+          cacheKey: patchedData.data.cacheKey,
           matchedPath: fileName,
           requestedPath: fileName
         };
       } else {
-        console.log(`❌ BrowserPreview: No server-side overlay found for ${fileName}`);
+        console.log(`❌ BrowserPreview: No server-side patches found for ${fileName}`);
         
-        // Update overlay data state to show no overlay
-        setOverlayData({
+        // Update patch data state to show no patches
+        setPatchData({
           baseline: null,
           current: null,
-          hasOverlay: false
+          hasPatches: false
         });
         
-        return { hasOverlay: false };
+        return { hasPatches: false };
       }
     } catch (error) {
-      console.error('❌ BrowserPreview: Error checking overlay status:', error);
+      console.error('❌ BrowserPreview: Error checking patch status:', error);
       
-      setOverlayData({
+      setPatchData({
         baseline: null,
         current: null,
-        hasOverlay: false
+        hasPatches: false
       });
       
-      return { hasOverlay: false };
+      return { hasPatches: false };
     }
   }, [storeId]);
 
-  // Server-side overlay application using URL parameters - no DOM manipulation needed
+  // Server-side patch application using URL parameters - no DOM manipulation needed
   const applyCodePatches = useCallback(async (iframe) => {
     if (!fileName) {
       console.log(`🔍 BrowserPreview: applyCodePatches called but fileName is empty: ${fileName}`);
@@ -405,20 +377,20 @@ const BrowserPreview = ({
     }
     
     try {
-      console.log(`🔄 BrowserPreview: Server-side overlay application for: ${fileName} (mode: ${overlayMode})`);
+      console.log(`🔄 BrowserPreview: Server-side patch application for: ${fileName} (mode: ${patchMode})`);
       console.log(`🔍 BrowserPreview: Current iframe src:`, iframe.src);
       console.log(`🔍 BrowserPreview: Preview URL:`, previewUrl);
       
-      // Check if overlay exists for this file
-      const overlayStatus = await checkOverlayStatus(fileName);
-      console.log(`🔍 BrowserPreview: Overlay status result:`, overlayStatus);
+      // Check if patches exist for this file using the patches API
+      const patchStatus = await checkPatchStatus(fileName);
+      console.log(`🔍 BrowserPreview: Patch status result:`, patchStatus);
       
-      if (overlayStatus.hasOverlay) {
-        console.log(`✅ BrowserPreview: Server-side overlay found for ${fileName}. Mode: ${overlayMode}`);
-        console.log(`📊 Overlay stats: ${overlayStatus.appliedSnapshots || 0} snapshots accumulated`);
+      if (patchStatus.hasPatches) {
+        console.log(`✅ BrowserPreview: Server-side patches found for ${fileName}. Mode: ${patchMode}`);
+        console.log(`📊 Patch stats: ${patchStatus.appliedPatches || 0} patches applied`);
         
-        // Instead of DOM manipulation, refresh the iframe with overlay parameters
-        // The server will serve the properly merged code based on the mode
+        // Server handles patch merging - just request the appropriate version via iframe URL
+        // The storefront renderer will handle the patch_mode and patch_file parameters
         const currentUrl = iframe.src || previewUrl;
         console.log(`🔍 BrowserPreview: Current URL before modification:`, currentUrl);
         
@@ -426,22 +398,23 @@ const BrowserPreview = ({
           const url = new URL(currentUrl);
           console.log(`🔍 BrowserPreview: URL object created:`, url.toString());
           
-          // Add overlay mode parameter to tell server which version to serve
-          if (overlayMode === 'baseline') {
-            url.searchParams.set('overlay_mode', 'baseline');
+          // Add patch parameters to tell the storefront renderer which version to serve
+          if (patchMode === 'baseline') {
+            url.searchParams.set('patch_mode', 'baseline');
           } else {
-            url.searchParams.set('overlay_mode', 'merged');
+            url.searchParams.set('patch_mode', 'merged');
           }
           
-          // Add file parameter so server knows which file's overlay to apply
-          url.searchParams.set('overlay_file', fileName);
+          // Add file parameter so renderer knows which file's patches to apply
+          url.searchParams.set('patch_file', fileName);
+          url.searchParams.set('store_id', storeId);
           
           const newUrl = url.toString();
-          console.log(`🔍 BrowserPreview: New URL with overlay parameters:`, newUrl);
-          console.log(`🔍 BrowserPreview: Overlay mode set to:`, overlayMode);
-          console.log(`🔍 BrowserPreview: Overlay file set to:`, fileName);
+          console.log(`🔍 BrowserPreview: New URL with patch parameters:`, newUrl);
+          console.log(`🔍 BrowserPreview: Patch mode set to:`, patchMode);
+          console.log(`🔍 BrowserPreview: Patch file set to:`, fileName);
           
-          console.log(`🔄 BrowserPreview: Refreshing iframe with server-side overlay mode: ${overlayMode}`);
+          console.log(`🔄 BrowserPreview: Refreshing iframe with server-side patch mode: ${patchMode}`);
           iframe.src = newUrl;
           
           // Verify the iframe src was actually set
@@ -449,54 +422,56 @@ const BrowserPreview = ({
             console.log(`🔍 BrowserPreview: Iframe src after setting:`, iframe.src);
           }, 100);
         } else {
-          console.log(`❌ BrowserPreview: No current URL available for overlay application`);
+          console.log(`❌ BrowserPreview: No current URL available for patch application`);
         }
       } else {
-        console.log(`❌ BrowserPreview: No server-side overlay found for ${fileName} - showing editor content`);
+        console.log(`❌ BrowserPreview: No server-side patches found for ${fileName} - showing normal page`);
         
-        // No overlay exists, remove any overlay parameters and show normal page
+        // No patches exist, remove any patch parameters and show normal page
         const currentUrl = iframe.src || previewUrl;
         if (currentUrl) {
           const url = new URL(currentUrl);
-          const hadOverlayParams = url.searchParams.has('overlay_mode') || url.searchParams.has('overlay_file');
+          const hadPatchParams = url.searchParams.has('patch_mode') || url.searchParams.has('patch_file');
           
-          url.searchParams.delete('overlay_mode');
-          url.searchParams.delete('overlay_file');
+          url.searchParams.delete('patch_mode');
+          url.searchParams.delete('patch_file');
+          url.searchParams.delete('store_id');
           
           const newUrl = url.toString();
           console.log(`🔍 BrowserPreview: Cleaned URL:`, newUrl);
           
-          if (newUrl !== currentUrl || hadOverlayParams) {
-            console.log(`🔄 BrowserPreview: Refreshing iframe without overlay parameters`);
+          if (newUrl !== currentUrl || hadPatchParams) {
+            console.log(`🔄 BrowserPreview: Refreshing iframe without patch parameters`);
             iframe.src = newUrl;
           }
         }
       }
     } catch (error) {
-      console.error('❌ BrowserPreview: Error applying server-side overlay:', error);
+      console.error('❌ BrowserPreview: Error applying server-side patches:', error);
       
-      // On error, try to refresh iframe without overlay parameters
+      // On error, try to refresh iframe without patch parameters
       const currentUrl = iframe.src || previewUrl;
       if (currentUrl) {
         const url = new URL(currentUrl);
-        url.searchParams.delete('overlay_mode');
-        url.searchParams.delete('overlay_file');
+        url.searchParams.delete('patch_mode');
+        url.searchParams.delete('patch_file');
+        url.searchParams.delete('store_id');
         iframe.src = url.toString();
       }
     }
-  }, [fileName, overlayMode, checkOverlayStatus, previewUrl]);
+  }, [fileName, patchMode, checkPatchStatus, previewUrl, storeId]);
 
   // Assign function to ref to break circular dependencies
   useEffect(() => {
     applyCodePatchesRef.current = applyCodePatches;
   }, [applyCodePatches]);
 
-  // Trigger overlay reapplication when overlay mode changes
+  // Trigger patch reapplication when patch mode changes
   useEffect(() => {
-    if (overlayData.hasOverlay && enablePatches) {
+    if (patchData.hasPatches && enablePatches) {
       const iframe = document.getElementById('browser-preview-iframe');
       if (iframe && applyCodePatchesRef.current) {
-        console.log(`🔄 BrowserPreview: Overlay mode changed to ${overlayMode}, reapplying...`);
+        console.log(`🔄 BrowserPreview: Patch mode changed to ${patchMode}, reapplying...`);
         setTimeout(() => {
           if (applyCodePatchesRef.current) {
             applyCodePatchesRef.current(iframe);
@@ -504,18 +479,18 @@ const BrowserPreview = ({
         }, 100);
       }
     }
-  }, [overlayMode, overlayData.hasOverlay, enablePatches]);
+  }, [patchMode, patchData.hasPatches, enablePatches]);
 
-  // Debug: Track overlayData changes
+  // Debug: Track patchData changes
   useEffect(() => {
-    console.log(`🔍 BrowserPreview: overlayData changed:`, overlayData);
-    console.log(`🔍 BrowserPreview: overlayData.hasOverlay:`, overlayData.hasOverlay);
-    if (overlayData.hasOverlay) {
-      console.log(`✅ BrowserPreview: Overlay is available for ${fileName}`);
+    console.log(`🔍 BrowserPreview: patchData changed:`, patchData);
+    console.log(`🔍 BrowserPreview: patchData.hasPatches:`, patchData.hasPatches);
+    if (patchData.hasPatches) {
+      console.log(`✅ BrowserPreview: Patches are available for ${fileName}`);
     } else {
-      console.log(`❌ BrowserPreview: No overlay found for ${fileName}`);
+      console.log(`❌ BrowserPreview: No patches found for ${fileName}`);
     }
-  }, [overlayData, fileName]);
+  }, [patchData, fileName]);
 
   // Parse code changes from the current file content
 
@@ -665,60 +640,59 @@ const BrowserPreview = ({
               <div className="flex items-center space-x-1">
                 <button
                   onClick={() => {
-                    console.log(`🔍 BrowserPreview: Overlay button clicked!`);
-                    console.log(`🔍 BrowserPreview: Current overlay data:`, overlayData);
-                    console.log(`🔍 BrowserPreview: Current overlay mode:`, overlayMode);
-                    console.log(`🔍 BrowserPreview: Has overlay:`, overlayData.hasOverlay);
+                    console.log(`🔍 BrowserPreview: Patch button clicked!`);
+                    console.log(`🔍 BrowserPreview: Current patch data:`, patchData);
+                    console.log(`🔍 BrowserPreview: Current patch mode:`, patchMode);
+                    console.log(`🔍 BrowserPreview: Has patches:`, patchData.hasPatches);
                     console.log(`🔍 BrowserPreview: File name:`, fileName);
                     
-                    if (overlayData.hasOverlay) {
+                    if (patchData.hasPatches) {
                       // Toggle between baseline and merged modes
-                      const newMode = overlayMode === 'baseline' ? 'merged' : 'baseline';
-                      console.log(`🔄 BrowserPreview: Toggling overlay from ${overlayMode} to ${newMode} mode`);
-                      setOverlayMode(newMode);
+                      const newMode = patchMode === 'baseline' ? 'merged' : 'baseline';
+                      console.log(`🔄 BrowserPreview: Toggling patch from ${patchMode} to ${newMode} mode`);
+                      setPatchMode(newMode);
                     } else {
-                      // No overlay data available, just show overlay system
-                      setShowOverlay(!showOverlay);
+                      // No patch data available, just show patch controls
+                      setShowPatchControls(!showPatchControls);
                     }
                   }}
                   className={cn(
                     "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
-                    (overlayData.hasOverlay && overlayMode !== 'baseline') || (showOverlay && !overlayData.hasOverlay)
+                    (patchData.hasPatches && patchMode !== 'baseline') || (showPatchControls && !patchData.hasPatches)
                       ? "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/50 dark:border-purple-700 dark:text-purple-300" 
                       : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
                   )}
-                  title={overlayData.hasOverlay
-                    ? `Toggle overlay changes (${overlayMode === 'baseline' ? 'click to show' : 'click to hide'} server-side overlays)`
-                    : "Show overlay system (non-destructive code patches)"
+                  title={patchData.hasPatches
+                    ? `Toggle patch changes (${patchMode === 'baseline' ? 'click to show' : 'click to hide'} server-side patches)`
+                    : "Show patch system (non-destructive code patches)"
                   }
                 >
                   <Layers className="w-3 h-3 mr-1 inline" />
-                  {overlayData.hasOverlay 
-                    ? (overlayMode === 'baseline' ? "Show Overlay" : "Hide Overlay")
-                    : "Overlay"
+                  {patchData.hasPatches 
+                    ? (patchMode === 'baseline' ? "Show Patches" : "Hide Patches")
+                    : "Patches"
                   }
                 </button>
                 
-                {/* Advanced Mode Selector - show when overlay is available and user wants more control */}
-                {overlayData.hasOverlay && showOverlay && (
+                {/* Advanced Mode Selector - show when patches are available and user wants more control */}
+                {patchData.hasPatches && showPatchControls && (
                   <select
-                    value={overlayMode}
-                    onChange={(e) => setOverlayMode(e.target.value)}
+                    value={patchMode}
+                    onChange={(e) => setPatchMode(e.target.value)}
                     className="px-2 py-1 text-xs rounded-md border bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 focus:border-purple-300 dark:focus:border-purple-600 focus:ring-1 focus:ring-purple-200 dark:focus:ring-purple-800"
                     title="Advanced mode selector - choose exact content version"
                   >
                     <option value="baseline">Baseline (Original)</option>
-                    <option value="merged">Merged (With Changes)</option>
-                    <option value="editor">Editor (Live Code)</option>
+                    <option value="merged">Merged (With Patches)</option>
                   </select>
                 )}
                 
-                {/* Show advanced controls toggle - only when overlay data is available */}
-                {overlayData.hasOverlay && (
+                {/* Show advanced controls toggle - only when patch data is available */}
+                {patchData.hasPatches && (
                   <button
-                    onClick={() => setShowOverlay(!showOverlay)}
+                    onClick={() => setShowPatchControls(!showPatchControls)}
                     className="px-2 py-1 text-xs rounded-md border bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 transition-colors"
-                    title="Show advanced overlay controls"
+                    title="Show advanced patch controls"
                   >
                     ⚙️
                   </button>
