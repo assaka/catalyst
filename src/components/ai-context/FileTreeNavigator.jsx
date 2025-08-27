@@ -46,12 +46,12 @@ const FileTreeNavigator = ({
       
       console.log('📡 FileTreeNavigator: API Response:', data);
       
-      if (data && data.success && data.files) {
-        console.log('✅ FileTreeNavigator: Got', data.files.length, 'files from baselines');
-        console.log('📁 FileTreeNavigator: Sample files:', data.files.slice(0, 5).map(f => f.file_path));
+      if (data && data.success && data.data && data.data.files) {
+        console.log('✅ FileTreeNavigator: Got', data.data.files.length, 'files from baselines');
+        console.log('📁 FileTreeNavigator: Sample files:', data.data.files.slice(0, 5).map(f => f.file_path));
         
         // Convert file baselines to file tree format
-        const fileList = data.files.map(file => ({
+        const fileList = data.data.files.map(file => ({
           path: file.file_path,
           extension: file.file_path.split('.').pop(),
           size: file.file_size || 0,
