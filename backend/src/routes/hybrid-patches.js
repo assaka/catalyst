@@ -387,7 +387,7 @@ router.get('/files/recent', authMiddleware, async (req, res) => {
 });
 
 /**
- * Get modified code for preview
+ * Get modified code for preview (with flexible path matching)
  * GET /api/hybrid-patches/modified-code/:filePath
  */
 router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
@@ -395,23 +395,51 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
     const filePath = decodeURIComponent(req.params.filePath);
     const userId = req.user.id;
 
-    // Direct query approach for consistency
-    const snapshot = await CustomizationSnapshot.findOne({
-      where: {
-        file_path: filePath,
-        status: 'open'
-      },
-      include: [{
-        model: CustomizationOverlay,
-        as: 'customization',
+    console.log(`🔍 Looking for overlay for file: ${filePath} (user: ${userId})`);
+
+    // Create path variations to try matching against database
+    const pathVariations = [
+      filePath,                           // e.g., "pages/Cart.jsx"
+      `src/${filePath}`,                  // e.g., "src/pages/Cart.jsx"
+      filePath.replace(/^pages\//, ''),   // e.g., "Cart.jsx" from "pages/Cart.jsx"
+      filePath.replace(/^src\/pages\//, 'pages/'), // e.g., "pages/Cart.jsx" from "src/pages/Cart.jsx"
+      filePath.replace(/^src\//, ''),     // e.g., "pages/Cart.jsx" from "src/pages/Cart.jsx"
+    ];
+
+    // Remove duplicates
+    const uniquePathVariations = [...new Set(pathVariations)];
+    console.log(`🔍 Trying path variations:`, uniquePathVariations);
+
+    let snapshot = null;
+    let matchedPath = null;
+
+    // Try each path variation until we find a match
+    for (const pathVariation of uniquePathVariations) {
+      console.log(`🔍 Trying path variation: ${pathVariation}`);
+      
+      snapshot = await CustomizationSnapshot.findOne({
         where: {
-          user_id: userId,
-          status: 'active'
+          file_path: pathVariation,
+          status: 'open'
         },
-        required: true
-      }],
-      order: [['created_at', 'DESC']]
-    });
+        include: [{
+          model: CustomizationOverlay,
+          as: 'customization',
+          where: {
+            user_id: userId,
+            status: 'active'
+          },
+          required: true
+        }],
+        order: [['created_at', 'DESC']]
+      });
+
+      if (snapshot) {
+        matchedPath = pathVariation;
+        console.log(`✅ Found overlay with path variation: ${matchedPath}`);
+        break;
+      }
+    }
 
     if (snapshot && snapshot.customization && snapshot.customization.current_code) {
       const customization = snapshot.customization;
@@ -420,13 +448,18 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
         data: {
           modifiedCode: customization.current_code,
           customizationId: customization.id,
-          lastModified: customization.updated_at
+          lastModified: customization.updated_at,
+          matchedPath: matchedPath,
+          requestedPath: filePath
         }
       });
     } else {
+      console.log(`❌ No overlay found for any path variation of: ${filePath}`);
       res.status(404).json({
         success: false,
-        error: 'No modified code found for this file'
+        error: 'No modified code found for this file',
+        requestedPath: filePath,
+        triedPaths: uniquePathVariations
       });
     }
   } catch (error) {

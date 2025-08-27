@@ -22,7 +22,8 @@ import {
   RefreshCw,
   Minimize2,
   Maximize2,
-  Square
+  Square,
+  ChevronLeft
 } from 'lucide-react';
 
 const FileTreeNavigator = ({ 
@@ -35,6 +36,7 @@ const FileTreeNavigator = ({
   const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'src/components', 'src/pages']));
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTree, setFileTree] = useState(null);
+  const [isFolded, setIsFolded] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
@@ -141,6 +143,10 @@ const FileTreeNavigator = ({
 
   const refreshFileTree = () => {
     loadFileTree();
+  };
+
+  const toggleFold = () => {
+    setIsFolded(prev => !prev);
   };
 
   const toggleMinimize = () => {
@@ -294,22 +300,34 @@ const FileTreeNavigator = ({
   const filteredTree = fileTree ? filterFiles(fileTree, searchTerm) : null;
 
   return (
-    <Card className={`h-full flex flex-col transition-all duration-300 ${isMaximized ? 'fixed inset-0 z-50' : ''} ${isMinimized ? 'w-12' : 'w-auto'} ${className}`}>
+    <Card className={`h-full flex flex-col transition-all duration-300 ${isMaximized ? 'fixed inset-0 z-50' : ''} ${isFolded ? 'w-12' : 'w-auto'} ${className}`}>
       {/* Header */}
       <div className="border-b p-3">
         <div className="flex items-center justify-between mb-3">
-          {!isMinimized && <h3 className="font-semibold">Files</h3>}
+          {!isFolded && <h3 className="font-semibold">Files</h3>}
           <div className="flex items-center space-x-1 flex-shrink-0">
+            {/* Fold Button - Always visible */}
             <Button
               variant="ghost"
               size="sm"
-              onClick={toggleMinimize}
-              title={isMinimized ? "Unfold" : "Fold"}
+              onClick={toggleFold}
+              title={isFolded ? "Unfold" : "Fold"}
             >
-              <Minimize2 className="w-4 h-4" />
+              {isFolded ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             </Button>
-            {!isMinimized && (
+            {/* Window controls - Only show when not folded */}
+            {!isFolded && (
               <>
+                {isMaximized && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={toggleMinimize}
+                    title="Minimize"
+                  >
+                    <Minimize2 className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -330,7 +348,7 @@ const FileTreeNavigator = ({
         </div>
         
         {/* Search */}
-        {!isMinimized && (
+        {!isFolded && (
           <div className="relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -344,7 +362,7 @@ const FileTreeNavigator = ({
       </div>
 
       {/* File Tree */}
-      {!isMinimized && (
+      {!isFolded && (
         <ScrollArea className="flex-1">
           <div className="p-1">
             {filteredTree ? (
@@ -360,7 +378,7 @@ const FileTreeNavigator = ({
       )}
 
       {/* Footer */}
-      {showDetails && !isMinimized && (
+      {showDetails && !isFolded && (
         <div className="border-t p-3 text-xs text-muted-foreground">
           <div className="flex items-center justify-between">
             <span>

@@ -444,85 +444,92 @@ const BrowserPreview = ({
     }
   }, [fileName]);
 
-  // Apply code patches using data-level merging instead of DOM manipulation
+  // Direct overlay lookup function - matches filename to customization_overlays table
+  const fetchOverlayForFile = useCallback(async (fileName) => {
+    try {
+      const apiConfig = getApiConfig();
+      
+      console.log(`🔍 BrowserPreview: Looking for overlay for file: ${fileName}`);
+      
+      // Make single API call - backend now handles path variations
+      const response = await fetch(`/api/hybrid-patches/modified-code/${encodeURIComponent(fileName)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...apiConfig.headers
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data && data.data.modifiedCode) {
+          console.log(`✅ BrowserPreview: Found overlay for ${fileName} using path: ${data.data.matchedPath}`);
+          return {
+            hasOverlay: true,
+            modifiedCode: data.data.modifiedCode,
+            customizationId: data.data.customizationId,
+            lastModified: data.data.lastModified,
+            matchedPath: data.data.matchedPath,
+            requestedPath: data.data.requestedPath
+          };
+        }
+      }
+      
+      // Handle 404 - no overlay found
+      const errorData = await response.json().catch(() => ({}));
+      console.log(`❌ BrowserPreview: No overlay found for ${fileName}. Tried paths: ${errorData.triedPaths?.join(', ') || 'unknown'}`);
+      
+      return {
+        hasOverlay: false,
+        message: errorData.error || `No overlay found for: ${fileName}`,
+        triedPaths: errorData.triedPaths
+      };
+      
+    } catch (error) {
+      console.warn(`⚠️ BrowserPreview: Error fetching overlay for ${fileName}:`, error.message);
+      return {
+        hasOverlay: false,
+        error: error.message
+      };
+    }
+  }, [getApiConfig]);
+
+  // Apply overlay by directly matching filename to database overlay - no content checking loop
   const applyCodePatches = useCallback(async (iframe) => {
     if (!fileName) return;
     
     try {
-      console.log(`🔄 BrowserPreview: Applying data-level overlay merging for: ${fileName}`);
+      console.log(`🔄 BrowserPreview: Direct overlay lookup for: ${fileName}`);
       
-      // Step 1: Get baseline code (original file content)
-      let baselineCode = getMergedContent(fileName) || currentCode;
-      
-      // Step 2: Fetch database overlays for this file
-      let databaseOverlays = [];
-      try {
-        const apiConfig = getApiConfig();
-        const response = await fetch(`/api/hybrid-patches/modified-code/${encodeURIComponent(fileName)}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            ...apiConfig.headers
-          }
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.data && data.data.modifiedCode) {
-            // Convert the API response to overlay format for merging
-            databaseOverlays = [{
-              name: 'Database Overlay',
-              current_code: data.data.modifiedCode,
-              status: 'active',
-              priority: 1,
-              updatedAt: data.data.lastModified
-            }];
-            console.log(`✅ BrowserPreview: Found database overlay (${data.data.modifiedCode.length} chars)`);
-            
-            // Check if it contains expected changes
-            if (data.data.modifiedCode.includes('Hamid Cart')) {
-              console.log(`🎯 BrowserPreview: Database overlay contains "Hamid Cart" - will be merged!`);
-            }
-          } else {
-            console.log(`📄 BrowserPreview: No database overlays found, using baseline code`);
-          }
-        } else {
-          console.warn(`⚠️ BrowserPreview: Overlay API call failed (${response.status}), using baseline code`);
-        }
-      } catch (apiError) {
-        console.warn(`⚠️ BrowserPreview: Overlay API error, using baseline code:`, apiError.message);
+      // Get baseline code (original file content)
+      const baselineCode = getMergedContent(fileName) || currentCode;
+      if (!baselineCode) {
+        console.warn('⚠️ BrowserPreview: No baseline code available');
+        return;
       }
       
-      // Step 3: Merge baseline code with overlays using OverlayMergeService
-      const mergeResult = await overlayMergeService.mergeCodeWithOverlays(
-        baselineCode, 
-        databaseOverlays, 
-        fileName
-      );
+      // Direct overlay lookup by filename - no loop needed
+      const overlayResult = await fetchOverlayForFile(fileName);
       
-      if (mergeResult.success) {
-        console.log(`🔄 BrowserPreview: Successfully merged ${mergeResult.appliedOverlays} overlays`);
-        console.log(`   Baseline length: ${mergeResult.baselineLength} chars`);
-        console.log(`   Merged length: ${mergeResult.mergedLength} chars`);
+      if (overlayResult.hasOverlay) {
+        console.log(`✅ BrowserPreview: Found overlay for ${fileName} (${overlayResult.modifiedCode.length} chars)`);
         
-        // Step 4: Apply merged code to iframe using data-level injection
-        const success = await applyMergedCodeToIframe(iframe, mergeResult.mergedCode);
+        // Apply overlay directly to iframe - no merging service needed for single overlay
+        const success = await applyMergedCodeToIframe(iframe, overlayResult.modifiedCode);
         
         if (success) {
-          console.log('✅ BrowserPreview: Data-level overlay merging completed successfully');
+          console.log('✅ BrowserPreview: Overlay applied successfully');
         } else {
-          console.warn('⚠️ BrowserPreview: Failed to inject merged code into iframe');
-        }
-      } else {
-        console.error('❌ BrowserPreview: Code merging failed:', mergeResult.error);
-        // Fallback to baseline code if merging fails
-        if (baselineCode) {
+          console.warn('⚠️ BrowserPreview: Failed to apply overlay, using baseline');
           await applyMergedCodeToIframe(iframe, baselineCode);
         }
+      } else {
+        console.log(`📄 BrowserPreview: No overlay found for ${fileName}, using baseline code`);
+        await applyMergedCodeToIframe(iframe, baselineCode);
       }
       
     } catch (error) {
-      console.error('❌ BrowserPreview: Error in data-level overlay system:', error);
+      console.error('❌ BrowserPreview: Error in overlay system:', error);
       // Fallback to baseline code
       try {
         const fallbackCode = getMergedContent(fileName) || currentCode;
@@ -534,7 +541,7 @@ const BrowserPreview = ({
         console.error('❌ BrowserPreview: Fallback also failed:', fallbackError);
       }
     }
-  }, [fileName, currentCode, getApiConfig, getMergedContent, applyMergedCodeToIframe]);
+  }, [fileName, currentCode, getMergedContent, applyMergedCodeToIframe]);
 
   // Assign function to ref to break circular dependencies
   useEffect(() => {
