@@ -173,15 +173,17 @@ const AIContextWindow = ({
     <div className={cn(
       "flex flex-col bg-white dark:bg-gray-900 border-l transition-all duration-300",
       isMaximized && "fixed inset-0 z-50",
-      isMinimized && "h-12 overflow-hidden",
+      isMinimized ? "w-12" : "w-auto",
       className
     )}>
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b bg-gray-50 dark:bg-gray-800">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-            AI Context Window
-          </h3>
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {!isMinimized && (
+            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              AI Context Window
+            </h3>
+          )}
           {!isMinimized && (
             <div className={cn(
               "flex items-center gap-1 px-2 py-0.5 rounded-full text-xs",
@@ -197,28 +199,32 @@ const AIContextWindow = ({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button
             onClick={toggleMinimize}
             className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            title={isMinimized ? "Restore" : "Minimize"}
+            title={isMinimized ? "Unfold" : "Fold"}
           >
             <Minimize2 className="w-4 h-4" />
           </button>
-          <button
-            onClick={toggleMaximize}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            title={isMaximized ? "Restore" : "Maximize"}
-          >
-            {isMaximized ? <Square className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={clearState}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            title="Clear"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          {!isMinimized && (
+            <>
+              <button
+                onClick={toggleMaximize}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                title={isMaximized ? "Restore" : "Maximize"}
+              >
+                {isMaximized ? <Square className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              </button>
+              <button
+                onClick={clearState}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                title="Clear"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
       </div>
 

@@ -20,7 +20,9 @@ import {
   Database,
   Globe,
   RefreshCw,
-  Minimize2
+  Minimize2,
+  Maximize2,
+  Square
 } from 'lucide-react';
 
 const FileTreeNavigator = ({ 
@@ -34,6 +36,7 @@ const FileTreeNavigator = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTree, setFileTree] = useState(null);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   // Load real file tree data from API
   useEffect(() => {
@@ -142,6 +145,13 @@ const FileTreeNavigator = ({
 
   const toggleMinimize = () => {
     setIsMinimized(prev => !prev);
+  };
+
+  const toggleMaximize = () => {
+    setIsMaximized(prev => !prev);
+    if (isMinimized) {
+      setIsMinimized(false);
+    }
   };
 
   const toggleFolder = (path) => {
@@ -284,22 +294,30 @@ const FileTreeNavigator = ({
   const filteredTree = fileTree ? filterFiles(fileTree, searchTerm) : null;
 
   return (
-    <Card className={`h-full flex flex-col transition-all duration-300 ${isMinimized ? 'h-12 overflow-hidden' : ''} ${className}`}>
+    <Card className={`h-full flex flex-col transition-all duration-300 ${isMaximized ? 'fixed inset-0 z-50' : ''} ${isMinimized ? 'w-12' : 'w-auto'} ${className}`}>
       {/* Header */}
       <div className="border-b p-3">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Files</h3>
-          <div className="flex items-center space-x-1">
+          {!isMinimized && <h3 className="font-semibold">Files</h3>}
+          <div className="flex items-center space-x-1 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={toggleMinimize}
-              title={isMinimized ? "Restore" : "Minimize"}
+              title={isMinimized ? "Unfold" : "Fold"}
             >
               <Minimize2 className="w-4 h-4" />
             </Button>
             {!isMinimized && (
               <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleMaximize}
+                  title={isMaximized ? "Restore" : "Maximize"}
+                >
+                  {isMaximized ? <Square className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </Button>
                 <Button variant="ghost" size="sm">
                   <Plus className="w-4 h-4" />
                 </Button>
