@@ -128,15 +128,14 @@ const AIContextWindowPage = () => {
   const loadFileContent = useCallback(async (filePath) => {
     setIsFileLoading(true);
     try {
-      // Use the proxy endpoint which fetches from GitHub when local filesystem unavailable
-      const data = await apiClient.get(`proxy-source-files/content?path=${encodeURIComponent(filePath)}`);
+      // Use the patches endpoint to get baseline file content
+      const data = await apiClient.get(`patches/baseline/${encodeURIComponent(filePath)}`);
 
-      if (data && data.success) {
-        setSourceCode(data.content);
+      if (data && data.success && data.data.hasBaseline) {
+        setSourceCode(data.data.baselineCode);
         
-        // Fetch the database baseline for proper diff detection
-        const baselineCode = await fetchBaselineCode(filePath, data.content);
-        setOriginalCode(baselineCode);
+        // Use the baseline code directly as the original code
+        setOriginalCode(data.data.baselineCode);
         setSelectedFile({
           path: filePath,
           name: filePath.split('/').pop(),
@@ -146,8 +145,28 @@ const AIContextWindowPage = () => {
         
         // Update URL
         setSearchParams({ file: filePath });
+      } else if (data && data.success && !data.data.hasBaseline) {
+        // No baseline found, try the apply patches endpoint to get the current version
+        try {
+          const patchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}`);
+          if (patchedData && patchedData.success) {
+            setSourceCode(patchedData.data.patchedCode);
+            setOriginalCode(patchedData.data.baselineCode || patchedData.data.patchedCode);
+            setSelectedFile({
+              path: filePath,
+              name: filePath.split('/').pop(),
+              type: 'file',
+              isSupported: true
+            });
+            setSearchParams({ file: filePath });
+          } else {
+            console.error('Failed to load file from patches:', patchedData?.error || 'Unknown error');
+          }
+        } catch (patchError) {
+          console.error('Failed to load file from patches:', patchError);
+        }
       } else {
-        console.error('Failed to load file:', data.message);
+        console.error('Failed to load file:', data?.message || 'Unknown error');
         // Provide detailed diagnostic information
         const diagnosticInfo = `// API Error: ${data.message}
 // File Path: ${filePath}
@@ -562,8 +581,8 @@ export default ExampleComponent;`;
         return;
       }
 
-      // Test the list endpoint first using API client
-      const listData = await apiClient.get('proxy-source-files/list?path=src');
+      // Test the baselines endpoint first using API client
+      const listData = await apiClient.get('patches/baselines');
       
       if (!listData.success) {
         setConnectionStatus({
@@ -577,12 +596,12 @@ export default ExampleComponent;`;
       // Test loading a specific file
       const testFilePath = 'src/pages/AIContextWindow.jsx';
       try {
-        const contentData = await apiClient.get(`proxy-source-files/content?path=${encodeURIComponent(testFilePath)}`);
-        if (contentData.success) {
+        const contentData = await apiClient.get(`patches/baseline/${encodeURIComponent(testFilePath)}`);
+        if (contentData.success && contentData.data.hasBaseline) {
           setConnectionStatus({
             status: 'success',
             message: 'Connection successful!',
-            details: `Successfully connected to backend at ${import.meta.env.VITE_API_BASE_URL}. Found ${listData.files?.length || 0} files in src directory.`
+            details: `Successfully connected to backend at ${import.meta.env.VITE_API_BASE_URL}. Found ${listData.files?.length || 0} files in baselines.`
           });
         } else {
           setConnectionStatus({

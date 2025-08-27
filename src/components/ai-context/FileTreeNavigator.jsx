@@ -33,26 +33,36 @@ const FileTreeNavigator = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [fileTree, setFileTree] = useState(null);
 
-  // Load real file tree data from API
+  // Load file tree data from file_baselines
   useEffect(() => {
     loadFileTree();
   }, []);
 
   const loadFileTree = async () => {
     try {
-      console.log('🔍 FileTreeNavigator: Loading file tree from API...');
-      // Fetch file listing from API
-      const data = await apiClient.get('proxy-source-files/list?path=src');
+      console.log('🔍 FileTreeNavigator: Loading file tree from file_baselines...');
+      // Fetch file baselines from API
+      const data = await apiClient.get('patches/baselines');
       
       console.log('📡 FileTreeNavigator: API Response:', data);
       
       if (data && data.success && data.files) {
-        console.log('✅ FileTreeNavigator: Got', data.files.length, 'files from API');
-        console.log('📁 FileTreeNavigator: Sample files:', data.files.slice(0, 5).map(f => f.path));
-        console.log('📊 FileTreeNavigator: API source:', data.source);
+        console.log('✅ FileTreeNavigator: Got', data.files.length, 'files from baselines');
+        console.log('📁 FileTreeNavigator: Sample files:', data.files.slice(0, 5).map(f => f.file_path));
+        
+        // Convert file baselines to file tree format
+        const fileList = data.files.map(file => ({
+          path: file.file_path,
+          extension: file.file_path.split('.').pop(),
+          size: file.file_size || 0,
+          modified: file.last_modified,
+          version: file.version,
+          codeHash: file.code_hash,
+          fileType: file.file_type
+        }));
         
         // Convert flat file list to hierarchical tree structure
-        const tree = buildFileTree(data.files);
+        const tree = buildFileTree(fileList);
         console.log('🌳 FileTreeNavigator: Built tree with', tree.children?.length || 0, 'children');
         setFileTree(tree);
       } else {
@@ -83,21 +93,25 @@ const FileTreeNavigator = ({
 
   // Convert flat file list to hierarchical tree structure
   const buildFileTree = (files) => {
+    // Find the common root path
+    const allPaths = files.map(f => f.path);
+    const rootPath = findCommonRoot(allPaths);
+    
     const tree = {
-      name: 'src',
+      name: rootPath || 'Project',
       type: 'folder',
       children: []
     };
 
     // Create a map to store folder references
     const folderMap = new Map();
-    folderMap.set('src', tree);
+    folderMap.set(rootPath || '', tree);
 
     // Sort files by path to ensure folders are created before their children
     const sortedFiles = files.sort((a, b) => a.path.localeCompare(b.path));
 
     sortedFiles.forEach(file => {
-      const pathParts = file.path.split('/');
+      const pathParts = file.path.split('/').filter(Boolean);
       let currentPath = '';
       let currentParent = tree;
 
@@ -112,7 +126,11 @@ const FileTreeNavigator = ({
             name: segment,
             type: 'file',
             path: file.path,
-            extension: file.extension
+            extension: file.extension,
+            size: file.size,
+            modified: file.modified,
+            version: file.version,
+            codeHash: file.codeHash
           });
         } else {
           // This is a folder
@@ -134,8 +152,42 @@ const FileTreeNavigator = ({
     return tree;
   };
 
+  // Find the common root path among all files
+  const findCommonRoot = (paths) => {
+    if (!paths || paths.length === 0) return 'src';
+    if (paths.length === 1) return paths[0].split('/')[0];
+    
+    const firstPath = paths[0].split('/');
+    let commonPath = '';
+    
+    for (let i = 0; i < firstPath.length; i++) {
+      const segment = firstPath[i];
+      const isCommon = paths.every(path => {
+        const parts = path.split('/');
+        return parts.length > i && parts[i] === segment;
+      });
+      
+      if (isCommon) {
+        commonPath = commonPath ? `${commonPath}/${segment}` : segment;
+      } else {
+        break;
+      }
+    }
+    
+    return commonPath || firstPath[0] || 'Project';
+  };
+
   const refreshFileTree = () => {
     loadFileTree();
+  };
+
+  // Format file size in human readable format
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
   };
 
   const toggleFolder = (path) => {
@@ -258,8 +310,8 @@ const FileTreeNavigator = ({
           
           {showDetails && node.type === 'file' && (
             <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-              <span>{node.size}</span>
-              <span>{node.modified}</span>
+              {node.size && <span>{formatBytes(node.size)}</span>}
+              {node.version && <Badge variant="secondary" className="text-xs">{node.version}</Badge>}
             </div>
           )}
         </div>
