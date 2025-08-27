@@ -188,7 +188,7 @@ const AIContextWindow = ({
   return (
     <div className={cn(
       "flex flex-col bg-white dark:bg-gray-900 border-l transition-all duration-300",
-      isFolded ? "w-8 min-w-8 max-w-8" : "w-80 min-w-80",
+      isFolded ? "w-12 min-w-12 max-w-12" : "w-80 min-w-80",
       className
     )}>
       {/* Header */}

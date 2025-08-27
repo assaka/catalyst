@@ -744,11 +744,16 @@ export default ExampleComponent;`;
       {/* Main Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
-          {/* AI Context Window - Now First Column */}
+          {/* AI Context Window - First Column */}
           <ResizablePanel 
-            size={aiContextMaximized ? 96 : (fileTreeMaximized ? 2 : (aiContextFolded ? 4 : 25))} 
-            minSize={aiContextMaximized ? 90 : (aiContextFolded ? 2 : 15)} 
-            maxSize={aiContextMaximized ? 98 : (aiContextFolded ? 6 : 50)} 
+            size={(() => {
+              if (aiContextMaximized) return 85;
+              if (fileTreeMaximized) return 8;
+              if (aiContextFolded) return 8;
+              return 25;
+            })()} 
+            minSize={aiContextMaximized ? 80 : (aiContextFolded ? 6 : 15)} 
+            maxSize={aiContextMaximized ? 90 : (aiContextFolded ? 12 : 50)} 
             data-panel-size={aiContextMaximized ? "ai-context-maximized" : (aiContextFolded ? "ai-context-folded" : "ai-context")}
           >
             <AIContextWindow
@@ -766,9 +771,14 @@ export default ExampleComponent;`;
 
           {/* File Tree Navigator */}
           <ResizablePanel 
-            size={fileTreeMaximized ? 96 : (aiContextMaximized ? 2 : (fileTreeFolded ? 4 : 15))} 
-            minSize={fileTreeMaximized ? 90 : (fileTreeFolded ? 2 : 10)} 
-            maxSize={fileTreeMaximized ? 98 : (fileTreeFolded ? 6 : 30)} 
+            size={(() => {
+              if (fileTreeMaximized) return 85;
+              if (aiContextMaximized) return 8;
+              if (fileTreeFolded) return 8;
+              return 15;
+            })()} 
+            minSize={fileTreeMaximized ? 80 : (fileTreeFolded ? 6 : 10)} 
+            maxSize={fileTreeMaximized ? 90 : (fileTreeFolded ? 12 : 30)} 
             data-panel-size={fileTreeMaximized ? "file-tree-maximized" : (fileTreeFolded ? "file-tree-folded" : "file-tree")}
           >
             <FileTreeNavigator
@@ -787,11 +797,14 @@ export default ExampleComponent;`;
           {/* Code Editor and Preview Panel */}
           <ResizablePanel 
             size={(() => {
-              const aiContextSize = aiContextMaximized ? 96 : (fileTreeMaximized ? 2 : (aiContextFolded ? 4 : 25));
-              const fileTreeSize = fileTreeMaximized ? 96 : (aiContextMaximized ? 2 : (fileTreeFolded ? 4 : 15));
-              return Math.max(100 - aiContextSize - fileTreeSize, 2);
+              if (aiContextMaximized) return 7; // 85 + 8 + 7 = 100
+              if (fileTreeMaximized) return 7; // 8 + 85 + 7 = 100
+              if (aiContextFolded && fileTreeFolded) return 84; // 8 + 8 + 84 = 100
+              if (aiContextFolded) return 77; // 8 + 15 + 77 = 100
+              if (fileTreeFolded) return 67; // 25 + 8 + 67 = 100
+              return 60; // 25 + 15 + 60 = 100
             })()}
-            minSize={aiContextMaximized || fileTreeMaximized ? 2 : 30}
+            minSize={aiContextMaximized || fileTreeMaximized ? 5 : 40}
           >
             <div className="h-[calc(100vh-200px)] flex flex-col">
               {selectedFile ? (
