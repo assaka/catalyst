@@ -88,6 +88,8 @@ const AIContextWindowPage = () => {
   const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
   const [aiContextFolded, setAiContextFolded] = useState(false); // Track AI Context fold state
   const [fileTreeFolded, setFileTreeFolded] = useState(false); // Track FileTree fold state
+  const [aiContextMaximized, setAiContextMaximized] = useState(false); // Track AI Context maximize state
+  const [fileTreeMaximized, setFileTreeMaximized] = useState(false); // Track FileTree maximize state
   
   // Auto-save debounce timer
   const autoSaveTimeoutRef = useRef(null);
@@ -297,6 +299,23 @@ export default ExampleComponent;`;
 
   const handleFileTreeFoldChange = useCallback((folded) => {
     setFileTreeFolded(folded);
+  }, []);
+
+  // Handle maximize state changes for dynamic panel sizing
+  const handleAiContextMaximizeChange = useCallback((maximized) => {
+    setAiContextMaximized(maximized);
+    // When one component maximizes, ensure the other doesn't interfere
+    if (maximized) {
+      setFileTreeMaximized(false);
+    }
+  }, []);
+
+  const handleFileTreeMaximizeChange = useCallback((maximized) => {
+    setFileTreeMaximized(maximized);
+    // When one component maximizes, ensure the other doesn't interfere  
+    if (maximized) {
+      setAiContextMaximized(false);
+    }
   }, []);
 
   // Handle code changes in editor
@@ -727,10 +746,10 @@ export default ExampleComponent;`;
         <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
           {/* AI Context Window - Now First Column */}
           <ResizablePanel 
-            defaultSize={aiContextFolded ? 8 : 25} 
-            minSize={5} 
-            maxSize={40} 
-            data-panel-size={aiContextFolded ? "ai-context-folded" : "ai-context"}
+            size={aiContextMaximized ? 85 : (aiContextFolded ? 8 : 25)} 
+            minSize={aiContextMaximized ? 80 : (aiContextFolded ? 3 : 15)} 
+            maxSize={aiContextMaximized ? 90 : (aiContextFolded ? 12 : 50)} 
+            data-panel-size={aiContextMaximized ? "ai-context-maximized" : (aiContextFolded ? "ai-context-folded" : "ai-context")}
           >
             <AIContextWindow
               sourceCode={sourceCode}
@@ -746,9 +765,9 @@ export default ExampleComponent;`;
 
           {/* File Tree Navigator */}
           <ResizablePanel 
-            defaultSize={fileTreeFolded ? 8 : 15} 
-            minSize={5} 
-            maxSize={25} 
+            size={fileTreeFolded ? 8 : 15} 
+            minSize={fileTreeFolded ? 3 : 10} 
+            maxSize={fileTreeFolded ? 12 : 30} 
             data-panel-size={fileTreeFolded ? "file-tree-folded" : "file-tree"}
           >
             <FileTreeNavigator
@@ -764,7 +783,14 @@ export default ExampleComponent;`;
           <ResizableHandle />
 
           {/* Code Editor and Preview Panel */}
-          <ResizablePanel defaultSize={55} minSize={30}>
+          <ResizablePanel 
+            size={(() => {
+              const aiContextSize = aiContextFolded ? 8 : 25;
+              const fileTreeSize = fileTreeFolded ? 8 : 15;
+              return 100 - aiContextSize - fileTreeSize;
+            })()}
+            minSize={30}
+          >
             <div className="h-[calc(100vh-200px)] flex flex-col">
               {selectedFile ? (
                 <>

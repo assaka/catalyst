@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
 import { detectComponentName, resolvePageNameToRoute } from '@/utils/componentNameDetection';
+import apiClient from '@/api/client';
 
 /**
  * Browser Preview Component
@@ -447,52 +448,55 @@ const BrowserPreview = ({
   // Direct overlay lookup function - matches filename to customization_overlays table
   const fetchOverlayForFile = useCallback(async (fileName) => {
     try {
-      const apiConfig = getApiConfig();
-      
       console.log(`🔍 BrowserPreview: Looking for overlay for file: ${fileName}`);
       
-      // Make single API call - backend now handles path variations
-      const response = await fetch(`/api/hybrid-patches/modified-code/${encodeURIComponent(fileName)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...apiConfig.headers
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data && data.data.modifiedCode) {
-          console.log(`✅ BrowserPreview: Found overlay for ${fileName} using path: ${data.data.matchedPath}`);
-          return {
-            hasOverlay: true,
-            modifiedCode: data.data.modifiedCode,
-            customizationId: data.data.customizationId,
-            lastModified: data.data.lastModified,
-            matchedPath: data.data.matchedPath,
-            requestedPath: data.data.requestedPath
-          };
-        }
+      // Use authenticated API client instead of raw fetch to ensure proper authentication
+      const customHeaders = {};
+      if (storeId && storeId !== 'undefined') {
+        customHeaders['x-store-id'] = storeId;
       }
       
-      // Handle 404 - no overlay found
-      const errorData = await response.json().catch(() => ({}));
-      console.log(`❌ BrowserPreview: No overlay found for ${fileName}. Tried paths: ${errorData.triedPaths?.join(', ') || 'unknown'}`);
+      const data = await apiClient.get(`hybrid-patches/modified-code/${encodeURIComponent(fileName)}`, customHeaders);
+      
+      if (data && data.success && data.data && data.data.modifiedCode) {
+        console.log(`✅ BrowserPreview: Found overlay for ${fileName} using path: ${data.data.matchedPath}`);
+        return {
+          hasOverlay: true,
+          modifiedCode: data.data.modifiedCode,
+          customizationId: data.data.customizationId,
+          lastModified: data.data.lastModified,
+          matchedPath: data.data.matchedPath,
+          requestedPath: data.data.requestedPath
+        };
+      }
+      
+      // Handle case where no overlay found
+      console.log(`❌ BrowserPreview: No overlay found for ${fileName}. Tried paths: ${data?.triedPaths?.join(', ') || 'unknown'}`);
       
       return {
         hasOverlay: false,
-        message: errorData.error || `No overlay found for: ${fileName}`,
-        triedPaths: errorData.triedPaths
+        message: data?.error || `No overlay found for: ${fileName}`,
+        triedPaths: data?.triedPaths
       };
       
     } catch (error) {
+      // Handle 404 and other errors
+      if (error.status === 404) {
+        console.log(`❌ BrowserPreview: No overlay found for ${fileName}. Tried paths: ${error.data?.triedPaths?.join(', ') || 'unknown'}`);
+        return {
+          hasOverlay: false,
+          message: error.data?.error || `No overlay found for: ${fileName}`,
+          triedPaths: error.data?.triedPaths
+        };
+      }
+      
       console.warn(`⚠️ BrowserPreview: Error fetching overlay for ${fileName}:`, error.message);
       return {
         hasOverlay: false,
         error: error.message
       };
     }
-  }, [getApiConfig]);
+  }, [storeId]);
 
   // Apply overlay by directly matching filename to database overlay - no content checking loop
   const applyCodePatches = useCallback(async (iframe) => {
