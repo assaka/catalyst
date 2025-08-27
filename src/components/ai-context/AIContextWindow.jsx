@@ -154,7 +154,6 @@ const AIContextWindow = ({
   return (
     <div className={cn(
       "flex flex-col bg-white dark:bg-gray-900 border-l",
-      "w-80 min-w-80",
       className
     )}>
       {/* Header */}

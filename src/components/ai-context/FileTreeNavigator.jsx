@@ -278,7 +278,7 @@ const FileTreeNavigator = ({
   const filteredTree = fileTree ? filterFiles(fileTree, searchTerm) : null;
 
   return (
-    <Card className={`h-full flex flex-col w-80 min-w-80 ${className}`}>
+    <Card className={`h-full flex flex-col ${className}`}>
       {/* Header */}
       <div className="border-b p-3">
         <div className="flex items-center justify-between mb-3">
