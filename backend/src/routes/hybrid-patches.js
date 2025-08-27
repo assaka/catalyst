@@ -389,13 +389,13 @@ router.get('/files/recent', authMiddleware, async (req, res) => {
 /**
  * Get modified code for preview (simple approach - latest current_code per file_path)
  * GET /api/hybrid-patches/modified-code/:filePath
+ * Note: No authentication required - this is for storefront preview
  */
-router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
+router.get('/modified-code/:filePath', async (req, res) => {
   try {
     const filePath = decodeURIComponent(req.params.filePath);
-    const userId = req.user.id;
 
-    console.log(`🔍 Simple overlay lookup for: ${filePath} (user: ${userId})`);
+    console.log(`🔍 Simple overlay lookup for: ${filePath} (no auth required)`);
     console.log(`🧪 DEBUG: Testing overlay query execution for ${filePath}...`);
 
     // Debug: First check if any overlays exist for this file without conditions
