@@ -542,12 +542,12 @@ const BrowserPreview = ({
         
         switch (overlayMode) {
           case 'baseline':
-            contentToApply = overlayResult.baselineCode || editorBaselineCode;
+            contentToApply = overlayResult.baseline || editorBaselineCode;
             modeDescription = 'database baseline';
             console.log(`🔧 BrowserPreview: Using ${modeDescription} content (${contentToApply.length} chars)`);
             break;
           case 'current':
-            contentToApply = overlayResult.modifiedCode;
+            contentToApply = overlayResult.current;
             modeDescription = 'database current/overlay';
             console.log(`🔧 BrowserPreview: Using ${modeDescription} content (${contentToApply.length} chars)`);
             break;
