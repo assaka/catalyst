@@ -736,7 +736,7 @@ export default ExampleComponent;`;
           <ResizablePanel 
             size={10}
             minSize={10}
-            maxSize={20}
+            maxSize={15}
           >
             <FileTreeNavigator
               onFileSelect={handleFileSelect}
