@@ -32,6 +32,7 @@ const FileTreeNavigator = ({
   showDetails = false,
   onRefresh,
   onFoldChange, // Callback when fold state changes
+  onMaximizeChange, // Callback when maximize state changes
   className = '' 
 }) => {
   const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'src/components', 'src/pages']));
@@ -159,7 +160,11 @@ const FileTreeNavigator = ({
   };
 
   const toggleMaximize = () => {
-    setIsMaximized(prev => !prev);
+    setIsMaximized(prev => {
+      const newMaximized = !prev;
+      onMaximizeChange?.(newMaximized);
+      return newMaximized;
+    });
     if (isMinimized) {
       setIsMinimized(false);
     }
@@ -305,7 +310,7 @@ const FileTreeNavigator = ({
   const filteredTree = fileTree ? filterFiles(fileTree, searchTerm) : null;
 
   return (
-    <Card className={`h-full flex flex-col transition-all duration-300 ${isMaximized ? 'fixed inset-0 z-50' : ''} ${isFolded ? 'w-12 min-w-12 max-w-12' : 'w-80 min-w-80'} ${className}`}>
+    <Card className={`h-full flex flex-col transition-all duration-300 ${isFolded ? 'w-12 min-w-12 max-w-12' : 'w-80 min-w-80'} ${className}`}>
       {/* Header */}
       <div className={`border-b ${isFolded ? 'p-2' : 'p-3'}`}>
         <div className={`flex items-center ${isFolded ? 'justify-center' : 'justify-between'} mb-3`}>

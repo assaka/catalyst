@@ -387,7 +387,7 @@ router.get('/files/recent', authMiddleware, async (req, res) => {
 });
 
 /**
- * Get modified code for preview (with flexible path matching)
+ * Get modified code for preview (simple approach - latest current_code per file_path)
  * GET /api/hybrid-patches/modified-code/:filePath
  */
 router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
@@ -395,71 +395,40 @@ router.get('/modified-code/:filePath', authMiddleware, async (req, res) => {
     const filePath = decodeURIComponent(req.params.filePath);
     const userId = req.user.id;
 
-    console.log(`🔍 Looking for overlay for file: ${filePath} (user: ${userId})`);
+    console.log(`🔍 Simple overlay lookup for: ${filePath} (user: ${userId})`);
 
-    // Create path variations to try matching against database
-    const pathVariations = [
-      filePath,                           // e.g., "pages/Cart.jsx"
-      `src/${filePath}`,                  // e.g., "src/pages/Cart.jsx"
-      filePath.replace(/^pages\//, ''),   // e.g., "Cart.jsx" from "pages/Cart.jsx"
-      filePath.replace(/^src\/pages\//, 'pages/'), // e.g., "pages/Cart.jsx" from "src/pages/Cart.jsx"
-      filePath.replace(/^src\//, ''),     // e.g., "pages/Cart.jsx" from "src/pages/Cart.jsx"
-    ];
+    // Simple approach: Just get the latest current_code for this file_path
+    const overlay = await CustomizationOverlay.findOne({
+      where: {
+        file_path: filePath,
+        user_id: userId,
+        status: 'active',
+        current_code: {
+          [require('sequelize').Op.ne]: null // current_code is not null
+        }
+      },
+      order: [['updated_at', 'DESC']] // Get the latest one
+    });
 
-    // Remove duplicates
-    const uniquePathVariations = [...new Set(pathVariations)];
-    console.log(`🔍 Trying path variations:`, uniquePathVariations);
-
-    let snapshot = null;
-    let matchedPath = null;
-
-    // Try each path variation until we find a match
-    for (const pathVariation of uniquePathVariations) {
-      console.log(`🔍 Trying path variation: ${pathVariation}`);
-      
-      snapshot = await CustomizationSnapshot.findOne({
-        where: {
-          file_path: pathVariation,
-          status: 'open'
-        },
-        include: [{
-          model: CustomizationOverlay,
-          as: 'customization',
-          where: {
-            user_id: userId,
-            status: 'active'
-          },
-          required: true
-        }],
-        order: [['created_at', 'DESC']]
-      });
-
-      if (snapshot) {
-        matchedPath = pathVariation;
-        console.log(`✅ Found overlay with path variation: ${matchedPath}`);
-        break;
-      }
-    }
-
-    if (snapshot && snapshot.customization && snapshot.customization.current_code) {
-      const customization = snapshot.customization;
+    if (overlay && overlay.current_code) {
+      console.log(`✅ Found simple overlay for: ${filePath}`);
       res.json({
         success: true,
         data: {
-          modifiedCode: customization.current_code,
-          customizationId: customization.id,
-          lastModified: customization.updated_at,
-          matchedPath: matchedPath,
+          modifiedCode: overlay.current_code,
+          customizationId: overlay.id,
+          lastModified: overlay.updated_at,
+          matchedPath: filePath,
           requestedPath: filePath
         }
       });
     } else {
-      console.log(`❌ No overlay found for any path variation of: ${filePath}`);
+      console.log(`❌ No overlay found for: ${filePath}`);
       res.status(404).json({
         success: false,
         error: 'No modified code found for this file',
         requestedPath: filePath,
-        triedPaths: uniquePathVariations
+        triedPaths: [filePath]
       });
     }
   } catch (error) {

@@ -15,6 +15,7 @@ const AIContextWindow = ({
   onPreviewGenerated,
   onCodeGenerated, // Callback for when AI generates new code (for preview updates)
   onFoldChange, // Callback when fold state changes
+  onMaximizeChange, // Callback when maximize state changes
   className 
 }) => {
   const [prompt, setPrompt] = useState('');
@@ -160,11 +161,15 @@ const AIContextWindow = ({
 
   // Toggle maximize state
   const toggleMaximize = useCallback(() => {
-    setIsMaximized(prev => !prev);
+    setIsMaximized(prev => {
+      const newMaximized = !prev;
+      onMaximizeChange?.(newMaximized);
+      return newMaximized;
+    });
     if (isMinimized) {
       setIsMinimized(false);
     }
-  }, [isMinimized]);
+  }, [isMinimized, onMaximizeChange]);
 
   // Common prompt templates
   const promptTemplates = [
@@ -183,7 +188,6 @@ const AIContextWindow = ({
   return (
     <div className={cn(
       "flex flex-col bg-white dark:bg-gray-900 border-l transition-all duration-300",
-      isMaximized && "fixed inset-0 z-50",
       isFolded ? "w-12 min-w-12 max-w-12" : "w-80 min-w-80",
       className
     )}>
