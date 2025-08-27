@@ -312,7 +312,7 @@ const FileTreeNavigator = ({
   return (
     <Card className={`h-full flex flex-col transition-all duration-300 ${isFolded ? 'w-8 min-w-8 max-w-8' : 'w-80 min-w-80'} ${className}`}>
       {/* Header */}
-      <div className={`border-b ${isFolded ? 'p-2' : 'p-3'}`}>
+      <div className={`border-b ${isFolded ? 'p-1' : 'p-3'}`}>
         <div className={`flex items-center ${isFolded ? 'justify-center' : 'justify-between'} mb-3`}>
           {!isFolded && <h3 className="font-semibold">Files</h3>}
           <div className="flex items-center space-x-1 flex-shrink-0">

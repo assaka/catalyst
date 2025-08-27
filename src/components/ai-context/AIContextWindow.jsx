@@ -194,7 +194,7 @@ const AIContextWindow = ({
       {/* Header */}
       <div className={cn(
         "flex items-center justify-between border-b bg-gray-50 dark:bg-gray-800",
-        isFolded ? "p-2" : "p-3"
+        isFolded ? "p-1" : "p-3"
       )}>
         <div className={cn(
           "flex items-center gap-2 min-w-0",
