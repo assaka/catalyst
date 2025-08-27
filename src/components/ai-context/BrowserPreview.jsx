@@ -358,7 +358,7 @@ const BrowserPreview = ({
         
         if (response.ok) {
           const data = await response.json();
-          if (data.success && data.data.hasPatches && data.data.modifiedCode) {
+          if (data.success && data.data && data.data.modifiedCode) {
             modifiedCode = data.data.modifiedCode;
             console.log(`✅ BrowserPreview: Got modified code from database (${modifiedCode.length} chars)`);
             
