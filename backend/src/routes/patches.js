@@ -565,12 +565,11 @@ router.get('/modified-code/:filePath(*)', async (req, res) => {
 // Get file baselines for tree navigation
 router.get('/baselines', async (req, res) => {
   try {
-    const storeId = req.query.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    console.log(`📋 Getting file baselines (core codebase files)`);
     
-    console.log(`📋 Getting file baselines for store: ${storeId}`);
-    
+    // Baselines represent core code files that are the same across all stores
     const files = await patchService.sequelize.query(`
-      SELECT 
+      SELECT DISTINCT
         file_path,
         baseline_code,
         code_hash,
@@ -579,10 +578,8 @@ router.get('/baselines', async (req, res) => {
         file_size,
         last_modified
       FROM file_baselines 
-      WHERE store_id = :storeId
       ORDER BY file_path ASC
     `, {
-      replacements: { storeId },
       type: patchService.sequelize.QueryTypes.SELECT
     });
     

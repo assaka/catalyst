@@ -41,8 +41,8 @@ const FileTreeNavigator = ({
   const loadFileTree = async () => {
     try {
       console.log('🔍 FileTreeNavigator: Loading file tree from file_baselines...');
-      // Fetch file baselines from API (no auth required)
-      const data = await apiClient.get('patches/baselines', { 'x-skip-transform': 'true' });
+      // Fetch file baselines from API (core codebase files, no store_id needed)
+      const data = await apiClient.get('patches/baselines');
       
       console.log('📡 FileTreeNavigator: API Response:', data);
       
