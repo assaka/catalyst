@@ -31,6 +31,7 @@ const FileTreeNavigator = ({
   selectedFile = null, 
   showDetails = false,
   onRefresh,
+  onFoldChange, // Callback when fold state changes
   className = '' 
 }) => {
   const [expandedFolders, setExpandedFolders] = useState(new Set(['src', 'src/components', 'src/pages']));
@@ -146,7 +147,11 @@ const FileTreeNavigator = ({
   };
 
   const toggleFold = () => {
-    setIsFolded(prev => !prev);
+    setIsFolded(prev => {
+      const newFolded = !prev;
+      onFoldChange?.(newFolded);
+      return newFolded;
+    });
   };
 
   const toggleMinimize = () => {

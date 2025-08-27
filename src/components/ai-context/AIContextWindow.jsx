@@ -14,6 +14,7 @@ const AIContextWindow = ({
   onPatchGenerated,
   onPreviewGenerated,
   onCodeGenerated, // Callback for when AI generates new code (for preview updates)
+  onFoldChange, // Callback when fold state changes
   className 
 }) => {
   const [prompt, setPrompt] = useState('');
@@ -142,8 +143,12 @@ const AIContextWindow = ({
 
   // Toggle fold state
   const toggleFold = useCallback(() => {
-    setIsFolded(prev => !prev);
-  }, []);
+    setIsFolded(prev => {
+      const newFolded = !prev;
+      onFoldChange?.(newFolded);
+      return newFolded;
+    });
+  }, [onFoldChange]);
 
   // Toggle minimize state
   const toggleMinimize = useCallback(() => {

@@ -86,6 +86,8 @@ const AIContextWindowPage = () => {
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
   const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
+  const [aiContextFolded, setAiContextFolded] = useState(false); // Track AI Context fold state
+  const [fileTreeFolded, setFileTreeFolded] = useState(false); // Track FileTree fold state
   
   // Auto-save debounce timer
   const autoSaveTimeoutRef = useRef(null);
@@ -287,6 +289,15 @@ export default ExampleComponent;`;
       loadFileContent(file.path);
     }
   }, [selectedFile, loadFileContent]);
+
+  // Handle fold state changes for dynamic panel sizing
+  const handleAiContextFoldChange = useCallback((folded) => {
+    setAiContextFolded(folded);
+  }, []);
+
+  const handleFileTreeFoldChange = useCallback((folded) => {
+    setFileTreeFolded(folded);
+  }, []);
 
   // Handle code changes in editor
   const handleCodeChange = useCallback((newCode) => {
@@ -715,12 +726,18 @@ export default ExampleComponent;`;
       <div className="flex-1 min-h-0 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
           {/* AI Context Window - Now First Column */}
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={40}>
+          <ResizablePanel 
+            defaultSize={aiContextFolded ? 8 : 25} 
+            minSize={5} 
+            maxSize={40} 
+            data-panel-size={aiContextFolded ? "ai-context-folded" : "ai-context"}
+          >
             <AIContextWindow
               sourceCode={sourceCode}
               filePath={selectedFile?.path || ''}
               onPatchGenerated={handlePatchGenerated}
               onPreviewGenerated={handlePreviewGenerated}
+              onFoldChange={handleAiContextFoldChange}
               className="h-full"
             />
           </ResizablePanel>
@@ -728,12 +745,18 @@ export default ExampleComponent;`;
           <ResizableHandle />
 
           {/* File Tree Navigator */}
-          <ResizablePanel defaultSize={15} minSize={15} maxSize={15}>
+          <ResizablePanel 
+            defaultSize={fileTreeFolded ? 8 : 15} 
+            minSize={5} 
+            maxSize={25} 
+            data-panel-size={fileTreeFolded ? "file-tree-folded" : "file-tree"}
+          >
             <FileTreeNavigator
               onFileSelect={handleFileSelect}
               selectedFile={selectedFile}
               modifiedFiles={modifiedFiles}
               onRefresh={handleFileTreeRefresh}
+              onFoldChange={handleFileTreeFoldChange}
               className="h-[calc(100vh-200px)]"
             />
           </ResizablePanel>
