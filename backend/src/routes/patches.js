@@ -629,6 +629,80 @@ router.get('/baselines', async (req, res) => {
   }
 });
 
+// Test patch application without applying - for inline preview validation
+router.get('/test/:filePath(*)', async (req, res) => {
+  try {
+    const filePath = req.params.filePath;
+    const storeId = req.query.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    
+    console.log(`🧪 Testing patch application for: ${filePath}`);
+    
+    const result = await patchService.applyPatches(filePath, {
+      storeId,
+      previewMode: true,
+      maxPatches: 50
+    });
+    
+    // Set cache control headers
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: {
+          canApplyPatches: true,
+          hasBaseline: !!result.baselineCode,
+          hasPatches: result.hasPatches,
+          patchedCode: result.patchedCode,
+          baselineCode: result.baselineCode,
+          appliedPatches: result.appliedPatches,
+          totalPatches: result.totalPatches || result.appliedPatches,
+          patchDetails: result.patchDetails || [],
+          applicationLog: result.applicationLog || [],
+          mode: 'test',
+          filePath
+        }
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: result.error,
+        data: {
+          canApplyPatches: false,
+          hasBaseline: false,
+          hasPatches: false,
+          mode: 'test',
+          filePath
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Patch test error:', error);
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      data: {
+        canApplyPatches: false,
+        hasBaseline: false,
+        hasPatches: false,
+        mode: 'test',
+        filePath: req.params.filePath
+      }
+    });
+  }
+});
+
 // Get patches for a specific file (catch-all route for frontend compatibility)
 // This route must be at the end to avoid conflicts with other routes
 router.get('/:filePath(*)', async (req, res) => {

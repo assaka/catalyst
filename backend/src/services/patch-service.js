@@ -83,8 +83,34 @@ class PatchService {
 
       return {
         ...result,
+        filePath: filePath,
         baselineCode: baseline.code,
-        appliedPatches: patches.length,
+        finalCode: result.patchedCode,
+        appliedPatches: patches.map(p => {
+          let unifiedDiff = p.unified_diff;
+          
+          // Fix URL encoding issue - decode URL-encoded characters in the diff
+          if (unifiedDiff) {
+            try {
+              unifiedDiff = decodeURIComponent(unifiedDiff);
+            } catch (decodeError) {
+              // If decoding fails, keep original (might not be URL-encoded)
+              console.warn('Warning: Could not decode unified diff, using original:', decodeError.message);
+            }
+          }
+          
+          return {
+            id: p.id,
+            changeSummary: p.change_summary,
+            patchName: p.patch_name,
+            changeType: p.change_type,
+            priority: p.priority,
+            unifiedDiff: unifiedDiff,
+            astDiff: p.ast_diff,
+            createdAt: p.created_at,
+            releaseVersion: p.release?.version_name
+          };
+        }),
         patchDetails: patches.map(p => ({
           id: p.id,
           name: p.patch_name,
@@ -646,7 +672,28 @@ class PatchService {
       // Create unified diff
       const diffs = this.dmp.diff_main(baselineCode, modifiedCode);
       this.dmp.diff_cleanupSemantic(diffs);
-      const unifiedDiff = this.dmp.patch_toText(this.dmp.patch_make(baselineCode, diffs));
+      let unifiedDiff = this.dmp.patch_toText(this.dmp.patch_make(baselineCode, diffs));
+      
+      // Fix URL encoding issue - decode URL-encoded characters in the diff
+      try {
+        unifiedDiff = decodeURIComponent(unifiedDiff);
+      } catch (decodeError) {
+        // If decoding fails, keep original (might not be URL-encoded)
+        console.warn('Warning: Could not decode unified diff, using original:', decodeError.message);
+      }
+
+      // Check diff size and warn if it's too large (could cause frontend display issues)
+      const MAX_DIFF_SIZE = 10000; // 10KB limit for diffs
+      if (unifiedDiff && unifiedDiff.length > MAX_DIFF_SIZE) {
+        console.warn(`⚠️ Large diff detected (${unifiedDiff.length} chars) for ${filePath} - this may cause display issues`);
+        
+        // Optionally truncate very large diffs with a summary
+        if (unifiedDiff.length > 50000) {
+          const truncatedDiff = unifiedDiff.substring(0, MAX_DIFF_SIZE);
+          const remainingSize = unifiedDiff.length - MAX_DIFF_SIZE;
+          unifiedDiff = truncatedDiff + `\n\n... [TRUNCATED: ${remainingSize} more characters] ...\n\nNote: This diff was truncated due to size. Full diff may indicate entire file replacement.`;
+        }
+      }
 
       // Create AST diff for JS files
       let astDiff = null;
