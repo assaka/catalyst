@@ -387,90 +387,98 @@ router.get('/files/recent', authMiddleware, async (req, res) => {
 });
 
 /**
- * Get modified code for preview (simple approach - latest current_code per file_path)
+ * Get modified code for preview with enhanced diff merging
  * GET /api/hybrid-patches/modified-code/:filePath
- * Note: No authentication required - this is for storefront preview
+ * Supports both authenticated and public access for overlay preview
  */
 router.get('/modified-code/:filePath', async (req, res) => {
   try {
     const filePath = decodeURIComponent(req.params.filePath);
+    const { mode = 'merged', includePending = 'false', processed = 'false' } = req.query;
+    
+    // Extract user ID if authenticated (optional for public overlay viewing)
+    const userId = req.headers.authorization ? 
+      (req.user ? req.user.id : null) : null;
 
-    console.log(`🔍 Simple overlay lookup for: ${filePath} (no auth required)`);
-    console.log(`🧪 DEBUG: Testing overlay query execution for ${filePath}...`);
+    console.log(`🔄 Enhanced overlay lookup for: ${filePath} (mode: ${mode}, user: ${userId || 'public'})`);
 
-    // Debug: First check if any overlays exist for this file without conditions
-    const allOverlaysForFile = await CustomizationOverlay.count({
-      where: { file_path: filePath }
-    });
-    console.log(`📊 DEBUG: Found ${allOverlaysForFile} total overlays for ${filePath}`);
+    const enhancedOverlayService = require('../services/enhanced-overlay-service');
 
-    // Debug: Check active overlays
-    const activeOverlaysForFile = await CustomizationOverlay.count({
-      where: { 
-        file_path: filePath,
-        status: 'active'
-      }
-    });
-    console.log(`📊 DEBUG: Found ${activeOverlaysForFile} active overlays for ${filePath}`);
-
-    // Simple approach: Just get the latest current_code for this file_path
-    // Note: Removed user_id filter for preview functionality - overlays should be visible to all users
-    console.log(`🔍 DEBUG: Executing main query with conditions: file_path='${filePath}', status='active', current_code IS NOT NULL`);
-    const overlay = await CustomizationOverlay.findOne({
-      where: {
-        file_path: filePath,
-        status: 'active',
-        current_code: {
-          [require('sequelize').Op.ne]: null // current_code is not null
-        }
-      },
-      order: [['updated_at', 'DESC']] // Get the latest one
+    // Get merged code with diff accumulation
+    const result = await enhancedOverlayService.getMergedCode(filePath, userId, {
+      includePending: includePending === 'true',
+      maxSnapshots: 20
     });
 
-    if (overlay) {
-      console.log(`✅ DEBUG: Overlay found! ID=${overlay.id}, status=${overlay.status}, current_code length=${overlay.current_code ? overlay.current_code.length : 'null'}`);
-    } else {
-      console.log(`❌ DEBUG: No overlay found with full conditions. Testing without current_code condition...`);
-      
-      // Test without the current_code condition to see if that's the issue
-      const overlayWithoutCodeCheck = await CustomizationOverlay.findOne({
-        where: {
-          file_path: filePath,
-          status: 'active'
-        },
-        order: [['updated_at', 'DESC']]
-      });
-      
-      if (overlayWithoutCodeCheck) {
-        console.log(`🔍 DEBUG: Found overlay without current_code check - current_code is: ${overlayWithoutCodeCheck.current_code === null ? 'NULL' : (overlayWithoutCodeCheck.current_code === '' ? 'EMPTY STRING' : 'HAS CONTENT')}`);
-      } else {
-        console.log(`❌ DEBUG: No overlay found even without current_code condition`);
-      }
-    }
-
-    if (overlay && overlay.current_code) {
-      console.log(`✅ Found simple overlay for: ${filePath}`);
-      console.log(`📋 DEBUG: Overlay data - baseline_code: ${overlay.baseline_code ? overlay.baseline_code.length + ' chars' : 'null'}, current_code: ${overlay.current_code.length} chars`);
-      res.json({
-        success: true,
-        data: {
-          modifiedCode: overlay.current_code,
-          baselineCode: overlay.baseline_code,
-          customizationId: overlay.id,
-          lastModified: overlay.updated_at,
-          matchedPath: filePath,
-          requestedPath: filePath
-        }
-      });
-    } else {
-      console.log(`❌ No overlay found for: ${filePath}`);
-      res.status(404).json({
+    if (!result.success) {
+      return res.status(404).json({
         success: false,
-        error: 'No modified code found for this file',
-        requestedPath: filePath,
+        error: result.error,
+        hasOverlay: false,
         triedPaths: [filePath]
       });
     }
+
+    // Determine what code to return based on mode
+    let codeToReturn;
+    let modeDescription;
+
+    switch (mode) {
+      case 'baseline':
+        codeToReturn = result.baselineCode;
+        modeDescription = 'baseline code';
+        break;
+      case 'merged':
+      default:
+        codeToReturn = result.mergedCode;
+        modeDescription = 'merged code with accumulated diffs';
+        break;
+    }
+
+    // Process code for browser if requested
+    if (processed === 'true') {
+      const browserResult = await enhancedOverlayService.getProcessedCodeForBrowser(
+        filePath, userId, { includePending: includePending === 'true' }
+      );
+      
+      if (browserResult.success) {
+        return res.json({
+          success: true,
+          data: {
+            hasOverlay: result.hasOverlay,
+            modifiedCode: mode === 'baseline' ? result.baselineCode : browserResult.processedCode,
+            baselineCode: result.baselineCode,
+            extractedData: browserResult.extractedData,
+            browserReady: true,
+            customizationId: result.customizationId,
+            lastModified: result.lastModified,
+            appliedSnapshots: result.appliedSnapshots,
+            mode: mode,
+            modeDescription: modeDescription,
+            matchedPath: filePath,
+            requestedPath: filePath
+          }
+        });
+      }
+    }
+
+    // Return standard response
+    res.json({
+      success: true,
+      data: {
+        hasOverlay: result.hasOverlay,
+        modifiedCode: codeToReturn,
+        baselineCode: result.baselineCode,
+        customizationId: result.customizationId,
+        lastModified: result.lastModified,
+        appliedSnapshots: result.appliedSnapshots,
+        mode: mode,
+        modeDescription: modeDescription,
+        matchedPath: filePath,
+        requestedPath: filePath,
+        snapshots: result.snapshots || []
+      }
+    });
   } catch (error) {
     console.error('Error fetching modified code:', error);
     res.status(500).json({

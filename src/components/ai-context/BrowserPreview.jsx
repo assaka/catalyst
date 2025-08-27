@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code, Layers } from 'lucide-react';
 import BrowserPreviewOverlay from './BrowserPreviewOverlay';
 import { useOverlayManager } from '../../services/overlay-manager';
-import { overlayMergeService } from '../../services/overlay-merge-service';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
@@ -28,7 +27,7 @@ const BrowserPreview = ({
   
   // Overlay state management using existing overlay manager
   const [showOverlay, setShowOverlay] = useState(false);
-  const [overlayMode, setOverlayMode] = useState('current'); // 'baseline', 'current', 'editor'
+  const [overlayMode, setOverlayMode] = useState('merged'); // 'baseline', 'merged', 'editor'
   const [coreCode, setCoreCode] = useState(''); // Immutable base code
   const [overlayData, setOverlayData] = useState({ baseline: null, current: null, hasOverlay: false });
   const { manager: overlayManager, stats: overlayStats, getMergedContent, setOriginalCode, createOverlay, clearFileOverlays } = useOverlayManager();
@@ -340,280 +339,137 @@ const BrowserPreview = ({
 
   const currentDimensions = deviceDimensions[deviceView];
 
-  // Helper function to apply merged code to iframe using data-level merging
-  const applyMergedCodeToIframe = useCallback(async (iframe, mergedCode) => {
+
+  // Enhanced overlay status check - now uses server-side merged code
+  const checkOverlayStatus = useCallback(async (fileName) => {
     try {
-      const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+      console.log(`🔍 BrowserPreview: Checking overlay status for file: ${fileName}`);
       
-      if (!iframeDoc) {
-        console.log('🔄 BrowserPreview: Iframe document not accessible for code injection');
-        return false;
-      }
-
-      // Clear any existing overlay patches before applying new ones
-      const existingPatches = iframeDoc.querySelectorAll('[data-overlay-preview="true"]');
-      existingPatches.forEach(element => element.remove());
-      
-      console.log(`🧹 Cleared ${existingPatches.length} existing overlay elements`);
-
-      // Create preview-safe code that can be injected into iframe
-      const previewCode = overlayMergeService.createPreviewCode(mergedCode, fileName);
-      
-      // Inject merged code as a script that updates the page content
-      const overlayScript = iframeDoc.createElement('script');
-      overlayScript.type = 'text/javascript';
-      overlayScript.setAttribute('data-overlay-preview', 'true');
-      overlayScript.textContent = `
-        console.log('🎭 BrowserPreview: Applying merged overlay code');
-        
-        // Extract changes from merged code and apply them intelligently
-        try {
-          const mergedCode = ${JSON.stringify(previewCode)};
-          
-          // Parse text content changes from merged code
-          const textMatches = mergedCode.match(/>([^<>{]+)</g) || [];
-          const extractedTexts = textMatches.map(match => match.replace(/[<>]/g, '').trim()).filter(text => text.length > 0);
-          
-          console.log('🔍 Extracted texts from merged code:', extractedTexts);
-          console.log('📊 Code length analysis:', {
-            totalChars: mergedCode.length,
-            totalTexts: extractedTexts.length,
-            cartTexts: extractedTexts.filter(t => t.toLowerCase().includes('cart')).length
-          });
-          
-          // Apply text changes to existing DOM elements - IMPROVED LOGIC
-          // Group texts by category to avoid conflicts
-          const cartTexts = extractedTexts.filter(text => text.toLowerCase().includes('cart'));
-          const otherTexts = extractedTexts.filter(text => !text.toLowerCase().includes('cart'));
-          
-          console.log('🔍 Categorized texts - Cart:', cartTexts, 'Other:', otherTexts);
-          
-          // Find all elements that could be updated
-          const allElements = document.getElementsByTagName('*');
-          const textElements = Array.from(allElements).filter(el => {
-            const textContent = el.textContent ? el.textContent.trim() : '';
-            return textContent.length > 0 && textContent.length < 100 && el.children.length <= 2;
-          });
-          
-          // For cart elements, use the MOST SPECIFIC cart text (longest match)
-          const cartElements = textElements.filter(el => 
-            el.textContent.toLowerCase().includes('cart') && !el.hasAttribute('data-overlay-preview')
-          );
-          
-          if (cartElements.length > 0 && cartTexts.length > 0) {
-            // Find the most comprehensive cart text (likely contains the most recent changes)
-            const bestCartText = cartTexts.reduce((best, current) => 
-              current.length > best.length ? current : best
-            );
-            
-            cartElements.forEach(element => {
-              const currentText = element.textContent.trim();
-              if (!element.hasAttribute('data-overlay-original')) {
-                element.setAttribute('data-overlay-original', currentText);
-              }
-              element.textContent = bestCartText;
-              element.setAttribute('data-overlay-preview', 'text-updated');
-              console.log('✅ Updated cart text with best match:', currentText, '->', bestCartText);
-            });
-          }
-          
-          // Handle other text replacements normally
-          otherTexts.forEach(newText => {
-            const matchingElements = textElements.filter(el => {
-              const currentText = el.textContent.trim();
-              return !el.hasAttribute('data-overlay-preview') && (
-                currentText === newText || 
-                currentText.toLowerCase() === newText.toLowerCase() ||
-                (currentText.includes(newText) || newText.includes(currentText))
-              );
-            });
-            
-            matchingElements.forEach(element => {
-              const currentText = element.textContent.trim();
-              if (!element.hasAttribute('data-overlay-original')) {
-                element.setAttribute('data-overlay-original', currentText);
-              }
-              element.textContent = newText;
-              element.setAttribute('data-overlay-preview', 'text-updated');
-              console.log('✅ Updated other text element:', currentText, '->', newText);
-            });
-          });
-          
-          // Add visual indicator
-          const indicator = document.createElement('div');
-          indicator.innerHTML = '🎭 Overlay Preview Active (Data-Level Merge)';
-          indicator.style.cssText = \`
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(34, 197, 94, 0.9);
-            color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-family: monospace;
-            z-index: 10000;
-            pointer-events: none;
-          \`;
-          indicator.setAttribute('data-overlay-preview', 'true');
-          document.body.appendChild(indicator);
-          
-        } catch (error) {
-          console.error('Error applying merged overlay code:', error);
-        }
-      `;
-      
-      iframeDoc.head.appendChild(overlayScript);
-      
-      console.log('✅ BrowserPreview: Merged code injected successfully into iframe');
-      return true;
-      
-    } catch (error) {
-      console.error('❌ BrowserPreview: Error injecting merged code into iframe:', error);
-      return false;
-    }
-  }, [fileName]);
-
-  // Enhanced overlay lookup function - fetches both baseline and current data for dynamic toggling
-  const fetchOverlayForFile = useCallback(async (fileName) => {
-    try {
-      console.log(`🔍 BrowserPreview: Looking for overlay for file: ${fileName}`);
-      
-      // Use authenticated API client instead of raw fetch to ensure proper authentication
+      // Use authenticated API client to check if overlay exists
       const customHeaders = {};
       if (storeId && storeId !== 'undefined') {
         customHeaders['x-store-id'] = storeId;
       }
       
-      // Fetch both current overlay data and baseline data
-      const data = await apiClient.get(`hybrid-patches/modified-code/${encodeURIComponent(fileName)}`, customHeaders);
+      // Check overlay status with both baseline and merged modes
+      const [mergedData, baselineData] = await Promise.all([
+        apiClient.get(`hybrid-patches/modified-code/${encodeURIComponent(fileName)}?mode=merged&processed=false`, customHeaders),
+        apiClient.get(`hybrid-patches/modified-code/${encodeURIComponent(fileName)}?mode=baseline&processed=false`, customHeaders)
+      ]);
       
-      if (data && data.success && data.data && data.data.modifiedCode) {
-        console.log(`✅ BrowserPreview: Found overlay for ${fileName} using path: ${data.data.matchedPath}`);
+      const hasOverlay = mergedData?.success && mergedData?.data?.hasOverlay;
+      
+      if (hasOverlay) {
+        console.log(`✅ BrowserPreview: Found server-side overlay for ${fileName}`);
+        console.log(`📊 Overlay stats: ${mergedData.data.appliedSnapshots || 0} snapshots applied`);
         
-        // Update overlay data state with both baseline and current content
+        // Update overlay data state for UI toggle
         const overlayResult = {
-          baseline: data.data.baselineCode || null,
-          current: data.data.modifiedCode,
-          hasOverlay: true
+          baseline: baselineData?.data?.modifiedCode || null,
+          current: mergedData?.data?.modifiedCode || null,
+          hasOverlay: true,
+          appliedSnapshots: mergedData.data.appliedSnapshots || 0,
+          customizationId: mergedData.data.customizationId,
+          lastModified: mergedData.data.lastModified
         };
         
         setOverlayData(overlayResult);
         
         return {
           hasOverlay: true,
-          modifiedCode: data.data.modifiedCode,
-          baselineCode: data.data.baselineCode,
-          customizationId: data.data.customizationId,
-          lastModified: data.data.lastModified,
-          matchedPath: data.data.matchedPath,
-          requestedPath: data.data.requestedPath
+          appliedSnapshots: mergedData.data.appliedSnapshots || 0,
+          customizationId: mergedData.data.customizationId,
+          lastModified: mergedData.data.lastModified,
+          matchedPath: fileName,
+          requestedPath: fileName
         };
+      } else {
+        console.log(`❌ BrowserPreview: No server-side overlay found for ${fileName}`);
+        
+        // Update overlay data state to show no overlay
+        setOverlayData({
+          baseline: null,
+          current: null,
+          hasOverlay: false
+        });
+        
+        return { hasOverlay: false };
       }
-      
-      // Handle case where no overlay found
-      console.log(`❌ BrowserPreview: No overlay found for ${fileName}. Tried paths: ${data?.triedPaths?.join(', ') || 'unknown'}`);
-      
-      setOverlayData({ baseline: null, current: null, hasOverlay: false });
-      
-      return {
-        hasOverlay: false,
-        message: data?.error || `No overlay found for: ${fileName}`,
-        triedPaths: data?.triedPaths
-      };
-      
     } catch (error) {
-      // Handle 404 and other errors
-      if (error.status === 404) {
-        console.log(`❌ BrowserPreview: No overlay found for ${fileName}. Tried paths: ${error.data?.triedPaths?.join(', ') || 'unknown'}`);
-        setOverlayData({ baseline: null, current: null, hasOverlay: false });
-        return {
-          hasOverlay: false,
-          message: error.data?.error || `No overlay found for: ${fileName}`,
-          triedPaths: error.data?.triedPaths
-        };
-      }
+      console.error('❌ BrowserPreview: Error checking overlay status:', error);
       
-      console.warn(`⚠️ BrowserPreview: Error fetching overlay for ${fileName}:`, error.message);
-      setOverlayData({ baseline: null, current: null, hasOverlay: false });
-      return {
-        hasOverlay: false,
-        error: error.message
-      };
+      setOverlayData({
+        baseline: null,
+        current: null,
+        hasOverlay: false
+      });
+      
+      return { hasOverlay: false };
     }
   }, [storeId]);
 
-  // Apply overlay with dynamic mode switching - supports baseline, current, and editor content
+  // Server-side overlay application using URL parameters - no DOM manipulation needed
   const applyCodePatches = useCallback(async (iframe) => {
     if (!fileName) return;
     
     try {
-      console.log(`🔄 BrowserPreview: Direct overlay lookup for: ${fileName} (mode: ${overlayMode})`);
+      console.log(`🔄 BrowserPreview: Server-side overlay application for: ${fileName} (mode: ${overlayMode})`);
       
-      // Get baseline code (original file content)
-      const editorBaselineCode = getMergedContent(fileName) || currentCode;
-      if (!editorBaselineCode) {
-        console.warn('⚠️ BrowserPreview: No editor baseline code available');
-        return;
-      }
+      // Check if overlay exists for this file
+      const overlayStatus = await checkOverlayStatus(fileName);
       
-      // Direct overlay lookup by filename - no loop needed
-      const overlayResult = await fetchOverlayForFile(fileName);
-      
-      if (overlayResult.hasOverlay) {
-        console.log(`✅ BrowserPreview: Found overlay for ${fileName}. Available modes: baseline, current, editor`);
+      if (overlayStatus.hasOverlay) {
+        console.log(`✅ BrowserPreview: Server-side overlay found for ${fileName}. Mode: ${overlayMode}`);
+        console.log(`📊 Overlay stats: ${overlayStatus.appliedSnapshots || 0} snapshots accumulated`);
         
-        // Determine which content to use based on overlay mode
-        let contentToApply;
-        let modeDescription;
-        
-        switch (overlayMode) {
-          case 'baseline':
-            contentToApply = overlayResult.baseline || editorBaselineCode;
-            modeDescription = 'database baseline';
-            console.log(`🔧 BrowserPreview: Using ${modeDescription} content (${contentToApply.length} chars)`);
-            break;
-          case 'current':
-            contentToApply = overlayResult.current;
-            modeDescription = 'database current/overlay';
-            console.log(`🔧 BrowserPreview: Using ${modeDescription} content (${contentToApply.length} chars)`);
-            break;
-          case 'editor':
-          default:
-            contentToApply = editorBaselineCode;
-            modeDescription = 'editor';
-            console.log(`🔧 BrowserPreview: Using ${modeDescription} content (${contentToApply.length} chars)`);
-            break;
-        }
-        
-        // Apply selected content to iframe
-        const success = await applyMergedCodeToIframe(iframe, contentToApply);
-        
-        if (success) {
-          console.log(`✅ BrowserPreview: ${modeDescription} content applied successfully`);
-        } else {
-          console.warn(`⚠️ BrowserPreview: Failed to apply ${modeDescription} content, falling back to editor`);
-          await applyMergedCodeToIframe(iframe, editorBaselineCode);
+        // Instead of DOM manipulation, refresh the iframe with overlay parameters
+        // The server will serve the properly merged code based on the mode
+        const currentUrl = iframe.src || previewUrl;
+        if (currentUrl) {
+          const url = new URL(currentUrl);
+          
+          // Add overlay mode parameter to tell server which version to serve
+          if (overlayMode === 'baseline') {
+            url.searchParams.set('overlay_mode', 'baseline');
+          } else {
+            url.searchParams.set('overlay_mode', 'merged');
+          }
+          
+          // Add file parameter so server knows which file's overlay to apply
+          url.searchParams.set('overlay_file', fileName);
+          
+          console.log(`🔄 BrowserPreview: Refreshing iframe with server-side overlay mode: ${overlayMode}`);
+          iframe.src = url.toString();
         }
       } else {
-        console.log(`📄 BrowserPreview: No overlay found for ${fileName}, using editor baseline code`);
-        await applyMergedCodeToIframe(iframe, editorBaselineCode);
-      }
-      
-    } catch (error) {
-      console.error('❌ BrowserPreview: Error in overlay system:', error);
-      // Fallback to baseline code
-      try {
-        const fallbackCode = getMergedContent(fileName) || currentCode;
-        if (fallbackCode) {
-          await applyMergedCodeToIframe(iframe, fallbackCode);
-          console.log('🔄 BrowserPreview: Fallback to baseline code successful');
+        console.log(`❌ BrowserPreview: No server-side overlay found for ${fileName} - showing editor content`);
+        
+        // No overlay exists, remove any overlay parameters and show normal page
+        const currentUrl = iframe.src || previewUrl;
+        if (currentUrl) {
+          const url = new URL(currentUrl);
+          url.searchParams.delete('overlay_mode');
+          url.searchParams.delete('overlay_file');
+          
+          if (url.toString() !== currentUrl) {
+            console.log(`🔄 BrowserPreview: Refreshing iframe without overlay parameters`);
+            iframe.src = url.toString();
+          }
         }
-      } catch (fallbackError) {
-        console.error('❌ BrowserPreview: Fallback also failed:', fallbackError);
+      }
+    } catch (error) {
+      console.error('❌ BrowserPreview: Error applying server-side overlay:', error);
+      
+      // On error, try to refresh iframe without overlay parameters
+      const currentUrl = iframe.src || previewUrl;
+      if (currentUrl) {
+        const url = new URL(currentUrl);
+        url.searchParams.delete('overlay_mode');
+        url.searchParams.delete('overlay_file');
+        iframe.src = url.toString();
       }
     }
-  }, [fileName, currentCode, getMergedContent, applyMergedCodeToIframe, overlayMode, fetchOverlayForFile]);
+  }, [fileName, overlayMode, checkOverlayStatus, previewUrl]);
 
   // Assign function to ref to break circular dependencies
   useEffect(() => {
@@ -770,34 +626,58 @@ const BrowserPreview = ({
               {/* Overlay Toggle with Mode Selector */}
               <div className="flex items-center space-x-1">
                 <button
-                  onClick={() => setShowOverlay(!showOverlay)}
+                  onClick={() => {
+                    if (overlayData.hasOverlay) {
+                      // Toggle between baseline and merged modes
+                      const newMode = overlayMode === 'baseline' ? 'merged' : 'baseline';
+                      setOverlayMode(newMode);
+                      console.log(`🔄 BrowserPreview: Toggled overlay to ${newMode} mode`);
+                    } else {
+                      // No overlay data available, just show overlay system
+                      setShowOverlay(!showOverlay);
+                    }
+                  }}
                   className={cn(
                     "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
-                    showOverlay || (overlayData.hasOverlay && overlayStats?.activeOverlays > 0)
+                    (overlayData.hasOverlay && overlayMode !== 'baseline') || (showOverlay && !overlayData.hasOverlay)
                       ? "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/50 dark:border-purple-700 dark:text-purple-300" 
                       : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
                   )}
                   title={overlayData.hasOverlay
-                    ? `Show overlay system (database overlay available)`
+                    ? `Toggle overlay changes (${overlayMode === 'baseline' ? 'click to show' : 'click to hide'} server-side overlays)`
                     : "Show overlay system (non-destructive code patches)"
                   }
                 >
                   <Layers className="w-3 h-3 mr-1 inline" />
-                  {overlayData.hasOverlay ? "Overlay" : "Overlay"}
+                  {overlayData.hasOverlay 
+                    ? (overlayMode === 'baseline' ? "Show Overlay" : "Hide Overlay")
+                    : "Overlay"
+                  }
                 </button>
                 
-                {/* Overlay Mode Selector - only show when overlay data is available */}
-                {overlayData.hasOverlay && (
+                {/* Advanced Mode Selector - show when overlay is available and user wants more control */}
+                {overlayData.hasOverlay && showOverlay && (
                   <select
                     value={overlayMode}
                     onChange={(e) => setOverlayMode(e.target.value)}
                     className="px-2 py-1 text-xs rounded-md border bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 focus:border-purple-300 dark:focus:border-purple-600 focus:ring-1 focus:ring-purple-200 dark:focus:ring-purple-800"
-                    title="Switch between different content versions"
+                    title="Advanced mode selector - choose exact content version"
                   >
-                    <option value="editor">Editor</option>
-                    <option value="baseline">DB Baseline</option>
-                    <option value="current">DB Current</option>
+                    <option value="baseline">Baseline (Original)</option>
+                    <option value="merged">Merged (With Changes)</option>
+                    <option value="editor">Editor (Live Code)</option>
                   </select>
+                )}
+                
+                {/* Show advanced controls toggle - only when overlay data is available */}
+                {overlayData.hasOverlay && (
+                  <button
+                    onClick={() => setShowOverlay(!showOverlay)}
+                    className="px-2 py-1 text-xs rounded-md border bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 transition-colors"
+                    title="Show advanced overlay controls"
+                  >
+                    ⚙️
+                  </button>
                 )}
               </div>
 
