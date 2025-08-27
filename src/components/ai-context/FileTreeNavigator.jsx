@@ -41,8 +41,8 @@ const FileTreeNavigator = ({
   const loadFileTree = async () => {
     try {
       console.log('🔍 FileTreeNavigator: Loading file tree from file_baselines...');
-      // Fetch file baselines from API
-      const data = await apiClient.get('patches/baselines');
+      // Fetch file baselines from API (no auth required)
+      const data = await apiClient.get('patches/baselines', { 'x-skip-transform': 'true' });
       
       console.log('📡 FileTreeNavigator: API Response:', data);
       
@@ -80,7 +80,39 @@ const FileTreeNavigator = ({
     } catch (error) {
       console.error('❌ FileTreeNavigator: Error loading file tree:', error);
       console.error('❌ FileTreeNavigator: Error details:', error.response || error.message);
-      // Fallback to error state
+      
+      // Handle authentication errors gracefully
+      if (error.message && error.message.includes('authentication')) {
+        console.warn('⚠️ FileTreeNavigator: Authentication issue, trying without auth...');
+        
+        try {
+          // Fallback: Try direct fetch without authentication
+          const fallbackResponse = await fetch('/api/patches/baselines');
+          const fallbackData = await fallbackResponse.json();
+          
+          if (fallbackData && fallbackData.success && fallbackData.data && fallbackData.data.files) {
+            console.log('✅ FileTreeNavigator: Fallback successful, got', fallbackData.data.files.length, 'files');
+            
+            const fileList = fallbackData.data.files.map(file => ({
+              path: file.file_path,
+              extension: file.file_path.split('.').pop(),
+              size: file.file_size || 0,
+              modified: file.last_modified,
+              version: file.version,
+              codeHash: file.code_hash,
+              fileType: file.file_type
+            }));
+            
+            const tree = buildFileTree(fileList);
+            setFileTree(tree);
+            return;
+          }
+        } catch (fallbackError) {
+          console.error('❌ FileTreeNavigator: Fallback also failed:', fallbackError);
+        }
+      }
+      
+      // Final fallback to error state
       setFileTree({
         name: 'src',
         type: 'folder', 
