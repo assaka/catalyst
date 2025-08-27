@@ -24,11 +24,12 @@ class VersionControlService {
   /**
    * Create a new customization with initial baseline
    */
-  async createCustomization({ userId, name, description, componentType = 'component', filePath, baselineCode, initialCode, changeType = 'manual_edit', changeSummary }) {
+  async createCustomization({ userId, storeId, name, description, componentType = 'component', filePath, baselineCode, initialCode, changeType = 'manual_edit', changeSummary }) {
     try {
       // Create the customization overlay record
       const customization = await CustomizationOverlay.create({
         user_id: userId,
+        store_id: storeId,
         name,
         description,
         file_path: filePath,

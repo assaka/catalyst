@@ -55,9 +55,14 @@ router.post('/create', authMiddleware, async (req, res) => {
 
     let result;
     if (!customization) {
+      // Get user's store ID - for now use the store we've been working with
+      // TODO: Implement proper store context middleware for hybrid-patches routes
+      const storeId = '157d4590-49bf-4b0b-bd77-abe131909528';
+      
       // Create new customization
       result = await versionControl.createCustomization({
         userId,
+        storeId,
         name: `Auto-saved changes to ${filePath.split('/').pop()}`,
         description: 'Auto-generated from manual edits',
         componentType: 'component',
