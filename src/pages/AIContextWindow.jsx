@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import {Code, Diff, Download, Eye} from 'lucide-react';
+import {Code, Diff, Download, Eye, Clock} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
@@ -732,6 +732,14 @@ export default ExampleComponent;`;
             className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {connectionStatus?.status === 'testing' ? 'Testing...' : 'Test Connection'}
+          </button>
+          
+          <button
+            disabled={true}
+            className="px-3 py-1 text-xs bg-gray-300 text-gray-500 rounded cursor-not-allowed flex items-center gap-1"
+          >
+            <Clock className="w-3 h-3" />
+            Version History
           </button>
         </div>
         
