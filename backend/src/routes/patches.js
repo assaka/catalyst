@@ -178,7 +178,7 @@ router.get('/file/:filePath(*)', async (req, res) => {
 
     query += ` ORDER BY cp.priority ASC, cp.created_at DESC`;
 
-    const [patches] = await patchService.sequelize.query(query, {
+    const patches = await patchService.sequelize.query(query, {
       replacements,
       type: patchService.sequelize.QueryTypes.SELECT
     });
@@ -740,7 +740,7 @@ router.get('/:filePath(*)', async (req, res) => {
 
     query += ` ORDER BY cp.priority ASC, cp.created_at DESC`;
 
-    const [patches] = await patchService.sequelize.query(query, {
+    const patches = await patchService.sequelize.query(query, {
       replacements,
       type: patchService.sequelize.QueryTypes.SELECT
     });
