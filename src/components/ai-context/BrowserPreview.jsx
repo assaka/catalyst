@@ -47,12 +47,12 @@ const BrowserPreview = ({
     return fileNameOnly.split('\\').pop() || fileNameOnly;
   }, []);
 
-  // Update preview URL - generate proper public URL directly
+  // Update preview URL - use localhost backend for patch support
   useEffect(() => {
     const generatePreviewUrl = async () => {
       if (fileName && storeId) {
         try {
-          // First, get store information and resolve the route
+          // Get store information
           const storeResponse = await apiClient.get(`stores/${storeId}`, getApiConfig().headers);
           const store = storeResponse.data;
           const storeSlug = store?.slug || 'store';
@@ -60,39 +60,26 @@ const BrowserPreview = ({
           // Extract page name from file path (e.g., src/pages/Cart.jsx -> Cart)
           const pageName = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
           
-          // Use store routes to find the actual route for this page (public endpoint)
-          const routeResponse = await apiClient.get(`store-routes/public/find-by-page/${pageName}`, getApiConfig().headers);
+          // Use localhost backend preview endpoint for patch application
+          const backendUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+          const patchesParam = enablePatches ? 'true' : 'false';
           
-          console.log(`🔍 BrowserPreview: API Response for "${pageName}":`, routeResponse);
+          // Build preview URL using backend endpoint which handles patch application and redirects
+          const finalUrl = `${backendUrl}/preview/${storeId}?fileName=${encodeURIComponent(fileName)}&patches=${patchesParam}&storeSlug=${storeSlug}&pageName=${pageName}`;
           
-          if (routeResponse && routeResponse.success && routeResponse.data && routeResponse.data.route) {
-            const route = routeResponse.data.route;
-            
-            // Build the proper external public store URL  
-            const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
-            // Use the external store URL (Vercel deployment) instead of localhost
-            const externalBaseUrl = process.env.REACT_APP_PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
-            const publicUrl = `${externalBaseUrl}/public/${storeSlug}/${routePath}`;
-            
-            // Add patches parameter if enabled
-            const finalUrl = enablePatches ? `${publicUrl}?patches=true` : publicUrl;
-            
-            console.log(`🔍 BrowserPreview: External public URL generation:`);
-            console.log(`  - storeId: ${storeId}`);
-            console.log(`  - storeSlug: ${storeSlug}`);
-            console.log(`  - fileName: ${fileName}`);
-            console.log(`  - pageName: ${pageName}`);
-            console.log(`  - routePath: ${route.route_path}`);
-            console.log(`  - externalBaseUrl: ${externalBaseUrl}`);
-            console.log(`  - enablePatches: ${enablePatches}`);
-            console.log(`  - finalUrl: ${finalUrl}`);
-            
-            setPreviewUrl(finalUrl);
-            console.log(`🎯 Generated external public store URL: ${finalUrl}`);
-            setError(null);
-          } else {
-            throw new Error(`No route mapping found for page "${pageName}"`);
-          }
+          console.log(`🔍 BrowserPreview: Localhost preview URL generation:`);
+          console.log(`  - storeId: ${storeId}`);
+          console.log(`  - storeSlug: ${storeSlug}`);
+          console.log(`  - fileName: ${fileName}`);
+          console.log(`  - pageName: ${pageName}`);
+          console.log(`  - backendUrl: ${backendUrl}`);
+          console.log(`  - enablePatches: ${enablePatches}`);
+          console.log(`  - patchesParam: ${patchesParam}`);
+          console.log(`  - finalUrl: ${finalUrl}`);
+          
+          setPreviewUrl(finalUrl);
+          console.log(`🎯 Generated localhost backend preview URL: ${finalUrl}`);
+          setError(null);
         } catch (error) {
           console.error('Error generating preview URL:', error);
           setPreviewUrl(null);
@@ -109,6 +96,13 @@ const BrowserPreview = ({
     generatePreviewUrl();
   }, [fileName, enablePatches, storeId, getApiConfig]);
 
+  // Check patch status when filename changes
+  useEffect(() => {
+    if (fileName && storeId) {
+      checkPatchStatus(fileName);
+    }
+  }, [fileName, storeId, checkPatchStatus]);
+
   // Device view dimensions
   const deviceDimensions = {
     desktop: { width: '100%', height: '100%', maxWidth: '100%' },
@@ -119,7 +113,7 @@ const BrowserPreview = ({
   const currentDimensions = deviceDimensions[deviceView];
 
 
-  // Simple patch status check
+  // Check if patches exist for this file
   const checkPatchStatus = useCallback(async (fileName) => {
     try {
       const customHeaders = {};
@@ -158,14 +152,13 @@ const BrowserPreview = ({
   const refreshPreview = useCallback(() => {
     setIsLoading(true);
     setError(null);
-    // Force iframe refresh by updating the src
+    // Force iframe refresh by updating the src with a cache-busting parameter
     const iframe = document.getElementById('browser-preview-iframe');
     if (iframe && previewUrl) {
-      // Use URL constructor to properly handle existing parameters
+      // Add cache-busting parameter to force refresh
       const url = new URL(previewUrl);
-      url.searchParams.set('preview', Date.now().toString());
+      url.searchParams.set('_refresh', Date.now().toString());
       iframe.src = url.toString();
-      // Patches will be reapplied automatically via handleIframeLoad
     }
   }, [previewUrl]);
 
