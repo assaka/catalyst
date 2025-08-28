@@ -128,6 +128,8 @@ import AIContextWindow from "./AIContextWindow";
 
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 
+import GlobalPatchProvider from "@/components/storefront/GlobalPatchProvider";
+
 const PAGES = {
     
     Landing: Landing,
@@ -1200,7 +1202,9 @@ function PagesContent() {
 export default function Pages() {
     return (
         <Router>
-            <PagesContent />
+            <GlobalPatchProvider>
+                <PagesContent />
+            </GlobalPatchProvider>
         </Router>
     );
 }
