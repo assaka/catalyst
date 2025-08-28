@@ -96,23 +96,6 @@ const BrowserPreview = ({
     generatePreviewUrl();
   }, [fileName, enablePatches, storeId, getApiConfig]);
 
-  // Check patch status when filename changes
-  useEffect(() => {
-    if (fileName && storeId) {
-      checkPatchStatus(fileName);
-    }
-  }, [fileName, storeId, checkPatchStatus]);
-
-  // Device view dimensions
-  const deviceDimensions = {
-    desktop: { width: '100%', height: '100%', maxWidth: '100%' },
-    tablet: { width: '768px', height: '1024px', maxWidth: '768px' },
-    mobile: { width: '375px', height: '667px', maxWidth: '375px' }
-  };
-
-  const currentDimensions = deviceDimensions[deviceView];
-
-
   // Check if patches exist for this file
   const checkPatchStatus = useCallback(async (fileName) => {
     try {
@@ -135,6 +118,22 @@ const BrowserPreview = ({
       return { hasPatches: false };
     }
   }, [storeId]);
+
+  // Check patch status when filename changes
+  useEffect(() => {
+    if (fileName && storeId) {
+      checkPatchStatus(fileName);
+    }
+  }, [fileName, storeId, checkPatchStatus]);
+
+  // Device view dimensions
+  const deviceDimensions = {
+    desktop: { width: '100%', height: '100%', maxWidth: '100%' },
+    tablet: { width: '768px', height: '1024px', maxWidth: '768px' },
+    mobile: { width: '375px', height: '667px', maxWidth: '375px' }
+  };
+
+  const currentDimensions = deviceDimensions[deviceView];
 
   // Handle iframe load - no patch application needed, URL already contains patches
   const handleIframeLoad = useCallback(() => {
