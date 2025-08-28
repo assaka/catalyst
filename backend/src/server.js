@@ -1670,62 +1670,41 @@ app.get('/preview/:storeId', async (req, res) => {
       });
     }
 
-    // Serve the merged patched content directly instead of redirecting
-    if (patchResult.hasPatches && patchResult.finalCode) {
-      console.log(`✅ Serving patched content for ${fileName} with ${patchResult.appliedPatches?.length || 0} patches applied`);
-      
-      // Generate HTML wrapper for the patched React component
-      const htmlWrapper = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Patched Preview: ${pageName}</title>
-  <link rel="stylesheet" href="https://cdn.tailwindcss.com">
-  <style>
-    body { margin: 0; padding: 20px; font-family: system-ui, -apple-system, sans-serif; }
-    .patch-info { background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 12px; margin-bottom: 20px; }
-    .patch-code { background: #1f2937; color: #f3f4f6; padding: 20px; border-radius: 8px; overflow-x: auto; }
-    pre { margin: 0; font-family: 'Courier New', monospace; }
-  </style>
-</head>
-<body>
-  <div class="patch-info">
-    <h2 style="margin: 0 0 8px 0; color: #0ea5e9;">🔧 Patched Component Preview</h2>
-    <p style="margin: 0; color: #1e40af;">
-      <strong>File:</strong> ${fileName}<br>
-      <strong>Patches Applied:</strong> ${patchResult.appliedPatches?.length || 0}<br>
-      <strong>Store:</strong> ${actualStoreSlug} (${storeId})
-    </p>
-    ${patchResult.appliedPatches?.length > 0 ? `
-    <details style="margin-top: 8px;">
-      <summary style="cursor: pointer; color: #1d4ed8;">View Applied Patches</summary>
-      <ul style="margin: 8px 0 0 20px; color: #64748b;">
-        ${patchResult.appliedPatches.map(p => `<li>${p.changeSummary || p.patchName}</li>`).join('')}
-      </ul>
-    </details>` : ''}
-  </div>
-  
-  <div class="patch-code">
-    <h3 style="margin: 0 0 16px 0; color: #60a5fa;">Merged Code (Baseline + Patches):</h3>
-    <pre><code>${patchResult.finalCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
-  </div>
-</body>
-</html>`;
-
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      return res.send(htmlWrapper);
-    }
-
-    // If no patches were applied or no patched content, redirect to original frontend
-    const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
-    const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
+    // Redirect to the actual frontend application with patches enabled
+    // This allows users to see the page as they would when browsing the store
+    console.log(`✅ Redirecting to frontend with patches enabled for ${fileName}`);
     
-    const publicUrl = `${publicStoreBaseUrl}/public/${actualStoreSlug}/${routePath}?_t=${Date.now()}`;
-    console.log(`ℹ️ No patches applied - redirecting to original: ${publicUrl}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+    const redirectParams = new URLSearchParams({
+      storeSlug: actualStoreSlug,
+      patches: 'true',
+      fileName: fileName,
+      storeId: storeId
+    });
     
-    return res.redirect(302, publicUrl);
+    // Redirect to the storefront with patches enabled
+    const redirectUrl = `${frontendUrl}/${actualStoreSlug}?${redirectParams.toString()}`;
+    console.log(`🔀 Redirecting to frontend: ${redirectUrl}`);
+    
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.redirect(302, redirectUrl);
+  } else {
+    // If no patches were applied, still redirect to frontend but without patches parameter
+    console.log(`ℹ️ No patches to apply for ${fileName} - redirecting to normal frontend`);
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+    const redirectParams = new URLSearchParams({
+      storeSlug: actualStoreSlug,
+      fileName: fileName,
+      storeId: storeId
+    });
+    
+    const redirectUrl = `${frontendUrl}/${actualStoreSlug}?${redirectParams.toString()}`;
+    console.log(`🔀 Redirecting to frontend (no patches): ${redirectUrl}`);
+    
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return res.redirect(302, redirectUrl);
+  }
     
   } catch (error) {
     console.error('Preview route error:', error);
