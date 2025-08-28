@@ -1643,8 +1643,7 @@ app.get('/preview/:storeId', async (req, res) => {
     }
 
     // Apply patches using the patch service
-    const PatchService = require('./services/patch-service');
-    const patchService = new PatchService();
+    const patchService = require('./services/patch-service');
     
     console.log(`🔧 Applying patches to ${fileName}...`);
     const patchResult = await patchService.applyPatches(fileName, {
