@@ -835,4 +835,71 @@ router.get('/:filePath(*)', async (req, res) => {
   }
 });
 
+// Delete/deactivate specific patches by line number - requires authentication
+router.delete('/line/:filePath(*)', authMiddleware, async (req, res) => {
+  try {
+    const filePath = req.params.filePath;
+    const { lineNumber } = req.body;
+    const storeId = req.headers['x-store-id'] || '157d4590-49bf-4b0b-bd77-abe131909528';
+
+    console.log(`🗑️ Deleting patches for ${filePath} line ${lineNumber}`);
+
+    if (typeof lineNumber !== 'number' || lineNumber < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Valid line number is required'
+      });
+    }
+
+    // Find patches that affect the specific line
+    const query = `
+      UPDATE patch_diffs 
+      SET is_active = false, 
+          updated_at = NOW(),
+          status = 'reverted'
+      WHERE store_id = :storeId 
+      AND file_path = :filePath 
+      AND is_active = true
+      AND (
+        applies_to_lines IS NULL OR 
+        applies_to_lines ? :lineNumber OR
+        applies_to_lines @> :lineNumberJson OR
+        applies_to_lines::text ILIKE :linePattern
+      )
+    `;
+
+    const replacements = {
+      storeId,
+      filePath,
+      lineNumber: lineNumber.toString(),
+      lineNumberJson: JSON.stringify([lineNumber]),
+      linePattern: `%${lineNumber}%`
+    };
+
+    const [result] = await patchService.sequelize.query(query, {
+      replacements,
+      type: patchService.sequelize.QueryTypes.UPDATE
+    });
+
+    console.log(`✅ Deactivated ${result} patches for line ${lineNumber}`);
+
+    res.json({
+      success: true,
+      message: `Successfully removed ${result} patch(es) for line ${lineNumber}`,
+      data: {
+        affectedPatches: result,
+        filePath,
+        lineNumber
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error deleting patches for line:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

@@ -512,7 +512,7 @@ const DiffPreviewSystem = ({
   }, [handleSyncScroll, selectedView]);
 
   // Handle line revert functionality
-  const handleLineRevert = useCallback((lineIndex, originalLine) => {
+  const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
     console.log('🔄 Reverting line', lineIndex, 'from:', currentModifiedCode.split('\n')[lineIndex]);
     console.log('🔄 Reverting to:', originalBaseCodeRef.current.split('\n')[lineIndex]);
     
@@ -529,12 +529,38 @@ const DiffPreviewSystem = ({
       
       setCurrentModifiedCode(newCode);
       
+      // Remove patches from database for this line
+      try {
+        console.log('🗑️ Removing patches for line', lineIndex);
+        const storeId = getSelectedStoreId();
+        const response = await fetch(`/api/patches/line/${encodeURIComponent(fileName)}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'X-Store-Id': storeId
+          },
+          body: JSON.stringify({
+            lineNumber: lineIndex
+          })
+        });
+
+        const result = await response.json();
+        if (result.success) {
+          console.log('✅ Successfully removed', result.data.affectedPatches, 'patch(es) for line', lineIndex);
+        } else {
+          console.error('❌ Failed to remove patches:', result.error);
+        }
+      } catch (error) {
+        console.error('❌ Error removing patches for line:', error);
+      }
+      
       // Notify parent component of the change
       if (onCodeChange) {
         onCodeChange(newCode);
       }
     }
-  }, [currentModifiedCode, onCodeChange]);
+  }, [currentModifiedCode, onCodeChange, fileName]);
 
   // Handle preview functionality with enhanced route resolution
   const handlePreview = useCallback(async () => {
