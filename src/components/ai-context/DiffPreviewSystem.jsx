@@ -242,7 +242,8 @@ const SplitViewPane = ({
   showWhitespace, 
   onLineRevert, 
   originalLines,
-  modifiedLines
+  modifiedLines,
+  onExpandCollapsed
 }) => {
   // Create a mapping of line numbers to diff types for highlighting
   const getDiffTypeForLine = (lineIndex) => {
@@ -263,6 +264,8 @@ const SplitViewPane = ({
         return side === 'modified' ? 'bg-green-50 border-l-4 border-green-500' : 'bg-gray-100';
       case 'deletion':
         return side === 'original' ? 'bg-red-50 border-l-4 border-red-500' : 'bg-gray-100';
+      case 'collapsed':
+        return 'bg-blue-50 border-l-4 border-blue-300';
       case 'context':
       default:
         return 'bg-background hover:bg-muted/30';
@@ -276,30 +279,43 @@ const SplitViewPane = ({
 
   return (
     <div className="font-mono min-w-max">
-      {lines.map((line, index) => {
-        const diffType = getDiffTypeForLine(index);
-        const shouldShow = side === 'original' 
-          ? diffType !== 'addition' 
-          : diffType !== 'deletion';
+      {diffLines.map((diffLine, index) => {
+        // Only show relevant lines for each side
+        const shouldShow = (() => {
+          if (diffLine.type === 'collapsed') return true; // Always show collapsed indicators
+          if (side === 'original') {
+            return diffLine.type !== 'addition'; // Show deletions and context
+          } else {
+            return diffLine.type !== 'deletion'; // Show additions and context
+          }
+        })();
 
-        if (!shouldShow && diffType !== 'context') {
+        if (!shouldShow) {
           return null;
         }
+
+        const actualLineNumber = side === 'original' ? diffLine.lineNumber : diffLine.newLineNumber;
+        const actualLineIndex = actualLineNumber ? actualLineNumber - 1 : null;
+        const lineContent = diffLine.type === 'collapsed' ? diffLine.content : (actualLineIndex !== null ? lines[actualLineIndex] || '' : '');
 
         return (
           <div
             key={index}
-            className={`flex items-center px-2 py-1 text-sm min-w-max ${getLineStyle(index, diffType)} group`}
+            className={`flex items-center px-2 py-1 text-sm min-w-max ${getLineStyle(actualLineIndex, diffLine.type)} group ${
+              diffLine.type === 'collapsed' ? 'cursor-pointer hover:bg-blue-100 transition-colors' : ''
+            }`}
+            onClick={diffLine.type === 'collapsed' && onExpandCollapsed ? () => onExpandCollapsed(diffLine.startIndex, diffLine.endIndex) : undefined}
+            title={diffLine.type === 'collapsed' ? 'Click to expand hidden lines' : undefined}
           >
             {/* Show revert button before line numbers for modified lines on the original side */}
             {side === 'original' && onLineRevert && originalLines && modifiedLines && 
-             originalLines[index] !== undefined && modifiedLines[index] !== undefined &&
-             originalLines[index] !== modifiedLines[index] ? (
+             actualLineIndex !== null && originalLines[actualLineIndex] !== undefined && modifiedLines[actualLineIndex] !== undefined &&
+             originalLines[actualLineIndex] !== modifiedLines[actualLineIndex] && diffLine.type !== 'collapsed' ? (
               <Button
                 variant="ghost"
                 size="sm"
                 className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0"
-                onClick={() => onLineRevert(index, line)}
+                onClick={() => onLineRevert(actualLineIndex, originalLines[actualLineIndex])}
                 title="Revert this line to original"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -310,15 +326,33 @@ const SplitViewPane = ({
             
             {showLineNumbers && (
               <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
-                {index + 1}
+                {diffLine.type === 'collapsed' ? '' : (actualLineNumber || '')}
               </div>
             )}
+            
+            {/* Icon indicator for collapsed/changes */}
+            <div className="w-6 flex items-center justify-center flex-shrink-0">
+              {diffLine.type === 'collapsed' ? (
+                <EyeOff className="w-3 h-3 text-blue-600" />
+              ) : diffLine.type === 'addition' && side === 'modified' ? (
+                <Plus className="w-3 h-3 text-green-600" />
+              ) : diffLine.type === 'deletion' && side === 'original' ? (
+                <Minus className="w-3 h-3 text-red-600" />
+              ) : null}
+            </div>
+            
             <div className="flex-1 pl-2 min-w-0">
-              <span className={`${diffType === 'addition' && side === 'modified' ? 'text-green-700' : 
-                                diffType === 'deletion' && side === 'original' ? 'text-red-700' : 
-                                'text-foreground'} whitespace-nowrap block`}>
-                {formatLine(line) || ' '}
-              </span>
+              {diffLine.type === 'collapsed' ? (
+                <span className="text-blue-600 italic font-medium">
+                  {lineContent}
+                </span>
+              ) : (
+                <span className={`${diffLine.type === 'addition' && side === 'modified' ? 'text-green-700' : 
+                                  diffLine.type === 'deletion' && side === 'original' ? 'text-red-700' : 
+                                  'text-foreground'} whitespace-nowrap block`}>
+                  {formatLine(lineContent) || ' '}
+                </span>
+              )}
             </div>
           </div>
         );
@@ -1273,6 +1307,14 @@ const DiffPreviewSystem = ({
                     />
                     <span>Whitespace</span>
                   </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={collapseUnchanged}
+                      onChange={(e) => setCollapseUnchanged(e.target.checked)}
+                    />
+                    <span>Collapse Unchanged</span>
+                  </label>
                 </div>
               </div>
               
@@ -1297,13 +1339,14 @@ const DiffPreviewSystem = ({
                       <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 350px)', minWidth: '600px', height: 'calc(100vh - 350px)' }}>
                         <SplitViewPane
                           lines={originalBaseCodeRef.current.split('\n')}
-                          diffLines={displayLines}
+                          diffLines={finalDisplayLines}
                           side="original"
                           showLineNumbers={lineNumbers}
                           showWhitespace={showWhitespace}
                           onLineRevert={handleLineRevert}
                           originalLines={originalBaseCodeRef.current.split('\n')}
                           modifiedLines={currentModifiedCode.split('\n')}
+                          onExpandCollapsed={handleExpandCollapsed}
                         />
                       </div>
                     </div>
@@ -1333,13 +1376,14 @@ const DiffPreviewSystem = ({
                         <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 350px)', minWidth: '600px', height: 'calc(100vh - 350px)' }}>
                           <SplitViewPane
                             lines={currentModifiedCode.split('\n')}
-                            diffLines={displayLines}
+                            diffLines={finalDisplayLines}
                             side="modified"
                             showLineNumbers={lineNumbers}
                             showWhitespace={showWhitespace}
                             onLineRevert={handleLineRevert}
                             originalLines={originalBaseCodeRef.current.split('\n')}
                             modifiedLines={currentModifiedCode.split('\n')}
+                            onExpandCollapsed={handleExpandCollapsed}
                           />
                         </div>
                       </div>

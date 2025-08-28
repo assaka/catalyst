@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code, Layers } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
@@ -21,12 +21,8 @@ const BrowserPreview = ({
   const [error, setError] = useState(null);
   const [deviceView, setDeviceView] = useState('desktop'); // desktop, tablet, mobile
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
-  const [enablePatches, setEnablePatches] = useState(true); // Enable server-side patch application
-  
-  // Patch state management - simplified for server-side merging
-  const [showPatchControls, setShowPatchControls] = useState(false);
-  const [patchMode, setPatchMode] = useState('merged'); // 'baseline', 'merged'
-  const [patchData, setPatchData] = useState({ baseline: null, current: null, hasPatches: false });
+  const [enablePatches, setEnablePatches] = useState(true); // Single toggle: patches on/off
+  const [patchData, setPatchData] = useState({ hasPatches: false });
 
   // Server-side patch system - no client-side code merging needed
   const applyCodePatchesRef = useRef(null);
@@ -287,256 +283,97 @@ const BrowserPreview = ({
   const currentDimensions = deviceDimensions[deviceView];
 
 
-  // Enhanced patch status check - coordinated with parent component patch state
-  // This follows the same pattern as Code and Diff tabs:
-  // - Parent component provides currentCode = patchedCode (baseline + patches applied)
-  // - We trust parent's currentCode as source of truth for content
-  // - We only check server API to determine if patches exist for server-side rendering coordination
+  // Simple patch status check
   const checkPatchStatus = useCallback(async (fileName) => {
     try {
-      console.log(`🔍 BrowserPreview: Checking patch status for file: ${fileName}`);
-      console.log(`🔍 BrowserPreview: StoreId: ${storeId}, currentCode length: ${currentCode?.length || 0}`);
-      
-      // Use authenticated API client to check if patches exist (for server-side coordination)
       const customHeaders = {};
       if (storeId && storeId !== 'undefined') {
         customHeaders['x-store-id'] = storeId;
       }
       
-      // Check patch status - but trust parent component for actual patch content
       const encodedFileName = encodeURIComponent(fileName);
       const patchedUrl = `patches/apply/${encodedFileName}?preview=true&store_id=${storeId}`;
-      
       const patchedData = await apiClient.get(patchedUrl, customHeaders);
       
-      console.log(`🔍 BrowserPreview: Patch check result:`, {
-        success: patchedData?.success, 
-        hasPatches: patchedData?.data?.hasPatches, 
-        totalPatches: patchedData?.data?.totalPatches
-      });
-      
       const hasPatches = patchedData?.success && patchedData?.data?.hasPatches;
+      setPatchData({ hasPatches });
       
-      if (hasPatches) {
-        console.log(`✅ BrowserPreview: Server confirms patches exist for ${fileName}`);
-        console.log(`📊 Patch stats: ${patchedData.data.totalPatches || 0} patches applied`);
-        
-        // Trust parent component's currentCode as the source of truth for patched content
-        // Just store metadata for UI controls
-        const patchResult = {
-          baseline: patchedData?.data?.baselineCode || null,
-          current: currentCode, // Use parent's currentCode as patched content
-          hasPatches: true,
-          appliedPatches: patchedData.data.totalPatches || patchedData.data.appliedPatches || 0,
-          patchDetails: patchedData.data.patchDetails || [],
-          cacheKey: patchedData.data.cacheKey
-        };
-        
-        setPatchData(patchResult);
-        
-        return {
-          hasPatches: true,
-          appliedPatches: patchedData.data.totalPatches || patchedData.data.appliedPatches || 0,
-          patchDetails: patchedData.data.patchDetails || [],
-          cacheKey: patchedData.data.cacheKey,
-          matchedPath: fileName,
-          requestedPath: fileName
-        };
-      } else {
-        console.log(`❌ BrowserPreview: No server-side patches found for ${fileName}`);
-        
-        // Update patch data state to show no patches
-        setPatchData({
-          baseline: currentCode || null, // Use currentCode as baseline when no patches
-          current: currentCode || null,
-          hasPatches: false
-        });
-        
-        return { hasPatches: false };
-      }
+      return { hasPatches };
     } catch (error) {
-      console.error('❌ BrowserPreview: Error checking patch status:', error);
-      
-      setPatchData({
-        baseline: currentCode || null,
-        current: currentCode || null,
-        hasPatches: false
-      });
-      
+      console.error('Error checking patch status:', error);
+      setPatchData({ hasPatches: false });
       return { hasPatches: false };
     }
-  }, [storeId, currentCode]);
+  }, [storeId]);
 
-  // Server-side patch application using URL parameters - no DOM manipulation needed
+  // Simple patch application - single mode toggle
   const applyCodePatches = useCallback(async (iframe) => {
-    if (!fileName) {
-      console.log(`🔍 BrowserPreview: applyCodePatches called but fileName is empty: ${fileName}`);
-      return;
-    }
+    if (!fileName) return;
     
     try {
-      console.log(`🔄 BrowserPreview: Server-side patch application for: ${fileName} (mode: ${patchMode})`);
-      console.log(`🔍 BrowserPreview: Current iframe src:`, iframe.src);
-      console.log(`🔍 BrowserPreview: Preview URL:`, previewUrl);
-      
-      // Check if patches exist for this file using the patches API
       const patchStatus = await checkPatchStatus(fileName);
-      console.log(`🔍 BrowserPreview: Patch status result:`, patchStatus);
+      const currentUrl = iframe.src || previewUrl;
       
-      if (patchStatus.hasPatches) {
-        console.log(`✅ BrowserPreview: Server-side patches found for ${fileName}. Mode: ${patchMode}`);
-        console.log(`📊 Patch stats: ${patchStatus.appliedPatches || 0} patches applied`);
+      if (currentUrl) {
+        const url = new URL(currentUrl);
         
-        // Server handles patch merging - just request the appropriate version via iframe URL
-        // The storefront renderer will handle the patch_mode and patch_file parameters
-        const currentUrl = iframe.src || previewUrl;
-        console.log(`🔍 BrowserPreview: Current URL before modification:`, currentUrl);
-        
-        if (currentUrl) {
-          const url = new URL(currentUrl);
-          console.log(`🔍 BrowserPreview: URL object created:`, url.toString());
-          
-          // Add patch parameters to tell the storefront renderer which version to serve
-          if (patchMode === 'baseline') {
-            url.searchParams.set('patch_mode', 'baseline');
-          } else {
-            url.searchParams.set('patch_mode', 'merged');
-          }
-          
-          // Add file parameter so renderer knows which file's patches to apply
+        if (enablePatches && patchStatus.hasPatches) {
+          // Show patches: set patch_mode to merged
+          url.searchParams.set('patch_mode', 'merged');
           url.searchParams.set('patch_file', fileName);
           url.searchParams.set('store_id', storeId);
-          
-          const newUrl = url.toString();
-          console.log(`🔍 BrowserPreview: New URL with patch parameters:`, newUrl);
-          console.log(`🔍 BrowserPreview: Patch mode set to:`, patchMode);
-          console.log(`🔍 BrowserPreview: Patch file set to:`, fileName);
-          
-          console.log(`🔄 BrowserPreview: Refreshing iframe with server-side patch mode: ${patchMode}`);
-          iframe.src = newUrl;
-          
-          // Verify the iframe src was actually set
-          setTimeout(() => {
-            console.log(`🔍 BrowserPreview: Iframe src after setting:`, iframe.src);
-          }, 100);
         } else {
-          console.log(`❌ BrowserPreview: No current URL available for patch application`);
-        }
-      } else {
-        console.log(`❌ BrowserPreview: No server-side patches found for ${fileName} - showing normal page`);
-        
-        // No patches exist, remove any patch parameters and show normal page
-        const currentUrl = iframe.src || previewUrl;
-        if (currentUrl) {
-          const url = new URL(currentUrl);
-          const hadPatchParams = url.searchParams.has('patch_mode') || url.searchParams.has('patch_file');
-          
+          // Don't show patches: remove patch parameters
           url.searchParams.delete('patch_mode');
           url.searchParams.delete('patch_file');
           url.searchParams.delete('store_id');
-          
-          const newUrl = url.toString();
-          console.log(`🔍 BrowserPreview: Cleaned URL:`, newUrl);
-          
-          if (newUrl !== currentUrl || hadPatchParams) {
-            console.log(`🔄 BrowserPreview: Refreshing iframe without patch parameters`);
-            iframe.src = newUrl;
-          }
         }
-      }
-    } catch (error) {
-      console.error('❌ BrowserPreview: Error applying server-side patches:', error);
-      
-      // On error, try to refresh iframe without patch parameters
-      const currentUrl = iframe.src || previewUrl;
-      if (currentUrl) {
-        const url = new URL(currentUrl);
-        url.searchParams.delete('patch_mode');
-        url.searchParams.delete('patch_file');
-        url.searchParams.delete('store_id');
+        
         iframe.src = url.toString();
       }
+    } catch (error) {
+      console.error('Error applying patches:', error);
     }
-  }, [fileName, patchMode, checkPatchStatus, previewUrl, storeId]);
+  }, [fileName, enablePatches, checkPatchStatus, previewUrl, storeId]);
 
   // Assign function to ref to break circular dependencies
   useEffect(() => {
     applyCodePatchesRef.current = applyCodePatches;
   }, [applyCodePatches]);
 
-  // Trigger patch reapplication when patch mode changes
+  // Trigger patch reapplication when enablePatches changes
   useEffect(() => {
-    if (patchData.hasPatches && enablePatches) {
-      const iframe = document.getElementById('browser-preview-iframe');
-      if (iframe && applyCodePatchesRef.current) {
-        console.log(`🔄 BrowserPreview: Patch mode changed to ${patchMode}, reapplying...`);
-        setTimeout(() => {
-          if (applyCodePatchesRef.current) {
-            applyCodePatchesRef.current(iframe);
-          }
-        }, 100);
-      }
-    }
-  }, [patchMode, patchData.hasPatches, enablePatches]);
-
-  // Debug: Track patchData changes
-  useEffect(() => {
-    console.log(`🔍 BrowserPreview: patchData changed:`, patchData);
-    console.log(`🔍 BrowserPreview: patchData.hasPatches:`, patchData.hasPatches);
-    if (patchData.hasPatches) {
-      console.log(`✅ BrowserPreview: Patches are available for ${fileName}`);
-    } else {
-      console.log(`❌ BrowserPreview: No patches found for ${fileName}`);
-    }
-  }, [patchData, fileName]);
-
-  // Parse code changes from the current file content
-
-  // Handle iframe load - simplified approach
-  const handleIframeLoad = useCallback(async () => {
-    console.log(`🔍 BrowserPreview: Iframe loaded! URL:`, document.getElementById('browser-preview-iframe')?.src);
-    console.log(`🔍 BrowserPreview: enablePatches:`, enablePatches);
-    console.log(`🔍 BrowserPreview: currentCode exists:`, !!currentCode);
-    console.log(`🔍 BrowserPreview: fileName:`, fileName);
-    
-    setIsLoading(false);
-    
-    // Apply code patches immediately after iframe loads (if enabled)
     const iframe = document.getElementById('browser-preview-iframe');
-    if (iframe && currentCode && enablePatches && applyCodePatchesRef.current) {
-      console.log('✅ BrowserPreview: Applying patches directly after iframe load');
-      
-      // Simple delay to ensure iframe document is accessible
+    if (iframe && applyCodePatchesRef.current) {
       setTimeout(() => {
         if (applyCodePatchesRef.current) {
-          console.log(`🔄 BrowserPreview: Calling applyCodePatches after iframe load`);
           applyCodePatchesRef.current(iframe);
         }
       }, 100);
-    } else {
-      console.log(`❌ BrowserPreview: Not applying patches after iframe load - missing requirements`);
-      console.log(`  - iframe exists:`, !!iframe);
-      console.log(`  - currentCode exists:`, !!currentCode);
-      console.log(`  - enablePatches:`, enablePatches);
-      console.log(`  - applyCodePatchesRef.current exists:`, !!applyCodePatchesRef.current);
     }
-  }, [currentCode, enablePatches, fileName]);
+  }, [enablePatches]);
+
+  // Handle iframe load
+  const handleIframeLoad = useCallback(async () => {
+    setIsLoading(false);
+    
+    const iframe = document.getElementById('browser-preview-iframe');
+    if (iframe && applyCodePatchesRef.current) {
+      setTimeout(() => {
+        if (applyCodePatchesRef.current) {
+          applyCodePatchesRef.current(iframe);
+        }
+      }, 100);
+    }
+  }, []);
 
   // Watch for currentCode changes and reapply patches
   useEffect(() => {
     const iframe = document.getElementById('browser-preview-iframe');
-    
-    // Only apply patches if iframe is loaded and we have code changes
-    if (iframe && currentCode && enablePatches && !isLoading) {
-      const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
-      
-      // Make sure iframe document is ready
-      if (iframeDoc && applyCodePatchesRef.current) {
-        console.log('🔄 Code changes detected, reapplying patches...');
-        applyCodePatchesRef.current(iframe);
-      }
+    if (iframe && !isLoading && applyCodePatchesRef.current) {
+      applyCodePatchesRef.current(iframe);
     }
-  }, [currentCode, enablePatches, isLoading]);
+  }, [currentCode, isLoading]);
 
   // Handle iframe error
   const handleIframeError = useCallback(() => {
@@ -634,69 +471,7 @@ const BrowserPreview = ({
 
             {/* Browser Actions */}
             <div className="flex items-center space-x-2">
-              {/* Overlay Toggle with Mode Selector */}
-              <div className="flex items-center space-x-1">
-                <button
-                  onClick={() => {
-                    console.log(`🔍 BrowserPreview: Patch button clicked!`);
-                    console.log(`🔍 BrowserPreview: Current patch data:`, patchData);
-                    console.log(`🔍 BrowserPreview: Current patch mode:`, patchMode);
-                    console.log(`🔍 BrowserPreview: Has patches:`, patchData.hasPatches);
-                    console.log(`🔍 BrowserPreview: File name:`, fileName);
-                    
-                    if (patchData.hasPatches) {
-                      // Toggle between baseline and merged modes
-                      const newMode = patchMode === 'baseline' ? 'merged' : 'baseline';
-                      console.log(`🔄 BrowserPreview: Toggling patch from ${patchMode} to ${newMode} mode`);
-                      setPatchMode(newMode);
-                    } else {
-                      // No patch data available, just show patch controls
-                      setShowPatchControls(!showPatchControls);
-                    }
-                  }}
-                  className={cn(
-                    "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
-                    (patchData.hasPatches && patchMode !== 'baseline') || (showPatchControls && !patchData.hasPatches)
-                      ? "bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/50 dark:border-purple-700 dark:text-purple-300" 
-                      : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
-                  )}
-                  title={patchData.hasPatches
-                    ? `Toggle patch changes (${patchMode === 'baseline' ? 'click to show' : 'click to hide'} server-side patches)`
-                    : "Show patch system (non-destructive code patches)"
-                  }
-                >
-                  <Layers className="w-3 h-3 mr-1 inline" />
-                  {patchData.hasPatches 
-                    ? (patchMode === 'baseline' ? "Show Patches" : "Hide Patches")
-                    : "Patches"
-                  }
-                </button>
-                
-                {/* Advanced Mode Selector - show when patches are available and user wants more control */}
-                {patchData.hasPatches && showPatchControls && (
-                  <select
-                    value={patchMode}
-                    onChange={(e) => setPatchMode(e.target.value)}
-                    className="px-2 py-1 text-xs rounded-md border bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 focus:border-purple-300 dark:focus:border-purple-600 focus:ring-1 focus:ring-purple-200 dark:focus:ring-purple-800"
-                    title="Advanced mode selector - choose exact content version"
-                  >
-                    <option value="baseline">Baseline (Original)</option>
-                    <option value="merged">Merged (With Patches)</option>
-                  </select>
-                )}
-                
-                {/* Show advanced controls toggle - only when patch data is available */}
-                {patchData.hasPatches && (
-                  <button
-                    onClick={() => setShowPatchControls(!showPatchControls)}
-                    className="px-2 py-1 text-xs rounded-md border bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 transition-colors"
-                    title="Show advanced patch controls"
-                  >
-                    ⚙️
-                  </button>
-                )}
-              </div>
-
+              {/* Simple Patch Toggle */}
               <button
                 onClick={() => setEnablePatches(!enablePatches)}
                 className={cn(
@@ -706,11 +481,12 @@ const BrowserPreview = ({
                     : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
                 )}
                 title={enablePatches 
-                  ? "Currently showing: Live site + your local code changes. Click to show live site only." 
-                  : "Currently showing: Live site only. Click to include your local code changes."
+                  ? "Currently showing patches applied. Click to show without patches." 
+                  : "Currently showing without patches. Click to show with patches applied."
                 }
               >
-                {enablePatches ? "🔧 Patched Preview" : "📺 Live Preview"}
+                <Code className="w-3 h-3 mr-1 inline" />
+                {enablePatches ? "With Patches" : "Without Patches"}
               </button>
               
               <button
