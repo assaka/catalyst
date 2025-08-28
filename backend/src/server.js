@@ -1587,7 +1587,7 @@ app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database rout
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
 
 // Preview route for serving patched content (used by BrowserPreview iframe)
-// Uses store_routes to map fileName to actual routes
+// Server-side patch rendering for preview
 app.get('/preview/:storeId', async (req, res) => {
   try {
     const { storeId } = req.params;
@@ -1599,7 +1599,7 @@ app.get('/preview/:storeId', async (req, res) => {
       return res.status(400).json({ error: 'fileName query parameter is required' });
     }
     
-    // Get store information to build proper public URL
+    // Get store information
     const Store = require('./models/Store');
     const store = await Store.findByPk(storeId);
     
@@ -1614,7 +1614,7 @@ app.get('/preview/:storeId', async (req, res) => {
     const actualStoreSlug = storeSlug || store.slug || 'store';
     console.log(`🏪 Store slug: ${actualStoreSlug}`);
     
-    // Use provided page name or extract from file path (e.g., src/pages/Cart.jsx -> Cart)
+    // Use provided page name or extract from file path
     const pageName = providedPageName || fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
     console.log(`🔍 Page name: ${pageName} ${providedPageName ? '(provided)' : '(extracted)'}`);
     
@@ -1632,29 +1632,106 @@ app.get('/preview/:storeId', async (req, res) => {
     
     const route = routeResolution.route;
     console.log(`✅ Found route: ${route.route_name} -> ${route.route_path}`);
-    
-    // Build the proper public URL with full domain
-    // Remove leading slash from route path if it exists to avoid double slashes
-    const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
-    
-    // Use the public store base URL from environment or default to Vercel deployment
-    const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
-    const publicUrl = `${publicStoreBaseUrl}/public/${actualStoreSlug}/${routePath}`;
-    
-    // Add patches parameter and cache busting for fresh preview
-    let finalUrl;
-    if (patches === 'true') {
-      // Apply patches - include fileName in URL for patch service to identify what to patch
-      finalUrl = `${publicUrl}?patches=${patches}&fileName=${encodeURIComponent(fileName)}&_t=${Date.now()}`;
-    } else {
-      // No patches - serve original content with cache busting
-      finalUrl = `${publicUrl}?_t=${Date.now()}`;
+
+    // If no patches requested, redirect to original frontend
+    if (patches !== 'true') {
+      const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+      const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
+      const publicUrl = `${publicStoreBaseUrl}/public/${actualStoreSlug}/${routePath}?_t=${Date.now()}`;
+      console.log(`🎯 No patches - redirecting to: ${publicUrl}`);
+      return res.redirect(302, publicUrl);
     }
+
+    // Apply patches using the patch service
+    const PatchService = require('./services/patch-service');
+    const patchService = new PatchService();
     
-    console.log(`🎯 Redirecting to public URL: ${finalUrl}`);
+    console.log(`🔧 Applying patches to ${fileName}...`);
+    const patchResult = await patchService.applyPatches(fileName, {
+      storeId,
+      previewMode: true
+    });
+
+    if (!patchResult.success) {
+      console.error(`❌ Patch application failed: ${patchResult.error}`);
+      return res.status(500).json({
+        error: 'Patch application failed',
+        message: patchResult.error
+      });
+    }
+
+    // Serve HTML with patch information embedded
+    const fs = require('fs');
+    const path = require('path');
     
-    // Redirect to the proper public store URL with patch support
-    return res.redirect(302, finalUrl);
+    try {
+      // Read the base HTML template
+      const htmlPath = path.join(__dirname, '../../dist/index.html');
+      let htmlContent = fs.readFileSync(htmlPath, 'utf8');
+      
+      // Inject patch information and preview script
+      const patchData = {
+        hasPatches: patchResult.hasPatches,
+        fileName,
+        pageName,
+        storeSlug: actualStoreSlug,
+        routePath: route.route_path,
+        patchedCode: patchResult.hasPatches ? patchResult.finalCode : null,
+        appliedPatches: patchResult.appliedPatches || [],
+        previewMode: true
+      };
+
+      const injectedScript = `
+        <script>
+          window.__CATALYST_PATCH_DATA__ = ${JSON.stringify(patchData)};
+          console.log('🔧 Patch data injected:', window.__CATALYST_PATCH_DATA__);
+        </script>
+      `;
+
+      // Inject before closing head tag
+      htmlContent = htmlContent.replace('</head>', `${injectedScript}</head>`);
+      
+      // Add patch status indicator
+      const patchIndicator = `
+        <div id="patch-indicator" style="
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          z-index: 9999;
+          background: ${patchResult.hasPatches ? '#22c55e' : '#ef4444'};
+          color: white;
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-family: monospace;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        ">
+          🔧 Patches: ${patchResult.hasPatches ? `✅ ${patchResult.appliedPatches?.length || 0} Applied` : '❌ None Found'}
+        </div>
+      `;
+
+      // Inject indicator before closing body tag
+      htmlContent = htmlContent.replace('</body>', `${patchIndicator}</body>`);
+
+      console.log(`✅ Serving patched HTML for ${fileName} with ${patchResult.appliedPatches?.length || 0} patches`);
+      
+      // Set content type and cache headers
+      res.set({
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      return res.send(htmlContent);
+
+    } catch (fileError) {
+      console.error(`❌ Error reading HTML template: ${fileError.message}`);
+      return res.status(500).json({
+        error: 'Template read error',
+        message: fileError.message
+      });
+    }
     
   } catch (error) {
     console.error('Preview route error:', error);
