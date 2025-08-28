@@ -316,7 +316,15 @@ const SplitViewPane = ({
                 variant="ghost"
                 size="sm"
                 className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0"
-                onClick={() => onLineRevert(actualLineIndex, originalLines[actualLineIndex])}
+                onClick={() => {
+                  console.log('🔄 Revert button clicked:', {
+                    actualLineIndex,
+                    originalContent: originalLines[actualLineIndex],
+                    modifiedContent: modifiedLines[actualLineIndex],
+                    side
+                  });
+                  onLineRevert(actualLineIndex, originalLines[actualLineIndex]);
+                }}
                 title="Revert this line to original"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -513,19 +521,42 @@ const DiffPreviewSystem = ({
 
   // Handle line revert functionality
   const handleLineRevert = useCallback((lineIndex, originalLine) => {
+    console.log('🔄 handleLineRevert called:', { lineIndex, originalLine });
+    
     const currentLines = currentModifiedCode.split('\n');
     const originalLines = originalBaseCodeRef.current.split('\n');
     
+    console.log('📋 Line revert details:', {
+      lineIndex,
+      currentLineContent: currentLines[lineIndex],
+      originalLineContent: originalLines[lineIndex],
+      totalCurrentLines: currentLines.length,
+      totalOriginalLines: originalLines.length
+    });
+    
     // Revert the specific line to its original content
-    if (lineIndex < currentLines.length) {
-      currentLines[lineIndex] = originalLines[lineIndex] || '';
+    if (lineIndex < currentLines.length && lineIndex < originalLines.length) {
+      const originalContent = originalLines[lineIndex] || '';
+      currentLines[lineIndex] = originalContent;
       const newCode = currentLines.join('\n');
+      
+      console.log('✅ Line reverted successfully:', {
+        from: currentModifiedCode.split('\n')[lineIndex],
+        to: originalContent
+      });
+      
       setCurrentModifiedCode(newCode);
       
       // Notify parent component of the change
       if (onCodeChange) {
         onCodeChange(newCode);
       }
+    } else {
+      console.warn('⚠️ Line revert failed - invalid line index:', {
+        lineIndex,
+        currentLength: currentLines.length,
+        originalLength: originalLines.length
+      });
     }
   }, [currentModifiedCode, onCodeChange]);
 
