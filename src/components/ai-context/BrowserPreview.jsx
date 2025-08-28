@@ -60,11 +60,11 @@ const BrowserPreview = ({
           // Extract page name from file path (e.g., src/pages/Cart.jsx -> Cart)
           const pageName = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
           
-          // Use store routes to find the actual route for this page
-          const routeResponse = await apiClient.get(`store-routes/find-by-page/${pageName}`, getApiConfig().headers);
+          // Use store routes to find the actual route for this page (public endpoint)
+          const routeResponse = await apiClient.get(`store-routes/public/find-by-page/${pageName}`, getApiConfig().headers);
           
-          if (routeResponse.data && routeResponse.data.success && routeResponse.data.route) {
-            const route = routeResponse.data.route;
+          if (routeResponse.data && routeResponse.data.success && routeResponse.data.data && routeResponse.data.data.route) {
+            const route = routeResponse.data.data.route;
             
             // Build the proper public URL directly
             const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
