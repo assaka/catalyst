@@ -1678,33 +1678,70 @@ app.get('/preview/:storeId', async (req, res) => {
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="https://www.suprshop.com/logo_v2.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Catalyst Preview</title>
-    <base href="https://catalyst-pearl.vercel.app/">
-    <script type="module" crossorigin>
-      // Bootstrap React app with patch data
-      window.__PATCH_PREVIEW_MODE__ = true;
-      import('https://catalyst-pearl.vercel.app/src/main.jsx').catch(() => {
-        // Fallback: redirect to the main app with patch parameters
+    <title>Catalyst Preview - Redirecting...</title>
+    <script>
+      // Direct redirect to main app with patch parameters
+      (function() {
         const params = new URLSearchParams(window.location.search);
         const baseUrl = 'https://catalyst-pearl.vercel.app';
         const storeSlug = params.get('storeSlug') || 'store';
         const pageName = params.get('pageName') || 'home';
-        const redirect = baseUrl + '/public/' + storeSlug + '/' + pageName.toLowerCase() + '?patches=true&' + params.toString();
-        window.location.href = redirect;
-      });
+        
+        // Build redirect URL with all parameters
+        const redirectParams = new URLSearchParams();
+        redirectParams.set('patches', 'true');
+        
+        // Preserve all original parameters
+        for (const [key, value] of params) {
+          redirectParams.set(key, value);
+        }
+        
+        const redirectUrl = baseUrl + '/public/' + storeSlug + '/' + pageName.toLowerCase() + '?' + redirectParams.toString();
+        
+        console.log('🔄 Redirecting to main app with patches:', redirectUrl);
+        
+        // Show loading message briefly then redirect
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 500);
+      })();
     </script>
     <style>
-      body { font-family: system-ui, sans-serif; margin: 0; padding: 0; }
-      #root { min-height: 100vh; }
+      body { 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+        margin: 0; 
+        padding: 0; 
+        background: #f8fafc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      .loader {
+        text-align: center;
+        color: #64748b;
+      }
+      .spinner {
+        border: 3px solid #e2e8f0;
+        border-top: 3px solid #3b82f6;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 20px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
-    <div id="root">
-      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column;">
-        <div style="animate: spin 1s linear infinite; border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 50px; height: 50px; margin-bottom: 20px;"></div>
-        <p>Loading patched component...</p>
-        <p style="font-size: 12px; color: #666;">If this takes too long, you'll be redirected automatically.</p>
-      </div>
+    <div class="loader">
+      <div class="spinner"></div>
+      <h3>Loading Patched Preview</h3>
+      <p>Redirecting to component with patches applied...</p>
+      <small style="color: #9ca3af;">You will be redirected to the main application in a moment.</small>
     </div>
   </body>
 </html>`;
