@@ -2518,6 +2518,15 @@ const AkeneoIntegration = () => {
                     )}
                     {testing ? 'Testing...' : 'Test Connection'}
                   </Button>
+
+                  <Button 
+                    disabled={true}
+                    className="flex items-center gap-2"
+                    variant="outline"
+                  >
+                    <Clock className="h-4 w-4" />
+                    Version History
+                  </Button>
                 </div>
 
               </div>
