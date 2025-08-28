@@ -534,6 +534,11 @@ const DiffPreviewSystem = ({
     setPreviewStatus({ loading: true, error: null, url: null });
     
     try {
+      const storeId = getSelectedStoreId();
+      if (!storeId) {
+        throw new Error('No store selected');
+      }
+      
       // Extract component name from file name or code
       const componentName = extractComponentName(fileName, currentModifiedCode);
       
@@ -636,7 +641,7 @@ const DiffPreviewSystem = ({
         setPreviewStatus(prev => ({ ...prev, error: null }));
       }, 3000);
     }
-  }, [fileName, currentModifiedCode, storeId, astDiffData, filePath]);
+  }, [fileName, currentModifiedCode, selectedStore?.id, astDiffData, filePath]);
 
   // Calculate diff using DiffService (always compare against original base code)
   const diffResult = useMemo(() => {
