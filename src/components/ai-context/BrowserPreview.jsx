@@ -47,40 +47,52 @@ const BrowserPreview = ({
     return fileNameOnly.split('\\').pop() || fileNameOnly;
   }, []);
 
-  // Update preview URL - use server-side preview route and get store slug for proper public URLs
+  // Update preview URL - generate proper public URL directly
   useEffect(() => {
     const generatePreviewUrl = async () => {
       if (fileName && storeId) {
         try {
-          // First, get store slug from the backend to construct proper public URLs
+          // First, get store information and resolve the route
           const storeResponse = await apiClient.get(`stores/${storeId}`, getApiConfig().headers);
           const store = storeResponse.data;
           const storeSlug = store?.slug || 'store';
           
-          const baseUrl = window.location.origin;
+          // Extract page name from file path (e.g., src/pages/Cart.jsx -> Cart)
+          const pageName = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
           
-          // Use the new server-side preview route that handles route resolution and patch application
-          const previewUrl = new URL(`${baseUrl}/preview/${storeId}`);
-          previewUrl.searchParams.set('fileName', fileName);
-          previewUrl.searchParams.set('patches', enablePatches.toString());
-          previewUrl.searchParams.set('storeSlug', storeSlug); // Add store slug for proper URL generation
+          // Use store routes to find the actual route for this page
+          const routeResponse = await apiClient.get(`store-routes/find-by-page/${pageName}`, getApiConfig().headers);
           
-          const finalUrl = previewUrl.toString();
-          
-          console.log(`🔍 BrowserPreview: Server-side preview URL generation:`);
-          console.log(`  - storeId: ${storeId}`);
-          console.log(`  - storeSlug: ${storeSlug}`);
-          console.log(`  - fileName: ${fileName}`);
-          console.log(`  - enablePatches: ${enablePatches}`);
-          console.log(`  - finalUrl: ${finalUrl}`);
-          
-          setPreviewUrl(finalUrl);
-          console.log(`🎯 Generated server-side preview URL with store slug: ${finalUrl}`);
-          setError(null);
+          if (routeResponse.data && routeResponse.data.success && routeResponse.data.route) {
+            const route = routeResponse.data.route;
+            
+            // Build the proper public URL directly
+            const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
+            const baseUrl = window.location.origin;
+            const publicUrl = `${baseUrl}/public/${storeSlug}/${routePath}`;
+            
+            // Add patches parameter if enabled
+            const finalUrl = enablePatches ? `${publicUrl}?patches=true` : publicUrl;
+            
+            console.log(`🔍 BrowserPreview: Direct public URL generation:`);
+            console.log(`  - storeId: ${storeId}`);
+            console.log(`  - storeSlug: ${storeSlug}`);
+            console.log(`  - fileName: ${fileName}`);
+            console.log(`  - pageName: ${pageName}`);
+            console.log(`  - routePath: ${route.route_path}`);
+            console.log(`  - enablePatches: ${enablePatches}`);
+            console.log(`  - finalUrl: ${finalUrl}`);
+            
+            setPreviewUrl(finalUrl);
+            console.log(`🎯 Generated direct public URL: ${finalUrl}`);
+            setError(null);
+          } else {
+            throw new Error(`No route mapping found for page "${pageName}"`);
+          }
         } catch (error) {
           console.error('Error generating preview URL:', error);
           setPreviewUrl(null);
-          setError('Failed to generate preview URL');
+          setError(`Failed to generate preview URL: ${error.message}`);
         }
       } else {
         setPreviewUrl(null);
