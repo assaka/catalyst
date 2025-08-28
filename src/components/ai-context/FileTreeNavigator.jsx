@@ -45,6 +45,8 @@ const FileTreeNavigator = ({
       const data = await apiClient.get('patches/baselines');
       
       console.log('📡 FileTreeNavigator: API Response:', data);
+      console.log('📡 FileTreeNavigator: API Response type:', typeof data);
+      console.log('📡 FileTreeNavigator: API Response keys:', data ? Object.keys(data) : 'null');
       
       if (data && data.success && data.data && data.data.files) {
         console.log('✅ FileTreeNavigator: Got', data.data.files.length, 'files from baselines');
@@ -68,6 +70,11 @@ const FileTreeNavigator = ({
       } else {
         console.error('❌ FileTreeNavigator: Failed to load file tree:', data?.message || 'Unknown error');
         console.error('❌ FileTreeNavigator: Full response:', data);
+        console.error('❌ FileTreeNavigator: Condition check results:');
+        console.error('   - data exists:', !!data);
+        console.error('   - data.success:', data && data.success);
+        console.error('   - data.data exists:', data && data.data);
+        console.error('   - data.data.files exists:', data && data.data && data.data.files);
         // Fallback to a simple error state
         setFileTree({
           name: 'src',
