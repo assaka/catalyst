@@ -47,28 +47,35 @@ const BrowserPreview = ({
     return fileNameOnly.split('\\').pop() || fileNameOnly;
   }, []);
 
-  // Update preview URL - use new server-side preview route that applies patches before serving
+  // Update preview URL - use server-side preview route and get store slug for proper public URLs
   useEffect(() => {
     const generatePreviewUrl = async () => {
       if (fileName && storeId) {
         try {
+          // First, get store slug from the backend to construct proper public URLs
+          const storeResponse = await apiClient.get(`stores/${storeId}`, getApiConfig().headers);
+          const store = storeResponse.data;
+          const storeSlug = store?.slug || 'store';
+          
           const baseUrl = window.location.origin;
           
           // Use the new server-side preview route that handles route resolution and patch application
           const previewUrl = new URL(`${baseUrl}/preview/${storeId}`);
           previewUrl.searchParams.set('fileName', fileName);
           previewUrl.searchParams.set('patches', enablePatches.toString());
+          previewUrl.searchParams.set('storeSlug', storeSlug); // Add store slug for proper URL generation
           
           const finalUrl = previewUrl.toString();
           
           console.log(`🔍 BrowserPreview: Server-side preview URL generation:`);
           console.log(`  - storeId: ${storeId}`);
+          console.log(`  - storeSlug: ${storeSlug}`);
           console.log(`  - fileName: ${fileName}`);
           console.log(`  - enablePatches: ${enablePatches}`);
           console.log(`  - finalUrl: ${finalUrl}`);
           
           setPreviewUrl(finalUrl);
-          console.log(`🎯 Generated server-side preview URL: ${finalUrl}`);
+          console.log(`🎯 Generated server-side preview URL with store slug: ${finalUrl}`);
           setError(null);
         } catch (error) {
           console.error('Error generating preview URL:', error);
@@ -84,7 +91,7 @@ const BrowserPreview = ({
     };
 
     generatePreviewUrl();
-  }, [fileName, enablePatches, storeId]);
+  }, [fileName, enablePatches, storeId, getApiConfig]);
 
   // Device view dimensions
   const deviceDimensions = {
