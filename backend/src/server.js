@@ -1686,44 +1686,78 @@ app.get('/preview/:storeId', async (req, res) => {
       }
     };
 
-    // Check if patches were applied and redirect accordingly
+    // Check if patches were applied and serve content accordingly
     if (patchResult.hasPatches && patchResult.finalCode) {
-      // Redirect to the actual frontend application with patches enabled
-      // This allows users to see the page as they would when browsing the store
-      console.log(`✅ Redirecting to frontend with patches enabled for ${fileName}`);
+      console.log(`✅ Patches applied for ${fileName} - serving with injected patch data`);
+      
+      // Instead of redirecting, fetch the frontend page and inject patch data
+      const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+      const pagePath = getPagePath(fileName);
+      const fetchUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}`;
+      
+      console.log(`🌐 Fetching frontend content from: ${fetchUrl}`);
+      
+      try {
+        const fetch = require('node-fetch');
+        const frontendResponse = await fetch(fetchUrl);
+        let htmlContent = await frontendResponse.text();
+        
+        // Inject patch data into the HTML
+        const patchData = JSON.stringify({
+          hasPatches: true,
+          fileName: fileName,
+          appliedPatches: patchResult.appliedPatches || [],
+          finalCode: patchResult.finalCode,
+          previewMode: true
+        });
+        
+        // Inject patch data as a script tag before closing head
+        const scriptTag = `
+          <script>
+            window.__CATALYST_PATCH_DATA__ = ${patchData};
+            console.log('🔧 Patch data injected:', window.__CATALYST_PATCH_DATA__);
+          </script>
+        `;
+        
+        htmlContent = htmlContent.replace('</head>', `${scriptTag}</head>`);
+        
+        // Set headers to prevent caching and allow iframe embedding
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        
+        console.log(`🎯 Serving patched content for ${fileName} with injected patch data`);
+        return res.send(htmlContent);
+        
+      } catch (fetchError) {
+        console.error('❌ Error fetching frontend content:', fetchError.message);
+        // Fallback to redirect if fetch fails
+        const redirectParams = new URLSearchParams({
+          patches: 'true',
+          fileName: fileName,
+          storeId: storeId
+        });
+        const redirectUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}?${redirectParams.toString()}`;
+        console.log(`🔀 Fallback redirect to: ${redirectUrl}`);
+        return res.redirect(302, redirectUrl);
+      }
+    } else {
+      // If no patches were applied, redirect to frontend without patches parameter
+      console.log(`ℹ️ No patches to apply for ${fileName} - redirecting to normal frontend`);
       
       const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
       const pagePath = getPagePath(fileName);
       const redirectParams = new URLSearchParams({
-        patches: 'true',
         fileName: fileName,
         storeId: storeId
       });
       
       // Redirect to the correct frontend route with /public/:storeCode pattern
       const redirectUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}?${redirectParams.toString()}`;
-      console.log(`🔀 Redirecting to frontend: ${redirectUrl}`);
+      console.log(`🔀 Redirecting to frontend (no patches): ${redirectUrl}`);
       
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       return res.redirect(302, redirectUrl);
-    } else {
-    // If no patches were applied, still redirect to frontend but without patches parameter
-    console.log(`ℹ️ No patches to apply for ${fileName} - redirecting to normal frontend`);
-    
-    const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
-    const pagePath = getPagePath(fileName);
-    const redirectParams = new URLSearchParams({
-      fileName: fileName,
-      storeId: storeId
-    });
-    
-    // Redirect to the correct frontend route with /public/:storeCode pattern
-    const redirectUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}?${redirectParams.toString()}`;
-    console.log(`🔀 Redirecting to frontend (no patches): ${redirectUrl}`);
-    
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    return res.redirect(302, redirectUrl);
-  }
+    }
     
   } catch (error) {
     console.error('Preview route error:', error);

@@ -536,9 +536,9 @@ const DiffPreviewSystem = ({
         const storeId = getSelectedStoreId();
         const modifiedContent = currentLines[lineIndex] || '';
         
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
         if (!token) {
-          console.error('❌ No authentication token found');
+          console.error('❌ No authentication token found in any of: store_owner_auth_token, auth_token, token');
           return;
         }
         
