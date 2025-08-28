@@ -1659,149 +1659,18 @@ app.get('/preview/:storeId', async (req, res) => {
       });
     }
 
-    // Serve HTML with patch information embedded
-    const fs = require('fs');
-    const path = require('path');
+    // Use server-side HTTP redirect instead of JavaScript redirect for better browser compatibility
+    const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+    const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
     
-    let htmlContent;
-    try {
-      // Try to read the built HTML first (for local development)
-      const htmlPath = path.join(__dirname, '../../dist/index.html');
-      htmlContent = fs.readFileSync(htmlPath, 'utf8');
-      console.log('📄 Using built HTML template');
-    } catch (readError) {
-      console.log('📄 Built HTML not found, using inline template');
-      // Fallback to inline HTML template (for production deployment)
-      htmlContent = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="https://www.suprshop.com/logo_v2.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Catalyst Preview - Redirecting...</title>
-    <script>
-      // Direct redirect to main app with patch parameters
-      (function() {
-        const params = new URLSearchParams(window.location.search);
-        const baseUrl = 'https://catalyst-pearl.vercel.app';
-        const storeSlug = params.get('storeSlug') || 'store';
-        const pageName = params.get('pageName') || 'home';
-        
-        // Build redirect URL with all parameters
-        const redirectParams = new URLSearchParams();
-        redirectParams.set('patches', 'true');
-        
-        // Preserve all original parameters
-        for (const [key, value] of params) {
-          redirectParams.set(key, value);
-        }
-        
-        const redirectUrl = baseUrl + '/public/' + storeSlug + '/' + pageName.toLowerCase() + '?' + redirectParams.toString();
-        
-        console.log('🔄 Redirecting to main app with patches:', redirectUrl);
-        
-        // Show loading message briefly then redirect
-        setTimeout(() => {
-          window.location.href = redirectUrl;
-        }, 500);
-      })();
-    </script>
-    <style>
-      body { 
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-        margin: 0; 
-        padding: 0; 
-        background: #f8fafc;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-      }
-      .loader {
-        text-align: center;
-        color: #64748b;
-      }
-      .spinner {
-        border: 3px solid #e2e8f0;
-        border-top: 3px solid #3b82f6;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 20px;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="loader">
-      <div class="spinner"></div>
-      <h3>Loading Patched Preview</h3>
-      <p>Redirecting to component with patches applied...</p>
-      <small style="color: #9ca3af;">You will be redirected to the main application in a moment.</small>
-    </div>
-  </body>
-</html>`;
-    }
-      
-    // Inject patch information and preview script
-    const patchData = {
-      hasPatches: patchResult.hasPatches,
-      fileName,
-      pageName,
-      storeSlug: actualStoreSlug,
-      routePath: route.route_path,
-      patchedCode: patchResult.hasPatches ? patchResult.finalCode : null,
-      appliedPatches: patchResult.appliedPatches || [],
-      previewMode: true
-    };
-
-    const injectedScript = `
-      <script>
-        window.__CATALYST_PATCH_DATA__ = ${JSON.stringify(patchData)};
-        console.log('🔧 Patch data injected:', window.__CATALYST_PATCH_DATA__);
-      </script>
-    `;
-
-    // Inject before closing head tag
-    htmlContent = htmlContent.replace('</head>', `${injectedScript}</head>`);
+    // Build redirect URL with all original parameters plus patches=true
+    const redirectParams = new URLSearchParams(req.query);
+    redirectParams.set('patches', 'true');
     
-    // Add patch status indicator
-    const patchIndicator = `
-      <div id="patch-indicator" style="
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        z-index: 9999;
-        background: ${patchResult.hasPatches ? '#22c55e' : '#ef4444'};
-        color: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-family: monospace;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      ">
-        🔧 Patches: ${patchResult.hasPatches ? `✅ ${patchResult.appliedPatches?.length || 0} Applied` : '❌ None Found'}
-      </div>
-    `;
-
-    // Inject indicator before closing body tag
-    htmlContent = htmlContent.replace('</body>', `${patchIndicator}</body>`);
-
-    console.log(`✅ Serving patched HTML for ${fileName} with ${patchResult.appliedPatches?.length || 0} patches`);
+    const publicUrl = `${publicStoreBaseUrl}/public/${actualStoreSlug}/${routePath}?${redirectParams.toString()}`;
+    console.log(`🔄 Patches requested - redirecting to: ${publicUrl}`);
     
-    // Set content type and cache headers
-    res.set({
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
-    });
-    
-    return res.send(htmlContent);
+    return res.redirect(302, publicUrl);
     
   } catch (error) {
     console.error('Preview route error:', error);
