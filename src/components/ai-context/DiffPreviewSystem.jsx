@@ -350,6 +350,8 @@ const DiffPreviewSystem = ({
   const [astDiffData, setAstDiffData] = useState(null);
   const [fetchingAstDiff, setFetchingAstDiff] = useState(false);
   const [astDiffError, setAstDiffError] = useState(null);
+  const [collapseUnchanged, setCollapseUnchanged] = useState(false);
+  const [expandedSections, setExpandedSections] = useState(new Set());
 
   const diffServiceRef = useRef(new DiffService());
   const originalBaseCodeRef = useRef(originalCode); // Preserve original base code
@@ -692,6 +694,114 @@ const DiffPreviewSystem = ({
     return convertDiffToDisplayLines(diffResult.diff);
   }, [diffResult.diff, originalCode, modifiedCode]);
 
+  // Process display lines for collapsing unchanged fragments
+  const processedDisplayLines = useMemo(() => {
+    if (!collapseUnchanged || displayLines.length === 0) {
+      return displayLines;
+    }
+
+    const processed = [];
+    let contextGroup = [];
+    const maxContextLines = 3; // Show 3 context lines before/after changes
+
+    for (let i = 0; i < displayLines.length; i++) {
+      const line = displayLines[i];
+      
+      if (line.type === 'context') {
+        contextGroup.push({ ...line, index: i });
+      } else {
+        // Process accumulated context group before change
+        if (contextGroup.length > 0) {
+          if (contextGroup.length <= maxContextLines * 2) {
+            // Small context group - show all
+            processed.push(...contextGroup);
+          } else {
+            // Large context group - show first few, collapsed indicator, last few
+            processed.push(...contextGroup.slice(0, maxContextLines));
+            
+            const collapsedCount = contextGroup.length - (maxContextLines * 2);
+            processed.push({
+              type: 'collapsed',
+              collapsedCount,
+              startIndex: contextGroup[maxContextLines].index,
+              endIndex: contextGroup[contextGroup.length - maxContextLines - 1].index,
+              content: `... ${collapsedCount} unchanged lines hidden ...`,
+              originalContent: null,
+              lineNumber: null,
+              newLineNumber: null
+            });
+            
+            processed.push(...contextGroup.slice(-maxContextLines));
+          }
+          contextGroup = [];
+        }
+        
+        // Add the change line
+        processed.push({ ...line, index: i });
+      }
+    }
+    
+    // Process any remaining context group at the end
+    if (contextGroup.length > 0) {
+      if (contextGroup.length <= maxContextLines) {
+        processed.push(...contextGroup);
+      } else {
+        processed.push(...contextGroup.slice(0, maxContextLines));
+        const collapsedCount = contextGroup.length - maxContextLines;
+        processed.push({
+          type: 'collapsed',
+          collapsedCount,
+          startIndex: contextGroup[maxContextLines].index,
+          endIndex: contextGroup[contextGroup.length - 1].index,
+          content: `... ${collapsedCount} unchanged lines hidden ...`,
+          originalContent: null,
+          lineNumber: null,
+          newLineNumber: null
+        });
+      }
+    }
+
+    return processed;
+  }, [displayLines, collapseUnchanged]);
+
+  // Handle expanding collapsed sections
+  const handleExpandCollapsed = useCallback((startIndex, endIndex) => {
+    const sectionKey = `${startIndex}-${endIndex}`;
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionKey)) {
+        newSet.delete(sectionKey);
+      } else {
+        newSet.add(sectionKey);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Final display lines considering expanded sections
+  const finalDisplayLines = useMemo(() => {
+    if (!collapseUnchanged || expandedSections.size === 0) {
+      return processedDisplayLines;
+    }
+
+    const final = [];
+    for (const line of processedDisplayLines) {
+      if (line.type === 'collapsed') {
+        const sectionKey = `${line.startIndex}-${line.endIndex}`;
+        if (expandedSections.has(sectionKey)) {
+          // Show the expanded lines
+          const expandedLines = displayLines.slice(line.startIndex, line.endIndex + 1);
+          final.push(...expandedLines);
+        } else {
+          final.push(line);
+        }
+      } else {
+        final.push(line);
+      }
+    }
+    return final;
+  }, [processedDisplayLines, expandedSections, displayLines, collapseUnchanged]);
+
   const copyDiff = async () => {
     try {
       setCopyStatus({ copied: false, error: null });
@@ -730,7 +840,7 @@ const DiffPreviewSystem = ({
     URL.revokeObjectURL(url);
   };
 
-  const DiffLine = ({ line, index }) => {
+  const DiffLine = ({ line, index, onExpandCollapsed }) => {
     const getLineStyle = () => {
       switch (line.type) {
         case 'addition':
@@ -739,6 +849,8 @@ const DiffPreviewSystem = ({
           return 'bg-red-50 border-l-4 border-red-500';
         case 'modification':
           return 'bg-yellow-50 border-l-4 border-yellow-500';
+        case 'collapsed':
+          return 'bg-blue-50 border-l-4 border-blue-300 cursor-pointer hover:bg-blue-100 transition-colors';
         default:
           return 'bg-background';
       }
@@ -752,13 +864,25 @@ const DiffPreviewSystem = ({
           return <Minus className="w-3 h-3 text-red-600" />;
         case 'modification':
           return <ArrowRight className="w-3 h-3 text-yellow-600" />;
+        case 'collapsed':
+          return <EyeOff className="w-3 h-3 text-blue-600" />;
         default:
           return null;
       }
     };
 
+    const handleCollapsedClick = () => {
+      if (line.type === 'collapsed' && onExpandCollapsed) {
+        onExpandCollapsed(line.startIndex, line.endIndex);
+      }
+    };
+
     return (
-      <div className={`flex items-center px-2 py-1 text-sm font-mono min-w-max ${getLineStyle()}`}>
+      <div 
+        className={`flex items-center px-2 py-1 text-sm font-mono min-w-max ${getLineStyle()}`}
+        onClick={line.type === 'collapsed' ? handleCollapsedClick : undefined}
+        title={line.type === 'collapsed' ? 'Click to expand hidden lines' : undefined}
+      >
         {lineNumbers && (
           <>
             <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
@@ -775,7 +899,11 @@ const DiffPreviewSystem = ({
         </div>
         
         <div className="pl-2 whitespace-nowrap">
-          {line.type === 'modification' ? (
+          {line.type === 'collapsed' ? (
+            <span className="text-blue-600 italic font-medium">
+              {line.content}
+            </span>
+          ) : line.type === 'modification' ? (
             <div className="space-y-1">
               <div className="text-red-600 line-through whitespace-nowrap">
                 {line.originalContent}
@@ -1049,6 +1177,15 @@ const DiffPreviewSystem = ({
                       <span>Whitespace</span>
                     </label>
                     
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={collapseUnchanged}
+                        onChange={(e) => setCollapseUnchanged(e.target.checked)}
+                      />
+                      <span>Collapse Unchanged</span>
+                    </label>
+                    
                     <div className="flex items-center space-x-2">
                       <span>Context:</span>
                       <select
@@ -1092,7 +1229,7 @@ const DiffPreviewSystem = ({
                   }}
                 >
                   <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 300px)', minWidth: '800px', height: 'calc(100vh - 300px)' }}>
-                  {displayLines.length === 0 ? (
+                  {finalDisplayLines.length === 0 ? (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center text-muted-foreground">
                         <FileText className="w-8 h-8 mx-auto mb-2" />
@@ -1104,8 +1241,8 @@ const DiffPreviewSystem = ({
                     </div>
                   ) : (
                     <div className="font-mono">
-                      {displayLines.map((line, index) => (
-                        <DiffLine key={index} line={line} index={index} />
+                      {finalDisplayLines.map((line, index) => (
+                        <DiffLine key={index} line={line} index={index} onExpandCollapsed={handleExpandCollapsed} />
                       ))}
                     </div>
                   )}

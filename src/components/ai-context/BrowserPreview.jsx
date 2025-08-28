@@ -287,47 +287,45 @@ const BrowserPreview = ({
   const currentDimensions = deviceDimensions[deviceView];
 
 
-  // Enhanced patch status check - now uses server-side patches API
+  // Enhanced patch status check - coordinated with parent component patch state
+  // This follows the same pattern as Code and Diff tabs:
+  // - Parent component provides currentCode = patchedCode (baseline + patches applied)
+  // - We trust parent's currentCode as source of truth for content
+  // - We only check server API to determine if patches exist for server-side rendering coordination
   const checkPatchStatus = useCallback(async (fileName) => {
     try {
       console.log(`🔍 BrowserPreview: Checking patch status for file: ${fileName}`);
-      console.log(`🔍 BrowserPreview: StoreId: ${storeId}, fileName: ${fileName}`);
+      console.log(`🔍 BrowserPreview: StoreId: ${storeId}, currentCode length: ${currentCode?.length || 0}`);
       
-      // Use authenticated API client to check if patches exist
+      // Use authenticated API client to check if patches exist (for server-side coordination)
       const customHeaders = {};
       if (storeId && storeId !== 'undefined') {
         customHeaders['x-store-id'] = storeId;
       }
       
-      console.log(`🔍 BrowserPreview: Custom headers:`, customHeaders);
-      
-      // Check patch status with both baseline and patched modes
+      // Check patch status - but trust parent component for actual patch content
       const encodedFileName = encodeURIComponent(fileName);
       const patchedUrl = `patches/apply/${encodedFileName}?preview=true&store_id=${storeId}`;
-      const baselineUrl = `patches/apply/${encodedFileName}?preview=false&store_id=${storeId}`;
       
-      console.log(`🔍 BrowserPreview: API URLs:`, { patchedUrl, baselineUrl });
+      const patchedData = await apiClient.get(patchedUrl, customHeaders);
       
-      const [patchedData, baselineData] = await Promise.all([
-        apiClient.get(patchedUrl, customHeaders),
-        apiClient.get(baselineUrl, customHeaders)
-      ]);
-      
-      console.log(`🔍 BrowserPreview: API responses:`, {
-        patched: { success: patchedData?.success, hasPatches: patchedData?.data?.hasPatches, totalPatches: patchedData?.data?.totalPatches },
-        baseline: { success: baselineData?.success }
+      console.log(`🔍 BrowserPreview: Patch check result:`, {
+        success: patchedData?.success, 
+        hasPatches: patchedData?.data?.hasPatches, 
+        totalPatches: patchedData?.data?.totalPatches
       });
       
       const hasPatches = patchedData?.success && patchedData?.data?.hasPatches;
       
       if (hasPatches) {
-        console.log(`✅ BrowserPreview: Found server-side patches for ${fileName}`);
+        console.log(`✅ BrowserPreview: Server confirms patches exist for ${fileName}`);
         console.log(`📊 Patch stats: ${patchedData.data.totalPatches || 0} patches applied`);
         
-        // Update patch data state for UI toggle
+        // Trust parent component's currentCode as the source of truth for patched content
+        // Just store metadata for UI controls
         const patchResult = {
-          baseline: baselineData?.data?.baselineCode || null,
-          current: patchedData?.data?.patchedCode || null,
+          baseline: patchedData?.data?.baselineCode || null,
+          current: currentCode, // Use parent's currentCode as patched content
           hasPatches: true,
           appliedPatches: patchedData.data.totalPatches || patchedData.data.appliedPatches || 0,
           patchDetails: patchedData.data.patchDetails || [],
@@ -349,8 +347,8 @@ const BrowserPreview = ({
         
         // Update patch data state to show no patches
         setPatchData({
-          baseline: null,
-          current: null,
+          baseline: currentCode || null, // Use currentCode as baseline when no patches
+          current: currentCode || null,
           hasPatches: false
         });
         
@@ -360,14 +358,14 @@ const BrowserPreview = ({
       console.error('❌ BrowserPreview: Error checking patch status:', error);
       
       setPatchData({
-        baseline: null,
-        current: null,
+        baseline: currentCode || null,
+        current: currentCode || null,
         hasPatches: false
       });
       
       return { hasPatches: false };
     }
-  }, [storeId]);
+  }, [storeId, currentCode]);
 
   // Server-side patch application using URL parameters - no DOM manipulation needed
   const applyCodePatches = useCallback(async (iframe) => {
