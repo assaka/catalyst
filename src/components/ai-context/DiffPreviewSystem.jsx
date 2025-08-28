@@ -1293,12 +1293,23 @@ const DiffPreviewSystem = ({
                     </Badge>
                   </div>
                   
-                  {astDiffData.patch.astDiff && (
+                  {astDiffData.patch.astDiff ? (
                     <div className="mt-3 text-sm">
                       <div className="text-blue-700 font-medium mb-2">AST Changes:</div>
                       <pre className="text-xs text-blue-600 bg-blue-100 p-2 rounded overflow-x-auto max-h-32">
                         {JSON.stringify(astDiffData.patch.astDiff, null, 2)}
                       </pre>
+                    </div>
+                  ) : astDiffData.patch.unified_diff ? (
+                    <div className="mt-3 text-sm">
+                      <div className="text-blue-700 font-medium mb-2">Unified Diff (AST not available):</div>
+                      <pre className="text-xs text-blue-600 bg-blue-100 p-2 rounded overflow-x-auto max-h-32 whitespace-pre">
+                        {astDiffData.patch.unified_diff}
+                      </pre>
+                    </div>
+                  ) : (
+                    <div className="mt-3 text-sm text-gray-500">
+                      No diff data available for this patch
                     </div>
                   )}
                 </Card>
