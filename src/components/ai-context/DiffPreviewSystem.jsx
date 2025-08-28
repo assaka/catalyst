@@ -384,7 +384,7 @@ const DiffPreviewSystem = ({
             if (result.baselineCode && !originalCode) {
               originalBaseCodeRef.current = result.baselineCode;
             }
-            if (result.modifiedCode && !modifiedCode) {
+            if (result.modifiedCode) {
               setCurrentModifiedCode(result.modifiedCode);
             }
           } else {
