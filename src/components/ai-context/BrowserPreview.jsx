@@ -68,25 +68,27 @@ const BrowserPreview = ({
           if (routeResponse && routeResponse.success && routeResponse.data && routeResponse.data.route) {
             const route = routeResponse.data.route;
             
-            // Build the proper public URL directly
+            // Build the proper external public store URL  
             const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
-            const baseUrl = window.location.origin;
-            const publicUrl = `${baseUrl}/public/${storeSlug}/${routePath}`;
+            // Use the external store URL (Vercel deployment) instead of localhost
+            const externalBaseUrl = process.env.REACT_APP_PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+            const publicUrl = `${externalBaseUrl}/public/${storeSlug}/${routePath}`;
             
             // Add patches parameter if enabled
             const finalUrl = enablePatches ? `${publicUrl}?patches=true` : publicUrl;
             
-            console.log(`🔍 BrowserPreview: Direct public URL generation:`);
+            console.log(`🔍 BrowserPreview: External public URL generation:`);
             console.log(`  - storeId: ${storeId}`);
             console.log(`  - storeSlug: ${storeSlug}`);
             console.log(`  - fileName: ${fileName}`);
             console.log(`  - pageName: ${pageName}`);
             console.log(`  - routePath: ${route.route_path}`);
+            console.log(`  - externalBaseUrl: ${externalBaseUrl}`);
             console.log(`  - enablePatches: ${enablePatches}`);
             console.log(`  - finalUrl: ${finalUrl}`);
             
             setPreviewUrl(finalUrl);
-            console.log(`🎯 Generated direct public URL: ${finalUrl}`);
+            console.log(`🎯 Generated external public store URL: ${finalUrl}`);
             setError(null);
           } else {
             throw new Error(`No route mapping found for page "${pageName}"`);
