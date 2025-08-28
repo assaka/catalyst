@@ -389,6 +389,7 @@ const DiffPreviewSystem = ({
   const [astDiffError, setAstDiffError] = useState(null);
   const [collapseUnchanged, setCollapseUnchanged] = useState(false);
   const [expandedSections, setExpandedSections] = useState(new Set());
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Trigger for refreshing patch data
 
   const diffServiceRef = useRef(new DiffService());
   const originalBaseCodeRef = useRef(originalCode); // Preserve original base code
@@ -529,30 +530,39 @@ const DiffPreviewSystem = ({
       
       setCurrentModifiedCode(newCode);
       
-      // Remove patches from database for this line
+      // Surgically revert patches for this specific line
       try {
-        console.log('🗑️ Removing patches for line', lineIndex);
+        console.log('✂️ Surgically reverting patches for line', lineIndex);
         const storeId = getSelectedStoreId();
-        const response = await fetch(`/api/patches/line/${encodeURIComponent(fileName)}`, {
-          method: 'DELETE',
+        const modifiedContent = currentLines[lineIndex] || '';
+        
+        const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(fileName)}`, {
+          method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
             'X-Store-Id': storeId
           },
           body: JSON.stringify({
-            lineNumber: lineIndex
+            lineNumber: lineIndex,
+            originalContent: originalContent,
+            modifiedContent: modifiedContent
           })
         });
 
         const result = await response.json();
         if (result.success) {
-          console.log('✅ Successfully removed', result.data.affectedPatches, 'patch(es) for line', lineIndex);
+          console.log('✅ Successfully reverted line', lineIndex, '- Modified:', result.data.modifiedPatches, 'Deleted:', result.data.deletedPatches);
+          
+          // Add a small delay to ensure database changes are reflected
+          setTimeout(() => {
+            setRefreshTrigger(prev => prev + 1);
+          }, 100);
         } else {
-          console.error('❌ Failed to remove patches:', result.error);
+          console.error('❌ Failed to revert patches:', result.error);
         }
       } catch (error) {
-        console.error('❌ Error removing patches for line:', error);
+        console.error('❌ Error reverting patches for line:', error);
       }
       
       // Notify parent component of the change

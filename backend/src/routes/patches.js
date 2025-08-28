@@ -835,14 +835,15 @@ router.get('/:filePath(*)', async (req, res) => {
   }
 });
 
-// Delete/deactivate specific patches by line number - requires authentication
-router.delete('/line/:filePath(*)', authMiddleware, async (req, res) => {
+// Revert specific line in patches (surgical approach) - requires authentication
+router.patch('/revert-line/:filePath(*)', authMiddleware, async (req, res) => {
   try {
     const filePath = req.params.filePath;
-    const { lineNumber } = req.body;
+    const { lineNumber, originalContent, modifiedContent } = req.body;
     const storeId = req.headers['x-store-id'] || '157d4590-49bf-4b0b-bd77-abe131909528';
 
-    console.log(`🗑️ Deleting patches for ${filePath} line ${lineNumber}`);
+    console.log(`↩️ Reverting line ${lineNumber} in ${filePath}`);
+    console.log(`   From: "${modifiedContent}" → To: "${originalContent}"`);
 
     if (typeof lineNumber !== 'number' || lineNumber < 0) {
       return res.status(400).json({
@@ -851,55 +852,139 @@ router.delete('/line/:filePath(*)', authMiddleware, async (req, res) => {
       });
     }
 
-    // Find patches that affect the specific line
-    const query = `
-      UPDATE patch_diffs 
-      SET is_active = false, 
-          updated_at = NOW(),
-          status = 'reverted'
+    // Get active patches for this file
+    const patches = await patchService.sequelize.query(`
+      SELECT id, unified_diff, patch_name, change_summary
+      FROM patch_diffs 
       WHERE store_id = :storeId 
       AND file_path = :filePath 
       AND is_active = true
-      AND (
-        applies_to_lines IS NULL OR 
-        applies_to_lines ? :lineNumber OR
-        applies_to_lines @> :lineNumberJson OR
-        applies_to_lines::text ILIKE :linePattern
-      )
-    `;
-
-    const replacements = {
-      storeId,
-      filePath,
-      lineNumber: lineNumber.toString(),
-      lineNumberJson: JSON.stringify([lineNumber]),
-      linePattern: `%${lineNumber}%`
-    };
-
-    const [result] = await patchService.sequelize.query(query, {
-      replacements,
-      type: patchService.sequelize.QueryTypes.UPDATE
+      AND unified_diff IS NOT NULL
+    `, {
+      replacements: { storeId, filePath },
+      type: patchService.sequelize.QueryTypes.SELECT
     });
 
-    console.log(`✅ Deactivated ${result} patches for line ${lineNumber}`);
+    let modifiedPatches = 0;
+    let deletedPatches = 0;
+
+    for (const patch of patches) {
+      try {
+        // Parse unified diff and remove hunks that affect the reverted line
+        const modifiedDiff = removeDiffHunkForLine(patch.unified_diff, lineNumber, originalContent, modifiedContent);
+        
+        if (modifiedDiff === null) {
+          // No changes were made to this patch
+          continue;
+        }
+        
+        if (modifiedDiff.trim() === '') {
+          // Patch became empty after removing the hunk, delete it
+          await patchService.sequelize.query(`
+            UPDATE patch_diffs 
+            SET is_active = false, status = 'reverted', updated_at = NOW()
+            WHERE id = :patchId
+          `, {
+            replacements: { patchId: patch.id },
+            type: patchService.sequelize.QueryTypes.UPDATE
+          });
+          deletedPatches++;
+          console.log(`🗑️ Deleted empty patch: ${patch.patch_name}`);
+        } else {
+          // Update patch with modified diff
+          await patchService.sequelize.query(`
+            UPDATE patch_diffs 
+            SET unified_diff = :modifiedDiff, updated_at = NOW()
+            WHERE id = :patchId
+          `, {
+            replacements: { 
+              patchId: patch.id, 
+              modifiedDiff: modifiedDiff 
+            },
+            type: patchService.sequelize.QueryTypes.UPDATE
+          });
+          modifiedPatches++;
+          console.log(`✏️ Modified patch: ${patch.patch_name}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error processing patch ${patch.id}:`, error.message);
+      }
+    }
+
+    console.log(`✅ Processed ${patches.length} patches: ${modifiedPatches} modified, ${deletedPatches} deleted`);
 
     res.json({
       success: true,
-      message: `Successfully removed ${result} patch(es) for line ${lineNumber}`,
+      message: `Successfully reverted line ${lineNumber}`,
       data: {
-        affectedPatches: result,
+        totalPatches: patches.length,
+        modifiedPatches,
+        deletedPatches,
         filePath,
         lineNumber
       }
     });
 
   } catch (error) {
-    console.error('❌ Error deleting patches for line:', error);
+    console.error('❌ Error reverting line:', error);
     res.status(500).json({
       success: false,
       error: error.message
     });
   }
 });
+
+// Helper function to remove diff hunks that affect a specific line
+function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, modifiedContent) {
+  if (!unifiedDiff) return null;
+  
+  const lines = unifiedDiff.split('\n');
+  const result = [];
+  let currentHunk = [];
+  let inHunk = false;
+  let hunkStartLine = 0;
+  let hunkModified = false;
+  
+  for (const line of lines) {
+    if (line.startsWith('@@')) {
+      // Process previous hunk
+      if (inHunk && currentHunk.length > 0) {
+        if (!hunkModified) {
+          result.push(...currentHunk);
+        }
+        currentHunk = [];
+        hunkModified = false;
+      }
+      
+      // Parse hunk header to get line numbers
+      const match = line.match(/@@ -(\d+),?\d* \+(\d+),?\d* @@/);
+      if (match) {
+        hunkStartLine = parseInt(match[1]);
+      }
+      
+      currentHunk = [line];
+      inHunk = true;
+    } else if (inHunk) {
+      currentHunk.push(line);
+      
+      // Check if this hunk contains the change we want to revert
+      if (modifiedContent && line.includes(modifiedContent)) {
+        const lineInFile = hunkStartLine + currentHunk.filter(l => !l.startsWith('+')).length - 2;
+        if (Math.abs(lineInFile - targetLineNumber) <= 2) { // Allow some tolerance
+          hunkModified = true;
+        }
+      }
+    } else {
+      result.push(line);
+    }
+  }
+  
+  // Process final hunk
+  if (inHunk && currentHunk.length > 0 && !hunkModified) {
+    result.push(...currentHunk);
+  }
+  
+  return result.join('\n');
+}
 
 module.exports = router;
