@@ -1679,11 +1679,33 @@ app.get('/preview/:storeId', async (req, res) => {
     <link rel="icon" type="image/svg+xml" href="https://www.suprshop.com/logo_v2.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Catalyst Preview</title>
-    <script type="module" crossorigin src="https://catalyst-pearl.vercel.app/assets/index-DIELze-b.js"></script>
-    <link rel="stylesheet" crossorigin href="https://catalyst-pearl.vercel.app/assets/index-CxahxoJ-.css">
+    <base href="https://catalyst-pearl.vercel.app/">
+    <script type="module" crossorigin>
+      // Bootstrap React app with patch data
+      window.__PATCH_PREVIEW_MODE__ = true;
+      import('https://catalyst-pearl.vercel.app/src/main.jsx').catch(() => {
+        // Fallback: redirect to the main app with patch parameters
+        const params = new URLSearchParams(window.location.search);
+        const baseUrl = 'https://catalyst-pearl.vercel.app';
+        const storeSlug = params.get('storeSlug') || 'store';
+        const pageName = params.get('pageName') || 'home';
+        const redirect = baseUrl + '/public/' + storeSlug + '/' + pageName.toLowerCase() + '?patches=true&' + params.toString();
+        window.location.href = redirect;
+      });
+    </script>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 0; padding: 0; }
+      #root { min-height: 100vh; }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div style="display: flex; align-items: center; justify-content: center; height: 100vh; flex-direction: column;">
+        <div style="animate: spin 1s linear infinite; border: 3px solid #f3f3f3; border-top: 3px solid #3498db; border-radius: 50%; width: 50px; height: 50px; margin-bottom: 20px;"></div>
+        <p>Loading patched component...</p>
+        <p style="font-size: 12px; color: #666;">If this takes too long, you'll be redirected automatically.</p>
+      </div>
+    </div>
   </body>
 </html>`;
     }
