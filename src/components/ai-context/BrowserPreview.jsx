@@ -41,23 +41,6 @@ const BrowserPreview = ({
     return { headers };
   }, [storeId]);
 
-  // Resolve page name to route using the new API
-  const resolveRouteFromPageName = useCallback(async (pageName) => {
-    try {
-      const apiConfig = getApiConfig();
-      const resolution = await resolvePageNameToRoute(pageName, apiConfig);
-      
-      if (resolution.found && resolution.route) {
-        console.log(`🎯 Resolved "${pageName}" to route: ${resolution.route.route_path} (${resolution.matchType})`);
-        return resolution.route.route_path;
-      } else {
-        console.warn(`⚠️ Could not resolve page name "${pageName}" to route:`, resolution.error);
-      }
-    } catch (error) {
-      console.warn('Failed to resolve page name to route:', error);
-    }
-    return null;
-  }, [getApiConfig]);
 
 
 
@@ -96,11 +79,14 @@ const BrowserPreview = ({
       const pageName = detectedPageName || finalFileName;
       
       console.log(`🔍 Resolving page "${pageName}" using store_routes table`);
-      const resolvedRoute = await resolveRouteFromPageName(pageName);
+      const apiConfig = getApiConfig();
+      const resolution = await resolvePageNameToRoute(pageName, apiConfig);
       
-      if (resolvedRoute) {
-        console.log(`🎯 Database route resolution: "${pageName}" -> "${resolvedRoute}"`);
-        return resolvedRoute;
+      if (resolution.found && resolution.route) {
+        console.log(`🎯 Database route resolution: "${pageName}" -> "${resolution.route.route_path}" (${resolution.matchType})`);
+        return resolution.route.route_path;
+      } else {
+        console.warn(`⚠️ Could not resolve page name "${pageName}" to route:`, resolution.error);
       }
 
       console.log(`⚠️ No route found in store_routes table for page "${pageName}"`);
@@ -388,7 +374,10 @@ const BrowserPreview = ({
     // Force iframe refresh by updating the src
     const iframe = document.getElementById('browser-preview-iframe');
     if (iframe && previewUrl) {
-      iframe.src = previewUrl + '?preview=' + Date.now();
+      // Use URL constructor to properly handle existing parameters
+      const url = new URL(previewUrl);
+      url.searchParams.set('preview', Date.now().toString());
+      iframe.src = url.toString();
       // Patches will be reapplied automatically via handleIframeLoad
     }
   }, [previewUrl]);
