@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Clock, RotateCcw, RefreshCw, AlertCircle, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 /**
  * Version History Component
@@ -14,6 +15,9 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [rollingBackId, setRollingBackId] = useState(null);
   const dropdownRef = useRef(null);
+  
+  // Get selected store from context
+  const { selectedStore, getSelectedStoreId } = useStoreSelection();
 
   // Check if this is being used inline in header
   const isHeaderMode = className?.includes('inline-block');

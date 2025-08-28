@@ -127,8 +127,14 @@ app.get('/deployment-status', (req, res) => {
 // Trust proxy for Render.com
 app.set('trust proxy', 1);
 
-// Security middleware
-app.use(helmet());
+// Security middleware with exceptions for preview route
+app.use((req, res, next) => {
+  // Skip helmet for preview routes to allow iframe embedding
+  if (req.path.startsWith('/preview/')) {
+    return next();
+  }
+  helmet()(req, res, next);
+});
 app.use(compression());
 
 // Rate limiting
@@ -1589,6 +1595,11 @@ app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage r
 // Preview route for serving patched content (used by BrowserPreview iframe)
 // Server-side patch rendering for preview
 app.get('/preview/:storeId', async (req, res) => {
+  // Set headers to allow iframe embedding and prevent caching
+  res.setHeader('X-Frame-Options', 'ALLOWALL');
+  res.setHeader('Content-Security-Policy', "frame-ancestors *;");
+  res.removeHeader('X-Content-Type-Options');
+  
   try {
     const { storeId } = req.params;
     const { fileName, patches = 'true', storeSlug, pageName: providedPageName } = req.query;
