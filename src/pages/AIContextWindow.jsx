@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import {Code, Diff, Download, Eye, Clock} from 'lucide-react';
+import {Code, Diff, Download, Eye, Clock, Upload, RefreshCw, CheckCircle} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
@@ -9,6 +9,7 @@ import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import StorefrontPreview from '@/components/ai-context/StorefrontPreview';
 import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import BrowserPreview from '@/components/ai-context/BrowserPreview';
+import VersionHistory from '@/components/ai-context/VersionHistory';
 import apiClient from '@/api/client';
 
 /**
@@ -86,9 +87,31 @@ const AIContextWindowPage = () => {
   const [astDiffStatus, setAstDiffStatus] = useState(null); // Track AST diff creation status
   const [manualEditResult, setManualEditResult] = useState(null); // Track manual edit detection
   const [previewMode, setPreviewMode] = useState('code'); // Track preview mode: 'code', 'patch', 'live'
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishSuccess, setPublishSuccess] = useState(null);
+  const [rollbackSuccess, setRollbackSuccess] = useState(null);
   
   // Auto-save debounce timer
   const autoSaveTimeoutRef = useRef(null);
+
+  // Check authentication status
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check authentication on mount and when needed
+  useEffect(() => {
+    const checkAuth = () => {
+      const authToken = apiClient.getToken();
+      setIsAuthenticated(!!authToken);
+    };
+    
+    checkAuth();
+    
+    // Check auth status when localStorage changes (e.g., user logs in/out)
+    const handleStorageChange = () => checkAuth();
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Load file from URL parameter on mount
   useEffect(() => {
@@ -105,6 +128,118 @@ const AIContextWindowPage = () => {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
+  }, []);
+
+  // Publish open diffs to patch_releases
+  const publishDiffs = useCallback(async () => {
+    if (!selectedFile?.path || !isAuthenticated) return;
+
+    setIsPublishing(true);
+    setPublishSuccess(null);
+    setRollbackSuccess(null);
+
+    try {
+      const authToken = apiClient.getToken();
+      if (!authToken) {
+        console.error('Authentication required. Please log in to publish changes.');
+        return;
+      }
+
+      // First, create a new patch release
+      const createReleaseResponse = await fetch('/api/patches/releases', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
+        },
+        body: JSON.stringify({
+          versionName: `AI-generated-v${Date.now()}`,
+          releaseType: 'minor',
+          description: `AI-generated changes for ${selectedFile.path.split('/').pop()}`
+        })
+      });
+
+      if (!createReleaseResponse.ok) {
+        throw new Error('Failed to create release');
+      }
+
+      const releaseData = await createReleaseResponse.json();
+      if (!releaseData.success) {
+        throw new Error(releaseData.error || 'Failed to create release');
+      }
+
+      const releaseId = releaseData.data.releaseId;
+
+      // Update open diffs with the release_id and set status to final/published
+      const finalizeResponse = await fetch('/api/patches/finalize-diffs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
+        },
+        body: JSON.stringify({
+          filePath: selectedFile.path,
+          releaseId,
+          changeSummary: 'AI-generated changes'
+        })
+      });
+
+      if (!finalizeResponse.ok) {
+        throw new Error('Failed to finalize changes');
+      }
+
+      const finalizeData = await finalizeResponse.json();
+      if (!finalizeData.success) {
+        throw new Error(finalizeData.error || 'Failed to finalize changes');
+      }
+
+      // Publish the release
+      const publishResponse = await fetch(`/api/patches/publish/${releaseId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!publishResponse.ok) {
+        throw new Error('Failed to publish release');
+      }
+
+      const publishData = await publishResponse.json();
+      if (!publishData.success) {
+        throw new Error(publishData.error || 'Failed to publish release');
+      }
+
+      setPublishSuccess({
+        releaseId,
+        versionName: releaseData.data.versionName,
+        publishedAt: publishData.data.publishedAt
+      });
+
+      // Auto-clear success message after 5 seconds
+      setTimeout(() => {
+        setPublishSuccess(null);
+      }, 5000);
+
+    } catch (error) {
+      console.error(`Publish failed: ${error.message}`);
+    } finally {
+      setIsPublishing(false);
+    }
+  }, [selectedFile?.path, isAuthenticated]);
+
+  // Handle successful rollback from version history
+  const handleRollback = useCallback((rollbackData) => {
+    setRollbackSuccess(rollbackData);
+    setPublishSuccess(null);
+    
+    // Auto-clear success message after 5 seconds
+    setTimeout(() => {
+      setRollbackSuccess(null);
+    }, 5000);
   }, []);
 
   // Helper function to fetch baseline code from database
@@ -681,6 +816,32 @@ export default ExampleComponent;`;
         {/* Connection Status */}
         <div className="flex items-center space-x-4">
 
+          {/* Publish Success */}
+          {publishSuccess && (
+            <div className="p-2 rounded-md text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              <div className="font-medium flex items-center">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Changes Published Successfully
+              </div>
+              <div className="text-xs mt-1">
+                Version {publishSuccess.versionName} at {new Date(publishSuccess.publishedAt).toLocaleTimeString()}
+              </div>
+            </div>
+          )}
+
+          {/* Rollback Success */}
+          {rollbackSuccess && (
+            <div className="p-2 rounded-md text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+              <div className="font-medium flex items-center">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                Rollback Completed
+              </div>
+              <div className="text-xs mt-1">
+                Rolled back to {rollbackSuccess.versionName} at {new Date(rollbackSuccess.rolledBackAt).toLocaleTimeString()}
+              </div>
+            </div>
+          )}
+
           {/* Manual Edit Status */}
           {manualEditResult && manualEditResult.hasChanges && (
             <div className="p-2 rounded-md text-xs bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
@@ -732,6 +893,26 @@ export default ExampleComponent;`;
             className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {connectionStatus?.status === 'testing' ? 'Testing...' : 'Test Connection'}
+          </button>
+          
+          <button
+            onClick={publishDiffs}
+            disabled={!isAuthenticated || isPublishing || !selectedFile?.path || (!modifiedFiles.includes(selectedFile?.path) && !publishSuccess)}
+            className={cn(
+              "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
+              "bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed",
+              "text-white disabled:text-gray-500"
+            )}
+            title="Publish changes to version history"
+          >
+            {isPublishing ? (
+              <RefreshCw className="w-3 h-3 animate-spin" />
+            ) : (
+              <>
+                <Upload className="w-3 h-3" />
+                Publish
+              </>
+            )}
           </button>
           
           <button
@@ -960,6 +1141,14 @@ export default ExampleComponent;`;
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
+
+      {/* Version History */}
+      {selectedFile?.path && (
+        <VersionHistory 
+          filePath={selectedFile.path}
+          onRollback={handleRollback}
+        />
+      )}
 
       {/* Status Bar */}
       <div className="p-2 border-t bg-white dark:bg-gray-800 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">

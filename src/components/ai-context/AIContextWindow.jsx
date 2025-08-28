@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Send, RefreshCw, AlertCircle, CheckCircle, Code, Lightbulb, Maximize2, Minimize2, Upload } from 'lucide-react';
+import { Send, RefreshCw, AlertCircle, CheckCircle, Code, Lightbulb, Maximize2, Minimize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
-import VersionHistory from './VersionHistory';
 
 /**
  * AI Context Window Component
@@ -24,9 +23,6 @@ const AIContextWindow = ({
   const [suggestions, setSuggestions] = useState([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [publishSuccess, setPublishSuccess] = useState(null);
-  const [rollbackSuccess, setRollbackSuccess] = useState(null);
   const textareaRef = useRef(null);
 
   // Auto-resize textarea
@@ -142,121 +138,6 @@ const AIContextWindow = ({
     setPrompt(suggestion);
   }, []);
 
-  // Publish open diffs to patch_releases
-  const publishDiffs = useCallback(async () => {
-    if (!filePath || !isAuthenticated) return;
-
-    setIsPublishing(true);
-    setError(null);
-    setPublishSuccess(null);
-
-    try {
-      const authToken = apiClient.getToken();
-      if (!authToken) {
-        setError('Authentication required. Please log in to publish changes.');
-        return;
-      }
-
-      // First, create a new patch release
-      const createReleaseResponse = await fetch('/api/patches/releases', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-          'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
-        },
-        body: JSON.stringify({
-          versionName: `AI-generated-v${Date.now()}`,
-          releaseType: 'minor',
-          description: `AI-generated changes for ${filePath.split('/').pop()}`
-        })
-      });
-
-      if (!createReleaseResponse.ok) {
-        throw new Error('Failed to create release');
-      }
-
-      const releaseData = await createReleaseResponse.json();
-      if (!releaseData.success) {
-        throw new Error(releaseData.error || 'Failed to create release');
-      }
-
-      const releaseId = releaseData.data.releaseId;
-
-      // Update open diffs with the release_id and set status to final/published
-      const finalizeResponse = await fetch('/api/patches/finalize-diffs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-          'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
-        },
-        body: JSON.stringify({
-          filePath,
-          releaseId,
-          changeSummary: prompt || 'AI-generated changes'
-        })
-      });
-
-      if (!finalizeResponse.ok) {
-        throw new Error('Failed to finalize changes');
-      }
-
-      const finalizeData = await finalizeResponse.json();
-      if (!finalizeData.success) {
-        throw new Error(finalizeData.error || 'Failed to finalize changes');
-      }
-
-      // Publish the release
-      const publishResponse = await fetch(`/api/patches/publish/${releaseId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-
-      if (!publishResponse.ok) {
-        throw new Error('Failed to publish release');
-      }
-
-      const publishData = await publishResponse.json();
-      if (!publishData.success) {
-        throw new Error(publishData.error || 'Failed to publish release');
-      }
-
-      setPublishSuccess({
-        releaseId,
-        versionName: releaseData.data.versionName,
-        publishedAt: publishData.data.publishedAt
-      });
-
-      // Clear current state after successful publish
-      setLastResult(null);
-      setPrompt('');
-
-    } catch (error) {
-      setError(`Publish failed: ${error.message}`);
-    } finally {
-      setIsPublishing(false);
-    }
-  }, [filePath, isAuthenticated, prompt]);
-
-  // Handle successful rollback from version history
-  const handleRollback = useCallback((rollbackData) => {
-    setRollbackSuccess(rollbackData);
-    setPublishSuccess(null);
-    setError(null);
-    
-    // Clear current state after successful rollback
-    setLastResult(null);
-    setPrompt('');
-
-    // Auto-clear success message after 5 seconds
-    setTimeout(() => {
-      setRollbackSuccess(null);
-    }, 5000);
-  }, []);
 
   // Common prompt templates
   const promptTemplates = [
@@ -286,25 +167,6 @@ const AIContextWindow = ({
           </h3>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={publishDiffs}
-            disabled={!isAuthenticated || isPublishing || !filePath || (!lastResult && !publishSuccess)}
-            className={cn(
-              "px-3 py-1 text-xs font-medium rounded-md transition-colors",
-              "bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed",
-              "text-white disabled:text-gray-500"
-            )}
-            title="Publish changes to version history"
-          >
-            {isPublishing ? (
-              <RefreshCw className="w-3 h-3 animate-spin" />
-            ) : (
-              <>
-                <Upload className="w-3 h-3 mr-1" />
-                Publish
-              </>
-            )}
-          </button>
           <button
             onClick={clearState}
             className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -413,39 +275,6 @@ const AIContextWindow = ({
             </div>
           )}
 
-          {/* Publish Success */}
-          {publishSuccess && (
-            <div className="p-3 m-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
-              <div className="flex items-center">
-                <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                <div>
-                  <span className="text-sm font-medium text-green-700 dark:text-green-400 block mb-1">
-                    Changes Published Successfully
-                  </span>
-                  <span className="text-xs text-green-600 dark:text-green-500">
-                    Version {publishSuccess.versionName} created and published at {new Date(publishSuccess.publishedAt).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Rollback Success */}
-          {rollbackSuccess && (
-            <div className="p-3 m-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md">
-              <div className="flex items-center">
-                <CheckCircle className="w-4 h-4 text-orange-500 mr-2" />
-                <div>
-                  <span className="text-sm font-medium text-orange-700 dark:text-orange-400 block mb-1">
-                    Rollback Completed Successfully
-                  </span>
-                  <span className="text-xs text-orange-600 dark:text-orange-500">
-                    Rolled back to version {rollbackSuccess.versionName} at {new Date(rollbackSuccess.rolledBackAt).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Error Display */}
           {error && (
