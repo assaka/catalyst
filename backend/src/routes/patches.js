@@ -436,6 +436,78 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// Finalize diffs for a file - assign release_id and set status to final
+router.post('/finalize-diffs', authMiddleware, async (req, res) => {
+  try {
+    const { filePath, releaseId, changeSummary = '' } = req.body;
+    const storeId = req.headers['x-store-id'] || '157d4590-49bf-4b0b-bd77-abe131909528';
+
+    if (!filePath || !releaseId) {
+      return res.status(400).json({
+        success: false,
+        error: 'File path and release ID are required'
+      });
+    }
+
+    console.log(`🏁 Finalizing diffs for file: ${filePath} with release: ${releaseId}`);
+
+    // Update open diffs for the file to assign release_id and set status to 'open' (ready for publishing)
+    const [updatedDiffs] = await patchService.sequelize.query(`
+      UPDATE patch_diffs 
+      SET 
+        release_id = :releaseId,
+        status = 'open',
+        change_summary = COALESCE(NULLIF(:changeSummary, ''), change_summary, 'AI-generated changes'),
+        updated_at = CURRENT_TIMESTAMP
+      WHERE store_id = :storeId 
+        AND file_path = :filePath 
+        AND status = 'open'
+        AND release_id IS NULL
+        AND created_by = :createdBy
+      RETURNING id, patch_name, change_summary
+    `, {
+      replacements: { 
+        storeId, 
+        filePath, 
+        releaseId, 
+        changeSummary,
+        createdBy: req.user.id 
+      },
+      type: patchService.sequelize.QueryTypes.UPDATE
+    });
+
+    const finalizedCount = updatedDiffs[1]?.rowCount || 0;
+
+    if (finalizedCount === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No open diffs found for this file'
+      });
+    }
+
+    console.log(`✅ Finalized ${finalizedCount} diffs for ${filePath}`);
+
+    res.json({
+      success: true,
+      message: 'Diffs finalized successfully',
+      data: {
+        filePath,
+        releaseId,
+        finalizedDiffs: updatedDiffs[0] || [],
+        totalFinalized: finalizedCount,
+        finalizedAt: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error finalizing diffs:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Finalize edit session - move patches from 'open' to 'ready_for_review' status
 router.post('/finalize-session', authMiddleware, async (req, res) => {
   try {
