@@ -19,7 +19,10 @@ const BrowserPreview = ({
   const [error, setError] = useState(null);
   const [deviceView, setDeviceView] = useState('desktop'); // desktop, tablet, mobile
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
-  const [enablePatches, setEnablePatches] = useState(true); // Single toggle: patches on/off
+  // Local preview toggle - true for local preview, false for deployed preview
+  const [isLocalPreview, setIsLocalPreview] = useState(false);
+  // Patches toggle - only relevant for local preview
+  const [enablePatches, setEnablePatches] = useState(true);
   const [patchData, setPatchData] = useState({ hasPatches: false });
 
 
@@ -68,23 +71,28 @@ const BrowserPreview = ({
           if (routeResponse && routeResponse.success && routeResponse.data && routeResponse.data.route) {
             const route = routeResponse.data.route;
             
-            // Build the proper external public store URL  
+            // Build URL based on preview mode
+            let finalUrl;
             const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
-            // Use the external store URL (Vercel deployment) instead of localhost
-            const externalBaseUrl = process.env.REACT_APP_PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
-            const publicUrl = `${externalBaseUrl}/public/${storeSlug}/${routePath}`;
             
-            // Add patches parameter if enabled
-            const finalUrl = enablePatches ? `${publicUrl}?patches=true` : publicUrl;
+            if (isLocalPreview) {
+              // Local preview - use localhost backend with optional patches
+              const backendUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+              const patchesParam = enablePatches ? '&patches=true' : '';
+              finalUrl = `${backendUrl}/preview/${storeId}?fileName=${encodeURIComponent(fileName)}${patchesParam}`;
+            } else {
+              // Remote deployment - external store URL (remote preview/publish handled by deployments)
+              const externalBaseUrl = process.env.REACT_APP_PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+              finalUrl = `${externalBaseUrl}/public/${storeSlug}/${routePath}`;
+            }
             
-            console.log(`🔍 BrowserPreview: External public URL generation:`);
+            console.log(`🔍 BrowserPreview: URL generation for preview mode "${isLocalPreview ? 'local' : 'remote'}":`);
             console.log(`  - storeId: ${storeId}`);
             console.log(`  - storeSlug: ${storeSlug}`);
             console.log(`  - fileName: ${fileName}`);
             console.log(`  - pageName: ${pageName}`);
             console.log(`  - routePath: ${route.route_path}`);
-            console.log(`  - externalBaseUrl: ${externalBaseUrl}`);
-            console.log(`  - enablePatches: ${enablePatches}`);
+            console.log(`  - isLocalPreview: ${isLocalPreview}`);
             console.log(`  - finalUrl: ${finalUrl}`);
             
             setPreviewUrl(finalUrl);
@@ -107,7 +115,7 @@ const BrowserPreview = ({
     };
 
     generatePreviewUrl();
-  }, [fileName, enablePatches, storeId, getApiConfig]);
+  }, [fileName, isLocalPreview, enablePatches, storeId, getApiConfig]);
 
   // Device view dimensions
   const deviceDimensions = {
@@ -237,26 +245,38 @@ const BrowserPreview = ({
 
             {/* Browser Actions */}
             <div className="flex items-center space-x-2">
-              {/* Patch Status Indicator */}
+              {/* Preview Mode Controls */}
               <div className="flex items-center space-x-2">
+                {/* Local Preview Toggle */}
                 <button
-                  onClick={() => setEnablePatches(!enablePatches)}
+                  onClick={() => setIsLocalPreview(!isLocalPreview)}
                   className={cn(
-                    "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
-                    patchData.hasPatches && enablePatches
-                      ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300"
+                    "px-2 py-1 text-xs rounded-md border font-medium transition-colors",
+                    isLocalPreview
+                      ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300"
                       : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
                   )}
-                  title={patchData.hasPatches
-                    ? (enablePatches
-                        ? "Patches would be applied in production. Click to preview without patches."
-                        : "Click to preview with patches applied.")
-                    : "No patches available for this file"
-                  }
+                  title={isLocalPreview ? "Switch to remote (acceptance) preview" : "Switch to local development preview"}
                 >
-                  <Code className="w-3 h-3 mr-1 inline" />
-                  {enablePatches ? "With Patches" : "Without Patches"}
+                  {isLocalPreview ? "Local" : "Remote"}
                 </button>
+
+                {/* Patches Toggle - Only visible in local preview */}
+                {isLocalPreview && (
+                  <button
+                    onClick={() => setEnablePatches(!enablePatches)}
+                    className={cn(
+                      "px-2 py-1 text-xs rounded-md border font-medium transition-colors",
+                      enablePatches
+                        ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300"
+                        : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                    )}
+                    title={enablePatches ? "Disable patches for local preview" : "Enable patches for local preview"}
+                  >
+                    <Code className="w-3 h-3 mr-1 inline" />
+                    {enablePatches ? "Patches" : "No Patches"}
+                  </button>
+                )}
 
                 <button
                   onClick={refreshPreview}
@@ -378,12 +398,12 @@ const BrowserPreview = ({
       <div className="bg-gray-100 dark:bg-gray-800 border-t border-gray-300 dark:border-gray-600 p-2">
         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center space-x-4">
-            <span>🌐 Live Preview</span>
+            <span>{isLocalPreview ? '🏠 Local Preview' : '🌐 Remote Preview'}</span>
             {getPageNameFromFile(fileName) && (
               <span>Page: {getPageNameFromFile(fileName)}</span>
             )}
             <span>Device: {deviceView}</span>
-            <span>Patches: {enablePatches ? 'On' : 'Off'}</span>
+            {isLocalPreview && <span>Patches: {enablePatches ? 'On' : 'Off'}</span>}
           </div>
           <div className="text-xs">
             File: {fileName.split('/').pop()}
