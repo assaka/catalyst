@@ -1670,6 +1670,22 @@ app.get('/preview/:storeId', async (req, res) => {
       });
     }
 
+    // Determine the correct frontend path based on the file being previewed
+    const getPagePath = (fileName) => {
+      const pageName = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '').toLowerCase();
+      switch (pageName) {
+        case 'cart':
+          return '/cart';
+        case 'checkout':
+          return '/checkout';
+        case 'shop':
+        case 'products':
+          return '/shop';
+        default:
+          return ''; // Default to store root
+      }
+    };
+
     // Check if patches were applied and redirect accordingly
     if (patchResult.hasPatches && patchResult.finalCode) {
       // Redirect to the actual frontend application with patches enabled
@@ -1677,15 +1693,15 @@ app.get('/preview/:storeId', async (req, res) => {
       console.log(`✅ Redirecting to frontend with patches enabled for ${fileName}`);
       
       const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+      const pagePath = getPagePath(fileName);
       const redirectParams = new URLSearchParams({
-        storeSlug: actualStoreSlug,
         patches: 'true',
         fileName: fileName,
         storeId: storeId
       });
       
-      // Redirect to the storefront with patches enabled
-      const redirectUrl = `${frontendUrl}/${actualStoreSlug}?${redirectParams.toString()}`;
+      // Redirect to the correct frontend route with /public/:storeCode pattern
+      const redirectUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}?${redirectParams.toString()}`;
       console.log(`🔀 Redirecting to frontend: ${redirectUrl}`);
       
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -1695,13 +1711,14 @@ app.get('/preview/:storeId', async (req, res) => {
     console.log(`ℹ️ No patches to apply for ${fileName} - redirecting to normal frontend`);
     
     const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+    const pagePath = getPagePath(fileName);
     const redirectParams = new URLSearchParams({
-      storeSlug: actualStoreSlug,
       fileName: fileName,
       storeId: storeId
     });
     
-    const redirectUrl = `${frontendUrl}/${actualStoreSlug}?${redirectParams.toString()}`;
+    // Redirect to the correct frontend route with /public/:storeCode pattern
+    const redirectUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}?${redirectParams.toString()}`;
     console.log(`🔀 Redirecting to frontend (no patches): ${redirectUrl}`);
     
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
