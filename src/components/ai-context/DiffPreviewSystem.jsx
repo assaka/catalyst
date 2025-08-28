@@ -652,9 +652,11 @@ const DiffPreviewSystem = ({
 
   // Calculate diff using DiffService (always compare against original base code)
   const diffResult = useMemo(() => {
+    console.log('🔄 Recalculating diffResult - currentModifiedCode changed');
     const baseCode = originalBaseCodeRef.current;
     
     if (!baseCode && !currentModifiedCode) {
+      console.log('🔄 No base code or modified code - returning empty diff');
       return { 
         success: true,
         diff: [], 
@@ -664,9 +666,12 @@ const DiffPreviewSystem = ({
       };
     }
 
+    console.log('🔄 Creating diff - base lines:', baseCode.split('\n').length, 'modified lines:', currentModifiedCode.split('\n').length);
     const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode, { algorithm });
     const stats = diffServiceRef.current.getDiffStats(result.diff);
     const unifiedDiff = diffServiceRef.current.createUnifiedDiff(baseCode, currentModifiedCode, fileName);
+    
+    console.log('🔄 Diff result - changes:', result.diff?.length || 0, 'stats:', stats);
     
     return {
       ...result,
@@ -740,9 +745,12 @@ const DiffPreviewSystem = ({
 
   // Get display lines from diff
   const displayLines = useMemo(() => {
+    console.log('🔄 Recalculating displayLines - diff changes:', diffResult.diff?.length || 0);
     if (!diffResult.diff || diffResult.diff.length === 0) return [];
-    return convertDiffToDisplayLines(diffResult.diff);
-  }, [diffResult.diff, originalCode, modifiedCode]);
+    const lines = convertDiffToDisplayLines(diffResult.diff);
+    console.log('🔄 Generated', lines.length, 'display lines');
+    return lines;
+  }, [diffResult.diff, currentModifiedCode]);
 
   // Process display lines for collapsing unchanged fragments
   const processedDisplayLines = useMemo(() => {
