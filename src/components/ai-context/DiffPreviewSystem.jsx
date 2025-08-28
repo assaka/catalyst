@@ -173,9 +173,9 @@ const fetchAstDiffData = async (filePath) => {
     
     const patchData = await patchResponse.json();
     
-    if (patchData.success && patchData.patches && patchData.patches.length > 0) {
+    if (patchData.success && patchData.data && patchData.data.patches && patchData.data.patches.length > 0) {
       // Use the most recent patch (first in array as they're ordered by creation time DESC)
-      const latestPatch = patchData.patches[0];
+      const latestPatch = patchData.data.patches[0];
       
       // Also get the baseline code
       const baselineResponse = await fetch(`/api/patches/baseline/${encodeURIComponent(filePath)}`, {
@@ -214,8 +214,7 @@ const fetchAstDiffData = async (filePath) => {
         patch: latestPatch,
         baselineCode,
         modifiedCode,
-        astDiff: latestPatch.astDiff,
-        customization: patchData.customization
+        astDiff: latestPatch.ast_diff
       };
     } else {
       return {
