@@ -36,8 +36,6 @@ import Cart from "./Cart";
 
 import CmsBlocks from "./CmsBlocks";
 
-import PatchApplier from "@/components/storefront/PatchApplier";
-
 import Checkout from "./Checkout";
 
 import Tax from "./Tax";
@@ -443,11 +441,7 @@ function PagesContent() {
                 <Route path="/public/:storeCode/search/*" element={<Storefront />} />
                 
                 {/* Shopping and checkout */}
-                <Route path="/public/:storeCode/cart" element={
-                    <PatchApplier fileName="src/pages/Cart.jsx" storeId={new URLSearchParams(window.location.search).get('storeId')}>
-                        <Cart />
-                    </PatchApplier>
-                } />
+                <Route path="/public/:storeCode/cart" element={<Cart />} />
                 <Route path="/public/:storeCode/checkout" element={<Checkout />} />
                 <Route path="/public/:storeCode/checkout/*" element={<Checkout />} />
                 
