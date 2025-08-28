@@ -1664,74 +1664,86 @@ app.get('/preview/:storeId', async (req, res) => {
     const fs = require('fs');
     const path = require('path');
     
+    let htmlContent;
     try {
-      // Read the base HTML template
+      // Try to read the built HTML first (for local development)
       const htmlPath = path.join(__dirname, '../../dist/index.html');
-      let htmlContent = fs.readFileSync(htmlPath, 'utf8');
-      
-      // Inject patch information and preview script
-      const patchData = {
-        hasPatches: patchResult.hasPatches,
-        fileName,
-        pageName,
-        storeSlug: actualStoreSlug,
-        routePath: route.route_path,
-        patchedCode: patchResult.hasPatches ? patchResult.finalCode : null,
-        appliedPatches: patchResult.appliedPatches || [],
-        previewMode: true
-      };
-
-      const injectedScript = `
-        <script>
-          window.__CATALYST_PATCH_DATA__ = ${JSON.stringify(patchData)};
-          console.log('🔧 Patch data injected:', window.__CATALYST_PATCH_DATA__);
-        </script>
-      `;
-
-      // Inject before closing head tag
-      htmlContent = htmlContent.replace('</head>', `${injectedScript}</head>`);
-      
-      // Add patch status indicator
-      const patchIndicator = `
-        <div id="patch-indicator" style="
-          position: fixed;
-          top: 10px;
-          right: 10px;
-          z-index: 9999;
-          background: ${patchResult.hasPatches ? '#22c55e' : '#ef4444'};
-          color: white;
-          padding: 8px 12px;
-          border-radius: 6px;
-          font-size: 12px;
-          font-family: monospace;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        ">
-          🔧 Patches: ${patchResult.hasPatches ? `✅ ${patchResult.appliedPatches?.length || 0} Applied` : '❌ None Found'}
-        </div>
-      `;
-
-      // Inject indicator before closing body tag
-      htmlContent = htmlContent.replace('</body>', `${patchIndicator}</body>`);
-
-      console.log(`✅ Serving patched HTML for ${fileName} with ${patchResult.appliedPatches?.length || 0} patches`);
-      
-      // Set content type and cache headers
-      res.set({
-        'Content-Type': 'text/html',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      });
-      
-      return res.send(htmlContent);
-
-    } catch (fileError) {
-      console.error(`❌ Error reading HTML template: ${fileError.message}`);
-      return res.status(500).json({
-        error: 'Template read error',
-        message: fileError.message
-      });
+      htmlContent = fs.readFileSync(htmlPath, 'utf8');
+      console.log('📄 Using built HTML template');
+    } catch (readError) {
+      console.log('📄 Built HTML not found, using inline template');
+      // Fallback to inline HTML template (for production deployment)
+      htmlContent = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="https://www.suprshop.com/logo_v2.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Catalyst Preview</title>
+    <script type="module" crossorigin src="https://catalyst-pearl.vercel.app/assets/index-DIELze-b.js"></script>
+    <link rel="stylesheet" crossorigin href="https://catalyst-pearl.vercel.app/assets/index-CxahxoJ-.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>`;
     }
+      
+    // Inject patch information and preview script
+    const patchData = {
+      hasPatches: patchResult.hasPatches,
+      fileName,
+      pageName,
+      storeSlug: actualStoreSlug,
+      routePath: route.route_path,
+      patchedCode: patchResult.hasPatches ? patchResult.finalCode : null,
+      appliedPatches: patchResult.appliedPatches || [],
+      previewMode: true
+    };
+
+    const injectedScript = `
+      <script>
+        window.__CATALYST_PATCH_DATA__ = ${JSON.stringify(patchData)};
+        console.log('🔧 Patch data injected:', window.__CATALYST_PATCH_DATA__);
+      </script>
+    `;
+
+    // Inject before closing head tag
+    htmlContent = htmlContent.replace('</head>', `${injectedScript}</head>`);
+    
+    // Add patch status indicator
+    const patchIndicator = `
+      <div id="patch-indicator" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 9999;
+        background: ${patchResult.hasPatches ? '#22c55e' : '#ef4444'};
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-family: monospace;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      ">
+        🔧 Patches: ${patchResult.hasPatches ? `✅ ${patchResult.appliedPatches?.length || 0} Applied` : '❌ None Found'}
+      </div>
+    `;
+
+    // Inject indicator before closing body tag
+    htmlContent = htmlContent.replace('</body>', `${patchIndicator}</body>`);
+
+    console.log(`✅ Serving patched HTML for ${fileName} with ${patchResult.appliedPatches?.length || 0} patches`);
+    
+    // Set content type and cache headers
+    res.set({
+      'Content-Type': 'text/html',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+    
+    return res.send(htmlContent);
     
   } catch (error) {
     console.error('Preview route error:', error);
