@@ -60,14 +60,14 @@ const BrowserPreview = ({
           // Extract page name from file path (e.g., src/pages/Cart.jsx -> Cart)
           const pageName = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
           
-          // Use localhost backend preview endpoint for patch application
+          // Use Node.js backend for preview with patch support (works everywhere)
           const backendUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
           const patchesParam = enablePatches ? 'true' : 'false';
           
-          // Build preview URL using backend endpoint which handles patch application and redirects
+          // Build preview URL using Node.js backend preview endpoint
           const finalUrl = `${backendUrl}/preview/${storeId}?fileName=${encodeURIComponent(fileName)}&patches=${patchesParam}&storeSlug=${storeSlug}&pageName=${pageName}`;
           
-          console.log(`🔍 BrowserPreview: Localhost preview URL generation:`);
+          console.log(`🔍 BrowserPreview: Node.js backend preview URL generation:`);
           console.log(`  - storeId: ${storeId}`);
           console.log(`  - storeSlug: ${storeSlug}`);
           console.log(`  - fileName: ${fileName}`);
@@ -78,7 +78,7 @@ const BrowserPreview = ({
           console.log(`  - finalUrl: ${finalUrl}`);
           
           setPreviewUrl(finalUrl);
-          console.log(`🎯 Generated localhost backend preview URL: ${finalUrl}`);
+          console.log(`🎯 Generated Node.js backend preview URL: ${finalUrl}`);
           setError(null);
         } catch (error) {
           console.error('Error generating preview URL:', error);
@@ -139,7 +139,7 @@ const BrowserPreview = ({
   // Handle iframe load - no patch application needed, URL already contains patches
   const handleIframeLoad = useCallback(() => {
     setIsLoading(false);
-    console.log('🎯 Preview iframe loaded successfully with server-side patches');
+    console.log('🎯 Preview iframe loaded successfully via Node.js backend with patches');
   }, []);
 
   // Handle iframe error

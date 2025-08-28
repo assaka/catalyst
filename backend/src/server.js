@@ -1591,7 +1591,7 @@ app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage r
 app.get('/preview/:storeId', async (req, res) => {
   try {
     const { storeId } = req.params;
-    const { fileName, patches = 'true', storeSlug } = req.query;
+    const { fileName, patches = 'true', storeSlug, pageName: providedPageName } = req.query;
     
     console.log(`🎬 Preview route: ${fileName} for store ${storeId} with patches=${patches}`);
     
@@ -1614,9 +1614,9 @@ app.get('/preview/:storeId', async (req, res) => {
     const actualStoreSlug = storeSlug || store.slug || 'store';
     console.log(`🏪 Store slug: ${actualStoreSlug}`);
     
-    // Extract page name from file path (e.g., src/pages/Cart.jsx -> Cart)
-    const pageName = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
-    console.log(`🔍 Extracted page name: ${pageName}`);
+    // Use provided page name or extract from file path (e.g., src/pages/Cart.jsx -> Cart)
+    const pageName = providedPageName || fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
+    console.log(`🔍 Page name: ${pageName} ${providedPageName ? '(provided)' : '(extracted)'}`);
     
     // Use store routes to find the actual route for this page
     const StoreRoute = require('./models/StoreRoute');
@@ -1633,17 +1633,27 @@ app.get('/preview/:storeId', async (req, res) => {
     const route = routeResolution.route;
     console.log(`✅ Found route: ${route.route_name} -> ${route.route_path}`);
     
-    // Build the proper public URL
+    // Build the proper public URL with full domain
     // Remove leading slash from route path if it exists to avoid double slashes
     const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
-    const publicUrl = `/public/${actualStoreSlug}/${routePath}`;
     
-    // Add patches parameter if needed
-    const finalUrl = patches === 'true' ? `${publicUrl}?patches=${patches}` : publicUrl;
+    // Use the public store base URL from environment or default to Vercel deployment
+    const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+    const publicUrl = `${publicStoreBaseUrl}/public/${actualStoreSlug}/${routePath}`;
+    
+    // Add patches parameter and cache busting for fresh preview
+    let finalUrl;
+    if (patches === 'true') {
+      // Apply patches - include fileName in URL for patch service to identify what to patch
+      finalUrl = `${publicUrl}?patches=${patches}&fileName=${encodeURIComponent(fileName)}&_t=${Date.now()}`;
+    } else {
+      // No patches - serve original content with cache busting
+      finalUrl = `${publicUrl}?_t=${Date.now()}`;
+    }
     
     console.log(`🎯 Redirecting to public URL: ${finalUrl}`);
     
-    // Redirect to the proper public store URL
+    // Redirect to the proper public store URL with patch support
     return res.redirect(302, finalUrl);
     
   } catch (error) {
