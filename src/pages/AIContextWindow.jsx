@@ -914,6 +914,15 @@ export default ExampleComponent;`;
               </>
             )}
           </button>
+          
+          {/* Version History in Header */}
+          {selectedFile?.path && (
+            <VersionHistory 
+              filePath={selectedFile.path}
+              onRollback={handleRollback}
+              className="inline-block"
+            />
+          )}
         </div>
         
         {selectedFile && (
@@ -1133,14 +1142,6 @@ export default ExampleComponent;`;
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
-
-      {/* Version History */}
-      {selectedFile?.path && (
-        <VersionHistory 
-          filePath={selectedFile.path}
-          onRollback={handleRollback}
-        />
-      )}
 
       {/* Status Bar */}
       <div className="p-2 border-t bg-white dark:bg-gray-800 flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
