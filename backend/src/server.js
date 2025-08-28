@@ -23,6 +23,9 @@ console.log('🔧 Models loaded with associations initialized');
 require('./database/auto-migrations');
 console.log('🔄 Automatic migrations scheduled');
 
+// Import services
+const patchService = require('./services/patch-service');
+
 // Import routes
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -1582,6 +1585,194 @@ app.use('/api/patches', patchesRoutes); // Versioned patches API with A/B testin
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
+
+// Preview route for serving patched content (used by BrowserPreview iframe)
+// Uses store_routes to map fileName to actual routes
+app.get('/preview/:storeId', async (req, res) => {
+  try {
+    const { storeId } = req.params;
+    const { fileName, patches = 'true' } = req.query;
+    
+    console.log(`🎬 Preview route: ${fileName} for store ${storeId} with patches=${patches}`);
+    
+    if (!fileName) {
+      return res.status(400).json({ error: 'fileName query parameter is required' });
+    }
+    
+    // Extract page name from file path (e.g., src/pages/Cart.jsx -> Cart)
+    const pageName = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
+    console.log(`🔍 Extracted page name: ${pageName}`);
+    
+    // Use store routes to find the actual route for this page
+    const StoreRoute = require('./models/StoreRoute');
+    const routeResolution = await StoreRoute.resolveByPageName(storeId, pageName);
+    
+    if (!routeResolution.found) {
+      return res.status(404).json({ 
+        error: 'Route not found', 
+        pageName,
+        message: `No route mapping found for page "${pageName}"` 
+      });
+    }
+    
+    const route = routeResolution.route;
+    console.log(`✅ Found route: ${route.route_name} -> ${route.route_path}`);
+    
+    if (patches === 'true') {
+      // Apply patches and serve modified content
+      const result = await patchService.applyPatches(fileName, {
+        storeId,
+        previewMode: true
+      });
+      
+      if (result.success && result.hasPatches) {
+        // Serve the patched content with route information
+        res.set('Content-Type', 'text/html');
+        res.set({
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        });
+        
+        // Create a basic HTML wrapper for the patched content
+        const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview: ${route.route_name} (${fileName})</title>
+  <style>
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      padding: 20px; 
+      background: #f5f5f5; 
+    }
+    .preview-container { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    }
+    .preview-header {
+      background: #e3f2fd;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #1976d2;
+    }
+    .route-info {
+      background: #f3e5f5;
+      padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #7b1fa2;
+    }
+    pre { 
+      background: #f8f9fa; 
+      padding: 16px; 
+      border-radius: 4px; 
+      overflow-x: auto; 
+      border-left: 4px solid #007acc; 
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="preview-header">
+      📝 Previewing: ${fileName} (with ${result.appliedPatches.length} patches applied)
+    </div>
+    <div class="route-info">
+      🔗 Route: ${route.route_name} (${route.route_path}) | Match: ${routeResolution.matchType}
+    </div>
+    <pre><code>${result.patchedCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+  </div>
+</body>
+</html>`;
+        
+        return res.send(htmlContent);
+      }
+    }
+    
+    // Fallback to original content
+    const result = await patchService.applyPatches(fileName, {
+      storeId,
+      previewMode: true
+    });
+    
+    if (result.success) {
+      res.set('Content-Type', 'text/html');
+      const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview: ${route.route_name} (${fileName})</title>
+  <style>
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      padding: 20px; 
+      background: #f5f5f5; 
+    }
+    .preview-container { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+    }
+    .preview-header {
+      background: #fff3e0;
+      padding: 10px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      color: #f57c00;
+    }
+    .route-info {
+      background: #f3e5f5;
+      padding: 8px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      color: #7b1fa2;
+    }
+    pre { 
+      background: #f8f9fa; 
+      padding: 16px; 
+      border-radius: 4px; 
+      overflow-x: auto; 
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-container">
+    <div class="preview-header">
+      📝 Previewing: ${fileName} (original version - no patches available)
+    </div>
+    <div class="route-info">
+      🔗 Route: ${route.route_name} (${route.route_path}) | Match: ${routeResolution.matchType}
+    </div>
+    <pre><code>${result.baselineCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>
+  </div>
+</body>
+</html>`;
+      
+      return res.send(htmlContent);
+    } else {
+      return res.status(404).json({ error: 'File not found', fileName });
+    }
+    
+  } catch (error) {
+    console.error('Preview route error:', error);
+    res.status(500).json({ 
+      error: 'Preview failed', 
+      message: error.message 
+    });
+  }
+});
 
 // 404 handler
 app.use('*', (req, res) => {

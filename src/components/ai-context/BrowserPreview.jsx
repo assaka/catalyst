@@ -1,9 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Eye, EyeOff, RefreshCw, ExternalLink, Globe, Monitor, Smartphone, Tablet, Code } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
-import { getStoreSlugFromPublicUrl, createPublicUrl } from '@/utils/urlUtils';
-import { detectComponentName, resolvePageNameToRoute } from '@/utils/componentNameDetection';
 import apiClient from '@/api/client';
 
 /**
@@ -24,13 +22,10 @@ const BrowserPreview = ({
   const [enablePatches, setEnablePatches] = useState(true); // Single toggle: patches on/off
   const [patchData, setPatchData] = useState({ hasPatches: false });
 
-  // Server-side patch system - no client-side code merging needed
-  const applyCodePatchesRef = useRef(null);
 
   // Get store context for API calls
   const { selectedStore } = useStoreSelection();
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
-  const storeSlug = selectedStore?.slug || selectedStore?.name?.toLowerCase().replace(/\s+/g, '-');
   
   // Create API config with store headers
   const getApiConfig = useCallback(() => {
@@ -44,220 +39,52 @@ const BrowserPreview = ({
 
 
 
-  // Detect route from page files only
-  const detectRouteFromFile = useCallback(async (filePath, fileContent = '') => {
-    try {
-      if (!filePath) {
-        console.log(`❌ No file path provided`);
-        return null;
-      }
 
-      // Get current store slug with fallback
-      const currentStoreSlug = storeSlug || 
-                             getStoreSlugFromPublicUrl(window.location.pathname) ||
-                             'amazing-store';
-
-      console.log(`🔍 Detecting route for file: ${filePath}`);
-      console.log(`🏪 Current store slug: "${currentStoreSlug}"`);
-
-      // Only process page files (located in /src/pages/)
-      const isPageFile = filePath.includes('/pages/') || filePath.includes('\\pages\\');
-      console.log(`📑 Is page file: ${isPageFile}`);
-
-      if (!isPageFile) {
-        console.log(`⚠️ Not a page file - preview only works for page files`);
-        return null;
-      }
-
-      const fileName = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
-      // Handle Windows paths
-      const finalFileName = fileName.split('\\').pop() || fileName;
-      console.log(`📄 Page file name: "${finalFileName}"`);
-      
-      // Use page name resolution API to get route from store_routes table
-      const detectedPageName = detectComponentName(filePath, fileContent);
-      const pageName = detectedPageName || finalFileName;
-      
-      console.log(`🔍 Resolving page "${pageName}" using store_routes table`);
-      const apiConfig = getApiConfig();
-      const resolution = await resolvePageNameToRoute(pageName, apiConfig);
-      
-      if (resolution.found && resolution.route) {
-        console.log(`🎯 Database route resolution: "${pageName}" -> "${resolution.route.route_path}" (${resolution.matchType})`);
-        return resolution.route.route_path;
-      } else {
-        console.warn(`⚠️ Could not resolve page name "${pageName}" to route:`, resolution.error);
-      }
-
-      console.log(`⚠️ No route found in store_routes table for page "${pageName}"`);
-      return null;
-    
-    } catch (error) {
-      console.error(`🚨 Error in detectRouteFromFile:`, error);
-      return null;
-    }
-  }, [storeSlug]);
-
-  // State for detected route and page name
-  const [detectedRoute, setDetectedRoute] = useState(null);
-  const [detectedPageName, setDetectedPageName] = useState(null);
-  const [routeLoading, setRouteLoading] = useState(false);
-
-  // Detect route for page files only
-  useEffect(() => {
-    let isCancelled = false;
-    
-    const resolveRoute = async () => {
-      if (!fileName) {
-        setDetectedRoute(null);
-        setDetectedPageName(null);
-        return;
-      }
-
-      // Check if this is a page file first
-      const isPageFile = fileName.includes('/pages/') || fileName.includes('\\pages\\');
-      
-      if (!isPageFile) {
-        setDetectedRoute(null);
-        setDetectedPageName(null);
-        setError('Preview only works for page files (located in /src/pages/)');
-        return;
-      }
-
-      setRouteLoading(true);
-      setError(null);
-      
-      try {
-        // Detect page name from file path
-        const fileNameOnly = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
-        const finalFileName = fileNameOnly.split('\\').pop() || fileNameOnly;
-        
-        if (!isCancelled) {
-          setDetectedPageName(finalFileName);
-        }
-        
-        // Resolve route for page file
-        const route = await detectRouteFromFile(fileName, currentCode);
-        if (!isCancelled) {
-          if (route) {
-            setDetectedRoute(route);
-          } else {
-            setError(`No route mapping found for page "${finalFileName}"`);
-            setDetectedRoute(null);
-          }
-        }
-      } catch (error) {
-        if (!isCancelled) {
-          console.error('Route detection failed:', error);
-          setError('Failed to detect route for page file');
-          setDetectedRoute(null);
-          setDetectedPageName(null);
-        }
-      } finally {
-        if (!isCancelled) {
-          setRouteLoading(false);
-        }
-      }
-    };
-
-    resolveRoute();
-    
-    return () => {
-      isCancelled = true;
-    };
-  }, [fileName, currentCode, detectRouteFromFile]);
-
-  // Convert route path to page name for proper URL construction
-  const convertRouteToPageName = useCallback((routePath) => {
-    if (!routePath) return null;
-    
-    // Map common route paths to page names for createPublicUrl
-    const routeToPageMap = {
-      '/': 'STOREFRONT',
-      '/cart': 'CART',
-      '/checkout': 'CHECKOUT',
-      '/shop': 'SHOP',
-      '/search': 'SEARCH',
-      '/login': 'CUSTOMER_AUTH',
-      '/register': 'CUSTOMER_REGISTER',
-      '/account': 'CUSTOMER_DASHBOARD',
-      '/my-account': 'MY_ACCOUNT',
-      '/orders': 'CUSTOMER_ORDERS',
-      '/my-orders': 'MY_ORDERS',
-      '/profile': 'CUSTOMER_PROFILE'
-    };
-    
-    // Check direct mapping first
-    if (routeToPageMap[routePath]) {
-      return routeToPageMap[routePath];
-    }
-    
-    // Handle product detail routes like /product/:slug
-    if (routePath.startsWith('/product/')) {
-      return 'PRODUCT_DETAIL';
-    }
-    
-    // Handle category routes like /category/:slug
-    if (routePath.startsWith('/category/')) {
-      return 'CATEGORY';
-    }
-    
-    // Handle brand routes like /brand/:slug
-    if (routePath.startsWith('/brand/')) {
-      return 'BRAND';
-    }
-    
-    // For unmapped routes, try to extract the page name from the path
-    const pathParts = routePath.split('/').filter(Boolean);
-    if (pathParts.length > 0) {
-      return pathParts[0].toUpperCase().replace(/-/g, '_');
-    }
-    
-    return null;
+  // Simple page name detection for display purposes only
+  const getPageNameFromFile = useCallback((filePath) => {
+    if (!filePath) return null;
+    const fileNameOnly = filePath.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
+    return fileNameOnly.split('\\').pop() || fileNameOnly;
   }, []);
 
-  // Update preview URL when route changes
+  // Update preview URL - use new server-side preview route that applies patches before serving
   useEffect(() => {
-    if (detectedRoute && storeSlug) {
-      try {
-        const pageName = convertRouteToPageName(detectedRoute);
-        
-        if (pageName) {
-          // Use createPublicUrl to generate proper /public/:store_code/page format
-          const properUrl = createPublicUrl(storeSlug, pageName);
+    const generatePreviewUrl = async () => {
+      if (fileName && storeId) {
+        try {
           const baseUrl = window.location.origin;
-          const fullPreviewUrl = `${baseUrl}${properUrl}`;
           
-          console.log(`🔍 BrowserPreview: URL generation details:`);
-          console.log(`  - storeSlug: ${storeSlug}`);
-          console.log(`  - pageName: ${pageName}`);
-          console.log(`  - detectedRoute: ${detectedRoute}`);
+          // Use the new server-side preview route that handles route resolution and patch application
+          const previewUrl = new URL(`${baseUrl}/preview/${storeId}`);
+          previewUrl.searchParams.set('fileName', fileName);
+          previewUrl.searchParams.set('patches', enablePatches.toString());
+          
+          const finalUrl = previewUrl.toString();
+          
+          console.log(`🔍 BrowserPreview: Server-side preview URL generation:`);
+          console.log(`  - storeId: ${storeId}`);
           console.log(`  - fileName: ${fileName}`);
-          console.log(`  - properUrl: ${properUrl}`);
-          console.log(`  - baseUrl: ${baseUrl}`);
-          console.log(`  - fullPreviewUrl: ${fullPreviewUrl}`);
+          console.log(`  - enablePatches: ${enablePatches}`);
+          console.log(`  - finalUrl: ${finalUrl}`);
           
-          setPreviewUrl(fullPreviewUrl);
-          console.log(`🎯 Generated preview URL: ${fullPreviewUrl} (route: ${detectedRoute} -> page: ${pageName})`);
+          setPreviewUrl(finalUrl);
+          console.log(`🎯 Generated server-side preview URL: ${finalUrl}`);
           setError(null);
-        } else {
-          // Fallback to direct URL construction if no page mapping found
-          const baseUrl = window.location.origin;
-          const fallbackUrl = `/public/${storeSlug}${detectedRoute}`;
-          setPreviewUrl(`${baseUrl}${fallbackUrl}`);
-          console.log(`⚠️ Using fallback URL construction: ${baseUrl}${fallbackUrl}`);
-          setError(null);
+        } catch (error) {
+          console.error('Error generating preview URL:', error);
+          setPreviewUrl(null);
+          setError('Failed to generate preview URL');
         }
-      } catch (error) {
-        console.error('Error generating preview URL:', error);
+      } else {
         setPreviewUrl(null);
-        setError('Failed to generate preview URL');
+        if (!fileName) {
+          setError('No file selected for preview');
+        }
       }
-    } else if (!routeLoading) {
-      setPreviewUrl(null);
-      setError('Could not determine preview route for this file');
-    }
-  }, [detectedRoute, routeLoading, storeSlug, convertRouteToPageName]);
+    };
+
+    generatePreviewUrl();
+  }, [fileName, enablePatches, storeId]);
 
   // Device view dimensions
   const deviceDimensions = {
@@ -292,74 +119,11 @@ const BrowserPreview = ({
     }
   }, [storeId]);
 
-  // Simple patch application - single mode toggle
-  const applyCodePatches = useCallback(async (iframe) => {
-    if (!fileName) return;
-    
-    try {
-      const patchStatus = await checkPatchStatus(fileName);
-      const currentUrl = iframe.src || previewUrl;
-      
-      if (currentUrl) {
-        const url = new URL(currentUrl);
-        
-        if (enablePatches && patchStatus.hasPatches) {
-          // Show patches: set patch_mode to merged
-          url.searchParams.set('patch_mode', 'merged');
-          url.searchParams.set('patch_file', fileName);
-          url.searchParams.set('store_id', storeId);
-        } else {
-          // Don't show patches: remove patch parameters
-          url.searchParams.delete('patch_mode');
-          url.searchParams.delete('patch_file');
-          url.searchParams.delete('store_id');
-        }
-        
-        iframe.src = url.toString();
-      }
-    } catch (error) {
-      console.error('Error applying patches:', error);
-    }
-  }, [fileName, enablePatches, checkPatchStatus, previewUrl, storeId]);
-
-  // Assign function to ref to break circular dependencies
-  useEffect(() => {
-    applyCodePatchesRef.current = applyCodePatches;
-  }, [applyCodePatches]);
-
-  // Trigger patch reapplication when enablePatches changes
-  useEffect(() => {
-    const iframe = document.getElementById('browser-preview-iframe');
-    if (iframe && applyCodePatchesRef.current) {
-      setTimeout(() => {
-        if (applyCodePatchesRef.current) {
-          applyCodePatchesRef.current(iframe);
-        }
-      }, 100);
-    }
-  }, [enablePatches]);
-
-  // Handle iframe load
-  const handleIframeLoad = useCallback(async () => {
+  // Handle iframe load - no patch application needed, URL already contains patches
+  const handleIframeLoad = useCallback(() => {
     setIsLoading(false);
-    
-    const iframe = document.getElementById('browser-preview-iframe');
-    if (iframe && applyCodePatchesRef.current) {
-      setTimeout(() => {
-        if (applyCodePatchesRef.current) {
-          applyCodePatchesRef.current(iframe);
-        }
-      }, 100);
-    }
+    console.log('🎯 Preview iframe loaded successfully with server-side patches');
   }, []);
-
-  // Watch for currentCode changes and reapply patches
-  useEffect(() => {
-    const iframe = document.getElementById('browser-preview-iframe');
-    if (iframe && !isLoading && applyCodePatchesRef.current) {
-      applyCodePatchesRef.current(iframe);
-    }
-  }, [currentCode, isLoading]);
 
   // Handle iframe error
   const handleIframeError = useCallback(() => {
@@ -393,19 +157,12 @@ const BrowserPreview = ({
     return (
       <div className={cn("h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900", className)}>
         <div className="text-center text-gray-500 dark:text-gray-400">
-          <Globe className={cn("w-8 h-8 mx-auto mb-2 opacity-50", routeLoading && "animate-pulse")} />
-          <p className="text-sm">
-            {routeLoading ? 'Resolving route from database...' : 'Detecting preview route...'}
-          </p>
+          <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">Generating preview URL...</p>
           <p className="text-xs mt-1">Analyzing file path: {fileName}</p>
-          {detectedPageName && (
+          {getPageNameFromFile(fileName) && (
             <p className="text-xs mt-1 text-blue-500 dark:text-blue-400">
-              📝 Detected page: "{detectedPageName}"
-            </p>
-          )}
-          {routeLoading && (
-            <p className="text-xs mt-1 text-blue-500 dark:text-blue-400">
-              🔄 Querying store routes API
+              📝 Page: "{getPageNameFromFile(fileName)}"
             </p>
           )}
         </div>
@@ -420,16 +177,13 @@ const BrowserPreview = ({
           <Globe className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm font-medium">{error}</p>
           <p className="text-xs mt-2 text-gray-500">File: {fileName}</p>
-          {detectedPageName && (
+          {getPageNameFromFile(fileName) && (
             <p className="text-xs mt-1 text-gray-500">
-              Detected page: "{detectedPageName}" (no route found)
+              Page: "{getPageNameFromFile(fileName)}"
             </p>
           )}
-          {detectedRoute && (
-            <p className="text-xs mt-1 text-gray-500">Attempted route: {detectedRoute}</p>
-          )}
           <p className="text-xs mt-2 text-gray-400">
-            💡 Try creating a route for "{detectedPageName || 'this page'}" in your store routes
+            💡 Try creating a route for "{getPageNameFromFile(fileName) || 'this page'}" in your store routes
           </p>
         </div>
       </div>
@@ -460,47 +214,50 @@ const BrowserPreview = ({
 
             {/* Browser Actions */}
             <div className="flex items-center space-x-2">
-              {/* Simple Patch Toggle */}
-              <button
-                onClick={() => setEnablePatches(!enablePatches)}
-                className={cn(
-                  "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
-                  enablePatches 
-                    ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300" 
-                    : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
-                )}
-                title={enablePatches 
-                  ? "Currently showing patches applied. Click to show without patches." 
-                  : "Currently showing without patches. Click to show with patches applied."
-                }
-              >
-                <Code className="w-3 h-3 mr-1 inline" />
-                {enablePatches ? "With Patches" : "Without Patches"}
-              </button>
-              
-              <button
-                onClick={refreshPreview}
-                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                title="Refresh preview"
-              >
-                <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-              </button>
-              
-              <button
-                onClick={openInNewTab}
-                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                title="Open in new tab"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </button>
+              {/* Patch Status Indicator */}
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setEnablePatches(!enablePatches)}
+                  className={cn(
+                    "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
+                    patchData.hasPatches && enablePatches
+                      ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300"
+                      : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                  )}
+                  title={patchData.hasPatches
+                    ? (enablePatches
+                        ? "Patches would be applied in production. Click to preview without patches."
+                        : "Click to preview with patches applied.")
+                    : "No patches available for this file"
+                  }
+                >
+                  <Code className="w-3 h-3 mr-1 inline" />
+                  {enablePatches ? "With Patches" : "Without Patches"}
+                </button>
 
-              <button
-                onClick={() => setShowBrowserChrome(false)}
-                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                title="Hide browser chrome"
-              >
-                <EyeOff className="w-4 h-4" />
-              </button>
+                <button
+                  onClick={refreshPreview}
+                  className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  title="Refresh preview"
+                >
+                  <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+                </button>
+
+                <button
+                  onClick={openInNewTab}
+                  className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  title="Open in new tab"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => setShowBrowserChrome(false)}
+                  className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  title="Hide browser chrome"
+                >
+                  <EyeOff className="w-4 h-4" />
+                </button>
             </div>
           </div>
 
@@ -510,34 +267,34 @@ const BrowserPreview = ({
               onClick={() => setDeviceView('desktop')}
               className={cn(
                 "p-1 rounded text-xs",
-                deviceView === 'desktop' 
-                  ? "bg-blue-500 text-white" 
+                deviceView === 'desktop'
+                  ? "bg-blue-500 text-white"
                   : "bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500"
               )}
               title="Desktop view"
             >
               <Monitor className="w-4 h-4" />
             </button>
-            
+
             <button
               onClick={() => setDeviceView('tablet')}
               className={cn(
                 "p-1 rounded text-xs",
-                deviceView === 'tablet' 
-                  ? "bg-blue-500 text-white" 
+                deviceView === 'tablet'
+                  ? "bg-blue-500 text-white"
                   : "bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500"
               )}
               title="Tablet view"
             >
               <Tablet className="w-4 h-4" />
             </button>
-            
+
             <button
               onClick={() => setDeviceView('mobile')}
               className={cn(
                 "p-1 rounded text-xs",
-                deviceView === 'mobile' 
-                  ? "bg-blue-500 text-white" 
+                deviceView === 'mobile'
+                  ? "bg-blue-500 text-white"
                   : "bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-400 dark:hover:bg-gray-500"
               )}
               title="Mobile view"
@@ -545,6 +302,7 @@ const BrowserPreview = ({
               <Smartphone className="w-4 h-4" />
             </button>
           </div>
+        </div>
         </div>
       )}
 
@@ -572,7 +330,7 @@ const BrowserPreview = ({
           </div>
         )}
 
-        <div 
+        <div
           className="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 shadow-lg transition-all duration-300"
           style={{
             width: currentDimensions.width,
@@ -598,11 +356,11 @@ const BrowserPreview = ({
         <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <div className="flex items-center space-x-4">
             <span>🌐 Live Preview</span>
-            {detectedPageName && (
-              <span>Page: {detectedPageName}</span>
+            {getPageNameFromFile(fileName) && (
+              <span>Page: {getPageNameFromFile(fileName)}</span>
             )}
-            <span>Route: {detectedRoute}</span>
             <span>Device: {deviceView}</span>
+            <span>Patches: {enablePatches ? 'On' : 'Off'}</span>
           </div>
           <div className="text-xs">
             File: {fileName.split('/').pop()}
