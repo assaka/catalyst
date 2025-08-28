@@ -130,9 +130,9 @@ const AIContextWindowPage = () => {
     };
   }, []);
 
-  // Publish open diffs to patch_releases
+  // Publish open diffs to patch_releases (Global - publishes all modified files)
   const publishDiffs = useCallback(async () => {
-    if (!selectedFile?.path || !isAuthenticated) return;
+    if (modifiedFiles.length === 0 || !isAuthenticated) return;
 
     setIsPublishing(true);
     setPublishSuccess(null);
@@ -154,9 +154,9 @@ const AIContextWindowPage = () => {
           'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
         },
         body: JSON.stringify({
-          versionName: `AI-generated-v${Date.now()}`,
+          versionName: `Global-changes-v${Date.now()}`,
           releaseType: 'minor',
-          description: `AI-generated changes for ${selectedFile.path.split('/').pop()}`
+          description: `Global changes across ${modifiedFiles.length} file${modifiedFiles.length !== 1 ? 's' : ''}: ${modifiedFiles.map(f => f.split('/').pop()).join(', ')}`
         })
       });
 
@@ -171,28 +171,40 @@ const AIContextWindowPage = () => {
 
       const releaseId = releaseData.data.releaseId;
 
-      // Update open diffs with the release_id and set status to final/published
-      const finalizeResponse = await fetch('/api/patches/finalize-diffs', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-          'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
-        },
-        body: JSON.stringify({
-          filePath: selectedFile.path,
-          releaseId,
-          changeSummary: 'AI-generated changes'
-        })
+      // Update open diffs with the release_id and set status to final/published for all modified files
+      const finalizePromises = modifiedFiles.map(async (filePath) => {
+        const finalizeResponse = await fetch('/api/patches/finalize-diffs', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+            'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
+          },
+          body: JSON.stringify({
+            filePath,
+            releaseId,
+            changeSummary: `Global publish - changes in ${filePath.split('/').pop()}`
+          })
+        });
+
+        if (!finalizeResponse.ok) {
+          throw new Error(`Failed to finalize changes for ${filePath}`);
+        }
+
+        const finalizeData = await finalizeResponse.json();
+        if (!finalizeData.success) {
+          throw new Error(finalizeData.error || `Failed to finalize changes for ${filePath}`);
+        }
+        
+        return finalizeData;
       });
 
-      if (!finalizeResponse.ok) {
-        throw new Error('Failed to finalize changes');
-      }
-
-      const finalizeData = await finalizeResponse.json();
-      if (!finalizeData.success) {
-        throw new Error(finalizeData.error || 'Failed to finalize changes');
+      const finalizeResults = await Promise.all(finalizePromises);
+      
+      // Check if all finalize operations succeeded
+      const failedFinalizes = finalizeResults.filter(result => !result.success);
+      if (failedFinalizes.length > 0) {
+        throw new Error(`Failed to finalize ${failedFinalizes.length} file(s): ${failedFinalizes.map(f => f.error).join(', ')}`);
       }
 
       // Publish the release
@@ -216,7 +228,8 @@ const AIContextWindowPage = () => {
       setPublishSuccess({
         releaseId,
         versionName: releaseData.data.versionName,
-        publishedAt: publishData.data.publishedAt
+        publishedAt: publishData.data.publishedAt,
+        filesCount: modifiedFiles.length
       });
 
       // Auto-clear success message after 5 seconds
@@ -229,7 +242,7 @@ const AIContextWindowPage = () => {
     } finally {
       setIsPublishing(false);
     }
-  }, [selectedFile?.path, isAuthenticated]);
+  }, [modifiedFiles, isAuthenticated]);
 
   // Handle successful rollback from version history
   const handleRollback = useCallback((rollbackData) => {
@@ -825,6 +838,9 @@ export default ExampleComponent;`;
               </div>
               <div className="text-xs mt-1">
                 Version {publishSuccess.versionName} at {new Date(publishSuccess.publishedAt).toLocaleTimeString()}
+                {publishSuccess.filesCount && publishSuccess.filesCount > 1 && (
+                  <span className="ml-1">• {publishSuccess.filesCount} files</span>
+                )}
               </div>
             </div>
           )}
@@ -897,13 +913,13 @@ export default ExampleComponent;`;
           
           <button
             onClick={publishDiffs}
-            disabled={!isAuthenticated || isPublishing || !selectedFile?.path || (!modifiedFiles.includes(selectedFile?.path) && !publishSuccess)}
+            disabled={!isAuthenticated || isPublishing || (modifiedFiles.length === 0 && !publishSuccess)}
             className={cn(
               "px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1",
               "bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed",
               "text-white disabled:text-gray-500"
             )}
-            title="Publish changes to version history"
+            title={`Publish all changes (${modifiedFiles.length} modified file${modifiedFiles.length !== 1 ? 's' : ''}) to version history`}
           >
             {isPublishing ? (
               <RefreshCw className="w-3 h-3 animate-spin" />

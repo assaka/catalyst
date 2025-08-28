@@ -17,21 +17,64 @@ const PatchApplier = ({
   const patchesEnabled = searchParams.get('patches') === 'true';
 
   useEffect(() => {
-    // Check if we have patch data injected from the backend
-    const injectedPatchData = window.__CATALYST_PATCH_DATA__;
-    
-    if (patchesEnabled && injectedPatchData) {
-      console.log(`🔧 PatchApplier: Using injected patch data for ${fileName}:`, injectedPatchData);
-      setPatchData(injectedPatchData);
-    } else if (patchesEnabled) {
-      console.log(`⚠️ PatchApplier: Patches enabled but no injected data found for ${fileName}`);
-      // Fallback - this shouldn't happen with server-side rendering
-    } else {
-      console.log(`📄 PatchApplier: No patches enabled for ${fileName}`);
-    }
-    
-    setLoading(false);
-  }, [patchesEnabled, fileName]);
+    const fetchPatchData = async () => {
+      if (!patchesEnabled) {
+        console.log(`📄 PatchApplier: No patches enabled for ${fileName}`);
+        setLoading(false);
+        return;
+      }
+
+      // Check if we have patch data injected from the backend (legacy support)
+      const injectedPatchData = window.__CATALYST_PATCH_DATA__;
+      
+      if (injectedPatchData) {
+        console.log(`🔧 PatchApplier: Using injected patch data for ${fileName}:`, injectedPatchData);
+        setPatchData(injectedPatchData);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch patch data from backend API
+      console.log(`🔍 PatchApplier: Fetching patch data for ${fileName} from backend...`);
+      
+      try {
+        const backendUrl = process.env.REACT_APP_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
+        const params = new URLSearchParams(searchParams);
+        
+        // Use the patch-service endpoint to get applied patches
+        const response = await fetch(`${backendUrl}/api/patch-service/apply-patches?fileName=${encodeURIComponent(fileName)}&storeId=${storeId}&previewMode=true`);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const patchResult = await response.json();
+        
+        if (patchResult.success) {
+          const patchData = {
+            hasPatches: patchResult.hasPatches,
+            fileName,
+            appliedPatches: patchResult.appliedPatches || [],
+            finalCode: patchResult.finalCode,
+            previewMode: true
+          };
+          
+          console.log(`✅ PatchApplier: Retrieved patch data for ${fileName}:`, patchData);
+          setPatchData(patchData);
+        } else {
+          console.error(`❌ PatchApplier: Failed to get patch data: ${patchResult.error}`);
+          setPatchData({ hasPatches: false, fileName, appliedPatches: [] });
+        }
+      } catch (error) {
+        console.error(`❌ PatchApplier: Error fetching patch data for ${fileName}:`, error);
+        setPatchData({ hasPatches: false, fileName, appliedPatches: [], error: error.message });
+      }
+      
+      setLoading(false);
+    };
+
+    fetchPatchData();
+  }, [patchesEnabled, fileName, storeId, searchParams]);
 
   // Show loading state while patches are being processed
   if (loading && patchesEnabled) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Clock, RotateCcw, RefreshCw, AlertCircle, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import apiClient from '@/api/client';
@@ -13,6 +13,7 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
   const [error, setError] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [rollingBackId, setRollingBackId] = useState(null);
+  const dropdownRef = useRef(null);
 
   // Load version history
   const loadVersionHistory = async () => {
@@ -107,6 +108,20 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
     }
   }, [filePath, isExpanded]);
 
+  // Handle click outside to close dropdown in header mode
+  useEffect(() => {
+    if (!isExpanded || !isHeaderMode) return;
+
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsExpanded(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isExpanded, isHeaderMode]);
+
   // Format date for display
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -132,76 +147,131 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
     }
   };
 
+  // Check if this is being used inline in header
+  const isHeaderMode = className?.includes('inline-block');
+
   return (
-    <div className={cn("border-t bg-gray-50 dark:bg-gray-800", className)}>
-      {/* Header */}
+    <div 
+      ref={dropdownRef}
+      className={cn(
+        isHeaderMode 
+          ? "relative" 
+          : "border-t bg-gray-50 dark:bg-gray-800", 
+        className
+      )}
+    >
+      {/* Header - Compact for header mode */}
       <div 
-        className="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+        className={cn(
+          "flex items-center cursor-pointer",
+          isHeaderMode 
+            ? "gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            : "justify-between p-3 hover:bg-gray-100 dark:hover:bg-gray-700"
+        )}
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center gap-2">
-          <Clock className="w-4 h-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Version History
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3 text-gray-500" />
+          <span className={cn(
+            "font-medium text-gray-700 dark:text-gray-300",
+            isHeaderMode ? "text-xs" : "text-sm"
+          )}>
+            {isHeaderMode ? "History" : "Version History"}
           </span>
           {releases.length > 0 && (
-            <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-600 px-2 py-0.5 rounded-full">
-              {releases.length} version{releases.length !== 1 ? 's' : ''}
+            <span className={cn(
+              "text-gray-500 bg-gray-200 dark:bg-gray-600 rounded-full",
+              isHeaderMode ? "text-xs px-1 py-0.5" : "text-xs px-2 py-0.5"
+            )}>
+              {releases.length}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              loadVersionHistory();
-            }}
-            disabled={isLoading}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            title="Refresh version history"
-          >
-            <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
-          </button>
-          {isExpanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-500" />
-          ) : (
-            <ChevronDown className="w-4 h-4 text-gray-500" />
-          )}
-        </div>
+        {!isHeaderMode && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                loadVersionHistory();
+              }}
+              disabled={isLoading}
+              className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              title="Refresh version history"
+            >
+              <RefreshCw className={cn("w-4 h-4", isLoading && "animate-spin")} />
+            </button>
+            {isExpanded ? (
+              <ChevronUp className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            )}
+          </div>
+        )}
+        {isHeaderMode && (
+          <ChevronDown className={cn("w-3 h-3 text-gray-500 transition-transform", isExpanded && "rotate-180")} />
+        )}
       </div>
 
-      {/* Content */}
+      {/* Content - Dropdown for header mode, inline for regular mode */}
       {isExpanded && (
-        <div className="border-t">
+        <div className={cn(
+          isHeaderMode 
+            ? "absolute top-full left-0 mt-1 min-w-[320px] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-50"
+            : "border-t"
+        )}>
           {/* Error Display */}
           {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border-b">
+            <div className={cn(
+              "bg-red-50 dark:bg-red-900/20 border-b",
+              isHeaderMode ? "p-2 rounded-t-md" : "p-3"
+            )}>
               <div className="flex items-center">
                 <AlertCircle className="w-4 h-4 text-red-500 mr-2" />
-                <span className="text-sm text-red-700 dark:text-red-400">{error}</span>
+                <span className={cn(
+                  "text-red-700 dark:text-red-400",
+                  isHeaderMode ? "text-xs" : "text-sm"
+                )}>{error}</span>
               </div>
             </div>
           )}
 
           {/* Loading State */}
           {isLoading && !error && (
-            <div className="p-6 text-center">
-              <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-500">Loading version history...</p>
+            <div className={cn(
+              "text-center",
+              isHeaderMode ? "p-4" : "p-6"
+            )}>
+              <RefreshCw className={cn(
+                "animate-spin mx-auto mb-2 text-gray-400",
+                isHeaderMode ? "w-4 h-4" : "w-6 h-6"
+              )} />
+              <p className={cn(
+                "text-gray-500",
+                isHeaderMode ? "text-xs" : "text-sm"
+              )}>Loading version history...</p>
             </div>
           )}
 
           {/* Version List */}
           {!isLoading && !error && (
-            <div className="max-h-64 overflow-auto">
+            <div className={cn(
+              "overflow-auto",
+              isHeaderMode ? "max-h-80" : "max-h-64"
+            )}>
               {releases.length > 0 ? (
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {releases.map((release) => (
-                    <div key={release.id} className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <div key={release.id} className={cn(
+                      "hover:bg-gray-100 dark:hover:bg-gray-700",
+                      isHeaderMode ? "p-2" : "p-3"
+                    )}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            <span className={cn(
+                              "font-medium text-gray-900 dark:text-gray-100 truncate",
+                              isHeaderMode ? "text-xs" : "text-sm"
+                            )}>
                               {release.version_name || `Release ${release.id.slice(-8)}`}
                             </span>
                             <span className={cn(
@@ -229,9 +299,10 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
                               onClick={() => handleRollback(release.id, release.version_name)}
                               disabled={rollingBackId === release.id}
                               className={cn(
-                                "flex items-center gap-1 px-2 py-1 text-xs font-medium rounded",
+                                "flex items-center gap-1 font-medium rounded transition-colors",
+                                isHeaderMode ? "px-1.5 py-0.5 text-xs" : "px-2 py-1 text-xs",
                                 "bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300",
-                                "text-white disabled:text-gray-500 transition-colors"
+                                "text-white disabled:text-gray-500"
                               )}
                               title="Rollback to this version"
                             >
@@ -251,11 +322,25 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
                   ))}
                 </div>
               ) : (
-                <div className="p-6 text-center">
-                  <Clock className="w-8 h-8 mx-auto mb-2 text-gray-400 opacity-50" />
-                  <p className="text-sm text-gray-500">No version history available</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Publish changes to create version history
+                <div className={cn(
+                  "text-center",
+                  isHeaderMode ? "p-4" : "p-6"
+                )}>
+                  <Clock className={cn(
+                    "mx-auto mb-2 text-gray-400 opacity-50",
+                    isHeaderMode ? "w-6 h-6" : "w-8 h-8"
+                  )} />
+                  <p className={cn(
+                    "text-gray-500",
+                    isHeaderMode ? "text-xs" : "text-sm"
+                  )}>
+                    {filePath ? 'No history for this file' : 'No version history available'}
+                  </p>
+                  <p className={cn(
+                    "text-gray-400 mt-1",
+                    isHeaderMode ? "text-xs" : "text-xs"
+                  )}>
+                    {isHeaderMode ? 'Publish to create versions' : 'Publish changes to create version history'}
                   </p>
                 </div>
               )}
