@@ -340,7 +340,8 @@ class ApiClient {
       }
       
       // Special handling for patches endpoints - don't transform, return full response
-      if (endpoint.includes('/patches/')) {
+      if (endpoint.includes('/patches/') || endpoint.startsWith('patches/')) {
+        console.log('🔧 API Client: Patches endpoint detected, bypassing transformation', { endpoint, hasSuccess: !!result?.success });
         const duration = performance.now() - startTime;
         apiDebugger.debugAPICall('response', {
           debugId,
