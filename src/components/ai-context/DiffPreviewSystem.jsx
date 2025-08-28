@@ -28,6 +28,7 @@ import {
 
 // Import diff service
 import DiffService from '../../services/diff-service';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 // Utility function to extract component name from file path or code
 const extractComponentName = (fileName, code) => {
@@ -120,7 +121,7 @@ const resolvePageURL = async (pageName, storeId) => {
 };
 
 // Function to fetch AST diff data from patches API
-const fetchAstDiffData = async (filePath) => {
+const fetchAstDiffData = async (filePath, storeId) => {
   try {
     // Get the auth token using the same logic as FileTreeNavigator fix
     const getAuthToken = () => {
@@ -160,7 +161,7 @@ const fetchAstDiffData = async (filePath) => {
     }
     
     // Fetch patches for the file
-    const patchResponse = await fetch(`/api/patches/${encodeURIComponent(filePath)}`, {
+    const patchResponse = await fetch(`/api/patches/${encodeURIComponent(filePath)}?store_id=${storeId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -178,7 +179,7 @@ const fetchAstDiffData = async (filePath) => {
       const latestPatch = patchData.data.patches[0];
       
       // Also get the baseline code
-      const baselineResponse = await fetch(`/api/patches/baseline/${encodeURIComponent(filePath)}`, {
+      const baselineResponse = await fetch(`/api/patches/baseline/${encodeURIComponent(filePath)}?store_id=${storeId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -194,7 +195,7 @@ const fetchAstDiffData = async (filePath) => {
       }
       
       // Get the modified code  
-      const modifiedResponse = await fetch(`/api/patches/modified-code/${encodeURIComponent(filePath)}`, {
+      const modifiedResponse = await fetch(`/api/patches/modified-code/${encodeURIComponent(filePath)}?store_id=${storeId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -369,10 +370,12 @@ const DiffPreviewSystem = ({
   className = '',
   onCodeChange,
   onDiffStatsChange, // New callback to notify parent about diff state changes
-  storeId = '157d4590-49bf-4b0b-bd77-abe131909528', // Store ID for route resolution
   filePath = null, // File path for fetching AST diff data from API
   useAstDiff = true // Whether to use AST diff data from API
 }) => {
+  // Get selected store from context
+  const { getSelectedStoreId, selectedStore } = useStoreSelection();
+  
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
   const [contextLines, setContextLines] = useState(3);
@@ -411,7 +414,8 @@ const DiffPreviewSystem = ({
         setAstDiffError(null);
         
         try {
-          const result = await fetchAstDiffData(filePath);
+          const storeId = getSelectedStoreId();
+          const result = await fetchAstDiffData(filePath, storeId);
           
           if (result.success) {
             setAstDiffData(result);
@@ -437,7 +441,7 @@ const DiffPreviewSystem = ({
       
       fetchData();
     }
-  }, [filePath, useAstDiff, originalCode, modifiedCode]);
+  }, [filePath, useAstDiff, originalCode, modifiedCode, selectedStore?.id]);
 
   // Handle synchronized scrolling between split view panes
   const handleSyncScroll = useCallback((source, scrollTop, scrollLeft) => {

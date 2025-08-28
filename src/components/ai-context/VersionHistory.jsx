@@ -25,6 +25,12 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
   // Load version history
   const loadVersionHistory = async () => {
     if (!filePath) return;
+    
+    const storeId = getSelectedStoreId();
+    if (!storeId) {
+      setError('No store selected');
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -39,7 +45,7 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
       const response = await fetch('/api/patches/releases', {
         headers: {
           'Authorization': `Bearer ${authToken}`,
-          'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
+          'x-store-id': storeId
         }
       });
 
@@ -114,6 +120,13 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
       loadVersionHistory();
     }
   }, [filePath, isExpanded]);
+
+  // Reload version history when selected store changes
+  useEffect(() => {
+    if (isExpanded && filePath && selectedStore) {
+      loadVersionHistory();
+    }
+  }, [selectedStore?.id]);
 
   // Handle click outside to close dropdown in header mode
   useEffect(() => {
