@@ -1698,7 +1698,7 @@ app.get('/preview/:storeId', async (req, res) => {
       console.log(`🌐 Fetching frontend content from: ${fetchUrl}`);
       
       try {
-        const fetch = require('node-fetch');
+        const { default: fetch } = await import('node-fetch');
         const frontendResponse = await fetch(fetchUrl);
         let htmlContent = await frontendResponse.text();
         

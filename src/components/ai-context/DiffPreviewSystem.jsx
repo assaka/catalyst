@@ -442,7 +442,7 @@ const DiffPreviewSystem = ({
       
       fetchData();
     }
-  }, [filePath, useAstDiff, originalCode, modifiedCode, selectedStore?.id]);
+  }, [filePath, useAstDiff, originalCode, modifiedCode, selectedStore?.id, refreshTrigger]);
 
   // Handle synchronized scrolling between split view panes
   const handleSyncScroll = useCallback((source, scrollTop, scrollLeft) => {
