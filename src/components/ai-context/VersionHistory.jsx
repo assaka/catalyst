@@ -15,6 +15,9 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
   const [rollingBackId, setRollingBackId] = useState(null);
   const dropdownRef = useRef(null);
 
+  // Check if this is being used inline in header
+  const isHeaderMode = className?.includes('inline-block');
+
   // Load version history
   const loadVersionHistory = async () => {
     if (!filePath) return;
@@ -146,9 +149,6 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
         return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
-
-  // Check if this is being used inline in header
-  const isHeaderMode = className?.includes('inline-block');
 
   return (
     <div 
