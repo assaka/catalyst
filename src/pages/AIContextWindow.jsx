@@ -914,14 +914,6 @@ export default ExampleComponent;`;
               </>
             )}
           </button>
-          
-          <button
-            disabled={true}
-            className="px-3 py-1 text-xs bg-gray-300 text-gray-500 rounded cursor-not-allowed flex items-center gap-1"
-          >
-            <Clock className="w-3 h-3" />
-            Version History
-          </button>
         </div>
         
         {selectedFile && (
