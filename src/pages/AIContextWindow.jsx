@@ -128,7 +128,28 @@ const AIContextWindowPage = () => {
   const loadFileContent = useCallback(async (filePath) => {
     setIsFileLoading(true);
     try {
-      // Use the patches endpoint to get baseline file content
+      // First try to get patched version if patches exist
+      try {
+        const patchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}?preview=true`);
+        if (patchedData && patchedData.success && patchedData.data.hasPatches) {
+          // Patches exist - use patched code for editor, baseline for diff comparison
+          setSourceCode(patchedData.data.patchedCode);
+          setOriginalCode(patchedData.data.baselineCode);
+          setSelectedFile({
+            path: filePath,
+            name: filePath.split('/').pop(),
+            type: 'file',
+            isSupported: true
+          });
+          setSearchParams({ file: filePath });
+          setIsFileLoading(false);
+          return; // Successfully loaded with patches
+        }
+      } catch (patchError) {
+        console.log('No patches found, falling back to baseline:', patchError);
+      }
+
+      // No patches found, load baseline code
       const data = await apiClient.get(`patches/baseline/${encodeURIComponent(filePath)}`);
 
       if (data && data.success && data.data.hasBaseline) {
@@ -146,12 +167,12 @@ const AIContextWindowPage = () => {
         // Update URL
         setSearchParams({ file: filePath });
       } else if (data && data.success && !data.data.hasBaseline) {
-        // No baseline found, try the apply patches endpoint to get the current version
+        // No baseline found either - this is the fallback case
         try {
-          const patchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}?preview=true`);
-          if (patchedData && patchedData.success) {
-            setSourceCode(patchedData.data.patchedCode);
-            setOriginalCode(patchedData.data.baselineCode || patchedData.data.patchedCode);
+          const fallbackPatchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}?preview=true`);
+          if (fallbackPatchedData && fallbackPatchedData.success) {
+            setSourceCode(fallbackPatchedData.data.patchedCode);
+            setOriginalCode(fallbackPatchedData.data.baselineCode || fallbackPatchedData.data.patchedCode);
             setSelectedFile({
               path: filePath,
               name: filePath.split('/').pop(),
@@ -160,7 +181,7 @@ const AIContextWindowPage = () => {
             });
             setSearchParams({ file: filePath });
           } else {
-            console.error('Failed to load file from patches:', patchedData?.error || 'Unknown error');
+            console.error('Failed to load file from patches:', fallbackPatchedData?.error || 'Unknown error');
           }
         } catch (patchError) {
           console.error('Failed to load file from patches:', patchError);
