@@ -399,12 +399,6 @@ const AIContextWindow = ({
         </div>
         </div>
 
-      {/* Version History */}
-      <VersionHistory 
-        filePath={filePath}
-        onRollback={handleRollback}
-      />
-
       {/* Footer */}
       <div className="p-2 border-t bg-gray-50 dark:bg-gray-800">
         <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
