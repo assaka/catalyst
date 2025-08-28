@@ -536,11 +536,17 @@ const DiffPreviewSystem = ({
         const storeId = getSelectedStoreId();
         const modifiedContent = currentLines[lineIndex] || '';
         
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.error('❌ No authentication token found');
+          return;
+        }
+        
         const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(fileName)}`, {
           method: 'PATCH',
           headers: {
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
             'X-Store-Id': storeId
           },
           body: JSON.stringify({
