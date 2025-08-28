@@ -1670,25 +1670,27 @@ app.get('/preview/:storeId', async (req, res) => {
       });
     }
 
-    // Redirect to the actual frontend application with patches enabled
-    // This allows users to see the page as they would when browsing the store
-    console.log(`✅ Redirecting to frontend with patches enabled for ${fileName}`);
-    
-    const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
-    const redirectParams = new URLSearchParams({
-      storeSlug: actualStoreSlug,
-      patches: 'true',
-      fileName: fileName,
-      storeId: storeId
-    });
-    
-    // Redirect to the storefront with patches enabled
-    const redirectUrl = `${frontendUrl}/${actualStoreSlug}?${redirectParams.toString()}`;
-    console.log(`🔀 Redirecting to frontend: ${redirectUrl}`);
-    
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    return res.redirect(302, redirectUrl);
-  } else {
+    // Check if patches were applied and redirect accordingly
+    if (patchResult.hasPatches && patchResult.finalCode) {
+      // Redirect to the actual frontend application with patches enabled
+      // This allows users to see the page as they would when browsing the store
+      console.log(`✅ Redirecting to frontend with patches enabled for ${fileName}`);
+      
+      const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+      const redirectParams = new URLSearchParams({
+        storeSlug: actualStoreSlug,
+        patches: 'true',
+        fileName: fileName,
+        storeId: storeId
+      });
+      
+      // Redirect to the storefront with patches enabled
+      const redirectUrl = `${frontendUrl}/${actualStoreSlug}?${redirectParams.toString()}`;
+      console.log(`🔀 Redirecting to frontend: ${redirectUrl}`);
+      
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return res.redirect(302, redirectUrl);
+    } else {
     // If no patches were applied, still redirect to frontend but without patches parameter
     console.log(`ℹ️ No patches to apply for ${fileName} - redirecting to normal frontend`);
     
