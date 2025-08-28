@@ -636,11 +636,21 @@ export default ExampleComponent;`;
     if (!selectedFile) return;
     
     // Check if there are any actual changes in the diff stats
+    // Note: DiffService returns 'additions', 'deletions', 'modifications' (not addedLines, etc.)
+    console.log('🔍 DiffStats for', selectedFile.name, ':', {
+      additions: diffStats?.additions,
+      deletions: diffStats?.deletions,
+      modifications: diffStats?.modifications,
+      unchanged: diffStats?.unchanged
+    });
+    
     const hasChanges = diffStats && (
-      diffStats.addedLines > 0 ||
-      diffStats.removedLines > 0 ||
-      diffStats.modifiedLines > 0
+      diffStats.additions > 0 ||
+      diffStats.deletions > 0 ||
+      diffStats.modifications > 0
     );
+    
+    console.log('🎯 HasChanges:', hasChanges, 'for', selectedFile.name);
     
     setModifiedFiles(prev => {
       const isCurrentlyModified = prev.includes(selectedFile.path);
