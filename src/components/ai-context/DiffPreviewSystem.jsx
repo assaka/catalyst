@@ -542,6 +542,21 @@ const DiffPreviewSystem = ({
           return;
         }
         
+        console.log('🌐 Making surgical revert request:', {
+          url: `/api/patches/revert-line/${encodeURIComponent(fileName)}`,
+          method: 'PATCH',
+          headers: {
+            'Authorization': token ? `Bearer ${token.substring(0, 20)}...` : 'Missing',
+            'Content-Type': 'application/json',
+            'X-Store-Id': storeId
+          },
+          body: {
+            lineNumber: lineIndex,
+            originalContent: originalContent,
+            modifiedContent: modifiedContent
+          }
+        });
+        
         const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(fileName)}`, {
           method: 'PATCH',
           headers: {
@@ -556,6 +571,16 @@ const DiffPreviewSystem = ({
           })
         });
 
+        console.log('📡 Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          headers: {
+            'content-type': response.headers.get('content-type'),
+            'access-control-allow-origin': response.headers.get('access-control-allow-origin')
+          }
+        });
+        
         const result = await response.json();
         if (result.success) {
           console.log('✅ Successfully reverted line', lineIndex, '- Modified:', result.data.modifiedPatches, 'Deleted:', result.data.deletedPatches);
