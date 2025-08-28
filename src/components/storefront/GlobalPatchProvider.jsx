@@ -67,8 +67,8 @@ const GlobalPatchProvider = ({ children }) => {
       try {
         const backendUrl = process.env.REACT_APP_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
         
-        // Use the patch-service endpoint to get applied patches
-        const response = await fetch(`${backendUrl}/api/patch-service/apply-patches?fileName=${encodeURIComponent(targetFileName)}&storeId=${storeId}&previewMode=true`);
+        // Use the patches endpoint to get applied patches (public endpoint)
+        const response = await fetch(`${backendUrl}/api/patches/apply/${encodeURIComponent(targetFileName)}?store_id=${storeId}&preview=true`);
         
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -78,10 +78,10 @@ const GlobalPatchProvider = ({ children }) => {
         
         if (patchResult.success) {
           const patchData = {
-            hasPatches: patchResult.hasPatches,
+            hasPatches: patchResult.data.hasPatches,
             fileName: targetFileName,
-            appliedPatches: patchResult.appliedPatches || [],
-            finalCode: patchResult.finalCode,
+            appliedPatches: patchResult.data.appliedPatches || [],
+            finalCode: patchResult.data.patchedCode,
             previewMode: true
           };
           
