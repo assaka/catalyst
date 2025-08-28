@@ -749,6 +749,19 @@ const DiffPreviewSystem = ({
     if (!diffResult.diff || diffResult.diff.length === 0) return [];
     const lines = convertDiffToDisplayLines(diffResult.diff);
     console.log('🔄 Generated', lines.length, 'display lines');
+    
+    // Debug: Show which lines are still marked as different
+    const changedLines = lines.filter(line => line.type !== 'context');
+    console.log('🔍 Lines still showing as different:', changedLines.length);
+    if (changedLines.length > 0) {
+      console.log('🔍 Changed lines details:', changedLines.slice(0, 5).map(line => ({
+        type: line.type,
+        lineNumber: line.lineNumber,
+        newLineNumber: line.newLineNumber,
+        content: line.content?.substring(0, 100) + '...'
+      })));
+    }
+    
     return lines;
   }, [diffResult.diff, currentModifiedCode]);
 
