@@ -1041,10 +1041,22 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
           if (prevLine && prevLine.startsWith('-')) {
             const removedContent = prevLine.substring(1).trim();
             console.log(`🔍 Found deletion context: "${removedContent}"`);
-            // If the removed content would fit in our target content, this is the change we want
-            if (modifiedTextContent.toLowerCase().includes(removedContent.toLowerCase())) {
+            
+            // For contextual match, we need TWO conditions:
+            // 1. The removed content should be in our target content (what we want to restore)
+            // 2. The added content should NOT naturally belong in our target content (what we want to remove)
+            const removedBelongsInTarget = modifiedTextContent.toLowerCase().includes(removedContent.toLowerCase());
+            const addedBelongsInTarget = modifiedTextContent.toLowerCase().includes(addedContentTrimmed.toLowerCase());
+            
+            console.log(`🔍 Removed "${removedContent}" belongs in target: ${removedBelongsInTarget}`);
+            console.log(`🔍 Added "${addedContentTrimmed}" belongs in target: ${addedBelongsInTarget}`);
+            
+            // Only match if we're replacing something that belongs with something that doesn't belong
+            if (removedBelongsInTarget && !addedBelongsInTarget) {
               hasContextualMatch = true;
-              console.log(`🔍 Contextual match found: "${removedContent}" should be in "${modifiedTextContent}"`);
+              console.log(`🔍 Contextual match found: restoring "${removedContent}", removing "${addedContentTrimmed}"`);
+            } else {
+              console.log(`🔍 No contextual match: both removed and added content have same relationship to target`);
             }
           }
         }
