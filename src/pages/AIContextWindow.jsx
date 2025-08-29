@@ -10,7 +10,7 @@ import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import BrowserPreview from '@/components/ai-context/BrowserPreview';
 import VersionHistory from '@/components/ai-context/VersionHistory';
 import apiClient from '@/api/client';
-import { useStoreContext } from '@/utils/storeContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 /**
  * Apply JSON Patch operations to source code
@@ -75,8 +75,11 @@ const AIContextWindowPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Store context for API calls
-  const { getStoreId } = useStoreContext();
-  const storeId = getStoreId();
+  const { getSelectedStoreId, selectedStore } = useStoreSelection();
+  const storeId = getSelectedStoreId();
+  
+  // Debug store ID
+  console.log('🏪 [AIContextWindow] Store ID:', storeId, typeof storeId, 'from selectedStore:', selectedStore);
   
   // State management
   const [selectedFile, setSelectedFile] = useState(null);
@@ -150,6 +153,12 @@ const AIContextWindowPage = () => {
       }
 
       // First, create a new patch release
+      if (!storeId) {
+        console.error('❌ Cannot create release: No store selected');
+        alert('Please select a store first');
+        return;
+      }
+      
       const createReleaseResponse = await fetch('/api/patches/releases', {
         method: 'POST',
         headers: {
@@ -177,6 +186,10 @@ const AIContextWindowPage = () => {
 
       // Update open diffs with the release_id and set status to final/published for all modified files
       const finalizePromises = modifiedFiles.map(async (filePath) => {
+        if (!storeId) {
+          throw new Error('Store ID is required for finalization');
+        }
+        
         const finalizeResponse = await fetch('/api/patches/finalize-diffs', {
           method: 'POST',
           headers: {
@@ -614,6 +627,15 @@ export default ExampleComponent;`;
           }
 
           console.log('💾 Auto-saving patch to database...');
+          
+          if (!storeId) {
+            console.error('❌ Cannot create patch: Store ID is null or undefined. selectedStore:', selectedStore);
+            // Show a user-friendly message
+            if (window.confirm('No store selected. Would you like to refresh the page to select a store?')) {
+              window.location.reload();
+            }
+            return;
+          }
           
           const response = await fetch('/api/patches/create', {
             method: 'POST',
