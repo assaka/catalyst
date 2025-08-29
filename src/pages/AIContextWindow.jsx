@@ -10,6 +10,7 @@ import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import BrowserPreview from '@/components/ai-context/BrowserPreview';
 import VersionHistory from '@/components/ai-context/VersionHistory';
 import apiClient from '@/api/client';
+import { useStoreContext } from '@/utils/storeContext';
 
 /**
  * Apply JSON Patch operations to source code
@@ -72,6 +73,10 @@ const applyPatchToCode = (sourceCode, patch) => {
  */
 const AIContextWindowPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Store context for API calls
+  const { getStoreId } = useStoreContext();
+  const storeId = getStoreId();
   
   // State management
   const [selectedFile, setSelectedFile] = useState(null);
@@ -150,7 +155,7 @@ const AIContextWindowPage = () => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${authToken}`,
-          'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
+          'x-store-id': storeId
         },
         body: JSON.stringify({
           versionName: `Global-changes-v${Date.now()}`,
@@ -177,7 +182,7 @@ const AIContextWindowPage = () => {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
-            'x-store-id': '157d4590-49bf-4b0b-bd77-abe131909528'
+            'x-store-id': storeId
           },
           body: JSON.stringify({
             filePath,
@@ -614,7 +619,8 @@ export default ExampleComponent;`;
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'x-store-id': storeId
             },
             body: JSON.stringify({
               filePath: filePath,

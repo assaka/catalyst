@@ -99,7 +99,13 @@ router.post('/create', authMiddleware, async (req, res) => {
       useUpsert = true      // NEW: enable upsert strategy by default
     } = req.body;
 
-    const storeId = req.headers['x-store-id'] || '157d4590-49bf-4b0b-bd77-abe131909528';
+    const storeId = req.headers['x-store-id'];
+    if (!storeId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Store ID is required. Please ensure x-store-id header is provided.'
+      });
+    }
 
     console.log(`📝 Creating/updating patch for ${filePath} (session: ${sessionId || 'none'})`);
 
