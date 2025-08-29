@@ -4,22 +4,17 @@
  * Replaces the overlay system with efficient patch accumulation
  */
 
-const { diff_match_patch } = require('diff-match-patch');
 const { parse } = require('@babel/parser');
 const generate = require('@babel/generator').default;
 const traverse = require('@babel/traverse').default;
 const crypto = require('crypto');
 const { sequelize } = require('../database/connection');
+const unifiedDiffService = require('./unified-diff-service');
 
 class PatchService {
   constructor() {
-    this.dmp = new diff_match_patch();
     this.cache = new Map();
     this.sequelize = sequelize; // Expose sequelize instance for routes
-    
-    // Configure diff-match-patch for better performance
-    this.dmp.Diff_Timeout = 1.0;
-    this.dmp.Diff_EditCost = 4;
   }
 
   /**
@@ -260,7 +255,7 @@ class PatchService {
           patchedCode = await this.applyASTDiff(currentCode, patch.ast_diff, filePath);
         } else if (patch.unified_diff) {
           // Apply unified diff patch
-          patchedCode = this.applyUnifiedDiff(currentCode, patch.unified_diff);
+          patchedCode = await this.applyUnifiedDiff(currentCode, patch.unified_diff);
         } else {
           console.warn(`⚠️ No diff data for patch ${patch.id}, skipping`);
           continue;
@@ -317,18 +312,9 @@ class PatchService {
   /**
    * Apply unified diff patch
    */
-  applyUnifiedDiff(currentCode, unifiedDiff) {
+  async applyUnifiedDiff(currentCode, unifiedDiff) {
     try {
-      const patches = this.dmp.patch_fromText(unifiedDiff);
-      const [patchedCode, results] = this.dmp.patch_apply(patches, currentCode);
-      
-      // Check if all patches applied successfully
-      const failedPatches = results.filter(result => !result).length;
-      if (failedPatches > 0) {
-        console.warn(`⚠️ ${failedPatches} patches failed to apply cleanly`);
-      }
-
-      return patchedCode;
+      return await unifiedDiffService.applyUnifiedDiff(currentCode, unifiedDiff);
     } catch (error) {
       console.error(`❌ Error applying unified diff:`, error.message);
       return currentCode; // Return original on error
@@ -667,19 +653,13 @@ class PatchService {
   /**
    * Utility methods
    */
-  createDiff(baselineCode, modifiedCode, filePath) {
+  async createDiff(baselineCode, modifiedCode, filePath) {
     try {
-      // Create unified diff
-      const diffs = this.dmp.diff_main(baselineCode, modifiedCode);
-      this.dmp.diff_cleanupSemantic(diffs);
-      let unifiedDiff = this.dmp.patch_toText(this.dmp.patch_make(baselineCode, diffs));
+      // Create unified diff using line-based approach
+      const unifiedDiff = await unifiedDiffService.createUnifiedDiff(baselineCode, modifiedCode, filePath);
       
-      // Fix URL encoding issue - decode URL-encoded characters in the diff
-      try {
-        unifiedDiff = decodeURIComponent(unifiedDiff);
-      } catch (decodeError) {
-        // If decoding fails, keep original (might not be URL-encoded)
-        console.warn('Warning: Could not decode unified diff, using original:', decodeError.message);
+      if (!unifiedDiff) {
+        return { unifiedDiff: null, astDiff: null, stats: { additions: 0, deletions: 0, changes: 0 } };
       }
 
       // Check diff size and warn if it's too large (could cause frontend display issues)
@@ -701,14 +681,13 @@ class PatchService {
         astDiff = this.createASTDiff(baselineCode, modifiedCode, filePath);
       }
 
+      // Get diff statistics
+      const stats = unifiedDiffService.getDiffStats(unifiedDiff);
+
       return {
         unifiedDiff,
         astDiff,
-        stats: {
-          additions: diffs.filter(d => d[0] === 1).reduce((sum, d) => sum + d[1].length, 0),
-          deletions: diffs.filter(d => d[0] === -1).reduce((sum, d) => sum + d[1].length, 0),
-          changes: diffs.filter(d => d[0] !== 0).length
-        }
+        stats
       };
     } catch (error) {
       console.error(`❌ Error creating diff:`, error.message);

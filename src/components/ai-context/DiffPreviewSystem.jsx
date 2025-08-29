@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 // Import diff service
-import DiffService from '../../services/diff-service';
+import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 // Utility function to extract component name from file path or code
@@ -391,7 +391,7 @@ const DiffPreviewSystem = ({
   const [expandedSections, setExpandedSections] = useState(new Set());
   const [refreshTrigger, setRefreshTrigger] = useState(0); // Trigger for refreshing patch data
 
-  const diffServiceRef = useRef(new DiffService());
+  const diffServiceRef = useRef(new UnifiedDiffFrontendService());
   const originalBaseCodeRef = useRef(originalCode); // Preserve original base code
   const originalScrollRef = useRef(null);
   const modifiedScrollRef = useRef(null);
@@ -732,8 +732,8 @@ const DiffPreviewSystem = ({
     }
 
     const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode, { algorithm });
-    const stats = diffServiceRef.current.getDiffStats(result.diff);
-    const unifiedDiff = diffServiceRef.current.createUnifiedDiff(baseCode, currentModifiedCode, fileName);
+    const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
+    const unifiedDiff = result.unifiedDiff; // Use unified diff from result
     
     return {
       ...result,
@@ -807,9 +807,9 @@ const DiffPreviewSystem = ({
 
   // Get display lines from diff
   const displayLines = useMemo(() => {
-    if (!diffResult.diff || diffResult.diff.length === 0) return [];
-    return convertDiffToDisplayLines(diffResult.diff);
-  }, [diffResult.diff, currentModifiedCode]);
+    if (!diffResult.parsedDiff || diffResult.parsedDiff.length === 0) return [];
+    return convertDiffToDisplayLines(diffResult.parsedDiff);
+  }, [diffResult.parsedDiff, currentModifiedCode]);
 
   // Process display lines for collapsing unchanged fragments
   const processedDisplayLines = useMemo(() => {

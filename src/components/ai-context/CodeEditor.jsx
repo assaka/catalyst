@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 // Import diff service
-import DiffService from '../../services/diff-service';
+import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
 
 const CodeEditor = ({ 
   value = '', 
@@ -40,7 +40,7 @@ const CodeEditor = ({
   const [diffData, setDiffData] = useState(null);
 
   const editorRef = useRef(null);
-  const diffServiceRef = useRef(new DiffService());
+  const diffServiceRef = useRef(new UnifiedDiffFrontendService());
 
   useEffect(() => {
     setLocalCode(value);
@@ -53,7 +53,15 @@ const CodeEditor = ({
       const contentToCompare = initialContent || originalCode || '';
       if (localCode !== contentToCompare) {
         const diffResult = diffServiceRef.current.createDiff(contentToCompare, localCode);
-        setDiffData(diffResult);
+        // Use parsedDiff for component compatibility with pure line-based format
+        if (diffResult.success) {
+          setDiffData({
+            ...diffResult,
+            diff: diffResult.parsedDiff // Map parsedDiff to expected diff property
+          });
+        } else {
+          setDiffData(diffResult);
+        }
       } else {
         setDiffData(null);
       }

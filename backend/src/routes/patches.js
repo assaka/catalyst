@@ -7,6 +7,7 @@
 const express = require('express');
 const router = express.Router();
 const patchService = require('../services/patch-service');
+const unifiedDiffService = require('../services/unified-diff-service');
 const { authMiddleware } = require('../middleware/auth');
 
 // Apply patches to a file and return the result (public endpoint for preview)
@@ -883,8 +884,8 @@ router.patch('/revert-line/:filePath(*)', authMiddleware, async (req, res) => {
         console.log(patch.unified_diff);
         console.log(`📍 Looking for line ${lineNumber} with content: "${modifiedContent}"`);
         
-        // Parse unified diff and remove hunks that affect the reverted line
-        const modifiedDiff = removeDiffHunkForLine(patch.unified_diff, lineNumber, originalContent, modifiedContent);
+        // Use unified diff service to remove the specific line
+        const modifiedDiff = unifiedDiffService.removeLineFromDiff(patch.unified_diff, modifiedContent, originalContent);
         
         console.log(`📄 Modified diff result:`);
         console.log(modifiedDiff);
@@ -954,205 +955,5 @@ router.patch('/revert-line/:filePath(*)', authMiddleware, async (req, res) => {
   }
 });
 
-// Helper function to remove diff hunks that affect a specific line
-function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, modifiedContent) {
-  if (!unifiedDiff) return null;
-  
-  console.log(`🔍 Analyzing diff for line ${targetLineNumber}: "${modifiedContent}"`);
-  
-  const lines = unifiedDiff.split('\n');
-  const result = [];
-  let currentHunk = [];
-  let inHunk = false;
-  let hunkStartOldLine = 0;
-  let hunkStartNewLine = 0;
-  let oldLineNumber = 0;
-  let newLineNumber = 0;
-  let hunkShouldBeRemoved = false;
-  
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    
-    if (line.startsWith('@@')) {
-      // Process previous hunk
-      if (inHunk && currentHunk.length > 0) {
-        if (!hunkShouldBeRemoved) {
-          result.push(...currentHunk);
-        } else {
-          console.log(`🗑️ Removing hunk starting at old:${hunkStartOldLine} new:${hunkStartNewLine} that affects target line ${targetLineNumber}`);
-        }
-        currentHunk = [];
-        hunkShouldBeRemoved = false;
-      }
-      
-      // Parse hunk header to get starting line numbers for both old (-) and new (+) files
-      const match = line.match(/@@ -(\d+),?\d* \+(\d+),?\d* @@/);
-      if (match) {
-        hunkStartOldLine = parseInt(match[1]);
-        hunkStartNewLine = parseInt(match[2]);
-        oldLineNumber = hunkStartOldLine;
-        newLineNumber = hunkStartNewLine;
-        console.log(`📍 Hunk starts at old line: ${hunkStartOldLine}, new line: ${hunkStartNewLine}`);
-      }
-      
-      currentHunk = [line];
-      inHunk = true;
-    } else if (inHunk) {
-      currentHunk.push(line);
-      
-      // Track line numbers as we go through the hunk
-      if (line.startsWith(' ')) {
-        // Context line - appears in both old and new files
-        oldLineNumber++;
-        newLineNumber++;
-      } else if (line.startsWith('-')) {
-        // Deleted line - only in old file
-        oldLineNumber++;
-      } else if (line.startsWith('+')) {
-        // Added line - only in new file, check if this is the line we want to revert
-        const addedContent = line.substring(1); // Remove the '+' prefix
-        
-        // Check if this added line matches what we're trying to revert
-        const addedContentTrimmed = addedContent.trim();
-        const modifiedContentTrimmed = modifiedContent ? modifiedContent.trim() : '';
-        
-        console.log(`🔍 Checking added line: "${addedContentTrimmed}"`);
-        console.log(`🔍 Against target content: "${modifiedContentTrimmed}"`);
-        console.log(`🔍 Line position - Old file: ${oldLineNumber}, New file: ${newLineNumber}, Target line: ${targetLineNumber}`);
-        
-        // Extract text content from HTML if present
-        const extractTextContent = (htmlString) => {
-          return htmlString.replace(/<[^>]*>/g, '').trim();
-        };
-        
-        const addedTextContent = extractTextContent(addedContentTrimmed);
-        const modifiedTextContent = extractTextContent(modifiedContentTrimmed);
-        
-        console.log(`🔍 Text content - Added: "${addedTextContent}", Target: "${modifiedTextContent}"`);
-        
-        // CRITICAL FIX: When reverting, we need to find the change that contains the word we're reverting
-        // The frontend is trying to revert "hamid" back to "Your", so we should match the added content "hamid"
-        // against the change being made, not the final target content
-        
-        // Strategy: Check for contextual matching with deletion/addition pairs
-        // Look for deletions within the same hunk, not just the immediately previous line
-        let hasContextualMatch = false;
-        
-        // Collect all deletions and additions in the current hunk
-        const hunkDeletions = [];
-        const hunkAdditions = [];
-        
-        // Search backwards and forwards from current position within the hunk
-        // Find the start of the current hunk by looking backwards for the @@ header
-        let hunkStartIndex = i;
-        for (let k = i; k >= 0; k--) {
-          if (lines[k].startsWith('@@')) {
-            hunkStartIndex = k;
-            break;
-          }
-        }
-        
-        for (let j = hunkStartIndex; j < lines.length && j < i + 10; j++) {
-          const line = lines[j];
-          if (line.startsWith('@@')) {
-            // If we hit another hunk header, stop
-            if (j > hunkStartIndex) break;
-          } else if (line.startsWith('-')) {
-            hunkDeletions.push({
-              content: line.substring(1).trim(),
-              index: j,
-              distance: Math.abs(j - i)
-            });
-          } else if (line.startsWith('+')) {
-            hunkAdditions.push({
-              content: line.substring(1).trim(), 
-              index: j,
-              distance: Math.abs(j - i)
-            });
-          }
-        }
-        
-        console.log(`🔍 Hunk deletions found: ${hunkDeletions.length}`);
-        console.log(`🔍 Hunk additions found: ${hunkAdditions.length}`);
-        
-        // Look for the best deletion/addition pair match
-        if (hunkDeletions.length > 0) {
-          // Sort by distance to current addition line
-          hunkDeletions.sort((a, b) => a.distance - b.distance);
-          
-          for (const deletion of hunkDeletions) {
-            console.log(`🔍 Testing deletion context: "${deletion.content}" (distance: ${deletion.distance})`);
-            
-            // For contextual match, we need TWO conditions:
-            // 1. The removed content should be in our target content (what we want to restore)
-            // 2. The added content should NOT naturally belong in our target content (what we want to remove)
-            const removedBelongsInTarget = modifiedTextContent.toLowerCase().includes(deletion.content.toLowerCase());
-            const addedBelongsInTarget = modifiedTextContent.toLowerCase().includes(addedContentTrimmed.toLowerCase());
-            
-            console.log(`🔍 Removed "${deletion.content}" belongs in target: ${removedBelongsInTarget}`);
-            console.log(`🔍 Added "${addedContentTrimmed}" belongs in target: ${addedBelongsInTarget}`);
-            
-            // Only match if we're replacing something that belongs with something that doesn't belong
-            if (removedBelongsInTarget && !addedBelongsInTarget) {
-              hasContextualMatch = true;
-              console.log(`🔍 Contextual match found: restoring "${deletion.content}", removing "${addedContentTrimmed}"`);
-              break; // Found a match, no need to check other deletions
-            } else {
-              console.log(`🔍 No contextual match with "${deletion.content}"`);
-            }
-          }
-        }
-        
-        // Try multiple matching strategies
-        const exactMatch = addedContentTrimmed === modifiedContentTrimmed;
-        const containsMatch = modifiedContentTrimmed && addedContentTrimmed.includes(modifiedContentTrimmed);
-        const reverseContainsMatch = modifiedContentTrimmed && modifiedContentTrimmed.includes(addedContentTrimmed);
-        
-        // Text-based matching (strip HTML tags)
-        const textExactMatch = addedTextContent === modifiedTextContent;
-        const textContainsMatch = modifiedTextContent && addedTextContent.includes(modifiedTextContent);
-        const textReverseContainsMatch = modifiedTextContent && modifiedTextContent.includes(addedTextContent);
-        
-        // Word-level matching
-        const words = modifiedTextContent.split(/\s+/).filter(w => w.length > 2); // Only significant words
-        const wordMatch = words.some(word => word === addedContentTrimmed || addedContentTrimmed === word);
-        
-        console.log(`🔍 Match strategies: exact=${exactMatch}, contains=${containsMatch}, reverse=${reverseContainsMatch}, word=${wordMatch}`);
-        console.log(`🔍 Text strategies: textExact=${textExactMatch}, textContains=${textContainsMatch}, textReverse=${textReverseContainsMatch}`);
-        console.log(`🔍 Context strategies: contextual=${hasContextualMatch}`);
-        
-        if (exactMatch || containsMatch || reverseContainsMatch || wordMatch || textExactMatch || textContainsMatch || textReverseContainsMatch || hasContextualMatch) {
-          console.log(`🎯 Found matching content: "${addedContentTrimmed}"`);
-          console.log(`📍 Target line number: ${targetLineNumber}, Current new position: ${newLineNumber}`);
-          
-          // Since we found matching content, mark the hunk for removal regardless of line number
-          // The line numbers in character-level diffs don't match visual line numbers
-          hunkShouldBeRemoved = true;
-          console.log(`✂️ Marking hunk for removal - content match found (ignoring line number mismatch)`);
-        }
-        
-        // Increment new line number for added lines
-        newLineNumber++;
-      }
-    } else {
-      result.push(line);
-    }
-  }
-  
-  // Process final hunk
-  if (inHunk && currentHunk.length > 0) {
-    if (!hunkShouldBeRemoved) {
-      result.push(...currentHunk);
-    } else {
-      console.log(`🗑️ Removing final hunk that affects target line ${targetLineNumber}`);
-    }
-  }
-  
-  const resultDiff = result.join('\n').trim();
-  console.log(`📊 Original diff lines: ${lines.length}, Result diff lines: ${result.length}`);
-  console.log(`📊 Result diff is empty: ${resultDiff === ''}`);
-  
-  return resultDiff;
-}
 
 module.exports = router;
