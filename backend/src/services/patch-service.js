@@ -655,10 +655,24 @@ class PatchService {
    */
   async createDiff(baselineCode, modifiedCode, filePath) {
     try {
-      // Create unified diff using line-based approach
-      const unifiedDiff = await unifiedDiffService.createUnifiedDiff(baselineCode, modifiedCode, filePath);
+      // Debug logging for diff creation
+      console.log(`🔍 Creating diff for ${filePath}:`);
+      console.log(`  Baseline length: ${baselineCode?.length || 0} chars`);
+      console.log(`  Modified length: ${modifiedCode?.length || 0} chars`);
+      console.log(`  Are identical: ${baselineCode === modifiedCode}`);
+      
+      // Normalize line endings for comparison
+      const normalizedBaseline = baselineCode?.replace(/\r\n/g, '\n').replace(/\r/g, '\n') || '';
+      const normalizedModified = modifiedCode?.replace(/\r\n/g, '\n').replace(/\r/g, '\n') || '';
+      console.log(`  After normalization - identical: ${normalizedBaseline === normalizedModified}`);
+      console.log(`  After normalization - baseline length: ${normalizedBaseline.length}`);
+      console.log(`  After normalization - modified length: ${normalizedModified.length}`);
+      
+      // Create unified diff using line-based approach with normalized content
+      const unifiedDiff = await unifiedDiffService.createUnifiedDiff(normalizedBaseline, normalizedModified, filePath);
       
       if (!unifiedDiff) {
+        console.log(`❌ No unified diff created - files appear identical after normalization`);
         return { unifiedDiff: null, astDiff: null, stats: { additions: 0, deletions: 0, changes: 0 } };
       }
 

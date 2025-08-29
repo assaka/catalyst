@@ -255,21 +255,27 @@ const AIContextWindowPage = () => {
   }, []);
 
   // Helper function to fetch baseline code from database
+  // Helper function to normalize line endings for comparison
+  const normalizeLineEndings = useCallback((content) => {
+    if (typeof content !== 'string') return content;
+    return content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  }, []);
+
   const fetchBaselineCode = useCallback(async (filePath, fallbackContent) => {
     try {
       const baselineData = await apiClient.get(`patches/baseline/${encodeURIComponent(filePath)}`);
       if (baselineData && baselineData.success && baselineData.data.hasBaseline) {
         console.log(`📋 Using database baseline for ${filePath} (${baselineData.data.baselineCode.length} chars)`);
-        return baselineData.data.baselineCode;
+        return normalizeLineEndings(baselineData.data.baselineCode);
       } else {
         console.log(`📋 No database baseline found for ${filePath}, using current content as baseline`);
-        return fallbackContent;
+        return normalizeLineEndings(fallbackContent);
       }
     } catch (baselineError) {
       console.error('Failed to fetch baseline, using current content:', baselineError);
-      return fallbackContent;
+      return normalizeLineEndings(fallbackContent);
     }
-  }, []);
+  }, [normalizeLineEndings]);
 
   // Load file content
   const loadFileContent = useCallback(async (filePath) => {
@@ -280,8 +286,8 @@ const AIContextWindowPage = () => {
         const patchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}?preview=true`);
         if (patchedData && patchedData.success && patchedData.data.hasPatches) {
           // Patches exist - use patched code for editor, baseline for diff comparison
-          setSourceCode(patchedData.data.patchedCode);
-          setOriginalCode(patchedData.data.baselineCode);
+          setSourceCode(normalizeLineEndings(patchedData.data.patchedCode));
+          setOriginalCode(normalizeLineEndings(patchedData.data.baselineCode));
           setSelectedFile({
             path: filePath,
             name: filePath.split('/').pop(),
@@ -300,10 +306,10 @@ const AIContextWindowPage = () => {
       const data = await apiClient.get(`patches/baseline/${encodeURIComponent(filePath)}`);
 
       if (data && data.success && data.data.hasBaseline) {
-        setSourceCode(data.data.baselineCode);
+        setSourceCode(normalizeLineEndings(data.data.baselineCode));
         
         // Use the baseline code directly as the original code
-        setOriginalCode(data.data.baselineCode);
+        setOriginalCode(normalizeLineEndings(data.data.baselineCode));
         setSelectedFile({
           path: filePath,
           name: filePath.split('/').pop(),
@@ -318,8 +324,8 @@ const AIContextWindowPage = () => {
         try {
           const fallbackPatchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}?preview=true`);
           if (fallbackPatchedData && fallbackPatchedData.success) {
-            setSourceCode(fallbackPatchedData.data.patchedCode);
-            setOriginalCode(fallbackPatchedData.data.baselineCode || fallbackPatchedData.data.patchedCode);
+            setSourceCode(normalizeLineEndings(fallbackPatchedData.data.patchedCode));
+            setOriginalCode(normalizeLineEndings(fallbackPatchedData.data.baselineCode || fallbackPatchedData.data.patchedCode));
             setSelectedFile({
               path: filePath,
               name: filePath.split('/').pop(),
@@ -363,7 +369,7 @@ const DiagnosticComponent = () => {
 
 export default DiagnosticComponent;`;
         
-        setSourceCode(diagnosticInfo);
+        setSourceCode(normalizeLineEndings(diagnosticInfo));
         const baselineCode = await fetchBaselineCode(filePath, diagnosticInfo);
         setOriginalCode(baselineCode); // Set baseline for diff detection
         setSelectedFile({
@@ -451,7 +457,7 @@ const ExampleComponent = () => {
 
 export default ExampleComponent;`;
       
-      setSourceCode(fallbackContent);
+      setSourceCode(normalizeLineEndings(fallbackContent));
       const baselineCode = await fetchBaselineCode(filePath, fallbackContent);
       setOriginalCode(baselineCode); // Set baseline for diff detection
       
@@ -464,7 +470,7 @@ export default ExampleComponent;`;
     } finally {
       setIsFileLoading(false);
     }
-  }, [setSearchParams]);
+  }, [setSearchParams, normalizeLineEndings]);
 
   // Handle file selection from tree navigator
   const handleFileSelect = useCallback((file) => {
@@ -483,7 +489,9 @@ export default ExampleComponent;`;
     // Track modified files - compare against original baseline, not just previous sourceCode
     if (selectedFile) {
       setModifiedFiles(prev => {
-        const hasChanges = newCode !== originalCode;
+        const normalizedNewCode = normalizeLineEndings(newCode);
+        const normalizedOriginalCode = normalizeLineEndings(originalCode);
+        const hasChanges = normalizedNewCode !== normalizedOriginalCode;
         const isCurrentlyModified = prev.includes(selectedFile.path);
         
         if (hasChanges && !isCurrentlyModified) {
@@ -501,14 +509,16 @@ export default ExampleComponent;`;
     
     // Update manual edit result when code changes (e.g., from line revert)
     if (manualEditResult) {
+      const normalizedNewCode = normalizeLineEndings(newCode);
+      const normalizedOriginalCode = normalizeLineEndings(manualEditResult.originalCode || originalCode);
       const updatedManualEdit = {
         ...manualEditResult,
         newCode: newCode,
-        hasChanges: newCode !== (manualEditResult.originalCode || originalCode)
+        hasChanges: normalizedNewCode !== normalizedOriginalCode
       };
       setManualEditResult(updatedManualEdit);
     }
-  }, [selectedFile, sourceCode, manualEditResult, originalCode]);
+  }, [selectedFile, sourceCode, manualEditResult, originalCode, normalizeLineEndings]);
 
   // Handle patch generation from AI Context Window
   const handlePatchGenerated = useCallback((patch) => {
@@ -564,10 +574,12 @@ export default ExampleComponent;`;
 
   // Handle manual edit detection with auto-save
   const handleManualEdit = useCallback(async (newCode, originalCode, options = {}) => {
+    const normalizedNewCode = normalizeLineEndings(newCode);
+    const normalizedOriginalCode = normalizeLineEndings(originalCode);
     const manualEdit = {
       newCode,
       originalCode,
-      hasChanges: newCode !== originalCode,
+      hasChanges: normalizedNewCode !== normalizedOriginalCode,
       options
     };
     
@@ -628,7 +640,7 @@ export default ExampleComponent;`;
     } else {
       console.log('✅ Changes undone - code returned to original state');
     }
-  }, [selectedFile?.name, selectedFile?.path]);
+  }, [selectedFile?.name, selectedFile?.path, normalizeLineEndings]);
 
   // Handle diff stats changes from DiffPreviewSystem
   const handleDiffStatsChange = useCallback((diffStats) => {
