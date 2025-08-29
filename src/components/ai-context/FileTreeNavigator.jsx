@@ -40,18 +40,10 @@ const FileTreeNavigator = ({
 
   const loadFileTree = async () => {
     try {
-      console.log('🔍 FileTreeNavigator: Loading file tree from file_baselines...');
       // Fetch file baselines from API (core codebase files, no store_id needed)
       const data = await apiClient.get('patches/baselines');
-      
-      console.log('📡 FileTreeNavigator: API Response:', data);
-      console.log('📡 FileTreeNavigator: API Response type:', typeof data);
-      console.log('📡 FileTreeNavigator: API Response keys:', data ? Object.keys(data) : 'null');
-      
+
       if (data && data.success && data.data && data.data.files) {
-        console.log('✅ FileTreeNavigator: Got', data.data.files.length, 'files from baselines');
-        console.log('📁 FileTreeNavigator: Sample files:', data.data.files.slice(0, 5).map(f => f.file_path));
-        
         // Convert file baselines to file tree format
         const fileList = data.data.files.map(file => ({
           path: file.file_path,
@@ -65,16 +57,8 @@ const FileTreeNavigator = ({
         
         // Convert flat file list to hierarchical tree structure
         const tree = buildFileTree(fileList);
-        console.log('🌳 FileTreeNavigator: Built tree with', tree.children?.length || 0, 'children');
         setFileTree(tree);
       } else {
-        console.error('❌ FileTreeNavigator: Failed to load file tree:', data?.message || 'Unknown error');
-        console.error('❌ FileTreeNavigator: Full response:', data);
-        console.error('❌ FileTreeNavigator: Condition check results:');
-        console.error('   - data exists:', !!data);
-        console.error('   - data.success:', data && data.success);
-        console.error('   - data.data exists:', data && data.data);
-        console.error('   - data.data.files exists:', data && data.data && data.data.files);
         // Fallback to a simple error state
         setFileTree({
           name: 'src',
@@ -85,8 +69,6 @@ const FileTreeNavigator = ({
         });
       }
     } catch (error) {
-      console.error('❌ FileTreeNavigator: Error loading file tree:', error);
-      console.error('❌ FileTreeNavigator: Error details:', error.response || error.message);
       
       // Handle authentication errors gracefully
       if (error.message && error.message.includes('authentication')) {
@@ -98,7 +80,6 @@ const FileTreeNavigator = ({
           const fallbackData = await fallbackResponse.json();
           
           if (fallbackData && fallbackData.success && fallbackData.data && fallbackData.data.files) {
-            console.log('✅ FileTreeNavigator: Fallback successful, got', fallbackData.data.files.length, 'files');
             
             const fileList = fallbackData.data.files.map(file => ({
               path: file.file_path,
