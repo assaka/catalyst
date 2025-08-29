@@ -1025,19 +1025,20 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
         const containsMatch = modifiedContentTrimmed && addedContentTrimmed.includes(modifiedContentTrimmed);
         const reverseContainsMatch = modifiedContentTrimmed && modifiedContentTrimmed.includes(addedContentTrimmed);
         
-        console.log(`🔍 Match strategies: exact=${exactMatch}, contains=${containsMatch}, reverse=${reverseContainsMatch}`);
+        // Additional strategy: check if the added content is a word within the target content
+        const words = modifiedContentTrimmed.split(/\s+/).filter(w => w.length > 0);
+        const wordMatch = words.some(word => word === addedContentTrimmed || addedContentTrimmed === word);
         
-        if (exactMatch || containsMatch || reverseContainsMatch) {
-          console.log(`🎯 Found matching line at new file position ${newLineNumber}: "${addedContentTrimmed}"`);
+        console.log(`🔍 Match strategies: exact=${exactMatch}, contains=${containsMatch}, reverse=${reverseContainsMatch}, word=${wordMatch}`);
+        
+        if (exactMatch || containsMatch || reverseContainsMatch || wordMatch) {
+          console.log(`🎯 Found matching content: "${addedContentTrimmed}"`);
           console.log(`📍 Target line number: ${targetLineNumber}, Current new position: ${newLineNumber}`);
           
-          // Compare against the new file line number since that's what the frontend sends
-          if (Math.abs(newLineNumber - targetLineNumber) <= 5) {
-            hunkShouldBeRemoved = true;
-            console.log(`✂️ Marking hunk for removal - matches target line ${targetLineNumber} at new position ${newLineNumber}`);
-          } else {
-            console.log(`⚠️ Content matches but line number too far off: ${newLineNumber} vs ${targetLineNumber}`);
-          }
+          // Since we found matching content, mark the hunk for removal regardless of line number
+          // The line numbers in character-level diffs don't match visual line numbers
+          hunkShouldBeRemoved = true;
+          console.log(`✂️ Marking hunk for removal - content match found (ignoring line number mismatch)`);
         }
         
         // Increment new line number for added lines
