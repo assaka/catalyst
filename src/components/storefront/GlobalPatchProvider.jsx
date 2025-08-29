@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 
 /**
@@ -10,6 +10,7 @@ const GlobalPatchProvider = ({ children }) => {
   const [searchParams] = useSearchParams();
   const [patchData, setPatchData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [patchedComponent, setPatchedComponent] = useState(null);
 
   const patchesEnabled = searchParams.get('patches') === 'true';
   const storeId = searchParams.get('storeId');
@@ -56,7 +57,17 @@ const GlobalPatchProvider = ({ children }) => {
       
       if (injectedPatchData) {
         console.log(`🔧 GlobalPatchProvider: Using injected patch data for ${targetFileName}:`, injectedPatchData);
+        console.log(`📝 Injected finalCode contains yasmin:`, injectedPatchData.finalCode?.includes('yasmin'));
+        
+        // Apply the injected patch data
         setPatchData(injectedPatchData);
+        
+        // Process the patched code to apply changes
+        if (injectedPatchData.hasPatches && injectedPatchData.finalCode) {
+          console.log(`🔄 GlobalPatchProvider: Processing injected patch data...`);
+          console.log(`📄 Final code snippet:`, injectedPatchData.finalCode.substring(0, 500) + '...');
+        }
+        
         setLoading(false);
         return;
       }
@@ -87,6 +98,9 @@ const GlobalPatchProvider = ({ children }) => {
           
           console.log(`✅ GlobalPatchProvider: Retrieved patch data for ${targetFileName}:`, patchData);
           setPatchData(patchData);
+          
+          // For now, we rely on server-side rendering of patched content
+          // The injected patch data will be used by the backend preview route
         } else {
           console.error(`❌ GlobalPatchProvider: Failed to get patch data: ${patchResult.error}`);
           setPatchData({ hasPatches: false, fileName: targetFileName, appliedPatches: [] });

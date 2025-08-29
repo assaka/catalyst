@@ -1020,18 +1020,34 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
         console.log(`🔍 Against target content: "${modifiedContentTrimmed}"`);
         console.log(`🔍 Line position - Old file: ${oldLineNumber}, New file: ${newLineNumber}, Target line: ${targetLineNumber}`);
         
+        // Extract text content from HTML if present
+        const extractTextContent = (htmlString) => {
+          return htmlString.replace(/<[^>]*>/g, '').trim();
+        };
+        
+        const addedTextContent = extractTextContent(addedContentTrimmed);
+        const modifiedTextContent = extractTextContent(modifiedContentTrimmed);
+        
+        console.log(`🔍 Text content - Added: "${addedTextContent}", Target: "${modifiedTextContent}"`);
+        
         // Try multiple matching strategies
         const exactMatch = addedContentTrimmed === modifiedContentTrimmed;
         const containsMatch = modifiedContentTrimmed && addedContentTrimmed.includes(modifiedContentTrimmed);
         const reverseContainsMatch = modifiedContentTrimmed && modifiedContentTrimmed.includes(addedContentTrimmed);
         
-        // Additional strategy: check if the added content is a word within the target content
-        const words = modifiedContentTrimmed.split(/\s+/).filter(w => w.length > 0);
+        // Text-based matching (strip HTML tags)
+        const textExactMatch = addedTextContent === modifiedTextContent;
+        const textContainsMatch = modifiedTextContent && addedTextContent.includes(modifiedTextContent);
+        const textReverseContainsMatch = modifiedTextContent && modifiedTextContent.includes(addedTextContent);
+        
+        // Word-level matching
+        const words = modifiedTextContent.split(/\s+/).filter(w => w.length > 2); // Only significant words
         const wordMatch = words.some(word => word === addedContentTrimmed || addedContentTrimmed === word);
         
         console.log(`🔍 Match strategies: exact=${exactMatch}, contains=${containsMatch}, reverse=${reverseContainsMatch}, word=${wordMatch}`);
+        console.log(`🔍 Text strategies: textExact=${textExactMatch}, textContains=${textContainsMatch}, textReverse=${textReverseContainsMatch}`);
         
-        if (exactMatch || containsMatch || reverseContainsMatch || wordMatch) {
+        if (exactMatch || containsMatch || reverseContainsMatch || wordMatch || textExactMatch || textContainsMatch || textReverseContainsMatch) {
           console.log(`🎯 Found matching content: "${addedContentTrimmed}"`);
           console.log(`📍 Target line number: ${targetLineNumber}, Current new position: ${newLineNumber}`);
           
