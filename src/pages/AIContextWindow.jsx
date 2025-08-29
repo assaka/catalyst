@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
-import StorefrontPreview from '@/components/ai-context/StorefrontPreview';
 import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import BrowserPreview from '@/components/ai-context/BrowserPreview';
 import VersionHistory from '@/components/ai-context/VersionHistory';

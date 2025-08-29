@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import DiffService from './diff-service.js';
+import UnifiedDiffFrontendService from './unified-diff-frontend-service.js';
 import { astParser, ASTDiffer } from '../utils/ast-utils.js';
 
 // Version entry structure
@@ -122,7 +122,7 @@ export class VersionControlService {
     this.activeFiles = new Map(); // fileId -> current version info
 
     // Services
-    this.diffService = new DiffService();
+    this.diffService = new UnifiedDiffFrontendService();
     
     // Event listeners
     this.eventListeners = new Map();
@@ -206,16 +206,16 @@ export class VersionControlService {
       const diffResult = this.diffService.createDiff(
         currentVersion.content, 
         newContent,
-        { compress: this.options.enableCompression }
+        { filename: fileInfo.fileName || 'file.txt' }
       );
 
       if (diffResult.success) {
         version.addPatch(fileInfo.currentVersionId, {
-          diff: diffResult.diff,
-          compressed: diffResult.compressed,
+          diff: diffResult.unifiedDiff,
+          compressed: null, // No compression in unified diff service
           stats: diffResult.metadata
         });
-        version.diffStats = this.diffService.getDiffStats(diffResult.diff);
+        version.diffStats = diffResult.metadata;
       }
     }
 
@@ -414,9 +414,8 @@ export class VersionControlService {
       case 'target':
         return targetContent;
       case 'diff':
-        // Use diff service to merge intelligently
-        const diffResult = this.diffService.createDiff(targetContent, sourceContent);
-        return this.diffService.applyDiff(targetContent, diffResult.diff);
+        // For frontend, we'll use source strategy as diff merging requires backend
+        return sourceContent;
       default:
         return sourceContent;
     }
@@ -453,18 +452,16 @@ export class VersionControlService {
 
   /**
    * Apply patch to content
+   * Note: Frontend version doesn't support patch application - use backend for this
    */
   applyPatch(content, patch) {
     if (!patch || !patch.diff) {
       return content;
     }
-
-    let diff = patch.diff;
-    if (patch.compressed) {
-      diff = this.diffService.decompressDiff(patch.compressed);
-    }
-
-    return this.diffService.applyDiff(content, diff);
+    
+    // Frontend version cannot apply patches - return original content
+    console.warn('Frontend version-control-service does not support patch application');
+    return content;
   }
 
   /**
@@ -492,11 +489,13 @@ export class VersionControlService {
       throw new Error('One or both versions not found');
     }
 
-    return this.diffService.createUnifiedDiff(
+    const result = this.diffService.createDiff(
       fromVersion.content, 
       toVersion.content, 
-      filename
+      { filename }
     );
+    
+    return result.success ? result.unifiedDiff : null;
   }
 
   /**

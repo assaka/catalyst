@@ -395,7 +395,7 @@ class PatchService {
       }
 
       // Create diff
-      const diff = this.createDiff(baseline.code, modifiedCode, filePath);
+      const diff = await this.createDiff(baseline.code, modifiedCode, filePath);
       if (!diff.unifiedDiff) {
         return { success: false, error: 'Could not create diff - no changes detected' };
       }
