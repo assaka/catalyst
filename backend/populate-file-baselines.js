@@ -3,8 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-// Default store ID (the one from your logs)
-const DEFAULT_STORE_ID = '157d4590-49bf-4b0b-bd77-abe131909528';
+// File baselines are now global - no store_id needed
 
 function getFileExtension(filePath) {
   return path.extname(filePath).slice(1);
@@ -86,7 +85,6 @@ async function walkDirectory(dir, fileList = [], baseDir = null) {
         // Use ON CONFLICT DO NOTHING to prevent duplicates
         const result = await sequelize.query(`
           INSERT INTO file_baselines (
-            store_id, 
             file_path, 
             baseline_code, 
             code_hash, 
@@ -96,7 +94,6 @@ async function walkDirectory(dir, fileList = [], baseDir = null) {
             last_modified
           ) 
           VALUES (
-            :storeId,
             :filePath,
             :baselineCode,
             :codeHash,
@@ -105,11 +102,10 @@ async function walkDirectory(dir, fileList = [], baseDir = null) {
             :fileSize,
             :lastModified
           )
-          ON CONFLICT (store_id, file_path, version) DO NOTHING
+          ON CONFLICT (file_path, version) DO NOTHING
           RETURNING id
         `, {
           replacements: {
-            storeId: DEFAULT_STORE_ID,
             filePath: file.relativePath,
             baselineCode: content,
             codeHash: codeHash,

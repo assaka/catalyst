@@ -132,14 +132,16 @@ class PatchService {
    */
   async getBaseline(filePath, storeId) {
     try {
+      // File baselines are global for all stores, so we don't filter by store_id
+      // We'll look for any baseline for this file path
       const baselines = await sequelize.query(`
         SELECT baseline_code, code_hash, version 
         FROM file_baselines 
-        WHERE store_id = :storeId AND file_path = :filePath
+        WHERE file_path = :filePath
         ORDER BY last_modified DESC 
         LIMIT 1
       `, {
-        replacements: { storeId, filePath },
+        replacements: { filePath },
         type: sequelize.QueryTypes.SELECT
       });
 
