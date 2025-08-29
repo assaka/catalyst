@@ -1688,55 +1688,55 @@ app.get('/preview/:storeId', async (req, res) => {
 
     // Check if patches were applied and serve content accordingly
     if (patchResult.hasPatches && patchResult.finalCode) {
-      console.log(`✅ Patches applied for ${fileName} - serving static preview`);
+      console.log(`✅ Patches applied for ${fileName} - creating HTML with injected patch data`);
       
-      // Create a simple static HTML preview that demonstrates the patch working
-      const staticHtml = `<!DOCTYPE html>
+      // Create HTML that loads the frontend app with patch data injected
+      const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+      const pagePath = getPagePath(fileName);
+      const redirectParams = new URLSearchParams({
+        patches: 'true',
+        fileName: fileName,
+        storeId: storeId,
+        storeSlug: actualStoreSlug
+      });
+      
+      const frontendAppUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}?${redirectParams.toString()}`;
+      
+      // Create an HTML page that injects patch data and then redirects to the React app
+      const htmlWithInjectedData = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Preview: ${fileName}</title>
+    <title>Loading Preview: ${fileName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>
-    <div class="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
-        <div class="flex">
-            <div class="ml-3">
-                <p class="text-sm text-green-700">
-                    <strong>✅ Patches Applied:</strong> This page (${fileName}) has been rendered with ${patchResult.appliedPatches?.length || 0} patch(es) applied server-side.
-                </p>
-            </div>
+    <div class="flex items-center justify-center h-screen">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Loading patched component...</p>
+            <p class="text-sm text-gray-500 mt-2">Applying ${patchResult.appliedPatches?.length || 0} patch(es) to ${fileName}</p>
         </div>
     </div>
-    <div class="bg-gray-50 min-h-screen">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <h1 class="text-3xl font-bold text-gray-900 mb-8">yasmin Cart</h1>
-            <div class="bg-white p-8 rounded-lg shadow-sm">
-                <p class="text-lg text-gray-600 mb-4">🎉 Success! The patch system is working correctly.</p>
-                <p class="text-sm text-gray-500">This preview shows that the heading has been changed from "My Cart" to "yasmin Cart" as expected.</p>
-                
-                <div class="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <h3 class="font-medium text-blue-900">Patch Details:</h3>
-                    <ul class="mt-2 text-sm text-blue-800">
-                        <li>✓ File: ${fileName}</li>
-                        <li>✓ Patches Applied: ${patchResult.appliedPatches?.length || 0}</li>
-                        <li>✓ Server-side rendering: Active</li>
-                        <li>✓ Content modification: "yasmin Cart" (instead of "My Cart")</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
+    
     <script>
+        // Inject patch data globally for the React app to use
         window.__CATALYST_PATCH_DATA__ = {
-            hasPatches: true,
+            hasPatches: ${patchResult.hasPatches},
             fileName: "${fileName}",
             appliedPatches: ${JSON.stringify(patchResult.appliedPatches || [])},
-            previewMode: true,
-            note: "Static preview showing server-side patched content"
+            finalCode: ${JSON.stringify(patchResult.finalCode)},
+            previewMode: true
         };
-        console.log('🔧 Static preview loaded with patch data:', window.__CATALYST_PATCH_DATA__);
+        
+        console.log('🔧 Injected patch data:', window.__CATALYST_PATCH_DATA__);
+        console.log('📝 Final code contains yasmin:', window.__CATALYST_PATCH_DATA__.finalCode.includes('yasmin'));
+        
+        // Redirect to the React app after a brief delay to ensure data is injected
+        setTimeout(() => {
+            window.location.href = "${frontendAppUrl}";
+        }, 500);
     </script>
 </body>
 </html>`;
@@ -1744,9 +1744,10 @@ app.get('/preview/:storeId', async (req, res) => {
       // Set headers to prevent caching and allow iframe embedding
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('X-Frame-Options', 'ALLOWALL');
       
-      console.log(`🎯 Serving static preview for ${fileName} showing yasmin changes`);
-      return res.send(staticHtml);
+      console.log(`🎯 Serving HTML with injected patch data, redirecting to: ${frontendAppUrl}`);
+      return res.send(htmlWithInjectedData);
     } else {
       // If no patches were applied, redirect to frontend without patches parameter
       console.log(`ℹ️ No patches to apply for ${fileName} - redirecting to normal frontend`);
