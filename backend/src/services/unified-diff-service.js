@@ -34,19 +34,41 @@ class UnifiedDiffService {
       const originalFile = path.join(this.tempDir, `original_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
       const modifiedFile = path.join(this.tempDir, `modified_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
+      console.log(`🔍 UnifiedDiffService Debug for ${filePath}:`);
+      console.log(`  Original content length: ${originalCode?.length || 0}`);
+      console.log(`  Modified content length: ${modifiedCode?.length || 0}`);
+      console.log(`  Content are identical: ${originalCode === modifiedCode}`);
+      console.log(`  Original first 100 chars: ${(originalCode || '').substring(0, 100)}...`);
+      console.log(`  Modified first 100 chars: ${(modifiedCode || '').substring(0, 100)}...`);
+
       // Write files to temp location
       await fs.writeFile(originalFile, originalCode);
       await fs.writeFile(modifiedFile, modifiedCode);
 
+      // Verify what was actually written to files
+      const writtenOriginal = await fs.readFile(originalFile, 'utf8');
+      const writtenModified = await fs.readFile(modifiedFile, 'utf8');
+      
+      console.log(`  Written original length: ${writtenOriginal.length}`);
+      console.log(`  Written modified length: ${writtenModified.length}`);
+      console.log(`  Written files identical: ${writtenOriginal === writtenModified}`);
+
       try {
         // Use git diff for high-quality unified diff
-        const { stdout } = await execAsync(`git diff --no-index --no-prefix "${originalFile}" "${modifiedFile}" || true`);
+        const gitCommand = `git diff --no-index --no-prefix "${originalFile}" "${modifiedFile}" || true`;
+        console.log(`  Git command: ${gitCommand}`);
+        
+        const { stdout } = await execAsync(gitCommand);
+        
+        console.log(`  Git diff stdout length: ${stdout.length}`);
+        console.log(`  Git diff stdout preview: ${stdout.substring(0, 200)}`);
         
         // Clean up temp files
         await fs.unlink(originalFile).catch(() => {});
         await fs.unlink(modifiedFile).catch(() => {});
 
         if (!stdout.trim()) {
+          console.log(`  ❌ Git diff returned empty - no changes detected by git`);
           return null; // No changes
         }
 
