@@ -9,6 +9,7 @@ const router = express.Router();
 const patchService = require('../services/patch-service');
 const unifiedDiffService = require('../services/unified-diff-service');
 const { authMiddleware } = require('../middleware/auth');
+const { storeResolver } = require('../middleware/storeResolver');
 
 // Apply patches to a file and return the result (public endpoint for preview)
 router.get('/apply/:filePath(*)', async (req, res) => {
@@ -84,7 +85,7 @@ router.get('/apply/:filePath(*)', async (req, res) => {
 });
 
 // Create a new patch or update existing one in edit session (requires authentication)
-router.post('/create', authMiddleware, async (req, res) => {
+router.post('/create', authMiddleware, storeResolver, async (req, res) => {
   try {
     const {
       filePath,
@@ -99,15 +100,17 @@ router.post('/create', authMiddleware, async (req, res) => {
       useUpsert = true      // NEW: enable upsert strategy by default
     } = req.body;
 
-    const storeId = req.headers['x-store-id'];
-    if (!storeId) {
-      return res.status(400).json({
-        success: false,
-        error: 'Store ID is required. Please ensure x-store-id header is provided.'
-      });
-    }
+    // Store ID is now automatically resolved by storeResolver middleware
+    const storeId = req.storeId;
+    
+    // Debug logging for storeId tracking  
+    console.log('🔍 [PatchRoute] /create endpoint called');
+    console.log('  storeId from resolver:', storeId, '(type:', typeof storeId, ')');
+    console.log('  store info:', req.store);
+    console.log('  Request body filePath:', filePath);
 
     console.log(`📝 Creating/updating patch for ${filePath} (session: ${sessionId || 'none'})`);
+    console.log('🔍 [PatchRoute] Passing storeId to patchService:', storeId);
 
     const result = await patchService.createPatch(filePath, modifiedCode, {
       storeId,

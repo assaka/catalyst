@@ -388,7 +388,23 @@ class PatchService {
         useUpsert = true   // NEW: flag to enable/disable upsert behavior
       } = options;
 
+      // Debug logging for storeId tracking
+      console.log('🔍 [PatchService] createPatch called with:');
+      console.log('  filePath:', filePath);
+      console.log('  storeId:', storeId, '(type:', typeof storeId, ')');
+      console.log('  options received:', JSON.stringify(options, null, 2));
+
+      // Validate storeId before proceeding
+      if (!storeId || storeId === 'null' || storeId === null || storeId === undefined) {
+        console.error('❌ [PatchService] Invalid storeId received:', storeId);
+        return { 
+          success: false, 
+          error: `Invalid storeId: ${storeId}. StoreId must be a valid UUID.` 
+        };
+      }
+
       // Get baseline code
+      console.log('🔍 [PatchService] Calling getBaseline with storeId:', storeId);
       const baseline = await this.getBaseline(filePath, storeId);
       if (!baseline.success) {
         return { success: false, error: baseline.error };

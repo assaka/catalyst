@@ -10,7 +10,8 @@ import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import BrowserPreview from '@/components/ai-context/BrowserPreview';
 import VersionHistory from '@/components/ai-context/VersionHistory';
 import apiClient from '@/api/client';
-import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+// Store context no longer needed - backend resolves store automatically
+// import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 /**
  * Apply JSON Patch operations to source code
@@ -74,12 +75,8 @@ const applyPatchToCode = (sourceCode, patch) => {
 const AIContextWindowPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Store context for API calls
-  const { getSelectedStoreId, selectedStore } = useStoreSelection();
-  const storeId = getSelectedStoreId();
-  
-  // Debug store ID
-  console.log('🏪 [AIContextWindow] Store ID:', storeId, typeof storeId, 'from selectedStore:', selectedStore);
+  // Store context no longer needed - backend resolves store automatically
+  console.log('🏪 [AIContextWindow] Store ID now resolved server-side automatically');
   
   // State management
   const [selectedFile, setSelectedFile] = useState(null);
@@ -627,22 +624,14 @@ export default ExampleComponent;`;
           }
 
           console.log('💾 Auto-saving patch to database...');
-          
-          if (!storeId) {
-            console.error('❌ Cannot create patch: Store ID is null or undefined. selectedStore:', selectedStore);
-            // Show a user-friendly message
-            if (window.confirm('No store selected. Would you like to refresh the page to select a store?')) {
-              window.location.reload();
-            }
-            return;
-          }
+          // Store ID is now automatically resolved by backend middleware
           
           const response = await fetch('/api/patches/create', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-              'x-store-id': storeId
+              'Content-Type': 'application/json'
+              // No need for x-store-id header - backend resolves it automatically
             },
             body: JSON.stringify({
               filePath: filePath,
