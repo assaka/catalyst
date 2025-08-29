@@ -123,6 +123,8 @@ const resolvePageURL = async (pageName, storeId) => {
 // Function to fetch AST diff data from patches API
 const fetchAstDiffData = async (filePath, storeId) => {
   try {
+    console.log('🔍 [DiffPreview] Fetching patches for:', filePath, 'storeId:', storeId);
+    
     // Get the auth token using the same logic as FileTreeNavigator fix
     const getAuthToken = () => {
       const loggedOut = localStorage.getItem('user_logged_out') === 'true';
@@ -155,28 +157,39 @@ const fetchAstDiffData = async (filePath, storeId) => {
     };
     
     const token = getAuthToken();
+    console.log('🔑 [DiffPreview] Auth token available:', !!token);
     
     if (!token) {
+      console.error('❌ [DiffPreview] No authentication token available');
       throw new Error('No authentication token available. Please log in.');
     }
     
     // Fetch patches for the file
-    const patchResponse = await fetch(`/api/patches/${encodeURIComponent(filePath)}?store_id=${storeId}`, {
+    const apiUrl = `/api/patches/${encodeURIComponent(filePath)}?store_id=${storeId}`;
+    console.log('📡 [DiffPreview] API URL:', apiUrl);
+    
+    const patchResponse = await fetch(apiUrl, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
     
+    console.log('📊 [DiffPreview] Patch response status:', patchResponse.status, patchResponse.statusText);
+    
     if (!patchResponse.ok) {
+      console.error('❌ [DiffPreview] Patch response not OK:', patchResponse.status);
       throw new Error(`Failed to fetch patches: ${patchResponse.status}`);
     }
     
     const patchData = await patchResponse.json();
+    console.log('📋 [DiffPreview] Patch response data:', patchData);
     
     if (patchData.success && patchData.data && patchData.data.patches && patchData.data.patches.length > 0) {
+      console.log('✅ [DiffPreview] Found patches:', patchData.data.patches.length);
       // Use the most recent patch (first in array as they're ordered by creation time DESC)
       const latestPatch = patchData.data.patches[0];
+      console.log('🔍 [DiffPreview] Latest patch:', latestPatch.id, latestPatch.patch_name);
       
       // Also get the baseline code
       const baselineResponse = await fetch(`/api/patches/baseline/${encodeURIComponent(filePath)}?store_id=${storeId}`, {
@@ -218,6 +231,12 @@ const fetchAstDiffData = async (filePath, storeId) => {
         astDiff: latestPatch.ast_diff
       };
     } else {
+      console.log('❌ [DiffPreview] No patches found. Response structure:', {
+        success: patchData.success,
+        hasData: !!patchData.data,
+        hasPatches: patchData.data && !!patchData.data.patches,
+        patchesLength: patchData.data && patchData.data.patches ? patchData.data.patches.length : 'N/A'
+      });
       return {
         success: false,
         message: 'No patches found for this file',
@@ -225,7 +244,7 @@ const fetchAstDiffData = async (filePath, storeId) => {
       };
     }
   } catch (error) {
-    console.error('Error fetching AST diff data:', error);
+    console.error('❌ [DiffPreview] Error fetching AST diff data:', error);
     return {
       success: false,
       error: error.message,
@@ -402,26 +421,34 @@ const DiffPreviewSystem = ({
 
   // Fetch AST diff data when filePath changes and useAstDiff is enabled
   useEffect(() => {
+    console.log('🔄 [DiffPreview] useEffect triggered:', { useAstDiff, filePath, hasFilePath: !!filePath });
     if (useAstDiff && filePath && filePath.trim() !== '') {
       const fetchData = async () => {
+        console.log('📡 [DiffPreview] Starting fetchData for:', filePath);
         setFetchingAstDiff(true);
         setAstDiffError(null);
         
         try {
           const storeId = getSelectedStoreId();
+          console.log('🏪 [DiffPreview] Store ID:', storeId);
           const result = await fetchAstDiffData(filePath, storeId);
+          console.log('📊 [DiffPreview] fetchAstDiffData result:', result);
           
           if (result.success) {
+            console.log('✅ [DiffPreview] Setting astDiffData');
             setAstDiffData(result);
             
             // Update the codes if they were fetched from the API
             if (result.baselineCode && !originalCode) {
+              console.log('📄 [DiffPreview] Setting baseline code');
               originalBaseCodeRef.current = result.baselineCode;
             }
             if (result.modifiedCode) {
+              console.log('📝 [DiffPreview] Setting modified code');
               setCurrentModifiedCode(result.modifiedCode);
             }
           } else {
+            console.log('❌ [DiffPreview] Setting error:', result.error || result.message);
             setAstDiffError(result.error || result.message || 'Failed to fetch AST diff data');
             setAstDiffData(null);
           }
