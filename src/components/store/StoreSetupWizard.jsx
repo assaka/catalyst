@@ -45,9 +45,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
     }
     
     try {
-      const response = await apiClient.get('/supabase/status', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/supabase/status');
       if (response.success && response.connected) {
         setConnectionStatus(response);
         setSupabaseConnected(true);
@@ -63,9 +61,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
     if (currentStep === 1 && !supabaseConnected && storeId && storeId !== 'undefined') {
       const pollInterval = setInterval(async () => {
         try {
-          const response = await apiClient.get('/supabase/status', {
-            'x-store-id': storeId
-          });
+          const response = await apiClient.get('/supabase/status');
           if (response.success && response.connected && !supabaseConnected) {
             setSupabaseConnected(true);
             setConnectionStatus(response);
@@ -94,8 +90,7 @@ const StoreSetupWizard = ({ storeId, storeName, onComplete, onSkip }) => {
       setMigrationStatus({ status: 'running', message: 'Initializing database migration...' });
 
       const response = await apiClient.post('/supabase/migrate', 
-        { store_id: storeId },
-        { 'x-store-id': storeId }
+        { store_id: storeId }
       );
 
       if (response.success) {

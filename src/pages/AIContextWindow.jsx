@@ -150,18 +150,13 @@ const AIContextWindowPage = () => {
       }
 
       // First, create a new patch release
-      if (!storeId) {
-        console.error('❌ Cannot create release: No store selected');
-        alert('Please select a store first');
-        return;
-      }
+      // Store ID is now automatically resolved by backend middleware
       
       const createReleaseResponse = await fetch('/api/patches/releases', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`,
-          'x-store-id': storeId
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify({
           versionName: `Global-changes-v${Date.now()}`,
@@ -183,16 +178,13 @@ const AIContextWindowPage = () => {
 
       // Update open diffs with the release_id and set status to final/published for all modified files
       const finalizePromises = modifiedFiles.map(async (filePath) => {
-        if (!storeId) {
-          throw new Error('Store ID is required for finalization');
-        }
+        // Store ID is now automatically resolved by backend middleware
         
         const finalizeResponse = await fetch('/api/patches/finalize-diffs', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-            'x-store-id': storeId
+            'Authorization': `Bearer ${authToken}`
           },
           body: JSON.stringify({
             filePath,

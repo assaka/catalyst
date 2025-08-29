@@ -62,9 +62,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       if (!showRefreshToast) {
         setLoading(true);
       }
-      const response = await apiClient.get('/supabase/status', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/supabase/status');
 
       if (response.success) {
         setStatus(response);
@@ -112,9 +110,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
     
     try {
       setLoadingStats(true);
-      const response = await apiClient.get('/supabase/storage/stats', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/supabase/storage/stats');
 
       if (response.success) {
         setStorageStats(response.summary);
@@ -152,9 +148,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   const loadProjects = async () => {
     try {
       setLoadingProjects(true);
-      const response = await apiClient.get('/supabase/projects', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/supabase/projects');
 
       if (response.success) {
         setProjects(response.projects || []);
@@ -181,8 +175,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
     try {
       setChangingProject(true);
       const response = await apiClient.post('/supabase/select-project', 
-        { projectId },
-        { 'x-store-id': storeId }
+        { projectId }
       );
 
       if (response.success) {
@@ -213,9 +206,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
         apiClient.isLoggedOut = false;
       }
       
-      const response = await apiClient.post('/supabase/connect', { store_id: storeId }, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/supabase/connect', { store_id: storeId });
 
       if (response.success) {
         // Open OAuth URL in new window
@@ -303,9 +294,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
   const handleTestConnection = async () => {
     try {
       setTesting(true);
-      const response = await apiClient.post('/supabase/test', { store_id: storeId }, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/supabase/test', { store_id: storeId });
 
       if (response.success) {
         // Check if connection has limited scope
@@ -360,9 +349,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
     }
 
     try {
-      const response = await apiClient.post('/supabase/disconnect', { store_id: storeId }, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/supabase/disconnect', { store_id: storeId });
 
       if (response.success) {
         toast.success('Supabase disconnected successfully', {
@@ -386,9 +373,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       setTestingUpload(true);
       setUploadResult(null);
       
-      const response = await apiClient.post('/supabase/storage/test-upload', { store_id: storeId }, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/supabase/storage/test-upload', { store_id: storeId });
 
       if (response.success) {
         toast.success('Test image uploaded successfully!');
@@ -417,8 +402,6 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
       const response = await apiClient.post('/supabase/update-config', {
         projectId: selectedProjectId,
         serviceRoleKey: serviceRoleKey || undefined
-      }, {
-        'x-store-id': storeId
       });
 
       if (response.success) {
@@ -442,9 +425,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
     if (!status?.connected || !status?.hasServiceRoleKey) return;
     
     try {
-      const response = await apiClient.post('/supabase/storage/ensure-buckets', {}, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/supabase/storage/ensure-buckets', {});
 
       if (response.success) {
         if (response.bucketsCreated && response.bucketsCreated.length > 0) {
@@ -464,9 +445,7 @@ const SupabaseIntegration = ({ storeId, context = 'full' }) => {
     
     setLoadingBuckets(true);
     try {
-      const response = await apiClient.get('/supabase/storage/buckets', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/supabase/storage/buckets');
 
       if (response.success) {
         setBuckets(response.buckets || []);

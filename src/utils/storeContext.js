@@ -42,10 +42,8 @@ export const useStoreContext = () => {
   const getApiHeaders = (additionalHeaders = {}) => {
     const headers = { ...additionalHeaders };
     
-    const storeId = getStoreId();
-    if (storeId) {
-      headers['x-store-id'] = storeId;
-    }
+    // Store resolution is now handled by backend storeResolver middleware
+    // No need to include x-store-id header
 
     return headers;
   };
@@ -98,8 +96,9 @@ export const getStoreContextUtils = () => {
   return {
     getStoreSlugFromUrl: () => urlSlug,
     createApiHeaders: (storeId, additionalHeaders = {}) => ({
-      ...additionalHeaders,
-      ...(storeId && { 'x-store-id': storeId })
+      ...additionalHeaders
+      // Store resolution is now handled by backend storeResolver middleware
+      // No need to include x-store-id header
     })
   };
 };
@@ -128,8 +127,9 @@ export const createStoreApiConfig = (filePath, storeId, additionalHeaders = {}) 
     normalizedPath: normalizeFilePath(filePath),
     config: {
       headers: {
-        ...additionalHeaders,
-        ...(storeId && { 'x-store-id': storeId })
+        ...additionalHeaders
+        // Store resolution is now handled by backend storeResolver middleware
+        // No need to include x-store-id header
       }
     }
   };

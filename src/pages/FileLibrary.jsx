@@ -45,9 +45,7 @@ const FileLibrary = () => {
   const checkStorageProvider = async () => {
     try {
       // Check storage providers and their availability
-      const response = await apiClient.get('/storage/providers', {
-        'x-store-id': selectedStore?.id
-      });
+      const response = await apiClient.get('/storage/providers');
       
       if (response.success && response.data) {
         const currentProvider = response.data.current;
@@ -86,9 +84,7 @@ const FileLibrary = () => {
       console.log('🔐 FileLibrary: User role:', apiClient.getCurrentUserRole());
       
       // Get files using the provider-agnostic storage API
-      const response = await apiClient.get('/storage/list?folder=library', {
-        'x-store-id': selectedStore?.id
-      });
+      const response = await apiClient.get('/storage/list?folder=library');
       
       console.log('📡 FileLibrary: API response:', response);
       
@@ -198,8 +194,7 @@ const FileLibrary = () => {
         const response = await fetch('/api/storage/upload-multiple', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${apiClient.getToken()}`,
-            'x-store-id': selectedStore?.id
+            'Authorization': `Bearer ${apiClient.getToken()}`
           },
           body: formData
         });
@@ -295,8 +290,7 @@ const FileLibrary = () => {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiClient.getToken()}`,
-          'x-store-id': selectedStore?.id
+          'Authorization': `Bearer ${apiClient.getToken()}`
         },
         body: JSON.stringify({
           imagePath: filePath

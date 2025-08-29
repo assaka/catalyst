@@ -27,14 +27,11 @@ const BrowserPreview = ({
   const { selectedStore } = useStoreSelection();
   const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
   
-  // Create API config with store headers
+  // Create API config - store context handled by backend
   const getApiConfig = useCallback(() => {
     const headers = {};
-    if (storeId && storeId !== 'undefined') {
-      headers['x-store-id'] = storeId;
-    }
     return { headers };
-  }, [storeId]);
+  }, []);
 
 
 
@@ -100,9 +97,6 @@ const BrowserPreview = ({
   const checkPatchStatus = useCallback(async (fileName) => {
     try {
       const customHeaders = {};
-      if (storeId && storeId !== 'undefined') {
-        customHeaders['x-store-id'] = storeId;
-      }
       
       const encodedFileName = encodeURIComponent(fileName);
       const patchedUrl = `patches/apply/${encodedFileName}?preview=true&store_id=${storeId}`;

@@ -474,7 +474,6 @@ const AkeneoIntegration = () => {
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
       
       const response = await apiClient.get('/integrations/akeneo/stats', {
-        'x-store-id': storeId,
         'x-skip-transform': 'true'  // Don't transform this response
       });
       
@@ -584,9 +583,7 @@ const AkeneoIntegration = () => {
       const storeId = selectedStore?.id;
       if (!storeId) return;
 
-      const response = await apiClient.get('/integrations/akeneo/schedules', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/integrations/akeneo/schedules');
 
       if (response.data?.success || response.success) {
         const responseData = response.data || response;
@@ -604,9 +601,7 @@ const AkeneoIntegration = () => {
     if (!selectedStore?.id) return;
     
     try {
-      const response = await apiClient.get('/integrations/akeneo/custom-mappings', {
-        'x-store-id': selectedStore.id
-      });
+      const response = await apiClient.get('/integrations/akeneo/custom-mappings');
       
       if (response.success) {
         const mappings = response.mappings;
@@ -663,9 +658,7 @@ const AkeneoIntegration = () => {
     if (!selectedStore?.id) return;
     
     try {
-      await apiClient.post('/integrations/akeneo/custom-mappings', mappings, {
-        'x-store-id': selectedStore.id
-      });
+      await apiClient.post('/integrations/akeneo/custom-mappings', mappings);
       console.log('✅ Custom mappings saved to database');
     } catch (error) {
       console.error('Failed to save custom mappings to database:', error);
@@ -681,9 +674,7 @@ const AkeneoIntegration = () => {
       const storeId = selectedStore?.id;
       if (!storeId) return;
 
-      const response = await apiClient.get('/integrations/akeneo/channels', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/integrations/akeneo/channels');
 
       if (response.data?.success || response.success) {
         const responseData = response.data || response;
@@ -712,9 +703,7 @@ const AkeneoIntegration = () => {
       console.log('🔧 Current connection status:', connectionStatus);
       console.log('⚙️ Config saved:', configSaved);
       
-      const response = await apiClient.get('/integrations/akeneo/categories', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/integrations/akeneo/categories');
 
       console.log('📥 Categories API response status:', response.status);
       console.log('📥 Categories API response data:', response.data);
@@ -815,9 +804,7 @@ const AkeneoIntegration = () => {
 
       // Fallback to loading families directly from Akeneo if connection is successful
       if (connectionStatus?.success) {
-        const response = await apiClient.get('/integrations/akeneo/families', {
-          'x-store-id': storeId
-        });
+        const response = await apiClient.get('/integrations/akeneo/families');
 
         if (response.success) {
           const familyData = response.families?.map(family => ({
@@ -894,9 +881,7 @@ const AkeneoIntegration = () => {
         return;
       }
 
-      const response = await apiClient.post('/integrations/akeneo/schedules', scheduleForm, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/integrations/akeneo/schedules', scheduleForm);
 
       if (response.data?.success || response.success) {
         toast.success('Schedule saved successfully');
@@ -926,9 +911,7 @@ const AkeneoIntegration = () => {
       const storeId = selectedStore?.id;
       if (!storeId) return;
 
-      const response = await apiClient.delete(`/integrations/akeneo/schedules/${scheduleId}`, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.delete(`/integrations/akeneo/schedules/${scheduleId}`);
 
       if (response.data?.success || response.success) {
         toast.success('Schedule deleted successfully');
@@ -1160,9 +1143,7 @@ const AkeneoIntegration = () => {
         return;
       }
 
-      const response = await apiClient.get('/integrations/akeneo/connection-status', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/integrations/akeneo/connection-status');
       
       console.log('📡 Connection status response:', response);
       
@@ -1198,9 +1179,7 @@ const AkeneoIntegration = () => {
       const storeId = selectedStore?.id;
       if (!storeId) return;
       
-      const response = await apiClient.get('/storage/providers', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/storage/providers');
       
       if (response.success && response.data) {
         const currentProvider = response.data.current;
@@ -1235,9 +1214,7 @@ const AkeneoIntegration = () => {
       }
 
       setLoading(true);
-      const response = await apiClient.get('/integrations/akeneo/config-status', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/integrations/akeneo/config-status');
       
       console.log('📥 Config status response:', response);
       
@@ -1385,9 +1362,7 @@ const AkeneoIntegration = () => {
         console.log('📋 Using provided configuration for test');
       }
       
-      const response = await apiClient.post('/integrations/akeneo/test-connection', requestPayload, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/integrations/akeneo/test-connection', requestPayload);
       
       console.log('📥 Test connection response:', response);
       
@@ -1452,9 +1427,7 @@ const AkeneoIntegration = () => {
     setSaving(true);
 
     try {
-      const response = await apiClient.post('/integrations/akeneo/save-config', config, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/integrations/akeneo/save-config', config);
       
       // Handle different response structures
       const responseData = response.data || response;
@@ -1570,9 +1543,7 @@ const AkeneoIntegration = () => {
       
       console.log('🎯 Selected root categories for import:', selectedRootCategories);
       
-      const response = await apiClient.post('/integrations/akeneo/import-categories', requestPayload, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/integrations/akeneo/import-categories', requestPayload);
 
       console.log('📥 Import categories response:', response);
       
@@ -1724,9 +1695,7 @@ const AkeneoIntegration = () => {
 
       console.log('🎯 Attribute import settings:', requestPayload);
       
-      const response = await apiClient.post('/integrations/akeneo/import-attributes', requestPayload, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/integrations/akeneo/import-attributes', requestPayload);
 
       console.log('📥 Import attributes response:', response);
       
@@ -1859,9 +1828,7 @@ const AkeneoIntegration = () => {
       
       console.log('🎯 Selected families for import:', selectedFamiliesToImport);
       
-      const response = await apiClient.post('/integrations/akeneo/import-families', requestPayload, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/integrations/akeneo/import-families', requestPayload);
 
       console.log('📥 Import families response:', response);
       
@@ -1958,9 +1925,7 @@ const AkeneoIntegration = () => {
 
       console.log('🎯 Product import settings:', requestPayload);
 
-      const response = await apiClient.post('/integrations/akeneo/import-products', requestPayload, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/integrations/akeneo/import-products', requestPayload);
 
       console.log('📥 Import products response:', response);
       console.log('📥 Import products response.data:', response.data);
@@ -2101,8 +2066,6 @@ const AkeneoIntegration = () => {
       const response = await apiClient.post('/integrations/akeneo/import-all', {
         ...config,
         dryRun
-      }, {
-        'x-store-id': storeId
       });
 
       // Handle both wrapped and direct response formats

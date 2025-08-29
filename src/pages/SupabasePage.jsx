@@ -26,9 +26,7 @@ const SupabasePage = () => {
     try {
       setLoading(true);
       // Use apiClient which handles authentication correctly
-      const response = await apiClient.get('/supabase/status', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/supabase/status');
       
       // apiClient returns the response directly, not wrapped in .data
       if (response && response.success) {

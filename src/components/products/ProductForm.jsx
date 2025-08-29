@@ -446,9 +446,7 @@ export default function ProductForm({ product, categories, stores, taxes, attrib
         images: imagesArray
       });
       
-      const response = await apiClient.put(`/products/${product.id}`, updateData, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.put(`/products/${product.id}`, updateData);
       
       console.log('✅ Auto-save response:', response);
       

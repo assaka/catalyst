@@ -4,7 +4,7 @@ const multer = require('multer');
 const storageManager = require('../services/storage-manager');
 const { Category } = require('../models');
 const { authMiddleware } = require('../middleware/auth');
-const { checkStoreOwnership } = require('../middleware/storeAuth');
+const { storeResolver } = require('../middleware/storeResolver');
 
 // Configure multer for image uploads
 const upload = multer({
@@ -22,28 +22,9 @@ const upload = multer({
   }
 });
 
-// Extract store ID middleware - gets storeId from headers/body/params
-const extractStoreId = (req, res, next) => {
-  const storeId = req.headers['x-store-id'] || 
-                  req.body.store_id || 
-                  req.query.store_id ||
-                  req.params.store_id;
-  
-  if (!storeId) {
-    return res.status(400).json({
-      success: false,
-      error: 'Store ID is required'
-    });
-  }
-  
-  req.storeId = storeId;
-  next();
-};
-
-// All routes require authentication and store ownership
+// All routes require authentication and automatic store resolution
 router.use(authMiddleware);
-router.use(extractStoreId);
-router.use(checkStoreOwnership);
+router.use(storeResolver);
 
 /**
  * POST /api/categories/:categoryId/image

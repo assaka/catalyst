@@ -48,9 +48,7 @@ const MediaStorage = () => {
     try {
       setLoading(true);
       // Use apiClient which handles authentication correctly
-      const response = await apiClient.get('/supabase/status', {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.get('/supabase/status');
 
       // apiClient returns the response directly, not wrapped in .data
       if (response && response.success) {
@@ -72,9 +70,7 @@ const MediaStorage = () => {
   const ensureBuckets = async () => {
     try {
       // Use apiClient for consistency and proper authentication
-      const response = await apiClient.post('/supabase/storage/ensure-buckets', {}, {
-        'x-store-id': storeId
-      });
+      const response = await apiClient.post('/supabase/storage/ensure-buckets');
 
       // apiClient returns the response directly
       if (response && response.success) {

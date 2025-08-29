@@ -146,8 +146,7 @@ const ProductImageUpload = ({
     const response = await fetch('/api/storage/upload', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        'x-store-id': storeId
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
       },
       body: formData
     });

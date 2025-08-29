@@ -44,8 +44,7 @@ const VersionHistory = ({ filePath, onRollback, className }) => {
 
       const response = await fetch('/api/patches/releases', {
         headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'x-store-id': storeId
+          'Authorization': `Bearer ${authToken}`
         }
       });
 

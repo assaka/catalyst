@@ -65,9 +65,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
       // When uploadFolder is 'category', only show category images
       // Otherwise show all files for general media library
       let requestUrl = '/storage/list';
-      let params = {
-        'x-store-id': selectedStore?.id
-      };
+      let params = {};
       
       if (uploadFolder === 'category') {
         params.folder = 'category';
@@ -125,9 +123,7 @@ const MediaBrowser = ({ isOpen, onClose, onInsert, allowMultiple = false, upload
     try {
       if (!selectedStore?.id) return;
       
-      const response = await apiClient.get('/storage/providers', {
-        'x-store-id': selectedStore.id
-      });
+      const response = await apiClient.get('/storage/providers');
       
       if (response.success && response.data) {
         const currentProvider = response.data.current;

@@ -128,8 +128,6 @@ export default function CategoryForm({ category, onSubmit, onCancel, parentCateg
             image_url: newImageUrl,
             parent_id: formData.parent_id || null,
             sort_order: parseInt(formData.sort_order) || 0
-          }, {
-            'x-store-id': storeId
           });
           
           if (response.success) {

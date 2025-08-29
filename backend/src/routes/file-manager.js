@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const storageManager = require('../services/storage-manager');
 const { authMiddleware } = require('../middleware/auth');
-const { checkStoreOwnership } = require('../middleware/storeAuth');
+const { storeResolver } = require('../middleware/storeResolver');
 const path = require('path');
 
 // Configure multer for file uploads
@@ -31,29 +31,10 @@ const upload = multer({
   }
 });
 
-// Extract store ID middleware
-const extractStoreId = (req, res, next) => {
-  const storeId = req.headers['x-store-id'] || 
-                  req.body.store_id || 
-                  req.query.store_id ||
-                  req.params.store_id;
-  
-  if (!storeId) {
-    return res.status(400).json({
-      success: false,
-      message: 'Store ID is required'
-    });
-  }
-  
-  req.storeId = storeId;
-  req.params.store_id = storeId;
-  next();
-};
 
 // Upload file with organized structure
 router.post('/upload', authMiddleware,
-  extractStoreId,
-  checkStoreOwnership,
+  storeResolver,
   upload.single('file'),
   async (req, res) => {
     try {
@@ -118,8 +99,7 @@ router.post('/upload', authMiddleware,
 
 // Upload multiple files
 router.post('/upload-multiple', authMiddleware,
-  extractStoreId,
-  checkStoreOwnership,
+  storeResolver,
   upload.array('files', 10),
   async (req, res) => {
     try {
@@ -198,8 +178,7 @@ router.post('/upload-multiple', authMiddleware,
 
 // List files in a directory
 router.get('/list', authMiddleware,
-  extractStoreId,
-  checkStoreOwnership,
+  storeResolver,
   async (req, res) => {
     try {
       const { storeId } = req;
@@ -239,8 +218,7 @@ router.get('/list', authMiddleware,
 
 // Delete a file
 router.delete('/delete', authMiddleware,
-  extractStoreId,
-  checkStoreOwnership,
+  storeResolver,
   async (req, res) => {
     try {
       const { storeId } = req;
@@ -271,8 +249,7 @@ router.delete('/delete', authMiddleware,
 
 // Get storage statistics
 router.get('/stats', authMiddleware,
-  extractStoreId,
-  checkStoreOwnership,
+  storeResolver,
   async (req, res) => {
     try {
       const { storeId } = req;

@@ -57,8 +57,7 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch('/api/shopify/app-configured', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       const data = await response.json();
@@ -100,8 +99,7 @@ const ShopifyIntegration = () => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-          'x-store-id': storeId
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(appCredentials)
       });
@@ -142,8 +140,7 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch('/api/shopify/status', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       const data = await response.json();
@@ -161,8 +158,7 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch('/api/shopify/shop-info', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
@@ -179,8 +175,7 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch('/api/shopify/import/stats', {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
@@ -210,8 +205,7 @@ const ShopifyIntegration = () => {
     try {
       const response = await fetch(`/api/shopify/auth?shop_domain=${formattedDomain}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
@@ -244,8 +238,7 @@ const ShopifyIntegration = () => {
       const response = await fetch('/api/shopify/test-connection', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
@@ -276,8 +269,7 @@ const ShopifyIntegration = () => {
       const response = await fetch('/api/shopify/disconnect', {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-store-id': storeId
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
 
@@ -312,8 +304,7 @@ const ShopifyIntegration = () => {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-          'x-store-id': storeId
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(options)
       });
