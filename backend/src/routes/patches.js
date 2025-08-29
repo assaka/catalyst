@@ -1035,28 +1035,70 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
         // against the change being made, not the final target content
         
         // Strategy: Check for contextual matching with deletion/addition pairs
+        // Look for deletions within the same hunk, not just the immediately previous line
         let hasContextualMatch = false;
-        if (i > 0) {
-          const prevLine = lines[i-1];
-          if (prevLine && prevLine.startsWith('-')) {
-            const removedContent = prevLine.substring(1).trim();
-            console.log(`🔍 Found deletion context: "${removedContent}"`);
+        
+        // Collect all deletions and additions in the current hunk
+        const hunkDeletions = [];
+        const hunkAdditions = [];
+        
+        // Search backwards and forwards from current position within the hunk
+        // Find the start of the current hunk by looking backwards for the @@ header
+        let hunkStartIndex = i;
+        for (let k = i; k >= 0; k--) {
+          if (lines[k].startsWith('@@')) {
+            hunkStartIndex = k;
+            break;
+          }
+        }
+        
+        for (let j = hunkStartIndex; j < lines.length && j < i + 10; j++) {
+          const line = lines[j];
+          if (line.startsWith('@@')) {
+            // If we hit another hunk header, stop
+            if (j > hunkStartIndex) break;
+          } else if (line.startsWith('-')) {
+            hunkDeletions.push({
+              content: line.substring(1).trim(),
+              index: j,
+              distance: Math.abs(j - i)
+            });
+          } else if (line.startsWith('+')) {
+            hunkAdditions.push({
+              content: line.substring(1).trim(), 
+              index: j,
+              distance: Math.abs(j - i)
+            });
+          }
+        }
+        
+        console.log(`🔍 Hunk deletions found: ${hunkDeletions.length}`);
+        console.log(`🔍 Hunk additions found: ${hunkAdditions.length}`);
+        
+        // Look for the best deletion/addition pair match
+        if (hunkDeletions.length > 0) {
+          // Sort by distance to current addition line
+          hunkDeletions.sort((a, b) => a.distance - b.distance);
+          
+          for (const deletion of hunkDeletions) {
+            console.log(`🔍 Testing deletion context: "${deletion.content}" (distance: ${deletion.distance})`);
             
             // For contextual match, we need TWO conditions:
             // 1. The removed content should be in our target content (what we want to restore)
             // 2. The added content should NOT naturally belong in our target content (what we want to remove)
-            const removedBelongsInTarget = modifiedTextContent.toLowerCase().includes(removedContent.toLowerCase());
+            const removedBelongsInTarget = modifiedTextContent.toLowerCase().includes(deletion.content.toLowerCase());
             const addedBelongsInTarget = modifiedTextContent.toLowerCase().includes(addedContentTrimmed.toLowerCase());
             
-            console.log(`🔍 Removed "${removedContent}" belongs in target: ${removedBelongsInTarget}`);
+            console.log(`🔍 Removed "${deletion.content}" belongs in target: ${removedBelongsInTarget}`);
             console.log(`🔍 Added "${addedContentTrimmed}" belongs in target: ${addedBelongsInTarget}`);
             
             // Only match if we're replacing something that belongs with something that doesn't belong
             if (removedBelongsInTarget && !addedBelongsInTarget) {
               hasContextualMatch = true;
-              console.log(`🔍 Contextual match found: restoring "${removedContent}", removing "${addedContentTrimmed}"`);
+              console.log(`🔍 Contextual match found: restoring "${deletion.content}", removing "${addedContentTrimmed}"`);
+              break; // Found a match, no need to check other deletions
             } else {
-              console.log(`🔍 No contextual match: both removed and added content have same relationship to target`);
+              console.log(`🔍 No contextual match with "${deletion.content}"`);
             }
           }
         }
