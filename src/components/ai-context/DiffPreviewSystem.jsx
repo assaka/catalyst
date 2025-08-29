@@ -240,7 +240,6 @@ const SplitViewPane = ({
   diffLines, 
   side, 
   showLineNumbers, 
-  showWhitespace, 
   onLineRevert, 
   originalLines,
   modifiedLines,
@@ -273,10 +272,6 @@ const SplitViewPane = ({
     }
   };
 
-  const formatLine = (line) => {
-    if (!showWhitespace) return line;
-    return line.replace(/ /g, '·').replace(/\t/g, '→   ');
-  };
 
   return (
     <div className="font-mono min-w-max">
@@ -351,7 +346,7 @@ const SplitViewPane = ({
                 <span className={`${diffLine.type === 'addition' && side === 'modified' ? 'text-green-700' : 
                                   diffLine.type === 'deletion' && side === 'original' ? 'text-red-700' : 
                                   'text-foreground'} whitespace-nowrap block`}>
-                  {formatLine(lineContent) || ' '}
+                  {lineContent || ' '}
                 </span>
               )}
             </div>
@@ -379,8 +374,6 @@ const DiffPreviewSystem = ({
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
   const [contextLines, setContextLines] = useState(3);
-  const [algorithm, setAlgorithm] = useState('myers');
-  const [showWhitespace, setShowWhitespace] = useState(false);
   const [currentModifiedCode, setCurrentModifiedCode] = useState(modifiedCode);
   const [copyStatus, setCopyStatus] = useState({ copied: false, error: null });
   const [previewStatus, setPreviewStatus] = useState({ loading: false, error: null, url: null });
@@ -731,7 +724,7 @@ const DiffPreviewSystem = ({
       };
     }
 
-    const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode, { algorithm });
+    const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode);
     const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
     const unifiedDiff = result.unifiedDiff; // Use unified diff from result
     
@@ -740,7 +733,7 @@ const DiffPreviewSystem = ({
       stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
       unifiedDiff
     };
-  }, [currentModifiedCode, algorithm, fileName]);
+  }, [currentModifiedCode, fileName]);
 
   // Notify parent when diff stats change
   useEffect(() => {
@@ -1288,15 +1281,6 @@ const DiffPreviewSystem = ({
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={showWhitespace}
-                        onChange={(e) => setShowWhitespace(e.target.checked)}
-                      />
-                      <span>Whitespace</span>
-                    </label>
-                    
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
                         checked={collapseUnchanged}
                         onChange={(e) => setCollapseUnchanged(e.target.checked)}
                       />
@@ -1318,17 +1302,6 @@ const DiffPreviewSystem = ({
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2 text-sm">
-                    <span>Algorithm:</span>
-                    <select
-                      value={algorithm}
-                      onChange={(e) => setAlgorithm(e.target.value)}
-                      className="px-2 py-1 border rounded text-xs"
-                    >
-                      <option value="myers">Myers</option>
-                      <option value="patience">Patience</option>
-                    </select>
-                  </div>
                 </div>
               </div>
               
@@ -1385,14 +1358,6 @@ const DiffPreviewSystem = ({
                   <label className="flex items-center space-x-2">
                     <input
                       type="checkbox"
-                      checked={showWhitespace}
-                      onChange={(e) => setShowWhitespace(e.target.checked)}
-                    />
-                    <span>Whitespace</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
                       checked={collapseUnchanged}
                       onChange={(e) => setCollapseUnchanged(e.target.checked)}
                     />
@@ -1425,7 +1390,6 @@ const DiffPreviewSystem = ({
                           diffLines={finalDisplayLines}
                           side="original"
                           showLineNumbers={lineNumbers}
-                          showWhitespace={showWhitespace}
                           onLineRevert={handleLineRevert}
                           originalLines={originalBaseCodeRef.current.split('\n')}
                           modifiedLines={currentModifiedCode.split('\n')}
@@ -1462,8 +1426,7 @@ const DiffPreviewSystem = ({
                             diffLines={finalDisplayLines}
                             side="modified"
                             showLineNumbers={lineNumbers}
-                            showWhitespace={showWhitespace}
-                            onLineRevert={handleLineRevert}
+                              onLineRevert={handleLineRevert}
                             originalLines={originalBaseCodeRef.current.split('\n')}
                             modifiedLines={currentModifiedCode.split('\n')}
                             onExpandCollapsed={handleExpandCollapsed}
@@ -1486,7 +1449,7 @@ const DiffPreviewSystem = ({
                 <h4 className="font-medium">Git-style Unified Diff</h4>
                 <div className="flex items-center space-x-2">
                   <Badge variant="secondary" className="text-xs">
-                    {diffResult.metadata?.algorithm || algorithm}
+                    {diffResult.metadata?.algorithm || 'unified'}
                   </Badge>
                   <Button 
                     variant="ghost" 
