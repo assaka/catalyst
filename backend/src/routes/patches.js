@@ -1030,6 +1030,25 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
         
         console.log(`🔍 Text content - Added: "${addedTextContent}", Target: "${modifiedTextContent}"`);
         
+        // CRITICAL FIX: When reverting, we need to find the change that contains the word we're reverting
+        // The frontend is trying to revert "hamid" back to "Your", so we should match the added content "hamid"
+        // against the change being made, not the final target content
+        
+        // Strategy: Check for contextual matching with deletion/addition pairs
+        let hasContextualMatch = false;
+        if (i > 0) {
+          const prevLine = lines[i-1];
+          if (prevLine && prevLine.startsWith('-')) {
+            const removedContent = prevLine.substring(1).trim();
+            console.log(`🔍 Found deletion context: "${removedContent}"`);
+            // If the removed content would fit in our target content, this is the change we want
+            if (modifiedTextContent.toLowerCase().includes(removedContent.toLowerCase())) {
+              hasContextualMatch = true;
+              console.log(`🔍 Contextual match found: "${removedContent}" should be in "${modifiedTextContent}"`);
+            }
+          }
+        }
+        
         // Try multiple matching strategies
         const exactMatch = addedContentTrimmed === modifiedContentTrimmed;
         const containsMatch = modifiedContentTrimmed && addedContentTrimmed.includes(modifiedContentTrimmed);
@@ -1046,8 +1065,9 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
         
         console.log(`🔍 Match strategies: exact=${exactMatch}, contains=${containsMatch}, reverse=${reverseContainsMatch}, word=${wordMatch}`);
         console.log(`🔍 Text strategies: textExact=${textExactMatch}, textContains=${textContainsMatch}, textReverse=${textReverseContainsMatch}`);
+        console.log(`🔍 Context strategies: contextual=${hasContextualMatch}`);
         
-        if (exactMatch || containsMatch || reverseContainsMatch || wordMatch || textExactMatch || textContainsMatch || textReverseContainsMatch) {
+        if (exactMatch || containsMatch || reverseContainsMatch || wordMatch || textExactMatch || textContainsMatch || textReverseContainsMatch || hasContextualMatch) {
           console.log(`🎯 Found matching content: "${addedContentTrimmed}"`);
           console.log(`📍 Target line number: ${targetLineNumber}, Current new position: ${newLineNumber}`);
           
