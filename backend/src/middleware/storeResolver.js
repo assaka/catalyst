@@ -8,6 +8,7 @@ const { sequelize } = require('../database/connection');
 const storeResolver = async (req, res, next) => {
   try {
     console.log('🏪 [StoreResolver] Resolving store for user:', req.user?.id);
+    console.log('🏪 [StoreResolver] Full user object:', req.user);
 
     if (!req.user || !req.user.id) {
       console.log('❌ [StoreResolver] No authenticated user found');
@@ -17,9 +18,16 @@ const storeResolver = async (req, res, next) => {
       });
     }
 
-    // Query to find store(s) owned by this user
-    const [stores] = await sequelize.query(`
-      SELECT id, name, slug, is_active 
+    // Test database connection first
+    console.log('🔍 [StoreResolver] Testing database connection...');
+    await sequelize.authenticate();
+    console.log('✅ [StoreResolver] Database connection successful');
+
+    // Query to find store(s) owned by this user - with enhanced debugging
+    console.log('🔍 [StoreResolver] Executing stores query with userId:', req.user.id, 'type:', typeof req.user.id);
+    
+    const stores = await sequelize.query(`
+      SELECT id, name, slug, is_active, user_id, created_at 
       FROM stores 
       WHERE user_id = :userId AND is_active = true 
       ORDER BY created_at DESC
@@ -28,10 +36,39 @@ const storeResolver = async (req, res, next) => {
       type: sequelize.QueryTypes.SELECT
     });
 
-    console.log('🔍 [StoreResolver] Found stores for user:', stores.length);
+    console.log('🔍 [StoreResolver] Raw query result:', stores);
+    console.log('🔍 [StoreResolver] Query result type:', typeof stores);
+    console.log('🔍 [StoreResolver] Is array?', Array.isArray(stores));
+    console.log('🔍 [StoreResolver] Found stores for user:', stores?.length || 0);
+    
+    if (stores && stores.length > 0) {
+      console.log('🔍 [StoreResolver] Store details:', stores.map(s => ({
+        id: s.id,
+        name: s.name,
+        user_id: s.user_id,
+        is_active: s.is_active
+      })));
+    }
 
-    if (stores.length === 0) {
-      console.log('❌ [StoreResolver] No active stores found for user');
+    if (!stores || stores.length === 0) {
+      console.log('❌ [StoreResolver] No active stores found for user ID:', req.user.id);
+      
+      // Let's also check if there are ANY stores for this user (including inactive)
+      const allStores = await sequelize.query(`
+        SELECT id, name, slug, is_active, user_id 
+        FROM stores 
+        WHERE user_id = :userId 
+        ORDER BY created_at DESC
+      `, {
+        replacements: { userId: req.user.id },
+        type: sequelize.QueryTypes.SELECT
+      });
+      
+      console.log('🔍 [StoreResolver] All stores (including inactive) for user:', allStores?.length || 0);
+      if (allStores && allStores.length > 0) {
+        console.log('🔍 [StoreResolver] Inactive stores found:', allStores);
+      }
+      
       return res.status(403).json({
         success: false,
         error: 'No active stores found for this user'
@@ -55,9 +92,10 @@ const storeResolver = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('❌ [StoreResolver] Error resolving store:', error);
+    console.error('❌ [StoreResolver] Error stack:', error.stack);
     return res.status(500).json({
       success: false,
-      error: 'Failed to resolve store information'
+      error: 'Failed to resolve store information: ' + error.message
     });
   }
 };

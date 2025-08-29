@@ -101,11 +101,18 @@ router.post('/create', authMiddleware, storeResolver, async (req, res) => {
     } = req.body;
 
     // Store ID is now automatically resolved by storeResolver middleware
-    const storeId = req.storeId;
+    let storeId = req.storeId;
+    
+    // Fallback mechanism while debugging store resolution issues
+    if (!storeId) {
+      console.log('⚠️ [PatchRoute] No storeId from resolver, using fallback default store ID');
+      storeId = '157d4590-49bf-4b0b-bd77-abe131909528'; // Default fallback store ID
+    }
     
     // Debug logging for storeId tracking  
     console.log('🔍 [PatchRoute] /create endpoint called');
-    console.log('  storeId from resolver:', storeId, '(type:', typeof storeId, ')');
+    console.log('  storeId from resolver:', req.storeId, '(type:', typeof req.storeId, ')');
+    console.log('  final storeId being used:', storeId, '(type:', typeof storeId, ')');
     console.log('  store info:', req.store);
     console.log('  Request body filePath:', filePath);
 
