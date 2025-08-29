@@ -1747,19 +1747,6 @@ app.get('/preview/:storeId', async (req, res) => {
       
       console.log(`🎯 Serving static preview for ${fileName} showing yasmin changes`);
       return res.send(staticHtml);
-        
-      } catch (fetchError) {
-        console.error('❌ Error fetching frontend content:', fetchError.message);
-        // Fallback to redirect if fetch fails
-        const redirectParams = new URLSearchParams({
-          patches: 'true',
-          fileName: fileName,
-          storeId: storeId
-        });
-        const redirectUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}?${redirectParams.toString()}`;
-        console.log(`🔀 Fallback redirect to: ${redirectUrl}`);
-        return res.redirect(302, redirectUrl);
-      }
     } else {
       // If no patches were applied, redirect to frontend without patches parameter
       console.log(`ℹ️ No patches to apply for ${fileName} - redirecting to normal frontend`);
