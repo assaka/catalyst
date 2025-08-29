@@ -878,11 +878,23 @@ router.patch('/revert-line/:filePath(*)', authMiddleware, async (req, res) => {
 
     for (const patch of patches) {
       try {
+        console.log(`\n🔍 Processing patch: ${patch.patch_name}`);
+        console.log(`📄 Original unified diff:`)
+        console.log(patch.unified_diff);
+        console.log(`📍 Looking for line ${lineNumber} with content: "${modifiedContent}"`);
+        
         // Parse unified diff and remove hunks that affect the reverted line
         const modifiedDiff = removeDiffHunkForLine(patch.unified_diff, lineNumber, originalContent, modifiedContent);
         
+        console.log(`📄 Modified diff result:`);
+        console.log(modifiedDiff);
+        console.log(`📊 Modified diff is null: ${modifiedDiff === null}`);
+        console.log(`📊 Modified diff is empty: ${modifiedDiff === ''}`);
+        console.log(`📊 Modified diff trimmed is empty: ${modifiedDiff && modifiedDiff.trim() === ''}`);
+        
         if (modifiedDiff === null) {
           // No changes were made to this patch
+          console.log(`⏭️ Skipping patch - no changes made`);
           continue;
         }
         
@@ -952,8 +964,10 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
   const result = [];
   let currentHunk = [];
   let inHunk = false;
-  let hunkStartLine = 0;
+  let hunkStartOldLine = 0;
+  let hunkStartNewLine = 0;
   let oldLineNumber = 0;
+  let newLineNumber = 0;
   let hunkShouldBeRemoved = false;
   
   for (let i = 0; i < lines.length; i++) {
@@ -965,17 +979,20 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
         if (!hunkShouldBeRemoved) {
           result.push(...currentHunk);
         } else {
-          console.log(`🗑️ Removing hunk starting at line ${hunkStartLine} that affects target line ${targetLineNumber}`);
+          console.log(`🗑️ Removing hunk starting at old:${hunkStartOldLine} new:${hunkStartNewLine} that affects target line ${targetLineNumber}`);
         }
         currentHunk = [];
         hunkShouldBeRemoved = false;
       }
       
-      // Parse hunk header to get starting line numbers
+      // Parse hunk header to get starting line numbers for both old (-) and new (+) files
       const match = line.match(/@@ -(\d+),?\d* \+(\d+),?\d* @@/);
       if (match) {
-        hunkStartLine = parseInt(match[1]);
-        oldLineNumber = hunkStartLine;
+        hunkStartOldLine = parseInt(match[1]);
+        hunkStartNewLine = parseInt(match[2]);
+        oldLineNumber = hunkStartOldLine;
+        newLineNumber = hunkStartNewLine;
+        console.log(`📍 Hunk starts at old line: ${hunkStartOldLine}, new line: ${hunkStartNewLine}`);
       }
       
       currentHunk = [line];
@@ -987,6 +1004,7 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
       if (line.startsWith(' ')) {
         // Context line - appears in both old and new files
         oldLineNumber++;
+        newLineNumber++;
       } else if (line.startsWith('-')) {
         // Deleted line - only in old file
         oldLineNumber++;
@@ -995,17 +1013,35 @@ function removeDiffHunkForLine(unifiedDiff, targetLineNumber, originalContent, m
         const addedContent = line.substring(1); // Remove the '+' prefix
         
         // Check if this added line matches what we're trying to revert
-        // Convert to line number (1-indexed) and check if it matches our target
-        if (modifiedContent && addedContent.trim().includes(modifiedContent.trim())) {
-          console.log(`🎯 Found matching line at position ${oldLineNumber}: "${addedContent.trim()}"`);
-          console.log(`📍 Target line number: ${targetLineNumber}, Current position: ${oldLineNumber}`);
+        const addedContentTrimmed = addedContent.trim();
+        const modifiedContentTrimmed = modifiedContent ? modifiedContent.trim() : '';
+        
+        console.log(`🔍 Checking added line: "${addedContentTrimmed}"`);
+        console.log(`🔍 Against target content: "${modifiedContentTrimmed}"`);
+        console.log(`🔍 Line position - Old file: ${oldLineNumber}, New file: ${newLineNumber}, Target line: ${targetLineNumber}`);
+        
+        // Try multiple matching strategies
+        const exactMatch = addedContentTrimmed === modifiedContentTrimmed;
+        const containsMatch = modifiedContentTrimmed && addedContentTrimmed.includes(modifiedContentTrimmed);
+        const reverseContainsMatch = modifiedContentTrimmed && modifiedContentTrimmed.includes(addedContentTrimmed);
+        
+        console.log(`🔍 Match strategies: exact=${exactMatch}, contains=${containsMatch}, reverse=${reverseContainsMatch}`);
+        
+        if (exactMatch || containsMatch || reverseContainsMatch) {
+          console.log(`🎯 Found matching line at new file position ${newLineNumber}: "${addedContentTrimmed}"`);
+          console.log(`📍 Target line number: ${targetLineNumber}, Current new position: ${newLineNumber}`);
           
-          // If this hunk contains the modification we want to revert, mark it for removal
-          if (Math.abs(oldLineNumber - targetLineNumber) <= 1) {
+          // Compare against the new file line number since that's what the frontend sends
+          if (Math.abs(newLineNumber - targetLineNumber) <= 5) {
             hunkShouldBeRemoved = true;
-            console.log(`✂️ Marking hunk for removal - matches target line ${targetLineNumber}`);
+            console.log(`✂️ Marking hunk for removal - matches target line ${targetLineNumber} at new position ${newLineNumber}`);
+          } else {
+            console.log(`⚠️ Content matches but line number too far off: ${newLineNumber} vs ${targetLineNumber}`);
           }
         }
+        
+        // Increment new line number for added lines
+        newLineNumber++;
       }
     } else {
       result.push(line);
