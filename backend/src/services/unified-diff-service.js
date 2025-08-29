@@ -40,6 +40,24 @@ class UnifiedDiffService {
       console.log(`  Content are identical: ${originalCode === modifiedCode}`);
       console.log(`  Original first 100 chars: ${(originalCode || '').substring(0, 100)}...`);
       console.log(`  Modified first 100 chars: ${(modifiedCode || '').substring(0, 100)}...`);
+      
+      // Find the exact character difference
+      if (originalCode !== modifiedCode) {
+        for (let i = 0; i < Math.max(originalCode.length, modifiedCode.length); i++) {
+          if (originalCode[i] !== modifiedCode[i]) {
+            const context = 20;
+            const start = Math.max(0, i - context);
+            const end = Math.min(Math.max(originalCode.length, modifiedCode.length), i + context + 1);
+            
+            console.log(`  🎯 First difference at position ${i}:`);
+            console.log(`    Original char: "${originalCode[i] || 'EOF'}" (code: ${originalCode.charCodeAt(i) || 'N/A'})`);
+            console.log(`    Modified char: "${modifiedCode[i] || 'EOF'}" (code: ${modifiedCode.charCodeAt(i) || 'N/A'})`);
+            console.log(`    Original context: "${originalCode.substring(start, end).replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"`);
+            console.log(`    Modified context: "${modifiedCode.substring(start, end).replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"`);
+            break;
+          }
+        }
+      }
 
       // Write files to temp location
       await fs.writeFile(originalFile, originalCode);
@@ -54,8 +72,8 @@ class UnifiedDiffService {
       console.log(`  Written files identical: ${writtenOriginal === writtenModified}`);
 
       try {
-        // Use git diff for high-quality unified diff
-        const gitCommand = `git diff --no-index --no-prefix "${originalFile}" "${modifiedFile}" || true`;
+        // Use git diff for high-quality unified diff with maximum sensitivity
+        const gitCommand = `git diff --no-index --no-prefix --minimal --ignore-space-at-eol --ignore-blank-lines=false "${originalFile}" "${modifiedFile}" || true`;
         console.log(`  Git command: ${gitCommand}`);
         
         const { stdout } = await execAsync(gitCommand);
@@ -69,7 +87,10 @@ class UnifiedDiffService {
 
         if (!stdout.trim()) {
           console.log(`  ❌ Git diff returned empty - no changes detected by git`);
-          return null; // No changes
+          console.log(`  🔄 Falling back to simple diff implementation since git missed the changes`);
+          
+          // Since we know the files are different, use the fallback
+          return this.createSimpleUnifiedDiff(originalCode, modifiedCode, filePath);
         }
 
         // Clean up the diff to use proper file paths
@@ -104,43 +125,86 @@ class UnifiedDiffService {
    * Fallback simple unified diff implementation
    */
   createSimpleUnifiedDiff(originalCode, modifiedCode, filePath = 'file.txt') {
+    console.log(`  🔄 Using fallback simple unified diff`);
+    
     const originalLines = originalCode.split('\n');
     const modifiedLines = modifiedCode.split('\n');
 
+    console.log(`  Original lines: ${originalLines.length}, Modified lines: ${modifiedLines.length}`);
+
     // Simple line-by-line comparison
     const result = [`--- a/${filePath}`, `+++ b/${filePath}`];
-    let contextStart = 0;
     let changes = [];
+    let changeStart = -1;
+    let changeEnd = -1;
 
+    // Find all changed lines
     for (let i = 0; i < Math.max(originalLines.length, modifiedLines.length); i++) {
       const originalLine = originalLines[i] || '';
       const modifiedLine = modifiedLines[i] || '';
 
       if (originalLine !== modifiedLine) {
-        // Start of a change block
-        if (changes.length === 0) {
-          contextStart = Math.max(0, i - 3); // 3 lines of context
+        if (changeStart === -1) {
+          changeStart = i;
         }
-
+        changeEnd = i;
+        
         if (i < originalLines.length) {
-          changes.push({ type: 'delete', line: originalLine, lineNum: i + 1 });
+          changes.push({ type: 'delete', line: originalLine, lineNum: i });
         }
         if (i < modifiedLines.length) {
-          changes.push({ type: 'add', line: modifiedLine, lineNum: i + 1 });
+          changes.push({ type: 'add', line: modifiedLine, lineNum: i });
         }
-      } else if (changes.length > 0) {
-        // End of change block, output hunk
-        this.outputHunk(result, originalLines, modifiedLines, contextStart, i, changes);
-        changes = [];
       }
     }
 
-    // Output final hunk if there are pending changes
     if (changes.length > 0) {
-      this.outputHunk(result, originalLines, modifiedLines, contextStart, Math.max(originalLines.length, modifiedLines.length), changes);
+      console.log(`  Found ${changes.length} line changes from line ${changeStart + 1} to ${changeEnd + 1}`);
+      
+      // Create a single hunk with 3 lines of context
+      const contextBefore = 3;
+      const contextAfter = 3;
+      const hunkStart = Math.max(0, changeStart - contextBefore);
+      const hunkEnd = Math.min(Math.max(originalLines.length, modifiedLines.length), changeEnd + contextAfter + 1);
+      
+      const origHunkStart = hunkStart + 1;
+      const origHunkLength = Math.min(originalLines.length - hunkStart, hunkEnd - hunkStart);
+      const newHunkStart = hunkStart + 1;
+      const newHunkLength = Math.min(modifiedLines.length - hunkStart, hunkEnd - hunkStart);
+      
+      result.push(`@@ -${origHunkStart},${origHunkLength} +${newHunkStart},${newHunkLength} @@`);
+      
+      // Add context lines before changes
+      for (let i = hunkStart; i < changeStart; i++) {
+        if (i < originalLines.length) {
+          result.push(` ${originalLines[i]}`);
+        }
+      }
+      
+      // Add the changes
+      for (const change of changes) {
+        if (change.type === 'delete') {
+          result.push(`-${change.line}`);
+        } else if (change.type === 'add') {
+          result.push(`+${change.line}`);
+        }
+      }
+      
+      // Add context lines after changes
+      for (let i = changeEnd + 1; i < hunkEnd && i < Math.max(originalLines.length, modifiedLines.length); i++) {
+        if (i < originalLines.length) {
+          result.push(` ${originalLines[i]}`);
+        } else if (i < modifiedLines.length) {
+          result.push(` ${modifiedLines[i]}`);
+        }
+      }
     }
 
-    return result.length > 2 ? result.join('\n') : null;
+    const finalDiff = result.length > 2 ? result.join('\n') : null;
+    console.log(`  Simple diff result length: ${finalDiff?.length || 0}`);
+    console.log(`  Simple diff preview: ${finalDiff?.substring(0, 200) || 'null'}...`);
+    
+    return finalDiff;
   }
 
   /**
