@@ -775,27 +775,54 @@ const DiffPreviewSystem = ({
     if (astDiffData?.patch?.unified_diff) {
       console.log('📋 [DiffPreview] Using stored unified_diff from patch as fallback');
       const unifiedDiff = astDiffData.patch.unified_diff;
-      const stats = diffServiceRef.current.getDiffStats(unifiedDiff);
-      const parsedDiff = diffServiceRef.current.parseUnifiedDiff(unifiedDiff);
       
-      console.log('📋 [DiffPreview] Parsed unified diff:', {
-        unifiedDiffLength: unifiedDiff?.length || 0,
-        parsedDiffLength: parsedDiff?.length || 0,
-        parsedDiffSample: parsedDiff?.slice(0, 2) || [],
-        stats
-      });
+      // Try to reconstruct both original and modified code from the unified diff
+      const reconstructed = diffServiceRef.current.reconstructFromUnifiedDiff(unifiedDiff);
       
-      return {
-        success: true,
-        unifiedDiff: unifiedDiff,
-        parsedDiff: parsedDiff,
-        stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
-        metadata: {
-          algorithm: 'unified',
-          source: 'stored_patch',
-          message: 'Using stored unified diff from patch'
-        }
-      };
+      if (reconstructed.success) {
+        console.log('🔄 [DiffPreview] Successfully reconstructed code from unified diff:', {
+          originalCodeLength: reconstructed.originalCode?.length || 0,
+          modifiedCodeLength: reconstructed.modifiedCode?.length || 0,
+          originalLines: reconstructed.metadata.originalLines,
+          modifiedLines: reconstructed.metadata.modifiedLines
+        });
+        
+        // Set the reconstructed code so other views can use it
+        originalBaseCodeRef.current = reconstructed.originalCode;
+        setCurrentModifiedCode(reconstructed.modifiedCode);
+        
+        // Now create the diff normally using the reconstructed code
+        const result = diffServiceRef.current.createDiff(reconstructed.originalCode, reconstructed.modifiedCode);
+        const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
+        
+        return {
+          ...result,
+          stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+          unifiedDiff: result.unifiedDiff,
+          metadata: {
+            algorithm: 'unified',
+            source: 'reconstructed_from_patch',
+            message: 'Reconstructed original and modified code from stored unified diff'
+          }
+        };
+      } else {
+        console.log('⚠️ [DiffPreview] Failed to reconstruct from unified diff, using raw approach');
+        // Fall back to the old approach if reconstruction fails
+        const stats = diffServiceRef.current.getDiffStats(unifiedDiff);
+        const parsedDiff = diffServiceRef.current.parseUnifiedDiff(unifiedDiff);
+        
+        return {
+          success: true,
+          unifiedDiff: unifiedDiff,
+          parsedDiff: parsedDiff,
+          stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+          metadata: {
+            algorithm: 'unified',
+            source: 'stored_patch',
+            message: 'Using stored unified diff from patch (reconstruction failed)'
+          }
+        };
+      }
     }
     
     // No data available
@@ -935,6 +962,12 @@ const DiffPreviewSystem = ({
         diffResultKeys: Object.keys(diffResult || {})
       });
       return [];
+    }
+    
+    // If we successfully reconstructed from patch, use standard converter
+    if (diffResult.metadata?.source === 'reconstructed_from_patch') {
+      console.log('🔄 [DiffPreview] Using standard converter for reconstructed diff');
+      return convertDiffToDisplayLines(diffResult.parsedDiff);
     }
     
     // If we're using stored unified diff (fallback), use the specialized converter

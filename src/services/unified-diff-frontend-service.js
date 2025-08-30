@@ -317,6 +317,143 @@ class UnifiedDiffFrontendService {
   }
 
   /**
+   * Reconstruct original and modified code from unified diff
+   * This allows us to get both versions when we only have the diff
+   */
+  reconstructFromUnifiedDiff(unifiedDiff, baselineHint = null) {
+    if (!unifiedDiff) {
+      return { success: false, error: 'No unified diff provided' };
+    }
+
+    try {
+      const lines = unifiedDiff.split('\n');
+      const originalLines = [];
+      const modifiedLines = [];
+      
+      let currentOriginalLine = 1;
+      let currentModifiedLine = 1;
+      
+      for (const line of lines) {
+        if (line.startsWith('@@')) {
+          // Parse hunk header: @@ -oldStart,oldLength +newStart,newLength @@
+          const match = line.match(/@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/);
+          if (match) {
+            currentOriginalLine = parseInt(match[1]);
+            currentModifiedLine = parseInt(match[3]);
+          }
+        } else if (line.startsWith('---') || line.startsWith('+++')) {
+          // Skip file headers
+          continue;
+        } else if (line.startsWith(' ')) {
+          // Context line (appears in both versions)
+          const content = line.substring(1);
+          originalLines[currentOriginalLine - 1] = content;
+          modifiedLines[currentModifiedLine - 1] = content;
+          currentOriginalLine++;
+          currentModifiedLine++;
+        } else if (line.startsWith('-')) {
+          // Deleted line (only in original)
+          const content = line.substring(1);
+          originalLines[currentOriginalLine - 1] = content;
+          currentOriginalLine++;
+        } else if (line.startsWith('+')) {
+          // Added line (only in modified)
+          const content = line.substring(1);
+          modifiedLines[currentModifiedLine - 1] = content;
+          currentModifiedLine++;
+        }
+      }
+      
+      // Convert sparse arrays to dense arrays, filling gaps with empty strings
+      const maxOriginalLine = Math.max(...Object.keys(originalLines).map(k => parseInt(k))) + 1;
+      const maxModifiedLine = Math.max(...Object.keys(modifiedLines).map(k => parseInt(k))) + 1;
+      
+      const denseOriginal = [];
+      const denseModified = [];
+      
+      for (let i = 0; i < maxOriginalLine; i++) {
+        denseOriginal[i] = originalLines[i] || '';
+      }
+      
+      for (let i = 0; i < maxModifiedLine; i++) {
+        denseModified[i] = modifiedLines[i] || '';
+      }
+      
+      const originalCode = denseOriginal.join('\n');
+      const modifiedCode = denseModified.join('\n');
+      
+      return {
+        success: true,
+        originalCode,
+        modifiedCode,
+        metadata: {
+          originalLines: denseOriginal.length,
+          modifiedLines: denseModified.length,
+          reconstructedFrom: 'unified_diff'
+        }
+      };
+      
+    } catch (error) {
+      console.error('Error reconstructing from unified diff:', error);
+      return { 
+        success: false, 
+        error: error.message,
+        originalCode: baselineHint || '',
+        modifiedCode: baselineHint || ''
+      };
+    }
+  }
+
+  /**
+   * Apply a unified diff to a base text to get the modified version
+   */
+  applyUnifiedDiff(baseText, unifiedDiff) {
+    if (!baseText || !unifiedDiff) {
+      return { success: false, error: 'Base text and unified diff required' };
+    }
+
+    try {
+      const baseLines = baseText.split('\n');
+      const modifiedLines = [...baseLines]; // Copy base lines
+      const lines = unifiedDiff.split('\n');
+      
+      for (const line of lines) {
+        if (line.startsWith('@@')) {
+          // Parse hunk header
+          const match = line.match(/@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/);
+          if (match) {
+            // We could use this info for more precise application
+            // For now, we'll apply changes line by line
+          }
+        } else if (line.startsWith(' ')) {
+          // Context line - no change needed
+          continue;
+        } else if (line.startsWith('-')) {
+          // Line to remove
+          const content = line.substring(1);
+          const index = modifiedLines.indexOf(content);
+          if (index !== -1) {
+            modifiedLines.splice(index, 1);
+          }
+        } else if (line.startsWith('+')) {
+          // Line to add
+          const content = line.substring(1);
+          // This is simplified - in a full implementation we'd need
+          // to track position more carefully
+          modifiedLines.push(content);
+        }
+      }
+      
+      return {
+        success: true,
+        modifiedCode: modifiedLines.join('\n')
+      };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Clear cache
    */
   clearCache() {
