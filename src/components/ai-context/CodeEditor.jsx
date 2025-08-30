@@ -401,8 +401,9 @@ const CodeEditor = ({
     setLocalCode(newCode);
     setIsModified(newCode !== value);
     
-    // Detect if this was a manual edit (not from undo/redo)
-    if (onManualEdit && newCode !== value) {
+    // Always call onManualEdit to let the parent handle change detection
+    // The parent (AIContextWindow) will determine if there are real changes
+    if (onManualEdit) {
       onManualEdit(newCode, value, { enableDiffDetection });
     }
     

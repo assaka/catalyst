@@ -615,6 +615,16 @@ export default ExampleComponent;`;
             return;
           }
 
+          // Double-check if there are still changes before auto-saving
+          // This helps prevent issues when undo/redo brings code back to original state
+          const currentNormalizedNew = normalizeLineEndings(newCode);
+          const currentNormalizedOriginal = normalizeLineEndings(originalCode);
+          
+          if (currentNormalizedNew === currentNormalizedOriginal) {
+            console.log('🔄 No changes detected at auto-save time - skipping save');
+            return;
+          }
+
           console.log('💾 Auto-saving patch to database...');
           // Store ID is now automatically resolved by backend middleware
           
@@ -648,6 +658,11 @@ export default ExampleComponent;`;
       }, 2000); // 2 second debounce
     } else {
       console.log('✅ Changes undone - code returned to original state');
+      // Clear any pending auto-save when changes are undone
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+        autoSaveTimeoutRef.current = null;
+      }
     }
   }, [selectedFile?.name, selectedFile?.path, normalizeLineEndings]);
 
