@@ -537,7 +537,7 @@ const CodeEditor = ({
           return;
         }
         
-        undoAction.run();
+        await undoAction.run();
         
         // Get state after undo
         const codeAfterUndo = editorRef.current.getValue();

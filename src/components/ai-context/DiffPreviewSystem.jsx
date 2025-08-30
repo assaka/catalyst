@@ -556,10 +556,10 @@ const DiffPreviewSystem = ({
     };
   }, [handleSyncScroll, selectedView]);
 
-
-  // Handle line revert functionality - simplified approach like CodeEditor
+  // Handle line revert functionality
   const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
-    console.log('🔄 Reverting line', lineIndex, 'to original:', originalLine);
+    console.log('🔄 Reverting line', lineIndex, 'from:', currentModifiedCode.split('\n')[lineIndex]);
+    console.log('🔄 Reverting to:', originalBaseCodeRef.current.split('\n')[lineIndex]);
     
     const currentLines = currentModifiedCode.split('\n');
     const originalLines = originalBaseCodeRef.current.split('\n');
@@ -572,15 +572,80 @@ const DiffPreviewSystem = ({
       
       console.log('🔄 New code after revert has', newCode.split('\n').length, 'lines');
       
-      // Simply update the local state - same as CodeEditor manual restore
       setCurrentModifiedCode(newCode);
       
-      // Call onChange if provided to notify parent component
+      // Surgically revert patches for this specific line
+      try {
+        console.log('✂️ Surgically reverting patches for line', lineIndex);
+        const storeId = getSelectedStoreId();
+        const modifiedContent = currentLines[lineIndex] || '';
+        
+        const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+        if (!token) {
+          console.error('❌ No authentication token found in any of: store_owner_auth_token, auth_token, token');
+          return;
+        }
+        
+        console.log('🌐 Making surgical revert request:', {
+          url: `/api/patches/revert-line/${encodeURIComponent(filePath || fileName)}`,
+          method: 'PATCH',
+          headers: {
+            'Authorization': token ? `Bearer ${token.substring(0, 20)}...` : 'Missing',
+            'Content-Type': 'application/json',
+            'X-Store-Id': storeId
+          },
+          body: {
+            lineNumber: lineIndex,
+            originalContent: originalContent,
+            modifiedContent: modifiedContent
+          }
+        });
+        
+        const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(fileName)}`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'X-Store-Id': storeId
+          },
+          body: JSON.stringify({
+            lineNumber: lineIndex,
+            originalContent: originalContent,
+            modifiedContent: modifiedContent
+          })
+        });
+
+        console.log('📡 Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          headers: {
+            'content-type': response.headers.get('content-type'),
+            'access-control-allow-origin': response.headers.get('access-control-allow-origin')
+          }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          console.log('✅ Successfully reverted line', lineIndex, '- Modified:', result.data.modifiedPatches, 'Deleted:', result.data.deletedPatches);
+          
+          // Add a small delay to ensure database changes are reflected
+          setTimeout(() => {
+            setRefreshTrigger(prev => prev + 1);
+          }, 100);
+        } else {
+          console.error('❌ Failed to revert patches:', result.error);
+        }
+      } catch (error) {
+        console.error('❌ Error reverting patches for line:', error);
+      }
+      
+      // Notify parent component of the change
       if (onCodeChange) {
         onCodeChange(newCode);
       }
     }
-  }, [currentModifiedCode, onCodeChange]);
+  }, [currentModifiedCode, onCodeChange, fileName, getSelectedStoreId]);
 
   // Handle preview functionality with enhanced route resolution
   const handlePreview = useCallback(async () => {
@@ -1518,6 +1583,7 @@ const DiffPreviewSystem = ({
             className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => {
               e.stopPropagation();
+              console.log('🔄 [DiffLine] Revert button clicked for line:', lineIndex, 'type:', line.type, 'originalContent:', line.originalContent);
               onLineRevert(lineIndex, line.originalContent || '');
             }}
             title={`Revert this ${line.type} line`}
