@@ -439,12 +439,17 @@ const DiffPreviewSystem = ({
             setAstDiffData(result);
             
             // Update the codes if they were fetched from the API
-            if (result.baselineCode && !originalCode) {
-              console.log('📄 [DiffPreview] Setting baseline code');
+            if (result.baselineCode) {
+              console.log('📄 [DiffPreview] Setting baseline code from API response', {
+                baselineLength: result.baselineCode.length,
+                hasOriginalCode: !!originalCode
+              });
               originalBaseCodeRef.current = result.baselineCode;
             }
             if (result.modifiedCode) {
-              console.log('📝 [DiffPreview] Setting modified code');
+              console.log('📝 [DiffPreview] Setting modified code from API response', {
+                modifiedLength: result.modifiedCode.length
+              });
               setCurrentModifiedCode(result.modifiedCode);
             }
           } else {
@@ -741,8 +746,18 @@ const DiffPreviewSystem = ({
   const diffResult = useMemo(() => {
     const baseCode = originalBaseCodeRef.current;
     
+    console.log('🔧 [DiffPreview] Calculating diff result:', {
+      hasBaseCode: !!baseCode,
+      baseCodeLength: baseCode?.length || 0,
+      hasModifiedCode: !!currentModifiedCode,
+      modifiedCodeLength: currentModifiedCode?.length || 0,
+      hasAstDiffData: !!astDiffData
+    });
+    
     // If we have both baseline and modified code, generate diff normally
     if (baseCode && currentModifiedCode) {
+      console.log('✅ [DiffPreview] Using direct baseline + modified code approach');
+      
       // Check if this is just a line ending issue
       const isLineEndingOnly = diffServiceRef.current.isLineEndingOnlyDiff(baseCode, currentModifiedCode);
       
@@ -764,10 +779,24 @@ const DiffPreviewSystem = ({
       const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode);
       const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
       
+      console.log('📊 [DiffPreview] Generated diff result:', {
+        success: result.success,
+        hasUnifiedDiff: !!result.unifiedDiff,
+        unifiedDiffLength: result.unifiedDiff?.length || 0,
+        hasParsedDiff: !!result.parsedDiff,
+        parsedDiffLength: result.parsedDiff?.length || 0,
+        stats
+      });
+      
       return {
         ...result,
         stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
-        unifiedDiff: result.unifiedDiff
+        unifiedDiff: result.unifiedDiff,
+        metadata: {
+          algorithm: 'unified',
+          source: 'direct_comparison',
+          message: 'Generated from baseline and modified code'
+        }
       };
     }
     
