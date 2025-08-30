@@ -399,7 +399,6 @@ const DiffPreviewSystem = ({
   const [astDiffData, setAstDiffData] = useState(null);
   const [fetchingAstDiff, setFetchingAstDiff] = useState(false);
   const [astDiffError, setAstDiffError] = useState(null);
-  const [expandedSections, setExpandedSections] = useState(new Set());
   const [refreshTrigger, setRefreshTrigger] = useState(0); // Trigger for refreshing patch data
 
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
@@ -762,41 +761,8 @@ const DiffPreviewSystem = ({
       unifiedDiffValue: astDiffData?.patch?.unified_diff ? astDiffData.patch.unified_diff.substring(0, 100) + '...' : 'NOT FOUND'
     });
     
-    // PRIORITY 1: If we have stored unified_diff from patch, check if we need full file context
+    // PRIORITY 1: If we have stored unified_diff from patch, use it directly
     if (astDiffData?.patch?.unified_diff) {
-      
-      if (showFullFile) {
-        console.log('🎯 [DiffPreview] Stored patch found, but regenerating with full file context for', selectedView, 'view');
-        
-        // Try to reconstruct original and modified code from stored diff, then regenerate with full context
-        const storedUnifiedDiff = astDiffData.patch.unified_diff;
-        const reconstructed = diffServiceRef.current.reconstructFromUnifiedDiff(storedUnifiedDiff);
-        
-        if (reconstructed.success && reconstructed.originalCode && reconstructed.modifiedCode) {
-          console.log('🔄 [DiffPreview] Successfully reconstructed code, regenerating with full file context');
-          
-          // Regenerate diff
-          const result = diffServiceRef.current.createDiff(reconstructed.originalCode, reconstructed.modifiedCode, {
-            filename: fileName || 'file'
-          });
-          
-          const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
-          
-          return {
-            success: true,
-            unifiedDiff: result.unifiedDiff,
-            parsedDiff: result.parsedDiff,
-            stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
-            metadata: {
-              algorithm: 'unified-full',
-              source: 'reconstructed_with_full_context',
-              message: 'Regenerated from stored patch with full file context'
-            }
-          };
-        } else {
-          console.log('⚠️ [DiffPreview] Failed to reconstruct code, falling back to stored diff');
-        }
-      }
       
       console.log('🎯 [DiffPreview] Using stored unified_diff directly from patch');
       const storedUnifiedDiff = astDiffData.patch.unified_diff;
@@ -1332,143 +1298,22 @@ const DiffPreviewSystem = ({
     return displayLines;
   }, [displayLines]);
 
-  // Final display lines (simplified)
-    let contextGroup = [];
-    const maxContextLines = 3; // Show 3 context lines before/after changes
-    const minCollapsibleLines = 8; // Only collapse if there are at least this many context lines
 
-    // First pass: identify change positions to better handle context around them
-    const changePositions = [];
-    displayLines.forEach((line, index) => {
-      if (line.type === 'addition' || line.type === 'deletion') {
-        changePositions.push(index);
-      }
-    });
-
-    console.log('🔧 [DiffPreview] Found', changePositions.length, 'changes at positions:', changePositions);
-
-    // Second pass: process lines with improved context grouping
-    for (let i = 0; i < displayLines.length; i++) {
-      const line = displayLines[i];
-      
-      // Check if we're near any changes (within maxContextLines distance)
-      const nearChange = changePositions.some(changePos => 
-        Math.abs(i - changePos) <= maxContextLines
-      );
-      
-      if (line.type === 'context' && !nearChange) {
-        // This is context that's far from changes - eligible for collapsing
-        contextGroup.push({ ...line, index: i });
-      } else {
-        // Process any accumulated context group before this important line
-        if (contextGroup.length >= minCollapsibleLines) {
-          // Large context group - show first few, collapsed indicator, last few
-          processed.push(...contextGroup.slice(0, maxContextLines));
-          
-          const collapsedCount = contextGroup.length - (maxContextLines * 2);
-          if (collapsedCount > 0) {
-            processed.push({
-              type: 'collapsed',
-              collapsedCount,
-              startIndex: contextGroup[maxContextLines].index,
-              endIndex: contextGroup[contextGroup.length - maxContextLines - 1].index,
-              content: `... ${collapsedCount} unchanged lines hidden (click to expand)`,
-              originalContent: null,
-              lineNumber: null,
-              newLineNumber: null
-            });
-            
-            processed.push(...contextGroup.slice(-maxContextLines));
-          } else {
-            // If somehow we don't have enough to collapse after removing context, show all
-            processed.push(...contextGroup);
-          }
-        } else if (contextGroup.length > 0) {
-          // Small context group - show all
-          processed.push(...contextGroup);
-        }
-        
-        contextGroup = [];
-        
-        // Add the important line (change or context near changes)
-        processed.push({ ...line, index: i });
-      }
-    }
-    
-    // Process any remaining context group at the end
-    if (contextGroup.length >= minCollapsibleLines) {
-      processed.push(...contextGroup.slice(0, maxContextLines));
-      const collapsedCount = contextGroup.length - maxContextLines;
-      if (collapsedCount > 0) {
-        processed.push({
-          type: 'collapsed',
-          collapsedCount,
-          startIndex: contextGroup[maxContextLines].index,
-          endIndex: contextGroup[contextGroup.length - 1].index,
-          content: `... ${collapsedCount} unchanged lines hidden (click to expand)`,
-          originalContent: null,
-          lineNumber: null,
-          newLineNumber: null
-        });
-      }
-    } else if (contextGroup.length > 0) {
-      processed.push(...contextGroup);
-    }
-
-    console.log('✅ [DiffPreview] Collapse processing completed:', {
-      originalLines: displayLines.length,
-      processedLines: processed.length,
-      collapsedSections: processed.filter(line => line.type === 'collapsed').length
-    });
-
-    return processed;
-  }, [displayLines]);
-
-  // Handle expanding collapsed sections
-  const handleExpandCollapsed = useCallback((startIndex, endIndex) => {
-    const sectionKey = `${startIndex}-${endIndex}`;
-    setExpandedSections(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sectionKey)) {
-        newSet.delete(sectionKey);
-      } else {
-        newSet.add(sectionKey);
-      }
-      return newSet;
-    });
+  // Handle expanding collapsed sections (simplified - no-op)
+  const handleExpandCollapsed = useCallback(() => {
+    // No-op since we removed collapse functionality
   }, []);
 
   // Final display lines considering expanded sections
   const finalDisplayLines = useMemo(() => {
     console.log('🎯 [DiffPreview] Creating final display lines:', {
       processedDisplayLinesLength: processedDisplayLines.length,
-      collapseUnchanged,
-      expandedSectionsSize: expandedSections.size,
       processedSample: processedDisplayLines.slice(0, 2)
     });
     
-    if (!collapseUnchanged || expandedSections.size === 0) {
-      console.log('✅ [DiffPreview] Using processed display lines as final:', processedDisplayLines.length);
-      return processedDisplayLines;
-    }
-
-    const final = [];
-    for (const line of processedDisplayLines) {
-      if (line.type === 'collapsed') {
-        const sectionKey = `${line.startIndex}-${line.endIndex}`;
-        if (expandedSections.has(sectionKey)) {
-          // Show the expanded lines
-          const expandedLines = displayLines.slice(line.startIndex, line.endIndex + 1);
-          final.push(...expandedLines);
-        } else {
-          final.push(line);
-        }
-      } else {
-        final.push(line);
-      }
-    }
-    return final;
-  }, [processedDisplayLines, expandedSections, displayLines, collapseUnchanged]);
+    console.log('✅ [DiffPreview] Using processed display lines as final:', processedDisplayLines.length);
+    return processedDisplayLines;
+  }, [processedDisplayLines]);
 
   const copyDiff = async () => {
     try {
