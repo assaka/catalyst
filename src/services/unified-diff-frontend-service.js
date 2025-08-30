@@ -183,7 +183,15 @@ class UnifiedDiffFrontendService {
    * Parse a unified diff to extract change information
    */
   parseUnifiedDiff(unifiedDiff) {
-    if (!unifiedDiff) return [];
+    if (!unifiedDiff) {
+      console.log('⚠️ [UnifiedDiff] parseUnifiedDiff: No unified diff provided');
+      return [];
+    }
+    
+    console.log('🔧 [UnifiedDiff] parseUnifiedDiff starting:', {
+      unifiedDiffLength: unifiedDiff.length,
+      firstLines: unifiedDiff.split('\n').slice(0, 10)
+    });
     
     const changes = [];
     const lines = unifiedDiff.split('\n');
@@ -222,6 +230,17 @@ class UnifiedDiffFrontendService {
         }
       }
     }
+
+    console.log('✅ [UnifiedDiff] parseUnifiedDiff completed:', {
+      changesCount: changes.length,
+      changes: changes.map(c => ({
+        oldStart: c.oldStart,
+        oldLength: c.oldLength,
+        newStart: c.newStart,
+        newLength: c.newLength,
+        changesCount: c.changes?.length || 0
+      }))
+    });
 
     return changes;
   }

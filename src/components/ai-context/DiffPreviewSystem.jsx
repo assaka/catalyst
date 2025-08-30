@@ -744,21 +744,45 @@ const DiffPreviewSystem = ({
 
   // Calculate diff using DiffService (always compare against original base code)
   const diffResult = useMemo(() => {
-    const baseCode = originalBaseCodeRef.current;
-    
     console.log('🔧 [DiffPreview] Calculating diff result:', {
-      hasBaseCode: !!baseCode,
-      baseCodeLength: baseCode?.length || 0,
+      hasBaseCode: !!originalBaseCodeRef.current,
+      baseCodeLength: originalBaseCodeRef.current?.length || 0,
       hasModifiedCode: !!currentModifiedCode,
       modifiedCodeLength: currentModifiedCode?.length || 0,
       hasAstDiffData: !!astDiffData,
+      hasStoredUnifiedDiff: !!astDiffData?.patch?.unified_diff,
       useAstDiff
     });
     
-    // IMPORTANT: If useAstDiff is true, wait for the API data before calculating
-    // This prevents using incomplete baseline data
+    // PRIORITY 1: If we have stored unified_diff from patch, use it directly
+    if (astDiffData?.patch?.unified_diff) {
+      console.log('🎯 [DiffPreview] Using stored unified_diff directly from patch');
+      const storedUnifiedDiff = astDiffData.patch.unified_diff;
+      const stats = diffServiceRef.current.getDiffStats(storedUnifiedDiff);
+      const parsedDiff = diffServiceRef.current.parseUnifiedDiff(storedUnifiedDiff);
+      
+      console.log('📊 [DiffPreview] Direct unified diff result:', {
+        unifiedDiffLength: storedUnifiedDiff.length,
+        parsedDiffLength: parsedDiff.length,
+        stats
+      });
+      
+      return {
+        success: true,
+        unifiedDiff: storedUnifiedDiff,
+        parsedDiff: parsedDiff,
+        stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+        metadata: {
+          algorithm: 'unified',
+          source: 'stored_unified_diff',
+          message: 'Using stored unified diff from patch directly'
+        }
+      };
+    }
+    
+    // PRIORITY 2: Wait for API data if useAstDiff is enabled
     if (useAstDiff && filePath && !astDiffData) {
-      console.log('⏳ [DiffPreview] Waiting for AST diff data before calculating...');
+      console.log('⏳ [DiffPreview] Waiting for AST diff data...');
       return {
         success: true,
         unifiedDiff: '',
@@ -891,9 +915,21 @@ const DiffPreviewSystem = ({
 
   // Convert parsed unified diff (from stored patch) to displayable lines
   const convertParsedUnifiedDiffToDisplayLines = (parsedDiff) => {
+    console.log('🔧 [DiffPreview] convertParsedUnifiedDiffToDisplayLines starting:', {
+      parsedDiffLength: parsedDiff.length,
+      firstHunk: parsedDiff[0]
+    });
+    
     const displayLines = [];
     
-    parsedDiff.forEach(hunk => {
+    parsedDiff.forEach((hunk, hunkIndex) => {
+      console.log(`🔧 [DiffPreview] Processing hunk ${hunkIndex}:`, {
+        oldStart: hunk.oldStart,
+        oldLength: hunk.oldLength,
+        newStart: hunk.newStart,
+        newLength: hunk.newLength,
+        changesCount: hunk.changes?.length || 0
+      });
       let oldLineNumber = hunk.oldStart;
       let newLineNumber = hunk.newStart;
       
@@ -934,6 +970,11 @@ const DiffPreviewSystem = ({
             break;
         }
       });
+    });
+    
+    console.log('✅ [DiffPreview] convertParsedUnifiedDiffToDisplayLines completed:', {
+      displayLinesLength: displayLines.length,
+      sampleDisplayLines: displayLines.slice(0, 3)
     });
     
     return displayLines;
@@ -1006,9 +1047,24 @@ const DiffPreviewSystem = ({
       console.log('🔄 [DiffPreview] No parsed diff available for display lines:', {
         hasParsedDiff: !!diffResult.parsedDiff,
         parsedDiffLength: diffResult.parsedDiff?.length || 0,
-        diffResultKeys: Object.keys(diffResult || {})
+        diffResultKeys: Object.keys(diffResult || {}),
+        diffResultSource: diffResult.metadata?.source
       });
       return [];
+    }
+    
+    // If using stored unified diff directly, use specialized converter
+    if (diffResult.metadata?.source === 'stored_unified_diff') {
+      console.log('🎯 [DiffPreview] Converting stored unified diff to display lines', {
+        parsedDiffLength: diffResult.parsedDiff.length,
+        firstHunk: diffResult.parsedDiff[0]
+      });
+      const displayLines = convertParsedUnifiedDiffToDisplayLines(diffResult.parsedDiff);
+      console.log('🔄 [DiffPreview] Generated display lines from stored diff:', {
+        displayLinesLength: displayLines.length,
+        sampleLines: displayLines.slice(0, 3)
+      });
+      return displayLines;
     }
     
     // If we successfully reconstructed from patch, use standard converter
@@ -1038,7 +1094,14 @@ const DiffPreviewSystem = ({
 
   // Process display lines for collapsing unchanged fragments
   const processedDisplayLines = useMemo(() => {
+    console.log('🔧 [DiffPreview] Processing display lines:', {
+      displayLinesLength: displayLines.length,
+      collapseUnchanged,
+      firstDisplayLine: displayLines[0]
+    });
+    
     if (!collapseUnchanged || displayLines.length === 0) {
+      console.log('🔄 [DiffPreview] Returning unprocessed display lines:', displayLines.length);
       return displayLines;
     }
 
@@ -1122,7 +1185,15 @@ const DiffPreviewSystem = ({
 
   // Final display lines considering expanded sections
   const finalDisplayLines = useMemo(() => {
+    console.log('🎯 [DiffPreview] Creating final display lines:', {
+      processedDisplayLinesLength: processedDisplayLines.length,
+      collapseUnchanged,
+      expandedSectionsSize: expandedSections.size,
+      processedSample: processedDisplayLines.slice(0, 2)
+    });
+    
     if (!collapseUnchanged || expandedSections.size === 0) {
+      console.log('✅ [DiffPreview] Using processed display lines as final:', processedDisplayLines.length);
       return processedDisplayLines;
     }
 
