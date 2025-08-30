@@ -20,7 +20,8 @@ const BrowserPreview = ({
   const [deviceView, setDeviceView] = useState('desktop'); // desktop, tablet, mobile
   const [showBrowserChrome, setShowBrowserChrome] = useState(true);
   const [enablePatches, setEnablePatches] = useState(true); // Single toggle: patches on/off
-  const [patchData, setPatchData] = useState({ hasPatches: false });
+  const [patchData, setPatchData] = useState({ hasPatches: false, patchCount: 0 });
+  const [checkingPatches, setCheckingPatches] = useState(false);
 
 
   // Get store context for API calls
@@ -44,74 +45,106 @@ const BrowserPreview = ({
     return fileNameOnly.split('\\').pop() || fileNameOnly;
   }, []);
 
-  // Update preview URL - use localhost backend for patch support
+  // Update preview URL - use backend for patch support with fallback
   useEffect(() => {
     const generatePreviewUrl = async () => {
       if (fileName && storeId) {
         try {
-          // Get store information
-          const storeResponse = await apiClient.get(`stores/${storeId}`, getApiConfig().headers);
-          const store = storeResponse.data;
-          const storeSlug = store?.slug || 'store';
+          // Get store information with better error handling
+          let store, storeSlug;
+          try {
+            const storeResponse = await apiClient.get(`stores/${storeId}`, getApiConfig().headers);
+            store = storeResponse.data;
+            storeSlug = store?.slug || 'store';
+          } catch (storeError) {
+            console.warn('Could not fetch store info, using fallback slug:', storeError);
+            storeSlug = 'store'; // fallback
+          }
           
           // Extract page name from file path (e.g., src/pages/Cart.jsx -> Cart)
           const pageName = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '') || '';
           
           // Use production Node.js backend for preview with patch support
           const backendUrl = process.env.REACT_APP_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
-          const patchesParam = enablePatches ? 'true' : 'false';
+          const patchesParam = enablePatches && patchData.hasPatches ? 'true' : 'false';
           
           // Build preview URL using Node.js backend preview endpoint
-          const finalUrl = `${backendUrl}/preview/${storeId}?fileName=${encodeURIComponent(fileName)}&patches=${patchesParam}&storeSlug=${storeSlug}&pageName=${pageName}`;
+          const finalUrl = `${backendUrl}/preview/${storeId}?fileName=${encodeURIComponent(fileName)}&patches=${patchesParam}&storeSlug=${storeSlug}&pageName=${pageName}&_t=${Date.now()}`;
           
-          console.log(`🔍 BrowserPreview: Production backend preview URL generation:`);
+          console.log(`🔍 BrowserPreview: Preview URL generation:`);
           console.log(`  - storeId: ${storeId}`);
           console.log(`  - storeSlug: ${storeSlug}`);
           console.log(`  - fileName: ${fileName}`);
           console.log(`  - pageName: ${pageName}`);
           console.log(`  - backendUrl: ${backendUrl}`);
           console.log(`  - enablePatches: ${enablePatches}`);
+          console.log(`  - patchData.hasPatches: ${patchData.hasPatches}`);
           console.log(`  - patchesParam: ${patchesParam}`);
           console.log(`  - finalUrl: ${finalUrl}`);
           
           setPreviewUrl(finalUrl);
-          console.log(`🎯 Generated production backend preview URL: ${finalUrl}`);
           setError(null);
         } catch (error) {
           console.error('Error generating preview URL:', error);
-          setPreviewUrl(null);
-          setError(`Failed to generate preview URL: ${error.message}`);
+          
+          // Fallback: Try to create a direct frontend URL if backend preview fails
+          try {
+            const frontendUrl = process.env.REACT_APP_FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
+            const fallbackUrl = `${frontendUrl}/public/store/${fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '')}?fallback=true&_t=${Date.now()}`;
+            console.warn(`🔄 Using fallback URL: ${fallbackUrl}`);
+            setPreviewUrl(fallbackUrl);
+            setError(`Preview URL generated with fallback (patches disabled): ${error.message}`);
+          } catch (fallbackError) {
+            setPreviewUrl(null);
+            setError(`Failed to generate preview URL: ${error.message}`);
+          }
         }
       } else {
         setPreviewUrl(null);
         if (!fileName) {
           setError('No file selected for preview');
         }
+        if (!storeId) {
+          setError('No store selected for preview');
+        }
       }
     };
 
     generatePreviewUrl();
-  }, [fileName, enablePatches, storeId, getApiConfig]);
+  }, [fileName, enablePatches, storeId, patchData.hasPatches, getApiConfig]);
 
-  // Check if patches exist for this file
+  // Check if patches exist for this file with improved error handling
   const checkPatchStatus = useCallback(async (fileName) => {
+    if (!fileName || !storeId) {
+      setPatchData({ hasPatches: false, patchCount: 0 });
+      return { hasPatches: false, patchCount: 0 };
+    }
+
+    setCheckingPatches(true);
     try {
-      const customHeaders = {};
+      const customHeaders = getApiConfig().headers;
       
       const encodedFileName = encodeURIComponent(fileName);
       const patchedUrl = `patches/apply/${encodedFileName}?preview=true&store_id=${storeId}`;
       const patchedData = await apiClient.get(patchedUrl, customHeaders);
       
       const hasPatches = patchedData?.success && patchedData?.data?.hasPatches;
-      setPatchData({ hasPatches });
+      const patchCount = patchedData?.data?.totalPatches || patchedData?.data?.appliedPatches || 0;
       
-      return { hasPatches };
+      console.log(`🔍 Patch status for ${fileName}: ${hasPatches ? `HAS ${patchCount} PATCHES` : 'NO PATCHES'}`);
+      setPatchData({ hasPatches, patchCount });
+      
+      return { hasPatches, patchCount };
     } catch (error) {
       console.error('Error checking patch status:', error);
-      setPatchData({ hasPatches: false });
-      return { hasPatches: false };
+      // Don't treat API errors as "no patches" - might be network issues
+      const fallbackData = { hasPatches: false, patchCount: 0, error: error.message };
+      setPatchData(fallbackData);
+      return fallbackData;
+    } finally {
+      setCheckingPatches(false);
     }
-  }, [storeId]);
+  }, [storeId, getApiConfig]);
 
   // Check patch status when filename changes
   useEffect(() => {
@@ -228,20 +261,38 @@ const BrowserPreview = ({
                 <button
                   onClick={() => setEnablePatches(!enablePatches)}
                   className={cn(
-                    "px-3 py-1 text-xs rounded-md border font-medium transition-colors",
-                    patchData.hasPatches && enablePatches
-                      ? "bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/50 dark:border-blue-700 dark:text-blue-300"
-                      : "bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                    "px-3 py-1 text-xs rounded-md border font-medium transition-colors flex items-center",
+                    checkingPatches
+                      ? "bg-gray-50 border-gray-200 text-gray-500"
+                      : patchData.hasPatches && enablePatches
+                      ? "bg-green-50 border-green-200 text-green-700 hover:bg-green-100 dark:bg-green-900/50 dark:border-green-700 dark:text-green-300"
+                      : patchData.hasPatches
+                      ? "bg-yellow-50 border-yellow-200 text-yellow-700 hover:bg-yellow-100 dark:bg-yellow-900/50 dark:border-yellow-700 dark:text-yellow-300"
+                      : "bg-gray-50 border-gray-200 text-gray-600 cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
                   )}
-                  title={patchData.hasPatches
-                    ? (enablePatches
-                        ? "Patches would be applied in production. Click to preview without patches."
-                        : "Click to preview with patches applied.")
-                    : "No patches available for this file"
+                  title={
+                    checkingPatches
+                      ? "Checking for patches..."
+                      : patchData.hasPatches
+                      ? (enablePatches
+                          ? `${patchData.patchCount} patch(es) applied. Click to disable patches.`
+                          : `${patchData.patchCount} patch(es) available. Click to apply patches.`)
+                      : patchData.error
+                      ? `Error checking patches: ${patchData.error}`
+                      : "No patches available for this file"
                   }
+                  disabled={!patchData.hasPatches || checkingPatches}
                 >
-                  <Code className="w-3 h-3 mr-1 inline" />
-                  {enablePatches ? "With Patches" : "Without Patches"}
+                  {checkingPatches ? (
+                    <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+                  ) : (
+                    <Code className="w-3 h-3 mr-1" />
+                  )}
+                  {checkingPatches
+                    ? "Checking..."
+                    : patchData.hasPatches 
+                    ? (enablePatches ? `Applied (${patchData.patchCount})` : `Apply (${patchData.patchCount})`) 
+                    : "No Patches"}
                 </button>
 
                 <button
@@ -369,7 +420,7 @@ const BrowserPreview = ({
               <span>Page: {getPageNameFromFile(fileName)}</span>
             )}
             <span>Device: {deviceView}</span>
-            <span>Patches: {enablePatches ? 'On' : 'Off'}</span>
+            <span>Patches: {patchData.hasPatches ? (enablePatches ? `On (${patchData.patchCount})` : 'Off') : 'None'}</span>
           </div>
           <div className="text-xs">
             File: {fileName.split('/').pop()}
