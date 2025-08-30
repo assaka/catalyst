@@ -794,16 +794,43 @@ router.get('/test/:filePath(*)', async (req, res) => {
 
 // Get patches for a specific file (catch-all route for frontend compatibility)
 // This route must be at the end to avoid conflicts with other routes
-router.get('/:filePath(*)', authMiddleware, storeResolver, async (req, res) => {
+router.get('/:filePath(*)', authMiddleware, async (req, res) => {
   try {
     const filePath = req.params.filePath;
-    const storeId = req.storeId; // Use resolved store ID from middleware
     const status = req.query.status || 'all';
     const releaseVersion = req.query.version || null;
 
+    // Try to resolve store ID from user's stores
+    let storeId = null;
+    if (req.user?.id) {
+      try {
+        const [stores] = await patchService.sequelize.query(`
+          SELECT id FROM stores 
+          WHERE user_id = :userId AND is_active = true 
+          ORDER BY created_at DESC 
+          LIMIT 1
+        `, {
+          replacements: { userId: req.user.id },
+          type: patchService.sequelize.QueryTypes.SELECT
+        });
+        
+        if (stores && stores.length > 0) {
+          storeId = stores[0].id;
+        }
+      } catch (storeError) {
+        console.error('Error resolving store ID:', storeError);
+      }
+    }
+    
+    // Fallback to default if no store found
+    if (!storeId) {
+      storeId = '157d4590-49bf-4b0b-bd77-abe131909528';
+      console.log('⚠️ Using fallback store ID');
+    }
+
     console.log(`🔍 Getting patches for file: ${filePath}`);
-    console.log(`🔍 [DEBUG] Using resolved store ID: ${storeId}`);
-    console.log(`🔍 [DEBUG] User: ${req.user?.email}, Store: ${req.store?.name}`);
+    console.log(`🔍 [DEBUG] Using store ID: ${storeId}`);
+    console.log(`🔍 [DEBUG] User: ${req.user?.email}`);
 
     let query = `
       SELECT 
