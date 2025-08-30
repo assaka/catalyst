@@ -778,6 +778,13 @@ const DiffPreviewSystem = ({
       const stats = diffServiceRef.current.getDiffStats(unifiedDiff);
       const parsedDiff = diffServiceRef.current.parseUnifiedDiff(unifiedDiff);
       
+      console.log('📋 [DiffPreview] Parsed unified diff:', {
+        unifiedDiffLength: unifiedDiff?.length || 0,
+        parsedDiffLength: parsedDiff?.length || 0,
+        parsedDiffSample: parsedDiff?.slice(0, 2) || [],
+        stats
+      });
+      
       return {
         success: true,
         unifiedDiff: unifiedDiff,
@@ -921,15 +928,31 @@ const DiffPreviewSystem = ({
 
   // Get display lines from diff
   const displayLines = useMemo(() => {
-    if (!diffResult.parsedDiff || diffResult.parsedDiff.length === 0) return [];
+    if (!diffResult.parsedDiff || diffResult.parsedDiff.length === 0) {
+      console.log('🔄 [DiffPreview] No parsed diff available for display lines:', {
+        hasParsedDiff: !!diffResult.parsedDiff,
+        parsedDiffLength: diffResult.parsedDiff?.length || 0,
+        diffResultKeys: Object.keys(diffResult || {})
+      });
+      return [];
+    }
     
     // If we're using stored unified diff (fallback), use the specialized converter
     if (diffResult.metadata?.source === 'stored_patch') {
-      console.log('🔄 [DiffPreview] Using stored patch converter for display lines');
-      return convertParsedUnifiedDiffToDisplayLines(diffResult.parsedDiff);
+      console.log('🔄 [DiffPreview] Using stored patch converter for display lines', {
+        parsedDiffLength: diffResult.parsedDiff.length,
+        firstHunk: diffResult.parsedDiff[0]
+      });
+      const displayLines = convertParsedUnifiedDiffToDisplayLines(diffResult.parsedDiff);
+      console.log('🔄 [DiffPreview] Generated display lines:', {
+        displayLinesLength: displayLines.length,
+        sampleLines: displayLines.slice(0, 3)
+      });
+      return displayLines;
     }
     
     // Otherwise use the standard diff converter
+    console.log('🔄 [DiffPreview] Using standard diff converter');
     return convertDiffToDisplayLines(diffResult.parsedDiff);
   }, [diffResult.parsedDiff, currentModifiedCode, diffResult.metadata]);
 
