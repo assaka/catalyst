@@ -9,7 +9,7 @@ const router = express.Router();
 const patchService = require('../services/patch-service');
 const unifiedDiffService = require('../services/unified-diff-service');
 const { authMiddleware } = require('../middleware/auth');
-const { storeResolver } = require('../middleware/storeResolver');
+const { storeResolver, optionalStoreResolver } = require('../middleware/storeResolver');
 
 // Apply patches to a file and return the result (public endpoint for preview)
 router.get('/apply/:filePath(*)', async (req, res) => {
@@ -794,38 +794,17 @@ router.get('/test/:filePath(*)', async (req, res) => {
 
 // Get patches for a specific file (catch-all route for frontend compatibility)
 // This route must be at the end to avoid conflicts with other routes
-router.get('/:filePath(*)', authMiddleware, async (req, res) => {
+router.get('/:filePath(*)', authMiddleware, optionalStoreResolver, async (req, res) => {
   try {
     const filePath = req.params.filePath;
     const status = req.query.status || 'all';
     const releaseVersion = req.query.version || null;
 
-    // Try to resolve store ID from user's stores
-    let storeId = null;
-    if (req.user?.id) {
-      try {
-        const [stores] = await patchService.sequelize.query(`
-          SELECT id FROM stores 
-          WHERE user_id = :userId AND is_active = true 
-          ORDER BY created_at DESC 
-          LIMIT 1
-        `, {
-          replacements: { userId: req.user.id },
-          type: patchService.sequelize.QueryTypes.SELECT
-        });
-        
-        if (stores && stores.length > 0) {
-          storeId = stores[0].id;
-        }
-      } catch (storeError) {
-        console.error('Error resolving store ID:', storeError);
-      }
-    }
-    
-    // Fallback to default if no store found
+    // Use store ID from optionalStoreResolver or fallback
+    let storeId = req.storeId;
     if (!storeId) {
       storeId = '157d4590-49bf-4b0b-bd77-abe131909528';
-      console.log('⚠️ Using fallback store ID');
+      console.log('⚠️ Using fallback store ID - no store resolved');
     }
 
     console.log(`🔍 Getting patches for file: ${filePath}`);
