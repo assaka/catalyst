@@ -577,7 +577,6 @@ const DiffPreviewSystem = ({
       // Surgically revert patches for this specific line
       try {
         console.log('✂️ Surgically reverting patches for line', lineIndex);
-        const storeId = getSelectedStoreId();
         const modifiedContent = currentLines[lineIndex] || '';
         
         const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
@@ -587,12 +586,11 @@ const DiffPreviewSystem = ({
         }
         
         console.log('🌐 Making surgical revert request:', {
-          url: `/api/patches/revert-line/${encodeURIComponent(fileName)}`,
+          url: `/api/patches/revert-line/${encodeURIComponent(filePath || fileName)}`,
           method: 'PATCH',
           headers: {
             'Authorization': token ? `Bearer ${token.substring(0, 20)}...` : 'Missing',
-            'Content-Type': 'application/json',
-            'X-Store-Id': storeId
+            'Content-Type': 'application/json'
           },
           body: {
             lineNumber: lineIndex,
@@ -601,12 +599,12 @@ const DiffPreviewSystem = ({
           }
         });
         
-        const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(fileName)}`, {
+        const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(filePath || fileName)}`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'X-Store-Id': storeId
+            'Content-Type': 'application/json'
+            // Removed X-Store-Id header - backend now resolves store server-side
           },
           body: JSON.stringify({
             lineNumber: lineIndex,
@@ -645,7 +643,7 @@ const DiffPreviewSystem = ({
         onCodeChange(newCode);
       }
     }
-  }, [currentModifiedCode, onCodeChange, fileName]);
+  }, [currentModifiedCode, onCodeChange, fileName, filePath, getSelectedStoreId]);
 
   // Handle preview functionality with enhanced route resolution
   const handlePreview = useCallback(async () => {
@@ -1555,6 +1553,19 @@ const DiffPreviewSystem = ({
     const canRevert = onLineRevert && (line.type === 'addition' || line.type === 'deletion') && line.type !== 'collapsed';
     const lineIndex = line.type === 'addition' ? (line.newLineNumber ? line.newLineNumber - 1 : null) : 
                      line.type === 'deletion' ? (line.lineNumber ? line.lineNumber - 1 : null) : null;
+    
+    // Debug logging for revert button visibility
+    if (line.type === 'addition' || line.type === 'deletion') {
+      console.log('🔍 [DiffLine] Revert check:', {
+        lineType: line.type,
+        hasOnLineRevert: !!onLineRevert,
+        canRevert,
+        lineIndex,
+        lineNumber: line.lineNumber,
+        newLineNumber: line.newLineNumber,
+        originalContent: line.originalContent
+      });
+    }
 
     return (
       <div 
@@ -1570,6 +1581,7 @@ const DiffPreviewSystem = ({
             className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => {
               e.stopPropagation();
+              console.log('🔄 [DiffLine] Revert button clicked for line:', lineIndex, 'type:', line.type, 'originalContent:', line.originalContent);
               onLineRevert(lineIndex, line.originalContent || '');
             }}
             title={`Revert this ${line.type} line`}
