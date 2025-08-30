@@ -435,7 +435,13 @@ const DiffPreviewSystem = ({
           console.log('📊 [DiffPreview] fetchAstDiffData result:', result);
           
           if (result.success) {
-            console.log('✅ [DiffPreview] Setting astDiffData');
+            console.log('✅ [DiffPreview] Setting astDiffData:', {
+              hasResult: !!result,
+              hasPatch: !!result.patch,
+              hasUnifiedDiff: !!result.patch?.unified_diff,
+              patchKeys: result.patch ? Object.keys(result.patch) : null,
+              unifiedDiffPreview: result.patch?.unified_diff ? result.patch.unified_diff.substring(0, 100) + '...' : 'MISSING'
+            });
             setAstDiffData(result);
             
             // Update the codes if they were fetched from the API
@@ -751,7 +757,10 @@ const DiffPreviewSystem = ({
       modifiedCodeLength: currentModifiedCode?.length || 0,
       hasAstDiffData: !!astDiffData,
       hasStoredUnifiedDiff: !!astDiffData?.patch?.unified_diff,
-      useAstDiff
+      useAstDiff,
+      astDiffDataKeys: astDiffData ? Object.keys(astDiffData) : null,
+      patchKeys: astDiffData?.patch ? Object.keys(astDiffData.patch) : null,
+      unifiedDiffValue: astDiffData?.patch?.unified_diff ? astDiffData.patch.unified_diff.substring(0, 100) + '...' : 'NOT FOUND'
     });
     
     // PRIORITY 1: If we have stored unified_diff from patch, use it directly
