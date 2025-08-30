@@ -46,27 +46,68 @@ const PreviewTab = ({
       const response = await apiClient.get(patchesUrl);
       
       console.log('🔍 API Response:', response);
+      console.log('🔍 API Response data:', response.data);
+      console.log('🔍 API Response data keys:', response.data ? Object.keys(response.data) : 'no data');
       
-      if (response.success && response.data.hasPatches) {
-        const patches = response.data.patches || [];
-        console.log('📋 Found patches:', patches);
+      // Check various possible response formats
+      const hasPatches = response.data?.hasPatches || 
+                        response.data?.patches?.length > 0 ||
+                        response.success && response.data;
+      
+      console.log('🔍 Patch detection:', { 
+        hasPatches: response.data?.hasPatches,
+        patchesArray: response.data?.patches,
+        patchesLength: response.data?.patches?.length,
+        finalHasPatches: hasPatches
+      });
+      
+      if (response.success && hasPatches) {
+        // Handle different response formats
+        let patches = [];
+        
+        if (response.data.patches) {
+          patches = response.data.patches;
+        } else if (response.data.id) {
+          // Single patch response
+          patches = [response.data];
+        } else if (Array.isArray(response.data)) {
+          patches = response.data;
+        }
+        
+        console.log('📋 Processed patches:', patches);
         setAvailablePatches(patches);
         
-        // Select first available patch for this file
-        const firstPatch = patches.find(p => p.file_path === fileName) || patches[0];
+        // Select patch - try multiple strategies
+        let selectedPatch = null;
         
-        if (firstPatch) {
+        // Strategy 1: Find by file path
+        selectedPatch = patches.find(p => p.file_path === fileName);
+        console.log('🎯 Strategy 1 (file path match):', selectedPatch);
+        
+        // Strategy 2: Use first patch if only one
+        if (!selectedPatch && patches.length === 1) {
+          selectedPatch = patches[0];
+          console.log('🎯 Strategy 2 (single patch):', selectedPatch);
+        }
+        
+        // Strategy 3: Use any patch (fallback)
+        if (!selectedPatch && patches.length > 0) {
+          selectedPatch = patches[0];
+          console.log('🎯 Strategy 3 (fallback):', selectedPatch);
+        }
+        
+        if (selectedPatch) {
           const config = {
             storeId: storeId,
-            patchId: firstPatch.id,
+            patchId: selectedPatch.id,
             pageName: getPageNameFromFile(fileName),
-            description: `${getPageNameFromFile(fileName)} preview with patch: ${firstPatch.patch_name || 'Unnamed patch'}`
+            description: `${getPageNameFromFile(fileName)} preview with patch: ${selectedPatch.patch_name || selectedPatch.name || 'Unnamed patch'}`
           };
           
           console.log('✅ Found patches via API, using:', config);
           setPreviewConfig(config);
         } else {
-          console.warn('❌ No matching patch found in response');
+          console.warn('❌ No usable patch found in response');
           setError(`No patches found for ${fileName}`);
         }
       } else {

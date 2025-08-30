@@ -393,6 +393,7 @@ const DiffPreviewSystem = ({
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
   const [contextLines, setContextLines] = useState(3);
+  const [collapseUnchanged, setCollapseUnchanged] = useState(true);
   const [currentModifiedCode, setCurrentModifiedCode] = useState(modifiedCode);
   const [copyStatus, setCopyStatus] = useState({ copied: false, error: null });
   const [previewStatus, setPreviewStatus] = useState({ loading: false, error: null, url: null });
@@ -1304,16 +1305,97 @@ const DiffPreviewSystem = ({
     // No-op since we removed collapse functionality
   }, []);
 
-  // Final display lines considering expanded sections
+  // Final display lines considering expanded sections and collapse settings
   const finalDisplayLines = useMemo(() => {
     console.log('🎯 [DiffPreview] Creating final display lines:', {
       processedDisplayLinesLength: processedDisplayLines.length,
-      processedSample: processedDisplayLines.slice(0, 2)
+      processedSample: processedDisplayLines.slice(0, 2),
+      collapseUnchanged,
+      selectedView
     });
+    
+    // For Unified Diff and Split View, show full file context when collapse is unchecked
+    if ((selectedView === 'unified' || selectedView === 'split') && !collapseUnchanged) {
+      console.log('🔄 [DiffPreview] Generating full file context for ' + selectedView + ' view');
+      
+      if (!originalBaseCodeRef.current || !currentModifiedCode) {
+        console.log('⚠️ [DiffPreview] Missing code for full context display');
+        return processedDisplayLines;
+      }
+      
+      const originalLines = originalBaseCodeRef.current.split('\n');
+      const modifiedLines = currentModifiedCode.split('\n');
+      const maxLines = Math.max(originalLines.length, modifiedLines.length);
+      
+      // Create full file display with change highlighting
+      const fullDisplayLines = [];
+      
+      // Create a map of changed lines for quick lookup
+      const changedLines = new Map();
+      processedDisplayLines.forEach(line => {
+        if (line.type === 'addition' && line.newLineNumber) {
+          changedLines.set(line.newLineNumber, 'addition');
+        } else if (line.type === 'deletion' && line.lineNumber) {
+          changedLines.set(line.lineNumber, 'deletion');
+        }
+      });
+      
+      // Generate full file context
+      for (let i = 0; i < maxLines; i++) {
+        const lineNumber = i + 1;
+        const originalLine = originalLines[i] || '';
+        const modifiedLine = modifiedLines[i] || '';
+        
+        if (originalLine !== modifiedLine) {
+          // This line has changes
+          if (i < originalLines.length && originalLine) {
+            fullDisplayLines.push({
+              type: 'deletion',
+              lineNumber: lineNumber,
+              newLineNumber: null,
+              content: originalLine,
+              originalContent: originalLine,
+              modifiedContent: null
+            });
+          }
+          if (i < modifiedLines.length && modifiedLine) {
+            fullDisplayLines.push({
+              type: 'addition',
+              lineNumber: null,
+              newLineNumber: lineNumber,
+              content: modifiedLine,
+              originalContent: null,
+              modifiedContent: modifiedLine
+            });
+          }
+        } else {
+          // Context line - same in both files
+          if (originalLine || modifiedLine) {
+            fullDisplayLines.push({
+              type: 'context',
+              lineNumber: lineNumber,
+              newLineNumber: lineNumber,
+              content: originalLine || modifiedLine,
+              originalContent: originalLine,
+              modifiedContent: modifiedLine
+            });
+          }
+        }
+      }
+      
+      console.log('✅ [DiffPreview] Generated full context display:', {
+        totalLines: fullDisplayLines.length,
+        contextLines: fullDisplayLines.filter(l => l.type === 'context').length,
+        additionLines: fullDisplayLines.filter(l => l.type === 'addition').length,
+        deletionLines: fullDisplayLines.filter(l => l.type === 'deletion').length
+      });
+      
+      return fullDisplayLines;
+    }
     
     console.log('✅ [DiffPreview] Using processed display lines as final:', processedDisplayLines.length);
     return processedDisplayLines;
-  }, [processedDisplayLines]);
+  }, [processedDisplayLines, collapseUnchanged, selectedView, currentModifiedCode]);
 
   const copyDiff = async () => {
     try {
@@ -1756,6 +1838,14 @@ const DiffPreviewSystem = ({
                       <span>Line numbers</span>
                     </label>
                     
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        checked={collapseUnchanged}
+                        onChange={(e) => setCollapseUnchanged(e.target.checked)}
+                      />
+                      <span>Collapse unchanged</span>
+                    </label>
                     
                     <div className="flex items-center space-x-2">
                       <span>Context:</span>
@@ -1763,6 +1853,7 @@ const DiffPreviewSystem = ({
                         value={contextLines}
                         onChange={(e) => setContextLines(Number(e.target.value))}
                         className="px-2 py-1 border rounded text-xs"
+                        disabled={!collapseUnchanged}
                       >
                         <option value={1}>1</option>
                         <option value={3}>3</option>
