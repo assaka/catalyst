@@ -922,18 +922,211 @@ const DiffPreviewSystem = ({
     }
   }, [diffResult.stats, onDiffStatsChange]);
 
-  // Convert parsed unified diff (from stored patch) to displayable lines
+  // Generate full file display lines with changes highlighted
+  const generateFullFileDisplayLines = (parsedDiff) => {
+    console.log('✨ [DiffPreview] generateFullFileDisplayLines starting:', {
+      hasOriginal: !!originalBaseCodeRef.current,
+      hasModified: !!currentModifiedCode,
+      parsedDiffHunks: parsedDiff.length
+    });
+
+    const originalLines = originalBaseCodeRef.current.split('\n');
+    const modifiedLines = currentModifiedCode.split('\n');
+    const displayLines = [];
+    
+    // Build a comprehensive change tracking system
+    const changeRanges = [];
+    
+    // Extract all change ranges from hunks with correct line mapping
+    parsedDiff.forEach(hunk => {
+      const range = {
+        oldStart: hunk.oldStart - 1, // Convert to 0-indexed
+        oldEnd: hunk.oldStart - 1 + (hunk.oldLength || 0),
+        newStart: hunk.newStart - 1, // Convert to 0-indexed  
+        newEnd: hunk.newStart - 1 + (hunk.newLength || 0),
+        changes: []
+      };
+      
+      let oldLineOffset = hunk.oldStart - 1; // 0-indexed
+      let newLineOffset = hunk.newStart - 1; // 0-indexed
+      
+      hunk.changes.forEach(change => {
+        switch (change.type) {
+          case 'delete':
+            range.changes.push({
+              type: 'deletion',
+              oldLineNumber: oldLineOffset + 1, // Convert back to 1-indexed for display
+              newLineNumber: null,
+              content: change.content
+            });
+            oldLineOffset++;
+            break;
+          case 'add':
+            range.changes.push({
+              type: 'addition',
+              oldLineNumber: null,
+              newLineNumber: newLineOffset + 1, // Convert back to 1-indexed for display
+              content: change.content
+            });
+            newLineOffset++;
+            break;
+          case 'context':
+            range.changes.push({
+              type: 'context',
+              oldLineNumber: oldLineOffset + 1,
+              newLineNumber: newLineOffset + 1,
+              content: change.content
+            });
+            oldLineOffset++;
+            newLineOffset++;
+            break;
+        }
+      });
+      
+      changeRanges.push(range);
+    });
+
+    // Sort change ranges by position
+    changeRanges.sort((a, b) => a.oldStart - b.oldStart);
+    
+    // Generate display lines with proper positioning
+    let currentOldLine = 0; // 0-indexed
+    let currentNewLine = 0; // 0-indexed
+    let displayOldLineNumber = 1; // 1-indexed for display
+    let displayNewLineNumber = 1; // 1-indexed for display
+    
+    for (const range of changeRanges) {
+      // Add context lines before this change range
+      while (currentOldLine < range.oldStart && currentNewLine < range.newStart) {
+        const originalLine = originalLines[currentOldLine];
+        const modifiedLine = modifiedLines[currentNewLine];
+        
+        if (originalLine !== undefined && modifiedLine !== undefined) {
+          displayLines.push({
+            type: 'context',
+            lineNumber: displayOldLineNumber,
+            newLineNumber: displayNewLineNumber,
+            content: originalLine,
+            originalContent: originalLine,
+            modifiedContent: modifiedLine
+          });
+        }
+        
+        currentOldLine++;
+        currentNewLine++;
+        displayOldLineNumber++;
+        displayNewLineNumber++;
+      }
+      
+      // Add changes from the current range
+      for (const change of range.changes) {
+        displayLines.push({
+          type: change.type,
+          lineNumber: change.oldLineNumber,
+          newLineNumber: change.newLineNumber,
+          content: change.content,
+          originalContent: change.type === 'deletion' || change.type === 'context' ? change.content : null,
+          modifiedContent: change.type === 'addition' || change.type === 'context' ? change.content : null
+        });
+        
+        // Update line counters based on change type
+        if (change.type === 'deletion' || change.type === 'context') {
+          currentOldLine++;
+          displayOldLineNumber++;
+        }
+        if (change.type === 'addition' || change.type === 'context') {
+          currentNewLine++;
+          displayNewLineNumber++;
+        }
+      }
+    }
+    
+    // Add remaining context lines after all changes
+    const maxLines = Math.max(originalLines.length, modifiedLines.length);
+    while (currentOldLine < originalLines.length || currentNewLine < modifiedLines.length) {
+      const originalLine = originalLines[currentOldLine];
+      const modifiedLine = modifiedLines[currentNewLine];
+      
+      if (originalLine !== undefined || modifiedLine !== undefined) {
+        if (originalLine !== undefined && modifiedLine !== undefined && originalLine === modifiedLine) {
+          // Context line
+          displayLines.push({
+            type: 'context',
+            lineNumber: displayOldLineNumber,
+            newLineNumber: displayNewLineNumber,
+            content: originalLine,
+            originalContent: originalLine,
+            modifiedContent: modifiedLine
+          });
+          currentOldLine++;
+          currentNewLine++;
+          displayOldLineNumber++;
+          displayNewLineNumber++;
+        } else {
+          // Handle remaining deletions/additions
+          if (originalLine !== undefined && (modifiedLine === undefined || originalLine !== modifiedLine)) {
+            displayLines.push({
+              type: 'deletion',
+              lineNumber: displayOldLineNumber,
+              newLineNumber: null,
+              content: originalLine,
+              originalContent: originalLine,
+              modifiedContent: null
+            });
+            currentOldLine++;
+            displayOldLineNumber++;
+          }
+          if (modifiedLine !== undefined && (originalLine === undefined || originalLine !== modifiedLine)) {
+            displayLines.push({
+              type: 'addition',
+              lineNumber: null,
+              newLineNumber: displayNewLineNumber,
+              content: modifiedLine,
+              originalContent: null,
+              modifiedContent: modifiedLine
+            });
+            currentNewLine++;
+            displayNewLineNumber++;
+          }
+        }
+      } else {
+        break;
+      }
+    }
+    
+    console.log('✅ [DiffPreview] generateFullFileDisplayLines completed:', {
+      totalLines: displayLines.length,
+      additions: displayLines.filter(line => line.type === 'addition').length,
+      deletions: displayLines.filter(line => line.type === 'deletion').length,
+      context: displayLines.filter(line => line.type === 'context').length,
+      changeRangesProcessed: changeRanges.length
+    });
+    
+    return displayLines;
+  };
+
+  // Convert parsed unified diff with full code context
   const convertParsedUnifiedDiffToDisplayLines = (parsedDiff) => {
     console.log('🔧 [DiffPreview] convertParsedUnifiedDiffToDisplayLines starting:', {
       parsedDiffLength: parsedDiff.length,
-      firstHunk: parsedDiff[0]
+      firstHunk: parsedDiff[0],
+      hasBaselineCode: !!originalBaseCodeRef.current,
+      hasModifiedCode: !!currentModifiedCode
     });
     
     if (!parsedDiff || parsedDiff.length === 0) {
       console.log('⚠️ [DiffPreview] No parsed diff data provided');
       return [];
     }
-    
+
+    // If we have full baseline and modified code, generate complete file view with changes highlighted
+    if (originalBaseCodeRef.current && currentModifiedCode) {
+      console.log('✨ [DiffPreview] Generating full file context with changes highlighted');
+      return generateFullFileDisplayLines(parsedDiff);
+    }
+
+    // Fallback to hunk-only view if we don't have full code
+    console.log('⚠️ [DiffPreview] Using hunk-only view - full code not available');
     const displayLines = [];
     
     parsedDiff.forEach((hunk, hunkIndex) => {
@@ -1137,63 +1330,91 @@ const DiffPreviewSystem = ({
     const processed = [];
     let contextGroup = [];
     const maxContextLines = 3; // Show 3 context lines before/after changes
+    const minCollapsibleLines = 8; // Only collapse if there are at least this many context lines
 
+    // First pass: identify change positions to better handle context around them
+    const changePositions = [];
+    displayLines.forEach((line, index) => {
+      if (line.type === 'addition' || line.type === 'deletion') {
+        changePositions.push(index);
+      }
+    });
+
+    console.log('🔧 [DiffPreview] Found', changePositions.length, 'changes at positions:', changePositions);
+
+    // Second pass: process lines with improved context grouping
     for (let i = 0; i < displayLines.length; i++) {
       const line = displayLines[i];
       
-      if (line.type === 'context') {
+      // Check if we're near any changes (within maxContextLines distance)
+      const nearChange = changePositions.some(changePos => 
+        Math.abs(i - changePos) <= maxContextLines
+      );
+      
+      if (line.type === 'context' && !nearChange) {
+        // This is context that's far from changes - eligible for collapsing
         contextGroup.push({ ...line, index: i });
       } else {
-        // Process accumulated context group before change
-        if (contextGroup.length > 0) {
-          if (contextGroup.length <= maxContextLines * 2) {
-            // Small context group - show all
-            processed.push(...contextGroup);
-          } else {
-            // Large context group - show first few, collapsed indicator, last few
-            processed.push(...contextGroup.slice(0, maxContextLines));
-            
-            const collapsedCount = contextGroup.length - (maxContextLines * 2);
+        // Process any accumulated context group before this important line
+        if (contextGroup.length >= minCollapsibleLines) {
+          // Large context group - show first few, collapsed indicator, last few
+          processed.push(...contextGroup.slice(0, maxContextLines));
+          
+          const collapsedCount = contextGroup.length - (maxContextLines * 2);
+          if (collapsedCount > 0) {
             processed.push({
               type: 'collapsed',
               collapsedCount,
               startIndex: contextGroup[maxContextLines].index,
               endIndex: contextGroup[contextGroup.length - maxContextLines - 1].index,
-              content: `... ${collapsedCount} unchanged lines hidden ...`,
+              content: `... ${collapsedCount} unchanged lines hidden (click to expand)`,
               originalContent: null,
               lineNumber: null,
               newLineNumber: null
             });
             
             processed.push(...contextGroup.slice(-maxContextLines));
+          } else {
+            // If somehow we don't have enough to collapse after removing context, show all
+            processed.push(...contextGroup);
           }
-          contextGroup = [];
+        } else if (contextGroup.length > 0) {
+          // Small context group - show all
+          processed.push(...contextGroup);
         }
         
-        // Add the change line
+        contextGroup = [];
+        
+        // Add the important line (change or context near changes)
         processed.push({ ...line, index: i });
       }
     }
     
     // Process any remaining context group at the end
-    if (contextGroup.length > 0) {
-      if (contextGroup.length <= maxContextLines) {
-        processed.push(...contextGroup);
-      } else {
-        processed.push(...contextGroup.slice(0, maxContextLines));
-        const collapsedCount = contextGroup.length - maxContextLines;
+    if (contextGroup.length >= minCollapsibleLines) {
+      processed.push(...contextGroup.slice(0, maxContextLines));
+      const collapsedCount = contextGroup.length - maxContextLines;
+      if (collapsedCount > 0) {
         processed.push({
           type: 'collapsed',
           collapsedCount,
           startIndex: contextGroup[maxContextLines].index,
           endIndex: contextGroup[contextGroup.length - 1].index,
-          content: `... ${collapsedCount} unchanged lines hidden ...`,
+          content: `... ${collapsedCount} unchanged lines hidden (click to expand)`,
           originalContent: null,
           lineNumber: null,
           newLineNumber: null
         });
       }
+    } else if (contextGroup.length > 0) {
+      processed.push(...contextGroup);
     }
+
+    console.log('✅ [DiffPreview] Collapse processing completed:', {
+      originalLines: displayLines.length,
+      processedLines: processed.length,
+      collapsedSections: processed.filter(line => line.type === 'collapsed').length
+    });
 
     return processed;
   }, [displayLines, collapseUnchanged]);
@@ -1364,6 +1585,73 @@ const DiffPreviewSystem = ({
             </span>
           )}
         </div>
+      </div>
+    );
+  };
+
+  // Component to render formatted raw diff
+  const FormattedRawDiff = ({ unifiedDiff }) => {
+    if (!unifiedDiff || unifiedDiff.trim() === '') {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center text-muted-foreground">
+            <FileText className="w-8 h-8 mx-auto mb-2" />
+            <p>No differences to display</p>
+          </div>
+        </div>
+      );
+    }
+
+    const lines = unifiedDiff.split('\n');
+    
+    return (
+      <div className="font-mono text-sm">
+        {lines.map((line, index) => {
+          const getLineStyle = () => {
+            if (line.startsWith('@@')) {
+              return 'bg-blue-50 text-blue-800 font-semibold border-l-4 border-blue-400';
+            } else if (line.startsWith('+')) {
+              return 'bg-green-50 text-green-800 border-l-4 border-green-400';
+            } else if (line.startsWith('-')) {
+              return 'bg-red-50 text-red-800 border-l-4 border-red-400';
+            } else if (line.startsWith('+++') || line.startsWith('---')) {
+              return 'bg-gray-100 text-gray-700 font-medium border-l-4 border-gray-300';
+            } else {
+              return 'text-foreground';
+            }
+          };
+
+          const getLineIcon = () => {
+            if (line.startsWith('@@')) {
+              return <Settings className="w-3 h-3 text-blue-600 mr-2" />;
+            } else if (line.startsWith('+')) {
+              return <Plus className="w-3 h-3 text-green-600 mr-2" />;
+            } else if (line.startsWith('-')) {
+              return <Minus className="w-3 h-3 text-red-600 mr-2" />;
+            } else if (line.startsWith('+++') || line.startsWith('---')) {
+              return <FileText className="w-3 h-3 text-gray-600 mr-2" />;
+            } else {
+              return <div className="w-3 h-3 mr-2" />; // Spacer for alignment
+            }
+          };
+
+          return (
+            <div 
+              key={index}
+              className={`flex items-start px-3 py-1 whitespace-nowrap leading-5 ${getLineStyle()}`}
+            >
+              <div className="flex items-center flex-shrink-0">
+                {getLineIcon()}
+                <span className="w-12 text-right text-muted-foreground text-xs mr-3">
+                  {index + 1}
+                </span>
+              </div>
+              <div className="flex-1 overflow-x-auto">
+                <span className="whitespace-pre">{line || ' '}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -1818,9 +2106,9 @@ const DiffPreviewSystem = ({
                   }}
                 >
                   <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 300px)', minWidth: '800px', height: 'calc(100vh - 300px)' }}>
-                    <pre className="p-4 text-sm font-mono whitespace-pre">
-                      {diffResult.unifiedDiff || 'No differences to display'}
-                    </pre>
+                    <div className="p-2">
+                      <FormattedRawDiff unifiedDiff={diffResult.unifiedDiff} />
+                    </div>
                   </div>
                 </div>
               </div>
