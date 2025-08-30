@@ -30,38 +30,53 @@ class UnifiedDiffService {
    */
   async createUnifiedDiff(originalCode, modifiedCode, filePath = 'file.txt') {
     try {
+      // Normalize line endings to prevent false diffs
+      const normalizeLineEndings = (text) => {
+        if (!text) return text;
+        return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      };
+      
+      const normalizedOriginal = normalizeLineEndings(originalCode);
+      const normalizedModified = normalizeLineEndings(modifiedCode);
+      
+      // If content is identical after normalization, return empty diff
+      if (normalizedOriginal === normalizedModified) {
+        console.log(`📋 UnifiedDiffService: No real changes after line ending normalization for ${filePath}`);
+        return '';
+      }
+      
       const timestamp = new Date().toISOString();
       const originalFile = path.join(this.tempDir, `original_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
       const modifiedFile = path.join(this.tempDir, `modified_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
 
       console.log(`🔍 UnifiedDiffService Debug for ${filePath}:`);
-      console.log(`  Original content length: ${originalCode?.length || 0}`);
-      console.log(`  Modified content length: ${modifiedCode?.length || 0}`);
-      console.log(`  Content are identical: ${originalCode === modifiedCode}`);
-      console.log(`  Original first 100 chars: ${(originalCode || '').substring(0, 100)}...`);
-      console.log(`  Modified first 100 chars: ${(modifiedCode || '').substring(0, 100)}...`);
+      console.log(`  Original content length: ${normalizedOriginal?.length || 0}`);
+      console.log(`  Modified content length: ${normalizedModified?.length || 0}`);
+      console.log(`  Content are identical: ${normalizedOriginal === normalizedModified}`);
+      console.log(`  Original first 100 chars: ${(normalizedOriginal || '').substring(0, 100)}...`);
+      console.log(`  Modified first 100 chars: ${(normalizedModified || '').substring(0, 100)}...`);
       
       // Find the exact character difference
-      if (originalCode !== modifiedCode) {
-        for (let i = 0; i < Math.max(originalCode.length, modifiedCode.length); i++) {
-          if (originalCode[i] !== modifiedCode[i]) {
+      if (normalizedOriginal !== normalizedModified) {
+        for (let i = 0; i < Math.max(normalizedOriginal.length, normalizedModified.length); i++) {
+          if (normalizedOriginal[i] !== normalizedModified[i]) {
             const context = 20;
             const start = Math.max(0, i - context);
-            const end = Math.min(Math.max(originalCode.length, modifiedCode.length), i + context + 1);
+            const end = Math.min(Math.max(normalizedOriginal.length, normalizedModified.length), i + context + 1);
             
             console.log(`  🎯 First difference at position ${i}:`);
-            console.log(`    Original char: "${originalCode[i] || 'EOF'}" (code: ${originalCode.charCodeAt(i) || 'N/A'})`);
-            console.log(`    Modified char: "${modifiedCode[i] || 'EOF'}" (code: ${modifiedCode.charCodeAt(i) || 'N/A'})`);
-            console.log(`    Original context: "${originalCode.substring(start, end).replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"`);
-            console.log(`    Modified context: "${modifiedCode.substring(start, end).replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"`);
+            console.log(`    Original char: "${normalizedOriginal[i] || 'EOF'}" (code: ${normalizedOriginal.charCodeAt(i) || 'N/A'})`);
+            console.log(`    Modified char: "${normalizedModified[i] || 'EOF'}" (code: ${normalizedModified.charCodeAt(i) || 'N/A'})`);
+            console.log(`    Original context: "${normalizedOriginal.substring(start, end).replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"`);
+            console.log(`    Modified context: "${normalizedModified.substring(start, end).replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"`);
             break;
           }
         }
       }
 
-      // Write files to temp location
-      await fs.writeFile(originalFile, originalCode);
-      await fs.writeFile(modifiedFile, modifiedCode);
+      // Write normalized files to temp location
+      await fs.writeFile(originalFile, normalizedOriginal);
+      await fs.writeFile(modifiedFile, normalizedModified);
 
       // Verify what was actually written to files
       const writtenOriginal = await fs.readFile(originalFile, 'utf8');
