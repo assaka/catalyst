@@ -3,7 +3,7 @@ import { Eye, Code, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BrowserPreview from './BrowserPreview';
 import apiClient from '@/api/client';
-import storeResolver from '@/utils/storeResolver';
+import { useStoreContext } from '@/utils/storeContext';
 
 /**
  * Preview Tab Component
@@ -18,24 +18,10 @@ const PreviewTab = ({
   const [error, setError] = useState(null);
   const [availablePatches, setAvailablePatches] = useState([]);
   
-  // Get store ID using storeResolver
-  const [storeId, setStoreId] = useState(null);
+  // Get store context
+  const { storeId, hasStoreId, loading: storeLoading } = useStoreContext();
   
-  // Resolve store ID on mount
-  useEffect(() => {
-    const resolveStoreId = async () => {
-      try {
-        const resolvedStoreId = await storeResolver.getCurrentStoreId();
-        setStoreId(resolvedStoreId);
-        console.log('🏪 PreviewTab: Resolved store ID:', resolvedStoreId);
-      } catch (error) {
-        console.error('❌ PreviewTab: Failed to resolve store ID:', error);
-        setError('Failed to resolve store ID. Please ensure you are authenticated.');
-      }
-    };
-    
-    resolveStoreId();
-  }, []);
+  console.log('🏪 PreviewTab: Store context:', { storeId, hasStoreId, storeLoading });
 
   // Fetch patches for current store and file
   const fetchPatches = useCallback(async (fileName, storeId) => {
@@ -93,17 +79,22 @@ const PreviewTab = ({
 
   // Initialize preview configuration by fetching patches
   useEffect(() => {
+    if (storeLoading) {
+      // Wait for store context to load
+      return;
+    }
+    
     if (fileName && storeId) {
       fetchPatches(fileName, storeId);
     } else {
       setPreviewConfig(null);
       if (!fileName) {
         setError('No file selected');
-      } else if (!storeId) {
-        setError('No store selected. Please select a store first.');
+      } else if (!storeId && !storeLoading) {
+        setError('No store ID available. Please ensure you are authenticated and have access to a store.');
       }
     }
-  }, [fileName, storeId, fetchPatches]);
+  }, [fileName, storeId, storeLoading, fetchPatches]);
 
   // Direct preview URL generation and iframe
   const DirectPreviewIframe = useCallback(({ config }) => {
@@ -184,12 +175,16 @@ const PreviewTab = ({
     );
   }
 
-  if (!previewConfig) {
+  if (storeLoading || isLoading || !previewConfig) {
     return (
       <div className={cn("h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900", className)}>
         <div className="text-center text-gray-500 dark:text-gray-400">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
-          <p className="text-sm">Initializing preview...</p>
+          <p className="text-sm">
+            {storeLoading ? 'Loading store context...' : 
+             isLoading ? 'Fetching patches...' : 
+             'Initializing preview...'}
+          </p>
         </div>
       </div>
     );
