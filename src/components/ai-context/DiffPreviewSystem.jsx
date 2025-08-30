@@ -1075,10 +1075,23 @@ const DiffPreviewSystem = ({
       return [];
     }
 
-    // If we have full baseline and modified code, generate complete file view with changes highlighted
+    // Always try to generate complete file view with changes highlighted when we have baseline and modified code
     if (originalBaseCodeRef.current && currentModifiedCode) {
       console.log('✨ [DiffPreview] Generating full file context with changes highlighted');
       return generateFullFileDisplayLines(parsedDiff);
+    }
+
+    // Check if we can reconstruct full code from the stored unified diff
+    if (diffResult.unifiedDiff) {
+      console.log('🔧 [DiffPreview] Attempting to reconstruct full context from unified diff');
+      const reconstructed = diffServiceRef.current.reconstructFromUnifiedDiff(diffResult.unifiedDiff);
+      if (reconstructed.success && reconstructed.originalCode && reconstructed.modifiedCode) {
+        // Update refs with reconstructed code
+        originalBaseCodeRef.current = reconstructed.originalCode;
+        setCurrentModifiedCode(reconstructed.modifiedCode);
+        console.log('✅ [DiffPreview] Successfully reconstructed full context, generating full file view');
+        return generateFullFileDisplayLines(parsedDiff);
+      }
     }
 
     // Fallback to hunk-only view if we don't have full code

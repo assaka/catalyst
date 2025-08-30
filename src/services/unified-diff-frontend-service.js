@@ -132,10 +132,12 @@ class UnifiedDiffFrontendService {
     
     const hunks = [];
     let currentHunk = null;
+    const contextLines = 3; // Number of context lines between hunks
+    const minHunkSeparation = 6; // Minimum lines between changes to create separate hunks
     
     changes.forEach(change => {
-      if (!currentHunk || change.lineNumber > currentHunk.endLine + 3) {
-        // Start new hunk
+      if (!currentHunk || change.lineNumber > currentHunk.endLine + minHunkSeparation) {
+        // Start new hunk - use stricter separation criteria
         if (currentHunk) {
           hunks.push(currentHunk);
         }
