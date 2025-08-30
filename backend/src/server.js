@@ -109,6 +109,7 @@ const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
 const cronJobRoutes = require('./routes/cron-jobs');
 const patchesRoutes = require('./routes/patches');
+const debugStoreRoutes = require('./routes/debug-store');
 
 const app = express();
 
@@ -1588,6 +1589,7 @@ app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, 
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/patches', patchesRoutes); // Versioned patches API with A/B testing and rollback support
+app.use('/api/debug', debugStoreRoutes); // Debug endpoints for troubleshooting store resolution
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', authMiddleware, storeMediaStorageRoutes); // Add media storage routes
