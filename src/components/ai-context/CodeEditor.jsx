@@ -410,6 +410,27 @@ const CodeEditor = ({
     }
     
     onChange && onChange(newCode);
+    
+    // Update undo/redo button states
+    setTimeout(() => {
+      if (editorRef.current) {
+        try {
+          const model = editorRef.current.getModel();
+          if (model && model.canUndo && model.canRedo) {
+            setCanUndo(model.canUndo());
+            setCanRedo(model.canRedo());
+          } else {
+            // Fallback - assume buttons should be enabled after content change
+            setCanUndo(true);
+            setCanRedo(false); // Usually nothing to redo after new changes
+          }
+        } catch (error) {
+          console.warn('Could not update undo/redo state:', error);
+          setCanUndo(true);
+          setCanRedo(true);
+        }
+      }
+    }, 100);
   };
 
   const handleEditorDidMount = (editor, monaco) => {
@@ -501,15 +522,155 @@ const CodeEditor = ({
     }
   };
 
-  const handleUndo = () => {
+  const handleUndo = async () => {
     if (editorRef.current) {
+      console.log('🔄 [CodeEditor] Handling undo - creating reverse patch');
+      
+      // Get current state before undo
+      const codeBeforeUndo = editorRef.current.getValue();
+      
+      // Perform the undo operation
       editorRef.current.getAction('undo').run();
+      
+      // Get state after undo
+      const codeAfterUndo = editorRef.current.getValue();
+      
+      // Create a patch that represents the undo operation
+      if (codeBeforeUndo !== codeAfterUndo) {
+        try {
+          console.log('💾 [CodeEditor] Creating undo patch...');
+          
+          const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+          if (!token) {
+            console.warn('⚠️ [CodeEditor] No auth token found for undo patch creation');
+            return;
+          }
+
+          const response = await fetch('/api/patches/create', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              filePath: fileName,
+              modifiedCode: codeAfterUndo,
+              changeSummary: 'Undo operation',
+              changeType: 'undo',
+              sessionId: `undo_${Date.now()}`,
+              useUpsert: true
+            })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('✅ [CodeEditor] Undo patch created successfully:', result);
+            
+            // Regenerate diff data after undo
+            if (enableDiffDetection && originalCode) {
+              const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterUndo);
+              if (diffResult) {
+                setDiffData(diffResult);
+                const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterUndo);
+                setFullFileDisplayLines(displayLines);
+              }
+            }
+          } else {
+            console.error('❌ [CodeEditor] Failed to create undo patch:', response.status);
+          }
+        } catch (error) {
+          console.error('❌ [CodeEditor] Error creating undo patch:', error);
+        }
+      }
+      
+      // Update button states after undo
+      setTimeout(() => {
+        try {
+          const model = editorRef.current.getModel();
+          if (model && model.canUndo && model.canRedo) {
+            setCanUndo(model.canUndo());
+            setCanRedo(model.canRedo());
+          }
+        } catch (error) {
+          console.warn('Could not update undo/redo state after undo:', error);
+        }
+      }, 100);
     }
   };
 
-  const handleRedo = () => {
+  const handleRedo = async () => {
     if (editorRef.current) {
+      console.log('🔄 [CodeEditor] Handling redo - creating forward patch');
+      
+      // Get current state before redo
+      const codeBeforeRedo = editorRef.current.getValue();
+      
+      // Perform the redo operation
       editorRef.current.getAction('redo').run();
+      
+      // Get state after redo
+      const codeAfterRedo = editorRef.current.getValue();
+      
+      // Create a patch that represents the redo operation
+      if (codeBeforeRedo !== codeAfterRedo) {
+        try {
+          console.log('💾 [CodeEditor] Creating redo patch...');
+          
+          const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+          if (!token) {
+            console.warn('⚠️ [CodeEditor] No auth token found for redo patch creation');
+            return;
+          }
+
+          const response = await fetch('/api/patches/create', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              filePath: fileName,
+              modifiedCode: codeAfterRedo,
+              changeSummary: 'Redo operation',
+              changeType: 'redo',
+              sessionId: `redo_${Date.now()}`,
+              useUpsert: true
+            })
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('✅ [CodeEditor] Redo patch created successfully:', result);
+            
+            // Regenerate diff data after redo
+            if (enableDiffDetection && originalCode) {
+              const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterRedo);
+              if (diffResult) {
+                setDiffData(diffResult);
+                const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterRedo);
+                setFullFileDisplayLines(displayLines);
+              }
+            }
+          } else {
+            console.error('❌ [CodeEditor] Failed to create redo patch:', response.status);
+          }
+        } catch (error) {
+          console.error('❌ [CodeEditor] Error creating redo patch:', error);
+        }
+      }
+      
+      // Update button states after redo
+      setTimeout(() => {
+        try {
+          const model = editorRef.current.getModel();
+          if (model && model.canUndo && model.canRedo) {
+            setCanUndo(model.canUndo());
+            setCanRedo(model.canRedo());
+          }
+        } catch (error) {
+          console.warn('Could not update undo/redo state after redo:', error);
+        }
+      }, 100);
     }
   };
 
@@ -530,7 +691,9 @@ const CodeEditor = ({
               variant="ghost"
               size="sm"
               onClick={handleUndo}
-              disabled={readOnly}
+              disabled={readOnly || !canUndo}
+              title={canUndo ? "Undo (Ctrl+Z) - Creates reverse patch" : "Nothing to undo"}
+              className={canUndo ? "hover:bg-blue-50 hover:text-blue-600" : ""}
             >
               <Undo className="w-4 h-4" />
             </Button>
@@ -539,7 +702,9 @@ const CodeEditor = ({
               variant="ghost"
               size="sm"
               onClick={handleRedo}
-              disabled={readOnly}
+              disabled={readOnly || !canRedo}
+              title={canRedo ? "Redo (Ctrl+Y) - Creates forward patch" : "Nothing to redo"}
+              className={canRedo ? "hover:bg-blue-50 hover:text-blue-600" : ""}
             >
               <Redo className="w-4 h-4" />
             </Button>
