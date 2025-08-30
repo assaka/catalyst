@@ -37,7 +37,7 @@ class PatchService {
       console.log(`   Options:`, { storeId, userId, releaseVersion, abVariant, previewMode });
 
       // Get baseline code for the file
-      const baseline = await this.getBaseline(filePath, storeId);
+      const baseline = await this.getBaseline(filePath);
       if (!baseline.success) {
         return baseline;
       }
@@ -130,10 +130,10 @@ class PatchService {
   /**
    * Get baseline code for a file
    */
-  async getBaseline(filePath, storeId) {
+  async getBaseline(filePath) {
     try {
-      // File baselines are global for all stores, so we don't filter by store_id
-      // We'll look for any baseline for this file path
+      // File baselines are global for all stores
+      // Look for baseline for this file path
       const baselines = await sequelize.query(`
         SELECT baseline_code, code_hash, version 
         FROM file_baselines 
@@ -406,8 +406,8 @@ class PatchService {
       }
 
       // Get baseline code
-      console.log('🔍 [PatchService] Calling getBaseline with storeId:', storeId);
-      const baseline = await this.getBaseline(filePath, storeId);
+      console.log('🔍 [PatchService] Calling getBaseline for filePath:', filePath);
+      const baseline = await this.getBaseline(filePath);
       if (!baseline.success) {
         return { success: false, error: baseline.error };
       }

@@ -601,7 +601,7 @@ router.get('/baseline/:filePath(*)', authMiddleware, storeResolver(), async (req
     
     console.log(`📋 Getting baseline code for ${filePath}`);
     
-    const result = await patchService.getBaseline(filePath, storeId);
+    const result = await patchService.getBaseline(filePath);
     
     // Set cache control headers to prevent unwanted caching
     res.set({

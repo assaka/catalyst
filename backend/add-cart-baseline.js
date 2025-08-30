@@ -13,12 +13,11 @@ async function addCartBaseline() {
   try {
     console.log('📁 Adding Cart.jsx baseline...');
     
-    // Check if it already exists
+    // Check if it already exists (baselines are now global)
     const existing = await sequelize.query(`
       SELECT id, file_path FROM file_baselines 
-      WHERE file_path = 'src/pages/Cart.jsx' AND store_id = :storeId
+      WHERE file_path = 'src/pages/Cart.jsx'
     `, {
-      replacements: { storeId: DEFAULT_STORE_ID },
       type: sequelize.QueryTypes.SELECT
     });
     
@@ -45,10 +44,9 @@ async function addCartBaseline() {
     console.log('  - Content length:', content.length, 'chars');
     console.log('  - Hash:', codeHash.substring(0, 16) + '...');
     
-    // Insert the baseline
+    // Insert the baseline (global, no store_id)
     const [result] = await sequelize.query(`
       INSERT INTO file_baselines (
-        store_id, 
         file_path, 
         baseline_code, 
         code_hash, 
@@ -60,7 +58,6 @@ async function addCartBaseline() {
         updated_at
       ) 
       VALUES (
-        :storeId,
         :filePath,
         :baselineCode,
         :codeHash,
@@ -74,7 +71,6 @@ async function addCartBaseline() {
       RETURNING id
     `, {
       replacements: {
-        storeId: DEFAULT_STORE_ID,
         filePath: 'src/pages/Cart.jsx',
         baselineCode: content,
         codeHash: codeHash,
@@ -94,9 +90,8 @@ async function addCartBaseline() {
     const verification = await sequelize.query(`
       SELECT id, file_path, file_size, LENGTH(baseline_code) as code_length
       FROM file_baselines 
-      WHERE file_path = 'src/pages/Cart.jsx' AND store_id = :storeId
+      WHERE file_path = 'src/pages/Cart.jsx'
     `, {
-      replacements: { storeId: DEFAULT_STORE_ID },
       type: sequelize.QueryTypes.SELECT
     });
     
