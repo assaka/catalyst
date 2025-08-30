@@ -763,8 +763,44 @@ const DiffPreviewSystem = ({
       unifiedDiffValue: astDiffData?.patch?.unified_diff ? astDiffData.patch.unified_diff.substring(0, 100) + '...' : 'NOT FOUND'
     });
     
-    // PRIORITY 1: If we have stored unified_diff from patch, use it directly
+    // PRIORITY 1: If we have stored unified_diff from patch, check if we need full file context
     if (astDiffData?.patch?.unified_diff) {
+      const showFullFile = selectedView === 'unified' || selectedView === 'split';
+      
+      if (showFullFile) {
+        console.log('🎯 [DiffPreview] Stored patch found, but regenerating with full file context for', selectedView, 'view');
+        
+        // Try to reconstruct original and modified code from stored diff, then regenerate with full context
+        const storedUnifiedDiff = astDiffData.patch.unified_diff;
+        const reconstructed = diffServiceRef.current.reconstructFromUnifiedDiff(storedUnifiedDiff);
+        
+        if (reconstructed.success && reconstructed.originalCode && reconstructed.modifiedCode) {
+          console.log('🔄 [DiffPreview] Successfully reconstructed code, regenerating with full file context');
+          
+          // Regenerate diff with full file context
+          const result = diffServiceRef.current.createDiff(reconstructed.originalCode, reconstructed.modifiedCode, {
+            showFullFile: true,
+            filename: fileName || 'file'
+          });
+          
+          const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
+          
+          return {
+            success: true,
+            unifiedDiff: result.unifiedDiff,
+            parsedDiff: result.parsedDiff,
+            stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+            metadata: {
+              algorithm: 'unified-full',
+              source: 'reconstructed_with_full_context',
+              message: 'Regenerated from stored patch with full file context'
+            }
+          };
+        } else {
+          console.log('⚠️ [DiffPreview] Failed to reconstruct code, falling back to stored diff');
+        }
+      }
+      
       console.log('🎯 [DiffPreview] Using stored unified_diff directly from patch');
       const storedUnifiedDiff = astDiffData.patch.unified_diff;
       const stats = diffServiceRef.current.getDiffStats(storedUnifiedDiff);
