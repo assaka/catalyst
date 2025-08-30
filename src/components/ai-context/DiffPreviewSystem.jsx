@@ -393,7 +393,6 @@ const DiffPreviewSystem = ({
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
   const [contextLines, setContextLines] = useState(3);
-  const [collapseUnchanged, setCollapseUnchanged] = useState(false);
   const [currentModifiedCode, setCurrentModifiedCode] = useState(modifiedCode);
   const [copyStatus, setCopyStatus] = useState({ copied: false, error: null });
   const [previewStatus, setPreviewStatus] = useState({ loading: false, error: null, url: null });
@@ -765,7 +764,6 @@ const DiffPreviewSystem = ({
     
     // PRIORITY 1: If we have stored unified_diff from patch, check if we need full file context
     if (astDiffData?.patch?.unified_diff) {
-      const showFullFile = !collapseUnchanged && (selectedView === 'unified' || selectedView === 'split');
       
       if (showFullFile) {
         console.log('🎯 [DiffPreview] Stored patch found, but regenerating with full file context for', selectedView, 'view');
@@ -777,9 +775,8 @@ const DiffPreviewSystem = ({
         if (reconstructed.success && reconstructed.originalCode && reconstructed.modifiedCode) {
           console.log('🔄 [DiffPreview] Successfully reconstructed code, regenerating with full file context');
           
-          // Regenerate diff with full file context
+          // Regenerate diff
           const result = diffServiceRef.current.createDiff(reconstructed.originalCode, reconstructed.modifiedCode, {
-            showFullFile: true,
             filename: fileName || 'file'
           });
           
@@ -864,9 +861,7 @@ const DiffPreviewSystem = ({
       }
 
       // Use full file context for unified and split views
-      const showFullFile = !collapseUnchanged && (selectedView === 'unified' || selectedView === 'split');
       const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode, {
-        showFullFile: showFullFile,
         filename: fileName || 'file'
       });
       const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
@@ -914,10 +909,8 @@ const DiffPreviewSystem = ({
         
         // Now create the diff normally using the reconstructed code
         // Use full file context for unified and split views
-        const showFullFile = !collapseUnchanged && (selectedView === 'unified' || selectedView === 'split');
-        const result = diffServiceRef.current.createDiff(reconstructed.originalCode, reconstructed.modifiedCode, {
-          showFullFile: showFullFile,
-          filename: fileName || 'file'
+          const result = diffServiceRef.current.createDiff(reconstructed.originalCode, reconstructed.modifiedCode, {
+            filename: fileName || 'file'
         });
         const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
         
@@ -959,7 +952,7 @@ const DiffPreviewSystem = ({
       unifiedDiff: '',
       metadata: null
     };
-  }, [currentModifiedCode, fileName, astDiffData, useAstDiff, filePath, selectedView, collapseUnchanged]);
+  }, [currentModifiedCode, fileName, astDiffData, useAstDiff, filePath, selectedView]);
 
   // Notify parent when diff stats change
   useEffect(() => {
@@ -1329,18 +1322,14 @@ const DiffPreviewSystem = ({
     return convertDiffToDisplayLines(diffResult.parsedDiff);
   }, [diffResult.parsedDiff, currentModifiedCode, diffResult.metadata]);
 
-  // Process display lines for collapsing unchanged fragments
+  // Process display lines (simplified - no collapsing)
   const processedDisplayLines = useMemo(() => {
     console.log('🔧 [DiffPreview] Processing display lines:', {
       displayLinesLength: displayLines.length,
-      collapseUnchanged,
       firstDisplayLine: displayLines[0]
     });
     
-    if (!collapseUnchanged || displayLines.length === 0) {
-      console.log('🔄 [DiffPreview] Returning unprocessed display lines:', displayLines.length);
-      return displayLines;
-    }
+    return displayLines;
 
     const processed = [];
     let contextGroup = [];
@@ -1432,7 +1421,7 @@ const DiffPreviewSystem = ({
     });
 
     return processed;
-  }, [displayLines, collapseUnchanged]);
+  }, [displayLines]);
 
   // Handle expanding collapsed sections
   const handleExpandCollapsed = useCallback((startIndex, endIndex) => {
@@ -1921,14 +1910,6 @@ const DiffPreviewSystem = ({
                       <span>Line numbers</span>
                     </label>
                     
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={collapseUnchanged}
-                        onChange={(e) => setCollapseUnchanged(e.target.checked)}
-                      />
-                      <span>Collapse Unchanged</span>
-                    </label>
                     
                     <div className="flex items-center space-x-2">
                       <span>Context:</span>
@@ -1997,14 +1978,6 @@ const DiffPreviewSystem = ({
                       onChange={(e) => setLineNumbers(e.target.checked)}
                     />
                     <span>Line numbers</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      checked={collapseUnchanged}
-                      onChange={(e) => setCollapseUnchanged(e.target.checked)}
-                    />
-                    <span>Collapse Unchanged</span>
                   </label>
                 </div>
               </div>

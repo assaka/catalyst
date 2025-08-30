@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Eye, Code, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BrowserPreview from './BrowserPreview';
+import apiClient from '@/api/client';
+import storeResolver from '@/utils/storeResolver';
 
 /**
  * Preview Tab Component
@@ -14,36 +16,94 @@ const PreviewTab = ({
   const [previewConfig, setPreviewConfig] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  // Specific configuration for the test case
-  const SPECIFIC_CONFIGS = {
-    'src/pages/Cart.jsx': {
-      storeId: '8cc01a01-3a78-4f20-beb8-a566a07834e5',
-      patchId: 'a432e3d2-42ef-4df6-b5cc-3dcd28c513fe',
-      pageName: 'Cart',
-      description: 'Cart preview with specific patch applied'
-    }
-  };
-
-  // Initialize preview configuration
+  const [availablePatches, setAvailablePatches] = useState([]);
+  
+  // Get store ID using storeResolver
+  const [storeId, setStoreId] = useState(null);
+  
+  // Resolve store ID on mount
   useEffect(() => {
-    if (fileName && SPECIFIC_CONFIGS[fileName]) {
-      const config = SPECIFIC_CONFIGS[fileName];
-      console.log(`🎬 Preview Tab: Configuring for ${fileName}`);
-      console.log(`  Store ID: ${config.storeId}`);
-      console.log(`  Patch ID: ${config.patchId}`);
-      console.log(`  Page: ${config.pageName}`);
+    const resolveStoreId = async () => {
+      try {
+        const resolvedStoreId = await storeResolver.getCurrentStoreId();
+        setStoreId(resolvedStoreId);
+        console.log('🏪 PreviewTab: Resolved store ID:', resolvedStoreId);
+      } catch (error) {
+        console.error('❌ PreviewTab: Failed to resolve store ID:', error);
+        setError('Failed to resolve store ID. Please ensure you are authenticated.');
+      }
+    };
+    
+    resolveStoreId();
+  }, []);
+
+  // Fetch patches for current store and file
+  const fetchPatches = useCallback(async (fileName, storeId) => {
+    if (!fileName || !storeId) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      console.log(`🔍 Fetching patches for ${fileName} in store ${storeId}`);
       
-      setPreviewConfig(config);
-      setError(null);
-    } else if (fileName) {
-      setError(`No specific preview configuration found for ${fileName}`);
-      setPreviewConfig(null);
+      // Use direct database query or API endpoint
+      const encodedFileName = encodeURIComponent(fileName);
+      const patchesUrl = `patches/apply/${encodedFileName}?store_id=${storeId}&preview=true`;
+      
+      const response = await apiClient.get(patchesUrl);
+      
+      if (response.success && response.data.hasPatches) {
+        const patches = response.data.patches || [];
+        setAvailablePatches(patches);
+        
+        // Select first available patch for this file
+        const firstPatch = patches.find(p => p.file_path === fileName) || patches[0];
+        
+        if (firstPatch) {
+          const config = {
+            storeId: storeId,
+            patchId: firstPatch.id,
+            pageName: getPageNameFromFile(fileName),
+            description: `${getPageNameFromFile(fileName)} preview with patch: ${firstPatch.patch_name || 'Unnamed patch'}`
+          };
+          
+          console.log('✅ Found patches, using:', config);
+          setPreviewConfig(config);
+        } else {
+          setError(`No patches found for ${fileName}`);
+        }
+      } else {
+        setError(`No patches available for ${fileName} in this store`);
+      }
+      
+    } catch (error) {
+      console.error('Error fetching patches:', error);
+      setError(`Failed to fetch patches: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+  
+  // Helper function to extract page name from file path
+  const getPageNameFromFile = useCallback((filePath) => {
+    const fileName = filePath.split('/').pop() || '';
+    return fileName.replace(/\.(jsx?|tsx?)$/, '') || 'Page';
+  }, []);
+
+  // Initialize preview configuration by fetching patches
+  useEffect(() => {
+    if (fileName && storeId) {
+      fetchPatches(fileName, storeId);
     } else {
       setPreviewConfig(null);
-      setError(null);
+      if (!fileName) {
+        setError('No file selected');
+      } else if (!storeId) {
+        setError('No store selected. Please select a store first.');
+      }
     }
-  }, [fileName]);
+  }, [fileName, storeId, fetchPatches]);
 
   // Direct preview URL generation and iframe
   const DirectPreviewIframe = useCallback(({ config }) => {
@@ -61,6 +121,18 @@ const PreviewTab = ({
     
     return (
       <div className="h-full flex flex-col">
+        {/* Configuration Display */}
+        <div className="p-2 bg-green-50 dark:bg-green-900/20 border-b text-xs">
+          <div className="font-medium text-green-700 dark:text-green-300 mb-1">Dynamic Configuration:</div>
+          <div className="text-green-600 dark:text-green-400">
+            ✅ Store ID: {config.storeId.substring(0, 8)}...
+            {' | '}
+            ✅ Patch ID: {config.patchId.substring(0, 8)}...
+            {' | '}
+            📄 Found {availablePatches.length} patches
+          </div>
+        </div>
+        
         {/* URL Display */}
         <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border-b text-xs">
           <div className="font-medium text-blue-700 dark:text-blue-300 mb-1">Preview URL:</div>
@@ -97,16 +169,15 @@ const PreviewTab = ({
       <div className={cn("h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900", className)}>
         <div className="text-center text-orange-600 dark:text-orange-400 p-4">
           <AlertCircle className="w-8 h-8 mx-auto mb-2" />
-          <p className="text-sm font-medium">Preview Configuration Error</p>
+          <p className="text-sm font-medium">Enhanced Preview Error</p>
           <p className="text-xs mt-2">{error}</p>
           <p className="text-xs mt-2 text-gray-500">File: {fileName}</p>
+          <p className="text-xs mt-2 text-gray-500">Store ID: {storeId || 'Not resolved'}</p>
           <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-left">
-            <p className="font-medium text-blue-700 dark:text-blue-300 mb-1">Available configurations:</p>
-            {Object.keys(SPECIFIC_CONFIGS).map(configFile => (
-              <p key={configFile} className="text-blue-600 dark:text-blue-400">
-                • {configFile}
-              </p>
-            ))}
+            <p className="font-medium text-blue-700 dark:text-blue-300 mb-1">This tab dynamically fetches patches from:</p>
+            <p className="text-blue-600 dark:text-blue-400">• Current store using storeResolver</p>
+            <p className="text-blue-600 dark:text-blue-400">• patch_diffs table for selected file</p>
+            <p className="text-blue-600 dark:text-blue-400">• API endpoint: patches/apply/{fileName}</p>
           </div>
         </div>
       </div>

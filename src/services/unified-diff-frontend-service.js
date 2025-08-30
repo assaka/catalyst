@@ -16,7 +16,7 @@ class UnifiedDiffFrontendService {
   /**
    * Create a unified diff between two pieces of code
    */
-  createUnifiedDiff(originalCode, modifiedCode, filePath = 'file.txt', showFullFile = false) {
+  createUnifiedDiff(originalCode, modifiedCode, filePath = 'file.txt') {
     try {
       // Normalize line endings first
       const normalizeLineEndings = (text) => {
@@ -41,7 +41,7 @@ class UnifiedDiffFrontendService {
       }
 
       // Create unified diff using simple line-by-line comparison
-      const diff = this.createSimpleUnifiedDiff(originalLines, modifiedLines, filePath, showFullFile);
+      const diff = this.createSimpleUnifiedDiff(originalLines, modifiedLines, filePath);
       return diff;
 
     } catch (error) {
@@ -53,7 +53,7 @@ class UnifiedDiffFrontendService {
   /**
    * Create a simple unified diff implementation for frontend use
    */
-  createSimpleUnifiedDiff(originalLines, modifiedLines, filePath = 'file.txt', showFullFile = false) {
+  createSimpleUnifiedDiff(originalLines, modifiedLines, filePath = 'file.txt') {
     const result = [`--- a/${filePath}`, `+++ b/${filePath}`];
     const changes = [];
     
@@ -79,34 +79,7 @@ class UnifiedDiffFrontendService {
       return null;
     }
 
-    if (showFullFile) {
-      // Create one big hunk for the entire file
-      result.push(`@@ -1,${originalLines.length} +1,${modifiedLines.length} @@`);
-      
-      // Show all lines with their change status
-      const maxLines = Math.max(originalLines.length, modifiedLines.length);
-      for (let i = 0; i < maxLines; i++) {
-        const originalLine = originalLines[i];
-        const modifiedLine = modifiedLines[i];
-        
-        if (originalLine !== modifiedLine) {
-          // Changed line
-          if (originalLine !== undefined) {
-            result.push(`-${originalLine}`);
-          }
-          if (modifiedLine !== undefined) {
-            result.push(`+${modifiedLine}`);
-          }
-        } else if (originalLine !== undefined) {
-          // Context line (unchanged)
-          result.push(` ${originalLine}`);
-        }
-      }
-      
-      return result.join('\n');
-    }
-
-    // Group changes into hunks (for hunk-based diff)
+    // Group changes into hunks
     const hunks = this.groupIntoHunks(changes, originalLines, modifiedLines);
     
     // Generate unified diff format with proper hunk separation
@@ -349,9 +322,7 @@ class UnifiedDiffFrontendService {
    */
   createDiff(original, newCode, options = {}) {
     try {
-      // Always use createUnifiedDiff - it handles both hunk-based and full file via internal logic
-      const showFullFile = options.showFullFile || options.fullFileContext;
-      const unifiedDiff = this.createUnifiedDiff(original, newCode, options.filename || 'file', showFullFile);
+      const unifiedDiff = this.createUnifiedDiff(original, newCode, options.filename || 'file');
       
       if (!unifiedDiff) {
         return {
@@ -370,13 +341,12 @@ class UnifiedDiffFrontendService {
         unifiedDiff: unifiedDiff,
         parsedDiff: this.parseUnifiedDiff(unifiedDiff),
         metadata: {
-          algorithm: showFullFile ? 'unified-full' : 'unified',
+          algorithm: 'unified',
           originalLength: original.length,
           newLength: newCode.length,
           changes: stats.changes,
           additions: stats.additions,
           deletions: stats.deletions,
-          showFullFile: showFullFile,
           createdAt: Date.now()
         }
       };
