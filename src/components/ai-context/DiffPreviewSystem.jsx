@@ -934,10 +934,9 @@ const DiffPreviewSystem = ({
     const modifiedLines = currentModifiedCode.split('\n');
     const displayLines = [];
     
-    // Create a comprehensive change map from the parsed unified diff
-    const changeMap = new Map(); // lineNumber -> {type, originalContent, modifiedContent}
+    // Process each hunk separately to maintain proper separation
+    let lastProcessedLine = 0;
     
-    // Process each hunk to build the change map
     parsedDiff.forEach((hunk, hunkIndex) => {
       console.log(`🔧 Processing hunk ${hunkIndex + 1}:`, {
         oldStart: hunk.oldStart,
@@ -947,132 +946,116 @@ const DiffPreviewSystem = ({
         changes: hunk.changes?.length || 0
       });
       
+      const hunkStartLine = hunk.oldStart;
+      const contextBefore = 3; // Show 3 lines of context before changes
+      const contextAfter = 3; // Show 3 lines of context after changes
+      
+      // Add context lines before this hunk (if there's a gap from last processed line)
+      const contextStart = Math.max(lastProcessedLine + 1, hunkStartLine - contextBefore);
+      const hunkActualStart = hunkStartLine;
+      
+      // Add context lines before the hunk
+      for (let i = contextStart - 1; i < hunkActualStart - 1; i++) {
+        if (i >= 0 && i < originalLines.length) {
+          const lineNumber = i + 1;
+          displayLines.push({
+            type: 'context',
+            lineNumber: lineNumber,
+            newLineNumber: lineNumber,
+            content: originalLines[i],
+            originalContent: originalLines[i],
+            modifiedContent: modifiedLines[i] || originalLines[i]
+          });
+        }
+      }
+      
+      // Process the actual changes in this hunk
       let oldLineNum = hunk.oldStart; // 1-indexed
       let newLineNum = hunk.newStart; // 1-indexed
       
       hunk.changes.forEach((change, changeIndex) => {
-        console.log(`  Change ${changeIndex + 1}: ${change.type} - "${change.content}"`);
+        console.log(`  Change ${changeIndex + 1}: ${change.type} - "${change.content}" (old: ${oldLineNum}, new: ${newLineNum})`);
         
         switch (change.type) {
           case 'delete':
-            changeMap.set(oldLineNum, {
+            displayLines.push({
               type: 'deletion',
+              lineNumber: oldLineNum,
+              newLineNumber: null,
+              content: change.content,
               originalContent: change.content,
-              modifiedContent: null,
-              originalLineNumber: oldLineNum,
-              newLineNumber: null
+              modifiedContent: null
             });
             oldLineNum++;
             break;
             
           case 'add':
-            // For additions, we need to find the corresponding line in the modified file
-            changeMap.set(newLineNum, {
+            displayLines.push({
               type: 'addition',
+              lineNumber: null,
+              newLineNumber: newLineNum,
+              content: change.content,
               originalContent: null,
-              modifiedContent: change.content,
-              originalLineNumber: null,
-              newLineNumber: newLineNum
+              modifiedContent: change.content
             });
             newLineNum++;
             break;
             
           case 'context':
-            // Context lines - no changes, just advance counters
+            displayLines.push({
+              type: 'context',
+              lineNumber: oldLineNum,
+              newLineNumber: newLineNum,
+              content: change.content,
+              originalContent: change.content,
+              modifiedContent: change.content
+            });
             oldLineNum++;
             newLineNum++;
             break;
         }
       });
-    });
-
-    console.log('🔍 [DiffPreview] Change map:', Array.from(changeMap.entries()));
-
-    // Now process all lines in the original file, using the change map to identify modifications
-    for (let i = 0; i < originalLines.length; i++) {
-      const lineNumber = i + 1; // 1-indexed
-      const originalLine = originalLines[i];
-      const modifiedLine = modifiedLines[i];
       
-      // Check if this line has a change recorded in our change map
-      const change = changeMap.get(lineNumber);
+      // Add context lines after this hunk
+      const hunkEndLine = Math.max(oldLineNum - 1, newLineNum - 1);
+      const contextEnd = Math.min(hunkEndLine + contextAfter, originalLines.length);
       
-      if (change) {
-        if (change.type === 'deletion') {
-          displayLines.push({
-            type: 'deletion',
-            lineNumber: lineNumber,
-            newLineNumber: null,
-            content: originalLine,
-            originalContent: originalLine,
-            modifiedContent: null
-          });
-        } else if (change.type === 'addition') {
-          displayLines.push({
-            type: 'addition',
-            lineNumber: null,
-            newLineNumber: lineNumber,
-            content: modifiedLine,
-            originalContent: null,
-            modifiedContent: modifiedLine
-          });
-        }
-      } else {
-        // No change recorded - check if content actually differs
-        if (originalLine !== modifiedLine) {
-          // This is a modification not caught by the unified diff parsing
-          displayLines.push({
-            type: 'deletion',
-            lineNumber: lineNumber,
-            newLineNumber: null,
-            content: originalLine,
-            originalContent: originalLine,
-            modifiedContent: null
-          });
-          displayLines.push({
-            type: 'addition',
-            lineNumber: null,
-            newLineNumber: lineNumber,
-            content: modifiedLine,
-            originalContent: null,
-            modifiedContent: modifiedLine
-          });
-        } else {
-          // Context line - no change
+      for (let i = hunkEndLine; i < contextEnd; i++) {
+        if (i >= 0 && i < originalLines.length) {
+          const lineNumber = i + 1;
           displayLines.push({
             type: 'context',
             lineNumber: lineNumber,
             newLineNumber: lineNumber,
-            content: originalLine,
-            originalContent: originalLine,
-            modifiedContent: modifiedLine
+            content: originalLines[i],
+            originalContent: originalLines[i],
+            modifiedContent: modifiedLines[i] || originalLines[i]
           });
         }
       }
-    }
-    
-    // Handle any additional lines in the modified file (additions at the end)
-    for (let i = originalLines.length; i < modifiedLines.length; i++) {
-      const lineNumber = i + 1;
-      const modifiedLine = modifiedLines[i];
       
-      displayLines.push({
-        type: 'addition',
-        lineNumber: null,
-        newLineNumber: lineNumber,
-        content: modifiedLine,
-        originalContent: null,
-        modifiedContent: modifiedLine
-      });
-    }
+      lastProcessedLine = contextEnd;
+      
+      // Add a visual separator between hunks (except for the last hunk)
+      if (hunkIndex < parsedDiff.length - 1) {
+        displayLines.push({
+          type: 'hunk_separator',
+          lineNumber: null,
+          newLineNumber: null,
+          content: '...',
+          originalContent: null,
+          modifiedContent: null
+        });
+      }
+    });
     
     console.log('✅ [DiffPreview] generateFullFileDisplayLines completed:', {
       totalLines: displayLines.length,
       additions: displayLines.filter(line => line.type === 'addition').length,
       deletions: displayLines.filter(line => line.type === 'deletion').length,
       context: displayLines.filter(line => line.type === 'context').length,
-      originalFileLines: originalLines.length,
-      modifiedFileLines: modifiedLines.length
+      hunks: parsedDiff.length,
+      separators: displayLines.filter(line => line.type === 'hunk_separator').length
     });
     
     return displayLines;
@@ -1487,6 +1470,8 @@ const DiffPreviewSystem = ({
           return 'bg-yellow-50 border-l-4 border-yellow-500';
         case 'collapsed':
           return 'bg-blue-50 border-l-4 border-blue-300 cursor-pointer hover:bg-blue-100 transition-colors';
+        case 'hunk_separator':
+          return 'bg-gray-100 border-l-4 border-gray-300 text-center';
         default:
           return 'bg-background';
       }
@@ -1502,6 +1487,8 @@ const DiffPreviewSystem = ({
           return <ArrowRight className="w-3 h-3 text-yellow-600" />;
         case 'collapsed':
           return <EyeOff className="w-3 h-3 text-blue-600" />;
+        case 'hunk_separator':
+          return <RotateCcw className="w-3 h-3 text-gray-500" />;
         default:
           return null;
       }
@@ -1548,6 +1535,10 @@ const DiffPreviewSystem = ({
                 {line.content}
               </div>
             </div>
+          ) : line.type === 'hunk_separator' ? (
+            <span className="text-gray-500 italic font-medium text-center w-full block">
+              {line.content}
+            </span>
           ) : (
             <span className={`whitespace-nowrap ${
               line.type === 'addition' ? 'text-green-600' :
