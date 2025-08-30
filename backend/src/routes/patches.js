@@ -594,10 +594,10 @@ router.post('/cache/clear', async (req, res) => {
 });
 
 // Get baseline code for a file (for AI chat integration)
-router.get('/baseline/:filePath(*)', async (req, res) => {
+router.get('/baseline/:filePath(*)', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const filePath = req.params.filePath;
-    const storeId = req.query.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    const storeId = req.storeId;
     
     console.log(`📋 Getting baseline code for ${filePath}`);
     
@@ -637,10 +637,10 @@ router.get('/baseline/:filePath(*)', async (req, res) => {
 });
 
 // Get modified code for a file (applies all patches to get final result)
-router.get('/modified-code/:filePath(*)', async (req, res) => {
+router.get('/modified-code/:filePath(*)', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const filePath = req.params.filePath;
-    const storeId = req.query.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    const storeId = req.storeId;
     
     console.log(`🔧 Getting modified code for ${filePath}`);
     
