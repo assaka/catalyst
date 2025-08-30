@@ -3,7 +3,7 @@ import { Eye, Code, RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import BrowserPreview from './BrowserPreview';
 import apiClient from '@/api/client';
-import { useStoreContext } from '@/utils/storeContext';
+import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 /**
  * Preview Tab Component
@@ -18,10 +18,15 @@ const PreviewTab = ({
   const [error, setError] = useState(null);
   const [availablePatches, setAvailablePatches] = useState([]);
   
-  // Get store context
-  const { storeId, hasStoreId, loading: storeLoading } = useStoreContext();
+  // Get store context - same as BrowserPreview
+  const { selectedStore } = useStoreSelection();
+  const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
   
-  console.log('🏪 PreviewTab: Store context:', { storeId, hasStoreId, storeLoading });
+  console.log('🏪 PreviewTab: Store selection context:', { 
+    selectedStore, 
+    storeId,
+    localStorageStoreId: localStorage.getItem('selectedStoreId')
+  });
 
   // Fetch patches for current store and file
   const fetchPatches = useCallback(async (fileName, storeId) => {
@@ -79,22 +84,17 @@ const PreviewTab = ({
 
   // Initialize preview configuration by fetching patches
   useEffect(() => {
-    if (storeLoading) {
-      // Wait for store context to load
-      return;
-    }
-    
     if (fileName && storeId) {
       fetchPatches(fileName, storeId);
     } else {
       setPreviewConfig(null);
       if (!fileName) {
         setError('No file selected');
-      } else if (!storeId && !storeLoading) {
-        setError('No store ID available. Please ensure you are authenticated and have access to a store.');
+      } else if (!storeId) {
+        setError('No store ID available. Please ensure you are authenticated and have selected a store.');
       }
     }
-  }, [fileName, storeId, storeLoading, fetchPatches]);
+  }, [fileName, storeId, fetchPatches]);
 
   // Direct preview URL generation and iframe
   const DirectPreviewIframe = useCallback(({ config }) => {
@@ -175,15 +175,13 @@ const PreviewTab = ({
     );
   }
 
-  if (storeLoading || isLoading || !previewConfig) {
+  if (isLoading || !previewConfig) {
     return (
       <div className={cn("h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900", className)}>
         <div className="text-center text-gray-500 dark:text-gray-400">
           <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
           <p className="text-sm">
-            {storeLoading ? 'Loading store context...' : 
-             isLoading ? 'Fetching patches...' : 
-             'Initializing preview...'}
+            {isLoading ? 'Fetching patches...' : 'Initializing preview...'}
           </p>
         </div>
       </div>
