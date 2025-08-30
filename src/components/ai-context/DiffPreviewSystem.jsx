@@ -393,13 +393,13 @@ const DiffPreviewSystem = ({
   const [selectedView, setSelectedView] = useState('unified');
   const [lineNumbers, setLineNumbers] = useState(true);
   const [contextLines, setContextLines] = useState(3);
+  const [collapseUnchanged, setCollapseUnchanged] = useState(false);
   const [currentModifiedCode, setCurrentModifiedCode] = useState(modifiedCode);
   const [copyStatus, setCopyStatus] = useState({ copied: false, error: null });
   const [previewStatus, setPreviewStatus] = useState({ loading: false, error: null, url: null });
   const [astDiffData, setAstDiffData] = useState(null);
   const [fetchingAstDiff, setFetchingAstDiff] = useState(false);
   const [astDiffError, setAstDiffError] = useState(null);
-  const [collapseUnchanged, setCollapseUnchanged] = useState(false);
   const [expandedSections, setExpandedSections] = useState(new Set());
   const [refreshTrigger, setRefreshTrigger] = useState(0); // Trigger for refreshing patch data
 
@@ -765,7 +765,7 @@ const DiffPreviewSystem = ({
     
     // PRIORITY 1: If we have stored unified_diff from patch, check if we need full file context
     if (astDiffData?.patch?.unified_diff) {
-      const showFullFile = selectedView === 'unified' || selectedView === 'split';
+      const showFullFile = !collapseUnchanged && (selectedView === 'unified' || selectedView === 'split');
       
       if (showFullFile) {
         console.log('🎯 [DiffPreview] Stored patch found, but regenerating with full file context for', selectedView, 'view');
@@ -864,7 +864,7 @@ const DiffPreviewSystem = ({
       }
 
       // Use full file context for unified and split views
-      const showFullFile = selectedView === 'unified' || selectedView === 'split';
+      const showFullFile = !collapseUnchanged && (selectedView === 'unified' || selectedView === 'split');
       const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode, {
         showFullFile: showFullFile,
         filename: fileName || 'file'
@@ -914,7 +914,7 @@ const DiffPreviewSystem = ({
         
         // Now create the diff normally using the reconstructed code
         // Use full file context for unified and split views
-        const showFullFile = selectedView === 'unified' || selectedView === 'split';
+        const showFullFile = !collapseUnchanged && (selectedView === 'unified' || selectedView === 'split');
         const result = diffServiceRef.current.createDiff(reconstructed.originalCode, reconstructed.modifiedCode, {
           showFullFile: showFullFile,
           filename: fileName || 'file'
@@ -959,7 +959,7 @@ const DiffPreviewSystem = ({
       unifiedDiff: '',
       metadata: null
     };
-  }, [currentModifiedCode, fileName, astDiffData, useAstDiff, filePath, selectedView]);
+  }, [currentModifiedCode, fileName, astDiffData, useAstDiff, filePath, selectedView, collapseUnchanged]);
 
   // Notify parent when diff stats change
   useEffect(() => {
