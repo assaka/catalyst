@@ -751,8 +751,26 @@ const DiffPreviewSystem = ({
       baseCodeLength: baseCode?.length || 0,
       hasModifiedCode: !!currentModifiedCode,
       modifiedCodeLength: currentModifiedCode?.length || 0,
-      hasAstDiffData: !!astDiffData
+      hasAstDiffData: !!astDiffData,
+      useAstDiff
     });
+    
+    // IMPORTANT: If useAstDiff is true, wait for the API data before calculating
+    // This prevents using incomplete baseline data
+    if (useAstDiff && filePath && !astDiffData) {
+      console.log('⏳ [DiffPreview] Waiting for AST diff data before calculating...');
+      return {
+        success: true,
+        unifiedDiff: '',
+        parsedDiff: [],
+        stats: { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+        metadata: { 
+          algorithm: 'unified',
+          source: 'waiting',
+          message: 'Waiting for API data'
+        }
+      };
+    }
     
     // If we have both baseline and modified code, generate diff normally
     if (baseCode && currentModifiedCode) {
@@ -862,7 +880,7 @@ const DiffPreviewSystem = ({
       unifiedDiff: '',
       metadata: null
     };
-  }, [currentModifiedCode, fileName, astDiffData]);
+  }, [currentModifiedCode, fileName, astDiffData, useAstDiff, filePath]);
 
   // Notify parent when diff stats change
   useEffect(() => {
