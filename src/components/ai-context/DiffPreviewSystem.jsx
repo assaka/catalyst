@@ -164,8 +164,8 @@ const fetchAstDiffData = async (filePath, storeId) => {
       throw new Error('No authentication token available. Please log in.');
     }
     
-    // Fetch patches for the file
-    const apiUrl = `/api/patches/${encodeURIComponent(filePath)}?store_id=${storeId}`;
+    // Fetch patches for the file (store ID now resolved server-side)
+    const apiUrl = `/api/patches/${encodeURIComponent(filePath)}`;
     console.log('📡 [DiffPreview] API URL:', apiUrl);
     
     const patchResponse = await fetch(apiUrl, {
@@ -191,8 +191,8 @@ const fetchAstDiffData = async (filePath, storeId) => {
       const latestPatch = patchData.data.patches[0];
       console.log('🔍 [DiffPreview] Latest patch:', latestPatch.id, latestPatch.patch_name);
       
-      // Also get the baseline code
-      const baselineResponse = await fetch(`/api/patches/baseline/${encodeURIComponent(filePath)}?store_id=${storeId}`, {
+      // Also get the baseline code (store ID now resolved server-side)
+      const baselineResponse = await fetch(`/api/patches/baseline/${encodeURIComponent(filePath)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -207,8 +207,8 @@ const fetchAstDiffData = async (filePath, storeId) => {
         }
       }
       
-      // Get the modified code  
-      const modifiedResponse = await fetch(`/api/patches/modified-code/${encodeURIComponent(filePath)}?store_id=${storeId}`, {
+      // Get the modified code (store ID now resolved server-side)
+      const modifiedResponse = await fetch(`/api/patches/modified-code/${encodeURIComponent(filePath)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
