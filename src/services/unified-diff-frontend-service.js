@@ -14,8 +14,23 @@ class UnifiedDiffFrontendService {
    */
   createUnifiedDiff(originalCode, modifiedCode, filePath = 'file.txt') {
     try {
-      const originalLines = this.splitIntoLines(originalCode);
-      const modifiedLines = this.splitIntoLines(modifiedCode);
+      // Normalize line endings first
+      const normalizeLineEndings = (text) => {
+        if (!text) return text;
+        return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      };
+      
+      const normalizedOriginal = normalizeLineEndings(originalCode);
+      const normalizedModified = normalizeLineEndings(modifiedCode);
+      
+      // If content is identical after normalization, return null
+      if (normalizedOriginal === normalizedModified) {
+        console.log('📋 No real changes after line ending normalization:', filePath);
+        return null;
+      }
+      
+      const originalLines = this.splitIntoLines(normalizedOriginal);
+      const modifiedLines = this.splitIntoLines(normalizedModified);
 
       if (this.arraysEqual(originalLines, modifiedLines)) {
         return null; // No changes
@@ -283,6 +298,22 @@ class UnifiedDiffFrontendService {
   arraysEqual(a, b) {
     if (a.length !== b.length) return false;
     return a.every((val, index) => val === b[index]);
+  }
+
+  /**
+   * Check if a diff is likely just line endings
+   */
+  isLineEndingOnlyDiff(originalCode, modifiedCode) {
+    if (!originalCode || !modifiedCode) return false;
+    
+    const normalizeLineEndings = (text) => {
+      return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    };
+    
+    const normalizedOriginal = normalizeLineEndings(originalCode);
+    const normalizedModified = normalizeLineEndings(modifiedCode);
+    
+    return normalizedOriginal === normalizedModified;
   }
 
   /**

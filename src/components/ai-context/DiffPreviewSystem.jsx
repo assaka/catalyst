@@ -751,6 +751,24 @@ const DiffPreviewSystem = ({
       };
     }
 
+    // Check if this is just a line ending issue
+    const isLineEndingOnly = diffServiceRef.current.isLineEndingOnlyDiff(baseCode, currentModifiedCode);
+    
+    if (isLineEndingOnly) {
+      console.log('📋 [DiffPreview] Detected line-ending-only diff, showing as no changes');
+      return {
+        success: true,
+        unifiedDiff: null,
+        parsedDiff: [],
+        stats: { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+        metadata: { 
+          algorithm: 'unified',
+          isLineEndingOnly: true,
+          message: 'No content changes detected (line endings normalized)'
+        }
+      };
+    }
+
     const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode);
     const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
     const unifiedDiff = result.unifiedDiff; // Use unified diff from result
