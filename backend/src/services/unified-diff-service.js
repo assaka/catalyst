@@ -137,89 +137,162 @@ class UnifiedDiffService {
   }
 
   /**
-   * Fallback simple unified diff implementation
+   * Fallback simple unified diff implementation with proper hunk separation
    */
   createSimpleUnifiedDiff(originalCode, modifiedCode, filePath = 'file.txt') {
-    console.log(`  🔄 Using fallback simple unified diff`);
+    console.log(`🔧 [UnifiedDiff] Using fallback simple unified diff`);
     
     const originalLines = originalCode.split('\n');
     const modifiedLines = modifiedCode.split('\n');
 
-    console.log(`  Original lines: ${originalLines.length}, Modified lines: ${modifiedLines.length}`);
-
-    // Simple line-by-line comparison
-    const result = [`--- a/${filePath}`, `+++ b/${filePath}`];
-    let changes = [];
-    let changeStart = -1;
-    let changeEnd = -1;
+    console.log(`🔧 [UnifiedDiff] Original lines: ${originalLines.length}, Modified lines: ${modifiedLines.length}`);
 
     // Find all changed lines
+    const changes = [];
     for (let i = 0; i < Math.max(originalLines.length, modifiedLines.length); i++) {
       const originalLine = originalLines[i] || '';
       const modifiedLine = modifiedLines[i] || '';
 
       if (originalLine !== modifiedLine) {
-        if (changeStart === -1) {
-          changeStart = i;
-        }
-        changeEnd = i;
-        
-        if (i < originalLines.length) {
-          changes.push({ type: 'delete', line: originalLine, lineNum: i });
-        }
-        if (i < modifiedLines.length) {
-          changes.push({ type: 'add', line: modifiedLine, lineNum: i });
-        }
+        changes.push({
+          lineNum: i + 1, // 1-based line number
+          originalLine,
+          modifiedLine
+        });
       }
     }
 
-    if (changes.length > 0) {
-      console.log(`  Found ${changes.length} line changes from line ${changeStart + 1} to ${changeEnd + 1}`);
+    if (changes.length === 0) {
+      console.log(`🔧 [UnifiedDiff] No changes found`);
+      return null;
+    }
+
+    console.log(`🔧 [UnifiedDiff] Found ${changes.length} line changes on lines: [${changes.map(c => c.lineNum).join(', ')}]`);
+    
+    // Group changes into hunks using the same logic as frontend
+    const hunks = this.groupIntoHunks(changes, originalLines, modifiedLines);
+    
+    console.log(`🔧 [UnifiedDiff] Created ${hunks.length} hunks`);
+
+    // Generate unified diff
+    const result = [`--- a/${filePath}`, `+++ b/${filePath}`];
+    
+    for (const hunk of hunks) {
+      // Add hunk header
+      result.push(`@@ -${hunk.originalStart},${hunk.originalLength} +${hunk.modifiedStart},${hunk.modifiedLength} @@`);
       
-      // Create a single hunk with 3 lines of context
-      const contextBefore = 3;
-      const contextAfter = 3;
-      const hunkStart = Math.max(0, changeStart - contextBefore);
-      const hunkEnd = Math.min(Math.max(originalLines.length, modifiedLines.length), changeEnd + contextAfter + 1);
-      
-      const origHunkStart = hunkStart + 1;
-      const origHunkLength = Math.min(originalLines.length - hunkStart, hunkEnd - hunkStart);
-      const newHunkStart = hunkStart + 1;
-      const newHunkLength = Math.min(modifiedLines.length - hunkStart, hunkEnd - hunkStart);
-      
-      result.push(`@@ -${origHunkStart},${origHunkLength} +${newHunkStart},${newHunkLength} @@`);
-      
-      // Add context lines before changes
-      for (let i = hunkStart; i < changeStart; i++) {
-        if (i < originalLines.length) {
-          result.push(` ${originalLines[i]}`);
-        }
-      }
-      
-      // Add the changes
-      for (const change of changes) {
-        if (change.type === 'delete') {
-          result.push(`-${change.line}`);
-        } else if (change.type === 'add') {
-          result.push(`+${change.line}`);
-        }
-      }
-      
-      // Add context lines after changes
-      for (let i = changeEnd + 1; i < hunkEnd && i < Math.max(originalLines.length, modifiedLines.length); i++) {
-        if (i < originalLines.length) {
-          result.push(` ${originalLines[i]}`);
-        } else if (i < modifiedLines.length) {
-          result.push(` ${modifiedLines[i]}`);
-        }
+      // Add hunk content
+      for (const line of hunk.lines) {
+        result.push(line);
       }
     }
 
     const finalDiff = result.length > 2 ? result.join('\n') : null;
-    console.log(`  Simple diff result length: ${finalDiff?.length || 0}`);
-    console.log(`  Simple diff preview: ${finalDiff?.substring(0, 200) || 'null'}...`);
+    console.log(`🔧 [UnifiedDiff] Simple diff result length: ${finalDiff?.length || 0}`);
     
     return finalDiff;
+  }
+
+  /**
+   * Group changes into separate hunks based on proximity
+   */
+  groupIntoHunks(changes, originalLines, modifiedLines) {
+    const minSeparation = 6; // Lines apart to create separate hunks
+    const contextLines = 3; // Context lines before/after changes
+    
+    const hunks = [];
+    let currentHunk = null;
+
+    console.log(`🔧 [UnifiedDiff] Grouping ${changes.length} changes into hunks with min separation: ${minSeparation}`);
+
+    for (let i = 0; i < changes.length; i++) {
+      const change = changes[i];
+      const changeLineZeroBased = change.lineNum - 1; // Convert to 0-based
+
+      if (currentHunk === null) {
+        // Start new hunk
+        console.log(`🔜 [UnifiedDiff] Starting new hunk at line: ${change.lineNum}`);
+        currentHunk = {
+          startLine: changeLineZeroBased,
+          endLine: changeLineZeroBased,
+          changes: [change]
+        };
+      } else {
+        // Check if this change should be in a new hunk
+        const separation = changeLineZeroBased - currentHunk.endLine;
+        console.log(`🔍 [UnifiedDiff] Distance from last change: ${separation} lines (min required: ${minSeparation})`);
+        
+        if (separation > minSeparation) {
+          // Close current hunk and start new one
+          console.log(`🔚 [UnifiedDiff] Closing hunk: {startLine: ${currentHunk.startLine + 1}, endLine: ${currentHunk.endLine + 1}, changes: ${currentHunk.changes.length}}`);
+          hunks.push(this.createHunk(currentHunk, originalLines, modifiedLines, contextLines));
+          
+          console.log(`🔜 [UnifiedDiff] Starting new hunk at line: ${change.lineNum}`);
+          currentHunk = {
+            startLine: changeLineZeroBased,
+            endLine: changeLineZeroBased,
+            changes: [change]
+          };
+        } else {
+          // Add to current hunk
+          currentHunk.endLine = changeLineZeroBased;
+          currentHunk.changes.push(change);
+        }
+      }
+    }
+
+    // Close final hunk
+    if (currentHunk) {
+      console.log(`🔚 [UnifiedDiff] Closing final hunk: {startLine: ${currentHunk.startLine + 1}, endLine: ${currentHunk.endLine + 1}, changes: ${currentHunk.changes.length}}`);
+      hunks.push(this.createHunk(currentHunk, originalLines, modifiedLines, contextLines));
+    }
+
+    console.log(`✅ [UnifiedDiff] Created hunks: {totalHunks: ${hunks.length}, hunkRanges: [${hunks.map(h => `{start: ${h.originalStart}, end: ${h.originalStart + h.originalLength - 1}}`).join(', ')}]}`);
+    
+    return hunks;
+  }
+
+  /**
+   * Create a hunk with context lines
+   */
+  createHunk(hunkInfo, originalLines, modifiedLines, contextLines) {
+    const hunkStart = Math.max(0, hunkInfo.startLine - contextLines);
+    const hunkEnd = Math.min(Math.max(originalLines.length, modifiedLines.length), hunkInfo.endLine + contextLines + 1);
+    
+    const originalLinesInHunk = Math.min(originalLines.length - hunkStart, hunkEnd - hunkStart);
+    const modifiedLinesInHunk = Math.min(modifiedLines.length - hunkStart, hunkEnd - hunkStart);
+    
+    console.log(`🔧 [UnifiedDiff] Creating hunk: {hunkStart: ${hunkStart + 1}, hunkEnd: ${hunkEnd}, changeLines: [${hunkInfo.changes.map(c => c.lineNum).join(', ')}], originalLinesInHunk: ${originalLinesInHunk}, modifiedLinesInHunk: ${modifiedLinesInHunk}}`);
+    
+    const lines = [];
+    const changesByLine = new Map(hunkInfo.changes.map(c => [c.lineNum - 1, c]));
+    
+    for (let i = hunkStart; i < hunkEnd; i++) {
+      const change = changesByLine.get(i);
+      
+      if (change) {
+        // This line has changes
+        if (i < originalLines.length && change.originalLine !== change.modifiedLine) {
+          lines.push(`-${change.originalLine}`);
+        }
+        if (i < modifiedLines.length && change.originalLine !== change.modifiedLine) {
+          lines.push(`+${change.modifiedLine}`);
+        }
+      } else {
+        // Context line
+        if (i < originalLines.length) {
+          lines.push(` ${originalLines[i]}`);
+        }
+      }
+    }
+    
+    return {
+      originalStart: hunkStart + 1,
+      originalLength: originalLinesInHunk,
+      modifiedStart: hunkStart + 1,
+      modifiedLength: modifiedLinesInHunk,
+      lines
+    };
   }
 
   /**

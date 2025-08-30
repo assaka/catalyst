@@ -38,14 +38,18 @@ const PreviewTab = ({
     try {
       console.log(`🔍 Fetching patches for ${fileName} in store ${storeId}`);
       
-      // Use direct database query or API endpoint
       const encodedFileName = encodeURIComponent(fileName);
       const patchesUrl = `patches/apply/${encodedFileName}?store_id=${storeId}&preview=true`;
       
+      console.log(`🌐 API URL: ${patchesUrl}`);
+      
       const response = await apiClient.get(patchesUrl);
+      
+      console.log('🔍 API Response:', response);
       
       if (response.success && response.data.hasPatches) {
         const patches = response.data.patches || [];
+        console.log('📋 Found patches:', patches);
         setAvailablePatches(patches);
         
         // Select first available patch for this file
@@ -59,17 +63,19 @@ const PreviewTab = ({
             description: `${getPageNameFromFile(fileName)} preview with patch: ${firstPatch.patch_name || 'Unnamed patch'}`
           };
           
-          console.log('✅ Found patches, using:', config);
+          console.log('✅ Found patches via API, using:', config);
           setPreviewConfig(config);
         } else {
+          console.warn('❌ No matching patch found in response');
           setError(`No patches found for ${fileName}`);
         }
       } else {
-        setError(`No patches available for ${fileName} in this store`);
+        console.warn(`❌ API returned no patches. Response:`, response);
+        setError(`No patches available for ${fileName} in this store. Patch ID 10722068-930f-41db-915b-e6c627e7f539 exists but API is not returning it.`);
       }
       
     } catch (error) {
-      console.error('Error fetching patches:', error);
+      console.error('❌ Error fetching patches:', error);
       setError(`Failed to fetch patches: ${error.message}`);
     } finally {
       setIsLoading(false);
