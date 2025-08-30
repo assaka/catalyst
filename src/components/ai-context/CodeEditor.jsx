@@ -526,75 +526,86 @@ const CodeEditor = ({
     if (editorRef.current) {
       console.log('🔄 [CodeEditor] Handling undo - creating reverse patch');
       
-      // Get current state before undo
-      const codeBeforeUndo = editorRef.current.getValue();
-      
-      // Perform the undo operation
-      editorRef.current.getAction('undo').run();
-      
-      // Get state after undo
-      const codeAfterUndo = editorRef.current.getValue();
-      
-      // Create a patch that represents the undo operation
-      if (codeBeforeUndo !== codeAfterUndo) {
-        try {
-          console.log('💾 [CodeEditor] Creating undo patch...');
-          
-          const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
-          if (!token) {
-            console.warn('⚠️ [CodeEditor] No auth token found for undo patch creation');
-            return;
-          }
-
-          const response = await fetch('/api/patches/create', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              filePath: fileName,
-              modifiedCode: codeAfterUndo,
-              changeSummary: 'Undo operation',
-              changeType: 'undo',
-              sessionId: `undo_${Date.now()}`,
-              useUpsert: true
-            })
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            console.log('✅ [CodeEditor] Undo patch created successfully:', result);
+      try {
+        // Get current state before undo
+        const codeBeforeUndo = editorRef.current.getValue();
+        
+        // Perform the undo operation
+        const undoAction = editorRef.current.getAction('undo');
+        if (!undoAction) {
+          console.warn('⚠️ [CodeEditor] Undo action not available');
+          return;
+        }
+        
+        undoAction.run();
+        
+        // Get state after undo
+        const codeAfterUndo = editorRef.current.getValue();
+        
+        // Create a patch that represents the undo operation
+        if (codeBeforeUndo !== codeAfterUndo) {
+          try {
+            console.log('💾 [CodeEditor] Creating undo patch...');
             
-            // Regenerate diff data after undo
-            if (enableDiffDetection && originalCode) {
-              const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterUndo);
-              if (diffResult) {
-                setDiffData(diffResult);
-                const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterUndo);
-                setFullFileDisplayLines(displayLines);
-              }
+            const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+            if (!token) {
+              console.warn('⚠️ [CodeEditor] No auth token found for undo patch creation');
+              return;
             }
-          } else {
-            console.error('❌ [CodeEditor] Failed to create undo patch:', response.status);
+
+            const response = await fetch('/api/patches/create', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                filePath: fileName,
+                modifiedCode: codeAfterUndo,
+                changeSummary: 'Undo operation',
+                changeType: 'undo',
+                sessionId: `undo_${Date.now()}`,
+                useUpsert: true
+              })
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              console.log('✅ [CodeEditor] Undo patch created successfully:', result);
+              
+              // Regenerate diff data after undo
+              if (enableDiffDetection && originalCode) {
+                const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterUndo);
+                if (diffResult) {
+                  setDiffData(diffResult);
+                  const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterUndo);
+                  setFullFileDisplayLines(displayLines);
+                }
+              }
+            } else {
+              console.error('❌ [CodeEditor] Failed to create undo patch:', response.status);
+            }
+          } catch (error) {
+            console.error('❌ [CodeEditor] Error creating undo patch:', error);
           }
-        } catch (error) {
-          console.error('❌ [CodeEditor] Error creating undo patch:', error);
         }
+        
+        // Update button states after undo
+        setTimeout(() => {
+          try {
+            const model = editorRef.current.getModel();
+            if (model && model.canUndo && model.canRedo) {
+              setCanUndo(model.canUndo());
+              setCanRedo(model.canRedo());
+            }
+          } catch (error) {
+            console.warn('Could not update undo/redo state after undo:', error);
+          }
+        }, 100);
+        
+      } catch (error) {
+        console.error('❌ [CodeEditor] Error during undo operation:', error);
       }
-      
-      // Update button states after undo
-      setTimeout(() => {
-        try {
-          const model = editorRef.current.getModel();
-          if (model && model.canUndo && model.canRedo) {
-            setCanUndo(model.canUndo());
-            setCanRedo(model.canRedo());
-          }
-        } catch (error) {
-          console.warn('Could not update undo/redo state after undo:', error);
-        }
-      }, 100);
     }
   };
 
@@ -602,75 +613,86 @@ const CodeEditor = ({
     if (editorRef.current) {
       console.log('🔄 [CodeEditor] Handling redo - creating forward patch');
       
-      // Get current state before redo
-      const codeBeforeRedo = editorRef.current.getValue();
-      
-      // Perform the redo operation
-      editorRef.current.getAction('redo').run();
-      
-      // Get state after redo
-      const codeAfterRedo = editorRef.current.getValue();
-      
-      // Create a patch that represents the redo operation
-      if (codeBeforeRedo !== codeAfterRedo) {
-        try {
-          console.log('💾 [CodeEditor] Creating redo patch...');
-          
-          const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
-          if (!token) {
-            console.warn('⚠️ [CodeEditor] No auth token found for redo patch creation');
-            return;
-          }
-
-          const response = await fetch('/api/patches/create', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              filePath: fileName,
-              modifiedCode: codeAfterRedo,
-              changeSummary: 'Redo operation',
-              changeType: 'redo',
-              sessionId: `redo_${Date.now()}`,
-              useUpsert: true
-            })
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            console.log('✅ [CodeEditor] Redo patch created successfully:', result);
+      try {
+        // Get current state before redo
+        const codeBeforeRedo = editorRef.current.getValue();
+        
+        // Perform the redo operation
+        const redoAction = editorRef.current.getAction('redo');
+        if (!redoAction) {
+          console.warn('⚠️ [CodeEditor] Redo action not available');
+          return;
+        }
+        
+        redoAction.run();
+        
+        // Get state after redo
+        const codeAfterRedo = editorRef.current.getValue();
+        
+        // Create a patch that represents the redo operation
+        if (codeBeforeRedo !== codeAfterRedo) {
+          try {
+            console.log('💾 [CodeEditor] Creating redo patch...');
             
-            // Regenerate diff data after redo
-            if (enableDiffDetection && originalCode) {
-              const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterRedo);
-              if (diffResult) {
-                setDiffData(diffResult);
-                const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterRedo);
-                setFullFileDisplayLines(displayLines);
-              }
+            const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+            if (!token) {
+              console.warn('⚠️ [CodeEditor] No auth token found for redo patch creation');
+              return;
             }
-          } else {
-            console.error('❌ [CodeEditor] Failed to create redo patch:', response.status);
+
+            const response = await fetch('/api/patches/create', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                filePath: fileName,
+                modifiedCode: codeAfterRedo,
+                changeSummary: 'Redo operation',
+                changeType: 'redo',
+                sessionId: `redo_${Date.now()}`,
+                useUpsert: true
+              })
+            });
+
+            if (response.ok) {
+              const result = await response.json();
+              console.log('✅ [CodeEditor] Redo patch created successfully:', result);
+              
+              // Regenerate diff data after redo
+              if (enableDiffDetection && originalCode) {
+                const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterRedo);
+                if (diffResult) {
+                  setDiffData(diffResult);
+                  const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterRedo);
+                  setFullFileDisplayLines(displayLines);
+                }
+              }
+            } else {
+              console.error('❌ [CodeEditor] Failed to create redo patch:', response.status);
+            }
+          } catch (error) {
+            console.error('❌ [CodeEditor] Error creating redo patch:', error);
           }
-        } catch (error) {
-          console.error('❌ [CodeEditor] Error creating redo patch:', error);
         }
+        
+        // Update button states after redo
+        setTimeout(() => {
+          try {
+            const model = editorRef.current.getModel();
+            if (model && model.canUndo && model.canRedo) {
+              setCanUndo(model.canUndo());
+              setCanRedo(model.canRedo());
+            }
+          } catch (error) {
+            console.warn('Could not update undo/redo state after redo:', error);
+          }
+        }, 100);
+        
+      } catch (error) {
+        console.error('❌ [CodeEditor] Error during redo operation:', error);
       }
-      
-      // Update button states after redo
-      setTimeout(() => {
-        try {
-          const model = editorRef.current.getModel();
-          if (model && model.canUndo && model.canRedo) {
-            setCanUndo(model.canUndo());
-            setCanRedo(model.canRedo());
-          }
-        } catch (error) {
-          console.warn('Could not update undo/redo state after redo:', error);
-        }
-      }, 100);
     }
   };
 

@@ -48,20 +48,40 @@ const SimplePreview = () => {
       console.log('🔧 Step 2: Checking for patches...');
       const patchResponse = await apiClient.get(`patches/apply/src%2Fpages%2FCart.jsx?store_id=${storeId}&preview=true`);
       
-      console.log('Patch response:', patchResponse);
+      console.log('🔍 Detailed patch response analysis:');
+      console.log('  - Response object:', patchResponse);
+      console.log('  - Response success:', patchResponse.success);
+      console.log('  - Response data:', patchResponse.data);
+      console.log('  - Has patches flag:', patchResponse.data?.hasPatches);
+      console.log('  - Patched code length:', patchResponse.data?.patchedCode?.length);
+      console.log('  - Baseline code length:', patchResponse.data?.baselineCode?.length);
+      console.log('  - Applied patches:', patchResponse.data?.appliedPatches);
+      console.log('  - Total patches:', patchResponse.data?.totalPatches);
+      
+      // Check if patched code contains "adam"
+      if (patchResponse.data?.patchedCode) {
+        const hasAdam = patchResponse.data.patchedCode.includes('adam');
+        console.log('🔍 Patched code contains "adam":', hasAdam);
+        if (hasAdam) {
+          const adamMatches = patchResponse.data.patchedCode.match(/adam/gi);
+          console.log('  - "adam" occurrences:', adamMatches?.length || 0);
+        }
+      }
       
       if (patchResponse.success && patchResponse.data.hasPatches) {
         console.log('✅ Found patches, using patched version');
         setPatchInfo({
           hasPatches: true,
-          patchCount: patchResponse.data.totalPatches || 1,
-          appliedPatches: patchResponse.data.appliedPatches || 1
+          patchCount: patchResponse.data.totalPatches || patchResponse.data.appliedPatches || 1,
+          appliedPatches: patchResponse.data.appliedPatches || 1,
+          hasAdamContent: patchResponse.data.patchedCode?.includes('adam') || false
         });
       } else {
         console.log('ℹ️ No patches found, using baseline version');
         setPatchInfo({
           hasPatches: false,
-          patchCount: 0
+          patchCount: 0,
+          hasAdamContent: false
         });
       }
       
@@ -84,6 +104,41 @@ const SimplePreview = () => {
       
       console.log('🔗 Generated preview URL:', finalPreviewUrl);
       setPreviewUrl(finalPreviewUrl);
+      
+      // Step 4: Test if the backend preview URL actually serves patched content
+      console.log('🧪 Step 4: Testing backend preview URL for "adam" content...');
+      try {
+        const previewTestResponse = await fetch(finalPreviewUrl, {
+          method: 'GET',
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+          }
+        });
+        
+        if (previewTestResponse.ok) {
+          const previewHtml = await previewTestResponse.text();
+          const previewHasAdam = previewHtml.includes('adam');
+          console.log('🔍 Backend preview HTML contains "adam":', previewHasAdam);
+          console.log('  - Preview HTML length:', previewHtml.length);
+          
+          if (previewHasAdam) {
+            const adamMatches = previewHtml.match(/adam/gi);
+            console.log('  - "adam" occurrences in preview HTML:', adamMatches?.length || 0);
+          } else {
+            console.log('  - Preview HTML preview (first 500 chars):', previewHtml.substring(0, 500));
+          }
+          
+          // Update patch info with backend test result
+          setPatchInfo(prev => ({
+            ...prev,
+            backendHasAdam: previewHasAdam
+          }));
+        } else {
+          console.warn('⚠️ Failed to fetch preview URL for testing:', previewTestResponse.status);
+        }
+      } catch (fetchError) {
+        console.warn('⚠️ Error testing backend preview URL:', fetchError);
+      }
       
     } catch (err) {
       console.error('❌ Error loading Cart preview:', err);
@@ -163,17 +218,33 @@ const SimplePreview = () => {
               Cart.jsx Preview
             </span>
             {patchInfo && (
-              <div className={`flex items-center space-x-1 px-2 py-1 rounded text-xs ${
-                patchInfo.hasPatches 
-                  ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-              }`}>
-                <Code className="w-3 h-3" />
-                <span>
-                  {patchInfo.hasPatches 
-                    ? `${patchInfo.appliedPatches} patch${patchInfo.appliedPatches !== 1 ? 'es' : ''} applied`
-                    : 'No patches'}
-                </span>
+              <div className="flex items-center space-x-2">
+                <div className={`flex items-center space-x-1 px-2 py-1 rounded text-xs ${
+                  patchInfo.hasPatches 
+                    ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                }`}>
+                  <Code className="w-3 h-3" />
+                  <span>
+                    {patchInfo.hasPatches 
+                      ? `${patchInfo.appliedPatches} patch${patchInfo.appliedPatches !== 1 ? 'es' : ''} applied`
+                      : 'No patches'}
+                  </span>
+                </div>
+                {patchInfo.hasAdamContent && (
+                  <div className="flex items-center space-x-1 px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                    <span>✅ "adam" in API</span>
+                  </div>
+                )}
+                {patchInfo.backendHasAdam !== undefined && (
+                  <div className={`flex items-center space-x-1 px-2 py-1 rounded text-xs ${
+                    patchInfo.backendHasAdam 
+                      ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                      : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+                  }`}>
+                    <span>{patchInfo.backendHasAdam ? '✅' : '❌'} "adam" in HTML</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
