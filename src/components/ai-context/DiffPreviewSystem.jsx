@@ -808,8 +808,63 @@ const DiffPreviewSystem = ({
     }
   }, [diffResult.stats, onDiffStatsChange]);
 
+  // Convert parsed unified diff (from stored patch) to displayable lines
+  const convertParsedUnifiedDiffToDisplayLines = (parsedDiff) => {
+    const displayLines = [];
+    
+    parsedDiff.forEach(hunk => {
+      let oldLineNumber = hunk.oldStart;
+      let newLineNumber = hunk.newStart;
+      
+      hunk.changes.forEach(change => {
+        switch (change.type) {
+          case 'context':
+            displayLines.push({
+              type: 'context',
+              lineNumber: oldLineNumber,
+              newLineNumber: newLineNumber,
+              content: change.content,
+              originalContent: change.content
+            });
+            oldLineNumber++;
+            newLineNumber++;
+            break;
+            
+          case 'delete':
+            displayLines.push({
+              type: 'deletion',
+              lineNumber: oldLineNumber,
+              newLineNumber: null,
+              content: change.content,
+              originalContent: change.content
+            });
+            oldLineNumber++;
+            break;
+            
+          case 'add':
+            displayLines.push({
+              type: 'addition',
+              lineNumber: null,
+              newLineNumber: newLineNumber,
+              content: change.content,
+              originalContent: null
+            });
+            newLineNumber++;
+            break;
+        }
+      });
+    });
+    
+    return displayLines;
+  };
+
   // Convert DiffService diff to displayable lines for UI
   const convertDiffToDisplayLines = (diff) => {
+    // Check if we have the required data for full diff conversion
+    if (!originalBaseCodeRef.current || !currentModifiedCode) {
+      return [];
+    }
+
     const originalLines = originalBaseCodeRef.current.split('\n');
     const modifiedLines = currentModifiedCode.split('\n');
     const displayLines = [];
@@ -867,8 +922,16 @@ const DiffPreviewSystem = ({
   // Get display lines from diff
   const displayLines = useMemo(() => {
     if (!diffResult.parsedDiff || diffResult.parsedDiff.length === 0) return [];
+    
+    // If we're using stored unified diff (fallback), use the specialized converter
+    if (diffResult.metadata?.source === 'stored_patch') {
+      console.log('🔄 [DiffPreview] Using stored patch converter for display lines');
+      return convertParsedUnifiedDiffToDisplayLines(diffResult.parsedDiff);
+    }
+    
+    // Otherwise use the standard diff converter
     return convertDiffToDisplayLines(diffResult.parsedDiff);
-  }, [diffResult.parsedDiff, currentModifiedCode]);
+  }, [diffResult.parsedDiff, currentModifiedCode, diffResult.metadata]);
 
   // Process display lines for collapsing unchanged fragments
   const processedDisplayLines = useMemo(() => {
