@@ -4,7 +4,7 @@ const { authMiddleware } = require('../middleware/auth');
 const { storeResolver } = require('../middleware/storeResolver');
 
 // Debug endpoint to check store resolution
-router.get('/store-resolution', authMiddleware, storeResolver, async (req, res) => {
+router.get('/store-resolution', authMiddleware, storeResolver(), async (req, res) => {
   try {
     console.log('🔍 [DEBUG] Store resolution debug endpoint called');
     console.log('🔍 [DEBUG] User:', req.user ? { id: req.user.id, email: req.user.email } : 'No user');

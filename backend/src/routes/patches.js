@@ -9,7 +9,7 @@ const router = express.Router();
 const patchService = require('../services/patch-service');
 const unifiedDiffService = require('../services/unified-diff-service');
 const { authMiddleware } = require('../middleware/auth');
-const { storeResolver, optionalStoreResolver } = require('../middleware/storeResolver');
+const { storeResolver } = require('../middleware/storeResolver');
 
 // Apply patches to a file and return the result (public endpoint for preview)
 router.get('/apply/:filePath(*)', async (req, res) => {
@@ -85,7 +85,7 @@ router.get('/apply/:filePath(*)', async (req, res) => {
 });
 
 // Create a new patch or update existing one in edit session (requires authentication)
-router.post('/create', authMiddleware, storeResolver, async (req, res) => {
+router.post('/create', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const {
       filePath,
@@ -794,13 +794,13 @@ router.get('/test/:filePath(*)', async (req, res) => {
 
 // Get patches for a specific file (catch-all route for frontend compatibility)
 // This route must be at the end to avoid conflicts with other routes
-router.get('/:filePath(*)', authMiddleware, optionalStoreResolver, async (req, res) => {
+router.get('/:filePath(*)', authMiddleware, storeResolver({ required: false }), async (req, res) => {
   try {
     const filePath = req.params.filePath;
     const status = req.query.status || 'all';
     const releaseVersion = req.query.version || null;
 
-    // Use store ID from optionalStoreResolver or fallback
+    // Use store ID from storeResolver or fallback
     let storeId = req.storeId;
     if (!storeId) {
       storeId = '157d4590-49bf-4b0b-bd77-abe131909528';

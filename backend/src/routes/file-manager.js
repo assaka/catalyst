@@ -34,7 +34,7 @@ const upload = multer({
 
 // Upload file with organized structure
 router.post('/upload', authMiddleware,
-  storeResolver,
+  storeResolver(),
   upload.single('file'),
   async (req, res) => {
     try {
@@ -99,7 +99,7 @@ router.post('/upload', authMiddleware,
 
 // Upload multiple files
 router.post('/upload-multiple', authMiddleware,
-  storeResolver,
+  storeResolver(),
   upload.array('files', 10),
   async (req, res) => {
     try {
@@ -178,7 +178,7 @@ router.post('/upload-multiple', authMiddleware,
 
 // List files in a directory
 router.get('/list', authMiddleware,
-  storeResolver,
+  storeResolver(),
   async (req, res) => {
     try {
       const { storeId } = req;
@@ -218,7 +218,7 @@ router.get('/list', authMiddleware,
 
 // Delete a file
 router.delete('/delete', authMiddleware,
-  storeResolver,
+  storeResolver(),
   async (req, res) => {
     try {
       const { storeId } = req;
@@ -249,7 +249,7 @@ router.delete('/delete', authMiddleware,
 
 // Get storage statistics
 router.get('/stats', authMiddleware,
-  storeResolver,
+  storeResolver(),
   async (req, res) => {
     try {
       const { storeId } = req;

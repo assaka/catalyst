@@ -185,7 +185,7 @@ const handleImportOperation = async (storeId, req, res, importFunction) => {
  */
 router.post('/akeneo/test-connection', 
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   body('baseUrl').optional().isURL().withMessage('Valid base URL is required'),
   body('clientId').optional().notEmpty().withMessage('Client ID is required'),
   body('clientSecret').optional().notEmpty().withMessage('Client secret is required'),
@@ -281,7 +281,7 @@ router.post('/akeneo/test-connection',
  */
 router.get('/akeneo/connection-status', 
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   async (req, res) => {
   try {
     const storeId = req.storeId;
@@ -324,7 +324,7 @@ router.get('/akeneo/connection-status',
  */
 router.post('/akeneo/sync',
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   body('operations').isArray().withMessage('Operations must be an array'),
   body('operations.*').isIn(['categories', 'products', 'attributes', 'families']).withMessage('Invalid operation type'),
   body('locale').optional().isString().withMessage('Locale must be a string'),
@@ -388,7 +388,7 @@ router.post('/akeneo/sync',
  * Get Akeneo sync status
  * GET /api/integrations/akeneo/sync/status
  */
-router.get('/akeneo/sync/status', authMiddleware, storeResolver, async (req, res) => {
+router.get('/akeneo/sync/status', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const storeId = req.storeId;
     const syncService = new AkeneoSyncService();
@@ -426,7 +426,7 @@ router.get('/akeneo/sync/status', authMiddleware, storeResolver, async (req, res
  */
 router.post('/akeneo/import-categories', 
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   body('locale').optional().isString().withMessage('Locale must be a string'),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
   body('filters').optional().isObject().withMessage('Filters must be an object'),
@@ -475,7 +475,7 @@ router.post('/akeneo/import-categories',
  * Get categories from Akeneo
  * GET /api/integrations/akeneo/categories
  */
-router.get('/akeneo/categories', authMiddleware, storeResolver, async (req, res) => {
+router.get('/akeneo/categories', authMiddleware, storeResolver(), async (req, res) => {
   const storeId = req.storeId;
   
   try {
@@ -555,7 +555,7 @@ router.get('/akeneo/categories', authMiddleware, storeResolver, async (req, res)
  */
 router.post('/akeneo/import-products',
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   body('locale').optional().isString().withMessage('Locale must be a string'),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
   body('batchSize').optional().isInt({ min: 1, max: 200 }).withMessage('Batch size must be between 1 and 200'),
@@ -655,7 +655,7 @@ router.post('/akeneo/import-products',
  */
 router.post('/akeneo/import-attributes', 
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
   body('filters').optional().isObject().withMessage('Filters must be an object'),
   body('settings').optional().isObject().withMessage('Settings must be an object'),
@@ -707,7 +707,7 @@ router.post('/akeneo/import-attributes',
  */
 router.post('/akeneo/import-families', 
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
   body('filters').optional().isObject().withMessage('Filters must be an object'),
   async (req, res) => {
@@ -736,7 +736,7 @@ router.post('/akeneo/import-families',
  */
 router.post('/akeneo/import-all',
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   body('locale').optional().isString().withMessage('Locale must be a string'),
   body('dryRun').optional().isBoolean().withMessage('Dry run must be a boolean'),
   async (req, res) => {
@@ -759,7 +759,7 @@ router.post('/akeneo/import-all',
  * Get integration configuration status
  * GET /api/integrations/akeneo/config-status
  */
-router.get('/akeneo/config-status', authMiddleware, storeResolver, async (req, res) => {
+router.get('/akeneo/config-status', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const storeId = req.storeId;
     
@@ -821,7 +821,7 @@ router.get('/akeneo/config-status', authMiddleware, storeResolver, async (req, r
  * Get import statistics
  * GET /api/integrations/akeneo/stats
  */
-router.get('/akeneo/stats', authMiddleware, storeResolver, async (req, res) => {
+router.get('/akeneo/stats', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const storeId = req.storeId;
     
@@ -882,7 +882,7 @@ router.get('/akeneo/stats', authMiddleware, storeResolver, async (req, res) => {
  * Get families from Akeneo
  * GET /api/integrations/akeneo/families
  */
-router.get('/akeneo/families', authMiddleware, storeResolver, async (req, res) => {
+router.get('/akeneo/families', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const storeId = req.storeId;
     const syncService = new AkeneoSyncService();
@@ -956,7 +956,7 @@ router.get('/akeneo/locales', (req, res) => {
  * Get available channels from Akeneo
  * GET /api/integrations/akeneo/channels
  */
-router.get('/akeneo/channels', authMiddleware, storeResolver, async (req, res) => {
+router.get('/akeneo/channels', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const storeId = req.storeId;
     const config = await loadAkeneoConfig(storeId);
@@ -992,7 +992,7 @@ router.get('/akeneo/channels', authMiddleware, storeResolver, async (req, res) =
  * Get schedule configurations
  * GET /api/integrations/akeneo/schedules
  */
-router.get('/akeneo/schedules', authMiddleware, storeResolver, async (req, res) => {
+router.get('/akeneo/schedules', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const storeId = req.storeId;
     const AkeneoSchedule = require('../models/AkeneoSchedule');
@@ -1020,7 +1020,7 @@ router.get('/akeneo/schedules', authMiddleware, storeResolver, async (req, res) 
  * Create or update schedule
  * POST /api/integrations/akeneo/schedules
  */
-router.post('/akeneo/schedules', authMiddleware, storeResolver, async (req, res) => {
+router.post('/akeneo/schedules', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const storeId = req.storeId;
     const AkeneoSchedule = require('../models/AkeneoSchedule');
@@ -1101,7 +1101,7 @@ router.post('/akeneo/schedules', authMiddleware, storeResolver, async (req, res)
  * Delete schedule
  * DELETE /api/integrations/akeneo/schedules/:id
  */
-router.delete('/akeneo/schedules/:id', authMiddleware, storeResolver, async (req, res) => {
+router.delete('/akeneo/schedules/:id', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const storeId = req.storeId;
     const AkeneoSchedule = require('../models/AkeneoSchedule');
@@ -1135,7 +1135,7 @@ router.delete('/akeneo/schedules/:id', authMiddleware, storeResolver, async (req
  */
 router.post('/akeneo/save-config',
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   body('baseUrl').isURL().withMessage('Valid base URL is required'),
   body('clientId').notEmpty().withMessage('Client ID is required'),
   body('clientSecret').notEmpty().withMessage('Client secret is required'),
@@ -1221,7 +1221,7 @@ router.post('/akeneo/save-config',
  * Get custom mappings for a store
  * GET /api/integrations/akeneo/custom-mappings
  */
-router.get('/akeneo/custom-mappings', authMiddleware, storeResolver, async (req, res) => {
+router.get('/akeneo/custom-mappings', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const mappings = await AkeneoCustomMapping.getMappings(req.storeId);
     
@@ -1245,7 +1245,7 @@ router.get('/akeneo/custom-mappings', authMiddleware, storeResolver, async (req,
  * Save custom mappings for a store
  * POST /api/integrations/akeneo/custom-mappings
  */
-router.post('/akeneo/custom-mappings', authMiddleware, storeResolver, async (req, res) => {
+router.post('/akeneo/custom-mappings', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { attributes, images, files } = req.body;
     const userId = req.user?.id || null;
@@ -1275,7 +1275,7 @@ router.post('/akeneo/custom-mappings', authMiddleware, storeResolver, async (req
  * Save specific mapping type for a store
  * PUT /api/integrations/akeneo/custom-mappings/:type
  */
-router.put('/akeneo/custom-mappings/:type', authMiddleware, storeResolver, async (req, res) => {
+router.put('/akeneo/custom-mappings/:type', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { type } = req.params;
     const { mappings } = req.body;
@@ -1314,7 +1314,7 @@ router.put('/akeneo/custom-mappings/:type', authMiddleware, storeResolver, async
  * Delete custom mappings for a store
  * DELETE /api/integrations/akeneo/custom-mappings/:type?
  */
-router.delete('/akeneo/custom-mappings/:type?', authMiddleware, storeResolver, async (req, res) => {
+router.delete('/akeneo/custom-mappings/:type?', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { type } = req.params;
     
@@ -1391,7 +1391,7 @@ const upload = multer({
  */
 router.post('/upload', 
   authMiddleware,
-  storeResolver,
+  storeResolver(),
   upload.single('file'),
   async (req, res) => {
     try {
@@ -1453,7 +1453,7 @@ router.post('/upload',
 );
 
 // Debug route to analyze Akeneo product attributes and identify numeric conversion issues
-router.post('/akeneo/debug-attributes', authMiddleware, storeResolver, async (req, res) => {
+router.post('/akeneo/debug-attributes', authMiddleware, storeResolver(), async (req, res) => {
   try {
     console.log('🔍 [DEBUG] Akeneo attribute debug request for store:', req.storeId);
     

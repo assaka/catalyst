@@ -38,7 +38,7 @@ const upload = multer({
 
 
 // Get connection status and ensure buckets exist
-router.get('/status', authMiddleware, storeResolver, async (req, res) => {
+router.get('/status', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const status = await supabaseIntegration.getConnectionStatus(req.storeId);
     
@@ -61,7 +61,7 @@ router.get('/status', authMiddleware, storeResolver, async (req, res) => {
 });
 
 // Initialize OAuth flow
-router.post('/connect', authMiddleware, storeResolver, async (req, res) => {
+router.post('/connect', authMiddleware, storeResolver(), async (req, res) => {
   try {
     console.log('Initiating Supabase OAuth connection for store:', req.storeId);
     console.log('OAuth configuration status:', {
@@ -348,7 +348,7 @@ router.get('/callback', async (req, res) => {
 });
 
 // Get available projects
-router.get('/projects', authMiddleware, storeResolver, async (req, res) => {
+router.get('/projects', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const result = await supabaseIntegration.getProjects(req.storeId);
     res.json(result);
@@ -362,7 +362,7 @@ router.get('/projects', authMiddleware, storeResolver, async (req, res) => {
 });
 
 // Select a project
-router.post('/select-project', authMiddleware, storeResolver, async (req, res) => {
+router.post('/select-project', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { projectId } = req.body;
     
@@ -404,7 +404,7 @@ router.post('/select-project', authMiddleware, storeResolver, async (req, res) =
 });
 
 // Test connection and ensure buckets exist
-router.post('/test', authMiddleware, storeResolver, async (req, res) => {
+router.post('/test', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const result = await supabaseIntegration.testConnection(req.storeId);
     
@@ -427,7 +427,7 @@ router.post('/test', authMiddleware, storeResolver, async (req, res) => {
 });
 
 // Disconnect
-router.post('/disconnect', authMiddleware, storeResolver, async (req, res) => {
+router.post('/disconnect', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const result = await supabaseIntegration.disconnect(req.storeId);
     res.json(result);
@@ -446,7 +446,7 @@ router.post('/disconnect', authMiddleware, storeResolver, async (req, res) => {
 
 // Upload image - handles both 'file' and 'image' fields for flexibility
 router.post('/storage/upload', authMiddleware, 
-  storeResolver, 
+  storeResolver(), 
   upload.single('file') || upload.single('image'), // Accept both field names
   async (req, res) => {
     try {
@@ -490,7 +490,7 @@ router.post('/storage/upload', authMiddleware,
 
 // Test upload - upload a sample product image
 router.post('/storage/test-upload', authMiddleware, 
-  storeResolver,
+  storeResolver(),
   async (req, res) => {
     try {
       console.log('Testing Supabase storage upload...');
@@ -556,7 +556,7 @@ router.post('/storage/test-upload', authMiddleware,
 
 // Upload multiple images
 router.post('/storage/upload-multiple', authMiddleware,
-  storeResolver,
+  storeResolver(),
   upload.array('images', 10),
   async (req, res) => {
     try {
@@ -584,7 +584,7 @@ router.post('/storage/upload-multiple', authMiddleware,
 );
 
 // List images
-router.get('/storage/list', authMiddleware, storeResolver, async (req, res) => {
+router.get('/storage/list', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const result = await supabaseStorage.listImages(req.storeId, req.query.folder, {
       limit: parseInt(req.query.limit) || 100,
@@ -603,7 +603,7 @@ router.get('/storage/list', authMiddleware, storeResolver, async (req, res) => {
 });
 
 // Delete image
-router.delete('/storage/delete', authMiddleware, storeResolver, async (req, res) => {
+router.delete('/storage/delete', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { path, bucket } = req.body;
     
@@ -626,7 +626,7 @@ router.delete('/storage/delete', authMiddleware, storeResolver, async (req, res)
 });
 
 // Move image
-router.post('/storage/move', authMiddleware, storeResolver, async (req, res) => {
+router.post('/storage/move', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { fromPath, toPath, bucket } = req.body;
     
@@ -649,7 +649,7 @@ router.post('/storage/move', authMiddleware, storeResolver, async (req, res) => 
 });
 
 // Copy image
-router.post('/storage/copy', authMiddleware, storeResolver, async (req, res) => {
+router.post('/storage/copy', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { fromPath, toPath, bucket } = req.body;
     
@@ -672,7 +672,7 @@ router.post('/storage/copy', authMiddleware, storeResolver, async (req, res) => 
 });
 
 // Get signed URL
-router.post('/storage/signed-url', authMiddleware, storeResolver, async (req, res) => {
+router.post('/storage/signed-url', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { path, expiresIn, bucket } = req.body;
     
@@ -695,7 +695,7 @@ router.post('/storage/signed-url', authMiddleware, storeResolver, async (req, re
 });
 
 // Get storage statistics
-router.get('/storage/stats', authMiddleware, storeResolver, async (req, res) => {
+router.get('/storage/stats', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const result = await supabaseStorage.getStorageStats(req.storeId);
     res.json(result);
@@ -709,7 +709,7 @@ router.get('/storage/stats', authMiddleware, storeResolver, async (req, res) => 
 });
 
 // Fetch and update API keys for current project
-router.post('/fetch-api-keys', authMiddleware, storeResolver, async (req, res) => {
+router.post('/fetch-api-keys', authMiddleware, storeResolver(), async (req, res) => {
   try {
     console.log('Fetching API keys for store:', req.storeId);
     const result = await supabaseIntegration.fetchAndUpdateApiKeys(req.storeId);
@@ -731,7 +731,7 @@ router.post('/fetch-api-keys', authMiddleware, storeResolver, async (req, res) =
 });
 
 // Manually update project configuration (for limited scope connections or when API doesn't provide keys)
-router.post('/update-config', authMiddleware, storeResolver, async (req, res) => {
+router.post('/update-config', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { projectId, projectUrl, serviceRoleKey, databaseUrl, storageUrl, authUrl } = req.body;
     
@@ -798,7 +798,7 @@ router.post('/update-config', authMiddleware, storeResolver, async (req, res) =>
 });
 
 // Ensure buckets exist - can be called anytime to create missing buckets
-router.post('/storage/ensure-buckets', authMiddleware, storeResolver, async (req, res) => {
+router.post('/storage/ensure-buckets', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const result = await supabaseStorage.ensureBucketsExist(req.storeId);
     res.json(result);
@@ -812,7 +812,7 @@ router.post('/storage/ensure-buckets', authMiddleware, storeResolver, async (req
 });
 
 // Get storage buckets
-router.get('/storage/buckets', authMiddleware, storeResolver, async (req, res) => {
+router.get('/storage/buckets', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const result = await supabaseStorage.listBuckets(req.storeId);
     res.json(result);
@@ -826,7 +826,7 @@ router.get('/storage/buckets', authMiddleware, storeResolver, async (req, res) =
 });
 
 // Create storage bucket
-router.post('/storage/buckets', authMiddleware, storeResolver, async (req, res) => {
+router.post('/storage/buckets', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { name, public: isPublic } = req.body;
     
@@ -852,7 +852,7 @@ router.post('/storage/buckets', authMiddleware, storeResolver, async (req, res) 
 });
 
 // Delete storage bucket
-router.delete('/storage/buckets/:bucketId', authMiddleware, storeResolver, async (req, res) => {
+router.delete('/storage/buckets/:bucketId', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const { bucketId } = req.params;
     

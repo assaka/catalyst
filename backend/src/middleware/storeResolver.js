@@ -4,8 +4,15 @@ const { sequelize } = require('../database/connection');
  * Store Resolution Middleware
  * Automatically resolves the user's store ID from the database and attaches it to req.storeId
  * This eliminates the need for frontend to send x-store-id headers
+ * 
+ * @param {Object} options - Configuration options
+ * @param {boolean} options.required - Whether store is required (default: true)
+ * @param {string} options.fallbackStoreId - Fallback store ID if none found
  */
-const storeResolver = async (req, res, next) => {
+const storeResolver = (options = {}) => {
+  const { required = true, fallbackStoreId = null } = options;
+  
+  return async (req, res, next) => {
   try {
     console.log('🏪 [StoreResolver] Resolving store for user:', req.user?.id);
     console.log('🏪 [StoreResolver] Full user object:', req.user);
@@ -53,6 +60,26 @@ const storeResolver = async (req, res, next) => {
     if (!stores || stores.length === 0) {
       console.log('❌ [StoreResolver] No active stores found for user ID:', req.user.id);
       
+      // Handle fallback store ID if provided
+      if (fallbackStoreId) {
+        console.log('⚠️ [StoreResolver] Using fallback store ID:', fallbackStoreId);
+        req.storeId = fallbackStoreId;
+        req.store = { 
+          id: fallbackStoreId, 
+          name: 'Fallback Store',
+          slug: 'fallback-store',
+          is_active: true 
+        };
+        return next();
+      }
+      
+      // If not required, continue without store context
+      if (!required) {
+        console.log('ℹ️ [StoreResolver] No stores found but not required - continuing without store context');
+        return next();
+      }
+      
+      // Required but no store found - return error (original behavior)
       // Let's also check if there are ANY stores for this user (including inactive)
       const allStores = await sequelize.query(`
         SELECT id, name, slug, is_active, user_id 
@@ -93,51 +120,35 @@ const storeResolver = async (req, res, next) => {
   } catch (error) {
     console.error('❌ [StoreResolver] Error resolving store:', error);
     console.error('❌ [StoreResolver] Error stack:', error.stack);
+    
+    // If fallback store ID provided, use it on error
+    if (fallbackStoreId) {
+      console.log('⚠️ [StoreResolver] Using fallback store ID due to error:', fallbackStoreId);
+      req.storeId = fallbackStoreId;
+      req.store = { 
+        id: fallbackStoreId, 
+        name: 'Fallback Store',
+        slug: 'fallback-store',
+        is_active: true 
+      };
+      return next();
+    }
+    
+    // If not required, continue despite error
+    if (!required) {
+      console.log('ℹ️ [StoreResolver] Error occurred but not required - continuing without store');
+      return next();
+    }
+    
+    // Required but error occurred - return error (original behavior)
     return res.status(500).json({
       success: false,
       error: 'Failed to resolve store information: ' + error.message
     });
   }
-};
-
-/**
- * Optional store resolver that doesn't fail if no store is found
- * Useful for endpoints that may or may not require store context
- */
-const optionalStoreResolver = async (req, res, next) => {
-  try {
-    if (!req.user || !req.user.id) {
-      return next(); // Continue without store info
-    }
-
-    const [stores] = await sequelize.query(`
-      SELECT id, name, slug, is_active 
-      FROM stores 
-      WHERE user_id = :userId AND is_active = true 
-      ORDER BY created_at DESC
-    `, {
-      replacements: { userId: req.user.id },
-      type: sequelize.QueryTypes.SELECT
-    });
-
-    if (stores.length > 0) {
-      const primaryStore = stores[0];
-      req.storeId = primaryStore.id;
-      req.store = primaryStore;
-      console.log('✅ [OptionalStoreResolver] Store resolved:', req.storeId);
-    } else {
-      console.log('ℹ️ [OptionalStoreResolver] No stores found for user - continuing without store context');
-    }
-
-    next();
-  } catch (error) {
-    console.error('❌ [OptionalStoreResolver] Error:', error);
-    // Don't fail the request, just continue without store info
-    next();
-  }
+  };
 };
 
 module.exports = {
-  storeResolver,
-  optionalStoreResolver
+  storeResolver
 };
