@@ -141,39 +141,6 @@ const CodeEditor = ({
   const editorRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
 
-  // Handle line revert functionality
-  const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
-    console.log('🔄 [CodeEditor] Reverting line', lineIndex, 'to original:', originalLine);
-    
-    const currentLines = localCode.split('\n');
-    
-    // Revert the specific line to its original content
-    if (lineIndex < currentLines.length) {
-      currentLines[lineIndex] = originalLine;
-      const newCode = currentLines.join('\n');
-      
-      console.log('🔄 [CodeEditor] New code after revert has', newCode.split('\n').length, 'lines');
-      
-      setLocalCode(newCode);
-      setIsModified(true);
-      
-      // Call onChange if provided
-      if (onChange) {
-        onChange(newCode);
-      }
-      
-      // Regenerate diff data
-      if (enableDiffDetection && originalCode) {
-        const diffResult = diffServiceRef.current.createDiff(originalCode, newCode);
-        if (diffResult) {
-          setDiffData(diffResult);
-          const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, newCode);
-          setFullFileDisplayLines(displayLines);
-        }
-      }
-    }
-  }, [localCode, originalCode, onChange, enableDiffDetection, generateFullFileDisplayLines]);
-
   useEffect(() => {
     setLocalCode(value);
     setIsModified(false);
@@ -364,6 +331,39 @@ const CodeEditor = ({
     
     return displayLines;
   }, []);
+
+  // Handle line revert functionality
+  const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
+    console.log('🔄 [CodeEditor] Reverting line', lineIndex, 'to original:', originalLine);
+    
+    const currentLines = localCode.split('\n');
+    
+    // Revert the specific line to its original content
+    if (lineIndex < currentLines.length) {
+      currentLines[lineIndex] = originalLine;
+      const newCode = currentLines.join('\n');
+      
+      console.log('🔄 [CodeEditor] New code after revert has', newCode.split('\n').length, 'lines');
+      
+      setLocalCode(newCode);
+      setIsModified(true);
+      
+      // Call onChange if provided
+      if (onChange) {
+        onChange(newCode);
+      }
+      
+      // Regenerate diff data
+      if (enableDiffDetection && originalCode) {
+        const diffResult = diffServiceRef.current.createDiff(originalCode, newCode);
+        if (diffResult) {
+          setDiffData(diffResult);
+          const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, newCode);
+          setFullFileDisplayLines(displayLines);
+        }
+      }
+    }
+  }, [localCode, originalCode, onChange, enableDiffDetection, generateFullFileDisplayLines]);
 
   // Generate diff when content changes
   useEffect(() => {
