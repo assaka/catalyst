@@ -8,8 +8,12 @@ const express = require('express');
 const router = express.Router();
 const patchService = require('../services/patch-service');
 const unifiedDiffService = require('../services/unified-diff-service');
+const HybridPatchService = require('../services/hybrid-patch-service');
 const { authMiddleware } = require('../middleware/auth');
 const { storeResolver } = require('../middleware/storeResolver');
+
+// Initialize hybrid patch service for dual-format generation
+const hybridPatchService = new HybridPatchService();
 
 // Apply patches to a file and return the result (public endpoint for preview)
 router.get('/apply/:filePath(*)', async (req, res) => {
@@ -133,11 +137,46 @@ router.post('/create', authMiddleware, storeResolver(), async (req, res) => {
     });
 
     if (result.success) {
+      // Also create hybrid patch format for enhanced metadata and validation
+      let hybridPatchId = null;
+      try {
+        console.log('🔄 [PatchRoute] Creating hybrid patch format for enhanced features...');
+        
+        const hybridResult = await hybridPatchService.createPatch({
+          storeId,
+          filePath,
+          originalCode: result.baselineCode || '',
+          modifiedCode: modifiedCode,
+          patchName: `${patchName} (Enhanced)`,
+          changeSummary,
+          changeDescription,
+          createdBy: req.user.id,
+          validation_rules: {
+            syntax_valid: true,
+            must_contain: [],
+            cannot_contain: ["process.exit", "eval("]
+          },
+          safety_checks: {
+            check_syntax: true,
+            prevent_infinite_loops: true,
+            block_dangerous_apis: true
+          }
+        });
+
+        if (hybridResult.success) {
+          hybridPatchId = hybridResult.patchId;
+          console.log('✅ [PatchRoute] Created hybrid patch:', hybridPatchId);
+        }
+      } catch (hybridError) {
+        console.warn('⚠️ [PatchRoute] Failed to create hybrid format (continuing with standard patch):', hybridError.message);
+      }
+
       res.json({
         success: true,
         message: result.action === 'updated' ? 'Patch updated successfully' : 'Patch created successfully',
         data: {
           patchId: result.patchId,
+          hybridPatchId, // Include hybrid patch ID if created
           diff: result.diff,
           createdAt: result.createdAt,
           action: result.action,
