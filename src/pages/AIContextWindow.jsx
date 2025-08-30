@@ -8,6 +8,7 @@ import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import BrowserPreview from '@/components/ai-context/BrowserPreview';
+import SimplePreview from '@/components/SimplePreview';
 import VersionHistory from '@/components/ai-context/VersionHistory';
 import apiClient from '@/api/client';
 // Store context no longer needed - backend resolves store automatically
@@ -1093,6 +1094,21 @@ export default ExampleComponent;`;
                           <Eye className="w-4 h-4 mr-2" />
                           Preview
                         </button>
+                        <button
+                          onClick={() => {
+                            setPreviewMode('simple');
+                            handlePreviewModeChange('simple');
+                          }}
+                          className={cn(
+                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            previewMode === 'simple' 
+                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                          )}
+                        >
+                          <Clock className="w-4 h-4 mr-2" />
+                          Simple
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1151,6 +1167,11 @@ export default ExampleComponent;`;
                         className="h-full"
                         onCodeChange={handleCodeChange}
                         onDiffStatsChange={handleDiffStatsChange}
+                      />
+                    ) : previewMode === 'simple' ? (
+                      // Simple Preview View - Cart.jsx with patches from file_baselines
+                      <SimplePreview
+                        className="h-full"
                       />
                     ) : (
                       // Live Preview View - Enhanced with AST diff and route resolution

@@ -137,6 +137,8 @@ const CodeEditor = ({
   const [diffData, setDiffData] = useState(null);
   const [showDiffView, setShowDiffView] = useState(false);
   const [fullFileDisplayLines, setFullFileDisplayLines] = useState([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   const editorRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
