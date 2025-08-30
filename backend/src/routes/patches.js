@@ -900,19 +900,19 @@ router.get('/:filePath(*)', authMiddleware, storeResolver({ required: false }), 
 });
 
 // Revert specific line in patches (surgical approach) - requires authentication
-router.patch('/revert-line/:filePath(*)', authMiddleware, async (req, res) => {
+router.patch('/revert-line/:filePath(*)', authMiddleware, storeResolver(), async (req, res) => {
   try {
     console.log('🔍 PATCH /revert-line endpoint called');
     console.log('🔍 User from auth middleware:', req.user ? { id: req.user.id, email: req.user.email, role: req.user.role } : 'undefined');
+    console.log('🔍 Store ID resolved by middleware:', req.storeId);
     console.log('🔍 Request headers:', {
       'authorization': req.headers.authorization ? 'Present' : 'Missing',
-      'x-store-id': req.headers['x-store-id'],
       'content-type': req.headers['content-type']
     });
     
     const filePath = req.params.filePath;
     const { lineNumber, originalContent, modifiedContent } = req.body;
-    const storeId = req.headers['x-store-id'] || '157d4590-49bf-4b0b-bd77-abe131909528';
+    const storeId = req.storeId;
 
     console.log(`↩️ Reverting line ${lineNumber} in ${filePath}`);
     console.log(`   From: "${modifiedContent}" → To: "${originalContent}"`);

@@ -585,19 +585,6 @@ const DiffPreviewSystem = ({
           return;
         }
         
-        console.log('🌐 Making surgical revert request:', {
-          url: `/api/patches/revert-line/${encodeURIComponent(filePath || fileName)}`,
-          method: 'PATCH',
-          headers: {
-            'Authorization': token ? `Bearer ${token.substring(0, 20)}...` : 'Missing',
-            'Content-Type': 'application/json'
-          },
-          body: {
-            lineNumber: lineIndex,
-            originalContent: originalContent,
-            modifiedContent: modifiedContent
-          }
-        });
         
         const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(filePath || fileName)}`, {
           method: 'PATCH',
@@ -1581,7 +1568,6 @@ const DiffPreviewSystem = ({
             className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => {
               e.stopPropagation();
-              console.log('🔄 [DiffLine] Revert button clicked for line:', lineIndex, 'type:', line.type, 'originalContent:', line.originalContent);
               onLineRevert(lineIndex, line.originalContent || '');
             }}
             title={`Revert this ${line.type} line`}
