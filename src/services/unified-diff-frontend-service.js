@@ -333,6 +333,11 @@ class UnifiedDiffFrontendService {
       let currentOriginalLine = 1;
       let currentModifiedLine = 1;
       
+      console.log('🔧 [UnifiedDiff] Reconstructing from unified diff:', {
+        totalLines: lines.length,
+        firstFewLines: lines.slice(0, 10)
+      });
+      
       for (const line of lines) {
         if (line.startsWith('@@')) {
           // Parse hunk header: @@ -oldStart,oldLength +newStart,newLength @@
@@ -364,19 +369,29 @@ class UnifiedDiffFrontendService {
         }
       }
       
-      // Convert sparse arrays to dense arrays, filling gaps with empty strings
-      const maxOriginalLine = Math.max(...Object.keys(originalLines).map(k => parseInt(k))) + 1;
-      const maxModifiedLine = Math.max(...Object.keys(modifiedLines).map(k => parseInt(k))) + 1;
+      // Convert sparse arrays to dense arrays, handling empty arrays
+      const originalKeys = Object.keys(originalLines).map(k => parseInt(k)).filter(k => !isNaN(k));
+      const modifiedKeys = Object.keys(modifiedLines).map(k => parseInt(k)).filter(k => !isNaN(k));
+      
+      if (originalKeys.length === 0 && modifiedKeys.length === 0) {
+        console.log('⚠️ [UnifiedDiff] No lines found in diff reconstruction');
+        return { success: false, error: 'No lines found in unified diff' };
+      }
+      
+      const maxOriginalLine = originalKeys.length > 0 ? Math.max(...originalKeys) + 1 : 0;
+      const maxModifiedLine = modifiedKeys.length > 0 ? Math.max(...modifiedKeys) + 1 : 0;
       
       const denseOriginal = [];
       const denseModified = [];
       
+      // Fill original array
       for (let i = 0; i < maxOriginalLine; i++) {
-        denseOriginal[i] = originalLines[i] || '';
+        denseOriginal[i] = originalLines[i] !== undefined ? originalLines[i] : '';
       }
       
+      // Fill modified array  
       for (let i = 0; i < maxModifiedLine; i++) {
-        denseModified[i] = modifiedLines[i] || '';
+        denseModified[i] = modifiedLines[i] !== undefined ? modifiedLines[i] : '';
       }
       
       const originalCode = denseOriginal.join('\n');
