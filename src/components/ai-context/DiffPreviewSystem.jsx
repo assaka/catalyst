@@ -556,10 +556,10 @@ const DiffPreviewSystem = ({
     };
   }, [handleSyncScroll, selectedView]);
 
-  // Handle line revert functionality
+
+  // Handle line revert functionality - simplified approach like CodeEditor
   const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
-    console.log('🔄 Reverting line', lineIndex, 'from:', currentModifiedCode.split('\n')[lineIndex]);
-    console.log('🔄 Reverting to:', originalBaseCodeRef.current.split('\n')[lineIndex]);
+    console.log('🔄 Reverting line', lineIndex, 'to original:', originalLine);
     
     const currentLines = currentModifiedCode.split('\n');
     const originalLines = originalBaseCodeRef.current.split('\n');
@@ -572,65 +572,15 @@ const DiffPreviewSystem = ({
       
       console.log('🔄 New code after revert has', newCode.split('\n').length, 'lines');
       
+      // Simply update the local state - same as CodeEditor manual restore
       setCurrentModifiedCode(newCode);
       
-      // Surgically revert patches for this specific line
-      try {
-        console.log('✂️ Surgically reverting patches for line', lineIndex);
-        const modifiedContent = currentLines[lineIndex] || '';
-        
-        const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
-        if (!token) {
-          console.error('❌ No authentication token found in any of: store_owner_auth_token, auth_token, token');
-          return;
-        }
-        
-        
-        const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(filePath || fileName)}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-            // Removed X-Store-Id header - backend now resolves store server-side
-          },
-          body: JSON.stringify({
-            lineNumber: lineIndex,
-            originalContent: originalContent,
-            modifiedContent: modifiedContent
-          })
-        });
-
-        console.log('📡 Response received:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-          headers: {
-            'content-type': response.headers.get('content-type'),
-            'access-control-allow-origin': response.headers.get('access-control-allow-origin')
-          }
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-          console.log('✅ Successfully reverted line', lineIndex, '- Modified:', result.data.modifiedPatches, 'Deleted:', result.data.deletedPatches);
-          
-          // Add a small delay to ensure database changes are reflected
-          setTimeout(() => {
-            setRefreshTrigger(prev => prev + 1);
-          }, 100);
-        } else {
-          console.error('❌ Failed to revert patches:', result.error);
-        }
-      } catch (error) {
-        console.error('❌ Error reverting patches for line:', error);
-      }
-      
-      // Notify parent component of the change
+      // Call onChange if provided to notify parent component
       if (onCodeChange) {
         onCodeChange(newCode);
       }
     }
-  }, [currentModifiedCode, onCodeChange, fileName, filePath, getSelectedStoreId]);
+  }, [currentModifiedCode, onCodeChange]);
 
   // Handle preview functionality with enhanced route resolution
   const handlePreview = useCallback(async () => {
