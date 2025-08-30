@@ -741,44 +741,65 @@ const DiffPreviewSystem = ({
   const diffResult = useMemo(() => {
     const baseCode = originalBaseCodeRef.current;
     
-    if (!baseCode && !currentModifiedCode) {
-      return { 
-        success: true,
-        diff: [], 
-        stats: { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
-        unifiedDiff: '',
-        metadata: null
+    // If we have both baseline and modified code, generate diff normally
+    if (baseCode && currentModifiedCode) {
+      // Check if this is just a line ending issue
+      const isLineEndingOnly = diffServiceRef.current.isLineEndingOnlyDiff(baseCode, currentModifiedCode);
+      
+      if (isLineEndingOnly) {
+        console.log('📋 [DiffPreview] Detected line-ending-only diff, showing as no changes');
+        return {
+          success: true,
+          unifiedDiff: null,
+          parsedDiff: [],
+          stats: { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+          metadata: { 
+            algorithm: 'unified',
+            isLineEndingOnly: true,
+            message: 'No content changes detected (line endings normalized)'
+          }
+        };
+      }
+
+      const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode);
+      const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
+      
+      return {
+        ...result,
+        stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+        unifiedDiff: result.unifiedDiff
       };
     }
-
-    // Check if this is just a line ending issue
-    const isLineEndingOnly = diffServiceRef.current.isLineEndingOnlyDiff(baseCode, currentModifiedCode);
     
-    if (isLineEndingOnly) {
-      console.log('📋 [DiffPreview] Detected line-ending-only diff, showing as no changes');
+    // Fallback: If no baseline/modified code but we have a patch with unified_diff, use that
+    if (astDiffData?.patch?.unified_diff) {
+      console.log('📋 [DiffPreview] Using stored unified_diff from patch as fallback');
+      const unifiedDiff = astDiffData.patch.unified_diff;
+      const stats = diffServiceRef.current.getDiffStats(unifiedDiff);
+      const parsedDiff = diffServiceRef.current.parseUnifiedDiff(unifiedDiff);
+      
       return {
         success: true,
-        unifiedDiff: null,
-        parsedDiff: [],
-        stats: { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
-        metadata: { 
+        unifiedDiff: unifiedDiff,
+        parsedDiff: parsedDiff,
+        stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+        metadata: {
           algorithm: 'unified',
-          isLineEndingOnly: true,
-          message: 'No content changes detected (line endings normalized)'
+          source: 'stored_patch',
+          message: 'Using stored unified diff from patch'
         }
       };
     }
-
-    const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode);
-    const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
-    const unifiedDiff = result.unifiedDiff; // Use unified diff from result
     
-    return {
-      ...result,
-      stats: stats || { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
-      unifiedDiff
+    // No data available
+    return { 
+      success: true,
+      diff: [], 
+      stats: { additions: 0, deletions: 0, modifications: 0, unchanged: 0 },
+      unifiedDiff: '',
+      metadata: null
     };
-  }, [currentModifiedCode, fileName]);
+  }, [currentModifiedCode, fileName, astDiffData]);
 
   // Notify parent when diff stats change
   useEffect(() => {
