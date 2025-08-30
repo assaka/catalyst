@@ -1511,7 +1511,7 @@ const DiffPreviewSystem = ({
     URL.revokeObjectURL(url);
   };
 
-  const DiffLine = ({ line, index, onExpandCollapsed }) => {
+  const DiffLine = ({ line, index, onExpandCollapsed, onLineRevert }) => {
     const getLineStyle = () => {
       switch (line.type) {
         case 'addition':
@@ -1552,12 +1552,34 @@ const DiffPreviewSystem = ({
       }
     };
 
+    const canRevert = onLineRevert && (line.type === 'addition' || line.type === 'deletion') && line.type !== 'collapsed';
+    const lineIndex = line.type === 'addition' ? (line.newLineNumber ? line.newLineNumber - 1 : null) : 
+                     line.type === 'deletion' ? (line.lineNumber ? line.lineNumber - 1 : null) : null;
+
     return (
       <div 
-        className={`flex items-center px-2 py-1 text-sm font-mono min-w-max ${getLineStyle()}`}
+        className={`flex items-center px-2 py-1 text-sm font-mono min-w-max ${getLineStyle()} group`}
         onClick={line.type === 'collapsed' ? handleCollapsedClick : undefined}
         title={line.type === 'collapsed' ? 'Click to expand hidden lines' : undefined}
       >
+        {/* Revert button - show on hover for addition/deletion lines */}
+        {canRevert && lineIndex !== null ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              onLineRevert(lineIndex, line.originalContent || '');
+            }}
+            title={`Revert this ${line.type} line`}
+          >
+            <RotateCcw className="w-3 h-3" />
+          </Button>
+        ) : (
+          <div className="w-8 mr-1 flex-shrink-0" />
+        )}
+
         {lineNumbers && (
           <>
             <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
@@ -1573,7 +1595,7 @@ const DiffPreviewSystem = ({
           {getLineIcon()}
         </div>
         
-        <div className="pl-2 whitespace-nowrap">
+        <div className="pl-2 whitespace-nowrap flex-1">
           {line.type === 'collapsed' ? (
             <span className="text-blue-600 italic font-medium">
               {line.content}
@@ -1984,7 +2006,7 @@ const DiffPreviewSystem = ({
                   ) : (
                     <div className="font-mono">
                       {finalDisplayLines.map((line, index) => (
-                        <DiffLine key={index} line={line} index={index} onExpandCollapsed={handleExpandCollapsed} />
+                        <DiffLine key={index} line={line} index={index} onExpandCollapsed={handleExpandCollapsed} onLineRevert={handleLineRevert} />
                       ))}
                     </div>
                   )}

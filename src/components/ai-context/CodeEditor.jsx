@@ -13,14 +13,17 @@ import {
   Minimize2,
   Code,
   Diff,
-  Eye
+  Eye,
+  RotateCcw,
+  Plus,
+  Minus
 } from 'lucide-react';
 
 // Import diff service
 import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
 
 // DiffLine component for displaying individual diff lines
-const DiffLine = ({ line, index }) => {
+const DiffLine = ({ line, index, onLineRevert }) => {
   const getLineStyle = () => {
     switch (line.type) {
       case 'addition':
@@ -54,9 +57,42 @@ const DiffLine = ({ line, index }) => {
   };
 
   const { oldNum, newNum } = getLineNumbers();
+  
+  const canRevert = onLineRevert && (line.type === 'addition' || line.type === 'deletion');
+  const lineIndex = line.type === 'addition' ? (line.newLineNumber ? line.newLineNumber - 1 : null) : 
+                   line.type === 'deletion' ? (line.lineNumber ? line.lineNumber - 1 : null) : null;
+
+  const getLineIcon = () => {
+    switch (line.type) {
+      case 'addition':
+        return <Plus className="w-3 h-3 text-green-600" />;
+      case 'deletion':
+        return <Minus className="w-3 h-3 text-red-600" />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className={`flex items-start text-sm font-mono leading-5 ${getLineStyle()}`}>
+    <div className={`flex items-start text-sm font-mono leading-5 ${getLineStyle()} group`}>
+      {/* Revert button - show on hover for addition/deletion lines */}
+      {canRevert && lineIndex !== null ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            onLineRevert(lineIndex, line.originalContent || '');
+          }}
+          title={`Revert this ${line.type} line`}
+        >
+          <RotateCcw className="w-3 h-3" />
+        </Button>
+      ) : (
+        <div className="w-8 mr-1 flex-shrink-0" />
+      )}
+
       {/* Line numbers */}
       <div className="flex-none flex">
         <div className="w-12 text-right text-muted-foreground px-2 py-1 select-none">
@@ -67,10 +103,10 @@ const DiffLine = ({ line, index }) => {
         </div>
       </div>
       
-      {/* Line prefix and content */}
+      {/* Line prefix and content with icon */}
       <div className="flex-1 flex">
-        <div className="w-4 text-center text-muted-foreground py-1 select-none">
-          {getLinePrefix()}
+        <div className="w-6 text-center py-1 select-none flex items-center justify-center">
+          {getLineIcon() || <span className="text-muted-foreground">{getLinePrefix()}</span>}
         </div>
         <div className="flex-1 py-1 px-2 whitespace-pre-wrap break-all">
           {line.content || ''}
@@ -104,6 +140,39 @@ const CodeEditor = ({
 
   const editorRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
+
+  // Handle line revert functionality
+  const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
+    console.log('🔄 [CodeEditor] Reverting line', lineIndex, 'to original:', originalLine);
+    
+    const currentLines = localCode.split('\n');
+    
+    // Revert the specific line to its original content
+    if (lineIndex < currentLines.length) {
+      currentLines[lineIndex] = originalLine;
+      const newCode = currentLines.join('\n');
+      
+      console.log('🔄 [CodeEditor] New code after revert has', newCode.split('\n').length, 'lines');
+      
+      setLocalCode(newCode);
+      setIsModified(true);
+      
+      // Call onChange if provided
+      if (onChange) {
+        onChange(newCode);
+      }
+      
+      // Regenerate diff data
+      if (enableDiffDetection && originalCode) {
+        const diffResult = diffServiceRef.current.createDiff(originalCode, newCode);
+        if (diffResult) {
+          setDiffData(diffResult);
+          const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, newCode);
+          setFullFileDisplayLines(displayLines);
+        }
+      }
+    }
+  }, [localCode, originalCode, onChange, enableDiffDetection, generateFullFileDisplayLines]);
 
   useEffect(() => {
     setLocalCode(value);
@@ -531,7 +600,7 @@ const CodeEditor = ({
               ) : (
                 <div>
                   {fullFileDisplayLines.map((line, index) => (
-                    <DiffLine key={index} line={line} index={index} />
+                    <DiffLine key={index} line={line} index={index} onLineRevert={handleLineRevert} />
                   ))}
                 </div>
               )}
