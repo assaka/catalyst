@@ -45,16 +45,38 @@ const PreviewTab = ({
     }
   }, [fileName]);
 
-  // Enhanced BrowserPreview with specific patch
-  const EnhancedBrowserPreview = useCallback(({ config }) => {
+  // Direct preview URL generation and iframe
+  const DirectPreviewIframe = useCallback(({ config }) => {
+    console.log('🎬 Enhanced PreviewTab: Direct preview with config:', config);
+    console.log('  - fileName:', fileName);
+    console.log('  - storeId:', config.storeId);
+    console.log('  - specificPatchId:', config.patchId);
+    
+    // Generate preview URL directly
+    const backendUrl = process.env.REACT_APP_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
+    const encodedFileName = encodeURIComponent(fileName);
+    const previewUrl = `${backendUrl}/preview/${config.storeId}?fileName=${encodedFileName}&patches=true&specificPatch=${config.patchId}&storeSlug=store&pageName=${config.pageName}&_t=${Date.now()}`;
+    
+    console.log('🔗 Generated preview URL:', previewUrl);
+    
     return (
-      <BrowserPreview
-        fileName={fileName}
-        storeId={config.storeId}
-        specificPatchId={config.patchId}
-        previewMode="enhanced"
-        className="h-full"
-      />
+      <div className="h-full flex flex-col">
+        {/* URL Display */}
+        <div className="p-2 bg-blue-50 dark:bg-blue-900/20 border-b text-xs">
+          <div className="font-medium text-blue-700 dark:text-blue-300 mb-1">Preview URL:</div>
+          <div className="text-blue-600 dark:text-blue-400 break-all">{previewUrl}</div>
+        </div>
+        
+        {/* Direct iframe */}
+        <div className="flex-1">
+          <iframe
+            src={previewUrl}
+            className="w-full h-full border-0"
+            title={`Enhanced Preview of ${fileName}`}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
+          />
+        </div>
+      </div>
     );
   }, [fileName]);
 
@@ -136,7 +158,7 @@ const PreviewTab = ({
 
       {/* Preview Content */}
       <div className="flex-1 overflow-hidden">
-        <EnhancedBrowserPreview config={previewConfig} />
+        <DirectPreviewIframe config={previewConfig} />
       </div>
     </div>
   );

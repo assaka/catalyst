@@ -30,6 +30,14 @@ const BrowserPreview = ({
   const { selectedStore } = useStoreSelection();
   const storeId = propStoreId || selectedStore?.id || localStorage.getItem('selectedStoreId');
   
+  console.log('🔍 BrowserPreview: Store and patch configuration:', {
+    propStoreId,
+    selectedStoreId: selectedStore?.id,
+    finalStoreId: storeId,
+    specificPatchId,
+    fileName
+  });
+  
   // Create API config - store context handled by backend
   const getApiConfig = useCallback(() => {
     const headers = {};
@@ -128,6 +136,13 @@ const BrowserPreview = ({
       return { hasPatches: false, patchCount: 0 };
     }
 
+    // If we have a specific patch ID, assume patches exist
+    if (specificPatchId) {
+      console.log(`🎯 BrowserPreview: Specific patch ID provided (${specificPatchId}), assuming patches exist`);
+      setPatchData({ hasPatches: true, patchCount: 1, specificPatch: specificPatchId });
+      return { hasPatches: true, patchCount: 1, specificPatch: specificPatchId };
+    }
+
     setCheckingPatches(true);
     try {
       const customHeaders = getApiConfig().headers;
@@ -152,7 +167,7 @@ const BrowserPreview = ({
     } finally {
       setCheckingPatches(false);
     }
-  }, [storeId, getApiConfig]);
+  }, [storeId, specificPatchId, getApiConfig]);
 
   // Check patch status when filename changes
   useEffect(() => {
