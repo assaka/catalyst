@@ -1330,8 +1330,9 @@ const DiffPreviewSystem = ({
     });
     
     return displayLines;
+  }, [displayLines]);
 
-    const processed = [];
+  // Final display lines (simplified)
     let contextGroup = [];
     const maxContextLines = 3; // Show 3 context lines before/after changes
     const minCollapsibleLines = 8; // Only collapse if there are at least this many context lines
