@@ -934,31 +934,51 @@ const DiffPreviewSystem = ({
     const modifiedLines = currentModifiedCode.split('\n');
     const displayLines = [];
     
-    // Simple approach: compare line by line and use the unified diff to identify changes
-    let originalLineIndex = 0;
-    let modifiedLineIndex = 0;
+    // Create a comprehensive change map from the parsed unified diff
+    const changeMap = new Map(); // lineNumber -> {type, originalContent, modifiedContent}
     
-    // Create a set of changed line numbers from the parsed diff for quick lookup
-    const changedOriginalLines = new Set();
-    const changedModifiedLines = new Set();
-    
-    // Extract all changed line numbers from hunks
-    parsedDiff.forEach(hunk => {
-      let oldLineNum = hunk.oldStart;
-      let newLineNum = hunk.newStart;
+    // Process each hunk to build the change map
+    parsedDiff.forEach((hunk, hunkIndex) => {
+      console.log(`🔧 Processing hunk ${hunkIndex + 1}:`, {
+        oldStart: hunk.oldStart,
+        oldLength: hunk.oldLength,
+        newStart: hunk.newStart,
+        newLength: hunk.newLength,
+        changes: hunk.changes?.length || 0
+      });
       
-      hunk.changes.forEach(change => {
+      let oldLineNum = hunk.oldStart; // 1-indexed
+      let newLineNum = hunk.newStart; // 1-indexed
+      
+      hunk.changes.forEach((change, changeIndex) => {
+        console.log(`  Change ${changeIndex + 1}: ${change.type} - "${change.content}"`);
+        
         switch (change.type) {
           case 'delete':
-            changedOriginalLines.add(oldLineNum);
+            changeMap.set(oldLineNum, {
+              type: 'deletion',
+              originalContent: change.content,
+              modifiedContent: null,
+              originalLineNumber: oldLineNum,
+              newLineNumber: null
+            });
             oldLineNum++;
             break;
+            
           case 'add':
-            changedModifiedLines.add(newLineNum);
+            // For additions, we need to find the corresponding line in the modified file
+            changeMap.set(newLineNum, {
+              type: 'addition',
+              originalContent: null,
+              modifiedContent: change.content,
+              originalLineNumber: null,
+              newLineNumber: newLineNum
+            });
             newLineNum++;
             break;
+            
           case 'context':
-            // Context lines don't count as changes
+            // Context lines - no changes, just advance counters
             oldLineNum++;
             newLineNum++;
             break;
@@ -966,56 +986,44 @@ const DiffPreviewSystem = ({
       });
     });
 
-    console.log('🔍 [DiffPreview] Changed lines:', {
-      originalLines: Array.from(changedOriginalLines),
-      modifiedLines: Array.from(changedModifiedLines)
-    });
+    console.log('🔍 [DiffPreview] Change map:', Array.from(changeMap.entries()));
 
-    // Process all lines, identifying changes by comparing actual content
-    const maxLines = Math.max(originalLines.length, modifiedLines.length);
-    
-    for (let i = 0; i < maxLines; i++) {
+    // Now process all lines in the original file, using the change map to identify modifications
+    for (let i = 0; i < originalLines.length; i++) {
+      const lineNumber = i + 1; // 1-indexed
       const originalLine = originalLines[i];
       const modifiedLine = modifiedLines[i];
-      const originalLineNumber = i + 1;
-      const modifiedLineNumber = i + 1;
       
-      if (originalLine === undefined && modifiedLine !== undefined) {
-        // Addition at end of file
-        displayLines.push({
-          type: 'addition',
-          lineNumber: null,
-          newLineNumber: modifiedLineNumber,
-          content: modifiedLine,
-          originalContent: null,
-          modifiedContent: modifiedLine
-        });
-      } else if (originalLine !== undefined && modifiedLine === undefined) {
-        // Deletion at end of file  
-        displayLines.push({
-          type: 'deletion',
-          lineNumber: originalLineNumber,
-          newLineNumber: null,
-          content: originalLine,
-          originalContent: originalLine,
-          modifiedContent: null
-        });
-      } else if (originalLine !== undefined && modifiedLine !== undefined) {
-        if (originalLine === modifiedLine) {
-          // No change - context line
-          displayLines.push({
-            type: 'context',
-            lineNumber: originalLineNumber,
-            newLineNumber: modifiedLineNumber,
-            content: originalLine,
-            originalContent: originalLine,
-            modifiedContent: modifiedLine
-          });
-        } else {
-          // Line modified - show as deletion + addition
+      // Check if this line has a change recorded in our change map
+      const change = changeMap.get(lineNumber);
+      
+      if (change) {
+        if (change.type === 'deletion') {
           displayLines.push({
             type: 'deletion',
-            lineNumber: originalLineNumber,
+            lineNumber: lineNumber,
+            newLineNumber: null,
+            content: originalLine,
+            originalContent: originalLine,
+            modifiedContent: null
+          });
+        } else if (change.type === 'addition') {
+          displayLines.push({
+            type: 'addition',
+            lineNumber: null,
+            newLineNumber: lineNumber,
+            content: modifiedLine,
+            originalContent: null,
+            modifiedContent: modifiedLine
+          });
+        }
+      } else {
+        // No change recorded - check if content actually differs
+        if (originalLine !== modifiedLine) {
+          // This is a modification not caught by the unified diff parsing
+          displayLines.push({
+            type: 'deletion',
+            lineNumber: lineNumber,
             newLineNumber: null,
             content: originalLine,
             originalContent: originalLine,
@@ -1024,13 +1032,38 @@ const DiffPreviewSystem = ({
           displayLines.push({
             type: 'addition',
             lineNumber: null,
-            newLineNumber: modifiedLineNumber,
+            newLineNumber: lineNumber,
             content: modifiedLine,
             originalContent: null,
             modifiedContent: modifiedLine
           });
+        } else {
+          // Context line - no change
+          displayLines.push({
+            type: 'context',
+            lineNumber: lineNumber,
+            newLineNumber: lineNumber,
+            content: originalLine,
+            originalContent: originalLine,
+            modifiedContent: modifiedLine
+          });
         }
       }
+    }
+    
+    // Handle any additional lines in the modified file (additions at the end)
+    for (let i = originalLines.length; i < modifiedLines.length; i++) {
+      const lineNumber = i + 1;
+      const modifiedLine = modifiedLines[i];
+      
+      displayLines.push({
+        type: 'addition',
+        lineNumber: null,
+        newLineNumber: lineNumber,
+        content: modifiedLine,
+        originalContent: null,
+        modifiedContent: modifiedLine
+      });
     }
     
     console.log('✅ [DiffPreview] generateFullFileDisplayLines completed:', {
