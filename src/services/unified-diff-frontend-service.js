@@ -135,8 +135,12 @@ class UnifiedDiffFrontendService {
       const contextLines = 3;
       
       // Calculate hunk boundaries with context
-      const hunkStart = Math.max(0, hunk.startLine - contextLines);
-      const hunkEnd = Math.min(originalLines.length, hunk.lastChangeLineNumber + contextLines);
+      // For a proper hunk, we need to include all lines from first change to last change, plus context
+      const firstChangeLineIndex = hunk.startLine; // 0-indexed
+      const lastChangeLineIndex = hunk.lastChangeLineNumber - 1; // Convert to 0-indexed
+      
+      const hunkStart = Math.max(0, firstChangeLineIndex - contextLines);
+      const hunkEnd = Math.min(originalLines.length, lastChangeLineIndex + contextLines + 1);
       
       // Calculate line counts for hunk header
       const originalLinesInHunk = hunkEnd - hunkStart;
