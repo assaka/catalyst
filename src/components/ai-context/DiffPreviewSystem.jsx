@@ -556,77 +556,96 @@ const DiffPreviewSystem = ({
     };
   }, [handleSyncScroll, selectedView]);
 
-  // Handle line revert functionality - update database patch directly
-  const handleLineRevert = useCallback(async (lineIndex, originalLine, lineType) => {
-    console.log('🔄 Reverting line', lineIndex, 'type:', lineType);
+  // Handle line revert functionality
+  const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
+    console.log('🔄 Reverting line', lineIndex, 'from:', currentModifiedCode.split('\n')[lineIndex]);
+    console.log('🔄 Reverting to:', originalBaseCodeRef.current.split('\n')[lineIndex]);
     
     const currentLines = currentModifiedCode.split('\n');
     const originalLines = originalBaseCodeRef.current.split('\n');
     
-    let newCode;
-    if (lineType === 'addition') {
-      // For addition lines, remove the line entirely
-      if (lineIndex < currentLines.length) {
-        currentLines.splice(lineIndex, 1);
-        newCode = currentLines.join('\n');
-        console.log('🔄 Removed addition line', lineIndex, 'new code has', newCode.split('\n').length, 'lines');
-      }
-    } else if (lineType === 'deletion') {
-      // For deletion lines, restore the original content
-      if (lineIndex < originalLines.length) {
-        const originalContent = originalLines[lineIndex] || '';
-        currentLines.splice(lineIndex, 0, originalContent);
-        newCode = currentLines.join('\n');
-        console.log('🔄 Restored deletion line', lineIndex, 'to:', originalContent);
-      }
-    }
-    
-    if (newCode) {
-      // Update the database patch with the reverted code
+    // Revert the specific line to its original content
+    if (lineIndex < currentLines.length && lineIndex < originalLines.length) {
+      const originalContent = originalLines[lineIndex] || '';
+      currentLines[lineIndex] = originalContent;
+      const newCode = currentLines.join('\n');
+      
+      console.log('🔄 New code after revert has', newCode.split('\n').length, 'lines');
+      
+      setCurrentModifiedCode(newCode);
+      
+      // Surgically revert patches for this specific line
       try {
+        console.log('✂️ Surgically reverting patches for line', lineIndex);
+        const storeId = getSelectedStoreId();
+        const modifiedContent = currentLines[lineIndex] || '';
+        
         const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
         if (!token) {
-          console.error('❌ No authentication token found');
+          console.error('❌ No authentication token found in any of: store_owner_auth_token, auth_token, token');
           return;
         }
-
-        console.log('💾 Updating database patch after revert...');
-        const response = await fetch('/api/patches/create', {
-          method: 'POST',
+        
+        console.log('🌐 Making surgical revert request:', {
+          url: `/api/patches/revert-line/${encodeURIComponent(fileName)}`,
+          method: 'PATCH',
+          headers: {
+            'Authorization': token ? `Bearer ${token.substring(0, 20)}...` : 'Missing',
+            'Content-Type': 'application/json',
+            'X-Store-Id': storeId
+          },
+          body: {
+            lineNumber: lineIndex,
+            originalContent: originalContent,
+            modifiedContent: modifiedContent
+          }
+        });
+        
+        const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(fileName)}`, {
+          method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'X-Store-Id': storeId
           },
           body: JSON.stringify({
-            filePath: filePath || fileName,
-            modifiedCode: newCode,
-            changeSummary: `Revert ${lineType} line ${lineIndex}`,
-            changeType: 'revert',
-            useUpsert: true
+            lineNumber: lineIndex,
+            originalContent: originalContent,
+            modifiedContent: modifiedContent
           })
         });
 
-        if (response.ok) {
-          console.log('✅ Database patch updated successfully after revert');
-          
-          // Update local state
-          setCurrentModifiedCode(newCode);
-          
-          // Notify parent component
-          if (onCodeChange) {
-            onCodeChange(newCode);
+        console.log('📡 Response received:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          headers: {
+            'content-type': response.headers.get('content-type'),
+            'access-control-allow-origin': response.headers.get('access-control-allow-origin')
           }
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+          console.log('✅ Successfully reverted line', lineIndex, '- Modified:', result.data.modifiedPatches, 'Deleted:', result.data.deletedPatches);
           
-          // Refresh the diff data to show updated state
-          setRefreshTrigger(prev => prev + 1);
+          // Add a small delay to ensure database changes are reflected
+          setTimeout(() => {
+            setRefreshTrigger(prev => prev + 1);
+          }, 100);
         } else {
-          console.error('❌ Failed to update database patch after revert');
+          console.error('❌ Failed to revert patches:', result.error);
         }
       } catch (error) {
-        console.error('❌ Error updating database patch after revert:', error);
+        console.error('❌ Error reverting patches for line:', error);
+      }
+      
+      // Notify parent component of the change
+      if (onCodeChange) {
+        onCodeChange(newCode);
       }
     }
-  }, [currentModifiedCode, onCodeChange, filePath, fileName]);
+  }, [currentModifiedCode, onCodeChange, fileName]);
 
   // Handle preview functionality with enhanced route resolution
   const handlePreview = useCallback(async () => {
@@ -1492,7 +1511,7 @@ const DiffPreviewSystem = ({
     URL.revokeObjectURL(url);
   };
 
-  const DiffLine = ({ line, index, onExpandCollapsed, onLineRevert }) => {
+  const DiffLine = ({ line, index, onExpandCollapsed }) => {
     const getLineStyle = () => {
       switch (line.type) {
         case 'addition':
@@ -1533,47 +1552,12 @@ const DiffPreviewSystem = ({
       }
     };
 
-    const canRevert = onLineRevert && (line.type === 'addition' || line.type === 'deletion') && line.type !== 'collapsed';
-    const lineIndex = line.type === 'addition' ? (line.newLineNumber ? line.newLineNumber - 1 : null) : 
-                     line.type === 'deletion' ? (line.lineNumber ? line.lineNumber - 1 : null) : null;
-    
-    // Debug logging for revert button visibility
-    if (line.type === 'addition' || line.type === 'deletion') {
-      console.log('🔍 [DiffLine] Revert check:', {
-        lineType: line.type,
-        hasOnLineRevert: !!onLineRevert,
-        canRevert,
-        lineIndex,
-        lineNumber: line.lineNumber,
-        newLineNumber: line.newLineNumber,
-        originalContent: line.originalContent
-      });
-    }
-
     return (
       <div 
-        className={`flex items-center px-2 py-1 text-sm font-mono min-w-max ${getLineStyle()} group`}
+        className={`flex items-center px-2 py-1 text-sm font-mono min-w-max ${getLineStyle()}`}
         onClick={line.type === 'collapsed' ? handleCollapsedClick : undefined}
         title={line.type === 'collapsed' ? 'Click to expand hidden lines' : undefined}
       >
-        {/* Revert button - show on hover for addition/deletion lines */}
-        {canRevert && lineIndex !== null ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              onLineRevert(lineIndex, line.originalContent || '', line.type);
-            }}
-            title={`Revert this ${line.type} line`}
-          >
-            <RotateCcw className="w-3 h-3" />
-          </Button>
-        ) : (
-          <div className="w-8 mr-1 flex-shrink-0" />
-        )}
-
         {lineNumbers && (
           <>
             <div className="w-12 text-muted-foreground text-right pr-2 flex-shrink-0">
@@ -1589,7 +1573,7 @@ const DiffPreviewSystem = ({
           {getLineIcon()}
         </div>
         
-        <div className="pl-2 whitespace-nowrap flex-1">
+        <div className="pl-2 whitespace-nowrap">
           {line.type === 'collapsed' ? (
             <span className="text-blue-600 italic font-medium">
               {line.content}
@@ -2000,7 +1984,7 @@ const DiffPreviewSystem = ({
                   ) : (
                     <div className="font-mono">
                       {finalDisplayLines.map((line, index) => (
-                        <DiffLine key={index} line={line} index={index} onExpandCollapsed={handleExpandCollapsed} onLineRevert={handleLineRevert} />
+                        <DiffLine key={index} line={line} index={index} onExpandCollapsed={handleExpandCollapsed} />
                       ))}
                     </div>
                   )}

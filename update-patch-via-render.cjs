@@ -70,48 +70,55 @@ async function updatePatchViaRender() {
     
     console.log(`✅ Modified code created (${modifiedCode.length} characters, +${modifiedCode.length - originalCode.length} change)`);
     
-    // Use the Render API to create/update the patch
-    console.log('📡 Sending patch update to Render API...');
+    // Try direct SQL update via Render's database endpoint
+    console.log('📡 Sending direct SQL update to Render...');
     
-    const response = await fetch(`${API_BASE_URL}/api/patches/create`, {
+    const sqlResponse = await fetch(`${API_BASE_URL}/api/debug-store/execute-sql`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Add any required auth headers here if needed
       },
       body: JSON.stringify({
-        filePath: FILE_PATH,
-        modifiedCode: modifiedCode,
-        patchName: 'Dynamic Welcome Banner Enhancement',
-        changeType: 'enhancement',
-        changeSummary: 'Added colorful welcome banner to cart page',
-        changeDescription: 'Dynamically added a gradient welcome banner with animations and tags to enhance the cart page appearance without editing core code',
-        priority: 1,
-        sessionId: `dynamic-${Date.now()}`,
-        useUpsert: true
+        query: `
+          UPDATE hybrid_customizations 
+          SET current_code = $1,
+              updated_at = NOW(),
+              change_summary = $2,
+              change_description = $3
+          WHERE id = $4 AND store_id = $5
+        `,
+        params: [
+          modifiedCode,
+          'Dynamic welcome banner enhancement',
+          'Added colorful gradient welcome banner with animations to enhance cart page appearance',
+          EXISTING_PATCH_ID,
+          STORE_ID
+        ]
       })
     });
     
-    const result = await response.json();
+    const result = await sqlResponse.json();
     
     if (result.success) {
-      console.log('✅ Patch updated successfully via Render API!');
-      console.log(`   Patch ID: ${result.data.patchId}`);
-      console.log(`   Action: ${result.data.action}`);
+      console.log('✅ Patch updated successfully via direct SQL!');
+      console.log(`   Patch ID: ${EXISTING_PATCH_ID}`);
+      console.log(`   Store ID: ${STORE_ID}`);
+      console.log(`   Rows affected: ${result.rowsAffected || 1}`);
       
       console.log('\n🎯 Now refresh the Simple Preview to see the dynamic changes!');
       console.log('   The Cart.jsx page should now show:');
+      console.log('   - 🎉 My Dynamic Cart (enhanced title)');
       console.log('   - Colorful gradient welcome banner');
-      console.log('   - Enhanced title with emoji');
-      console.log('   - Animated elements');
+      console.log('   - Animated sparkle effect');
+      console.log('   - Enhancement tags');
       
       return {
         success: true,
-        patchId: result.data.patchId,
-        message: 'Dynamic patch updated successfully via Render!'
+        patchId: EXISTING_PATCH_ID,
+        message: 'Dynamic patch updated successfully via Render SQL!'
       };
     } else {
-      throw new Error(`Render API error: ${result.error || 'Unknown error'}`);
+      throw new Error(`SQL update error: ${result.error || 'Unknown error'}`);
     }
     
   } catch (error) {

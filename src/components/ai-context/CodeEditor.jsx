@@ -13,17 +13,14 @@ import {
   Minimize2,
   Code,
   Diff,
-  Eye,
-  RotateCcw,
-  Plus,
-  Minus
+  Eye
 } from 'lucide-react';
 
 // Import diff service
 import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
 
 // DiffLine component for displaying individual diff lines
-const DiffLine = ({ line, index, onLineRevert }) => {
+const DiffLine = ({ line, index }) => {
   const getLineStyle = () => {
     switch (line.type) {
       case 'addition':
@@ -57,42 +54,9 @@ const DiffLine = ({ line, index, onLineRevert }) => {
   };
 
   const { oldNum, newNum } = getLineNumbers();
-  
-  const canRevert = onLineRevert && (line.type === 'addition' || line.type === 'deletion');
-  const lineIndex = line.type === 'addition' ? (line.newLineNumber ? line.newLineNumber - 1 : null) : 
-                   line.type === 'deletion' ? (line.lineNumber ? line.lineNumber - 1 : null) : null;
-
-  const getLineIcon = () => {
-    switch (line.type) {
-      case 'addition':
-        return <Plus className="w-3 h-3 text-green-600" />;
-      case 'deletion':
-        return <Minus className="w-3 h-3 text-red-600" />;
-      default:
-        return null;
-    }
-  };
 
   return (
-    <div className={`flex items-start text-sm font-mono leading-5 ${getLineStyle()} group`}>
-      {/* Revert button - show on hover for addition/deletion lines */}
-      {canRevert && lineIndex !== null ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => {
-            e.stopPropagation();
-            onLineRevert(lineIndex, line.originalContent || '');
-          }}
-          title={`Revert this ${line.type} line`}
-        >
-          <RotateCcw className="w-3 h-3" />
-        </Button>
-      ) : (
-        <div className="w-8 mr-1 flex-shrink-0" />
-      )}
-
+    <div className={`flex items-start text-sm font-mono leading-5 ${getLineStyle()}`}>
       {/* Line numbers */}
       <div className="flex-none flex">
         <div className="w-12 text-right text-muted-foreground px-2 py-1 select-none">
@@ -103,10 +67,10 @@ const DiffLine = ({ line, index, onLineRevert }) => {
         </div>
       </div>
       
-      {/* Line prefix and content with icon */}
+      {/* Line prefix and content */}
       <div className="flex-1 flex">
-        <div className="w-6 text-center py-1 select-none flex items-center justify-center">
-          {getLineIcon() || <span className="text-muted-foreground">{getLinePrefix()}</span>}
+        <div className="w-4 text-center text-muted-foreground py-1 select-none">
+          {getLinePrefix()}
         </div>
         <div className="flex-1 py-1 px-2 whitespace-pre-wrap break-all">
           {line.content || ''}
@@ -790,7 +754,7 @@ const CodeEditor = ({
               ) : (
                 <div>
                   {fullFileDisplayLines.map((line, index) => (
-                    <DiffLine key={index} line={line} index={index} onLineRevert={handleLineRevert} />
+                    <DiffLine key={index} line={line} index={index} />
                   ))}
                 </div>
               )}
