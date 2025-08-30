@@ -794,14 +794,16 @@ router.get('/test/:filePath(*)', async (req, res) => {
 
 // Get patches for a specific file (catch-all route for frontend compatibility)
 // This route must be at the end to avoid conflicts with other routes
-router.get('/:filePath(*)', async (req, res) => {
+router.get('/:filePath(*)', authMiddleware, storeResolver, async (req, res) => {
   try {
     const filePath = req.params.filePath;
-    const storeId = req.query.store_id || '157d4590-49bf-4b0b-bd77-abe131909528';
+    const storeId = req.storeId; // Use resolved store ID from middleware
     const status = req.query.status || 'all';
     const releaseVersion = req.query.version || null;
 
     console.log(`🔍 Getting patches for file: ${filePath}`);
+    console.log(`🔍 [DEBUG] Using resolved store ID: ${storeId}`);
+    console.log(`🔍 [DEBUG] User: ${req.user?.email}, Store: ${req.store?.name}`);
 
     let query = `
       SELECT 
