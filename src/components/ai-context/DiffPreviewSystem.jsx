@@ -1916,6 +1916,15 @@ const DiffPreviewSystem = ({
                     />
                     <span>Line numbers</span>
                   </label>
+                  
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={collapseUnchanged}
+                      onChange={(e) => setCollapseUnchanged(e.target.checked)}
+                    />
+                    <span>Collapse unchanged</span>
+                  </label>
                 </div>
               </div>
               
