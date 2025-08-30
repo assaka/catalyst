@@ -599,33 +599,13 @@ export default function Cart() {
             />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">
-                    {(() => {
-                        // Check for injected patch data
-                        const patchData = window.__CATALYST_PATCH_DATA__;
-                        if (patchData?.hasPatches && patchData?.finalCode?.includes('yasmin Cart')) {
-                            console.log('🔧 Applying patch: Changing "My Cart" to "yasmin Cart"');
-                            return 'yasmin Cart';
-                        }
-                        return 'My Cart';
-                    })()}
-                </h1>
+                <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
                 <CmsBlockRenderer position="cart_above_items" />
                 {cartItems.length === 0 ? (
                     <Card>
                         <CardContent className="text-center py-12">
                             <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <h2 className="text-xl font-semibold mb-2">
-                                {(() => {
-                                    // Check for injected patch data
-                                    const patchData = window.__CATALYST_PATCH_DATA__;
-                                    if (patchData?.hasPatches && patchData?.finalCode?.includes('yasmin cart is empty')) {
-                                        console.log('🔧 Applying patch: Changing "Your cart is empty" to "yasmin cart is empty"');
-                                        return 'yasmin cart is empty';
-                                    }
-                                    return 'Your cart is empty';
-                                })()}
-                            </h2>
+                            <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
                             <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
                             <Button onClick={() => {
                                 const baseUrl = getStoreBaseUrl(store);
