@@ -556,47 +556,77 @@ const DiffPreviewSystem = ({
     };
   }, [handleSyncScroll, selectedView]);
 
-  // Handle line revert functionality - simplified approach like CodeEditor
+  // Handle line revert functionality - update database patch directly
   const handleLineRevert = useCallback(async (lineIndex, originalLine, lineType) => {
     console.log('🔄 Reverting line', lineIndex, 'type:', lineType);
     
     const currentLines = currentModifiedCode.split('\n');
     const originalLines = originalBaseCodeRef.current.split('\n');
     
+    let newCode;
     if (lineType === 'addition') {
       // For addition lines, remove the line entirely
       if (lineIndex < currentLines.length) {
         currentLines.splice(lineIndex, 1);
-        const newCode = currentLines.join('\n');
-        
+        newCode = currentLines.join('\n');
         console.log('🔄 Removed addition line', lineIndex, 'new code has', newCode.split('\n').length, 'lines');
-        
-        setCurrentModifiedCode(newCode);
-        
-        if (onCodeChange) {
-          onCodeChange(newCode);
-        }
       }
     } else if (lineType === 'deletion') {
       // For deletion lines, restore the original content
       if (lineIndex < originalLines.length) {
         const originalContent = originalLines[lineIndex] || '';
-        
-        // Insert the line back at the correct position
         currentLines.splice(lineIndex, 0, originalContent);
-        const newCode = currentLines.join('\n');
-        
+        newCode = currentLines.join('\n');
         console.log('🔄 Restored deletion line', lineIndex, 'to:', originalContent);
-        console.log('🔄 New code has', newCode.split('\n').length, 'lines');
-        
-        setCurrentModifiedCode(newCode);
-        
-        if (onCodeChange) {
-          onCodeChange(newCode);
-        }
       }
     }
-  }, [currentModifiedCode, onCodeChange]);
+    
+    if (newCode) {
+      // Update the database patch with the reverted code
+      try {
+        const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+        if (!token) {
+          console.error('❌ No authentication token found');
+          return;
+        }
+
+        console.log('💾 Updating database patch after revert...');
+        const response = await fetch('/api/patches/create', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            filePath: filePath || fileName,
+            modifiedCode: newCode,
+            changeSummary: `Revert ${lineType} line ${lineIndex}`,
+            changeType: 'revert',
+            useUpsert: true
+          })
+        });
+
+        if (response.ok) {
+          console.log('✅ Database patch updated successfully after revert');
+          
+          // Update local state
+          setCurrentModifiedCode(newCode);
+          
+          // Notify parent component
+          if (onCodeChange) {
+            onCodeChange(newCode);
+          }
+          
+          // Refresh the diff data to show updated state
+          setRefreshTrigger(prev => prev + 1);
+        } else {
+          console.error('❌ Failed to update database patch after revert');
+        }
+      } catch (error) {
+        console.error('❌ Error updating database patch after revert:', error);
+      }
+    }
+  }, [currentModifiedCode, onCodeChange, filePath, fileName]);
 
   // Handle preview functionality with enhanced route resolution
   const handlePreview = useCallback(async () => {
