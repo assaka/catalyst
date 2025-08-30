@@ -827,7 +827,12 @@ const DiffPreviewSystem = ({
         };
       }
 
-      const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode);
+      // Use full file context for unified and split views
+      const showFullFile = selectedView === 'unified' || selectedView === 'split';
+      const result = diffServiceRef.current.createDiff(baseCode, currentModifiedCode, {
+        showFullFile: showFullFile,
+        filename: fileName || 'file'
+      });
       const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
       
       console.log('📊 [DiffPreview] Generated diff result:', {
@@ -872,7 +877,12 @@ const DiffPreviewSystem = ({
         setCurrentModifiedCode(reconstructed.modifiedCode);
         
         // Now create the diff normally using the reconstructed code
-        const result = diffServiceRef.current.createDiff(reconstructed.originalCode, reconstructed.modifiedCode);
+        // Use full file context for unified and split views
+        const showFullFile = selectedView === 'unified' || selectedView === 'split';
+        const result = diffServiceRef.current.createDiff(reconstructed.originalCode, reconstructed.modifiedCode, {
+          showFullFile: showFullFile,
+          filename: fileName || 'file'
+        });
         const stats = diffServiceRef.current.getDiffStats(result.unifiedDiff);
         
         return {
@@ -913,7 +923,7 @@ const DiffPreviewSystem = ({
       unifiedDiff: '',
       metadata: null
     };
-  }, [currentModifiedCode, fileName, astDiffData, useAstDiff, filePath]);
+  }, [currentModifiedCode, fileName, astDiffData, useAstDiff, filePath, selectedView]);
 
   // Notify parent when diff stats change
   useEffect(() => {

@@ -10,6 +10,58 @@ class UnifiedDiffFrontendService {
   }
 
   /**
+   * Create a full file diff showing all lines with change indicators
+   */
+  createFullFileDiff(originalCode, modifiedCode, filePath = 'file.txt') {
+    try {
+      const normalizeLineEndings = (text) => {
+        if (!text) return text;
+        return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      };
+      
+      const normalizedOriginal = normalizeLineEndings(originalCode);
+      const normalizedModified = normalizeLineEndings(modifiedCode);
+      
+      if (normalizedOriginal === normalizedModified) {
+        return null;
+      }
+      
+      const originalLines = this.splitIntoLines(normalizedOriginal);
+      const modifiedLines = this.splitIntoLines(normalizedModified);
+      
+      const result = [`--- a/${filePath}`, `+++ b/${filePath}`];
+      const maxLines = Math.max(originalLines.length, modifiedLines.length);
+      
+      // Create one big hunk for the entire file
+      result.push(`@@ -1,${originalLines.length} +1,${modifiedLines.length} @@`);
+      
+      // Show all lines with their change status
+      for (let i = 0; i < maxLines; i++) {
+        const originalLine = originalLines[i];
+        const modifiedLine = modifiedLines[i];
+        
+        if (originalLine !== modifiedLine) {
+          // Changed line
+          if (originalLine !== undefined) {
+            result.push(`-${originalLine}`);
+          }
+          if (modifiedLine !== undefined) {
+            result.push(`+${modifiedLine}`);
+          }
+        } else if (originalLine !== undefined) {
+          // Context line (unchanged)
+          result.push(` ${originalLine}`);
+        }
+      }
+      
+      return result.join('\n');
+    } catch (error) {
+      console.error('Error creating full file diff:', error);
+      return null;
+    }
+  }
+
+  /**
    * Create a unified diff between two pieces of code
    */
   createUnifiedDiff(originalCode, modifiedCode, filePath = 'file.txt') {
@@ -78,45 +130,55 @@ class UnifiedDiffFrontendService {
     // Group changes into hunks
     const hunks = this.groupIntoHunks(changes, originalLines, modifiedLines);
     
-    // Generate unified diff format
-    hunks.forEach(hunk => {
-      const oldStart = Math.max(1, hunk.startLine);
-      const oldCount = hunk.originalLines;
-      const newStart = Math.max(1, hunk.startLine);  
-      const newCount = hunk.modifiedLines;
+    // Generate unified diff format with proper hunk separation
+    hunks.forEach((hunk, hunkIndex) => {
+      const contextLines = 3;
       
-      result.push(`@@ -${oldStart},${oldCount} +${newStart},${newCount} @@`);
+      // Calculate hunk boundaries with context
+      const hunkStart = Math.max(0, hunk.startLine - contextLines);
+      const hunkEnd = Math.min(originalLines.length, hunk.lastChangeLineNumber + contextLines);
       
-      // Add context lines before changes
-      for (let i = Math.max(0, hunk.startLine - 3); i < hunk.startLine; i++) {
-        if (originalLines[i] !== undefined) {
-          result.push(` ${originalLines[i]}`);
-        }
-      }
+      // Calculate line counts for hunk header
+      const originalLinesInHunk = hunkEnd - hunkStart;
+      const modifiedLinesInHunk = originalLinesInHunk; // Same for context, adjusted for changes
       
-      // Add the actual changes
-      hunk.changes.forEach(change => {
-        if (change.type === 'delete' && change.original !== undefined) {
-          result.push(`-${change.original}`);
-        }
-        if (change.type === 'insert' && change.modified !== undefined) {
-          result.push(`+${change.modified}`);
-        }
-        if (change.type === 'modify') {
-          if (change.original !== undefined) {
-            result.push(`-${change.original}`);
-          }
-          if (change.modified !== undefined) {
-            result.push(`+${change.modified}`);
-          }
-        }
+      const oldStart = hunkStart + 1; // Convert to 1-indexed
+      const newStart = hunkStart + 1; // Convert to 1-indexed
+      
+      result.push(`@@ -${oldStart},${originalLinesInHunk} +${newStart},${modifiedLinesInHunk} @@`);
+      
+      console.log(`🔧 [UnifiedDiff] Hunk ${hunkIndex + 1}:`, {
+        hunkStart: hunkStart + 1,
+        hunkEnd: hunkEnd,
+        changeLines: hunk.changes.map(c => c.lineNumber),
+        originalLinesInHunk,
+        modifiedLinesInHunk
       });
       
-      // Add context lines after changes
-      const endLine = hunk.startLine + hunk.originalLines;
-      for (let i = endLine; i < Math.min(endLine + 3, originalLines.length); i++) {
-        if (originalLines[i] !== undefined) {
-          result.push(` ${originalLines[i]}`);
+      // Process each line in the hunk range
+      for (let i = hunkStart; i < hunkEnd; i++) {
+        const lineNumber = i + 1; // Convert to 1-indexed
+        const change = hunk.changes.find(c => c.lineNumber === lineNumber);
+        
+        if (change) {
+          // This line has changes
+          if (change.type === 'modify') {
+            if (change.original !== undefined) {
+              result.push(`-${change.original}`);
+            }
+            if (change.modified !== undefined) {
+              result.push(`+${change.modified}`);
+            }
+          } else if (change.type === 'delete' && change.original !== undefined) {
+            result.push(`-${change.original}`);
+          } else if (change.type === 'insert' && change.modified !== undefined) {
+            result.push(`+${change.modified}`);
+          }
+        } else {
+          // Context line (no changes)
+          if (originalLines[i] !== undefined) {
+            result.push(` ${originalLines[i]}`);
+          }
         }
       }
     });
@@ -132,19 +194,34 @@ class UnifiedDiffFrontendService {
     
     const hunks = [];
     let currentHunk = null;
-    const contextLines = 3; // Number of context lines between hunks
     const minHunkSeparation = 6; // Minimum lines between changes to create separate hunks
     
-    changes.forEach(change => {
-      if (!currentHunk || change.lineNumber > currentHunk.endLine + minHunkSeparation) {
-        // Start new hunk - use stricter separation criteria
+    console.log('🔧 [UnifiedDiff] Grouping changes into hunks:', {
+      totalChanges: changes.length,
+      changeLines: changes.map(c => c.lineNumber),
+      minSeparation: minHunkSeparation
+    });
+    
+    changes.forEach((change, index) => {
+      const shouldStartNewHunk = !currentHunk || 
+        (currentHunk.lastChangeLineNumber && 
+         change.lineNumber > currentHunk.lastChangeLineNumber + minHunkSeparation);
+      
+      if (shouldStartNewHunk) {
+        // Start new hunk
         if (currentHunk) {
+          console.log('🔚 [UnifiedDiff] Closing hunk:', {
+            startLine: currentHunk.startLine + 1,
+            endLine: currentHunk.lastChangeLineNumber,
+            changes: currentHunk.changes.length
+          });
           hunks.push(currentHunk);
         }
         
+        console.log('🔜 [UnifiedDiff] Starting new hunk at line:', change.lineNumber);
         currentHunk = {
           startLine: change.lineNumber - 1, // 0-indexed
-          endLine: change.lineNumber - 1,
+          lastChangeLineNumber: change.lineNumber,
           originalLines: 0,
           modifiedLines: 0,
           changes: []
@@ -152,7 +229,7 @@ class UnifiedDiffFrontendService {
       }
       
       currentHunk.changes.push(change);
-      currentHunk.endLine = change.lineNumber - 1;
+      currentHunk.lastChangeLineNumber = change.lineNumber;
       
       // Update line counts
       if (change.type === 'delete') {
@@ -166,8 +243,18 @@ class UnifiedDiffFrontendService {
     });
     
     if (currentHunk) {
+      console.log('🔚 [UnifiedDiff] Closing final hunk:', {
+        startLine: currentHunk.startLine + 1,
+        endLine: currentHunk.lastChangeLineNumber,
+        changes: currentHunk.changes.length
+      });
       hunks.push(currentHunk);
     }
+    
+    console.log('✅ [UnifiedDiff] Created hunks:', {
+      totalHunks: hunks.length,
+      hunkRanges: hunks.map(h => ({ start: h.startLine + 1, end: h.lastChangeLineNumber }))
+    });
     
     return hunks;
   }
@@ -279,7 +366,11 @@ class UnifiedDiffFrontendService {
    */
   createDiff(original, newCode, options = {}) {
     try {
-      const unifiedDiff = this.createUnifiedDiff(original, newCode, options.filename || 'file');
+      const showFullFile = options.showFullFile || options.fullFileContext;
+      const unifiedDiff = showFullFile 
+        ? this.createFullFileDiff(original, newCode, options.filename || 'file')
+        : this.createUnifiedDiff(original, newCode, options.filename || 'file');
+      
       const stats = this.getDiffStats(unifiedDiff);
       
       return {
@@ -287,12 +378,13 @@ class UnifiedDiffFrontendService {
         unifiedDiff: unifiedDiff,
         parsedDiff: this.parseUnifiedDiff(unifiedDiff),
         metadata: {
-          algorithm: 'unified',
+          algorithm: showFullFile ? 'unified-full' : 'unified',
           originalLength: original.length,
           newLength: newCode.length,
           changes: stats.changes,
           additions: stats.additions,
           deletions: stats.deletions,
+          showFullFile: showFullFile,
           createdAt: Date.now()
         }
       };
