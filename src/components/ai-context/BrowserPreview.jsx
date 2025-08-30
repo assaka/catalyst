@@ -12,6 +12,8 @@ const BrowserPreview = ({
   fileName = '',
   currentCode = '',
   previewMode = 'live',
+  storeId: propStoreId = null,
+  specificPatchId = null,
   className 
 }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -24,9 +26,9 @@ const BrowserPreview = ({
   const [checkingPatches, setCheckingPatches] = useState(false);
 
 
-  // Get store context for API calls
+  // Get store context for API calls - allow override via props
   const { selectedStore } = useStoreSelection();
-  const storeId = selectedStore?.id || localStorage.getItem('selectedStoreId');
+  const storeId = propStoreId || selectedStore?.id || localStorage.getItem('selectedStoreId');
   
   // Create API config - store context handled by backend
   const getApiConfig = useCallback(() => {
@@ -69,7 +71,12 @@ const BrowserPreview = ({
           const patchesParam = enablePatches && patchData.hasPatches ? 'true' : 'false';
           
           // Build preview URL using Node.js backend preview endpoint
-          const finalUrl = `${backendUrl}/preview/${storeId}?fileName=${encodeURIComponent(fileName)}&patches=${patchesParam}&storeSlug=${storeSlug}&pageName=${pageName}&_t=${Date.now()}`;
+          let finalUrl = `${backendUrl}/preview/${storeId}?fileName=${encodeURIComponent(fileName)}&patches=${patchesParam}&storeSlug=${storeSlug}&pageName=${pageName}&_t=${Date.now()}`;
+          
+          // Add specific patch ID if provided
+          if (specificPatchId && enablePatches && patchData.hasPatches) {
+            finalUrl += `&specificPatch=${specificPatchId}`;
+          }
           
           console.log(`🔍 BrowserPreview: Preview URL generation:`);
           console.log(`  - storeId: ${storeId}`);
@@ -79,6 +86,7 @@ const BrowserPreview = ({
           console.log(`  - backendUrl: ${backendUrl}`);
           console.log(`  - enablePatches: ${enablePatches}`);
           console.log(`  - patchData.hasPatches: ${patchData.hasPatches}`);
+          console.log(`  - specificPatchId: ${specificPatchId}`);
           console.log(`  - patchesParam: ${patchesParam}`);
           console.log(`  - finalUrl: ${finalUrl}`);
           
@@ -421,6 +429,9 @@ const BrowserPreview = ({
             )}
             <span>Device: {deviceView}</span>
             <span>Patches: {patchData.hasPatches ? (enablePatches ? `On (${patchData.patchCount})` : 'Off') : 'None'}</span>
+            {specificPatchId && enablePatches && (
+              <span className="text-blue-600 dark:text-blue-400">Specific: {specificPatchId.substring(0, 8)}...</span>
+            )}
           </div>
           <div className="text-xs">
             File: {fileName.split('/').pop()}
