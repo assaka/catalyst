@@ -306,6 +306,9 @@ class UnifiedDiffFrontendService {
   isLineEndingOnlyDiff(originalCode, modifiedCode) {
     if (!originalCode || !modifiedCode) return false;
     
+    // First check if they're exactly the same
+    if (originalCode === modifiedCode) return true;
+    
     const normalizeLineEndings = (text) => {
       return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
     };
@@ -313,7 +316,20 @@ class UnifiedDiffFrontendService {
     const normalizedOriginal = normalizeLineEndings(originalCode);
     const normalizedModified = normalizeLineEndings(modifiedCode);
     
-    return normalizedOriginal === normalizedModified;
+    // Only consider it line-endings-only if they're identical after normalization
+    // BUT different before normalization
+    const isLineEndingOnly = (originalCode !== modifiedCode) && (normalizedOriginal === normalizedModified);
+    
+    if (isLineEndingOnly) {
+      console.log('🔍 [UnifiedDiff] Confirmed line-ending-only diff:', {
+        originalLength: originalCode.length,
+        modifiedLength: modifiedCode.length,
+        normalizedOriginalLength: normalizedOriginal.length,
+        normalizedModifiedLength: normalizedModified.length
+      });
+    }
+    
+    return isLineEndingOnly;
   }
 
   /**
