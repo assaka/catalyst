@@ -929,6 +929,11 @@ const DiffPreviewSystem = ({
       firstHunk: parsedDiff[0]
     });
     
+    if (!parsedDiff || parsedDiff.length === 0) {
+      console.log('⚠️ [DiffPreview] No parsed diff data provided');
+      return [];
+    }
+    
     const displayLines = [];
     
     parsedDiff.forEach((hunk, hunkIndex) => {
@@ -939,10 +944,18 @@ const DiffPreviewSystem = ({
         newLength: hunk.newLength,
         changesCount: hunk.changes?.length || 0
       });
+      
+      if (!hunk.changes || hunk.changes.length === 0) {
+        console.log(`⚠️ [DiffPreview] Hunk ${hunkIndex} has no changes`);
+        return;
+      }
+      
       let oldLineNumber = hunk.oldStart;
       let newLineNumber = hunk.newStart;
       
-      hunk.changes.forEach(change => {
+      hunk.changes.forEach((change, changeIndex) => {
+        console.log(`  Change ${changeIndex}: ${change.type} - "${change.content}"`);
+        
         switch (change.type) {
           case 'context':
             displayLines.push({
@@ -950,7 +963,8 @@ const DiffPreviewSystem = ({
               lineNumber: oldLineNumber,
               newLineNumber: newLineNumber,
               content: change.content,
-              originalContent: change.content
+              originalContent: change.content,
+              modifiedContent: change.content
             });
             oldLineNumber++;
             newLineNumber++;
@@ -962,7 +976,8 @@ const DiffPreviewSystem = ({
               lineNumber: oldLineNumber,
               newLineNumber: null,
               content: change.content,
-              originalContent: change.content
+              originalContent: change.content,
+              modifiedContent: null
             });
             oldLineNumber++;
             break;
@@ -973,9 +988,14 @@ const DiffPreviewSystem = ({
               lineNumber: null,
               newLineNumber: newLineNumber,
               content: change.content,
-              originalContent: null
+              originalContent: null,
+              modifiedContent: change.content
             });
             newLineNumber++;
+            break;
+            
+          default:
+            console.log(`⚠️ [DiffPreview] Unknown change type: ${change.type}`);
             break;
         }
       });
@@ -1698,13 +1718,13 @@ const DiffPreviewSystem = ({
                     >
                       <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 350px)', minWidth: '600px', height: 'calc(100vh - 350px)' }}>
                         <SplitViewPane
-                          lines={originalBaseCodeRef.current.split('\n')}
+                          lines={originalBaseCodeRef.current?.split('\n') || []}
                           diffLines={finalDisplayLines}
                           side="original"
                           showLineNumbers={lineNumbers}
                           onLineRevert={handleLineRevert}
-                          originalLines={originalBaseCodeRef.current.split('\n')}
-                          modifiedLines={currentModifiedCode.split('\n')}
+                          originalLines={originalBaseCodeRef.current?.split('\n') || []}
+                          modifiedLines={currentModifiedCode?.split('\n') || []}
                           onExpandCollapsed={handleExpandCollapsed}
                         />
                       </div>
@@ -1734,13 +1754,13 @@ const DiffPreviewSystem = ({
                       >
                         <div className="min-w-max w-fit" style={{ minHeight: 'calc(100vh - 350px)', minWidth: '600px', height: 'calc(100vh - 350px)' }}>
                           <SplitViewPane
-                            lines={currentModifiedCode.split('\n')}
+                            lines={currentModifiedCode?.split('\n') || []}
                             diffLines={finalDisplayLines}
                             side="modified"
                             showLineNumbers={lineNumbers}
-                              onLineRevert={handleLineRevert}
-                            originalLines={originalBaseCodeRef.current.split('\n')}
-                            modifiedLines={currentModifiedCode.split('\n')}
+                            onLineRevert={handleLineRevert}
+                            originalLines={originalBaseCodeRef.current?.split('\n') || []}
+                            modifiedLines={currentModifiedCode?.split('\n') || []}
                             onExpandCollapsed={handleExpandCollapsed}
                           />
                         </div>
