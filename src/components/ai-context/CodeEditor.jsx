@@ -26,6 +26,44 @@ import hookSystem from '../../core/HookSystem.js';
 import eventSystem from '../../core/EventSystem.js';
 import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
 
+// RevertGutter component for split view
+const RevertGutter = ({ changedBlocks, onRevertBlock, onRevertLine }) => {
+  if (!changedBlocks || changedBlocks.length === 0) return null;
+  
+  return (
+    <div className="absolute left-0 top-0 w-8 h-full pointer-events-none">
+      {changedBlocks.map((block, blockIndex) => (
+        <div
+          key={blockIndex}
+          className="absolute group pointer-events-auto"
+          style={{
+            top: `${block.startLine * 20}px`, // Assuming 20px line height
+            height: `${(block.endLine - block.startLine + 1) * 20}px`
+          }}
+        >
+          <div className="w-full h-full bg-blue-500/10 border-l-2 border-blue-500/30 hover:border-blue-500 transition-colors">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="opacity-0 group-hover:opacity-100 absolute -left-1 top-0 w-6 h-6 p-0 bg-blue-500 hover:bg-blue-600 text-white transition-all duration-200"
+              onClick={() => {
+                if (block.startLine === block.endLine) {
+                  onRevertLine(block.startLine);
+                } else {
+                  onRevertBlock(block.startLine, block.endLine);
+                }
+              }}
+              title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
+            >
+              <RotateCcw className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // DiffLine component for displaying individual diff lines
 const DiffLine = ({ line, index }) => {
   const getLineStyle = () => {
@@ -247,6 +285,83 @@ const CodeEditor = ({
       }
     }
   }, [localCode, originalCode, fileName, onChange]);
+  
+  // Handle block-level reverts (for multiple consecutive lines)
+  const handleRevertBlock = useCallback((startLine, endLine) => {
+    if (!originalCode) return;
+    
+    const currentLines = localCode.split('\n');
+    const originalLines = originalCode.split('\n');
+    
+    // Revert all lines in the block
+    for (let i = startLine; i <= endLine; i++) {
+      if (originalLines[i] !== undefined) {
+        currentLines[i] = originalLines[i];
+      }
+    }
+    
+    const newCode = currentLines.join('\n');
+    setLocalCode(newCode);
+    
+    // Apply hooks
+    hookSystem.do('codeEditor.blockReverted', {
+      fileName,
+      startLine,
+      endLine,
+      newCode
+    });
+    
+    if (onChange) {
+      onChange(newCode);
+    }
+  }, [localCode, originalCode, fileName, onChange]);
+  
+  // Get changed line blocks for revert functionality
+  const getChangedBlocks = useCallback(() => {
+    if (!originalCode || !localCode) return [];
+    
+    const originalLines = originalCode.split('\n');
+    const modifiedLines = localCode.split('\n');
+    const blocks = [];
+    
+    let currentBlock = null;
+    const maxLines = Math.max(originalLines.length, modifiedLines.length);
+    
+    for (let i = 0; i < maxLines; i++) {
+      const original = originalLines[i] || '';
+      const modified = modifiedLines[i] || '';
+      
+      if (original !== modified) {
+        if (currentBlock && currentBlock.endLine === i - 1) {
+          // Extend current block
+          currentBlock.endLine = i;
+          currentBlock.lines.push({
+            lineIndex: i,
+            originalLine: original,
+            modifiedLine: modified,
+            type: original === '' ? 'addition' : modified === '' ? 'deletion' : 'modification'
+          });
+        } else {
+          // Start new block
+          currentBlock = {
+            startLine: i,
+            endLine: i,
+            lines: [{
+              lineIndex: i,
+              originalLine: original,
+              modifiedLine: modified,
+              type: original === '' ? 'addition' : modified === '' ? 'deletion' : 'modification'
+            }]
+          };
+          blocks.push(currentBlock);
+        }
+      } else {
+        currentBlock = null;
+      }
+    }
+    
+    return blocks;
+  }, [originalCode, localCode]);
 
   useEffect(() => {
     setLocalCode(value);
@@ -947,7 +1062,7 @@ const CodeEditor = ({
             </div>
             
                 {/* Modified Code */}
-                <div className="flex-1">
+                <div className="flex-1 relative">
                   <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <span>Modified ({localCode.split('\n').length} lines)</span>
@@ -965,29 +1080,39 @@ const CodeEditor = ({
                       </div>
                     )}
                   </div>
-                  <Editor
-                    height="100%"
-                    language={getMonacoLanguage()}
-                    value={collapseUnchanged ? collapsedModified : localCode}
-                onChange={handleCodeChange}
-                onMount={handleEditorDidMount}
-                options={{
-                  readOnly: readOnly,
-                  minimap: { enabled: false },
-                  scrollBeyondLastLine: false,
-                  fontSize: 14,
-                  lineHeight: 20,
-                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-                  tabSize: 2,
-                  insertSpaces: true,
-                  wordWrap: 'on',
-                  automaticLayout: true,
-                  lineNumbers: 'on',
-                  glyphMargin: true,
-                  folding: true
-                }}
-                theme="vs-dark"
-              />
+                  <div className="relative h-[calc(100%-40px)]">
+                    <Editor
+                      height="100%"
+                      language={getMonacoLanguage()}
+                      value={collapseUnchanged ? collapsedModified : localCode}
+                      onChange={handleCodeChange}
+                      onMount={handleEditorDidMount}
+                      options={{
+                        readOnly: readOnly,
+                        minimap: { enabled: false },
+                        scrollBeyondLastLine: false,
+                        fontSize: 14,
+                        lineHeight: 20,
+                        fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                        tabSize: 2,
+                        insertSpaces: true,
+                        wordWrap: 'on',
+                        automaticLayout: true,
+                        lineNumbers: 'on',
+                        glyphMargin: true,
+                        folding: true
+                      }}
+                      theme="vs-dark"
+                    />
+                    {/* Revert Gutter for Split View */}
+                    {!collapseUnchanged && (
+                      <RevertGutter
+                        changedBlocks={getChangedBlocks()}
+                        onRevertLine={handleRevertLine}
+                        onRevertBlock={handleRevertBlock}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             );
