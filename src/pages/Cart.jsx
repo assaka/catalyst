@@ -21,7 +21,7 @@ import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 import hookSystem from '@/core/HookSystem.js';
 import eventSystem from '@/core/EventSystem.js';
 import customizationEngine from '@/core/CustomizationEngine.js';
-import { useCustomizations } from '@/hooks/useCustomizations';
+import { useCustomizations } from '@/hooks/useCustomizations.jsx';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

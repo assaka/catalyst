@@ -3,7 +3,7 @@
  * React hook for integrating customizations into components
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import customizationEngine from '@/core/CustomizationEngine';
 import eventSystem from '@/core/EventSystem';
 
