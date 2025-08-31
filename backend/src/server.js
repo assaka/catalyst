@@ -1673,6 +1673,7 @@ app.get('/preview/:storeId', async (req, res) => {
     }
 
     // DEMO: If no patches found for Cart.jsx, create a demo patch with "adam" replacement
+    console.log(`🔍 DEMO CHECK: hasPatches=${patchResult.hasPatches}, fileName="${fileName}"`);
     if (!patchResult.hasPatches && fileName === 'src/pages/Cart.jsx') {
       console.log('📝 No patches found for Cart.jsx - creating demo "adam" patch...');
       
