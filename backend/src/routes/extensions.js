@@ -443,7 +443,7 @@ router.get('/baselines', async (req, res) => {
         file_type,
         file_size,
         last_modified,
-        content_hash,
+        code_hash,
         version
       FROM file_baselines 
       ORDER BY file_path ASC
@@ -459,7 +459,7 @@ router.get('/baselines', async (req, res) => {
           file_type: file.file_type,
           file_size: file.file_size,
           last_modified: file.last_modified,
-          code_hash: file.content_hash,
+          code_hash: file.code_hash,
           version: file.version
         }))
       },
@@ -490,17 +490,17 @@ router.get('/baseline/:filePath', async (req, res) => {
   try {
     const filePath = decodeURIComponent(req.params.filePath);
     
-    // Query specific file baseline from database (graceful handling of missing baseline_content column)
+    // Query specific file baseline from database (graceful handling of missing columns)
     let file;
     try {
-      // First try the full query with baseline_code
+      // Try the most complete query first
       [file] = await extensionService.sequelize.query(`
         SELECT 
           file_path,
           baseline_code,
           file_size,
           last_modified,
-          content_hash
+          code_hash
         FROM file_baselines 
         WHERE file_path = :filePath
         LIMIT 1
@@ -509,15 +509,15 @@ router.get('/baseline/:filePath', async (req, res) => {
         type: extensionService.sequelize.QueryTypes.SELECT
       });
     } catch (error) {
-      // If baseline_code column doesn't exist, fall back to basic query
-      if (error.message && error.message.includes('baseline_code')) {
-        console.log('⚠️ baseline_code column not found, using fallback query');
+      try {
+        // If that fails, try without baseline_code
+        console.log('⚠️ Trying query without baseline_code column');
         [file] = await extensionService.sequelize.query(`
           SELECT 
             file_path,
             file_size,
             last_modified,
-            content_hash
+            code_hash
           FROM file_baselines 
           WHERE file_path = :filePath
           LIMIT 1
@@ -525,8 +525,32 @@ router.get('/baseline/:filePath', async (req, res) => {
           replacements: { filePath },
           type: extensionService.sequelize.QueryTypes.SELECT
         });
-      } else {
-        throw error; // Re-throw if it's a different error
+      } catch (secondError) {
+        try {
+          // If that also fails, try with just basic columns
+          console.log('⚠️ Trying basic query with minimal columns');
+          [file] = await extensionService.sequelize.query(`
+            SELECT 
+              file_path,
+              file_size,
+              last_modified
+            FROM file_baselines 
+            WHERE file_path = :filePath
+            LIMIT 1
+          `, {
+            replacements: { filePath },
+            type: extensionService.sequelize.QueryTypes.SELECT
+          });
+        } catch (thirdError) {
+          // If even the basic query fails, try the most minimal query
+          console.log('⚠️ Trying most minimal query');
+          [file] = await extensionService.sequelize.query(`
+            SELECT file_path FROM file_baselines WHERE file_path = :filePath LIMIT 1
+          `, {
+            replacements: { filePath },
+            type: extensionService.sequelize.QueryTypes.SELECT
+          });
+        }
       }
     }
 
@@ -541,7 +565,7 @@ router.get('/baseline/:filePath', async (req, res) => {
             file_path: file.file_path,
             file_size: file.file_size,
             last_modified: file.last_modified,
-            content_hash: file.content_hash
+            code_hash: file.code_hash
           },
           message: 'File baseline content retrieved successfully'
         });
@@ -554,7 +578,7 @@ router.get('/baseline/:filePath', async (req, res) => {
             file_path: file.file_path,
             file_size: file.file_size,
             last_modified: file.last_modified,
-            content_hash: file.content_hash,
+            code_hash: file.code_hash,
             message: `File exists but no baseline content stored for ${filePath}`
           }
         });
