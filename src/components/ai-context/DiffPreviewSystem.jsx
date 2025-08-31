@@ -322,33 +322,19 @@ const SplitViewPane = ({
             onClick={diffLine.type === 'collapsed' && onExpandCollapsed ? () => onExpandCollapsed(diffLine.startIndex, diffLine.endIndex) : undefined}
             title={diffLine.type === 'collapsed' ? 'Click to expand hidden lines' : undefined}
           >
-            {/* Show revert button for changed lines on both sides */}
-            {onLineRevert && originalLines && modifiedLines && actualLineIndex !== null && diffLine.type !== 'collapsed' ? (
-              (() => {
-                const originalLine = originalLines[actualLineIndex] || '';
-                const modifiedLine = modifiedLines[actualLineIndex] || '';
-                const hasChanges = originalLine !== modifiedLine;
-                
-                // Show revert button if line has changes
-                if (hasChanges && (
-                  (side === 'original' && diffLine.type === 'deletion') ||
-                  (side === 'modified' && diffLine.type === 'addition') ||
-                  (diffLine.type === 'context' && hasChanges)
-                )) {
-                  return (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0"
-                      onClick={() => onLineRevert(actualLineIndex, originalLines[actualLineIndex])}
-                      title="Revert this line to original"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                    </Button>
-                  );
-                }
-                return <div className="w-8 mr-1 flex-shrink-0" />;
-              })()
+            {/* Show revert button before line numbers for modified lines on the original side */}
+            {side === 'original' && onLineRevert && originalLines && modifiedLines && 
+             actualLineIndex !== null && originalLines[actualLineIndex] !== undefined && modifiedLines[actualLineIndex] !== undefined &&
+             originalLines[actualLineIndex] !== modifiedLines[actualLineIndex] && diffLine.type !== 'collapsed' ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0"
+                onClick={() => onLineRevert(actualLineIndex, originalLines[actualLineIndex])}
+                title="Revert this line to original"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </Button>
             ) : (
               <div className="w-8 mr-1 flex-shrink-0" />
             )}
@@ -1303,84 +1289,21 @@ const DiffPreviewSystem = ({
     return convertDiffToDisplayLines(diffResult.parsedDiff);
   }, [diffResult.parsedDiff, currentModifiedCode, diffResult.metadata]);
 
-  // Process display lines with collapse indicators when enabled
+  // Process display lines (simplified - no collapsing)
   const processedDisplayLines = useMemo(() => {
     console.log('🔧 [DiffPreview] Processing display lines:', {
       displayLinesLength: displayLines.length,
-      firstDisplayLine: displayLines[0],
-      collapseUnchanged,
-      selectedView
+      firstDisplayLine: displayLines[0]
     });
     
-    // If collapse is disabled or not in unified/split view, return as-is
-    if (!collapseUnchanged || (selectedView !== 'unified' && selectedView !== 'split')) {
-      return displayLines;
-    }
-    
-    // Add collapse indicators for large gaps between changes
-    if (!originalBaseCodeRef.current || !currentModifiedCode || displayLines.length === 0) {
-      return displayLines;
-    }
-    
-    const originalLines = originalBaseCodeRef.current.split('\n');
-    const result = [];
-    let lastProcessedLine = 0;
-    
-    displayLines.forEach((line, index) => {
-      const currentLineNumber = line.lineNumber || line.newLineNumber || 0;
-      
-      // Check if there's a gap between last processed line and current line
-      if (currentLineNumber > 0 && lastProcessedLine > 0) {
-        const gap = currentLineNumber - lastProcessedLine - 1;
-        
-        // Add collapse indicator if gap is significant (> 5 lines)
-        if (gap > 5) {
-          result.push({
-            type: 'collapsed',
-            content: `⋯ ${gap} unchanged lines hidden (click to expand)`,
-            startIndex: lastProcessedLine + 1,
-            endIndex: currentLineNumber - 1,
-            lineNumber: null,
-            newLineNumber: null,
-            originalContent: null,
-            modifiedContent: null
-          });
-        }
-      }
-      
-      result.push(line);
-      
-      // Update lastProcessedLine based on line type
-      if (line.type === 'context' || line.type === 'deletion') {
-        lastProcessedLine = Math.max(lastProcessedLine, line.lineNumber || 0);
-      }
-      if (line.type === 'context' || line.type === 'addition') {
-        lastProcessedLine = Math.max(lastProcessedLine, line.newLineNumber || 0);
-      }
-    });
-    
-    console.log('🔧 [DiffPreview] Processed display lines with collapse indicators:', {
-      originalLength: displayLines.length,
-      processedLength: result.length,
-      collapsedSections: result.filter(l => l.type === 'collapsed').length
-    });
-    
-    return result;
-  }, [displayLines, collapseUnchanged, selectedView, originalBaseCodeRef.current, currentModifiedCode]);
+    return displayLines;
+  }, [displayLines]);
 
 
-  // Handle expanding collapsed sections
-  const handleExpandCollapsed = useCallback((startIndex, endIndex) => {
-    console.log('🔄 [DiffPreview] Expanding collapsed section:', { startIndex, endIndex });
-    
-    if (!originalBaseCodeRef.current || !currentModifiedCode) {
-      return;
-    }
-    
-    // Temporarily disable collapse for this section by setting collapseUnchanged to false
-    // This is a simple approach - in a more complex implementation, we could track expanded sections
-    setCollapseUnchanged(false);
-  }, [originalBaseCodeRef.current, currentModifiedCode]);
+  // Handle expanding collapsed sections (simplified - no-op)
+  const handleExpandCollapsed = useCallback(() => {
+    // No-op since we removed collapse functionality
+  }, []);
 
   // Final display lines considering expanded sections and collapse settings
   const finalDisplayLines = useMemo(() => {
@@ -1424,8 +1347,8 @@ const DiffPreviewSystem = ({
         const modifiedLine = modifiedLines[i] || '';
         
         if (originalLine !== modifiedLine) {
-          // This line has changes - add deletion if original exists
-          if (i < originalLines.length) {
+          // This line has changes
+          if (i < originalLines.length && originalLine) {
             fullDisplayLines.push({
               type: 'deletion',
               lineNumber: lineNumber,
@@ -1435,8 +1358,7 @@ const DiffPreviewSystem = ({
               modifiedContent: null
             });
           }
-          // Add addition if modified exists  
-          if (i < modifiedLines.length) {
+          if (i < modifiedLines.length && modifiedLine) {
             fullDisplayLines.push({
               type: 'addition',
               lineNumber: null,
@@ -1448,14 +1370,16 @@ const DiffPreviewSystem = ({
           }
         } else {
           // Context line - same in both files
-          fullDisplayLines.push({
-            type: 'context',
-            lineNumber: lineNumber,
-            newLineNumber: lineNumber,
-            content: originalLine || modifiedLine || '',
-            originalContent: originalLine,
-            modifiedContent: modifiedLine
-          });
+          if (originalLine || modifiedLine) {
+            fullDisplayLines.push({
+              type: 'context',
+              lineNumber: lineNumber,
+              newLineNumber: lineNumber,
+              content: originalLine || modifiedLine,
+              originalContent: originalLine,
+              modifiedContent: modifiedLine
+            });
+          }
         }
       }
       
@@ -1921,21 +1845,6 @@ const DiffPreviewSystem = ({
                         onChange={(e) => setCollapseUnchanged(e.target.checked)}
                       />
                       <span>Collapse unchanged</span>
-                      {collapseUnchanged && (() => {
-                        const collapsedCount = finalDisplayLines.filter(l => l.type === 'collapsed').length;
-                        const hiddenLinesCount = finalDisplayLines
-                          .filter(l => l.type === 'collapsed')
-                          .reduce((sum, l) => {
-                            const match = l.content.match(/(\d+) unchanged lines/);
-                            return sum + (match ? parseInt(match[1]) : 0);
-                          }, 0);
-                        
-                        return collapsedCount > 0 ? (
-                          <Badge variant="secondary" className="text-xs ml-1">
-                            {hiddenLinesCount} lines hidden
-                          </Badge>
-                        ) : null;
-                      })()}
                     </label>
                     
                     <div className="flex items-center space-x-2">
@@ -2015,21 +1924,6 @@ const DiffPreviewSystem = ({
                       onChange={(e) => setCollapseUnchanged(e.target.checked)}
                     />
                     <span>Collapse unchanged</span>
-                    {collapseUnchanged && (() => {
-                      const collapsedCount = finalDisplayLines.filter(l => l.type === 'collapsed').length;
-                      const hiddenLinesCount = finalDisplayLines
-                        .filter(l => l.type === 'collapsed')
-                        .reduce((sum, l) => {
-                          const match = l.content.match(/(\d+) unchanged lines/);
-                          return sum + (match ? parseInt(match[1]) : 0);
-                        }, 0);
-                      
-                      return collapsedCount > 0 ? (
-                        <Badge variant="secondary" className="text-xs ml-1">
-                          {hiddenLinesCount} lines hidden
-                        </Badge>
-                      ) : null;
-                    })()}
                   </label>
                 </div>
               </div>
