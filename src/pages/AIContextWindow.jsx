@@ -15,6 +15,31 @@ import apiClient from '@/api/client';
 // import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
 /**
+ * Get language type from filename
+ */
+const getLanguageFromFileName = (fileName) => {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  switch (ext) {
+    case 'js':
+    case 'jsx':
+      return 'javascript';
+    case 'ts':
+    case 'tsx':
+      return 'typescript';
+    case 'css':
+      return 'css';
+    case 'json':
+      return 'json';
+    case 'html':
+      return 'html';
+    case 'md':
+      return 'markdown';
+    default:
+      return 'javascript';
+  }
+};
+
+/**
  * Apply JSON Patch operations to source code
  * This is a simple implementation for basic patch operations
  * @param {string} sourceCode - Original source code
@@ -629,20 +654,26 @@ export default ExampleComponent;`;
           console.log('💾 Auto-saving patch to database...');
           // Store ID is now automatically resolved by backend middleware
           
-          const response = await fetch('/api/patches/create', {
+          const response = await fetch('/api/customizations', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
-              // No need for x-store-id header - backend resolves it automatically
             },
             body: JSON.stringify({
-              filePath: filePath,
-              modifiedCode: newCode,
-              changeSummary: 'Auto-saved changes',
-              changeType: 'manual_edit',
-              sessionId: `ai_context_${Date.now()}`,
-              useUpsert: true
+              type: 'file_modification',
+              name: `Auto-save: ${selectedFile.name}`,
+              description: 'Auto-saved file changes from CodeEditor',
+              targetComponent: selectedFile.name,
+              customizationData: {
+                filePath: filePath,
+                originalCode: originalCode,
+                modifiedCode: newCode,
+                language: getLanguageFromFileName(selectedFile.name),
+                changeSummary: 'Auto-saved changes',
+                changeType: 'manual_edit'
+              },
+              priority: 10
             })
           });
 

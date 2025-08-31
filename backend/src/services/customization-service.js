@@ -315,6 +315,9 @@ class CustomizationService {
       case 'event_handler':
         return this.applyEventHandler(customization_data, context);
       
+      case 'file_modification':
+        return this.applyFileModification(customization_data, context);
+      
       default:
         // Try to find extension handler
         const extensionResult = hookSystem.apply(`customization.${type}`, customization_data, context);
@@ -445,6 +448,38 @@ class CustomizationService {
   }
 
   /**
+   * File modification handler (replaces patch system)
+   */
+  async applyFileModification(data, context) {
+    const { 
+      filePath, 
+      originalCode, 
+      modifiedCode, 
+      language = 'javascript',
+      changeSummary = 'File modified',
+      changeType = 'manual_edit'
+    } = data;
+    
+    return {
+      success: true,
+      data: {
+        type: 'file_modification',
+        filePath,
+        originalCode,
+        modifiedCode,
+        language,
+        changeSummary,
+        changeType,
+        appliedAt: new Date().toISOString(),
+        // Calculate basic diff stats
+        linesAdded: this.calculateAddedLines(originalCode, modifiedCode),
+        linesRemoved: this.calculateRemovedLines(originalCode, modifiedCode),
+        linesModified: this.calculateModifiedLines(originalCode, modifiedCode)
+      }
+    };
+  }
+
+  /**
    * Check for conflicts between customizations
    */
   async checkConflicts(storeId, conflictsWith) {
@@ -552,6 +587,59 @@ class CustomizationService {
       }
     }
     keysToDelete.forEach(key => this.cache.delete(key));
+  }
+
+  /**
+   * Calculate added lines in diff
+   */
+  calculateAddedLines(original, modified) {
+    const originalLines = (original || '').split('\n');
+    const modifiedLines = (modified || '').split('\n');
+    
+    // Simple approximation - count lines that exist in modified but not in original
+    const originalSet = new Set(originalLines.map(line => line.trim()));
+    let added = 0;
+    
+    for (const line of modifiedLines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !originalSet.has(trimmedLine)) {
+        added++;
+      }
+    }
+    
+    return added;
+  }
+
+  /**
+   * Calculate removed lines in diff
+   */
+  calculateRemovedLines(original, modified) {
+    const originalLines = (original || '').split('\n');
+    const modifiedLines = (modified || '').split('\n');
+    
+    // Simple approximation - count lines that exist in original but not in modified
+    const modifiedSet = new Set(modifiedLines.map(line => line.trim()));
+    let removed = 0;
+    
+    for (const line of originalLines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine && !modifiedSet.has(trimmedLine)) {
+        removed++;
+      }
+    }
+    
+    return removed;
+  }
+
+  /**
+   * Calculate modified lines in diff
+   */
+  calculateModifiedLines(original, modified) {
+    const originalLines = (original || '').split('\n');
+    const modifiedLines = (modified || '').split('\n');
+    
+    // Simple approximation - total lines changed
+    return Math.abs(modifiedLines.length - originalLines.length);
   }
 
   /**
