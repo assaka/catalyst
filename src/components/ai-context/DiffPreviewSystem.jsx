@@ -1343,14 +1343,18 @@ const DiffPreviewSystem = ({
           body: JSON.stringify({
             filePath: filePath || fileName,
             modifiedCode: newCode,
+            patchName: `Revert line ${lineIndex} in ${(filePath || fileName).split('/').pop()}`,
             changeSummary: `Revert ${lineType || 'line'} at line ${lineIndex}`,
+            changeDescription: `Reverted ${lineType || 'line'} at line ${lineIndex} to original content`,
             changeType: 'revert',
+            sessionId: `revert_${Date.now()}`,
             useUpsert: true
           })
         });
 
         if (response.ok) {
-          console.log('✅ Database patch updated successfully after revert');
+          const result = await response.json();
+          console.log('✅ Database patch updated successfully after revert:', result);
           
           // Update local state
           setCurrentModifiedCode(newCode);
@@ -1363,7 +1367,12 @@ const DiffPreviewSystem = ({
           // Refresh the diff data to show updated state
           setRefreshTrigger(prev => prev + 1);
         } else {
-          console.error('❌ Failed to update database patch after revert');
+          const errorResult = await response.json().catch(() => ({ error: 'Unknown error' }));
+          console.error('❌ Failed to update database patch after revert:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorResult
+          });
         }
       } catch (error) {
         console.error('❌ Error updating database patch after revert:', error);
