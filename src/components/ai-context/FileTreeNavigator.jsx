@@ -41,6 +41,7 @@ const FileTreeNavigator = ({
   const loadFileTree = async () => {
     try {
       // Fetch file baselines from restored API (core codebase files, no store_id needed)
+      console.log('🌲 FileTreeNavigator: Loading file tree from extensions/baselines...');
       const data = await apiClient.get('extensions/baselines');
 
       if (data && data.success && data.data && data.data.files) {
