@@ -340,7 +340,7 @@ const SplitViewPane = ({
                       variant="ghost"
                       size="sm"
                       className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0"
-                      onClick={() => onLineRevert(actualLineIndex, originalLines[actualLineIndex])}
+                      onClick={() => onLineRevert(actualLineIndex, originalLines[actualLineIndex], diffLine.type)}
                       title="Revert this line to original"
                     >
                       <RotateCcw className="w-3 h-3" />
@@ -556,96 +556,6 @@ const DiffPreviewSystem = ({
     };
   }, [handleSyncScroll, selectedView]);
 
-  // Handle line revert functionality
-  const handleLineRevert = useCallback(async (lineIndex, originalLine) => {
-    console.log('🔄 Reverting line', lineIndex, 'from:', currentModifiedCode.split('\n')[lineIndex]);
-    console.log('🔄 Reverting to:', originalBaseCodeRef.current.split('\n')[lineIndex]);
-    
-    const currentLines = currentModifiedCode.split('\n');
-    const originalLines = originalBaseCodeRef.current.split('\n');
-    
-    // Revert the specific line to its original content
-    if (lineIndex < currentLines.length && lineIndex < originalLines.length) {
-      const originalContent = originalLines[lineIndex] || '';
-      currentLines[lineIndex] = originalContent;
-      const newCode = currentLines.join('\n');
-      
-      console.log('🔄 New code after revert has', newCode.split('\n').length, 'lines');
-      
-      setCurrentModifiedCode(newCode);
-      
-      // Surgically revert patches for this specific line
-      try {
-        console.log('✂️ Surgically reverting patches for line', lineIndex);
-        const storeId = getSelectedStoreId();
-        const modifiedContent = currentLines[lineIndex] || '';
-        
-        const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
-        if (!token) {
-          console.error('❌ No authentication token found in any of: store_owner_auth_token, auth_token, token');
-          return;
-        }
-        
-        console.log('🌐 Making surgical revert request:', {
-          url: `/api/patches/revert-line/${encodeURIComponent(fileName)}`,
-          method: 'PATCH',
-          headers: {
-            'Authorization': token ? `Bearer ${token.substring(0, 20)}...` : 'Missing',
-            'Content-Type': 'application/json',
-            'X-Store-Id': storeId
-          },
-          body: {
-            lineNumber: lineIndex,
-            originalContent: originalContent,
-            modifiedContent: modifiedContent
-          }
-        });
-        
-        const response = await fetch(`/api/patches/revert-line/${encodeURIComponent(fileName)}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'X-Store-Id': storeId
-          },
-          body: JSON.stringify({
-            lineNumber: lineIndex,
-            originalContent: originalContent,
-            modifiedContent: modifiedContent
-          })
-        });
-
-        console.log('📡 Response received:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-          headers: {
-            'content-type': response.headers.get('content-type'),
-            'access-control-allow-origin': response.headers.get('access-control-allow-origin')
-          }
-        });
-        
-        const result = await response.json();
-        if (result.success) {
-          console.log('✅ Successfully reverted line', lineIndex, '- Modified:', result.data.modifiedPatches, 'Deleted:', result.data.deletedPatches);
-          
-          // Add a small delay to ensure database changes are reflected
-          setTimeout(() => {
-            setRefreshTrigger(prev => prev + 1);
-          }, 100);
-        } else {
-          console.error('❌ Failed to revert patches:', result.error);
-        }
-      } catch (error) {
-        console.error('❌ Error reverting patches for line:', error);
-      }
-      
-      // Notify parent component of the change
-      if (onCodeChange) {
-        onCodeChange(newCode);
-      }
-    }
-  }, [currentModifiedCode, onCodeChange, fileName]);
 
   // Handle preview functionality with enhanced route resolution
   const handlePreview = useCallback(async () => {
@@ -1332,8 +1242,8 @@ const DiffPreviewSystem = ({
       if (currentLineNumber > 0 && lastProcessedLine > 0) {
         const gap = currentLineNumber - lastProcessedLine - 1;
         
-        // Add collapse indicator if gap is significant (> 5 lines)
-        if (gap > 5) {
+        // Add collapse indicator if gap is significant (> 3 lines)
+        if (gap > 3) {
           result.push({
             type: 'collapsed',
             content: `⋯ ${gap} unchanged lines hidden (click to expand)`,
@@ -1380,6 +1290,86 @@ const DiffPreviewSystem = ({
     // This will show the full file context including the collapsed section
     setCollapseUnchanged(false);
   }, [originalBaseCodeRef.current, currentModifiedCode]);
+
+  // Handle line revert functionality - update database patch directly
+  const handleLineRevert = useCallback(async (lineIndex, originalLine, lineType) => {
+    console.log('🔄 Reverting line', lineIndex, 'type:', lineType);
+    
+    const currentLines = currentModifiedCode.split('\n');
+    const originalLines = originalBaseCodeRef.current.split('\n');
+    
+    let newCode;
+    if (lineType === 'addition') {
+      // For addition lines, remove the line entirely
+      if (lineIndex < currentLines.length) {
+        currentLines.splice(lineIndex, 1);
+        newCode = currentLines.join('\n');
+        console.log('🔄 Removed addition line', lineIndex, 'new code has', newCode.split('\n').length, 'lines');
+      }
+    } else if (lineType === 'deletion') {
+      // For deletion lines, restore the original content
+      if (lineIndex < originalLines.length) {
+        const originalContent = originalLines[lineIndex] || '';
+        currentLines.splice(lineIndex, 0, originalContent);
+        newCode = currentLines.join('\n');
+        console.log('🔄 Restored deletion line', lineIndex, 'to:', originalContent);
+      }
+    } else {
+      // For other types, just replace the line content
+      if (lineIndex < currentLines.length && lineIndex < originalLines.length) {
+        const originalContent = originalLines[lineIndex] || '';
+        currentLines[lineIndex] = originalContent;
+        newCode = currentLines.join('\n');
+        console.log('🔄 Reverted line', lineIndex, 'to original content');
+      }
+    }
+    
+    if (newCode) {
+      // Update the database patch with the reverted code
+      try {
+        const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+        if (!token) {
+          console.error('❌ No authentication token found');
+          return;
+        }
+
+        console.log('💾 Updating database patch after revert...');
+        const response = await fetch('/api/patches/create', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            filePath: filePath || fileName,
+            modifiedCode: newCode,
+            changeSummary: `Revert ${lineType || 'line'} at line ${lineIndex}`,
+            changeType: 'revert',
+            useUpsert: true
+          })
+        });
+
+        if (response.ok) {
+          console.log('✅ Database patch updated successfully after revert');
+          
+          // Update local state
+          setCurrentModifiedCode(newCode);
+          
+          // Notify parent component
+          if (onCodeChange) {
+            onCodeChange(newCode);
+          }
+          
+          // Refresh the diff data to show updated state
+          setRefreshTrigger(prev => prev + 1);
+        } else {
+          console.error('❌ Failed to update database patch after revert');
+        }
+      } catch (error) {
+        console.error('❌ Error updating database patch after revert:', error);
+      }
+    }
+  }, [currentModifiedCode, onCodeChange, filePath, fileName]);
 
   // Final display lines considering expanded sections and collapse settings
   const finalDisplayLines = useMemo(() => {
@@ -1570,7 +1560,7 @@ const DiffPreviewSystem = ({
             className="w-8 h-8 p-0 mr-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={(e) => {
               e.stopPropagation();
-              onLineRevert(lineIndex, line.originalContent || '');
+              onLineRevert(lineIndex, line.originalContent || '', line.type);
             }}
             title={`Revert this ${line.type} line`}
           >
