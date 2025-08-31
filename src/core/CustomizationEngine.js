@@ -395,9 +395,11 @@ class CustomizationEngine {
     
     if (this.isPreviewMode) {
       this.showPreviewIndicator();
+      this.applyPreviewChanges();
     } else {
       this.hidePreviewIndicator();
       this.clearPreviewCustomizations();
+      this.revertPreviewChanges();
     }
 
     eventSystem.emit('customization.previewToggle', { 
@@ -407,6 +409,113 @@ class CustomizationEngine {
     console.log(`🔄 Preview mode ${this.isPreviewMode ? 'enabled' : 'disabled'}`);
     
     return this.isPreviewMode;
+  }
+
+  /**
+   * Apply preview changes automatically when preview mode is enabled
+   */
+  applyPreviewChanges() {
+    console.log('🎨 Applying preview changes to page...');
+    
+    // Store original values for reverting later
+    this.originalValues = new Map();
+    
+    // Example customizations that get applied automatically in preview mode
+    const previewCustomizations = [
+      {
+        selector: 'h1, h2, h3, [data-testid="page-title"], .cart-title',
+        type: 'text',
+        changes: [
+          { from: 'My Cart', to: 'Shopping Bag' },
+          { from: 'Cart', to: 'Shopping Bag' },
+          { from: 'Shopping Cart', to: 'Shopping Bag' }
+        ]
+      },
+      {
+        selector: '.checkout-button, [data-testid="checkout-btn"], button:contains("Checkout")',
+        type: 'text',
+        changes: [
+          { from: 'Checkout', to: 'Complete Purchase' },
+          { from: 'Proceed to Checkout', to: 'Complete Your Order' }
+        ]
+      },
+      {
+        selector: '.cart-item-count, .item-count',
+        type: 'style',
+        changes: {
+          backgroundColor: '#e3f2fd',
+          border: '2px solid #2196f3',
+          borderRadius: '8px'
+        }
+      }
+    ];
+
+    // Apply each customization
+    previewCustomizations.forEach(customization => {
+      const elements = document.querySelectorAll(customization.selector);
+      
+      elements.forEach(element => {
+        if (customization.type === 'text') {
+          // Store original text
+          const originalText = element.textContent;
+          this.originalValues.set(element, { text: originalText });
+          
+          // Apply text changes
+          let newText = originalText;
+          customization.changes.forEach(change => {
+            if (originalText.includes(change.from)) {
+              newText = originalText.replace(change.from, change.to);
+            }
+          });
+          
+          if (newText !== originalText) {
+            element.textContent = newText;
+            console.log(`📝 Changed text: "${originalText}" → "${newText}"`);
+          }
+        } else if (customization.type === 'style') {
+          // Store original styles
+          const originalStyles = {};
+          Object.keys(customization.changes).forEach(prop => {
+            originalStyles[prop] = element.style[prop] || '';
+          });
+          this.originalValues.set(element, { styles: originalStyles });
+          
+          // Apply style changes
+          Object.entries(customization.changes).forEach(([prop, value]) => {
+            element.style[prop] = value;
+            console.log(`🎨 Applied style: ${prop} = ${value}`);
+          });
+        }
+      });
+    });
+
+    console.log('✨ Preview changes applied! Browse normally to see them.');
+  }
+
+  /**
+   * Revert all preview changes back to original
+   */
+  revertPreviewChanges() {
+    console.log('🔄 Reverting preview changes...');
+    
+    if (this.originalValues) {
+      this.originalValues.forEach((original, element) => {
+        if (original.text !== undefined) {
+          // Revert text changes
+          element.textContent = original.text;
+        }
+        if (original.styles !== undefined) {
+          // Revert style changes
+          Object.entries(original.styles).forEach(([prop, value]) => {
+            element.style[prop] = value;
+          });
+        }
+      });
+      
+      this.originalValues.clear();
+    }
+
+    console.log('✅ All preview changes reverted');
   }
 
   /**
@@ -566,38 +675,12 @@ class CustomizationEngine {
       toggle.innerHTML = `👁️ Preview Mode: ${this.isPreviewMode ? 'ON' : 'OFF'}`;
       toggle.style.background = this.isPreviewMode ? '#007bff' : '#333';
       
-      // Test with a simple text change
-      if (this.isPreviewMode) {
-        this.testTextualChange();
-      }
+      // Changes are applied automatically via applyPreviewChanges()
     });
 
     document.body.appendChild(toggle);
 
-    // Add test button for textual changes
-    const testButton = document.createElement('div');
-    testButton.id = 'catalyst-test-button';
-    testButton.style.cssText = `
-      position: fixed;
-      top: 60px;
-      right: 20px;
-      z-index: 10000;
-      background: #28a745;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: monospace;
-      font-size: 12px;
-      display: block;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    `;
-    testButton.innerHTML = '🧪 Test Text Change';
-    testButton.addEventListener('click', () => {
-      this.testTextualChange();
-    });
-
-    document.body.appendChild(testButton);
+    // Note: Preview changes are now applied automatically when preview mode is enabled
   }
 
   /**
