@@ -27,13 +27,139 @@ import {
   FileText,
   AlertTriangle,
   CheckCircle,
-  Info
+  Info,
+  RefreshCw
 } from 'lucide-react';
 
 // Import new systems
 import hookSystem from '../../core/HookSystem.js';
 import eventSystem from '../../core/EventSystem.js';
 import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
+
+// PreviewFrame component for iframe preview
+const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Generate preview URL with code changes
+  useEffect(() => {
+    const generatePreview = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        // For now, use the production URL with preview parameters
+        const baseUrl = window.location.origin;
+        const currentPath = window.location.pathname;
+        
+        // Create preview URL with changes encoded
+        const previewParams = new URLSearchParams({
+          preview: 'true',
+          file: fileName || 'unknown',
+          changes: btoa(encodeURIComponent(JSON.stringify({
+            original: originalCode,
+            modified: sourceCode,
+            fileName,
+            language
+          })))
+        });
+
+        // Use current path for preview context
+        let previewPath = currentPath;
+        if (fileName?.includes('Cart')) {
+          previewPath = '/cart';
+        } else if (fileName?.includes('Checkout')) {
+          previewPath = '/checkout';
+        }
+
+        const fullPreviewUrl = `${baseUrl}${previewPath}?${previewParams.toString()}`;
+        setPreviewUrl(fullPreviewUrl);
+        
+        console.log('🔗 Generated preview URL:', fullPreviewUrl);
+        
+      } catch (error) {
+        console.error('❌ Error generating preview URL:', error);
+        setError('Failed to generate preview URL');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (sourceCode || originalCode) {
+      generatePreview();
+    }
+  }, [sourceCode, originalCode, fileName, language]);
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-muted/20">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin text-blue-500" />
+          <p className="text-sm text-muted-foreground">Generating preview...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center bg-red-50 dark:bg-red-900/10">
+        <div className="text-center">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-red-500" />
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-2 px-3 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full relative">
+      <iframe
+        src={previewUrl}
+        className="w-full h-full border-0"
+        title="Live Preview"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        onLoad={() => {
+          console.log('✅ Preview iframe loaded successfully');
+          // Apply customizations to the iframe content
+          try {
+            const iframe = document.querySelector('iframe[title="Live Preview"]');
+            if (iframe?.contentWindow) {
+              iframe.contentWindow.postMessage({
+                type: 'APPLY_PREVIEW_CUSTOMIZATIONS',
+                data: {
+                  original: originalCode,
+                  modified: sourceCode,
+                  fileName,
+                  language
+                }
+              }, '*');
+            }
+          } catch (error) {
+            console.warn('Could not communicate with preview iframe:', error);
+          }
+        }}
+        onError={() => {
+          console.error('❌ Preview iframe failed to load');
+          setError('Failed to load preview');
+        }}
+      />
+      
+      {/* Preview overlay info */}
+      <div className="absolute top-2 left-2 bg-blue-500/90 text-white px-2 py-1 rounded text-xs font-medium">
+        <Eye className="w-3 h-3 inline mr-1" />
+        Preview Mode
+      </div>
+    </div>
+  );
+};
 
 // RevertGutter component for split view
 const RevertGutter = ({ changedBlocks, onRevertBlock, onRevertLine }) => {
@@ -163,6 +289,7 @@ const CodeEditor = ({
   const [selectedVersion, setSelectedVersion] = useState(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
+  const [showPreviewFrame, setShowPreviewFrame] = useState(false);
 
   const editorRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
@@ -1037,6 +1164,15 @@ const CodeEditor = ({
                 >
                   <Diff className="w-4 h-4" />
                 </Button>
+                
+                <Button
+                  variant={showPreviewFrame ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setShowPreviewFrame(!showPreviewFrame)}
+                  title="Show Preview Frame"
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
               </>
             )}
             
@@ -1303,6 +1439,44 @@ const CodeEditor = ({
               </div>
             </div>
           </div>
+        ) : showPreviewFrame ? (
+          /* Preview Frame View */
+          <div className="h-full flex flex-col">
+            <div className="border-b bg-muted p-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Eye className="w-4 h-4 text-blue-600" />
+                  <span className="font-medium">Live Preview</span>
+                  <Badge variant="secondary" className="text-xs">
+                    Production Ready
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-muted-foreground">
+                    Changes applied automatically
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPreviewFrame(false)}
+                    title="Close Preview"
+                  >
+                    <Minimize2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex-1">
+              <PreviewFrame 
+                sourceCode={localCode}
+                originalCode={originalCode}
+                fileName={fileName}
+                language={language}
+              />
+            </div>
+          </div>
         ) : showVersionHistory ? (
           /* Version History View */
           <div className="h-full flex">
@@ -1447,6 +1621,11 @@ const CodeEditor = ({
                 </span>
                 <span>{fullFileDisplayLines.length} lines in diff</span>
               </>
+            ) : showPreviewFrame ? (
+              <>
+                <span>Preview Frame</span>
+                <span>Live preview active</span>
+              </>
             ) : showVersionHistory ? (
               <>
                 <span>Version History</span>
@@ -1472,6 +1651,12 @@ const CodeEditor = ({
               <Badge variant="outline" className="text-xs">
                 <Diff className="w-3 h-3 mr-1" />
                 Diff View
+              </Badge>
+            )}
+            {showPreviewFrame && (
+              <Badge variant="outline" className="text-xs">
+                <Eye className="w-3 h-3 mr-1" />
+                Preview
               </Badge>
             )}
             {showVersionHistory && (
