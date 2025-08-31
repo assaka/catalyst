@@ -17,6 +17,10 @@ import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
 import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 
+// Import new hook system
+import hookSystem from '@/core/HookSystem.js';
+import eventSystem from '@/core/EventSystem.js';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,10 +37,13 @@ const getSessionId = () => {
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Safe number formatting helper
-const formatPrice = (value) => {
-    const num = parseFloat(value);
-    return isNaN(num) ? 0 : num;
+// Safe number formatting helper with hooks
+const formatPrice = (value, context = {}) => {
+  const num = parseFloat(value);
+  const basePrice = isNaN(num) ? 0 : num;
+  
+  // Apply pricing hooks
+  return hookSystem.apply('pricing.format', basePrice, context);
 };
 
 const safeToFixed = (value, decimals = 2) => {
@@ -93,9 +100,21 @@ export default function Cart() {
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
     const [taxRules, setTaxRules] = useState([]);
     
+    // Get currency symbol from settings with hook support
+    const currencySymbol = hookSystem.apply('cart.getCurrencySymbol', settings?.currency_symbol || '$', {
+        store,
+        settings
+    });
     
-    // Get currency symbol from settings
-    const currencySymbol = settings?.currency_symbol || '$';
+    // Enhanced cart context for hooks
+    const cartContext = useMemo(() => ({
+        store,
+        settings,
+        taxes,
+        selectedCountry,
+        currencySymbol,
+        sessionId: getSessionId()
+    }), [store, settings, taxes, selectedCountry, currencySymbol]);
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [couponCode, setCouponCode] = useState('');
@@ -197,7 +216,18 @@ export default function Cart() {
 
     const loadCartData = async (showLoader = true) => {
         if (showLoader) setLoading(true);
+        
         try {
+            // Apply before load hooks
+            const shouldLoad = hookSystem.apply('cart.beforeLoadItems', true, cartContext);
+            if (!shouldLoad) {
+                setLoading(false);
+                return;
+            }
+
+            // Emit loading event
+            eventSystem.emit('cart.loadingStarted', cartContext);
+
             // Use simplified cart service (session-based approach)
             const cartResult = await cartService.getCart();
             
@@ -240,12 +270,27 @@ export default function Cart() {
                 };
             }).filter(item => item.product); // Ensure product exists
             
-            setCartItems(populatedCart);
+            // Apply item processing hooks
+            const processedItems = hookSystem.apply('cart.processLoadedItems', populatedCart, cartContext);
+            
+            setCartItems(processedItems);
             setHasLoadedInitialData(true);
+            
+            // Apply after load hooks
+            hookSystem.do('cart.afterLoadItems', {
+                items: processedItems,
+                ...cartContext
+            });
+
+            // Emit loaded event
+            eventSystem.emit('cart.itemsLoaded', {
+                items: processedItems,
+                ...cartContext
+            });
             
             // Validate applied coupon when cart contents change
             if (appliedCoupon) {
-                validateAppliedCoupon(appliedCoupon, populatedCart);
+                validateAppliedCoupon(appliedCoupon, processedItems);
             }
         } catch (error) {
             console.error("Error loading cart:", error);
@@ -257,28 +302,68 @@ export default function Cart() {
         }
     };
 
-    // Renamed from handleQuantityChange to updateQuantity
-    const updateQuantity = (itemId, newQuantity) => {
-        const quantity = Math.max(1, newQuantity);
-        
+    // Enhanced updateQuantity with hooks
+    const updateQuantity = useCallback((itemId, newQuantity) => {
+        const currentItem = cartItems.find(item => item.id === itemId);
+        if (!currentItem) return;
+
+        // Apply before update hooks
+        const shouldUpdate = hookSystem.apply('cart.beforeUpdateQuantity', true, {
+            itemId,
+            currentQuantity: currentItem.quantity,
+            newQuantity,
+            item: currentItem,
+            ...cartContext
+        });
+
+        if (!shouldUpdate) return;
+
+        // Apply quantity validation hooks
+        const validatedQuantity = hookSystem.apply('cart.validateQuantity', Math.max(1, newQuantity), {
+            item: currentItem,
+            maxStock: currentItem.product?.stock_quantity,
+            ...cartContext
+        });
+
         // Update local state immediately for instant UI response
         setCartItems(currentItems =>
             currentItems.map(item =>
-                item.id === itemId ? { ...item, quantity } : item
+                item.id === itemId ? { ...item, quantity: validatedQuantity } : item
             )
         );
+
+        // Apply after update hooks
+        hookSystem.do('cart.afterUpdateQuantity', {
+            itemId,
+            oldQuantity: currentItem.quantity,
+            newQuantity: validatedQuantity,
+            item: currentItem,
+            ...cartContext
+        });
+
+        // Emit update event
+        eventSystem.emit('cart.quantityUpdated', {
+            itemId,
+            oldQuantity: currentItem.quantity,
+            newQuantity: validatedQuantity,
+            item: currentItem,
+            ...cartContext
+        });
 
         // Dispatch immediate update for other components
         window.dispatchEvent(new CustomEvent('cartUpdated'));
 
         setQuantityUpdates(currentUpdates => ({
             ...currentUpdates,
-            [itemId]: quantity,
+            [itemId]: validatedQuantity,
         }));
-    };
+    }, [cartItems, cartContext]);
 
-    // Renamed from handleRemoveItem to removeItem
-    const removeItem = async (itemId) => {
+    // Enhanced removeItem with hooks
+    const removeItem = useCallback(async (itemId) => {
+        const itemToRemove = cartItems.find(item => item.id === itemId);
+        if (!itemToRemove) return;
+
         try {
             if (!store?.id) {
                 console.error('🛒 Cart: No store context available for remove');
@@ -297,9 +382,32 @@ export default function Cart() {
                 return;
             }
 
+            // Apply before remove hooks
+            const shouldRemove = hookSystem.apply('cart.beforeRemoveItem', true, {
+                itemId,
+                item: itemToRemove,
+                ...cartContext
+            });
+
+            if (!shouldRemove) return;
+
             // Update local state immediately for instant UI response
             const updatedItems = cartItems.filter(item => item.id !== itemId);
             setCartItems(updatedItems);
+
+            // Apply after remove hooks
+            hookSystem.do('cart.afterRemoveItem', {
+                itemId,
+                removedItem: itemToRemove,
+                ...cartContext
+            });
+
+            // Emit remove event
+            eventSystem.emit('cart.itemRemoved', {
+                itemId,
+                removedItem: itemToRemove,
+                ...cartContext
+            });
             
             // Dispatch immediate update for other components
             window.dispatchEvent(new CustomEvent('cartUpdated'));
@@ -313,8 +421,14 @@ export default function Cart() {
         } catch (error) {
             console.error("Error removing item:", error);
             setFlashMessage({ type: 'error', message: "Failed to remove item." });
+            
+            eventSystem.emit('cart.removeError', {
+                error: error.message,
+                itemId,
+                ...cartContext
+            });
         }
-    };
+    }, [cartItems, cartContext, store?.id, loading, hasLoadedInitialData]);
 
     // Validate that applied coupon is still valid for current cart contents
     const validateAppliedCoupon = (coupon, cartItems) => {
@@ -580,6 +694,56 @@ export default function Cart() {
         return { subtotal: calculatedSubtotal, discount: disc, tax: taxAmount, total: totalAmount };
     }, [cartItems, appliedCoupon, store, taxRules, selectedCountry, calculateSubtotal]);
 
+    // Enhanced checkout navigation with hooks
+    const handleCheckout = useCallback(() => {
+        // Apply before checkout hooks
+        const checkoutData = hookSystem.apply('cart.beforeCheckout', {
+            items: cartItems,
+            subtotal,
+            discount,
+            tax,
+            total,
+            canProceed: cartItems.length > 0
+        }, cartContext);
+
+        if (!checkoutData.canProceed) {
+            eventSystem.emit('cart.checkoutBlocked', {
+                reason: 'No items in cart',
+                ...cartContext
+            });
+            return;
+        }
+
+        // Apply checkout URL hooks
+        const checkoutUrl = hookSystem.apply('cart.getCheckoutUrl', createPublicUrl(store.slug, 'CHECKOUT'), {
+            ...checkoutData,
+            ...cartContext
+        });
+
+        // Emit checkout event
+        eventSystem.emit('cart.checkoutStarted', {
+            ...checkoutData,
+            checkoutUrl,
+            ...cartContext
+        });
+
+        navigate(checkoutUrl);
+    }, [cartItems, subtotal, discount, tax, total, cartContext, store?.slug, navigate]);
+
+    // Emit cart viewed event
+    useEffect(() => {
+        if (!loading && cartItems.length >= 0) {
+            eventSystem.emit('cart.viewed', {
+                items: cartItems,
+                subtotal,
+                discount, 
+                tax,
+                total,
+                ...cartContext
+            });
+        }
+    }, [loading, cartItems, subtotal, discount, tax, total, cartContext]);
+
 
     // Wait for both store data and cart data to load
     if (loading || storeLoading) {
@@ -758,18 +922,17 @@ export default function Cart() {
                                     </div>
                                     <CmsBlockRenderer position="cart_below_total" />
                                     <div className="border-t mt-6 pt-6">
-                                        <Link to={createPublicUrl(store.slug, 'CHECKOUT')}>
-                                            <Button 
-                                                size="lg" 
-                                                className="w-full"
-                                                style={{
-                                                    backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
-                                                    color: '#FFFFFF',
-                                                }}
-                                            >
-                                                Proceed to Checkout
-                                            </Button>
-                                        </Link>
+                                        <Button 
+                                            size="lg" 
+                                            className="w-full"
+                                            onClick={handleCheckout}
+                                            style={{
+                                                backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
+                                                color: '#FFFFFF',
+                                            }}
+                                        >
+                                            Proceed to Checkout
+                                        </Button>
                                     </div>
                                 </CardContent>
                             </Card>
