@@ -1016,6 +1016,7 @@ const CodeEditor = ({
             if (model && model.canUndo && model.canRedo) {
               setCanUndo(model.canUndo());
               setCanRedo(model.canRedo());
+
             }
           } catch (error) {
             console.warn('Could not update undo/redo state after undo:', error);

@@ -7,8 +7,6 @@ import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
-import BrowserPreview from '@/components/ai-context/BrowserPreview';
-import SimplePreview from '@/components/SimplePreview';
 import VersionHistory from '@/components/ai-context/VersionHistory';
 import apiClient from '@/api/client';
 // Store context no longer needed - backend resolves store automatically
@@ -160,121 +158,10 @@ const AIContextWindowPage = () => {
     };
   }, []);
 
-  // Publish open diffs to patch_releases (Global - publishes all modified files)
+  // Publish functionality removed - will be reimplemented with customizations API
   const publishDiffs = useCallback(async () => {
-    if (modifiedFiles.length === 0 || !isAuthenticated) return;
-
-    setIsPublishing(true);
-    setPublishSuccess(null);
-    setRollbackSuccess(null);
-
-    try {
-      const authToken = apiClient.getToken();
-      if (!authToken) {
-        console.error('Authentication required. Please log in to publish changes.');
-        return;
-      }
-
-      // First, create a new patch release
-      // Store ID is now automatically resolved by backend middleware
-      
-      const createReleaseResponse = await fetch('/api/patches/releases', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        },
-        body: JSON.stringify({
-          versionName: `Global-changes-v${Date.now()}`,
-          releaseType: 'minor',
-          description: `Global changes across ${modifiedFiles.length} file${modifiedFiles.length !== 1 ? 's' : ''}: ${modifiedFiles.map(f => f.split('/').pop()).join(', ')}`
-        })
-      });
-
-      if (!createReleaseResponse.ok) {
-        throw new Error('Failed to create release');
-      }
-
-      const releaseData = await createReleaseResponse.json();
-      if (!releaseData.success) {
-        throw new Error(releaseData.error || 'Failed to create release');
-      }
-
-      const releaseId = releaseData.data.releaseId;
-
-      // Update open diffs with the release_id and set status to final/published for all modified files
-      const finalizePromises = modifiedFiles.map(async (filePath) => {
-        // Store ID is now automatically resolved by backend middleware
-        
-        const finalizeResponse = await fetch('/api/patches/finalize-diffs', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: JSON.stringify({
-            filePath,
-            releaseId,
-            changeSummary: `Global publish - changes in ${filePath.split('/').pop()}`
-          })
-        });
-
-        if (!finalizeResponse.ok) {
-          throw new Error(`Failed to finalize changes for ${filePath}`);
-        }
-
-        const finalizeData = await finalizeResponse.json();
-        if (!finalizeData.success) {
-          throw new Error(finalizeData.error || `Failed to finalize changes for ${filePath}`);
-        }
-        
-        return finalizeData;
-      });
-
-      const finalizeResults = await Promise.all(finalizePromises);
-      
-      // Check if all finalize operations succeeded
-      const failedFinalizes = finalizeResults.filter(result => !result.success);
-      if (failedFinalizes.length > 0) {
-        throw new Error(`Failed to finalize ${failedFinalizes.length} file(s): ${failedFinalizes.map(f => f.error).join(', ')}`);
-      }
-
-      // Publish the release
-      const publishResponse = await fetch(`/api/patches/publish/${releaseId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authToken}`
-        }
-      });
-
-      if (!publishResponse.ok) {
-        throw new Error('Failed to publish release');
-      }
-
-      const publishData = await publishResponse.json();
-      if (!publishData.success) {
-        throw new Error(publishData.error || 'Failed to publish release');
-      }
-
-      setPublishSuccess({
-        releaseId,
-        versionName: releaseData.data.versionName,
-        publishedAt: publishData.data.publishedAt,
-        filesCount: modifiedFiles.length
-      });
-
-      // Auto-clear success message after 5 seconds
-      setTimeout(() => {
-        setPublishSuccess(null);
-      }, 5000);
-
-    } catch (error) {
-      console.error(`Publish failed: ${error.message}`);
-    } finally {
-      setIsPublishing(false);
-    }
-  }, [modifiedFiles, isAuthenticated]);
+    console.log('Publish functionality temporarily disabled - will be reimplemented');
+  }, []);
 
   // Handle successful rollback from version history
   const handleRollback = useCallback((rollbackData) => {
@@ -314,28 +201,7 @@ const AIContextWindowPage = () => {
   const loadFileContent = useCallback(async (filePath) => {
     setIsFileLoading(true);
     try {
-      // First try to get patched version if patches exist
-      try {
-        const patchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}?preview=true`);
-        if (patchedData && patchedData.success && patchedData.data.hasPatches) {
-          // Patches exist - use patched code for editor, baseline for diff comparison
-          setSourceCode(normalizeLineEndings(patchedData.data.patchedCode));
-          setOriginalCode(normalizeLineEndings(patchedData.data.baselineCode));
-          setSelectedFile({
-            path: filePath,
-            name: filePath.split('/').pop(),
-            type: 'file',
-            isSupported: true
-          });
-          setSearchParams({ file: filePath });
-          setIsFileLoading(false);
-          return; // Successfully loaded with patches
-        }
-      } catch (patchError) {
-        console.log('No patches found, falling back to baseline:', patchError);
-      }
-
-      // No patches found, load baseline code
+      // Load baseline code directly
       const data = await apiClient.get(`extensions/baseline/${encodeURIComponent(filePath)}`);
 
       if (data && data.success && data.data.hasBaseline) {
@@ -353,25 +219,7 @@ const AIContextWindowPage = () => {
         // Update URL
         setSearchParams({ file: filePath });
       } else if (data && data.success && !data.data.hasBaseline) {
-        // No baseline found either - this is the fallback case
-        try {
-          const fallbackPatchedData = await apiClient.get(`patches/apply/${encodeURIComponent(filePath)}?preview=true`);
-          if (fallbackPatchedData && fallbackPatchedData.success) {
-            setSourceCode(normalizeLineEndings(fallbackPatchedData.data.patchedCode));
-            setOriginalCode(normalizeLineEndings(fallbackPatchedData.data.baselineCode || fallbackPatchedData.data.patchedCode));
-            setSelectedFile({
-              path: filePath,
-              name: filePath.split('/').pop(),
-              type: 'file',
-              isSupported: true
-            });
-            setSearchParams({ file: filePath });
-          } else {
-            console.error('Failed to load file from patches:', fallbackPatchedData?.error || 'Unknown error');
-          }
-        } catch (patchError) {
-          console.error('Failed to load file from patches:', patchError);
-        }
+        console.log('No baseline found for file:', filePath);
       } else {
         console.error('Failed to load file:', data?.message || 'Unknown error');
         // Provide detailed diagnostic information
@@ -558,52 +406,11 @@ export default ExampleComponent;`;
     setCurrentPatch(patch);
   }, []);
 
-  // Handle preview generation and store AST diff as overlay
+  // Handle preview generation - simplified without patch storage
   const handlePreviewGenerated = useCallback(async (preview) => {
-    // Preview is handled by the BrowserPreview component
     console.log('Preview generated:', preview);
-    
-    // Store AST diff in database when switching to preview mode
-    if (selectedFile && sourceCode && currentPatch) {
-      setAstDiffStatus({ status: 'saving', message: 'Saving AST diff overlay...' });
-      
-      try {
-        // Calculate the modified code by applying the current patch
-        const modifiedCode = applyPatchToCode(sourceCode, currentPatch);
-        
-        // Create patch in database
-        const response = await apiClient.post('patches/create', {
-          filePath: selectedFile.path,
-          modifiedCode: modifiedCode,
-          changeSummary: `AI-generated changes for: ${selectedFile.path}`,
-          changeType: 'ai_modification'
-        });
-        
-        if (response.success) {
-          console.log('Patch created:', response.data);
-          setAstDiffStatus({ 
-            status: 'success', 
-            message: 'Patch saved successfully',
-            data: response.data 
-          });
-          // Clear status after 3 seconds
-          setTimeout(() => setAstDiffStatus(null), 3000);
-        } else {
-          console.error('Failed to create patch:', response.message);
-          setAstDiffStatus({ 
-            status: 'error', 
-            message: `Failed to save patch: ${response.message}` 
-          });
-        }
-      } catch (error) {
-        console.error('Error creating patch:', error);
-        setAstDiffStatus({ 
-          status: 'error', 
-          message: `Error saving patch: ${error.message}` 
-        });
-      }
-    }
-  }, [selectedFile, sourceCode, currentPatch]);
+    // Preview functionality simplified - no more patch storage
+  }, []);
 
   // Handle manual edit detection with auto-save
   const handleManualEdit = useCallback(async (newCode, originalCode, options = {}) => {
@@ -765,43 +572,10 @@ export default ExampleComponent;`;
     }
   }, [selectedFile, sourceCode, previewMode]);
 
-  // Handle preview mode changes
+  // Handle preview mode changes - simplified
   const handlePreviewModeChange = useCallback(async (mode) => {
     setPreviewMode(mode);
-    
-    // If switching to patch mode and we have a selected file, ensure hybrid patches are loaded
-    if (mode === 'patch' && selectedFile?.path) {
-      try {
-        console.log(`🔍 Loading patches for Diff tab: ${selectedFile.path}`);
-        
-        const patchData = await apiClient.get(`patches/${encodeURIComponent(selectedFile.path)}`);
-        
-        if (patchData && patchData.success && patchData.data) {
-          const patches = patchData.data.patches || [];
-          console.log(`📋 Found ${patches.length} patches for ${selectedFile.path}:`, patches);
-          
-          if (patches.length > 0) {
-            const fileWithPatches = {
-              ...selectedFile,
-              hybridPatches: patches
-            };
-            
-            // Dispatch the patchesLoaded event to update DiffPreviewSystem
-            window.dispatchEvent(new CustomEvent('patchesLoaded', {
-              detail: {
-                file: fileWithPatches,
-                patches: patches
-              }
-            }));
-            
-            console.log(`✅ Reloaded ${patches.length} patches for ${selectedFile.path} when switching to Diff tab`);
-          }
-        }
-      } catch (error) {
-        console.warn(`⚠️ Failed to reload patches for ${selectedFile.path}:`, error.message);
-      }
-    }
-  }, [selectedFile]);
+  }, []);
 
 
   // Handle file tree refresh
@@ -1110,36 +884,6 @@ export default ExampleComponent;`;
                           <Diff className="w-4 h-4 mr-2" />
                           Diff
                         </button>
-                        <button
-                          onClick={() => {
-                            setPreviewMode('live');
-                            handlePreviewModeChange('live');
-                          }}
-                          className={cn(
-                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                            previewMode === 'live' 
-                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                          )}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          Preview
-                        </button>
-                        <button
-                          onClick={() => {
-                            setPreviewMode('simple');
-                            handlePreviewModeChange('simple');
-                          }}
-                          className={cn(
-                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
-                            previewMode === 'simple' 
-                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
-                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                          )}
-                        >
-                          <Clock className="w-4 h-4 mr-2" />
-                          Simple
-                        </button>
                       </div>
                     </div>
                   </div>
@@ -1198,22 +942,6 @@ export default ExampleComponent;`;
                         className="h-full"
                         onCodeChange={handleCodeChange}
                         onDiffStatsChange={handleDiffStatsChange}
-                      />
-                    ) : previewMode === 'simple' ? (
-                      // Simple Preview View - Cart.jsx with patches from file_baselines
-                      <SimplePreview
-                        className="h-full"
-                      />
-                    ) : (
-                      // Live Preview View - Enhanced with AST diff and route resolution
-                      <BrowserPreview
-                        fileName={selectedFile?.path || ''}
-                        filePath={selectedFile?.path}
-                        currentCode={sourceCode}
-                        previewMode="live"
-                        useAstDiff={true}
-                        astDiffData={astDiffStatus?.data}
-                        className="h-full"
                       />
                     )}
                   </div>
