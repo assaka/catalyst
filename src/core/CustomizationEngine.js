@@ -25,6 +25,22 @@ class CustomizationEngine {
   }
 
   /**
+   * Handle preview toggle events
+   */
+  handlePreviewToggle(event) {
+    this.isPreviewMode = event.isPreview;
+    
+    if (this.isPreviewMode) {
+      this.showPreviewIndicator();
+    } else {
+      this.hidePreviewIndicator();
+      this.clearPreviewCustomizations();
+    }
+
+    console.log(`🔄 Preview mode ${this.isPreviewMode ? 'enabled' : 'disabled'}`);
+  }
+
+  /**
    * Initialize customization engine for a page/component
    */
   async initialize(storeId, options = {}) {
@@ -526,37 +542,81 @@ class CustomizationEngine {
    * Create preview mode toggle UI
    */
   createPreviewToggle() {
-    // Only create in development or for store owners
-    if (process.env.NODE_ENV === 'development' || window.__CATALYST_PREVIEW_MODE) {
-      const toggle = document.createElement('div');
-      toggle.id = 'catalyst-preview-toggle';
-      toggle.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 10000;
-        background: #333;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-family: monospace;
-        font-size: 12px;
-        display: none;
-      `;
-      toggle.innerHTML = '👁️ Preview Mode: OFF';
-      toggle.addEventListener('click', () => {
-        this.togglePreviewMode();
-        toggle.innerHTML = `👁️ Preview Mode: ${this.isPreviewMode ? 'ON' : 'OFF'}`;
-        toggle.style.background = this.isPreviewMode ? '#007bff' : '#333';
-      });
+    // Always create for testing (can be configured later)
+    const toggle = document.createElement('div');
+    toggle.id = 'catalyst-preview-toggle';
+    toggle.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      background: #333;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 12px;
+      display: block;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    `;
+    toggle.innerHTML = '👁️ Preview Mode: OFF';
+    toggle.addEventListener('click', () => {
+      this.togglePreviewMode();
+      toggle.innerHTML = `👁️ Preview Mode: ${this.isPreviewMode ? 'ON' : 'OFF'}`;
+      toggle.style.background = this.isPreviewMode ? '#007bff' : '#333';
+      
+      // Test with a simple text change
+      if (this.isPreviewMode) {
+        this.testTextualChange();
+      }
+    });
 
-      document.body.appendChild(toggle);
+    document.body.appendChild(toggle);
 
-      // Show toggle when customizations are being edited
-      eventSystem.on('customization.editing', () => {
-        toggle.style.display = 'block';
-      });
+    // Add test button for textual changes
+    const testButton = document.createElement('div');
+    testButton.id = 'catalyst-test-button';
+    testButton.style.cssText = `
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      z-index: 10000;
+      background: #28a745;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: monospace;
+      font-size: 12px;
+      display: block;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    `;
+    testButton.innerHTML = '🧪 Test Text Change';
+    testButton.addEventListener('click', () => {
+      this.testTextualChange();
+    });
+
+    document.body.appendChild(testButton);
+  }
+
+  /**
+   * Test textual change for preview
+   */
+  testTextualChange() {
+    // Find cart title and change it
+    const cartTitle = document.querySelector('h1, h2, h3, .cart-title');
+    if (cartTitle) {
+      const originalText = cartTitle.textContent;
+      if (originalText.includes('Cart')) {
+        cartTitle.textContent = originalText.replace('Cart', 'Shopping Bag');
+        console.log('🧪 Test: Changed "Cart" to "Shopping Bag"');
+      } else if (originalText.includes('Shopping Bag')) {
+        cartTitle.textContent = originalText.replace('Shopping Bag', 'Cart');
+        console.log('🧪 Test: Changed "Shopping Bag" back to "Cart"');
+      }
+    } else {
+      console.log('🧪 Test: No cart title found to change');
     }
   }
 
