@@ -121,6 +121,13 @@ class PreviewService {
 
       console.log(`🔍 Fetching original page: ${targetUrl}`);
 
+      // Try alternative URLs if the main one fails
+      const fallbackUrls = [
+        targetUrl, // Original URL with full path
+        `${baseUrl}/public/${storeSlug}?${urlParams.toString()}`, // Base store URL
+        `${baseUrl}/?storeId=${session.storeId}&path=${session.targetPath}`, // Root with store param
+      ];
+
       // Fetch the original page content
       const response = await axios.get(targetUrl, {
         timeout: 10000,
@@ -131,6 +138,12 @@ class PreviewService {
       });
 
       let htmlContent = response.data;
+
+      // Remove any existing CSP headers that might block iframe embedding
+      htmlContent = htmlContent.replace(
+        /<meta[^>]*http-equiv=["']?content-security-policy["']?[^>]*>/gi,
+        ''
+      );
 
       // Apply code changes to the HTML content
       const modifiedHtml = this.applyCodeChangesToHtml(htmlContent, session);
