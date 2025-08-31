@@ -485,6 +485,60 @@ router.get('/baselines', async (req, res) => {
   }
 });
 
+// Get individual file baseline content for AIContextWindow
+router.get('/baseline/:filePath', async (req, res) => {
+  try {
+    const filePath = decodeURIComponent(req.params.filePath);
+    
+    // Query specific file baseline from database
+    const [file] = await extensionService.sequelize.query(`
+      SELECT 
+        file_path,
+        baseline_content,
+        file_size,
+        last_modified,
+        content_hash
+      FROM file_baselines 
+      WHERE file_path = :filePath
+      LIMIT 1
+    `, {
+      replacements: { filePath },
+      type: extensionService.sequelize.QueryTypes.SELECT
+    });
+
+    if (file && file.baseline_content) {
+      res.json({
+        success: true,
+        data: {
+          hasBaseline: true,
+          baselineCode: file.baseline_content,
+          file_path: file.file_path,
+          file_size: file.file_size,
+          last_modified: file.last_modified,
+          content_hash: file.content_hash
+        },
+        message: 'File baseline content retrieved successfully'
+      });
+    } else {
+      // File not found in baselines - return fallback
+      res.json({
+        success: true,
+        data: {
+          hasBaseline: false,
+          message: `No baseline found for ${filePath}`
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Error getting file baseline:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Clear cache
 router.post('/cache/clear', authMiddleware, async (req, res) => {
   try {

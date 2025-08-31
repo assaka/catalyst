@@ -271,7 +271,7 @@ const AIContextWindowPage = () => {
 
   const fetchBaselineCode = useCallback(async (filePath, fallbackContent) => {
     try {
-      const baselineData = await apiClient.get(`patches/baseline/${encodeURIComponent(filePath)}`);
+      const baselineData = await apiClient.get(`extensions/baseline/${encodeURIComponent(filePath)}`);
       if (baselineData && baselineData.success && baselineData.data.hasBaseline) {
         console.log(`📋 Using database baseline for ${filePath} (${baselineData.data.baselineCode.length} chars)`);
         return normalizeLineEndings(baselineData.data.baselineCode);
@@ -311,7 +311,7 @@ const AIContextWindowPage = () => {
       }
 
       // No patches found, load baseline code
-      const data = await apiClient.get(`patches/baseline/${encodeURIComponent(filePath)}`);
+      const data = await apiClient.get(`extensions/baseline/${encodeURIComponent(filePath)}`);
 
       if (data && data.success && data.data.hasBaseline) {
         setSourceCode(normalizeLineEndings(data.data.baselineCode));
@@ -797,7 +797,7 @@ export default ExampleComponent;`;
       }
 
       // Test the baselines endpoint first using API client
-      const listData = await apiClient.get('patches/baselines');
+      const listData = await apiClient.get('extensions/baselines');
       
       if (!listData.success) {
         setConnectionStatus({
@@ -811,7 +811,7 @@ export default ExampleComponent;`;
       // Test loading a specific file
       const testFilePath = 'src/pages/AIContextWindow.jsx';
       try {
-        const contentData = await apiClient.get(`patches/baseline/${encodeURIComponent(testFilePath)}`);
+        const contentData = await apiClient.get(`extensions/baseline/${encodeURIComponent(testFilePath)}`);
         if (contentData.success && contentData.data.hasBaseline) {
           setConnectionStatus({
             status: 'success',
