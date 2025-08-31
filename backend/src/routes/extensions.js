@@ -490,35 +490,75 @@ router.get('/baseline/:filePath', async (req, res) => {
   try {
     const filePath = decodeURIComponent(req.params.filePath);
     
-    // Query specific file baseline from database
-    const [file] = await extensionService.sequelize.query(`
-      SELECT 
-        file_path,
-        baseline_content,
-        file_size,
-        last_modified,
-        content_hash
-      FROM file_baselines 
-      WHERE file_path = :filePath
-      LIMIT 1
-    `, {
-      replacements: { filePath },
-      type: extensionService.sequelize.QueryTypes.SELECT
-    });
-
-    if (file && file.baseline_content) {
-      res.json({
-        success: true,
-        data: {
-          hasBaseline: true,
-          baselineCode: file.baseline_content,
-          file_path: file.file_path,
-          file_size: file.file_size,
-          last_modified: file.last_modified,
-          content_hash: file.content_hash
-        },
-        message: 'File baseline content retrieved successfully'
+    // Query specific file baseline from database (graceful handling of missing baseline_content column)
+    let file;
+    try {
+      // First try the full query with baseline_code
+      [file] = await extensionService.sequelize.query(`
+        SELECT 
+          file_path,
+          baseline_code,
+          file_size,
+          last_modified,
+          content_hash
+        FROM file_baselines 
+        WHERE file_path = :filePath
+        LIMIT 1
+      `, {
+        replacements: { filePath },
+        type: extensionService.sequelize.QueryTypes.SELECT
       });
+    } catch (error) {
+      // If baseline_code column doesn't exist, fall back to basic query
+      if (error.message && error.message.includes('baseline_code')) {
+        console.log('⚠️ baseline_code column not found, using fallback query');
+        [file] = await extensionService.sequelize.query(`
+          SELECT 
+            file_path,
+            file_size,
+            last_modified,
+            content_hash
+          FROM file_baselines 
+          WHERE file_path = :filePath
+          LIMIT 1
+        `, {
+          replacements: { filePath },
+          type: extensionService.sequelize.QueryTypes.SELECT
+        });
+      } else {
+        throw error; // Re-throw if it's a different error
+      }
+    }
+
+    if (file) {
+      // Check if we have baseline content or just file metadata
+      if (file.baseline_code) {
+        res.json({
+          success: true,
+          data: {
+            hasBaseline: true,
+            baselineCode: file.baseline_code,
+            file_path: file.file_path,
+            file_size: file.file_size,
+            last_modified: file.last_modified,
+            content_hash: file.content_hash
+          },
+          message: 'File baseline content retrieved successfully'
+        });
+      } else {
+        // File exists but no content stored - return metadata only
+        res.json({
+          success: true,
+          data: {
+            hasBaseline: false,
+            file_path: file.file_path,
+            file_size: file.file_size,
+            last_modified: file.last_modified,
+            content_hash: file.content_hash,
+            message: `File exists but no baseline content stored for ${filePath}`
+          }
+        });
+      }
     } else {
       // File not found in baselines - return fallback
       res.json({
