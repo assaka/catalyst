@@ -19,7 +19,15 @@ import {
   History,
   ChevronUp,
   ChevronDown,
-  ChevronLeft
+  ChevronLeft,
+  Plus,
+  Minus,
+  GitBranch,
+  Clock,
+  FileText,
+  AlertTriangle,
+  CheckCircle,
+  Info
 } from 'lucide-react';
 
 // Import new systems
@@ -160,12 +168,45 @@ const CodeEditor = ({
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
   
   // Helper function to get diff stats
+  // Enhanced diff statistics
   const getDiffStats = useCallback((oldCode, newCode) => {
-    const oldLines = oldCode.split('\n').length;
-    const newLines = newCode.split('\n').length;
-    const additions = Math.max(0, newLines - oldLines);
-    const deletions = Math.max(0, oldLines - newLines);
-    return { additions, deletions, changes: additions + deletions };
+    if (!oldCode || !newCode) {
+      return { additions: 0, deletions: 0, changes: 0, linesChanged: 0, unchanged: 0 };
+    }
+
+    const oldLines = oldCode.split('\n');
+    const newLines = newCode.split('\n');
+    
+    let additions = 0;
+    let deletions = 0;
+    let linesChanged = 0;
+    let unchanged = 0;
+    
+    const maxLines = Math.max(oldLines.length, newLines.length);
+    
+    for (let i = 0; i < maxLines; i++) {
+      const oldLine = oldLines[i];
+      const newLine = newLines[i];
+      
+      if (oldLine === undefined && newLine !== undefined) {
+        additions++; // Line added
+      } else if (oldLine !== undefined && newLine === undefined) {
+        deletions++; // Line deleted
+      } else if (oldLine !== newLine) {
+        linesChanged++; // Line modified
+      } else if (oldLine === newLine) {
+        unchanged++; // Line unchanged
+      }
+    }
+    
+    return { 
+      additions, 
+      deletions, 
+      linesChanged, 
+      unchanged,
+      changes: additions + deletions + linesChanged,
+      totalLines: maxLines
+    };
   }, []);
   
   // Helper function to process code for collapsed view
@@ -1119,40 +1160,147 @@ const CodeEditor = ({
             );
           })()
         ) : showDiffView && enableDiffDetection && fullFileDisplayLines.length > 0 ? (
-          /* Enhanced Diff View with Revert Actions */
-          <div className="h-full overflow-auto border">
-            <div className="min-w-max">
-              {fullFileDisplayLines.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center text-muted-foreground">
-                    <Diff className="w-8 h-8 mx-auto mb-2" />
-                    <p>No differences to display</p>
-                    <p className="text-sm mt-1">
-                      The original and modified code are identical
-                    </p>
+          /* Enhanced Diff View with Statistics Panel and Revert Actions */
+          <div className="h-full flex flex-col">
+            {/* Diff Summary Panel */}
+            {(() => {
+              const stats = getDiffStats(originalCode || '', localCode);
+              const additions = fullFileDisplayLines.filter(line => line.type === 'addition').length;
+              const deletions = fullFileDisplayLines.filter(line => line.type === 'deletion').length;
+              const context = fullFileDisplayLines.filter(line => line.type === 'context').length;
+              
+              return (
+                <div className="border-b bg-muted/30 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <Diff className="w-4 h-4 text-blue-600" />
+                        <span className="font-medium">Diff Summary</span>
+                      </div>
+                      
+                      <div className="flex items-center space-x-4 text-sm">
+                        <div className="flex items-center space-x-1">
+                          <Plus className="w-3 h-3 text-green-600" />
+                          <span className="text-green-600 font-medium">{additions}</span>
+                          <span className="text-muted-foreground">additions</span>
+                        </div>
+                        
+                        <div className="flex items-center space-x-1">
+                          <Minus className="w-3 h-3 text-red-600" />
+                          <span className="text-red-600 font-medium">{deletions}</span>
+                          <span className="text-muted-foreground">deletions</span>
+                        </div>
+                        
+                        {stats.linesChanged > 0 && (
+                          <div className="flex items-center space-x-1">
+                            <FileText className="w-3 h-3 text-orange-600" />
+                            <span className="text-orange-600 font-medium">{stats.linesChanged}</span>
+                            <span className="text-muted-foreground">modified</span>
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center space-x-1">
+                          <CheckCircle className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-muted-foreground">{context} unchanged</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {stats.changes > 0 && (
+                        <Badge variant="outline" className="text-xs">
+                          <GitBranch className="w-3 h-3 mr-1" />
+                          {stats.changes} total changes
+                        </Badge>
+                      )}
+                      
+                      <Badge variant="secondary" className="text-xs">
+                        <FileText className="w-3 h-3 mr-1" />
+                        {fullFileDisplayLines.length} lines in diff
+                      </Badge>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div>
-                  {fullFileDisplayLines.map((line, index) => (
-                    <div key={index} className="group relative">
-                      <DiffLine line={line} index={index} />
-                      {/* Revert button for modified lines */}
-                      {line.type === 'addition' && line.originalContent && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={() => handleRevertLine(index)}
-                          title="Revert this line"
-                        >
-                          <RotateCcw className="w-3 h-3" />
-                        </Button>
+                  
+                  {/* Change Visualization Bar */}
+                  <div className="mt-2">
+                    <div className="flex h-2 rounded-full overflow-hidden bg-background">
+                      {stats.totalLines > 0 && (
+                        <>
+                          {additions > 0 && (
+                            <div 
+                              className="bg-green-500"
+                              style={{ width: `${(additions / stats.totalLines) * 100}%` }}
+                              title={`${additions} additions`}
+                            />
+                          )}
+                          {deletions > 0 && (
+                            <div 
+                              className="bg-red-500"
+                              style={{ width: `${(deletions / stats.totalLines) * 100}%` }}
+                              title={`${deletions} deletions`}
+                            />
+                          )}
+                          {stats.linesChanged > 0 && (
+                            <div 
+                              className="bg-orange-500"
+                              style={{ width: `${(stats.linesChanged / stats.totalLines) * 100}%` }}
+                              title={`${stats.linesChanged} modifications`}
+                            />
+                          )}
+                          {context > 0 && (
+                            <div 
+                              className="bg-muted-foreground/20"
+                              style={{ width: `${(context / stats.totalLines) * 100}%` }}
+                              title={`${context} unchanged lines`}
+                            />
+                          )}
+                        </>
                       )}
                     </div>
-                  ))}
+                    <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                      <span>Original: {originalCode?.split('\n').length || 0} lines</span>
+                      <span>Modified: {localCode.split('\n').length} lines</span>
+                    </div>
+                  </div>
                 </div>
-              )}
+              );
+            })()}
+            
+            {/* Diff Content */}
+            <div className="flex-1 overflow-auto border">
+              <div className="min-w-max">
+                {fullFileDisplayLines.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-muted-foreground">
+                      <Diff className="w-8 h-8 mx-auto mb-2" />
+                      <p>No differences to display</p>
+                      <p className="text-sm mt-1">
+                        The original and modified code are identical
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {fullFileDisplayLines.map((line, index) => (
+                      <div key={index} className="group relative">
+                        <DiffLine line={line} index={index} />
+                        {/* Revert button for modified lines */}
+                        {line.type === 'addition' && line.originalContent && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleRevertLine(index)}
+                            title="Revert this line"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ) : showVersionHistory ? (
