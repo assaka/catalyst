@@ -23,8 +23,8 @@ console.log('🔧 Models loaded with associations initialized');
 require('./database/auto-migrations');
 console.log('🔄 Automatic migrations scheduled');
 
-// Import services
-const patchService = require('./services/patch-service');
+// Import services  
+const extensionService = require('./services/extension-service');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -108,7 +108,7 @@ const storeRoutesManagement = require('./routes/store-routes');
 const heatmapRoutes = require('./routes/heatmap');
 const backgroundJobRoutes = require('./routes/background-jobs');
 const cronJobRoutes = require('./routes/cron-jobs');
-const patchesRoutes = require('./routes/patches');
+const extensionsRoutes = require('./routes/extensions');
 const debugStoreRoutes = require('./routes/debug-store');
 
 const app = express();
@@ -1588,7 +1588,7 @@ app.use('/api/stores', domainSettingsRoutes); // Domain settings for Store -> Se
 app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, auth for analytics) - MUST come before broad /api middleware
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
-app.use('/api/patches', patchesRoutes); // Versioned patches API with A/B testing and rollback support
+app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
 app.use('/api/debug', debugStoreRoutes); // Debug endpoints for troubleshooting store resolution
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 app.use('/api', authMiddleware, storeDatabaseRoutes); // Add store database routes
@@ -1655,171 +1655,67 @@ app.get('/preview/:storeId', async (req, res) => {
       return res.redirect(302, publicUrl);
     }
 
-    // Apply patches using the patch service
-    const patchService = require('./services/patch-service');
+    // Use the new extension system for preview
+    console.log(`🔌 Using extension system for preview of ${fileName}...`);
     
-    console.log(`🔧 Applying patches to ${fileName}...`);
-    const patchResult = await patchService.applyPatches(fileName, {
-      storeId,
-      previewMode: true
+    // Get current published version for this store
+    const currentVersionResult = await extensionService.getCurrentVersion(storeId);
+    const hasExtensions = currentVersionResult.success && currentVersionResult.version;
+    
+    console.log(`📦 Extension status - Store: ${storeId}, Has Extensions: ${hasExtensions}`);
+
+    // Redirect to main application with extension system enabled
+    const publicStoreBaseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+    const routePath = route.route_path.startsWith('/') ? route.route_path.substring(1) : route.route_path;
+    
+    // Add extension system parameters instead of patches
+    const queryParams = new URLSearchParams({
+      extensions: 'true',
+      storeId: storeId,
+      fileName: fileName,
+      preview: 'true',
+      _t: Date.now()
     });
-
-    if (!patchResult.success) {
-      console.error(`❌ Patch application failed: ${patchResult.error}`);
-      return res.status(500).json({
-        error: 'Patch application failed',
-        message: patchResult.error
-      });
-    }
-
-    // DEMO: If no patches found for Cart.jsx, create a demo patch with "adam" replacement
-    console.log(`🔍 DEMO CHECK: hasPatches=${patchResult.hasPatches}, fileName="${fileName}"`);
-    if (!patchResult.hasPatches && fileName === 'src/pages/Cart.jsx') {
-      console.log('📝 No patches found for Cart.jsx - creating demo "adam" patch...');
-      
-      try {
-        const fs = require('fs');
-        const path = require('path');
-        
-        // Read the baseline Cart.jsx file
-        const cartPath = path.join(__dirname, '../../src/pages/Cart.jsx');
-        if (fs.existsSync(cartPath)) {
-          const baselineCode = fs.readFileSync(cartPath, 'utf8');
-          const targetText = 'Looks like you haven\'t added anything to your cart yet.';
-          const replacementText = 'adam like you haven\'t added anything to your cart yet.';
-          
-          if (baselineCode.includes(targetText)) {
-            const demoCode = baselineCode.replace(targetText, replacementText);
-            
-            console.log('✅ Demo patch created: "Looks" → "adam"');
-            
-            // Override the patch result with our demo patch
-            patchResult.hasPatches = true;
-            patchResult.baselineCode = baselineCode;
-            patchResult.patchedCode = demoCode;
-            patchResult.finalCode = demoCode;
-            patchResult.appliedPatches = [{ 
-              id: 'demo-adam-patch',
-              patch_name: 'Demo Adam Replacement',
-              change_summary: 'Replace "Looks" with "adam" for demonstration'
-            }];
-            patchResult.success = true;
-            
-            console.log('🎯 Demo patch result:', {
-              hasPatches: patchResult.hasPatches,
-              appliedPatchCount: patchResult.appliedPatches.length,
-              codeLength: patchResult.finalCode.length,
-              containsAdam: patchResult.finalCode.includes('adam like you haven')
-            });
-          }
-        }
-      } catch (demoError) {
-        console.warn('⚠️ Demo patch creation failed:', demoError.message);
-      }
-    }
-
-    // Determine the correct frontend path based on the file being previewed
-    const getPagePath = (fileName) => {
-      const pageName = fileName.split('/').pop()?.replace(/\.(jsx?|tsx?)$/, '').toLowerCase();
-      switch (pageName) {
-        case 'cart':
-          return '/cart';
-        case 'checkout':
-          return '/checkout';
-        case 'shop':
-        case 'products':
-          return '/shop';
-        default:
-          return ''; // Default to store root
-      }
-    };
-
-    // Check if patches were applied and serve content accordingly
-    if (patchResult.hasPatches && patchResult.finalCode) {
-      console.log(`✅ Patches applied for ${fileName} - creating HTML with injected patch data`);
-      
-      // Create HTML that loads the frontend app with patch data injected
-      const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
-      const pagePath = getPagePath(fileName);
-      const redirectParams = new URLSearchParams({
-        patches: 'true',
-        fileName: fileName,
-        storeId: storeId,
-        storeSlug: actualStoreSlug
-      });
-      
-      const frontendAppUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}?${redirectParams.toString()}`;
-      
-      // Create an HTML page that injects patch data and then redirects to the React app
-      const htmlWithInjectedData = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loading Preview: ${fileName}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-    <div class="flex items-center justify-center h-screen">
-        <div class="text-center">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p class="text-gray-600">Loading patched component...</p>
-            <p class="text-sm text-gray-500 mt-2">Applying ${patchResult.appliedPatches?.length || 0} patch(es) to ${fileName}</p>
-        </div>
-    </div>
     
-    <script>
-        // Inject patch data globally for the React app to use
-        window.__CATALYST_PATCH_DATA__ = {
-            hasPatches: ${patchResult.hasPatches},
-            fileName: "${fileName}",
-            appliedPatches: ${JSON.stringify(patchResult.appliedPatches || [])},
-            finalCode: ${JSON.stringify(patchResult.finalCode)},
-            previewMode: true
-        };
-        
-        console.log('🔧 Injected patch data:', window.__CATALYST_PATCH_DATA__);
-        console.log('📝 Final code contains yasmin:', window.__CATALYST_PATCH_DATA__.finalCode.includes('yasmin'));
-        
-        // Redirect to the React app after a brief delay to ensure data is injected
-        setTimeout(() => {
-            window.location.href = "${frontendAppUrl}";
-        }, 500);
-    </script>
-</body>
-</html>`;
-      
-      // Set headers to prevent caching and allow iframe embedding
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.setHeader('X-Frame-Options', 'ALLOWALL');
-      
-      console.log(`🎯 Serving HTML with injected patch data, redirecting to: ${frontendAppUrl}`);
-      return res.send(htmlWithInjectedData);
-    } else {
-      // If no patches were applied, redirect to frontend without patches parameter
-      console.log(`ℹ️ No patches to apply for ${fileName} - redirecting to normal frontend`);
-      
-      const frontendUrl = process.env.FRONTEND_URL || 'https://catalyst-pearl.vercel.app';
-      const pagePath = getPagePath(fileName);
-      const redirectParams = new URLSearchParams({
-        fileName: fileName,
-        storeId: storeId
-      });
-      
-      // Redirect to the correct frontend route with /public/:storeCode pattern
-      const redirectUrl = `${frontendUrl}/public/${actualStoreSlug}${pagePath}?${redirectParams.toString()}`;
-      console.log(`🔀 Redirecting to frontend (no patches): ${redirectUrl}`);
-      
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      return res.redirect(302, redirectUrl);
-    }
+    const extensionPreviewUrl = `${publicStoreBaseUrl}/public/${actualStoreSlug}/${routePath}?${queryParams.toString()}`;
+    console.log(`🚀 Redirecting to extension-powered preview: ${extensionPreviewUrl}`);
     
+    return res.redirect(302, extensionPreviewUrl);
+
   } catch (error) {
     console.error('Preview route error:', error);
     res.status(500).json({ 
       error: 'Preview failed', 
       message: error.message 
+    });
+  }
+});
+
+// Extension System Status Endpoint
+app.get('/api/extension-system-status', async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      message: 'Extension system is active',
+      status: 'active',
+      features: [
+        'Hook-based architecture',
+        'Event-driven system', 
+        'Version management',
+        'Preview system',
+        'Extension modules'
+      ],
+      legacy_systems_removed: [
+        'diff-patching',
+        'overlay-patch-system',
+        'patch-service',
+        'hybrid-patch-service'
+      ]
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: error.message 
     });
   }
 });
