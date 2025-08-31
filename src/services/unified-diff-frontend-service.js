@@ -418,8 +418,8 @@ class UnifiedDiffFrontendService {
 
     try {
       const lines = unifiedDiff.split('\n');
-      const originalLines = [];
-      const modifiedLines = [];
+      let originalLines = [];
+      let modifiedLines = [];
       
       let currentOriginalLine = 1;
       let currentModifiedLine = 1;
@@ -520,7 +520,7 @@ class UnifiedDiffFrontendService {
 
     try {
       const baseLines = baseText.split('\n');
-      const modifiedLines = [...baseLines]; // Copy base lines
+      let modifiedLines = [...baseLines]; // Copy base lines
       const lines = unifiedDiff.split('\n');
       
       for (const line of lines) {
