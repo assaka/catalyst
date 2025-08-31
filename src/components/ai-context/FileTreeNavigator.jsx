@@ -40,8 +40,8 @@ const FileTreeNavigator = ({
 
   const loadFileTree = async () => {
     try {
-      // Fetch file baselines from API (core codebase files, no store_id needed)
-      const data = await apiClient.get('patches/baselines');
+      // Fetch file baselines from restored API (core codebase files, no store_id needed)
+      const data = await apiClient.get('extensions/baselines');
 
       if (data && data.success && data.data && data.data.files) {
         // Convert file baselines to file tree format
@@ -75,12 +75,11 @@ const FileTreeNavigator = ({
         console.warn('⚠️ FileTreeNavigator: Authentication issue, trying without auth...');
         
         try {
-          // Fallback: Try direct fetch without authentication
-          const fallbackResponse = await fetch('/api/patches/baselines');
+          // Fallback: Try direct fetch without authentication  
+          const fallbackResponse = await fetch('/api/extensions/baselines');
           const fallbackData = await fallbackResponse.json();
           
           if (fallbackData && fallbackData.success && fallbackData.data && fallbackData.data.files) {
-            
             const fileList = fallbackData.data.files.map(file => ({
               path: file.file_path,
               extension: file.file_path.split('.').pop(),
