@@ -472,8 +472,8 @@ class UnifiedDiffFrontendService {
       const maxOriginalLine = originalKeys.length > 0 ? Math.max(...originalKeys) + 1 : 0;
       const maxModifiedLine = modifiedKeys.length > 0 ? Math.max(...modifiedKeys) + 1 : 0;
       
-      const denseOriginal = [];
-      const denseModified = [];
+      let denseOriginal = [];
+      let denseModified = [];
       
       // Fill original array
       for (let i = 0; i < maxOriginalLine; i++) {
