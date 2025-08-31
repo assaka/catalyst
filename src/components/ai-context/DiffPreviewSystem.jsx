@@ -605,7 +605,8 @@ const DiffPreviewSystem = ({
       
       if (urlResult && (urlResult.success || urlResult.fallback)) {
         // Enhanced preview URL with AST diff data if available
-        let previewUrl = urlResult.url;
+        let previewUrl = urlResult.ur
+
         
         // Add preview parameters
         const previewParams = new URLSearchParams({

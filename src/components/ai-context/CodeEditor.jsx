@@ -13,10 +13,15 @@ import {
   Minimize2,
   Code,
   Diff,
-  Eye
+  Eye,
+  Split,
+  RotateCcw,
+  History
 } from 'lucide-react';
 
-// Import diff service
+// Import new systems
+import hookSystem from '../../core/HookSystem.js';
+import eventSystem from '../../core/EventSystem.js';
 import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
 
 // DiffLine component for displaying individual diff lines
@@ -100,12 +105,77 @@ const CodeEditor = ({
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [diffData, setDiffData] = useState(null);
   const [showDiffView, setShowDiffView] = useState(false);
+  const [showSplitView, setShowSplitView] = useState(false);
   const [fullFileDisplayLines, setFullFileDisplayLines] = useState([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
+  const [versionHistory, setVersionHistory] = useState([]);
+  const [selectedVersion, setSelectedVersion] = useState(null);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [previewMode, setPreviewMode] = useState(false);
 
   const editorRef = useRef(null);
   const diffServiceRef = useRef(new UnifiedDiffFrontendService());
+  
+  // Helper function to get diff stats
+  const getDiffStats = useCallback((oldCode, newCode) => {
+    const oldLines = oldCode.split('\n').length;
+    const newLines = newCode.split('\n').length;
+    const additions = Math.max(0, newLines - oldLines);
+    const deletions = Math.max(0, oldLines - newLines);
+    return { additions, deletions, changes: additions + deletions };
+  }, []);
+  
+  // Handle version restoration
+  const handleRestoreVersion = useCallback((version) => {
+    setLocalCode(version.content);
+    setSelectedVersion(version);
+    
+    // Apply hooks
+    hookSystem.do('codeEditor.versionRestored', {
+      fileName,
+      version,
+      restoredCode: version.content
+    });
+    
+    // Emit event
+    eventSystem.emit('codeEditor.versionRestored', {
+      fileName,
+      version,
+      restoredCode: version.content
+    });
+    
+    if (onChange) {
+      onChange(version.content);
+    }
+  }, [fileName, onChange]);
+  
+  // Handle line-specific reverts
+  const handleRevertLine = useCallback((lineIndex) => {
+    if (!originalCode) return;
+    
+    const currentLines = localCode.split('\n');
+    const originalLines = originalCode.split('\n');
+    
+    if (originalLines[lineIndex] !== undefined) {
+      currentLines[lineIndex] = originalLines[lineIndex];
+      const newCode = currentLines.join('\n');
+      
+      setLocalCode(newCode);
+      
+      // Apply hooks
+      hookSystem.do('codeEditor.lineReverted', {
+        fileName,
+        lineIndex,
+        originalLine: originalLines[lineIndex],
+        newCode
+      });
+      
+      if (onChange) {
+        onChange(newCode);
+      }
+    }
+  }, [localCode, originalCode, fileName, onChange]);
 
   useEffect(() => {
     setLocalCode(value);
@@ -364,16 +434,42 @@ const CodeEditor = ({
 
 
   const handleCodeChange = (newCode) => {
-    setLocalCode(newCode);
-    setIsModified(newCode !== value);
+    // Apply hooks before processing change
+    const processedCode = hookSystem.apply('codeEditor.beforeChange', newCode, {
+      fileName,
+      language,
+      originalCode: value
+    });
     
-    // Always call onManualEdit to let the parent handle change detection
-    // The parent (AIContextWindow) will determine if there are real changes
-    if (onManualEdit) {
-      onManualEdit(newCode, value, { enableDiffDetection });
+    setLocalCode(processedCode);
+    setIsModified(processedCode !== value);
+    
+    // Emit event for extensions
+    eventSystem.emit('codeEditor.codeChanged', {
+      fileName,
+      oldCode: value,
+      newCode: processedCode,
+      language
+    });
+    
+    // Add to version history
+    if (processedCode !== value) {
+      const historyEntry = {
+        id: Date.now(),
+        timestamp: new Date(),
+        content: processedCode,
+        description: 'Code modification',
+        changeStats: getDiffStats(value, processedCode)
+      };
+      setVersionHistory(prev => [historyEntry, ...prev.slice(0, 19)]); // Keep last 20 versions
     }
     
-    onChange && onChange(newCode);
+    // Always call onManualEdit to let the parent handle change detection
+    if (onManualEdit) {
+      onManualEdit(processedCode, value, { enableDiffDetection });
+    }
+    
+    onChange && onChange(processedCode);
     
     // Update undo/redo button states
     setTimeout(() => {
@@ -384,9 +480,8 @@ const CodeEditor = ({
             setCanUndo(model.canUndo());
             setCanRedo(model.canRedo());
           } else {
-            // Fallback - assume buttons should be enabled after content change
             setCanUndo(true);
-            setCanRedo(false); // Usually nothing to redo after new changes
+            setCanRedo(false);
           }
         } catch (error) {
           console.warn('Could not update undo/redo state:', error);
@@ -488,13 +583,22 @@ const CodeEditor = ({
 
   const handleUndo = async () => {
     if (editorRef.current) {
-      console.log('🔄 [CodeEditor] Handling undo - creating reverse patch');
+      console.log('🔄 [CodeEditor] Handling undo with hook system');
       
       try {
-        // Get current state before undo
         const codeBeforeUndo = editorRef.current.getValue();
         
-        // Perform the undo operation
+        // Apply undo hook
+        const shouldUndo = hookSystem.apply('codeEditor.beforeUndo', true, {
+          fileName,
+          currentCode: codeBeforeUndo
+        });
+        
+        if (!shouldUndo) {
+          console.log('Undo operation cancelled by hook');
+          return;
+        }
+        
         const undoAction = editorRef.current.getAction('undo');
         if (!undoAction) {
           console.warn('⚠️ [CodeEditor] Undo action not available');
@@ -502,59 +606,26 @@ const CodeEditor = ({
         }
         
         await undoAction.run();
-        
-        // Get state after undo
         const codeAfterUndo = editorRef.current.getValue();
         
-        // Create a patch that represents the undo operation
-        if (codeBeforeUndo !== codeAfterUndo) {
-          try {
-            console.log('💾 [CodeEditor] Creating undo patch...');
-            
-            const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
-            if (!token) {
-              console.warn('⚠️ [CodeEditor] No auth token found for undo patch creation');
-              return;
-            }
-
-            const response = await fetch('/api/patches/create', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                filePath: fileName,
-                modifiedCode: codeAfterUndo,
-                changeSummary: 'Undo operation',
-                changeType: 'undo',
-                sessionId: `undo_${Date.now()}`,
-                useUpsert: true
-              })
-            });
-
-            if (response.ok) {
-              const result = await response.json();
-              console.log('✅ [CodeEditor] Undo patch created successfully:', result);
-              
-              // Regenerate diff data after undo
-              if (enableDiffDetection && originalCode) {
-                const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterUndo);
-                if (diffResult) {
-                  setDiffData(diffResult);
-                  const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterUndo);
-                  setFullFileDisplayLines(displayLines);
-                }
-              }
-            } else {
-              console.error('❌ [CodeEditor] Failed to create undo patch:', response.status);
-            }
-          } catch (error) {
-            console.error('❌ [CodeEditor] Error creating undo patch:', error);
+        // Emit undo event
+        eventSystem.emit('codeEditor.undoPerformed', {
+          fileName,
+          beforeCode: codeBeforeUndo,
+          afterCode: codeAfterUndo
+        });
+        
+        // Update diff if enabled
+        if (enableDiffDetection && originalCode && codeBeforeUndo !== codeAfterUndo) {
+          const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterUndo);
+          if (diffResult) {
+            setDiffData(diffResult);
+            const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterUndo);
+            setFullFileDisplayLines(displayLines);
           }
         }
         
-        // Update button states after undo
+        // Update button states
         setTimeout(() => {
           try {
             const model = editorRef.current.getModel();
@@ -575,13 +646,22 @@ const CodeEditor = ({
 
   const handleRedo = async () => {
     if (editorRef.current) {
-      console.log('🔄 [CodeEditor] Handling redo - creating forward patch');
+      console.log('🔄 [CodeEditor] Handling redo with hook system');
       
       try {
-        // Get current state before redo
         const codeBeforeRedo = editorRef.current.getValue();
         
-        // Perform the redo operation
+        // Apply redo hook
+        const shouldRedo = hookSystem.apply('codeEditor.beforeRedo', true, {
+          fileName,
+          currentCode: codeBeforeRedo
+        });
+        
+        if (!shouldRedo) {
+          console.log('Redo operation cancelled by hook');
+          return;
+        }
+        
         const redoAction = editorRef.current.getAction('redo');
         if (!redoAction) {
           console.warn('⚠️ [CodeEditor] Redo action not available');
@@ -589,59 +669,26 @@ const CodeEditor = ({
         }
         
         redoAction.run();
-        
-        // Get state after redo
         const codeAfterRedo = editorRef.current.getValue();
         
-        // Create a patch that represents the redo operation
-        if (codeBeforeRedo !== codeAfterRedo) {
-          try {
-            console.log('💾 [CodeEditor] Creating redo patch...');
-            
-            const token = localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token');
-            if (!token) {
-              console.warn('⚠️ [CodeEditor] No auth token found for redo patch creation');
-              return;
-            }
-
-            const response = await fetch('/api/patches/create', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                filePath: fileName,
-                modifiedCode: codeAfterRedo,
-                changeSummary: 'Redo operation',
-                changeType: 'redo',
-                sessionId: `redo_${Date.now()}`,
-                useUpsert: true
-              })
-            });
-
-            if (response.ok) {
-              const result = await response.json();
-              console.log('✅ [CodeEditor] Redo patch created successfully:', result);
-              
-              // Regenerate diff data after redo
-              if (enableDiffDetection && originalCode) {
-                const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterRedo);
-                if (diffResult) {
-                  setDiffData(diffResult);
-                  const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterRedo);
-                  setFullFileDisplayLines(displayLines);
-                }
-              }
-            } else {
-              console.error('❌ [CodeEditor] Failed to create redo patch:', response.status);
-            }
-          } catch (error) {
-            console.error('❌ [CodeEditor] Error creating redo patch:', error);
+        // Emit redo event
+        eventSystem.emit('codeEditor.redoPerformed', {
+          fileName,
+          beforeCode: codeBeforeRedo,
+          afterCode: codeAfterRedo
+        });
+        
+        // Update diff if enabled
+        if (enableDiffDetection && originalCode && codeBeforeRedo !== codeAfterRedo) {
+          const diffResult = diffServiceRef.current.createDiff(originalCode, codeAfterRedo);
+          if (diffResult) {
+            setDiffData(diffResult);
+            const displayLines = generateFullFileDisplayLines(diffResult.parsedDiff, originalCode, codeAfterRedo);
+            setFullFileDisplayLines(displayLines);
           }
         }
         
-        // Update button states after redo
+        // Update button states
         setTimeout(() => {
           try {
             const model = editorRef.current.getModel();
@@ -714,13 +761,41 @@ const CodeEditor = ({
             </Button>
 
             {enableDiffDetection && diffData && (
+              <>
+                <Button
+                  variant={showSplitView ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setShowSplitView(!showSplitView);
+                    setShowDiffView(false);
+                  }}
+                  title={showSplitView ? "Hide Split View" : "Show Split View"}
+                >
+                  <Split className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  variant={showDiffView ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setShowDiffView(!showDiffView);
+                    setShowSplitView(false);
+                  }}
+                  title={showDiffView ? "Show Code Editor" : "Show Diff View"}
+                >
+                  {showDiffView ? <Code className="w-4 h-4" /> : <Diff className="w-4 h-4" />}
+                </Button>
+              </>
+            )}
+            
+            {versionHistory.length > 0 && (
               <Button
-                variant={showDiffView ? "default" : "ghost"}
+                variant="ghost"
                 size="sm"
-                onClick={() => setShowDiffView(!showDiffView)}
-                title={showDiffView ? "Show Code Editor" : "Show Diff View"}
+                onClick={() => setShowVersionHistory(!showVersionHistory)}
+                title="View Version History"
               >
-                {showDiffView ? <Code className="w-4 h-4" /> : <Diff className="w-4 h-4" />}
+                <History className="w-4 h-4" />
               </Button>
             )}
 
@@ -737,8 +812,74 @@ const CodeEditor = ({
 
       {/* Editor Content */}
       <div className="flex-1">
-        {showDiffView && enableDiffDetection && fullFileDisplayLines.length > 0 ? (
-          /* Diff View */
+        {showSplitView && enableDiffDetection ? (
+          /* Split View - Original vs Modified */
+          <div className="h-full flex">
+            {/* Original Code */}
+            <div className="flex-1 border-r">
+              <div className="bg-muted p-2 text-sm font-medium border-b">
+                Original ({originalCode?.split('\n').length || 0} lines)
+              </div>
+              <Editor
+                height="100%"
+                language={getMonacoLanguage()}
+                value={originalCode || ''}
+                options={{
+                  readOnly: true,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                  tabSize: 2,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                  lineNumbers: 'on',
+                  glyphMargin: true,
+                  folding: true
+                }}
+                theme="vs-dark"
+              />
+            </div>
+            
+            {/* Modified Code */}
+            <div className="flex-1">
+              <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+                <span>Modified ({localCode.split('\n').length} lines)</span>
+                {diffData && (
+                  <div className="flex items-center space-x-2 text-xs">
+                    <span className="text-green-600">+{diffData.metadata?.additions || 0}</span>
+                    <span className="text-red-600">-{diffData.metadata?.deletions || 0}</span>
+                  </div>
+                )}
+              </div>
+              <Editor
+                height="100%"
+                language={getMonacoLanguage()}
+                value={localCode}
+                onChange={handleCodeChange}
+                onMount={handleEditorDidMount}
+                options={{
+                  readOnly: readOnly,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  fontSize: 14,
+                  lineHeight: 20,
+                  fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+                  tabSize: 2,
+                  insertSpaces: true,
+                  wordWrap: 'on',
+                  automaticLayout: true,
+                  lineNumbers: 'on',
+                  glyphMargin: true,
+                  folding: true
+                }}
+                theme="vs-dark"
+              />
+            </div>
+          </div>
+        ) : showDiffView && enableDiffDetection && fullFileDisplayLines.length > 0 ? (
+          /* Enhanced Diff View with Revert Actions */
           <div className="h-full overflow-auto border">
             <div className="min-w-max">
               {fullFileDisplayLines.length === 0 ? (
@@ -754,8 +895,102 @@ const CodeEditor = ({
               ) : (
                 <div>
                   {fullFileDisplayLines.map((line, index) => (
-                    <DiffLine key={index} line={line} index={index} />
+                    <div key={index} className="group relative">
+                      <DiffLine line={line} index={index} />
+                      {/* Revert button for modified lines */}
+                      {line.type === 'addition' && line.originalContent && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-2 top-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleRevertLine(index)}
+                          title="Revert this line"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
                   ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : showVersionHistory ? (
+          /* Version History View */
+          <div className="h-full flex">
+            {/* Version List */}
+            <div className="w-80 border-r bg-muted/50">
+              <div className="p-3 border-b bg-muted">
+                <h3 className="font-medium">Version History</h3>
+                <p className="text-xs text-muted-foreground">{versionHistory.length} versions</p>
+              </div>
+              <div className="overflow-y-auto">
+                {versionHistory.map((version) => (
+                  <div
+                    key={version.id}
+                    className={`p-3 border-b cursor-pointer hover:bg-background transition-colors ${
+                      selectedVersion?.id === version.id ? 'bg-primary/10 border-primary' : ''
+                    }`}
+                    onClick={() => setSelectedVersion(version)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">{version.description}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {version.changeStats.changes} changes
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {version.timestamp.toLocaleString()}
+                    </div>
+                    <div className="flex items-center space-x-2 mt-2 text-xs">
+                      <span className="text-green-600">+{version.changeStats.additions}</span>
+                      <span className="text-red-600">-{version.changeStats.deletions}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Version Preview */}
+            <div className="flex-1 flex flex-col">
+              {selectedVersion ? (
+                <>
+                  <div className="p-3 border-b bg-muted flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium">{selectedVersion.description}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedVersion.timestamp.toLocaleString()}
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => handleRestoreVersion(selectedVersion)}
+                      title="Restore this version"
+                    >
+                      <RotateCcw className="w-4 h-4 mr-1" />
+                      Restore
+                    </Button>
+                  </div>
+                  <Editor
+                    height="100%"
+                    language={getMonacoLanguage()}
+                    value={selectedVersion.content}
+                    options={{
+                      readOnly: true,
+                      minimap: { enabled: false },
+                      scrollBeyondLastLine: false,
+                      fontSize: 14,
+                      automaticLayout: true
+                    }}
+                    theme="vs-dark"
+                  />
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <History className="w-8 h-8 mx-auto mb-2" />
+                    <p>Select a version to preview</p>
+                  </div>
                 </div>
               )}
             </div>
@@ -812,12 +1047,22 @@ const CodeEditor = ({
       <div className="border-t px-4 py-1 bg-muted/50 text-xs text-muted-foreground">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {showDiffView && diffData ? (
+            {showSplitView ? (
+              <>
+                <span>Split View</span>
+                <span>{originalCode?.split('\n').length || 0} → {localCode.split('\n').length} lines</span>
+              </>
+            ) : showDiffView && diffData ? (
               <>
                 <span>
                   +{diffData.metadata?.additions || 0} -{diffData.metadata?.deletions || 0}
                 </span>
                 <span>{fullFileDisplayLines.length} lines in diff</span>
+              </>
+            ) : showVersionHistory ? (
+              <>
+                <span>Version History</span>
+                <span>{versionHistory.length} versions</span>
               </>
             ) : (
               <>
@@ -829,10 +1074,22 @@ const CodeEditor = ({
           </div>
 
           <div className="flex items-center space-x-2">
+            {showSplitView && (
+              <Badge variant="outline" className="text-xs">
+                <Split className="w-3 h-3 mr-1" />
+                Split View
+              </Badge>
+            )}
             {showDiffView && diffData && (
               <Badge variant="outline" className="text-xs">
                 <Diff className="w-3 h-3 mr-1" />
                 Diff View
+              </Badge>
+            )}
+            {showVersionHistory && (
+              <Badge variant="outline" className="text-xs">
+                <History className="w-3 h-3 mr-1" />
+                History
               </Badge>
             )}
             {isModified && <span className="text-orange-600">Unsaved changes</span>}
