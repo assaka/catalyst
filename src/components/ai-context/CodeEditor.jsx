@@ -18,7 +18,8 @@ import {
   RotateCcw,
   History,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  ChevronLeft
 } from 'lucide-react';
 
 // Import new systems
@@ -35,17 +36,17 @@ const RevertGutter = ({ changedBlocks, onRevertBlock, onRevertLine }) => {
       {changedBlocks.map((block, blockIndex) => (
         <div
           key={blockIndex}
-          className="absolute group pointer-events-auto"
+          className="absolute pointer-events-auto"
           style={{
             top: `${block.startLine * 20}px`, // Assuming 20px line height
             height: `${(block.endLine - block.startLine + 1) * 20}px`
           }}
         >
-          <div className="w-full h-full bg-blue-500/10 border-l-2 border-blue-500/30 hover:border-blue-500 transition-colors">
+          <div className="w-full h-full bg-blue-500/5 border-l-2 border-blue-500/20">
             <Button
               variant="ghost"
               size="sm"
-              className="opacity-0 group-hover:opacity-100 absolute -left-1 top-0 w-6 h-6 p-0 bg-blue-500 hover:bg-blue-600 text-white transition-all duration-200"
+              className="absolute -left-1 top-0 w-6 h-6 p-0 bg-gray-400 hover:bg-gray-500 text-white transition-colors duration-150"
               onClick={() => {
                 if (block.startLine === block.endLine) {
                   onRevertLine(block.startLine);
@@ -55,7 +56,7 @@ const RevertGutter = ({ changedBlocks, onRevertBlock, onRevertLine }) => {
               }}
               title={`Revert ${block.startLine === block.endLine ? 'line' : 'lines'} ${block.startLine + 1}${block.startLine !== block.endLine ? `-${block.endLine + 1}` : ''}`}
             >
-              <RotateCcw className="w-3 h-3" />
+              <ChevronLeft className="w-3 h-3" />
             </Button>
           </div>
         </div>
