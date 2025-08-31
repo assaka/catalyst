@@ -834,13 +834,25 @@ const CodeEditor = ({
             {enableDiffDetection && diffData && (
               <>
                 <Button
+                  variant={!showSplitView && !showDiffView ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    setShowSplitView(false);
+                    setShowDiffView(false);
+                  }}
+                  title="Show Code Editor"
+                >
+                  <Code className="w-4 h-4" />
+                </Button>
+                
+                <Button
                   variant={showSplitView ? "default" : "ghost"}
                   size="sm"
                   onClick={() => {
-                    setShowSplitView(!showSplitView);
+                    setShowSplitView(true);
                     setShowDiffView(false);
                   }}
-                  title={showSplitView ? "Hide Split View" : "Show Split View"}
+                  title="Show Split View"
                 >
                   <Split className="w-4 h-4" />
                 </Button>
@@ -861,12 +873,12 @@ const CodeEditor = ({
                   variant={showDiffView ? "default" : "ghost"}
                   size="sm"
                   onClick={() => {
-                    setShowDiffView(!showDiffView);
+                    setShowDiffView(true);
                     setShowSplitView(false);
                   }}
-                  title={showDiffView ? "Show Code Editor" : "Show Diff View"}
+                  title="Show Diff View"
                 >
-                  {showDiffView ? <Code className="w-4 h-4" /> : <Diff className="w-4 h-4" />}
+                  <Diff className="w-4 h-4" />
                 </Button>
               </>
             )}
