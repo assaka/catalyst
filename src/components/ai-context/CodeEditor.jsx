@@ -16,7 +16,9 @@ import {
   Eye,
   Split,
   RotateCcw,
-  History
+  History,
+  ChevronUp,
+  ChevronDown
 } from 'lucide-react';
 
 // Import new systems
@@ -106,6 +108,7 @@ const CodeEditor = ({
   const [diffData, setDiffData] = useState(null);
   const [showDiffView, setShowDiffView] = useState(false);
   const [showSplitView, setShowSplitView] = useState(false);
+  const [collapseUnchanged, setCollapseUnchanged] = useState(false);
   const [fullFileDisplayLines, setFullFileDisplayLines] = useState([]);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -125,6 +128,74 @@ const CodeEditor = ({
     const deletions = Math.max(0, oldLines - newLines);
     return { additions, deletions, changes: additions + deletions };
   }, []);
+  
+  // Helper function to process code for collapsed view
+  const getCollapsedCode = useCallback((originalCode, modifiedCode) => {
+    if (!collapseUnchanged || !originalCode || !modifiedCode) {
+      return { original: originalCode, modified: modifiedCode };
+    }
+    
+    const originalLines = originalCode.split('\n');
+    const modifiedLines = modifiedCode.split('\n');
+    const maxLines = Math.max(originalLines.length, modifiedLines.length);
+    
+    const collapsedOriginal = [];
+    const collapsedModified = [];
+    let unchangedCount = 0;
+    let lastShownLine = -1;
+    
+    for (let i = 0; i < maxLines; i++) {
+      const origLine = originalLines[i] || '';
+      const modLine = modifiedLines[i] || '';
+      const isChanged = origLine !== modLine;
+      
+      if (isChanged) {
+        // If we have accumulated unchanged lines, add a collapse indicator
+        if (unchangedCount > 3) {
+          collapsedOriginal.push(`\n... ${unchangedCount - 2} unchanged lines ...\n`);
+          collapsedModified.push(`\n... ${unchangedCount - 2} unchanged lines ...\n`);
+        } else if (unchangedCount > 0) {
+          // Add the unchanged lines if there are only a few
+          for (let j = lastShownLine + 1; j < i; j++) {
+            collapsedOriginal.push(originalLines[j] || '');
+            collapsedModified.push(modifiedLines[j] || '');
+          }
+        }
+        
+        // Add the changed line
+        collapsedOriginal.push(origLine);
+        collapsedModified.push(modLine);
+        
+        // Add context lines (1 line before and after if available)
+        if (i + 1 < maxLines && originalLines[i + 1] === modifiedLines[i + 1]) {
+          collapsedOriginal.push(originalLines[i + 1] || '');
+          collapsedModified.push(modifiedLines[i + 1] || '');
+          i++; // Skip this line in the next iteration
+        }
+        
+        unchangedCount = 0;
+        lastShownLine = i;
+      } else {
+        unchangedCount++;
+      }
+    }
+    
+    // Handle remaining unchanged lines at the end
+    if (unchangedCount > 3) {
+      collapsedOriginal.push(`\n... ${unchangedCount - 1} unchanged lines ...\n`);
+      collapsedModified.push(`\n... ${unchangedCount - 1} unchanged lines ...\n`);
+    } else if (unchangedCount > 0) {
+      for (let j = lastShownLine + 1; j < maxLines; j++) {
+        collapsedOriginal.push(originalLines[j] || '');
+        collapsedModified.push(modifiedLines[j] || '');
+      }
+    }
+    
+    return {
+      original: collapsedOriginal.join('\n'),
+      modified: collapsedModified.join('\n')
+    };
+  }, [collapseUnchanged]);
   
   // Handle version restoration
   const handleRestoreVersion = useCallback((version) => {
@@ -774,6 +845,18 @@ const CodeEditor = ({
                   <Split className="w-4 h-4" />
                 </Button>
                 
+                {showSplitView && (
+                  <Button
+                    variant={collapseUnchanged ? "default" : "ghost"}
+                    size="sm"
+                    onClick={() => setCollapseUnchanged(!collapseUnchanged)}
+                    title={collapseUnchanged ? "Show All Lines" : "Collapse Unchanged Lines"}
+                    className="px-2"
+                  >
+                    {collapseUnchanged ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                  </Button>
+                )}
+                
                 <Button
                   variant={showDiffView ? "default" : "ghost"}
                   size="sm"
@@ -814,16 +897,25 @@ const CodeEditor = ({
       <div className="flex-1">
         {showSplitView && enableDiffDetection ? (
           /* Split View - Original vs Modified */
-          <div className="h-full flex">
-            {/* Original Code */}
-            <div className="flex-1 border-r">
-              <div className="bg-muted p-2 text-sm font-medium border-b">
-                Original ({originalCode?.split('\n').length || 0} lines)
-              </div>
-              <Editor
-                height="100%"
-                language={getMonacoLanguage()}
-                value={originalCode || ''}
+          (() => {
+            const { original: collapsedOriginal, modified: collapsedModified } = getCollapsedCode(originalCode, localCode);
+            return (
+              <div className="h-full flex">
+                {/* Original Code */}
+                <div className="flex-1 border-r">
+                  <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+                    <span>Original ({originalCode?.split('\n').length || 0} lines)</span>
+                    {collapseUnchanged && (
+                      <Badge variant="secondary" className="text-xs">
+                        <ChevronUp className="w-3 h-3 mr-1" />
+                        Collapsed
+                      </Badge>
+                    )}
+                  </div>
+                  <Editor
+                    height="100%"
+                    language={getMonacoLanguage()}
+                    value={collapsedOriginal || originalCode || ''}
                 options={{
                   readOnly: true,
                   minimap: { enabled: false },
@@ -842,21 +934,29 @@ const CodeEditor = ({
               />
             </div>
             
-            {/* Modified Code */}
-            <div className="flex-1">
-              <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
-                <span>Modified ({localCode.split('\n').length} lines)</span>
-                {diffData && (
-                  <div className="flex items-center space-x-2 text-xs">
-                    <span className="text-green-600">+{diffData.metadata?.additions || 0}</span>
-                    <span className="text-red-600">-{diffData.metadata?.deletions || 0}</span>
+                {/* Modified Code */}
+                <div className="flex-1">
+                  <div className="bg-muted p-2 text-sm font-medium border-b flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span>Modified ({localCode.split('\n').length} lines)</span>
+                      {collapseUnchanged && (
+                        <Badge variant="secondary" className="text-xs">
+                          <ChevronUp className="w-3 h-3 mr-1" />
+                          Collapsed
+                        </Badge>
+                      )}
+                    </div>
+                    {diffData && (
+                      <div className="flex items-center space-x-2 text-xs">
+                        <span className="text-green-600">+{diffData.metadata?.additions || 0}</span>
+                        <span className="text-red-600">-{diffData.metadata?.deletions || 0}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <Editor
-                height="100%"
-                language={getMonacoLanguage()}
-                value={localCode}
+                  <Editor
+                    height="100%"
+                    language={getMonacoLanguage()}
+                    value={collapseUnchanged ? collapsedModified : localCode}
                 onChange={handleCodeChange}
                 onMount={handleEditorDidMount}
                 options={{
@@ -876,8 +976,10 @@ const CodeEditor = ({
                 }}
                 theme="vs-dark"
               />
-            </div>
-          </div>
+                </div>
+              </div>
+            );
+          })()
         ) : showDiffView && enableDiffDetection && fullFileDisplayLines.length > 0 ? (
           /* Enhanced Diff View with Revert Actions */
           <div className="h-full overflow-auto border">
