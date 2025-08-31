@@ -1227,46 +1227,82 @@ const DiffPreviewSystem = ({
       return displayLines;
     }
     
-    // Add smart collapse indicators for large gaps between changes (>5 lines)
-    if (!originalBaseCodeRef.current || !currentModifiedCode || displayLines.length === 0) {
-      return displayLines;
-    }
-    
+    // Simple collapse logic: find large runs of consecutive context lines between changes
     const result = [];
-    let lastProcessedLine = 0;
+    let currentRun = [];
+    let inContextRun = false;
     
     displayLines.forEach((line, index) => {
-      const currentLineNumber = line.lineNumber || line.newLineNumber || 0;
-      
-      // Check if there's a significant gap between last processed line and current line
-      if (currentLineNumber > 0 && lastProcessedLine > 0) {
-        const gap = currentLineNumber - lastProcessedLine - 1;
-        
-        // Add collapse indicator if gap is significant (> 3 lines)
-        if (gap > 3) {
+      if (line.type === 'context') {
+        if (!inContextRun) {
+          inContextRun = true;
+          currentRun = [line];
+        } else {
+          currentRun.push(line);
+        }
+      } else {
+        // Non-context line (addition, deletion, etc.)
+        if (inContextRun && currentRun.length > 8) {
+          // Large context run - replace middle with collapse indicator
+          const contextBefore = 3;
+          const contextAfter = 3;
+          const collapsedCount = currentRun.length - contextBefore - contextAfter;
+          
+          // Add first few context lines
+          for (let i = 0; i < contextBefore; i++) {
+            result.push(currentRun[i]);
+          }
+          
+          // Add collapse indicator
           result.push({
             type: 'collapsed',
-            content: `⋯ ${gap} unchanged lines hidden (click to expand)`,
-            startIndex: lastProcessedLine + 1,
-            endIndex: currentLineNumber - 1,
+            content: `⋯ ${collapsedCount} unchanged lines hidden (click to expand)`,
+            startIndex: result.length,
+            endIndex: result.length + collapsedCount,
             lineNumber: null,
             newLineNumber: null,
             originalContent: null,
             modifiedContent: null
           });
+          
+          // Add last few context lines
+          for (let i = currentRun.length - contextAfter; i < currentRun.length; i++) {
+            result.push(currentRun[i]);
+          }
+        } else if (inContextRun) {
+          // Small context run - add all lines
+          result.push(...currentRun);
         }
-      }
-      
-      result.push(line);
-      
-      // Update lastProcessedLine based on line type
-      if (line.type === 'context' || line.type === 'deletion') {
-        lastProcessedLine = Math.max(lastProcessedLine, line.lineNumber || 0);
-      }
-      if (line.type === 'context' || line.type === 'addition') {
-        lastProcessedLine = Math.max(lastProcessedLine, line.newLineNumber || 0);
+        
+        // Reset context run and add the changed line
+        inContextRun = false;
+        currentRun = [];
+        result.push(line);
       }
     });
+    
+    // Handle any remaining context run at the end
+    if (inContextRun && currentRun.length > 8) {
+      const contextBefore = 3;
+      const collapsedCount = currentRun.length - contextBefore;
+      
+      for (let i = 0; i < contextBefore; i++) {
+        result.push(currentRun[i]);
+      }
+      
+      result.push({
+        type: 'collapsed',
+        content: `⋯ ${collapsedCount} unchanged lines hidden (click to expand)`,
+        startIndex: result.length,
+        endIndex: result.length + collapsedCount,
+        lineNumber: null,
+        newLineNumber: null,
+        originalContent: null,
+        modifiedContent: null
+      });
+    } else if (inContextRun) {
+      result.push(...currentRun);
+    }
     
     console.log('🔧 [DiffPreview] Processed display lines with collapse indicators:', {
       originalLength: displayLines.length,
