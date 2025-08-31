@@ -20,6 +20,8 @@ import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 // Import new hook system
 import hookSystem from '@/core/HookSystem.js';
 import eventSystem from '@/core/EventSystem.js';
+import customizationEngine from '@/core/CustomizationEngine.js';
+import { useCustomizations } from '@/hooks/useCustomizations';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -98,6 +100,23 @@ export default function Cart() {
     const navigate = useNavigate();
     // Use StoreProvider data instead of making separate API calls
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
+    
+    // Initialize customization system for Cart component
+    const {
+        isInitialized: customizationsInitialized,
+        isPreviewMode,
+        getCustomStyles,
+        getCustomProps
+    } = useCustomizations({
+        storeId: store?.id,
+        componentName: 'Cart',
+        selectors: ['cart-page', 'shopping-cart'],
+        autoInit: true,
+        context: {
+            page: 'cart',
+            hasItems: false // Will be updated below
+        }
+    });
     const [taxRules, setTaxRules] = useState([]);
     
     // Get currency symbol from settings with hook support
@@ -755,7 +774,10 @@ export default function Cart() {
     }
     
     return (
-        <div className="bg-gray-50">
+        <div 
+            {...getCustomProps({ className: "bg-gray-50 cart-page" })}
+            style={getCustomStyles({ backgroundColor: '#f9fafb' })}
+        >
             <SeoHeadManager
                 title="Your Cart"
                 description="Review your shopping cart items before proceeding to checkout."
