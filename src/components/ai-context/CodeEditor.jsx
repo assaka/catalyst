@@ -153,7 +153,8 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
         src={previewUrl}
         className="w-full h-full border-0"
         title="Live Preview"
-        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-top-navigation-by-user-activation"
+        referrerPolicy="no-referrer-when-downgrade"
         onLoad={() => {
           console.log('✅ Preview iframe loaded successfully');
           // Apply customizations to the iframe content

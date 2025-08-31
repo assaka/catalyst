@@ -154,6 +154,7 @@ const allowedOrigins = [
   'https://catalyst-pearl.vercel.app',
   'https://catalyst-ecommerce.vercel.app',
   'https://catalyst-683t6upsk-hamids-projects-1928df2f.vercel.app',
+  'https://catalyst-backend-fzhu.onrender.com', // Allow backend for preview pages
   process.env.CORS_ORIGIN
 ].filter(Boolean);
 

@@ -161,6 +161,31 @@ class PreviewService {
    */
   applyCodeChangesToHtml(htmlContent, session) {
     try {
+      // Fix asset URLs to point to frontend server
+      const frontendUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+      
+      // Replace relative asset URLs with absolute URLs pointing to frontend
+      htmlContent = htmlContent.replace(
+        /src=["']\/assets\//g, 
+        `src="${frontendUrl}/assets/`
+      );
+      htmlContent = htmlContent.replace(
+        /href=["']\/assets\//g, 
+        `href="${frontendUrl}/assets/`
+      );
+      
+      // Also fix any other relative URLs that might break
+      htmlContent = htmlContent.replace(
+        /src=["']\//g, 
+        `src="${frontendUrl}/`
+      );
+      htmlContent = htmlContent.replace(
+        /href=["']\//g, 
+        `href="${frontendUrl}/`
+      );
+      
+      console.log(`🔧 Fixed asset URLs to point to ${frontendUrl}`);
+
       // Inject preview metadata and modified code into the HTML
       const previewScript = `
         <script>
