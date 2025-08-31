@@ -105,13 +105,15 @@ class PreviewService {
         };
       }
 
-      // Determine the target URL
+      // Determine the target URL  
       const storeSlug = store.slug || 'store';
       let targetUrl = `${baseUrl}/public/${storeSlug}${session.targetPath}`;
       
-      // Add original query params to maintain context
+      // Add original query params to maintain context and enable preview mode
       const urlParams = new URLSearchParams({
         storeId: session.storeId,
+        preview: 'true',
+        fileName: session.fileName,
         _t: Date.now() // Cache busting
       });
       
@@ -200,11 +202,23 @@ class PreviewService {
             appliedAt: Date.now()
           })};
           
+          // Override window.location to show correct route for React Router
+          const originalLocation = window.location.href;
+          const targetPath = '${session.targetPath}';
+          const storeSlug = '${store.slug}';
+          const frontendPath = '/public/' + storeSlug + targetPath;
+          
+          // Update browser history to show correct URL for React Router
+          if (window.history && window.history.replaceState) {
+            window.history.replaceState(null, '', frontendPath + window.location.search);
+          }
+          
           // Apply preview changes when DOM is ready
           document.addEventListener('DOMContentLoaded', function() {
             console.log('🎬 Catalyst Preview Mode Active');
             console.log('📁 File:', '${session.fileName}');
             console.log('🔧 Modified Code Length:', ${session.modifiedCode?.length || 0});
+            console.log('🔄 React Router Path:', frontendPath);
             
             // Dispatch preview event for components to listen to
             window.dispatchEvent(new CustomEvent('catalystPreviewReady', {
