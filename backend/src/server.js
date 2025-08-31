@@ -110,6 +110,7 @@ const backgroundJobRoutes = require('./routes/background-jobs');
 const cronJobRoutes = require('./routes/cron-jobs');
 const extensionsRoutes = require('./routes/extensions');
 const debugStoreRoutes = require('./routes/debug-store');
+const previewRoutes = require('./routes/preview');
 
 const app = express();
 
@@ -1589,6 +1590,7 @@ app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, 
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
+app.use('/api/preview', previewRoutes); // Server-side preview rendering system
 app.use('/api/customizations', require('./routes/customizations')); // Customization system for layout/JS/CSS modifications
 app.use('/api/debug', debugStoreRoutes); // Debug endpoints for troubleshooting store resolution
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware

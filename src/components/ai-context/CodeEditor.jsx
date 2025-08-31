@@ -36,58 +36,86 @@ import hookSystem from '../../core/HookSystem.js';
 import eventSystem from '../../core/EventSystem.js';
 import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
 
-// PreviewFrame component for iframe preview
+// PreviewFrame component for server-side preview
 const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
   const [previewUrl, setPreviewUrl] = useState('');
+  const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Generate preview URL with code changes
+  // Create preview session with server-side rendering
   useEffect(() => {
-    const generatePreview = async () => {
+    const createPreviewSession = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        // For now, use the production URL with preview parameters
-        const baseUrl = window.location.origin;
+        // Get store context from URL or default
+        const urlParams = new URLSearchParams(window.location.search);
+        const storeId = urlParams.get('storeId') || 'default-store-id';
+        
+        // Determine target path from current location or fileName
+        let targetPath = '/';
         const currentPath = window.location.pathname;
         
-        // Create preview URL with changes encoded
-        const previewParams = new URLSearchParams({
-          preview: 'true',
-          file: fileName || 'unknown',
-          changes: btoa(encodeURIComponent(JSON.stringify({
-            original: originalCode,
-            modified: sourceCode,
-            fileName,
-            language
-          })))
-        });
-
-        // Use current path for preview context
-        let previewPath = currentPath;
-        if (fileName?.includes('Cart')) {
-          previewPath = '/cart';
-        } else if (fileName?.includes('Checkout')) {
-          previewPath = '/checkout';
+        if (fileName?.includes('Cart') || currentPath.includes('/cart')) {
+          targetPath = '/cart';
+        } else if (fileName?.includes('Checkout') || currentPath.includes('/checkout')) {
+          targetPath = '/checkout';
+        } else if (fileName?.includes('Storefront') || currentPath.includes('/shop')) {
+          targetPath = '/shop';
+        } else if (fileName?.includes('ProductDetail') || currentPath.includes('/products')) {
+          targetPath = '/products';
         }
 
-        const fullPreviewUrl = `${baseUrl}${previewPath}?${previewParams.toString()}`;
-        setPreviewUrl(fullPreviewUrl);
+        // Call the new preview API
+        const backendUrl = process.env.REACT_APP_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
+        const response = await fetch(`${backendUrl}/api/preview/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            storeId,
+            fileName: fileName || 'unknown.jsx',
+            originalCode: originalCode || '',
+            modifiedCode: sourceCode || '',
+            language: language || 'javascript',
+            targetPath
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
         
-        console.log('🔗 Generated preview URL:', fullPreviewUrl);
+        if (result.success) {
+          const fullPreviewUrl = `${backendUrl}${result.data.previewUrl}`;
+          setPreviewUrl(fullPreviewUrl);
+          setSessionId(result.data.sessionId);
+          
+          console.log('✅ Preview session created:', {
+            sessionId: result.data.sessionId,
+            fileName: result.data.fileName,
+            targetPath: result.data.targetPath,
+            previewUrl: fullPreviewUrl
+          });
+        } else {
+          throw new Error(result.error || 'Failed to create preview session');
+        }
         
       } catch (error) {
-        console.error('❌ Error generating preview URL:', error);
-        setError('Failed to generate preview URL');
+        console.error('❌ Error creating preview session:', error);
+        setError(`Failed to create preview: ${error.message}`);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (sourceCode || originalCode) {
-      generatePreview();
+    if (sourceCode && originalCode && fileName) {
+      createPreviewSession();
     }
   }, [sourceCode, originalCode, fileName, language]);
 
