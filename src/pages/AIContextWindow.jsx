@@ -857,14 +857,14 @@ export default ExampleComponent;`;
                   {/* Tab Interface Above File Name */}
                   <div className="sticky top-0 bg-white dark:bg-gray-900 border-b z-10">
                     <div className="flex justify-between border-b border-gray-200 dark:border-gray-700">
-                      <div className="flex">
+                      <div className="flex overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-gray-100 dark:scrollbar-track-gray-800">
                         <button
                           onClick={() => {
                             setPreviewMode('code');
                             handlePreviewModeChange('code');
                           }}
                           className={cn(
-                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
                             previewMode === 'code' 
                               ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
@@ -879,7 +879,7 @@ export default ExampleComponent;`;
                             handlePreviewModeChange('patch');
                           }}
                           className={cn(
-                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
                             previewMode === 'patch' 
                               ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
@@ -894,7 +894,7 @@ export default ExampleComponent;`;
                             handlePreviewModeChange('hybrid');
                           }}
                           className={cn(
-                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
                             previewMode === 'hybrid' 
                               ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
                               : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
@@ -934,7 +934,7 @@ export default ExampleComponent;`;
                   </div>
 
                   {/* Single Content Area - Tab-based Content */}
-                  <div className="flex-1">
+                  <div className="flex-1 overflow-hidden">
                     {previewMode === 'code' ? (
                       // Advanced Code Editor with Database Persistence
                       <CodeEditor
@@ -963,26 +963,28 @@ export default ExampleComponent;`;
                         onDiffStatsChange={handleDiffStatsChange}
                       />
                     ) : (
-                      // Hybrid Customization Editor - Three-mode editor
-                      <HybridCustomizationEditor
-                        fileName={selectedFile.name}
-                        filePath={selectedFile.path}
-                        initialCode={sourceCode}
-                        language={getLanguageFromFileName(selectedFile.name)}
-                        onSave={(data) => {
-                          // Handle both slot configurations and code changes
-                          if (data.type === 'slot_config') {
-                            console.log('Slot configuration saved:', data);
-                          } else if (data.type === 'code_change') {
-                            handleCodeChange(data.modifiedCode);
-                          }
-                        }}
-                        onCancel={() => {
-                          // Switch back to code mode
-                          setPreviewMode('code');
-                        }}
-                        className="h-full"
-                      />
+                      // Hybrid Customization Editor - Three-mode editor with scrollable content
+                      <div className="h-full overflow-y-auto">
+                        <HybridCustomizationEditor
+                          fileName={selectedFile.name}
+                          filePath={selectedFile.path}
+                          initialCode={sourceCode}
+                          language={getLanguageFromFileName(selectedFile.name)}
+                          onSave={(data) => {
+                            // Handle both slot configurations and code changes
+                            if (data.type === 'slot_config') {
+                              console.log('Slot configuration saved:', data);
+                            } else if (data.type === 'code_change') {
+                              handleCodeChange(data.modifiedCode);
+                            }
+                          }}
+                          onCancel={() => {
+                            // Switch back to code mode
+                            setPreviewMode('code');
+                          }}
+                          className="min-h-full"
+                        />
+                      </div>
                     )}
                   </div>
                 </>
