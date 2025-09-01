@@ -239,13 +239,34 @@ class PreviewService {
     <link rel="icon" type="image/svg+xml" href="https://www.suprshop.com/logo_v2.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Preview: ${session.fileName}</title>
+    <!-- Load actual CSS from the live cart page -->
+    <link rel="stylesheet" crossorigin href="https://catalyst-pearl.vercel.app/assets/index-DsosPPHy.css">
+    
     <style>
+      /* Reset and base styles for preview */
       body {
         margin: 0;
         padding: 0;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         background: #f8f9fa;
         line-height: 1.6;
+      }
+      
+      /* Hide preview-specific elements when showing real cart */
+      .preview-container .info-card {
+        display: none;
+      }
+      
+      /* Make cart preview full width like real site */
+      #react-preview-container {
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        min-height: 100vh !important;
+      }
+      
+      #react-mount-point {
+        padding: 0 !important;
       }
       .preview-container {
         max-width: 1200px;
@@ -323,34 +344,33 @@ class PreviewService {
     </div>
     
     <div class="preview-container">
-      <div class="info-card">
-        <h1>Preview: ${session.fileName}</h1>
-        <p><strong>Target Path:</strong> ${session.targetPath}</p>
-        <p><strong>Store:</strong> ${storeData.slug || 'Unknown'}</p>
-        <p><strong>Session ID:</strong> ${session.sessionId}</p>
-        <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-      </div>
-      
-      <div class="code-card">
-        <h2>🎯 Visual Preview</h2>
-        <div class="diff-indicator">
-          🚀 Live Cart component with your modifications applied
-        </div>
-        <div id="react-preview-container" style="
-          border: 2px solid #e5e7eb;
-          border-radius: 8px;
-          background: white;
-          min-height: 500px;
-          position: relative;
-        ">
-          <div id="react-mount-point" style="padding: 20px;">
-            <div style="text-align: center; padding: 40px; color: #6b7280;" id="loading-placeholder">
-              <div style="font-size: 48px; margin-bottom: 16px;">🛒</div>
-              <div style="font-size: 18px; margin-bottom: 8px;">Loading Cart Component...</div>
-              <div style="font-size: 14px;">Initializing React runtime</div>
-            </div>
+      <!-- Full-screen cart preview matching real site -->
+      <div id="react-preview-container" style="
+        border: none;
+        border-radius: 0;
+        background: white;
+        min-height: 100vh;
+        position: relative;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      ">
+        <div id="react-mount-point" style="padding: 0; width: 100%;">
+          <div style="text-align: center; padding: 40px; color: #6b7280;" id="loading-placeholder">
+            <div style="font-size: 48px; margin-bottom: 16px;">🛒</div>
+            <div style="font-size: 18px; margin-bottom: 8px;">Loading Cart Component...</div>
+            <div style="font-size: 14px;">Matching hamid2 store layout</div>
           </div>
         </div>
+      </div>
+      
+      <!-- Info card shown only when cart fails to load -->
+      <div class="info-card" id="fallback-info" style="display: none;">
+        <h1>Preview: ${session.fileName}</h1>
+        <p><strong>Target Path:</strong> ${session.targetPath}</p>
+        <p><strong>Store:</strong> hamid2</p>
+        <p><strong>Session ID:</strong> ${session.sessionId}</p>
+        <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
       </div>
       
       <div class="code-card">
@@ -409,18 +429,59 @@ class PreviewService {
         useNavigate: () => (path) => console.log('Navigate to:', path),
         Link: ({ to, children, ...props }) => React.createElement('a', { href: to, ...props }, children),
         
-        // Store context (mock)
+        // Store context with real hamid2 data
         useStore: () => ({
-          store: { id: '${storeData.store?.id || 'mock-store-id'}', name: '${storeData.store?.name || 'Preview Store'}', slug: '${storeData.slug || 'preview-store'}' },
-          settings: { currency_symbol: '$' },
+          store: { 
+            id: '${storeData.store?.id || '8cc01a01-3a78-4f20-beb8-a566a07834e5'}', 
+            name: '${storeData.store?.name || 'hamid2'}', 
+            slug: 'hamid2'
+          },
+          settings: { 
+            currency_symbol: '$',
+            currency: 'USD'
+          },
           taxes: [],
           selectedCountry: 'US',
           loading: false
         }),
         
-        // Mock services
+        // Mock services with sample cart data
         cartService: {
-          getCart: () => Promise.resolve({ success: true, items: [] }),
+          getCart: () => Promise.resolve({ 
+            success: true, 
+            items: [
+              {
+                id: 'cart-item-1',
+                product_id: 'product-1',
+                quantity: 2,
+                price: 29.99,
+                selected_options: [],
+                product: {
+                  id: 'product-1',
+                  name: 'Premium T-Shirt',
+                  price: 29.99,
+                  sale_price: 29.99,
+                  image_url: 'https://via.placeholder.com/150x150?text=Product+1',
+                  category_ids: ['cat-1']
+                }
+              },
+              {
+                id: 'cart-item-2',
+                product_id: 'product-2',
+                quantity: 1,
+                price: 45.00,
+                selected_options: [{ name: 'Size', value: 'Large', price: 0 }],
+                product: {
+                  id: 'product-2',
+                  name: 'Designer Jacket',
+                  price: 45.00,
+                  sale_price: 45.00,
+                  image_url: 'https://via.placeholder.com/150x150?text=Product+2',
+                  category_ids: ['cat-2']
+                }
+              }
+            ]
+          }),
           updateCart: () => Promise.resolve({ success: true })
         },
         couponService: {

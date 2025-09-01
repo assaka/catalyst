@@ -122,10 +122,18 @@ const applySemanticDiffsToCode = async (baseCode, semanticDiffs, filePath) => {
           });
           
           const beforeLength = modifiedCode.length;
-          modifiedCode = modifiedCode.replace(diff.originalContent, diff.newContent);
-          const afterLength = modifiedCode.length;
+          const searchExists = modifiedCode.includes(diff.originalContent);
+          console.log(`🔧 [applySemanticDiffsToCode] Search string exists in code: ${searchExists}`);
           
-          console.log(`🔧 [applySemanticDiffsToCode] Replacement result: ${beforeLength} -> ${afterLength} chars`);
+          if (searchExists) {
+            modifiedCode = modifiedCode.replace(diff.originalContent, diff.newContent);
+            const afterLength = modifiedCode.length;
+            console.log(`🔧 [applySemanticDiffsToCode] Replacement successful: ${beforeLength} -> ${afterLength} chars`);
+          } else {
+            console.log(`❌ [applySemanticDiffsToCode] Original content not found for replacement!`);
+            console.log(`🔍 First 200 chars of search target:`, diff.originalContent.substring(0, 200));
+            console.log(`🔍 First 200 chars of actual code:`, modifiedCode.substring(0, 200));
+          }
           
         } else if (diff.type === 'add' && diff.content) {
           // Add new content at specified location
