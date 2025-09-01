@@ -1,4 +1,4 @@
-y/**
+/**
  * ImprovedCartSlottedEditor - Clean No-Code + Advanced modes for CartSlotted
  * No-Code: Preview + drag & drop
  * Advanced: Code + slots management + preview (responsive layout)
