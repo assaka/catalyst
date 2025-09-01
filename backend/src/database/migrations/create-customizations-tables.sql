@@ -87,6 +87,9 @@ CREATE TABLE IF NOT EXISTS customization_logs (
 CREATE INDEX IF NOT EXISTS idx_customization_types_name ON customization_types(name);
 CREATE INDEX IF NOT EXISTS idx_customization_types_active ON customization_types(is_active);
 
+-- Add unique constraint for upserts
+ALTER TABLE customizations ADD CONSTRAINT unique_store_component_type UNIQUE (store_id, target_component, type);
+
 CREATE INDEX IF NOT EXISTS idx_customizations_store_id ON customizations(store_id);
 CREATE INDEX IF NOT EXISTS idx_customizations_type ON customizations(type);
 CREATE INDEX IF NOT EXISTS idx_customizations_type_id ON customizations(customization_type_id);

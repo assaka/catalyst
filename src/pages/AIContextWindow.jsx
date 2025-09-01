@@ -480,7 +480,8 @@ export default ExampleComponent;`;
                 changeSummary: 'Auto-saved changes',
                 changeType: 'manual_edit'
               },
-              priority: 10
+              priority: 10,
+              useUpsert: true
             })
           });
 
