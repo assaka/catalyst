@@ -325,6 +325,37 @@ class PreviewService {
   }
 
   /**
+   * Merge original and modified code to produce final result
+   * @param {string} originalCode - Original code content
+   * @param {string} modifiedCode - Modified code content  
+   * @param {string} fileName - File name for context
+   * @returns {string} Merged code
+   */
+  mergeCodeChanges(originalCode, modifiedCode, fileName) {
+    try {
+      console.log(`🔀 MERGE: Starting code merge for ${fileName}`);
+      
+      // For now, since both codes are the same length, use the modified code as the result
+      // In future, this could implement proper diff-based merging
+      if (originalCode === modifiedCode) {
+        console.log(`🔀 MERGE: No changes detected, using original code`);
+        return originalCode;
+      }
+      
+      console.log(`🔀 MERGE: Changes detected, using modified code as final result`);
+      console.log(`🔀 MERGE: Original: ${originalCode?.length || 0} chars, Modified: ${modifiedCode?.length || 0} chars`);
+      
+      // Return the modified code as the merged result
+      // TODO: In future versions, implement proper 3-way merge with conflict resolution
+      return modifiedCode || originalCode || '';
+      
+    } catch (error) {
+      console.error('❌ MERGE: Error merging code changes:', error);
+      return modifiedCode || originalCode || '';
+    }
+  }
+
+  /**
    * Generate fallback preview when route simulation fails
    * @param {Object} session - Session data
    * @param {Object} storeData - Store data  
@@ -332,8 +363,8 @@ class PreviewService {
    * @returns {string} Fallback HTML
    */
   generateFallbackPreview(session, storeData, error) {
-    // Get merged code for the preview (inline simple merge for fallback)
-    const mergedCode = session.modifiedCode || session.originalCode || '';
+    // Get merged code for the preview
+    const mergedCode = this.mergeCodeChanges(session.originalCode, session.modifiedCode, session.fileName);
     
     // Escape HTML helper function
     function escapeHtml(unsafe) {
@@ -856,37 +887,6 @@ class PreviewService {
   <p>Failed to generate preview: ${error.message}</p>
 </body>
 </html>`;
-    }
-  }
-
-  /**
-   * Merge original and modified code to produce final result
-   * @param {string} originalCode - Original code content
-   * @param {string} modifiedCode - Modified code content  
-   * @param {string} fileName - File name for context
-   * @returns {string} Merged code
-   */
-  mergeCodeChanges(originalCode, modifiedCode, fileName) {
-    try {
-      console.log(`🔀 MERGE: Starting code merge for ${fileName}`);
-      
-      // For now, since both codes are the same length, use the modified code as the result
-      // In future, this could implement proper diff-based merging
-      if (originalCode === modifiedCode) {
-        console.log(`🔀 MERGE: No changes detected, using original code`);
-        return originalCode;
-      }
-      
-      console.log(`🔀 MERGE: Changes detected, using modified code as final result`);
-      console.log(`🔀 MERGE: Original: ${originalCode?.length || 0} chars, Modified: ${modifiedCode?.length || 0} chars`);
-      
-      // Return the modified code as the merged result
-      // TODO: In future versions, implement proper 3-way merge with conflict resolution
-      return modifiedCode || originalCode || '';
-      
-    } catch (error) {
-      console.error('❌ MERGE: Error merging code changes:', error);
-      return modifiedCode || originalCode || '';
     }
   }
 
