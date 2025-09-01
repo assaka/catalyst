@@ -1,11 +1,33 @@
 -- Customizations System Database Tables
 -- Creates tables for unified customization system (replaces patches)
 
+-- Customization types lookup table
+CREATE TABLE IF NOT EXISTS customization_types (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT,
+    schema_definition JSONB,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Insert default customization types
+INSERT INTO customization_types (name, description, schema_definition) VALUES
+('file_modification', 'Direct file/code modifications', '{"filePath": "string", "originalCode": "string", "modifiedCode": "string", "language": "string", "changeSummary": "string", "changeType": "string", "linesAdded": "number", "linesRemoved": "number", "linesModified": "number"}'),
+('layout_modification', 'UI layout changes', '{"operation": "string", "selector": "string", "properties": "object", "conditions": "object"}'),
+('css_injection', 'CSS styling injections', '{"selector": "string", "styles": "object", "media_query": "string"}'),
+('javascript_injection', 'JavaScript behavior modifications', '{"code": "string", "target": "string", "trigger": "string"}'),
+('component_replacement', 'React component replacements', '{"original_component": "string", "replacement_component": "string", "props_mapping": "object"}'),
+('hook_customization', 'WordPress-style hooks', '{"hook_name": "string", "callback": "string", "priority": "number"}'),
+('event_handler', 'DOM event handlers', '{"selector": "string", "event": "string", "handler": "string"}}')
+ON CONFLICT (name) DO NOTHING;
+
 -- Main customizations table
 CREATE TABLE IF NOT EXISTS customizations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     store_id UUID NOT NULL,
-    type VARCHAR(50) NOT NULL, -- 'file_modification', 'layout_modification', 'css_injection', etc.
+    customization_type_id INTEGER REFERENCES customization_types(id),
+    type VARCHAR(50) NOT NULL, -- For backward compatibility, references customization_types.name
     name VARCHAR(255) NOT NULL,
     description TEXT,
     target_component VARCHAR(255), -- Component or file being customized
@@ -62,8 +84,12 @@ CREATE TABLE IF NOT EXISTS customization_logs (
 );
 
 -- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_customization_types_name ON customization_types(name);
+CREATE INDEX IF NOT EXISTS idx_customization_types_active ON customization_types(is_active);
+
 CREATE INDEX IF NOT EXISTS idx_customizations_store_id ON customizations(store_id);
 CREATE INDEX IF NOT EXISTS idx_customizations_type ON customizations(type);
+CREATE INDEX IF NOT EXISTS idx_customizations_type_id ON customizations(customization_type_id);
 CREATE INDEX IF NOT EXISTS idx_customizations_target_component ON customizations(target_component);
 CREATE INDEX IF NOT EXISTS idx_customizations_active ON customizations(is_active);
 CREATE INDEX IF NOT EXISTS idx_customizations_priority ON customizations(priority);
