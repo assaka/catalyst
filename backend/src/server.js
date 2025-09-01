@@ -1608,7 +1608,7 @@ const conditionalAuthMiddleware = (req, res, next) => {
 app.use('/api', conditionalAuthMiddleware, storeDatabaseRoutes); // Add store database routes
 app.use('/api', conditionalAuthMiddleware, storeMediaStorageRoutes); // Add media storage routes
 
-// Preview route for serving patched content (used by BrowserPreview iframe)
+// Preview route for serving content with customizations
 // Server-side patch rendering for preview
 app.get('/preview/:storeId', async (req, res) => {
   // Set headers to allow iframe embedding and prevent caching

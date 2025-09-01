@@ -12,12 +12,12 @@ const { checkStoreOwnership } = require('../middleware/storeAuth');
 
 /**
  * PUBLIC ENDPOINTS (no authentication required)
- * These endpoints are used by the BrowserPreview for route resolution
+ * These endpoints are used by the preview system for route resolution
  */
 
 /**
  * GET /api/store-routes/public/find-by-page/:pageName
- * Public endpoint to find routes by page name (for BrowserPreview)
+ * Public endpoint to find routes by page name (for preview system)
  * Requires store_id in query params or x-store-id header
  */
 router.get('/public/find-by-page/:pageName', async (req, res) => {
@@ -153,7 +153,7 @@ router.get('/navigation', async (req, res) => {
 
 /**
  * GET /api/store-routes/resolve/:path*
- * Resolve a path to a route (for internal use by BrowserPreview)
+ * Resolve a path to a route (for internal use by preview system)
  */
 router.get('/resolve/*', async (req, res) => {
   try {
