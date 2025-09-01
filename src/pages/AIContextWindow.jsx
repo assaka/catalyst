@@ -8,6 +8,7 @@ import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import VersionHistory from '@/components/ai-context/VersionHistory';
+import HybridCustomizationEditor from '@/core/slot-editor/HybridCustomizationEditor';
 import apiClient from '@/api/client';
 // Store context no longer needed - backend resolves store automatically
 // import { useStoreSelection } from '@/contexts/StoreSelectionContext';
@@ -1272,6 +1273,21 @@ export default ExampleComponent;`;
                           <Diff className="w-4 h-4 mr-2" />
                           Diff
                         </button>
+                        <button
+                          onClick={() => {
+                            setPreviewMode('hybrid');
+                            handlePreviewModeChange('hybrid');
+                          }}
+                          className={cn(
+                            "flex items-center px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+                            previewMode === 'hybrid' 
+                              ? "text-blue-600 dark:text-blue-400 border-blue-600 dark:border-blue-400"
+                              : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 border-transparent hover:border-gray-300 dark:hover:border-gray-600"
+                          )}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Customize
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1319,7 +1335,7 @@ export default ExampleComponent;`;
                         enableTabs={true}
                         className="h-full"
                       />
-                    ) : (
+                    ) : previewMode === 'patch' ? (
                       // Diff View - Enhanced with AST diff functionality
                       <DiffPreviewSystem
                         originalCode={manualEditResult?.originalCode || originalCode}
@@ -1330,6 +1346,27 @@ export default ExampleComponent;`;
                         className="h-full"
                         onCodeChange={handleCodeChange}
                         onDiffStatsChange={handleDiffStatsChange}
+                      />
+                    ) : (
+                      // Hybrid Customization Editor - Three-mode editor
+                      <HybridCustomizationEditor
+                        fileName={selectedFile.name}
+                        filePath={selectedFile.path}
+                        initialCode={sourceCode}
+                        language={getLanguageFromFileName(selectedFile.name)}
+                        onSave={(data) => {
+                          // Handle both slot configurations and code changes
+                          if (data.type === 'slot_config') {
+                            console.log('Slot configuration saved:', data);
+                          } else if (data.type === 'code_change') {
+                            handleCodeChange(data.modifiedCode);
+                          }
+                        }}
+                        onCancel={() => {
+                          // Switch back to code mode
+                          setPreviewMode('code');
+                        }}
+                        className="h-full"
                       />
                     )}
                   </div>
