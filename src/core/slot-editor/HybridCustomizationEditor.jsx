@@ -101,18 +101,20 @@ const HybridCustomizationEditor = ({
     });
   }, [fileName, filePath]);
 
-  // Load actual file content if initialCode is empty or missing
+  // Always try to load file content to ensure we have the latest version
   useEffect(() => {
     const loadActualFileContent = async () => {
-      console.log('🔄 HybridCustomizationEditor: Checking if need to load file content:', {
+      console.log('🔄 HybridCustomizationEditor: Loading file content:', {
         fileName,
         filePath,
         initialCodeLength: initialCode ? initialCode.length : 0,
-        initialCodeTrimLength: initialCode ? initialCode.trim().length : 0,
-        shouldLoad: !((initialCode && initialCode.trim().length > 0) || !filePath)
+        hasInitialCode: !!(initialCode && initialCode.trim().length > 0)
       });
       
-      if ((initialCode && initialCode.trim().length > 0) || !filePath) return;
+      if (!filePath) {
+        console.warn('⚠️ HybridCustomizationEditor: No filePath provided');
+        return;
+      }
       
       setIsLoadingCode(true);
       try {
@@ -124,18 +126,31 @@ const HybridCustomizationEditor = ({
           setActualFileCode(fileContent);
           setCurrentCode(fileContent);
           console.log('✅ HybridCustomizationEditor: Loaded file content:', fileContent.length, 'characters');
+          console.log('📄 HybridCustomizationEditor: File content preview:', fileContent.substring(0, 200) + '...');
         } else {
           console.warn('⚠️ HybridCustomizationEditor: No baseline found for:', filePath);
+          // Fallback to initialCode if no baseline found
+          if (initialCode) {
+            setActualFileCode(initialCode);
+            setCurrentCode(initialCode);
+            console.log('📄 HybridCustomizationEditor: Using initialCode as fallback:', initialCode.length, 'characters');
+          }
         }
       } catch (error) {
         console.error('❌ HybridCustomizationEditor: Error loading file content:', error);
+        // Fallback to initialCode on error
+        if (initialCode) {
+          setActualFileCode(initialCode);
+          setCurrentCode(initialCode);
+          console.log('📄 HybridCustomizationEditor: Using initialCode after error:', initialCode.length, 'characters');
+        }
       } finally {
         setIsLoadingCode(false);
       }
     };
 
     loadActualFileContent();
-  }, [filePath, initialCode]);
+  }, [filePath, fileName]); // Remove initialCode from dependencies to avoid reload loops
 
   // Load existing slot configuration
   useEffect(() => {
@@ -387,16 +402,32 @@ const HybridCustomizationEditor = ({
                   Loading file content...
                 </div>
               ) : (
-                <CodeEditor
-                  key={filePath} // Force re-render when file changes
-                  fileName={fileName}
-                  value={actualFileCode || initialCode}
-                  language={language}
-                  onChange={handleCodeChange}
-                  className="h-full"
-                  originalCode={actualFileCode || initialCode}
-                  enableDiffDetection={true}
-                />
+                (() => {
+                  const codeToRender = actualFileCode || initialCode;
+                  console.log('🎯 HybridCustomizationEditor: Rendering CodeEditor with:', {
+                    fileName,
+                    filePath,
+                    codeLength: codeToRender ? codeToRender.length : 0,
+                    hasActualFileCode: !!actualFileCode,
+                    hasInitialCode: !!initialCode,
+                    actualFileCodeLength: actualFileCode ? actualFileCode.length : 0,
+                    initialCodeLength: initialCode ? initialCode.length : 0,
+                    codePreview: codeToRender ? codeToRender.substring(0, 100) + '...' : 'NO CODE'
+                  });
+                  
+                  return (
+                    <CodeEditor
+                      key={filePath} // Force re-render when file changes
+                      fileName={fileName}
+                      value={codeToRender}
+                      language={language}
+                      onChange={handleCodeChange}
+                      className="h-full"
+                      originalCode={codeToRender}
+                      enableDiffDetection={true}
+                    />
+                  );
+                })()
               )}
             </div>
           )}
