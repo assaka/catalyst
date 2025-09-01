@@ -478,6 +478,13 @@ const CodeEditor = ({
         newCode
       });
       
+      // Check if all changes have been reverted, if so switch to Editor mode
+      if (newCode === originalCode) {
+        setShowSplitView(false);
+        setShowDiffView(false);
+        setShowPreviewFrame(false);
+      }
+      
       if (onChange) {
         onChange(newCode);
       }
@@ -508,6 +515,13 @@ const CodeEditor = ({
       endLine,
       newCode
     });
+    
+    // Check if all changes have been reverted, if so switch to Editor mode
+    if (newCode === originalCode) {
+      setShowSplitView(false);
+      setShowDiffView(false);
+      setShowPreviewFrame(false);
+    }
     
     if (onChange) {
       onChange(newCode);
@@ -1145,14 +1159,25 @@ const CodeEditor = ({
               <Save className="w-4 h-4" />
             </Button>
 
+            {/* Always show Preview eye, other buttons only when diff detection is enabled */}
+            <Button
+              variant={showPreviewFrame ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setShowPreviewFrame(!showPreviewFrame)}
+              title="Show Preview Frame"
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+            
             {enableDiffDetection && diffData && (
               <>
                 <Button
-                  variant={!showSplitView && !showDiffView ? "default" : "ghost"}
+                  variant={!showSplitView && !showDiffView && !showPreviewFrame ? "default" : "ghost"}
                   size="sm"
                   onClick={() => {
                     setShowSplitView(false);
                     setShowDiffView(false);
+                    setShowPreviewFrame(false);
                   }}
                   title="Show Code Editor"
                 >
@@ -1165,6 +1190,7 @@ const CodeEditor = ({
                   onClick={() => {
                     setShowSplitView(true);
                     setShowDiffView(false);
+                    setShowPreviewFrame(false);
                   }}
                   title="Show Split View"
                 >
@@ -1189,19 +1215,11 @@ const CodeEditor = ({
                   onClick={() => {
                     setShowDiffView(true);
                     setShowSplitView(false);
+                    setShowPreviewFrame(false);
                   }}
                   title="Show Diff View"
                 >
                   <Diff className="w-4 h-4" />
-                </Button>
-                
-                <Button
-                  variant={showPreviewFrame ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setShowPreviewFrame(!showPreviewFrame)}
-                  title="Show Preview Frame"
-                >
-                  <Eye className="w-4 h-4" />
                 </Button>
               </>
             )}

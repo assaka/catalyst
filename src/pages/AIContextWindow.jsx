@@ -92,6 +92,179 @@ const applyPatchToCode = (sourceCode, patch) => {
 };
 
 /**
+ * Apply semantic diffs to code
+ * @param {string} baseCode - The base code to apply diffs to
+ * @param {Array} semanticDiffs - Array of semantic diff operations
+ * @param {string} filePath - File path for context
+ * @returns {string} Modified code
+ */
+const applySemanticDiffsToCode = async (baseCode, semanticDiffs, filePath) => {
+  if (!semanticDiffs || semanticDiffs.length === 0) return baseCode;
+  
+  let modifiedCode = baseCode;
+  
+  try {
+    // Parse code into segments for semantic matching
+    const segments = parseCodeSegments(modifiedCode, filePath);
+    
+    for (const diff of semanticDiffs) {
+      try {
+        if (diff.type === 'add') {
+          modifiedCode = insertSegment(modifiedCode, diff, segments);
+        } else if (diff.type === 'modify') {
+          modifiedCode = modifySegment(modifiedCode, diff, segments);
+        } else if (diff.type === 'remove') {
+          modifiedCode = removeSegment(modifiedCode, diff, segments);
+        }
+      } catch (error) {
+        console.warn(`Failed to apply semantic diff ${diff.type} for ${diff.segmentName}:`, error);
+      }
+    }
+  } catch (error) {
+    console.error('Error applying semantic diffs:', error);
+    return baseCode; // Return original code if diff application fails
+  }
+  
+  return modifiedCode;
+};
+
+/**
+ * Simple code segment parser for semantic diff application
+ */
+const parseCodeSegments = (code, filePath) => {
+  const segments = [];
+  const lines = code.split('\n');
+  let currentSegment = null;
+  let currentContent = [];
+  
+  const isJavaScript = filePath.endsWith('.js') || filePath.endsWith('.jsx') || 
+                      filePath.endsWith('.ts') || filePath.endsWith('.tsx');
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const originalLine = lines[i];
+    
+    if (isJavaScript) {
+      // Detect React components
+      if (line.match(/^(export\s+)?(default\s+)?const\s+\w+\s*=\s*\(/)) {
+        if (currentSegment) segments.push(currentSegment);
+        const componentName = line.match(/const\s+(\w+)/)?.[1];
+        currentSegment = {
+          type: 'component',
+          name: componentName,
+          pattern: `const ${componentName}`,
+          startLine: i,
+          content: '',
+          metadata: { isReactComponent: true }
+        };
+        currentContent = [originalLine];
+      }
+      // Detect function declarations
+      else if (line.match(/^(export\s+)?(async\s+)?function\s+\w+/)) {
+        if (currentSegment) segments.push(currentSegment);
+        const funcName = line.match(/function\s+(\w+)/)?.[1];
+        currentSegment = {
+          type: 'function',
+          name: funcName,
+          pattern: `function ${funcName}`,
+          startLine: i,
+          content: '',
+          metadata: { isAsync: line.includes('async') }
+        };
+        currentContent = [originalLine];
+      }
+      // Add to current segment or standalone code
+      if (currentSegment) {
+        currentContent.push(originalLine);
+        currentSegment.content = currentContent.join('\n');
+        currentSegment.endLine = i;
+      }
+    }
+  }
+  
+  // Add final segment
+  if (currentSegment) {
+    segments.push(currentSegment);
+  }
+  
+  return segments;
+};
+
+/**
+ * Insert a new code segment
+ */
+const insertSegment = (code, diff, segments) => {
+  const lines = code.split('\n');
+  const insertPoint = findInsertionPoint(lines, diff);
+  lines.splice(insertPoint, 0, diff.content);
+  return lines.join('\n');
+};
+
+/**
+ * Modify an existing code segment
+ */
+const modifySegment = (code, diff, segments) => {
+  const segment = segments.find(s => 
+    s.name === diff.segmentName && s.type === diff.segmentType
+  );
+  
+  if (segment && diff.originalContent && diff.newContent) {
+    return code.replace(diff.originalContent, diff.newContent);
+  }
+  
+  return code;
+};
+
+/**
+ * Remove a code segment
+ */
+const removeSegment = (code, diff, segments) => {
+  const segment = segments.find(s => 
+    s.name === diff.segmentName && s.type === diff.segmentType
+  );
+  
+  if (segment) {
+    const lines = code.split('\n');
+    if (segment.startLine !== undefined && segment.endLine !== undefined) {
+      lines.splice(segment.startLine, segment.endLine - segment.startLine + 1);
+      return lines.join('\n');
+    }
+  }
+  
+  return code;
+};
+
+/**
+ * Find insertion point for new segments
+ */
+const findInsertionPoint = (lines, diff) => {
+  if (diff.insertAfter === 'beginning') return 0;
+  if (diff.insertAfter === 'end') return lines.length;
+  
+  // Find export default line for 'before_export'
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (lines[i].trim().startsWith('export default')) {
+      return i;
+    }
+  }
+  
+  return lines.length;
+};
+
+/**
+ * Create a simple hash for code comparison
+ */
+const createSimpleHash = (content) => {
+  let hash = 0;
+  for (let i = 0; i < content.length; i++) {
+    const char = content.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return hash.toString(16);
+};
+
+/**
  * AI Context Window Page
  * Main interface for natural language code editing with AST-aware intelligence
  * Integrates file navigation, code editing, AI processing, and live preview
@@ -205,10 +378,72 @@ const AIContextWindowPage = () => {
       const data = await apiClient.get(`extensions/baseline/${encodeURIComponent(filePath)}`);
 
       if (data && data.success && data.data.hasBaseline) {
-        setSourceCode(normalizeLineEndings(data.data.baselineCode));
+        const baselineCode = normalizeLineEndings(data.data.baselineCode);
+        let finalCode = baselineCode;
         
-        // Use the baseline code directly as the original code
-        setOriginalCode(normalizeLineEndings(data.data.baselineCode));
+        // Try to load and apply existing customizations for this file
+        try {
+          const componentName = filePath.split('/').pop(); // Get filename from path
+          console.log(`🎨 Loading customizations for component: ${componentName}`);
+          
+          // Fetch existing customizations for this component
+          const customizationResponse = await fetch(`/api/customizations/component/${encodeURIComponent(componentName)}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              // Include auth token if available for authenticated access
+              ...(localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token')) && {
+                'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token')}`
+              }
+            }
+          });
+          
+          if (customizationResponse.ok) {
+            const customizationData = await customizationResponse.json();
+            
+            if (customizationData.success && customizationData.data.customizations.length > 0) {
+              console.log(`✅ Found ${customizationData.data.customizations.length} customizations for ${componentName}`);
+              
+              // Apply customizations in order of priority
+              const customizations = customizationData.data.customizations.sort((a, b) => a.priority - b.priority);
+              
+              for (const customization of customizations) {
+                if (customization.type === 'file_modification' && customization.customization_data) {
+                  const custData = customization.customization_data;
+                  
+                  // If we have semantic diffs, apply them
+                  if (custData.semanticDiffs && custData.semanticDiffs.length > 0) {
+                    console.log(`🔧 Applying ${custData.semanticDiffs.length} semantic diffs from customization: ${customization.name}`);
+                    finalCode = await applySemanticDiffsToCode(finalCode, custData.semanticDiffs, filePath);
+                  }
+                  // Fallback: if we have modifiedCode, use it directly (for simple customizations)
+                  else if (custData.modifiedCode && 
+                          custData.originalCodeHash && 
+                          createSimpleHash(baselineCode) === custData.originalCodeHash) {
+                    console.log(`📝 Applying direct code replacement from customization: ${customization.name}`);
+                    finalCode = normalizeLineEndings(custData.modifiedCode);
+                  }
+                }
+              }
+              
+              console.log(`🎯 Applied customizations to ${componentName}, code length: ${baselineCode.length} -> ${finalCode.length}`);
+            } else {
+              console.log(`📋 No customizations found for ${componentName}`);
+            }
+          } else {
+            console.warn(`⚠️ Could not fetch customizations for ${componentName}: ${customizationResponse.status}`);
+          }
+          
+        } catch (customizationError) {
+          console.warn('⚠️ Failed to load customizations, using baseline code:', customizationError);
+          // Continue with baseline code if customization loading fails
+        }
+        
+        // Set the final code (baseline + customizations)
+        setSourceCode(finalCode);
+        
+        // Keep original baseline code for comparison
+        setOriginalCode(baselineCode);
         setSelectedFile({
           path: filePath,
           name: filePath.split('/').pop(),
