@@ -128,11 +128,13 @@ class PreviewService {
       // Determine the target URL  
       let targetUrl = `${baseUrl}/public/${storeSlug}${session.targetPath}`;
       
-      // Add original query params to maintain context and enable preview mode
+      // Add authentication bypass and preview params
       const urlParams = new URLSearchParams({
         storeId: session.storeId,
         preview: 'true',
         fileName: session.fileName,
+        bypassAuth: 'true', // Signal to bypass authentication
+        previewMode: 'true',
         _t: Date.now() // Cache busting
       });
       
@@ -215,137 +217,11 @@ class PreviewService {
   applyCodeChangesToHtml(htmlContent, session, storeData = {}) {
     try {
       console.log(`🔧 ROUTE-SIM: Starting route simulation for ${session.fileName}`);
-      console.log(`🔧 ROUTE-SIM: Processing ${storeData.slug} store cart page`);
+      console.log(`🔧 ROUTE-SIM: Due to authentication issues, switching to fallback preview`);
       
-      // Step 1: We already have the real page HTML from the fetch
-      console.log(`🔧 ROUTE-SIM: Received real page HTML (${htmlContent.length} chars)`);
-      console.log(`🔧 ROUTE-SIM: HTML preview:`, htmlContent.substring(0, 500));
-      
-      // Step 2: For now, use a simple approach - just add a preview indicator to the real page
-      console.log(`🔧 ROUTE-SIM: Using simplified approach for route simulation`);
-      
-      // Add preview indicator and disable problematic extensions
-      const previewEnhancements = `
-      <div id="catalyst-preview-indicator" style="
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        background: #3b82f6;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 500;
-        z-index: 10000;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-      ">
-        👁 Preview: ${session.fileName}
-      </div>
-      <script>
-        // Disable extension loading in preview mode to avoid CORS/MIME errors
-        window.__CATALYST_PREVIEW_MODE__ = true;
-        
-        // Mock authentication context for preview
-        window.__CATALYST_PREVIEW_AUTH__ = {
-          user: {
-            id: 'preview-user',
-            email: 'preview@example.com',
-            name: 'Preview User',
-            role: 'admin'
-          },
-          store: {
-            id: '${session.storeId}',
-            name: '${storeData.store?.name || 'Preview Store'}',
-            slug: '${storeData.slug}',
-            owner_id: 'preview-user'
-          },
-          token: 'preview-token-' + Date.now(),
-          isAuthenticated: true,
-          isStoreOwner: true
-        };
-        
-        // Override extension loading to prevent errors
-        const originalImport = window.import;
-        window.import = function(moduleSpecifier) {
-          if (moduleSpecifier.includes('/extensions/') || moduleSpecifier.includes('/src/extensions/')) {
-            console.log('🔧 PREVIEW: Skipping extension in preview mode:', moduleSpecifier);
-            return Promise.resolve({ default: () => {} });
-          }
-          return originalImport ? originalImport.apply(this, arguments) : import(moduleSpecifier);
-        };
-        
-        // Override localStorage for auth data
-        const originalGetItem = localStorage.getItem;
-        localStorage.getItem = function(key) {
-          if (key === 'authToken' || key === 'token') {
-            return window.__CATALYST_PREVIEW_AUTH__.token;
-          }
-          if (key === 'user') {
-            return JSON.stringify(window.__CATALYST_PREVIEW_AUTH__.user);
-          }
-          if (key === 'selectedStoreId') {
-            return window.__CATALYST_PREVIEW_AUTH__.store.id;
-          }
-          if (key === 'selectedStoreName') {
-            return window.__CATALYST_PREVIEW_AUTH__.store.name;
-          }
-          return originalGetItem.call(this, key);
-        };
-        
-        // Disable problematic features in preview
-        if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
-          navigator.serviceWorker.register = () => Promise.resolve();
-        }
-        
-        // Override fetch for authentication endpoints
-        const originalFetch = window.fetch;
-        window.fetch = function(url, options) {
-          if (typeof url === 'string') {
-            // Mock authentication verification endpoints
-            if (url.includes('/api/auth/verify') || url.includes('/api/user/profile')) {
-              console.log('🔧 PREVIEW: Mocking auth endpoint:', url);
-              return Promise.resolve({
-                ok: true,
-                status: 200,
-                json: () => Promise.resolve({
-                  success: true,
-                  user: window.__CATALYST_PREVIEW_AUTH__.user,
-                  store: window.__CATALYST_PREVIEW_AUTH__.store,
-                  token: window.__CATALYST_PREVIEW_AUTH__.token
-                })
-              });
-            }
-            
-            // Mock store data endpoints
-            if (url.includes('/api/stores/') || url.includes('/api/store/')) {
-              console.log('🔧 PREVIEW: Mocking store endpoint:', url);
-              return Promise.resolve({
-                ok: true,
-                status: 200,
-                json: () => Promise.resolve({
-                  success: true,
-                  data: window.__CATALYST_PREVIEW_AUTH__.store
-                })
-              });
-            }
-          }
-          
-          return originalFetch.apply(this, arguments);
-        };
-        
-        console.log('🔧 PREVIEW: Authentication context and API mocking initialized');
-      </script>`;
-      
-      // Fix asset paths and add preview indicator
-      const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
-      let enhancedHtml = htmlContent
-        .replace(/href="\/assets\//g, `href="${baseUrl}/assets/`)
-        .replace(/src="\/assets\//g, `src="${baseUrl}/assets/`)
-        .replace('</body>', previewEnhancements + '</body>');
-      
-      console.log(`🔧 ROUTE-SIM: Enhanced HTML with fixed assets (${enhancedHtml.length} chars)`);
-      return enhancedHtml;
+      // Since the real page requires authentication that we can't easily bypass,
+      // use the fallback preview which is designed to work standalone
+      return this.generateFallbackPreview(session, storeData, { message: 'Using fallback due to authentication requirements' });
       
     } catch (error) {
       console.error('❌ ROUTE-SIM: Error in route simulation:', error);

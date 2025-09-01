@@ -798,11 +798,11 @@ export default ExampleComponent;`;
   // Handle manual edit detection with auto-save
   const handleManualEdit = useCallback(async (newCode, originalCode, options = {}) => {
     const normalizedNewCode = normalizeLineEndings(newCode);
-    const normalizedOriginalCode = normalizeLineEndings(originalCode);
+    const normalizedBaselineCode = normalizeLineEndings(baselineCode);
     const manualEdit = {
       newCode,
-      originalCode,
-      hasChanges: normalizedNewCode !== normalizedOriginalCode,
+      originalCode, // Keep editor's original for compatibility
+      hasChanges: normalizedNewCode !== normalizedBaselineCode, // Compare against baseline
       options
     };
     
@@ -810,7 +810,11 @@ export default ExampleComponent;`;
     
     if (manualEdit.hasChanges) {
       console.log(`🔍 Manual changes detected in ${selectedFile?.name || 'file'}`);
-      console.log('📋 Changes detected:', { originalLength: originalCode.length, newLength: newCode.length });
+      console.log('📋 Changes detected (baseline comparison):', { 
+        baselineLength: baselineCode.length, 
+        newLength: newCode.length,
+        editorOriginalLength: originalCode.length // Editor's previous state
+      });
       
       // Auto-save patch to database with debouncing
       if (autoSaveTimeoutRef.current) {
