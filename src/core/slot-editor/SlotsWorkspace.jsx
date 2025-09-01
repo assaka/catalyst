@@ -30,6 +30,7 @@ import {
 import ConfigurationEditor from './ConfigurationEditor.jsx';
 import ConfigurationPreview from './ConfigurationPreview.jsx';
 import VisualSlotManager from './VisualSlotManager.jsx';
+import SimplifiedSlotsWorkspace from './SimplifiedSlotsWorkspace.jsx';
 import { ComponentSlotDefinitions, ValidationUtils } from './types.js';
 
 // Import slot system and API
@@ -49,7 +50,7 @@ const SlotsWorkspace = ({
   className = ''
 }) => {
   // State management
-  const [activeTab, setActiveTab] = useState('visual'); // 'visual', 'split', 'editor', 'preview'
+  const [activeTab, setActiveTab] = useState('simple'); // 'simple', 'visual', 'split', 'editor', 'preview'
   const [currentUserConfig, setCurrentUserConfig] = useState(null);
   const [originalUserConfig, setOriginalUserConfig] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -414,6 +415,10 @@ const SlotsWorkspace = ({
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
         <div className="mb-4">
           <TabsList>
+            <TabsTrigger value="simple" className="flex items-center gap-2">
+              <Zap className="w-4 h-4" />
+              Simple Mode
+            </TabsTrigger>
             <TabsTrigger value="visual" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
               Visual Manager
@@ -427,12 +432,19 @@ const SlotsWorkspace = ({
               <Code className="w-4 h-4" />
               JSON Editor
             </TabsTrigger>
-            <TabsTrigger value="preview" className="flex items-center gap-2">
-              <Eye className="w-4 h-4" />
-              Preview Only
-            </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="simple" className="h-full">
+          <SimplifiedSlotsWorkspace
+            componentName={componentName}
+            userId={userId}
+            storeId={effectiveStoreId}
+            initialUserConfig={currentUserConfig}
+            onSave={handleSlotSave}
+            onCancel={onCancel}
+          />
+        </TabsContent>
 
         <TabsContent value="visual" className="h-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
