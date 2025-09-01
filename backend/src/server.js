@@ -1598,15 +1598,12 @@ app.use('/api/heatmap', heatmapRoutes); // Add heatmap routes (public tracking, 
 app.use('/api/background-jobs', backgroundJobRoutes); // Background job management routes
 app.use('/api/cron-jobs', cronJobRoutes); // Dynamic cron job management routes
 app.use('/api/extensions', extensionsRoutes); // Modern extension system API with hook-based architecture
-app.use('/api/customizations', authMiddleware, require('./routes/customizations')); // Customization system for layout/JS/CSS modifications
 app.use('/api/debug', debugStoreRoutes); // Debug endpoints for troubleshooting store resolution
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 // Conditional auth middleware that excludes preview routes
 const conditionalAuthMiddleware = (req, res, next) => {
-  // Skip authentication for preview routes, migration endpoint, and customization component endpoint
-  if (req.path.startsWith('/api/preview') || 
-      req.path === '/api/customizations/migrate' ||
-      req.path.startsWith('/api/customizations/component/')) {
+  // Skip authentication for preview routes
+  if (req.path.startsWith('/api/preview')) {
     return next();
   }
   return authMiddleware(req, res, next);

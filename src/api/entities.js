@@ -892,6 +892,7 @@ export const Customer = new BaseEntity('customers');
 export const CustomerActivity = new BaseEntity('customer-activity');
 export const Redirect = new BaseEntity('redirects');
 export const MediaAsset = new BaseEntity('media-assets');
+export const SlotConfiguration = new BaseEntity('slot-configurations');
 
 // For backward compatibility, export common methods
 export const getCurrentUser = () => User.me();
