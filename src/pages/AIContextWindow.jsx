@@ -341,6 +341,7 @@ const AIContextWindowPage = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [sourceCode, setSourceCode] = useState('');
   const [originalCode, setOriginalCode] = useState(''); // Store original baseline for diff detection
+  const [baselineCode, setBaselineCode] = useState(''); // Store actual file baseline for semantic diffs
   const [modifiedFiles, setModifiedFiles] = useState([]);
   const [currentPatch, setCurrentPatch] = useState(null);
   const [cursorPosition, setCursorPosition] = useState({ line: 0, column: 0 });
@@ -634,6 +635,7 @@ export default DiagnosticComponent;`;
         setSourceCode(normalizeLineEndings(diagnosticInfo));
         const baselineCode = await fetchBaselineCode(filePath, diagnosticInfo);
         setOriginalCode(baselineCode); // Set baseline for diff detection
+        setBaselineCode(baselineCode); // Store actual baseline for semantic diffs
         setSelectedFile({
           path: filePath,
           name: filePath.split('/').pop() || 'unknown.js',
@@ -855,7 +857,7 @@ export default ExampleComponent;`;
               targetComponent: selectedFile.path || selectedFile.name,
               customizationData: {
                 filePath: filePath,
-                originalCode: originalCode,
+                originalCode: baselineCode, // Use actual baseline, not previous editor state
                 modifiedCode: newCode,
                 language: getLanguageFromFileName(selectedFile.name),
                 changeSummary: 'Auto-saved changes',
@@ -885,7 +887,7 @@ export default ExampleComponent;`;
         autoSaveTimeoutRef.current = null;
       }
     }
-  }, [selectedFile?.name, selectedFile?.path, normalizeLineEndings]);
+  }, [selectedFile?.name, selectedFile?.path, baselineCode, normalizeLineEndings]);
 
   // Handle diff stats changes from DiffPreviewSystem
   const handleDiffStatsChange = useCallback((diffStats) => {
