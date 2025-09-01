@@ -216,6 +216,10 @@ class PreviewService {
     try {
       console.log(`🔧 SERVER-SIDE: Starting server-side code merging for ${session.fileName}`);
       
+      // Step 1: Merge the code changes
+      const mergedCode = this.mergeCodeChanges(session.originalCode, session.modifiedCode, session.fileName);
+      console.log(`🔧 SERVER-SIDE: Code merged successfully (${mergedCode.length} chars)`);
+      
       // Helper function to escape HTML
       const escapeHtml = (text) => {
         if (!text) return '';
