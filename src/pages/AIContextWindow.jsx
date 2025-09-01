@@ -101,29 +101,70 @@ const applyPatchToCode = (sourceCode, patch) => {
 const applySemanticDiffsToCode = async (baseCode, semanticDiffs, filePath) => {
   if (!semanticDiffs || semanticDiffs.length === 0) return baseCode;
   
+  console.log(`🔧 [applySemanticDiffsToCode] Starting with code length: ${baseCode.length}`);
+  console.log(`🔧 [applySemanticDiffsToCode] Processing ${semanticDiffs.length} semantic diffs:`, semanticDiffs);
+  
   let modifiedCode = baseCode;
   
   try {
-    // Parse code into segments for semantic matching
-    const segments = parseCodeSegments(modifiedCode, filePath);
-    
-    for (const diff of semanticDiffs) {
+    // For each semantic diff, apply it based on its type
+    for (const [index, diff] of semanticDiffs.entries()) {
+      console.log(`🔧 [applySemanticDiffsToCode] Processing diff ${index + 1}:`, diff);
+      
       try {
-        if (diff.type === 'add') {
-          modifiedCode = insertSegment(modifiedCode, diff, segments);
-        } else if (diff.type === 'modify') {
-          modifiedCode = modifySegment(modifiedCode, diff, segments);
-        } else if (diff.type === 'remove') {
-          modifiedCode = removeSegment(modifiedCode, diff, segments);
+        if (diff.type === 'replace' && diff.originalContent && diff.newContent) {
+          // Simple string replacement
+          console.log(`🔧 [applySemanticDiffsToCode] Applying string replacement:`, {
+            searchFor: diff.originalContent.substring(0, 100) + '...',
+            replaceWith: diff.newContent.substring(0, 100) + '...',
+            originalLength: diff.originalContent.length,
+            newLength: diff.newContent.length
+          });
+          
+          const beforeLength = modifiedCode.length;
+          modifiedCode = modifiedCode.replace(diff.originalContent, diff.newContent);
+          const afterLength = modifiedCode.length;
+          
+          console.log(`🔧 [applySemanticDiffsToCode] Replacement result: ${beforeLength} -> ${afterLength} chars`);
+          
+        } else if (diff.type === 'add' && diff.content) {
+          // Add new content at specified location
+          console.log(`🔧 [applySemanticDiffsToCode] Adding content:`, diff.content.substring(0, 100) + '...');
+          
+          if (diff.insertAfter === 'end') {
+            modifiedCode += '\n' + diff.content;
+          } else if (diff.insertAfter === 'beginning') {
+            modifiedCode = diff.content + '\n' + modifiedCode;
+          } else {
+            // Try to find insertion point
+            modifiedCode = insertSegment(modifiedCode, diff, []);
+          }
+          
+        } else if (diff.type === 'modify' && diff.segmentName && diff.originalContent && diff.newContent) {
+          // Modify specific segment
+          console.log(`🔧 [applySemanticDiffsToCode] Modifying segment: ${diff.segmentName}`);
+          modifiedCode = modifiedCode.replace(diff.originalContent, diff.newContent);
+          
+        } else if (diff.type === 'remove' && diff.originalContent) {
+          // Remove content
+          console.log(`🔧 [applySemanticDiffsToCode] Removing content:`, diff.originalContent.substring(0, 100) + '...');
+          modifiedCode = modifiedCode.replace(diff.originalContent, '');
+          
+        } else {
+          console.log(`🔧 [applySemanticDiffsToCode] Unsupported diff type or missing data:`, diff);
         }
+        
       } catch (error) {
-        console.warn(`Failed to apply semantic diff ${diff.type} for ${diff.segmentName}:`, error);
+        console.warn(`🔧 [applySemanticDiffsToCode] Failed to apply diff ${index + 1}:`, error);
       }
     }
   } catch (error) {
-    console.error('Error applying semantic diffs:', error);
+    console.error('🔧 [applySemanticDiffsToCode] Error applying semantic diffs:', error);
     return baseCode; // Return original code if diff application fails
   }
+  
+  console.log(`🔧 [applySemanticDiffsToCode] Final result: ${baseCode.length} -> ${modifiedCode.length} chars`);
+  console.log(`🔧 [applySemanticDiffsToCode] Code changed: ${baseCode !== modifiedCode}`);
   
   return modifiedCode;
 };
@@ -452,8 +493,29 @@ const AIContextWindowPage = () => {
                     console.log(`🔧 STEP 8.${index + 1}: Applying ${custData.semanticDiffs.length} semantic diffs from customization: ${customization.name}`);
                     console.log(`🔧 STEP 8.${index + 1}a: Semantic diffs details:`, custData.semanticDiffs);
                     const beforeLength = finalCode.length;
-                    finalCode = await applySemanticDiffsToCode(finalCode, custData.semanticDiffs, filePath);
-                    console.log(`🔧 STEP 8.${index + 1}b: Semantic diffs applied, code length: ${beforeLength} -> ${finalCode.length}`);
+                    const appliedCode = await applySemanticDiffsToCode(finalCode, custData.semanticDiffs, filePath);
+                    console.log(`🔧 STEP 8.${index + 1}b: Semantic diffs applied, code length: ${beforeLength} -> ${appliedCode.length}`);
+                    
+                    // Check if semantic diffs actually changed the code
+                    if (appliedCode !== finalCode) {
+                      finalCode = appliedCode;
+                      console.log(`✅ STEP 8.${index + 1}c: Semantic diffs successfully modified the code`);
+                    } else {
+                      console.log(`⚠️ STEP 8.${index + 1}c: Semantic diffs didn't change code, trying direct replacement fallback`);
+                      
+                      // Fallback: Try direct code replacement if semantic diffs didn't work
+                      if (custData.modifiedCode && custData.originalCodeHash) {
+                        const baselineHash = createSimpleHash(baselineCode);
+                        console.log(`🔄 STEP 8.${index + 1}d: Hash comparison - baseline: ${baselineHash}, stored: ${custData.originalCodeHash}`);
+                        
+                        if (baselineHash === custData.originalCodeHash) {
+                          console.log(`📝 STEP 8.${index + 1}e: Hash match! Using direct code replacement as fallback`);
+                          finalCode = normalizeLineEndings(custData.modifiedCode);
+                        } else {
+                          console.log(`❌ STEP 8.${index + 1}e: Hash mismatch - cannot apply direct replacement`);
+                        }
+                      }
+                    }
                   }
                   // Fallback: if we have modifiedCode, use it directly (for simple customizations)
                   else if (custData.modifiedCode && 

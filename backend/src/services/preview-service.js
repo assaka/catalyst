@@ -504,51 +504,63 @@ class PreviewService {
             // Transform the Cart component code to work in browser environment
             let transformedCode = cartComponentCode;
             
-            // Replace ES6 imports with global references
+            // Collect all needed dependencies to avoid duplicates
+            const dependencies = new Set();
+            let imports = [];
+            
+            // Extract React hooks
+            const reactHookMatches = transformedCode.match(/import.*?{([^}]+)}.*?from ['"]react['"];?/g);
+            if (reactHookMatches) {
+              reactHookMatches.forEach(match => {
+                const hooks = match.match(/{([^}]+)}/)[1].split(',').map(h => h.trim());
+                hooks.forEach(hook => dependencies.add(hook));
+              });
+            }
+            
+            // Build import replacements without duplicates
+            const reactHooks = Array.from(dependencies).join(', ');
+            
+            // Replace ES6 imports with global references (avoiding duplicates)
             transformedCode = transformedCode
-              // React imports
-              .replace(/import React.*?from ['"]react['"];?/g, 'const React = window.React;')
-              .replace(/import.*?{([^}]+)}.*?from ['"]react['"];?/g, 'const {$1} = window.React;')
-              
-              // React Router imports  
-              .replace(/import.*?{([^}]+)}.*?from ['"]react-router-dom['"];?/g, 'const {$1} = mockDependencies;')
-              .replace(/import.*?useNavigate.*?from ['"]react-router-dom['"];?/g, 'const useNavigate = mockDependencies.useNavigate;')
-              
-              // Store and service imports
-              .replace(/import.*?useStore.*?from.*?['"]@\\/components\\/storefront\\/StoreProvider['"];?/g, 'const useStore = mockDependencies.useStore;')
-              .replace(/import.*?cartService.*?from.*?['"][^'"]*['"];?/g, 'const cartService = mockDependencies.cartService;')
-              .replace(/import.*?couponService.*?from.*?['"][^'"]*['"];?/g, 'const couponService = mockDependencies.couponService;')
-              .replace(/import.*?taxService.*?from.*?['"][^'"]*['"];?/g, 'const taxService = mockDependencies.taxService;')
-              
-              // UI Component imports
-              .replace(/import.*?{([^}]+)}.*?from ['"]@\\/components\\/ui\\/(button|input|card)['"];?/g, 'const {$1} = mockDependencies;')
-              .replace(/import.*?{([^}]+)}.*?from ['"]lucide-react['"];?/g, 'const {$1} = mockDependencies;')
-              
-              // Utility imports
-              .replace(/import.*?{([^}]+)}.*?from ['"]@\\/utils.*?['"];?/g, 'const {$1} = mockDependencies;')
-              .replace(/import.*?from ['"]@\\/utils.*?['"];?/g, '')
-              
-              // Component imports (mock them)
-              .replace(/import.*?RecommendedProducts.*?from.*?['"][^'"]*['"];?/g, 'const RecommendedProducts = window.RecommendedProducts;')
-              .replace(/import.*?FlashMessage.*?from.*?['"][^'"]*['"];?/g, 'const FlashMessage = window.FlashMessage;')
-              .replace(/import.*?SeoHeadManager.*?from.*?['"][^'"]*['"];?/g, 'const SeoHeadManager = window.SeoHeadManager;')
-              .replace(/import.*?CmsBlockRenderer.*?from.*?['"][^'"]*['"];?/g, 'const CmsBlockRenderer = window.CmsBlockRenderer;')
-              
-              // API entity imports
-              .replace(/import.*?{([^}]+)}.*?from ['"]@\\/api\\/(storefront-entities|entities)['"];?/g, 'const {$1} = window;')
-              
-              // Remove other imports
+              // Remove all import statements first
               .replace(/import.*?['"][^'"]*['"];?\\n?/g, '')
               
               // Fix export
               .replace(/export default function Cart/g, 'function Cart')
               .replace(/export default Cart/g, '// Cart component defined above');
             
+            // Add single consolidated import block at the top
+            const importBlock = \`
+              // Consolidated imports to avoid duplicates
+              \${reactHooks ? \`const {\${reactHooks}} = React;\` : ''}
+              const useNavigate = mockDependencies.useNavigate;
+              const Link = mockDependencies.Link;
+              const useStore = mockDependencies.useStore;
+              const cartService = mockDependencies.cartService;
+              const couponService = mockDependencies.couponService;
+              const taxService = mockDependencies.taxService;
+              const { Button } = mockDependencies;
+              const { Input } = mockDependencies;
+              const { Card, CardContent, CardHeader, CardTitle } = mockDependencies;
+              const { Trash2, Plus, Minus, Tag, ShoppingCart } = mockDependencies;
+              const { formatDisplayPrice, calculateDisplayPrice } = mockDependencies;
+              const { createPageUrl, createPublicUrl, getExternalStoreUrl, getStoreBaseUrl } = mockDependencies;
+              const RecommendedProducts = window.RecommendedProducts;
+              const FlashMessage = window.FlashMessage;
+              const SeoHeadManager = window.SeoHeadManager;
+              const CmsBlockRenderer = window.CmsBlockRenderer;
+              const { StorefrontProduct } = window;
+              const { Coupon } = window;
+              const { Tax } = window;
+              const { User } = window;
+            \`;
+            
+            transformedCode = importBlock + transformedCode;
+            
             console.log('🔧 REACT: Transformed component for browser execution');
             
             // Create a function that returns the Cart component
             const componentFactory = new Function('React', 'mockDependencies', 'window', \`
-              const { useState, useEffect, useCallback, useMemo } = React;
               \${transformedCode}
               return Cart;
             \`);
