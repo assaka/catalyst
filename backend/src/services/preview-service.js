@@ -557,11 +557,25 @@ class PreviewService {
             
             transformedCode = importBlock + transformedCode;
             
-            console.log('🔧 REACT: Transformed component for browser execution');
+            console.log('🔧 REACT: Transforming JSX to createElement calls using Babel');
+            
+            // Check if Babel is available
+            if (typeof Babel === 'undefined') {
+              throw new Error('Babel is not loaded. Cannot transform JSX.');
+            }
+            
+            // Use Babel to transform JSX to React.createElement calls
+            const babelTransformed = Babel.transform(transformedCode, {
+              presets: [['react', { pragma: 'React.createElement' }]],
+              plugins: []
+            }).code;
+            
+            console.log('🔧 REACT: JSX transformed successfully');
+            console.log('🔧 REACT: Transformed code preview (first 500 chars):', babelTransformed.substring(0, 500));
             
             // Create a function that returns the Cart component
             const componentFactory = new Function('React', 'mockDependencies', 'window', \`
-              \${transformedCode}
+              \${babelTransformed}
               return Cart;
             \`);
             

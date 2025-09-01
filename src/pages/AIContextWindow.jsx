@@ -422,6 +422,9 @@ const AIContextWindowPage = () => {
         const baselineCode = normalizeLineEndings(data.data.baselineCode);
         let finalCode = baselineCode;
         
+        console.log(`📄 BASELINE CODE LOADED: ${baselineCode.length} characters for ${filePath}`);
+        console.log(`📄 BASELINE CODE PREVIEW:`, baselineCode.substring(0, 200) + '...');
+        
         // Try to load and apply existing customizations for this file
         try {
           const componentPath = filePath; // Use full file path as identifier
@@ -540,7 +543,13 @@ const AIContextWindowPage = () => {
                 }
               }
               
-              console.log(`🎯 STEP 12: FINAL RESULT - Applied customizations to ${componentPath}, code length: ${baselineCode.length} -> ${finalCode.length}`);
+              console.log(`🎯 STEP 12: FINAL RESULT - Applied customizations to ${componentPath}`);
+              console.log(`📊 STEP 12a: CODE LENGTH COMPARISON:`);
+              console.log(`   📄 Original baseline: ${baselineCode.length} characters`);
+              console.log(`   🔀 Final merged code: ${finalCode.length} characters`);
+              console.log(`   📈 Difference: ${finalCode.length - baselineCode.length} characters`);
+              console.log(`   ✨ Code was modified: ${baselineCode !== finalCode}`);
+              console.log(`📄 FINAL MERGED CODE PREVIEW:`, finalCode.substring(0, 200) + '...');
             } else {
               console.log(`📋 STEP 4: No customizations found for ${componentPath}`);
             }
@@ -554,6 +563,8 @@ const AIContextWindowPage = () => {
         }
         
         // Set the final code (baseline + customizations)
+        console.log(`📝 SETTING EDITOR CODE: ${finalCode.length} characters`);
+        console.log(`📝 SETTING ORIGINAL CODE: ${baselineCode.length} characters (for comparison)`);
         setSourceCode(finalCode);
         
         // Keep original baseline code for comparison
