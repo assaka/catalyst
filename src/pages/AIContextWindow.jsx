@@ -836,12 +836,12 @@ export default ExampleComponent;`;
           }
 
           // Double-check if there are still changes before auto-saving
-          // This helps prevent issues when undo/redo brings code back to original state
+          // Compare against baseline, not editor's previous state
           const currentNormalizedNew = normalizeLineEndings(newCode);
-          const currentNormalizedOriginal = normalizeLineEndings(originalCode);
+          const currentNormalizedBaseline = normalizeLineEndings(baselineCode);
           
-          if (currentNormalizedNew === currentNormalizedOriginal) {
-            console.log('🔄 No changes detected at auto-save time - skipping save');
+          if (currentNormalizedNew === currentNormalizedBaseline) {
+            console.log('🔄 No changes detected against baseline - skipping save');
             return;
           }
 
