@@ -188,7 +188,7 @@ class PreviewService {
       return {
         success: true,
         content: modifiedHtml,
-        contentType: 'text/html',
+        contentType: 'text/html; charset=utf-8',
         session: {
           id: sessionId,
           fileName: session.fileName,
@@ -221,27 +221,36 @@ class PreviewService {
       console.log(`🔧 ROUTE-SIM: Received real page HTML (${htmlContent.length} chars)`);
       console.log(`🔧 ROUTE-SIM: HTML preview:`, htmlContent.substring(0, 500));
       
-      // Step 2: Parse the HTML to understand the structure
-      const hasReactRoot = htmlContent.includes('<div id="root">');
-      const hasReactScript = htmlContent.includes('assets/index-');
+      // Step 2: For now, use a simple approach - just add a preview indicator to the real page
+      console.log(`🔧 ROUTE-SIM: Using simplified approach for route simulation`);
       
-      console.log(`🔧 ROUTE-SIM: Page structure analysis:`);
-      console.log(`🔧 ROUTE-SIM: - Has React root div:`, hasReactRoot);
-      console.log(`🔧 ROUTE-SIM: - Has React scripts:`, hasReactScript);
+      // Add preview indicator to show this is preview mode
+      const previewIndicator = `
+      <div id="catalyst-preview-indicator" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #3b82f6;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        z-index: 10000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      ">
+        👁 Preview: ${session.fileName}
+      </div>`;
       
-      if (!hasReactRoot) {
-        console.log(`🔧 ROUTE-SIM: This is a static page, not a React SPA`);
-        return htmlContent; // Return as-is if it's not a React app
-      }
+      // Fix asset paths and add preview indicator
+      const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+      let enhancedHtml = htmlContent
+        .replace(/href="\/assets\//g, `href="${baseUrl}/assets/`)
+        .replace(/src="\/assets\//g, `src="${baseUrl}/assets/`)
+        .replace('</body>', previewIndicator + '</body>');
       
-      // Step 3: Merge the code changes
-      const mergedCode = this.mergeCodeChanges(session.originalCode, session.modifiedCode, session.fileName);
-      console.log(`🔧 ROUTE-SIM: Code merged successfully (${mergedCode.length} chars)`);
-      
-      // Step 4: Inject Cart.jsx customizations into the real page
-      const enhancedHtml = this.injectCartCustomizations(htmlContent, mergedCode, session, storeData);
-      
-      console.log(`🔧 ROUTE-SIM: Enhanced HTML with customizations (${enhancedHtml.length} chars)`);
+      console.log(`🔧 ROUTE-SIM: Enhanced HTML with fixed assets (${enhancedHtml.length} chars)`);
       return enhancedHtml;
       
     } catch (error) {
@@ -261,16 +270,29 @@ class PreviewService {
   injectCartCustomizations(htmlContent, mergedCode, session, storeData) {
     console.log(`🔧 INJECT: Injecting Cart customizations into real page`);
     
-    // Step 1: Add our customization script before the existing React scripts load
-    const customizationScript = `
-    <script>
+    // Step 1: Fix asset paths to point to original site instead of backend
+    let modifiedHtml = htmlContent;
+    
+    // Replace relative asset paths with absolute URLs to the original site
+    const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+    modifiedHtml = modifiedHtml.replace(
+      /href="\/assets\//g, 
+      `href="${baseUrl}/assets/`
+    );
+    modifiedHtml = modifiedHtml.replace(
+      /src="\/assets\//g, 
+      `src="${baseUrl}/assets/`
+    );
+    
+    // Step 2: Add our customization script before the existing React scripts load
+    const customizationScript = `<script>
       console.log('🔧 CART-CUSTOM: Cart customizations loading');
       
-      // Store the merged Cart component code for the app to use
+      // Store the merged Cart component code for the app to use  
       window.__CATALYST_CART_CUSTOMIZATIONS__ = {
         sessionId: '${session.sessionId}',
         fileName: '${session.fileName}',
-        mergedCode: ${JSON.stringify(mergedCode)},
+        mergedCode: ${JSON.stringify(mergedCode).replace(/\n/g, '\\n').replace(/\r/g, '\\r')},
         targetPath: '${session.targetPath}',
         appliedAt: Date.now()
       };
@@ -279,11 +301,9 @@ class PreviewService {
       window.__CATALYST_PREVIEW_MODE__ = true;
       
       console.log('🔧 CART-CUSTOM: Customizations ready for React app');
-    </script>
-    `;
+    </script>`;
     
-    // Step 2: Insert the script before the main React script loads
-    let modifiedHtml = htmlContent;
+    // Step 3: Insert the script before the main React script loads
     
     // Find the main React script and inject our customization script before it
     if (modifiedHtml.includes('<script')) {
