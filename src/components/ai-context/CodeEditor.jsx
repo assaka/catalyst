@@ -35,7 +35,7 @@ import {
 import hookSystem from '../../core/HookSystem.js';
 import eventSystem from '../../core/EventSystem.js';
 import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
-import { useStoreContext } from '../../utils/storeContext';
+import { useStoreSelection } from '../../contexts/StoreSelectionContext';
 
 // PreviewFrame component for server-side preview
 const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
@@ -43,17 +43,21 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { storeId, hasStoreId, loading: storeLoading } = useStoreContext();
+  const { selectedStore, loading: storeLoading } = useStoreSelection();
+  const storeId = selectedStore?.id;
+  const hasStoreId = !!storeId;
 
   // Debug store context
   useEffect(() => {
     console.log('🏪 PreviewFrame store context:', { 
+      selectedStore,
       storeId, 
       hasStoreId, 
       storeLoading,
-      storeIdType: typeof storeId 
+      storeIdType: typeof storeId,
+      storeName: selectedStore?.name
     });
-  }, [storeId, hasStoreId, storeLoading]);
+  }, [selectedStore, storeId, hasStoreId, storeLoading]);
 
   // Create preview session with server-side rendering
   useEffect(() => {
@@ -64,7 +68,7 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
       try {
         // Validate that we have a proper store context
         if (!hasStoreId || !storeId) {
-          throw new Error('No store selected. Please select a store to use preview functionality.');
+          throw new Error('No store selected. Please select a store from the store selector to use preview functionality.');
         }
         
         // Determine target path from current location or fileName
