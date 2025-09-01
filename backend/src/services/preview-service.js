@@ -339,15 +339,16 @@ class PreviewService {
         <div id="react-preview-container" style="
           border: 2px solid #e5e7eb;
           border-radius: 8px;
-          padding: 20px;
           background: white;
-          min-height: 400px;
+          min-height: 500px;
           position: relative;
         ">
-          <div style="text-align: center; padding: 40px; color: #6b7280;">
-            <div style="font-size: 48px; margin-bottom: 16px;">🛒</div>
-            <div style="font-size: 18px; margin-bottom: 8px;">Cart Component Preview</div>
-            <div style="font-size: 14px;">Your Cart.jsx modifications will render here</div>
+          <div id="react-mount-point" style="padding: 20px;">
+            <div style="text-align: center; padding: 40px; color: #6b7280;" id="loading-placeholder">
+              <div style="font-size: 48px; margin-bottom: 16px;">🛒</div>
+              <div style="font-size: 18px; margin-bottom: 8px;">Loading Cart Component...</div>
+              <div style="font-size: 14px;">Initializing React runtime</div>
+            </div>
           </div>
         </div>
       </div>
@@ -378,6 +379,11 @@ class PreviewService {
       </details>
     </div>
 
+    <!-- React Runtime Dependencies -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <script>
       console.log('🎬 SERVER-SIDE: Preview rendered successfully');
       console.log('📁 File:', '${session.fileName}');
@@ -392,6 +398,196 @@ class PreviewService {
         targetPath: session.targetPath,
         appliedAt: Date.now()
       })};
+
+      // React Component Rendering Setup
+      const { React, ReactDOM } = window;
+      const { useState, useEffect, useCallback, useMemo } = React;
+      
+      // Mock dependencies that Cart component needs
+      const mockDependencies = {
+        // React Router
+        useNavigate: () => (path) => console.log('Navigate to:', path),
+        Link: ({ to, children, ...props }) => React.createElement('a', { href: to, ...props }, children),
+        
+        // Store context (mock)
+        useStore: () => ({
+          store: { id: '${storeData.store?.id || 'mock-store-id'}', name: '${storeData.store?.name || 'Preview Store'}', slug: '${storeData.slug || 'preview-store'}' },
+          settings: { currency_symbol: '$' },
+          taxes: [],
+          selectedCountry: 'US',
+          loading: false
+        }),
+        
+        // Mock services
+        cartService: {
+          getCart: () => Promise.resolve({ success: true, items: [] }),
+          updateCart: () => Promise.resolve({ success: true })
+        },
+        couponService: {
+          getAppliedCoupon: () => null,
+          addListener: () => () => {},
+          setAppliedCoupon: () => ({ success: true }),
+          removeAppliedCoupon: () => ({ success: true })
+        },
+        taxService: {
+          calculateTax: () => ({ taxAmount: 0 })
+        },
+        
+        // Mock UI components
+        Button: ({ children, onClick, ...props }) => 
+          React.createElement('button', { onClick, style: { padding: '8px 16px', margin: '4px', border: '1px solid #ccc', borderRadius: '4px', background: '#f8f9fa', cursor: 'pointer' }, ...props }, children),
+        Input: ({ ...props }) => 
+          React.createElement('input', { style: { padding: '8px', border: '1px solid #ccc', borderRadius: '4px', width: '100%' }, ...props }),
+        Card: ({ children }) => 
+          React.createElement('div', { style: { border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white' } }, children),
+        CardContent: ({ children }) => 
+          React.createElement('div', { style: { padding: '16px' } }, children),
+        CardHeader: ({ children }) => 
+          React.createElement('div', { style: { padding: '16px', borderBottom: '1px solid #e5e7eb' } }, children),
+        CardTitle: ({ children }) => 
+          React.createElement('h3', { style: { margin: 0, fontSize: '18px', fontWeight: '600' } }, children),
+        
+        // Mock icons
+        Trash2: () => React.createElement('span', null, '🗑️'),
+        Plus: () => React.createElement('span', null, '➕'),
+        Minus: () => React.createElement('span', null, '➖'),
+        Tag: () => React.createElement('span', null, '🏷️'),
+        ShoppingCart: () => React.createElement('span', null, '🛒'),
+        
+        // Mock utility functions
+        formatDisplayPrice: (price) => \`$\${(price || 0).toFixed(2)}\`,
+        calculateDisplayPrice: (price) => price || 0,
+        createPageUrl: (path) => path,
+        createPublicUrl: (path) => path,
+        getExternalStoreUrl: (slug, path, base) => \`\${base || ''}/\${slug}\${path || ''}\`,
+        getStoreBaseUrl: (store) => 'https://preview.example.com'
+      };
+      
+      // Mock API entities
+      window.StorefrontProduct = { filter: () => Promise.resolve([]) };
+      window.Coupon = { filter: () => Promise.resolve([]) };
+      window.Tax = { filter: () => Promise.resolve([]) };
+      window.User = { filter: () => Promise.resolve([]) };
+      
+      // Mock components
+      window.RecommendedProducts = () => React.createElement('div', { style: { padding: '20px', background: '#f8f9fa', borderRadius: '8px', textAlign: 'center' } }, 'Recommended Products Section');
+      window.FlashMessage = ({ message }) => message ? React.createElement('div', { style: { padding: '10px', background: '#dff0d8', border: '1px solid #d6e9c6', borderRadius: '4px', marginBottom: '10px' } }, message.message) : null;
+      window.SeoHeadManager = () => null;
+      window.CmsBlockRenderer = ({ position }) => React.createElement('div', { style: { padding: '10px', background: '#e7f3ff', borderRadius: '4px', margin: '10px 0', fontSize: '12px' } }, \`CMS Block: \${position}\`);
+      
+      // Initialize React rendering
+      async function initializeReactPreview() {
+        try {
+          console.log('🚀 REACT: Initializing React component preview');
+          
+          const mountPoint = document.getElementById('react-mount-point');
+          const loadingPlaceholder = document.getElementById('loading-placeholder');
+          
+          if (!mountPoint) {
+            console.error('❌ REACT: Mount point not found');
+            return;
+          }
+          
+          // Remove loading placeholder
+          if (loadingPlaceholder) {
+            loadingPlaceholder.remove();
+          }
+          
+          // Create preview component
+          const PreviewComponent = () => {
+            return React.createElement('div', {
+              style: {
+                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+                lineHeight: 1.6
+              }
+            }, [
+              React.createElement('div', {
+                key: 'header',
+                style: {
+                  background: '#3b82f6',
+                  color: 'white',
+                  padding: '12px 16px',
+                  borderRadius: '6px',
+                  marginBottom: '20px',
+                  fontSize: '14px'
+                }
+              }, '🎯 Live Cart Component Preview - ${session.fileName}'),
+              
+              React.createElement('div', {
+                key: 'preview-notice',
+                style: {
+                  background: '#fff3cd',
+                  border: '1px solid #ffeaa7',
+                  borderRadius: '6px',
+                  padding: '12px',
+                  marginBottom: '20px',
+                  fontSize: '14px'
+                }
+              }, '⚠️ This is a simplified preview. Some features may not work exactly as in the full application.'),
+              
+              React.createElement('div', {
+                key: 'cart-preview',
+                style: {
+                  border: '2px dashed #3b82f6',
+                  borderRadius: '8px',
+                  padding: '20px',
+                  background: '#f8fafc',
+                  textAlign: 'center'
+                }
+              }, [
+                React.createElement('div', { key: 'icon', style: { fontSize: '48px', marginBottom: '16px' } }, '🛒'),
+                React.createElement('h2', { key: 'title', style: { margin: '0 0 8px 0', color: '#1f2937' } }, 'Cart Component'),
+                React.createElement('p', { key: 'desc', style: { margin: 0, color: '#6b7280' } }, 'Your Cart.jsx component would render here with full React context'),
+                React.createElement('div', {
+                  key: 'mock-items',
+                  style: { marginTop: '20px', textAlign: 'left' }
+                }, [
+                  React.createElement('h4', { key: 'items-title' }, 'Sample Cart Items:'),
+                  React.createElement('div', {
+                    key: 'item-1',
+                    style: { padding: '10px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', marginBottom: '8px' }
+                  }, 'Product 1 - $29.99'),
+                  React.createElement('div', {
+                    key: 'item-2', 
+                    style: { padding: '10px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', marginBottom: '8px' }
+                  }, 'Product 2 - $45.00'),
+                  React.createElement('div', {
+                    key: 'total',
+                    style: { padding: '10px', background: '#3b82f6', color: 'white', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold' }
+                  }, 'Total: $74.99')
+                ])
+              ])
+            ]);
+          };
+          
+          // Render the preview component
+          const root = ReactDOM.createRoot(mountPoint);
+          root.render(React.createElement(PreviewComponent));
+          
+          console.log('✅ REACT: Preview component rendered successfully');
+          
+        } catch (error) {
+          console.error('❌ REACT: Error rendering preview:', error);
+          const mountPoint = document.getElementById('react-mount-point');
+          if (mountPoint) {
+            mountPoint.innerHTML = \`
+              <div style="text-align: center; padding: 40px; color: #dc2626;">
+                <div style="font-size: 48px; margin-bottom: 16px;">❌</div>
+                <div style="font-size: 18px; margin-bottom: 8px;">Preview Error</div>
+                <div style="font-size: 14px;">Failed to render component: \${error.message}</div>
+              </div>
+            \`;
+          }
+        }
+      }
+      
+      // Wait for DOM and React to load, then initialize
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeReactPreview);
+      } else {
+        // Add small delay to ensure React libraries are loaded
+        setTimeout(initializeReactPreview, 100);
+      }
     </script>
   </body>
 </html>`;
