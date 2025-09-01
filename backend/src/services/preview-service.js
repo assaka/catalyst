@@ -224,8 +224,8 @@ class PreviewService {
       // Step 2: For now, use a simple approach - just add a preview indicator to the real page
       console.log(`🔧 ROUTE-SIM: Using simplified approach for route simulation`);
       
-      // Add preview indicator to show this is preview mode
-      const previewIndicator = `
+      // Add preview indicator and disable problematic extensions
+      const previewEnhancements = `
       <div id="catalyst-preview-indicator" style="
         position: fixed;
         top: 10px;
@@ -241,14 +241,33 @@ class PreviewService {
         font-family: -apple-system, BlinkMacSystemFont, sans-serif;
       ">
         👁 Preview: ${session.fileName}
-      </div>`;
+      </div>
+      <script>
+        // Disable extension loading in preview mode to avoid CORS/MIME errors
+        window.__CATALYST_PREVIEW_MODE__ = true;
+        
+        // Override extension loading to prevent errors
+        const originalImport = window.import;
+        window.import = function(moduleSpecifier) {
+          if (moduleSpecifier.includes('/extensions/') || moduleSpecifier.includes('/src/extensions/')) {
+            console.log('🔧 PREVIEW: Skipping extension in preview mode:', moduleSpecifier);
+            return Promise.resolve({ default: () => {} });
+          }
+          return originalImport ? originalImport.apply(this, arguments) : import(moduleSpecifier);
+        };
+        
+        // Disable problematic features in preview
+        if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+          navigator.serviceWorker.register = () => Promise.resolve();
+        }
+      </script>`;
       
       // Fix asset paths and add preview indicator
       const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
       let enhancedHtml = htmlContent
         .replace(/href="\/assets\//g, `href="${baseUrl}/assets/`)
         .replace(/src="\/assets\//g, `src="${baseUrl}/assets/`)
-        .replace('</body>', previewIndicator + '</body>');
+        .replace('</body>', previewEnhancements + '</body>');
       
       console.log(`🔧 ROUTE-SIM: Enhanced HTML with fixed assets (${enhancedHtml.length} chars)`);
       return enhancedHtml;

@@ -137,7 +137,7 @@ router.get('/render/:sessionId', async (req, res) => {
       res.removeHeader('X-Frame-Options');
       res.setHeader('X-Frame-Options', 'ALLOWALL');
       res.removeHeader('Content-Security-Policy');
-      res.setHeader('Content-Security-Policy', "frame-ancestors *; script-src 'self' 'unsafe-inline' 'unsafe-eval' *; style-src 'self' 'unsafe-inline' *;");
+      res.setHeader('Content-Security-Policy', "frame-ancestors *; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: http: *; style-src 'self' 'unsafe-inline' https: http: *; connect-src 'self' https: http: *; img-src 'self' https: http: data: *; font-src 'self' https: http: data: *;");
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
