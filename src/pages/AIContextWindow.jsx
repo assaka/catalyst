@@ -148,10 +148,23 @@ const applySemanticDiffsToCode = async (baseCode, semanticDiffs, filePath) => {
             modifiedCode = insertSegment(modifiedCode, diff, []);
           }
           
-        } else if (diff.type === 'modify' && diff.segmentName && diff.originalContent && diff.newContent) {
-          // Modify specific segment
-          console.log(`🔧 [applySemanticDiffsToCode] Modifying segment: ${diff.segmentName}`);
-          modifiedCode = modifiedCode.replace(diff.originalContent, diff.newContent);
+        } else if (diff.type === 'modify' && diff.originalContent && diff.newContent) {
+          // Modify specific segment using direct string replacement
+          console.log(`🔧 [applySemanticDiffsToCode] Modifying segment: ${diff.segmentName || 'unnamed'}`);
+          
+          const beforeLength = modifiedCode.length;
+          const searchExists = modifiedCode.includes(diff.originalContent);
+          console.log(`🔧 [applySemanticDiffsToCode] Modify: Search string exists in code: ${searchExists}`);
+          
+          if (searchExists) {
+            modifiedCode = modifiedCode.replace(diff.originalContent, diff.newContent);
+            const afterLength = modifiedCode.length;
+            console.log(`🔧 [applySemanticDiffsToCode] Modify successful: ${beforeLength} -> ${afterLength} chars`);
+          } else {
+            console.log(`❌ [applySemanticDiffsToCode] Original content not found for modify!`);
+            console.log(`🔍 First 200 chars of search target:`, diff.originalContent.substring(0, 200));
+            console.log(`🔍 First 200 chars of actual code:`, modifiedCode.substring(0, 200));
+          }
           
         } else if (diff.type === 'remove' && diff.originalContent) {
           // Remove content

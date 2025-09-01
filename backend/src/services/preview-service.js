@@ -214,25 +214,138 @@ class PreviewService {
    */
   applyCodeChangesToHtml(htmlContent, session, storeData = {}) {
     try {
-      console.log(`🔧 SERVER-SIDE: Starting server-side code merging for ${session.fileName}`);
+      console.log(`🔧 ROUTE-SIM: Starting route simulation for ${session.fileName}`);
+      console.log(`🔧 ROUTE-SIM: Processing ${storeData.slug} store cart page`);
       
-      // Step 1: Merge the code changes
+      // Step 1: We already have the real page HTML from the fetch
+      console.log(`🔧 ROUTE-SIM: Received real page HTML (${htmlContent.length} chars)`);
+      console.log(`🔧 ROUTE-SIM: HTML preview:`, htmlContent.substring(0, 500));
+      
+      // Step 2: Parse the HTML to understand the structure
+      const hasReactRoot = htmlContent.includes('<div id="root">');
+      const hasReactScript = htmlContent.includes('assets/index-');
+      
+      console.log(`🔧 ROUTE-SIM: Page structure analysis:`);
+      console.log(`🔧 ROUTE-SIM: - Has React root div:`, hasReactRoot);
+      console.log(`🔧 ROUTE-SIM: - Has React scripts:`, hasReactScript);
+      
+      if (!hasReactRoot) {
+        console.log(`🔧 ROUTE-SIM: This is a static page, not a React SPA`);
+        return htmlContent; // Return as-is if it's not a React app
+      }
+      
+      // Step 3: Merge the code changes
       const mergedCode = this.mergeCodeChanges(session.originalCode, session.modifiedCode, session.fileName);
-      console.log(`🔧 SERVER-SIDE: Code merged successfully (${mergedCode.length} chars)`);
+      console.log(`🔧 ROUTE-SIM: Code merged successfully (${mergedCode.length} chars)`);
       
-      // Helper function to escape HTML
-      const escapeHtml = (text) => {
-        if (!text) return '';
-        return text
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
+      // Step 4: Inject Cart.jsx customizations into the real page
+      const enhancedHtml = this.injectCartCustomizations(htmlContent, mergedCode, session, storeData);
+      
+      console.log(`🔧 ROUTE-SIM: Enhanced HTML with customizations (${enhancedHtml.length} chars)`);
+      return enhancedHtml;
+      
+    } catch (error) {
+      console.error('❌ ROUTE-SIM: Error in route simulation:', error);
+      return this.generateFallbackPreview(session, storeData, error);
+    }
+  }
+
+  /**
+   * Inject Cart.jsx customizations into the real page HTML
+   * @param {string} htmlContent - Real page HTML
+   * @param {string} mergedCode - Merged Cart component code
+   * @param {Object} session - Session data
+   * @param {Object} storeData - Store data
+   * @returns {string} Enhanced HTML
+   */
+  injectCartCustomizations(htmlContent, mergedCode, session, storeData) {
+    console.log(`🔧 INJECT: Injecting Cart customizations into real page`);
+    
+    // Step 1: Add our customization script before the existing React scripts load
+    const customizationScript = `
+    <script>
+      console.log('🔧 CART-CUSTOM: Cart customizations loading');
+      
+      // Store the merged Cart component code for the app to use
+      window.__CATALYST_CART_CUSTOMIZATIONS__ = {
+        sessionId: '${session.sessionId}',
+        fileName: '${session.fileName}',
+        mergedCode: ${JSON.stringify(mergedCode)},
+        targetPath: '${session.targetPath}',
+        appliedAt: Date.now()
       };
       
-      // Create the complete preview HTML server-side
-      const previewHtml = `<!doctype html>
+      // Flag that this is a preview with customizations
+      window.__CATALYST_PREVIEW_MODE__ = true;
+      
+      console.log('🔧 CART-CUSTOM: Customizations ready for React app');
+    </script>
+    `;
+    
+    // Step 2: Insert the script before the main React script loads
+    let modifiedHtml = htmlContent;
+    
+    // Find the main React script and inject our customization script before it
+    if (modifiedHtml.includes('<script')) {
+      modifiedHtml = modifiedHtml.replace(
+        /<script[^>]*src=["'][^"']*assets\/index-[^"']*\.js["'][^>]*><\/script>/,
+        customizationScript + '$&'
+      );
+      console.log(`🔧 INJECT: Injected customization script before React app loads`);
+    } else {
+      // Fallback: inject before closing head
+      modifiedHtml = modifiedHtml.replace('</head>', customizationScript + '</head>');
+      console.log(`🔧 INJECT: Fallback injection before </head>`);
+    }
+    
+    // Step 3: Add preview indicator
+    const previewIndicator = `
+    <div id="catalyst-preview-indicator" style="
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #3b82f6;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      z-index: 10000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    ">
+      👁 Preview: ${session.fileName}
+    </div>
+    `;
+    
+    modifiedHtml = modifiedHtml.replace('</body>', previewIndicator + '</body>');
+    
+    console.log(`🔧 INJECT: Added preview indicator`);
+    return modifiedHtml;
+  }
+
+  /**
+   * Generate fallback preview when route simulation fails
+   * @param {Object} session - Session data
+   * @param {Object} storeData - Store data  
+   * @param {Error} error - Error that occurred
+   * @returns {string} Fallback HTML
+   */
+  generateFallbackPreview(session, storeData, error) {
+    // Get merged code for the preview (inline simple merge for fallback)
+    const mergedCode = session.modifiedCode || session.originalCode || '';
+    
+    // Escape HTML helper function
+    function escapeHtml(unsafe) {
+      return (unsafe || '')
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+    
+    const previewHtml = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
