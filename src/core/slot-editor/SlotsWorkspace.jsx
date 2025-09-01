@@ -23,7 +23,8 @@ import {
   Copy,
   Undo,
   Redo,
-  History
+  History,
+  Zap
 } from 'lucide-react';
 
 // Import slot editor components
@@ -308,6 +309,16 @@ const SlotsWorkspace = ({
     console.error('Preview error:', error);
     // Could show a toast notification here
   }, []);
+
+  // Handle slot configuration save
+  const handleSlotSave = useCallback(async (config) => {
+    setCurrentUserConfig(config);
+    onSave({
+      type: 'slot_config',
+      config: config,
+      componentName: componentName
+    });
+  }, [componentName, onSave]);
 
   // Loading state
   if (isLoading) {
