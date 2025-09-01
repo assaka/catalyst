@@ -19,7 +19,7 @@ INSERT INTO customization_types (name, description, schema_definition) VALUES
 ('javascript_injection', 'JavaScript behavior modifications', '{"code": "string", "target": "string", "trigger": "string"}'),
 ('component_replacement', 'React component replacements', '{"original_component": "string", "replacement_component": "string", "props_mapping": "object"}'),
 ('hook_customization', 'WordPress-style hooks', '{"hook_name": "string", "callback": "string", "priority": "number"}'),
-('event_handler', 'DOM event handlers', '{"selector": "string", "event": "string", "handler": "string"}}')
+('event_handler', 'DOM event handlers', '{"selector": "string", "event": "string", "handler": "string"}')
 ON CONFLICT (name) DO NOTHING;
 
 -- Main customizations table
