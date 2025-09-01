@@ -424,6 +424,7 @@ const HybridCustomizationEditor = ({
                       onChange={handleCodeChange}
                       className="h-full"
                       originalCode={initialCode}
+                      initialContent={initialCode}
                       enableDiffDetection={true}
                     />
                   );
