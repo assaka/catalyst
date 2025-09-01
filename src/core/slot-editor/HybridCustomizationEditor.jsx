@@ -423,7 +423,7 @@ const HybridCustomizationEditor = ({
                       language={language}
                       onChange={handleCodeChange}
                       className="h-full"
-                      originalCode={codeToRender}
+                      originalCode={initialCode}
                       enableDiffDetection={true}
                     />
                   );
