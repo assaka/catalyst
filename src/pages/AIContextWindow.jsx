@@ -416,12 +416,12 @@ const AIContextWindowPage = () => {
                 }
               }
               
-              console.log(`🎯 Applied customizations to ${componentName}, code length: ${baselineCode.length} -> ${finalCode.length}`);
+              console.log(`🎯 Applied customizations to ${componentPath}, code length: ${baselineCode.length} -> ${finalCode.length}`);
             } else {
-              console.log(`📋 No customizations found for ${componentName}`);
+              console.log(`📋 No customizations found for ${componentPath}`);
             }
           } else {
-            console.warn(`⚠️ Could not fetch customizations for ${componentName}: API returned unsuccessful response`);
+            console.warn(`⚠️ Could not fetch customizations for ${componentPath}: API returned unsuccessful response`);
           }
           
         } catch (customizationError) {
@@ -696,7 +696,7 @@ export default ExampleComponent;`;
               type: 'file_modification',
               name: `Auto-save: ${selectedFile.name}`,
               description: 'Auto-saved file changes from CodeEditor',
-              targetComponent: selectedFile.name,
+              targetComponent: selectedFile.path || selectedFile.name,
               customizationData: {
                 filePath: filePath,
                 originalCode: originalCode,

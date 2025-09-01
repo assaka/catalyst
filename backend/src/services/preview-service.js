@@ -134,6 +134,13 @@ class PreviewService {
       targetUrl += `?${urlParams.toString()}`;
 
       console.log(`🔍 Fetching original page: ${targetUrl}`);
+      console.log(`🔍 Store info: name="${store?.name || 'No store'}", slug="${storeSlug}"`);
+      console.log(`🔍 Session details:`, {
+        sessionId: session.sessionId,
+        targetPath: session.targetPath,
+        storeId: session.storeId,
+        fileName: session.fileName
+      });
 
       // Try alternative URLs if the main one fails
       const fallbackUrls = [
@@ -151,6 +158,10 @@ class PreviewService {
         }
       });
 
+      console.log(`📊 HTTP Response: ${response.status} ${response.statusText}`);
+      console.log(`📊 Content-Type: ${response.headers['content-type']}`);
+      console.log(`📊 Content length: ${response.data?.length || 0} characters`);
+
       let htmlContent = response.data;
 
       // Remove any existing CSP headers that might block iframe embedding
@@ -159,8 +170,15 @@ class PreviewService {
         ''
       );
 
+      console.log(`🔧 Original HTML preview (first 200 chars):`, htmlContent.substring(0, 200));
+      
       // Apply code changes to the HTML content
       const modifiedHtml = this.applyCodeChangesToHtml(htmlContent, session);
+
+      console.log(`🔧 Modified HTML preview (first 200 chars):`, modifiedHtml.substring(0, 200));
+      console.log(`🔧 HTML contains preview script:`, modifiedHtml.includes('__CATALYST_PREVIEW_MODE__'));
+      console.log(`🔧 HTML contains store slug:`, modifiedHtml.includes(storeSlug));
+      console.log(`✅ Applied preview changes to HTML (${modifiedHtml.length} chars)`);
 
       return {
         success: true,
@@ -190,8 +208,19 @@ class PreviewService {
    */
   applyCodeChangesToHtml(htmlContent, session) {
     try {
+      console.log(`🛠️  Starting HTML modification for session ${session.sessionId}`);
+      console.log(`🛠️  Session data:`, {
+        fileName: session.fileName,
+        targetPath: session.targetPath,
+        hasOriginalCode: !!session.originalCode,
+        hasModifiedCode: !!session.modifiedCode,
+        originalCodeLength: session.originalCode?.length || 0,
+        modifiedCodeLength: session.modifiedCode?.length || 0
+      });
+
       // Fix asset URLs to point to frontend server
       const frontendUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
+      console.log(`🛠️  Using frontend URL: ${frontendUrl}`);
       
       // Replace relative asset URLs with absolute URLs pointing to frontend
       htmlContent = htmlContent.replace(
@@ -216,9 +245,11 @@ class PreviewService {
       console.log(`🔧 Fixed asset URLs to point to ${frontendUrl}`);
 
       // Inject preview metadata and modified code into the HTML
+      console.log(`🛠️  Generating preview script for injection`);
       const previewScript = `
         <script>
           // Catalyst Preview Mode
+          console.log('🎬 Catalyst Preview Mode activated');
           window.__CATALYST_PREVIEW_MODE__ = true;
           window.__CATALYST_PREVIEW_DATA__ = ${JSON.stringify({
             sessionId: session.sessionId,
@@ -278,13 +309,20 @@ class PreviewService {
       `;
 
       // Inject the preview script before the closing head tag or body tag
+      console.log(`🛠️  Injecting preview script...`);
+      console.log(`🛠️  HTML contains </head>:`, htmlContent.includes('</head>'));
+      console.log(`🛠️  HTML contains </body>:`, htmlContent.includes('</body>'));
+      
       if (htmlContent.includes('</head>')) {
         htmlContent = htmlContent.replace('</head>', `${previewScript}</head>`);
+        console.log(`🛠️  Injected script before </head>`);
       } else if (htmlContent.includes('</body>')) {
         htmlContent = htmlContent.replace('</body>', `${previewScript}</body>`);
+        console.log(`🛠️  Injected script before </body>`);
       } else {
         // Fallback: append to end of content
         htmlContent = htmlContent + previewScript;
+        console.log(`🛠️  Fallback: appended script to end of content`);
       }
 
       // Add preview mode CSS

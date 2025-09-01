@@ -359,9 +359,11 @@ router.post('/templates/:templateId/install', authMiddleware, storeResolver(), a
 });
 
 // Get customizations for a specific component (for loading pages/components)
-router.get('/component/:componentName', storeResolver({ required: false, fallbackStoreId: 'default-store' }), async (req, res) => {
+router.get('/component/:componentPath', storeResolver({ required: false, fallbackStoreId: 'default-store' }), async (req, res) => {
   try {
-    const { componentName } = req.params;
+    const { componentPath } = req.params;
+    // URL decode the component path to handle file paths with slashes
+    const decodedComponentPath = decodeURIComponent(componentPath);
     // Default to store_id from query or use a default for development
     const storeId = req.storeId || req.query.store_id || 'default-store';
     const { 
@@ -370,16 +372,16 @@ router.get('/component/:componentName', storeResolver({ required: false, fallbac
       applyDiffs = false 
     } = req.query;
 
-    console.log(`🎯 Fetching customizations for component: ${componentName} (store: ${storeId})`);
+    console.log(`🎯 Fetching customizations for file path: ${decodedComponentPath} (store: ${storeId})`);
 
-    const result = await customizationService.getCustomizationsForComponent(storeId, componentName, {
+    const result = await customizationService.getCustomizationsForComponent(storeId, decodedComponentPath, {
       type,
       includeInactive: includeInactive === 'true'
     });
 
     if (result.success) {
       let responseData = {
-        component: componentName,
+        component: decodedComponentPath,
         customizations: result.customizations,
         count: result.count,
         hasCustomizations: result.count > 0
@@ -387,7 +389,7 @@ router.get('/component/:componentName', storeResolver({ required: false, fallbac
 
       // If applyDiffs is requested, apply semantic diffs to provided base code
       if (applyDiffs === 'true' && req.body.baseCode) {
-        const filePath = req.body.filePath || `src/pages/${componentName}.jsx`;
+        const filePath = req.body.filePath || decodedComponentPath;
         let modifiedCode = req.body.baseCode;
         
         for (const customization of result.customizations) {
