@@ -218,31 +218,21 @@ class PreviewService {
         modifiedCodeLength: session.modifiedCode?.length || 0
       });
 
-      // Fix asset URLs to point to frontend server
-      const frontendUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
-      console.log(`🛠️  Using frontend URL: ${frontendUrl}`);
+      console.log(`🛠️  Removing React scripts and creating standalone preview`);
       
-      // Replace relative asset URLs with absolute URLs pointing to frontend
+      // Remove all script tags that load the React app
       htmlContent = htmlContent.replace(
-        /src=["']\/assets\//g, 
-        `src="${frontendUrl}/assets/`
-      );
-      htmlContent = htmlContent.replace(
-        /href=["']\/assets\//g, 
-        `href="${frontendUrl}/assets/`
+        /<script[^>]*src=["'][^"']*\.js["'][^>]*><\/script>/gi,
+        ''
       );
       
-      // Also fix any other relative URLs that might break
+      // Remove all CSS imports from the React app  
       htmlContent = htmlContent.replace(
-        /src=["']\//g, 
-        `src="${frontendUrl}/`
-      );
-      htmlContent = htmlContent.replace(
-        /href=["']\//g, 
-        `href="${frontendUrl}/`
+        /<link[^>]*rel=["']stylesheet["'][^>]*>/gi,
+        ''
       );
       
-      console.log(`🔧 Fixed asset URLs to point to ${frontendUrl}`);
+      console.log(`🔧 Removed React scripts and stylesheets`);
 
       // Inject preview metadata and modified code into the HTML
       console.log(`🛠️  Generating preview script for injection`);
