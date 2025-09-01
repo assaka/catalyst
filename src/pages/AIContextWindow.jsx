@@ -383,16 +383,16 @@ const AIContextWindowPage = () => {
         
         // Try to load and apply existing customizations for this file
         try {
-          const componentName = filePath.split('/').pop(); // Get filename from path
-          console.log(`🎨 Loading customizations for component: ${componentName}`);
+          const componentPath = filePath; // Use full file path as identifier
+          console.log(`🎨 Loading customizations for file path: ${componentPath}`);
           
-          // Fetch existing customizations for this component using apiClient
-          const customizationData = await apiClient.get(`customizations/component/${encodeURIComponent(componentName)}`);
+          // Fetch existing customizations for this file using full path
+          const customizationData = await apiClient.get(`customizations/component/${encodeURIComponent(componentPath)}`);
           
           if (customizationData && customizationData.success) {
             
             if (customizationData.data.customizations.length > 0) {
-              console.log(`✅ Found ${customizationData.data.customizations.length} customizations for ${componentName}`);
+              console.log(`✅ Found ${customizationData.data.customizations.length} customizations for ${componentPath}`);
               
               // Apply customizations in order of priority
               const customizations = customizationData.data.customizations.sort((a, b) => a.priority - b.priority);
