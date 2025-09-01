@@ -101,10 +101,18 @@ const HybridCustomizationEditor = ({
     });
   }, [fileName, filePath]);
 
-  // Load actual file content if initialCode is empty
+  // Load actual file content if initialCode is empty or missing
   useEffect(() => {
     const loadActualFileContent = async () => {
-      if (initialCode || !filePath) return;
+      console.log('🔄 HybridCustomizationEditor: Checking if need to load file content:', {
+        fileName,
+        filePath,
+        initialCodeLength: initialCode ? initialCode.length : 0,
+        initialCodeTrimLength: initialCode ? initialCode.trim().length : 0,
+        shouldLoad: !((initialCode && initialCode.trim().length > 0) || !filePath)
+      });
+      
+      if ((initialCode && initialCode.trim().length > 0) || !filePath) return;
       
       setIsLoadingCode(true);
       try {
@@ -380,14 +388,14 @@ const HybridCustomizationEditor = ({
                 </div>
               ) : (
                 <CodeEditor
+                  key={filePath} // Force re-render when file changes
                   fileName={fileName}
-                  filePath={filePath}
-                  initialCode={actualFileCode || initialCode}
+                  value={actualFileCode || initialCode}
                   language={language}
                   onChange={handleCodeChange}
-                  onSave={handleCodeSave}
-                  onCancel={onCancel}
                   className="h-full"
+                  originalCode={actualFileCode || initialCode}
+                  enableDiffDetection={true}
                 />
               )}
             </div>
