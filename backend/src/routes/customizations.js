@@ -8,6 +8,9 @@ const router = express.Router();
 const customizationService = require('../services/customization-service');
 const { authMiddleware } = require('../middleware/auth');
 const { storeResolver } = require('../middleware/storeResolver');
+const { sequelize } = require('../database/connection');
+const fs = require('fs');
+const path = require('path');
 
 // Create a new customization
 router.post('/', authMiddleware, storeResolver(), async (req, res) => {
@@ -349,6 +352,36 @@ router.post('/templates/:templateId/install', authMiddleware, storeResolver(), a
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+// Database migration endpoint (admin only)
+router.post('/migrate', async (req, res) => {
+  try {
+    console.log('🚀 Running customization database migration...');
+    
+    // Read migration SQL file
+    const migrationPath = path.join(__dirname, '../database/migrations/create-customizations-tables.sql');
+    const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+    
+    // Execute migration
+    await sequelize.query(migrationSQL);
+    
+    console.log('✅ Migration completed successfully');
+    
+    res.json({
+      success: true,
+      message: 'Customization database migration completed successfully',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ Migration failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: 'Database migration failed. Check server logs for details.'
     });
   }
 });
