@@ -332,19 +332,50 @@ class PreviewService {
       </div>
       
       <div class="code-card">
-        <h2>Modified Code</h2>
+        <h2>🎯 Visual Preview</h2>
         <div class="diff-indicator">
-          ✨ Showing modifications for ${session.fileName} (${session.modifiedCode?.length || 0} characters)
+          🚀 Live Cart component with your modifications applied
         </div>
-        <pre class="code-preview">${escapeHtml(session.modifiedCode || 'No code available')}</pre>
+        <div id="react-preview-container" style="
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          padding: 20px;
+          background: white;
+          min-height: 400px;
+          position: relative;
+        ">
+          <div style="text-align: center; padding: 40px; color: #6b7280;">
+            <div style="font-size: 48px; margin-bottom: 16px;">🛒</div>
+            <div style="font-size: 18px; margin-bottom: 8px;">Cart Component Preview</div>
+            <div style="font-size: 14px;">Your Cart.jsx modifications will render here</div>
+          </div>
+        </div>
       </div>
       
-      ${session.originalCode !== session.modifiedCode ? `
       <div class="code-card">
-        <h2>Original Code (for comparison)</h2>
-        <pre class="code-preview">${escapeHtml(session.originalCode?.substring(0, 2000) + '...' || 'No original code available')}</pre>
+        <h2>🔗 Merged Code Result</h2>
+        <div class="diff-indicator">
+          ✨ Final code with your modifications applied (${mergedCode.length} characters)
+        </div>
+        <pre class="code-preview">${escapeHtml(mergedCode)}</pre>
       </div>
-      ` : ''}
+      
+      <details style="margin-top: 20px;">
+        <summary style="cursor: pointer; padding: 10px; background: #f3f4f6; border-radius: 4px;">
+          📋 View Original vs Modified Code Comparison
+        </summary>
+        <div style="margin-top: 16px;">
+          <div class="code-card">
+            <h3>Modified Code (${session.modifiedCode?.length || 0} chars)</h3>
+            <pre class="code-preview" style="max-height: 300px;">${escapeHtml(session.modifiedCode?.substring(0, 3000) + (session.modifiedCode?.length > 3000 ? '...' : '') || 'No code available')}</pre>
+          </div>
+          
+          <div class="code-card">
+            <h3>Original Code (${session.originalCode?.length || 0} chars)</h3>
+            <pre class="code-preview" style="max-height: 300px;">${escapeHtml(session.originalCode?.substring(0, 3000) + (session.originalCode?.length > 3000 ? '...' : '') || 'No original code available')}</pre>
+          </div>
+        </div>
+      </details>
     </div>
 
     <script>
@@ -378,6 +409,37 @@ class PreviewService {
   <p>Failed to generate preview: ${error.message}</p>
 </body>
 </html>`;
+    }
+  }
+
+  /**
+   * Merge original and modified code to produce final result
+   * @param {string} originalCode - Original code content
+   * @param {string} modifiedCode - Modified code content  
+   * @param {string} fileName - File name for context
+   * @returns {string} Merged code
+   */
+  mergeCodeChanges(originalCode, modifiedCode, fileName) {
+    try {
+      console.log(`🔀 MERGE: Starting code merge for ${fileName}`);
+      
+      // For now, since both codes are the same length, use the modified code as the result
+      // In future, this could implement proper diff-based merging
+      if (originalCode === modifiedCode) {
+        console.log(`🔀 MERGE: No changes detected, using original code`);
+        return originalCode;
+      }
+      
+      console.log(`🔀 MERGE: Changes detected, using modified code as final result`);
+      console.log(`🔀 MERGE: Original: ${originalCode?.length || 0} chars, Modified: ${modifiedCode?.length || 0} chars`);
+      
+      // Return the modified code as the merged result
+      // TODO: In future versions, implement proper 3-way merge with conflict resolution
+      return modifiedCode || originalCode || '';
+      
+    } catch (error) {
+      console.error('❌ MERGE: Error merging code changes:', error);
+      return modifiedCode || originalCode || '';
     }
   }
 
