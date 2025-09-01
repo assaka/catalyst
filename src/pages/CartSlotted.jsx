@@ -447,7 +447,7 @@ export default function CartSlotted() {
           {...commonSlotProps}
         />
         
-        </compactBlockRenderer position="cart_above_items" />
+        <CmsBlockRenderer position="cart_above_items" />
         
         {cartItems.length === 0 ? (
           /* Empty Cart Display */
