@@ -20,7 +20,8 @@ import {
   Save,
   FileText,
   Wrench,
-  Layers
+  Layers,
+  RefreshCw
 } from 'lucide-react';
 
 // Import both editing systems
@@ -28,6 +29,7 @@ import SlotsWorkspace from './SlotsWorkspace.jsx';
 import CodeEditor from '@/components/ai-context/CodeEditor.jsx';
 import { SlotConfiguration } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
+import apiClient from '@/api/client';
 
 // Component detection utility
 const ComponentDetector = {
@@ -78,6 +80,8 @@ const HybridCustomizationEditor = ({
   const [currentCode, setCurrentCode] = useState(initialCode);
   const [slotConfig, setSlotConfig] = useState(null);
   const [showModeInfo, setShowModeInfo] = useState(true);
+  const [isLoadingCode, setIsLoadingCode] = useState(false);
+  const [actualFileCode, setActualFileCode] = useState(initialCode);
 
   // Store context
   const { selectedStore } = useStoreSelection();
@@ -96,6 +100,34 @@ const HybridCustomizationEditor = ({
       hasSlotSupport: !!component
     });
   }, [fileName, filePath]);
+
+  // Load actual file content if initialCode is empty
+  useEffect(() => {
+    const loadActualFileContent = async () => {
+      if (initialCode || !filePath) return;
+      
+      setIsLoadingCode(true);
+      try {
+        console.log('🔄 HybridCustomizationEditor: Loading file content for:', filePath);
+        const data = await apiClient.get(`extensions/baseline/${encodeURIComponent(filePath)}`);
+        
+        if (data && data.success && data.data.hasBaseline) {
+          const fileContent = data.data.baselineCode;
+          setActualFileCode(fileContent);
+          setCurrentCode(fileContent);
+          console.log('✅ HybridCustomizationEditor: Loaded file content:', fileContent.length, 'characters');
+        } else {
+          console.warn('⚠️ HybridCustomizationEditor: No baseline found for:', filePath);
+        }
+      } catch (error) {
+        console.error('❌ HybridCustomizationEditor: Error loading file content:', error);
+      } finally {
+        setIsLoadingCode(false);
+      }
+    };
+
+    loadActualFileContent();
+  }, [filePath, initialCode]);
 
   // Load existing slot configuration
   useEffect(() => {
@@ -341,16 +373,23 @@ const HybridCustomizationEditor = ({
           {/* Expert Mode - Direct code editing */}
           {editingMode === 'expert' && (
             <div className="min-h-[600px]">
-              <CodeEditor
-                fileName={fileName}
-                filePath={filePath}
-                initialCode={initialCode}
-                language={language}
-                onChange={handleCodeChange}
-                onSave={handleCodeSave}
-                onCancel={onCancel}
-                className="h-full"
-              />
+              {isLoadingCode ? (
+                <div className="flex items-center justify-center h-full">
+                  <RefreshCw className="w-6 h-6 animate-spin mr-2" />
+                  Loading file content...
+                </div>
+              ) : (
+                <CodeEditor
+                  fileName={fileName}
+                  filePath={filePath}
+                  initialCode={actualFileCode || initialCode}
+                  language={language}
+                  onChange={handleCodeChange}
+                  onSave={handleCodeSave}
+                  onCancel={onCancel}
+                  className="h-full"
+                />
+              )}
             </div>
           )}
 
