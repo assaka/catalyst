@@ -423,7 +423,7 @@ router.get('/component/:componentName', storeResolver({ required: false }), asyn
   }
 });
 
-// Database migration endpoint (admin only)
+// Database migration endpoint (admin only) - temporarily without auth for setup
 router.post('/migrate', async (req, res) => {
   try {
     console.log('🚀 Running customization database migration...');

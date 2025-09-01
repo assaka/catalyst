@@ -68,6 +68,18 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
           targetPath = '/products';
         }
 
+        console.log('🎬 Creating preview session:', {
+          storeId,
+          fileName,
+          targetPath,
+          hasOriginalCode: !!originalCode,
+          hasSourceCode: !!sourceCode,
+          originalCodeLength: originalCode?.length || 0,
+          sourceCodeLength: sourceCode?.length || 0,
+          currentPath: window.location.pathname,
+          urlParams: Object.fromEntries(urlParams.entries())
+        });
+
         // Call the new preview API
         const backendUrl = process.env.REACT_APP_API_BASE_URL || 'https://catalyst-backend-fzhu.onrender.com';
         const response = await fetch(`${backendUrl}/api/preview/create`, {
@@ -86,10 +98,17 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          const errorText = await response.text();
+          console.error('❌ Preview API error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText
+          });
+          throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
         }
 
         const result = await response.json();
+        console.log('📋 Preview API response:', result);
         
         if (result.success) {
           const fullPreviewUrl = `${backendUrl}${result.data.previewUrl}`;
@@ -103,6 +122,7 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
             previewUrl: fullPreviewUrl
           });
         } else {
+          console.error('❌ Preview session failed:', result);
           throw new Error(result.error || 'Failed to create preview session');
         }
         
