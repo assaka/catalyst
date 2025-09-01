@@ -273,8 +273,8 @@ const HybridCustomizationEditor = ({
               </>
             ) : editingMode === 'advanced' ? (
               <>
-                <strong>Advanced Mode:</strong> JSON-based slot configuration with powerful editing tools. 
-                Full validation, diff view, and schema support for technical users.
+                <strong>Advanced Mode:</strong> Visual slot management with drag-and-drop reordering, easy slot creation, 
+                and custom JavaScript/CSS support. Perfect for power users who want control without complex JSON editing.
               </>
             ) : (
               <>
@@ -478,11 +478,11 @@ const HybridCustomizationEditor = ({
                 Advanced Mode
               </h4>
               <ul className="space-y-1 text-gray-600">
-                <li>• JSON-based configuration</li>
-                <li>• Schema validation</li>
-                <li>• Diff view and history</li>
-                <li>• Powerful editing tools</li>
-                <li>• Technical user friendly</li>
+                <li>• Visual drag-and-drop interface</li>
+                <li>• Easy slot creation wizard</li>
+                <li>• Custom JavaScript & CSS support</li>
+                <li>• Real-time preview</li>
+                <li>• User-friendly controls</li>
               </ul>
             </div>
 

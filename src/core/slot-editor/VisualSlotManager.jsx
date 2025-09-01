@@ -32,7 +32,24 @@ import {
   AlertCircle,
   Info
 } from 'lucide-react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { ComponentSlotDefinitions } from './types.js';
 
@@ -82,13 +99,26 @@ const VisualSlotManager = ({
     return componentDef.availableSlots.filter(slotId => !usedSlots.includes(slotId));
   }, [config.slots, componentDef.availableSlots]);
 
-  // Handle drag end for reordering
-  const handleDragEnd = useCallback((result) => {
-    if (!result.destination) return;
+  // Sensors for drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
-    const newSlots = Array.from(slotsArray);
-    const [reorderedSlot] = newSlots.splice(result.source.index, 1);
-    newSlots.splice(result.destination.index, 0, reorderedSlot);
+  // Handle drag end for reordering
+  const handleDragEnd = useCallback((event) => {
+    const { active, over } = event;
+    
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = slotsArray.findIndex(slot => slot.id === active.id);
+    const newIndex = slotsArray.findIndex(slot => slot.id === over.id);
+    
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newSlots = arrayMove(slotsArray, oldIndex, newIndex);
 
     // Update order values
     const updatedSlots = {};
@@ -192,24 +222,38 @@ const VisualSlotManager = ({
     updateSlot(targetSlot.id, { order: currentSlot.order });
   }, [slotsArray, updateSlot]);
 
-  // Slot item component
-  const SlotItem = ({ slot, index }) => (
-    <Draggable key={slot.id} draggableId={slot.id} index={index}>
-      {(provided, snapshot) => (
-        <Card
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          className={`mb-3 transition-all ${snapshot.isDragging ? 'shadow-lg rotate-2' : 'hover:shadow-md'} ${!slot.enabled ? 'opacity-60' : ''}`}
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              {/* Drag handle */}
-              <div
-                {...provided.dragHandleProps}
-                className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
-              >
-                <GripVertical className="w-5 h-5" />
-              </div>
+  // Sortable slot item component
+  const SortableSlotItem = ({ slot, index }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: slot.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
+
+    return (
+      <Card
+        ref={setNodeRef}
+        style={style}
+        className={`mb-3 transition-all ${isDragging ? 'shadow-lg rotate-2 z-50' : 'hover:shadow-md'} ${!slot.enabled ? 'opacity-60' : ''}`}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            {/* Drag handle */}
+            <div
+              {...listeners}
+              {...attributes}
+              className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+            >
+              <GripVertical className="w-5 h-5" />
+            </div>
 
               {/* Slot info */}
               <div className="flex-1">
@@ -289,9 +333,8 @@ const VisualSlotManager = ({
             </div>
           </CardContent>
         </Card>
-      )}
-    </Draggable>
-  );
+    );
+  };
 
   // Add slot dialog
   const AddSlotDialog = () => (
@@ -582,22 +625,22 @@ console.log('Slot mounted:', slotId);
 
           {/* Slots list */}
           {slotsArray.length > 0 ? (
-            <DragDropContext onDragEnd={handleDragEnd}>
-              <Droppable droppableId="slots">
-                {(provided, snapshot) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    className={`min-h-[100px] ${snapshot.isDraggingOver ? 'bg-blue-50' : ''} rounded-lg transition-colors`}
-                  >
-                    {slotsArray.map((slot, index) => (
-                      <SlotItem key={slot.id} slot={slot} index={index} />
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </DragDropContext>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={slotsArray.map(slot => slot.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="min-h-[100px] rounded-lg transition-colors">
+                  {slotsArray.map((slot, index) => (
+                    <SortableSlotItem key={slot.id} slot={slot} index={index} />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           ) : (
             <div className="text-center py-8">
               <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />

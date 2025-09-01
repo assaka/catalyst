@@ -29,6 +29,7 @@ import {
 // Import slot editor components
 import ConfigurationEditor from './ConfigurationEditor.jsx';
 import ConfigurationPreview from './ConfigurationPreview.jsx';
+import VisualSlotManager from './VisualSlotManager.jsx';
 import { ComponentSlotDefinitions, ValidationUtils } from './types.js';
 
 // Import slot system and API
@@ -48,7 +49,7 @@ const SlotsWorkspace = ({
   className = ''
 }) => {
   // State management
-  const [activeTab, setActiveTab] = useState('split'); // 'split', 'editor', 'preview'
+  const [activeTab, setActiveTab] = useState('visual'); // 'visual', 'split', 'editor', 'preview'
   const [currentUserConfig, setCurrentUserConfig] = useState(null);
   const [originalUserConfig, setOriginalUserConfig] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -413,6 +414,10 @@ const SlotsWorkspace = ({
       <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
         <div className="mb-4">
           <TabsList>
+            <TabsTrigger value="visual" className="flex items-center gap-2">
+              <Settings className="w-4 h-4" />
+              Visual Manager
+            </TabsTrigger>
             <TabsTrigger value="split" className="flex items-center gap-2">
               <Code className="w-4 h-4" />
               <Eye className="w-4 h-4" />
@@ -420,7 +425,7 @@ const SlotsWorkspace = ({
             </TabsTrigger>
             <TabsTrigger value="editor" className="flex items-center gap-2">
               <Code className="w-4 h-4" />
-              Editor Only
+              JSON Editor
             </TabsTrigger>
             <TabsTrigger value="preview" className="flex items-center gap-2">
               <Eye className="w-4 h-4" />
@@ -428,6 +433,25 @@ const SlotsWorkspace = ({
             </TabsTrigger>
           </TabsList>
         </div>
+
+        <TabsContent value="visual" className="h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+            <VisualSlotManager
+              config={currentUserConfig}
+              componentName={componentName}
+              onChange={handleConfigurationChange}
+              availableSlots={componentDef.availableSlots}
+            />
+            <ConfigurationPreview
+              defaultConfig={defaultConfig}
+              userConfig={currentUserConfig}
+              componentName={componentName}
+              componentProps={componentDef.defaultProps}
+              storeContext={{ store: selectedStore }}
+              onError={handlePreviewError}
+            />
+          </div>
+        </TabsContent>
 
         <TabsContent value="split" className="h-full">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
