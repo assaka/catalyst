@@ -260,50 +260,84 @@ class PreviewService {
             appliedAt: Date.now()
           })};
           
-          // Override window.location to show correct route for React Router
-          const originalLocation = window.location.href;
-          const targetPath = '${session.targetPath}';
-          const storeSlug = '${storeData.slug}';
-          const frontendPath = '/public/' + storeSlug + targetPath;
-          
-          // Update browser history to show correct URL for React Router
-          if (window.history && window.history.replaceState) {
-            window.history.replaceState(null, '', frontendPath + window.location.search);
-          }
+          // Instead of routing, create a simple preview content
+          console.log('🎬 Creating preview content for ${session.fileName}');
           
           // Apply preview changes when DOM is ready
           document.addEventListener('DOMContentLoaded', function() {
             console.log('🎬 Catalyst Preview Mode Active');
             console.log('📁 File:', '${session.fileName}');
             console.log('🔧 Modified Code Length:', ${session.modifiedCode?.length || 0});
-            console.log('🔄 React Router Path:', frontendPath);
+            console.log('🔄 Target Path:', '${session.targetPath}');
             
             // Dispatch preview event for components to listen to
             window.dispatchEvent(new CustomEvent('catalystPreviewReady', {
               detail: window.__CATALYST_PREVIEW_DATA__
             }));
             
-            // Add preview indicator
-            const indicator = document.createElement('div');
-            indicator.innerHTML = \`
+            // Replace body with preview content
+            document.body.innerHTML = \`
               <div style="
-                position: fixed;
-                top: 10px;
-                right: 10px;
-                background: #3b82f6;
-                color: white;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-                font-size: 12px;
-                font-weight: 500;
-                z-index: 10000;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                max-width: 1200px;
+                margin: 0 auto;
+                padding: 20px;
+                background: #f8f9fa;
+                min-height: 100vh;
               ">
-                👁 Preview: \${window.__CATALYST_PREVIEW_DATA__.fileName}
+                <div style="
+                  position: fixed;
+                  top: 10px;
+                  right: 10px;
+                  background: #3b82f6;
+                  color: white;
+                  padding: 8px 12px;
+                  border-radius: 6px;
+                  font-size: 12px;
+                  font-weight: 500;
+                  z-index: 10000;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                ">
+                  👁 Preview Mode
+                </div>
+                
+                <div style="
+                  background: white;
+                  border-radius: 8px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                  padding: 24px;
+                  margin-bottom: 20px;
+                ">
+                  <h1 style="margin: 0 0 16px 0; color: #1f2937;">Preview: ${session.fileName}</h1>
+                  <p style="margin: 0; color: #6b7280;">Target Path: ${session.targetPath}</p>
+                  <p style="margin: 8px 0 0 0; color: #6b7280;">Store: ${storeData.slug || 'Unknown'}</p>
+                </div>
+                
+                <div style="
+                  background: white;
+                  border-radius: 8px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                  padding: 24px;
+                ">
+                  <h2 style="margin: 0 0 16px 0; color: #1f2937;">Modified Code</h2>
+                  <pre style="
+                    background: #f3f4f6;
+                    border-radius: 6px;
+                    padding: 16px;
+                    overflow-x: auto;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: #374151;
+                    margin: 0;
+                    max-height: 500px;
+                    overflow-y: auto;
+                  ">\${window.__CATALYST_PREVIEW_DATA__.modifiedCode}</pre>
+                </div>
               </div>
             \`;
-            document.body.appendChild(indicator);
           });
         </script>
       `;
