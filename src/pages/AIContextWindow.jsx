@@ -443,152 +443,17 @@ const AIContextWindowPage = () => {
 
       if (data && data.success && data.data.hasBaseline) {
         const baselineCode = normalizeLineEndings(data.data.baselineCode);
-        let finalCode = baselineCode;
         
         console.log(`📄 BASELINE CODE LOADED: ${baselineCode.length} characters for ${filePath}`);
         console.log(`📄 BASELINE CODE PREVIEW:`, baselineCode.substring(0, 200) + '...');
         
-        // Try to load and apply existing customizations for this file
-        try {
-          const componentPath = filePath; // Use full file path as identifier
-          console.log(`🎨 STEP 1: Loading customizations for file path: ${componentPath}`);
-          
-          // Fetch existing customizations for this file using full path
-          console.log(`🌐 STEP 2: Making API call to: customizations/component/${encodeURIComponent(componentPath)}`);
-          
-          // Debug authentication
-          const token = apiClient.getToken();
-          const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
-          const customerToken = localStorage.getItem('customer_auth_token');
-          const legacyToken = localStorage.getItem('auth_token');
-          
-          console.log(`🔐 STEP 2a: Authentication debug:`, {
-            hasToken: !!token,
-            tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
-            hasStoreOwnerToken: !!storeOwnerToken,
-            hasCustomerToken: !!customerToken,
-            hasLegacyToken: !!legacyToken,
-            currentPath: window.location.pathname,
-            isAdminContext: window.location.pathname.startsWith('/editor/'),
-            userLoggedOut: localStorage.getItem('user_logged_out')
-          });
-          
-          const customizationData = await apiClient.get(`customizations/component/${encodeURIComponent(componentPath)}`);
-          
-          console.log(`📡 STEP 3: API Response received:`, {
-            success: customizationData?.success,
-            hasData: !!customizationData?.data,
-            customizationsCount: customizationData?.data?.customizations?.length || 0,
-            rawResponse: customizationData
-          });
-          
-          if (customizationData && customizationData.success) {
-            
-            if (customizationData.data.customizations.length > 0) {
-              console.log(`✅ STEP 4: Found ${customizationData.data.customizations.length} customizations for ${componentPath}`);
-              console.log(`📋 STEP 5: Customization details:`, customizationData.data.customizations.map(c => ({
-                id: c.id,
-                name: c.name,
-                type: c.type,
-                priority: c.priority,
-                hasSemanticDiffs: c.customization_data?.semanticDiffs?.length > 0,
-                hasModifiedCode: !!c.customization_data?.modifiedCode,
-                dataKeys: Object.keys(c.customization_data || {})
-              })));
-              
-              // Apply customizations in order of priority
-              const customizations = customizationData.data.customizations.sort((a, b) => a.priority - b.priority);
-              console.log(`🔄 STEP 6: Processing customizations in priority order:`, customizations.map(c => `${c.name} (priority: ${c.priority})`));
-              
-              for (const [index, customization] of customizations.entries()) {
-                console.log(`🎯 STEP 7.${index + 1}: Processing customization ID: ${customization.id}, Name: ${customization.name}`);
-                
-                if (customization.type === 'file_modification' && customization.customization_data) {
-                  const custData = customization.customization_data;
-                  console.log(`📝 STEP 7.${index + 1}a: Customization data structure:`, {
-                    hasSemanticDiffs: custData.semanticDiffs?.length > 0,
-                    semanticDiffsCount: custData.semanticDiffs?.length || 0,
-                    hasModifiedCode: !!custData.modifiedCode,
-                    hasOriginalCodeHash: !!custData.originalCodeHash,
-                    modifiedCodeLength: custData.modifiedCode?.length || 0,
-                    originalCodeLength: custData.originalCode?.length || 0
-                  });
-                  
-                  // If we have semantic diffs, apply them
-                  if (custData.semanticDiffs && custData.semanticDiffs.length > 0) {
-                    console.log(`🔧 STEP 8.${index + 1}: Applying ${custData.semanticDiffs.length} semantic diffs from customization: ${customization.name}`);
-                    console.log(`🔧 STEP 8.${index + 1}a: Semantic diffs details:`, custData.semanticDiffs);
-                    const beforeLength = finalCode.length;
-                    const appliedCode = await applySemanticDiffsToCode(finalCode, custData.semanticDiffs, filePath);
-                    console.log(`🔧 STEP 8.${index + 1}b: Semantic diffs applied, code length: ${beforeLength} -> ${appliedCode.length}`);
-                    
-                    // Check if semantic diffs actually changed the code
-                    if (appliedCode !== finalCode) {
-                      finalCode = appliedCode;
-                      console.log(`✅ STEP 8.${index + 1}c: Semantic diffs successfully modified the code`);
-                    } else {
-                      console.log(`⚠️ STEP 8.${index + 1}c: Semantic diffs didn't change code, trying direct replacement fallback`);
-                      
-                      // Fallback: Try direct code replacement if semantic diffs didn't work
-                      if (custData.modifiedCode && custData.originalCodeHash) {
-                        const baselineHash = createSimpleHash(baselineCode);
-                        console.log(`🔄 STEP 8.${index + 1}d: Hash comparison - baseline: ${baselineHash}, stored: ${custData.originalCodeHash}`);
-                        
-                        if (baselineHash === custData.originalCodeHash) {
-                          console.log(`📝 STEP 8.${index + 1}e: Hash match! Using direct code replacement as fallback`);
-                          finalCode = normalizeLineEndings(custData.modifiedCode);
-                        } else {
-                          console.log(`❌ STEP 8.${index + 1}e: Hash mismatch - cannot apply direct replacement`);
-                        }
-                      }
-                    }
-                  }
-                  // Fallback: if we have modifiedCode, use it directly (for simple customizations)
-                  else if (custData.modifiedCode && 
-                          custData.originalCodeHash && 
-                          createSimpleHash(baselineCode) === custData.originalCodeHash) {
-                    console.log(`📝 STEP 9.${index + 1}: Applying direct code replacement from customization: ${customization.name}`);
-                    console.log(`📝 STEP 9.${index + 1}a: Hash comparison - baseline: ${createSimpleHash(baselineCode)}, stored: ${custData.originalCodeHash}`);
-                    const beforeLength = finalCode.length;
-                    finalCode = normalizeLineEndings(custData.modifiedCode);
-                    console.log(`📝 STEP 9.${index + 1}b: Direct replacement applied, code length: ${beforeLength} -> ${finalCode.length}`);
-                  }
-                  else {
-                    console.log(`⚠️ STEP 10.${index + 1}: Skipping customization ${customization.name} - no applicable merge method`, {
-                      hasSemanticDiffs: custData.semanticDiffs?.length > 0,
-                      hasModifiedCode: !!custData.modifiedCode,
-                      hasOriginalCodeHash: !!custData.originalCodeHash,
-                      hashMatch: custData.originalCodeHash ? createSimpleHash(baselineCode) === custData.originalCodeHash : 'N/A'
-                    });
-                  }
-                } else {
-                  console.log(`⚠️ STEP 11.${index + 1}: Skipping non-file-modification customization: ${customization.name} (type: ${customization.type})`);
-                }
-              }
-              
-              console.log(`🎯 STEP 12: FINAL RESULT - Applied customizations to ${componentPath}`);
-              console.log(`📊 STEP 12a: CODE LENGTH COMPARISON:`);
-              console.log(`   📄 Original baseline: ${baselineCode.length} characters`);
-              console.log(`   🔀 Final merged code: ${finalCode.length} characters`);
-              console.log(`   📈 Difference: ${finalCode.length - baselineCode.length} characters`);
-              console.log(`   ✨ Code was modified: ${baselineCode !== finalCode}`);
-              console.log(`📄 FINAL MERGED CODE PREVIEW:`, finalCode.substring(0, 200) + '...');
-            } else {
-              console.log(`📋 STEP 4: No customizations found for ${componentPath}`);
-            }
-          } else {
-            console.warn(`⚠️ Could not fetch customizations for ${componentPath}: API returned unsuccessful response`);
-          }
-          
-        } catch (customizationError) {
-          console.warn('⚠️ Failed to load customizations, using baseline code:', customizationError);
-          // Continue with baseline code if customization loading fails
-        }
+        // Skip customizations loading - feature is obsolete  
+        console.log(`📄 Loading baseline code directly for: ${filePath}`);
         
-        // Set the final code (baseline + customizations)
-        console.log(`📝 SETTING EDITOR CODE: ${finalCode.length} characters`);
+        // Set the final code (baseline only)
+        console.log(`📝 SETTING EDITOR CODE: ${baselineCode.length} characters`);
         console.log(`📝 SETTING ORIGINAL CODE: ${baselineCode.length} characters (for comparison)`);
-        setSourceCode(finalCode);
+        setSourceCode(baselineCode);
         
         // Keep original baseline code for comparison
         setOriginalCode(baselineCode);
@@ -846,40 +711,8 @@ export default ExampleComponent;`;
             return;
           }
 
-          console.log('💾 Auto-saving patch to database...');
-          // Store ID is now automatically resolved by backend middleware
-          
-          const response = await fetch('/api/customizations', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              type: 'file_modification',
-              name: `Auto-save: ${selectedFile.name}`,
-              description: 'Auto-saved file changes from CodeEditor',
-              targetComponent: selectedFile.path || selectedFile.name,
-              customizationData: {
-                filePath: filePath,
-                originalCode: baselineCode, // Use actual baseline, not previous editor state
-                modifiedCode: newCode,
-                language: getLanguageFromFileName(selectedFile.name),
-                changeSummary: 'Auto-saved changes',
-                changeType: 'manual_edit'
-              },
-              priority: 10,
-              useUpsert: true
-            })
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            console.log('✅ Patch auto-saved successfully:', result);
-          } else {
-            const error = await response.text();
-            console.error('❌ Failed to auto-save patch:', response.status, error);
-          }
+          console.log('💾 Auto-save disabled - customizations API is obsolete');
+          // Auto-save functionality removed with customizations API
         } catch (error) {
           console.error('❌ Error during auto-save:', error);
         }
