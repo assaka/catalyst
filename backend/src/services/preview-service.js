@@ -345,7 +345,8 @@ class PreviewService {
         .replace(/'/g, "&#039;");
     }
     
-    const previewHtml = `<!doctype html>
+    try {
+      const previewHtml = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
