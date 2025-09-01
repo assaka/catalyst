@@ -931,7 +931,7 @@ export default ExampleComponent;`;
                         enableTabs={true}
                         className="h-full"
                       />
-                    ) : previewMode === 'patch' ? (
+                    ) : (
                       // Diff View - Enhanced with AST diff functionality
                       <DiffPreviewSystem
                         originalCode={manualEditResult?.originalCode || originalCode}
