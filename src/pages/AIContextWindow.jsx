@@ -421,7 +421,7 @@ const AIContextWindowPage = () => {
               console.log(`📋 No customizations found for ${componentName}`);
             }
           } else {
-            console.warn(`⚠️ Could not fetch customizations for ${componentName}: ${customizationResponse.status}`);
+            console.warn(`⚠️ Could not fetch customizations for ${componentName}: API returned unsuccessful response`);
           }
           
         } catch (customizationError) {

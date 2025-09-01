@@ -35,6 +35,7 @@ import {
 import hookSystem from '../../core/HookSystem.js';
 import eventSystem from '../../core/EventSystem.js';
 import UnifiedDiffFrontendService from '../../services/unified-diff-frontend-service';
+import { useStoreContext } from '../../utils/storeContext';
 
 // PreviewFrame component for server-side preview
 const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
@@ -42,6 +43,7 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { storeId, hasStoreId } = useStoreContext();
 
   // Create preview session with server-side rendering
   useEffect(() => {
@@ -50,9 +52,10 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
       setError(null);
 
       try {
-        // Get store context from URL or default
-        const urlParams = new URLSearchParams(window.location.search);
-        const storeId = urlParams.get('storeId') || 'default-store-id';
+        // Validate that we have a proper store context
+        if (!hasStoreId || !storeId) {
+          throw new Error('No store selected. Please select a store to use preview functionality.');
+        }
         
         // Determine target path from current location or fileName
         let targetPath = '/';
@@ -77,7 +80,8 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
           originalCodeLength: originalCode?.length || 0,
           sourceCodeLength: sourceCode?.length || 0,
           currentPath: window.location.pathname,
-          urlParams: Object.fromEntries(urlParams.entries())
+          storeIdType: typeof storeId,
+          storeIdValid: hasStoreId
         });
 
         // Call the new preview API
@@ -134,10 +138,10 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
       }
     };
 
-    if (sourceCode && originalCode && fileName) {
+    if (sourceCode && originalCode && fileName && hasStoreId) {
       createPreviewSession();
     }
-  }, [sourceCode, originalCode, fileName, language]);
+  }, [sourceCode, originalCode, fileName, language, storeId, hasStoreId]);
 
   if (isLoading) {
     return (

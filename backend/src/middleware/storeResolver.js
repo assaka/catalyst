@@ -19,6 +19,13 @@ const storeResolver = (options = {}) => {
 
     if (!req.user || !req.user.id) {
       console.log('❌ [StoreResolver] No authenticated user found');
+      
+      if (!required) {
+        console.log('🔄 [StoreResolver] Auth not required, using fallback store or query store_id');
+        req.storeId = req.query.store_id || fallbackStoreId;
+        return next();
+      }
+      
       return res.status(401).json({
         success: false,
         error: 'Authentication required'

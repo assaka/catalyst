@@ -359,7 +359,7 @@ router.post('/templates/:templateId/install', authMiddleware, storeResolver(), a
 });
 
 // Get customizations for a specific component (for loading pages/components)
-router.get('/component/:componentName', async (req, res) => {
+router.get('/component/:componentName', storeResolver({ required: false, fallbackStoreId: 'default-store' }), async (req, res) => {
   try {
     const { componentName } = req.params;
     // Default to store_id from query or use a default for development
