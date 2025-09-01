@@ -246,6 +246,25 @@ class PreviewService {
         // Disable extension loading in preview mode to avoid CORS/MIME errors
         window.__CATALYST_PREVIEW_MODE__ = true;
         
+        // Mock authentication context for preview
+        window.__CATALYST_PREVIEW_AUTH__ = {
+          user: {
+            id: 'preview-user',
+            email: 'preview@example.com',
+            name: 'Preview User',
+            role: 'admin'
+          },
+          store: {
+            id: '${session.storeId}',
+            name: '${storeData.store?.name || 'Preview Store'}',
+            slug: '${storeData.slug}',
+            owner_id: 'preview-user'
+          },
+          token: 'preview-token-' + Date.now(),
+          isAuthenticated: true,
+          isStoreOwner: true
+        };
+        
         // Override extension loading to prevent errors
         const originalImport = window.import;
         window.import = function(moduleSpecifier) {
@@ -256,10 +275,66 @@ class PreviewService {
           return originalImport ? originalImport.apply(this, arguments) : import(moduleSpecifier);
         };
         
+        // Override localStorage for auth data
+        const originalGetItem = localStorage.getItem;
+        localStorage.getItem = function(key) {
+          if (key === 'authToken' || key === 'token') {
+            return window.__CATALYST_PREVIEW_AUTH__.token;
+          }
+          if (key === 'user') {
+            return JSON.stringify(window.__CATALYST_PREVIEW_AUTH__.user);
+          }
+          if (key === 'selectedStoreId') {
+            return window.__CATALYST_PREVIEW_AUTH__.store.id;
+          }
+          if (key === 'selectedStoreName') {
+            return window.__CATALYST_PREVIEW_AUTH__.store.name;
+          }
+          return originalGetItem.call(this, key);
+        };
+        
         // Disable problematic features in preview
         if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
           navigator.serviceWorker.register = () => Promise.resolve();
         }
+        
+        // Override fetch for authentication endpoints
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options) {
+          if (typeof url === 'string') {
+            // Mock authentication verification endpoints
+            if (url.includes('/api/auth/verify') || url.includes('/api/user/profile')) {
+              console.log('🔧 PREVIEW: Mocking auth endpoint:', url);
+              return Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve({
+                  success: true,
+                  user: window.__CATALYST_PREVIEW_AUTH__.user,
+                  store: window.__CATALYST_PREVIEW_AUTH__.store,
+                  token: window.__CATALYST_PREVIEW_AUTH__.token
+                })
+              });
+            }
+            
+            // Mock store data endpoints
+            if (url.includes('/api/stores/') || url.includes('/api/store/')) {
+              console.log('🔧 PREVIEW: Mocking store endpoint:', url);
+              return Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve({
+                  success: true,
+                  data: window.__CATALYST_PREVIEW_AUTH__.store
+                })
+              });
+            }
+          }
+          
+          return originalFetch.apply(this, arguments);
+        };
+        
+        console.log('🔧 PREVIEW: Authentication context and API mocking initialized');
       </script>`;
       
       // Fix asset paths and add preview indicator
