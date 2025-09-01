@@ -75,11 +75,11 @@ class CustomizationService {
           name,
           description,
           targetComponent,
-          targetSelector,
+          targetSelector: targetSelector || null,
           customizationData: JSON.stringify(customizationData),
           priority,
-          dependencies,
-          conflictsWith,
+          dependencies: JSON.stringify(dependencies || []),
+          conflictsWith: JSON.stringify(conflictsWith || []),
           createdBy
         },
         type: sequelize.QueryTypes.INSERT
