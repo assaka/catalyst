@@ -65,7 +65,7 @@ class CustomizationService {
         ) VALUES (
           :storeId, :typeId, :type, :name, :description,
           :targetComponent, :targetSelector, :customizationData::jsonb,
-          :priority, :dependencies::text[], :conflictsWith::text[], :createdBy
+          :priority, '{}', '{}', :createdBy
         ) RETURNING id, version_number as version
       `, {
         replacements: {
@@ -78,8 +78,6 @@ class CustomizationService {
           targetSelector: targetSelector || null,
           customizationData: JSON.stringify(customizationData),
           priority,
-          dependencies: dependencies || [],
-          conflictsWith: conflictsWith || [],
           createdBy
         },
         type: sequelize.QueryTypes.INSERT
