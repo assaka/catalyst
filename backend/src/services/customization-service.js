@@ -31,19 +31,19 @@ class CustomizationService {
     } = data;
 
     try {
-      // Get customization type
-      const [customizationType] = await sequelize.query(`
-        SELECT id FROM customization_types WHERE name = :type
-      `, {
-        replacements: { type },
-        type: sequelize.QueryTypes.SELECT
-      });
-
-      if (!customizationType) {
-        return {
-          success: false,
-          error: `Invalid customization type: ${type}`
-        };
+      // Get customization type (handle missing table gracefully)
+      let customizationType = null;
+      try {
+        const [result] = await sequelize.query(`
+          SELECT id FROM customization_types WHERE name = :type
+        `, {
+          replacements: { type },
+          type: sequelize.QueryTypes.SELECT
+        });
+        customizationType = result;
+      } catch (typeError) {
+        console.log(`⚠️ customization_types table not found, creating customization without type_id`);
+        // Continue without type_id for backward compatibility
       }
 
       // Check for conflicts
@@ -58,27 +58,28 @@ class CustomizationService {
 
       // Create customization
       const [result] = await sequelize.query(`
-        INSERT INTO store_customizations (
-          store_id, customization_type_id, name, description,
+        INSERT INTO customizations (
+          store_id, customization_type_id, type, name, description,
           target_component, target_selector, customization_data,
           priority, dependencies, conflicts_with, created_by
         ) VALUES (
-          :storeId, :typeId, :name, :description,
+          :storeId, :typeId, :type, :name, :description,
           :targetComponent, :targetSelector, :customizationData::jsonb,
-          :priority, :dependencies::jsonb, :conflictsWith::jsonb, :createdBy
-        ) RETURNING id, version
+          :priority, :dependencies, :conflictsWith, :createdBy
+        ) RETURNING id, version_number as version
       `, {
         replacements: {
           storeId,
-          typeId: customizationType.id,
+          typeId: customizationType ? customizationType.id : null,
+          type,
           name,
           description,
           targetComponent,
           targetSelector,
           customizationData: JSON.stringify(customizationData),
           priority,
-          dependencies: JSON.stringify(dependencies),
-          conflictsWith: JSON.stringify(conflictsWith),
+          dependencies,
+          conflictsWith,
           createdBy
         },
         type: sequelize.QueryTypes.INSERT
