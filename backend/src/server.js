@@ -137,7 +137,7 @@ app.use((req, res, next) => {
     res.removeHeader('Content-Security-Policy');
     res.removeHeader('X-Frame-Options');
     res.setHeader('X-Frame-Options', 'ALLOWALL');
-    res.setHeader('Content-Security-Policy', 'frame-ancestors *; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' *; style-src \'self\' \'unsafe-inline\' *;');
+    res.setHeader('Content-Security-Policy', 'frame-ancestors *; frame-src *; child-src *; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' *; style-src \'self\' \'unsafe-inline\' *; default-src *;');
     return next();
   }
   helmet()(req, res, next);

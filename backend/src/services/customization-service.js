@@ -50,39 +50,65 @@ class CustomizationService {
       const processedData = await this.processDiffBasedCustomization(customizationData, type);
 
       if (useUpsert) {
-        // Use upsert for file modifications to avoid duplicates
-        const [result] = await sequelize.query(`
-          INSERT INTO customizations (
-            store_id, customization_type_id, type, name, description,
-            target_component, target_selector, customization_data,
-            priority, dependencies, conflicts_with, created_by, updated_at
-          ) VALUES (
-            :storeId, :typeId, :type, :name, :description,
-            :targetComponent, :targetSelector, :customizationData::jsonb,
-            :priority, '{}', '{}', :createdBy, NOW()
-          )
-          ON CONFLICT (store_id, target_component, type) 
-          DO UPDATE SET
-            customization_data = :customizationData::jsonb,
-            description = :description,
-            updated_at = NOW(),
-            version_number = customizations.version_number + 1
-          RETURNING id, version_number as version
+        // Check if customization exists for upsert
+        const [existing] = await sequelize.query(`
+          SELECT id, version_number FROM customizations 
+          WHERE store_id = :storeId AND target_component = :targetComponent AND type = :type
+          LIMIT 1
         `, {
-          replacements: {
-            storeId,
-            typeId: customizationType ? customizationType.id : null,
-            type,
-            name,
-            description,
-            targetComponent,
-            targetSelector: targetSelector || null,
-            customizationData: JSON.stringify(processedData),
-            priority,
-            createdBy
-          },
-          type: sequelize.QueryTypes.INSERT
+          replacements: { storeId, targetComponent, type },
+          type: sequelize.QueryTypes.SELECT
         });
+
+        let result;
+        
+        if (existing) {
+          // Update existing customization
+          [result] = await sequelize.query(`
+            UPDATE customizations SET
+              customization_data = :customizationData::jsonb,
+              description = :description,
+              updated_at = NOW(),
+              version_number = version_number + 1
+            WHERE id = :existingId
+            RETURNING id, version_number as version
+          `, {
+            replacements: {
+              existingId: existing.id,
+              customizationData: JSON.stringify(processedData),
+              description
+            },
+            type: sequelize.QueryTypes.UPDATE
+          });
+        } else {
+          // Create new customization
+          [result] = await sequelize.query(`
+            INSERT INTO customizations (
+              store_id, customization_type_id, type, name, description,
+              target_component, target_selector, customization_data,
+              priority, dependencies, conflicts_with, created_by, updated_at
+            ) VALUES (
+              :storeId, :typeId, :type, :name, :description,
+              :targetComponent, :targetSelector, :customizationData::jsonb,
+              :priority, '{}', '{}', :createdBy, NOW()
+            )
+            RETURNING id, version_number as version
+          `, {
+            replacements: {
+              storeId,
+              typeId: customizationType ? customizationType.id : null,
+              type,
+              name,
+              description,
+              targetComponent,
+              targetSelector: targetSelector || null,
+              customizationData: JSON.stringify(processedData),
+              priority,
+              createdBy
+            },
+            type: sequelize.QueryTypes.INSERT
+          });
+        }
 
         this.clearStoreCache(storeId);
         return {
@@ -91,7 +117,7 @@ class CustomizationService {
           data: {
             id: result[0].id,
             version: result[0].version,
-            isUpdate: true
+            isUpdate: !!existing
           }
         };
       }
@@ -179,11 +205,11 @@ class CustomizationService {
     }
 
     try {
-      let whereClause = 'sc.store_id = :storeId';
+      let whereClause = 'c.store_id = :storeId';
       const replacements = { storeId };
 
       if (isActive !== null) {
-        whereClause += ' AND sc.is_active = :isActive';
+        whereClause += ' AND c.is_active = :isActive';
         replacements.isActive = isActive;
       }
 
@@ -194,26 +220,26 @@ class CustomizationService {
 
       const customizations = await sequelize.query(`
         SELECT 
-          sc.id,
-          sc.name,
-          sc.description,
-          sc.target_component,
-          sc.target_selector,
-          sc.customization_data,
-          sc.priority,
-          sc.dependencies,
-          sc.conflicts_with,
-          sc.version,
-          sc.is_active,
-          sc.created_at,
-          sc.updated_at,
-          ct.name as type,
-          ct.category,
+          c.id,
+          c.name,
+          c.description,
+          c.target_component,
+          c.target_selector,
+          c.customization_data,
+          c.priority,
+          c.dependencies,
+          c.conflicts_with,
+          c.version_number as version,
+          c.is_active,
+          c.created_at,
+          c.updated_at,
+          c.type,
+          COALESCE(ct.category, 'uncategorized') as category,
           ct.description as type_description
-        FROM store_customizations sc
-        JOIN customization_types ct ON sc.customization_type_id = ct.id
+        FROM customizations c
+        LEFT JOIN customization_types ct ON c.customization_type_id = ct.id
         WHERE ${whereClause}
-        ORDER BY sc.priority ASC, sc.created_at ASC
+        ORDER BY c.priority ASC, c.created_at ASC
       `, {
         replacements,
         type: sequelize.QueryTypes.SELECT
@@ -535,8 +561,8 @@ class CustomizationService {
       return [];
     }
 
-    const [results] = await sequelize.query(`
-      SELECT name FROM store_customizations 
+    const results = await sequelize.query(`
+      SELECT name FROM customizations 
       WHERE store_id = :storeId 
       AND name = ANY(:conflictsWith) 
       AND is_active = true
@@ -1045,12 +1071,12 @@ class CustomizationService {
       const [stats] = await sequelize.query(`
         SELECT 
           COUNT(*) as total_customizations,
-          COUNT(CASE WHEN is_active THEN 1 END) as active_customizations,
+          COUNT(CASE WHEN c.is_active THEN 1 END) as active_customizations,
           COUNT(DISTINCT ct.category) as categories_used,
-          AVG(priority) as avg_priority
-        FROM store_customizations sc
-        JOIN customization_types ct ON sc.customization_type_id = ct.id
-        WHERE sc.store_id = :storeId
+          AVG(c.priority) as avg_priority
+        FROM customizations c
+        LEFT JOIN customization_types ct ON c.customization_type_id = ct.id
+        WHERE c.store_id = :storeId
       `, {
         replacements: { storeId },
         type: sequelize.QueryTypes.SELECT
