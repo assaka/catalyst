@@ -98,15 +98,16 @@ class PreviewService {
       const Store = require('../models/Store');
       const store = await Store.findByPk(session.storeId);
       
-      if (!store) {
-        return {
-          success: false,
-          error: 'Store not found'
-        };
+      // Use fallback slug if store not found (for development/testing)
+      let storeSlug = 'store'; // Default fallback
+      if (store) {
+        storeSlug = store.slug || 'store';
+        console.log(`🏪 Using store: ${store.name} (${storeSlug})`);
+      } else {
+        console.log(`⚠️ Store not found for ID: ${session.storeId}, using default slug: ${storeSlug}`);
       }
 
       // Determine the target URL  
-      const storeSlug = store.slug || 'store';
       let targetUrl = `${baseUrl}/public/${storeSlug}${session.targetPath}`;
       
       // Add original query params to maintain context and enable preview mode

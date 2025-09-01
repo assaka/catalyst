@@ -1603,8 +1603,10 @@ app.use('/api/debug', debugStoreRoutes); // Debug endpoints for troubleshooting 
 app.use('/api/store-routes', storeRoutesManagement); // Database-driven routing system for custom pages and route management - MUST come before broad /api middleware
 // Conditional auth middleware that excludes preview routes
 const conditionalAuthMiddleware = (req, res, next) => {
-  // Skip authentication for preview routes and migration endpoint
-  if (req.path.startsWith('/api/preview') || req.path === '/api/customizations/migrate') {
+  // Skip authentication for preview routes, migration endpoint, and customization component endpoint
+  if (req.path.startsWith('/api/preview') || 
+      req.path === '/api/customizations/migrate' ||
+      req.path.startsWith('/api/customizations/component/')) {
     return next();
   }
   return authMiddleware(req, res, next);
