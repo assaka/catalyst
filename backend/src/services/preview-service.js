@@ -173,7 +173,7 @@ class PreviewService {
       console.log(`🔧 Original HTML preview (first 200 chars):`, htmlContent.substring(0, 200));
       
       // Apply code changes to the HTML content
-      const modifiedHtml = this.applyCodeChangesToHtml(htmlContent, session);
+      const modifiedHtml = this.applyCodeChangesToHtml(htmlContent, session, { slug: storeSlug, store });
 
       console.log(`🔧 Modified HTML preview (first 200 chars):`, modifiedHtml.substring(0, 200));
       console.log(`🔧 HTML contains preview script:`, modifiedHtml.includes('__CATALYST_PREVIEW_MODE__'));
@@ -206,7 +206,7 @@ class PreviewService {
    * @param {Object} session - Preview session data
    * @returns {string} Modified HTML content
    */
-  applyCodeChangesToHtml(htmlContent, session) {
+  applyCodeChangesToHtml(htmlContent, session, storeData = {}) {
     try {
       console.log(`🛠️  Starting HTML modification for session ${session.sessionId}`);
       console.log(`🛠️  Session data:`, {
@@ -263,7 +263,7 @@ class PreviewService {
           // Override window.location to show correct route for React Router
           const originalLocation = window.location.href;
           const targetPath = '${session.targetPath}';
-          const storeSlug = '${store.slug}';
+          const storeSlug = '${storeData.slug}';
           const frontendPath = '/public/' + storeSlug + targetPath;
           
           // Update browser history to show correct URL for React Router
