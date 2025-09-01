@@ -15,7 +15,7 @@ class CustomizationService {
   /**
    * Create a new customization
    */
-  async createCustomization(data) {
+  async createOrUpdateCustomization(data) {
     const {
       storeId,
       type,
@@ -27,7 +27,8 @@ class CustomizationService {
       priority = 10,
       dependencies = [],
       conflictsWith = [],
-      createdBy
+      createdBy,
+      useUpsert = false
     } = data;
 
     try {
@@ -43,7 +44,56 @@ class CustomizationService {
         customizationType = result;
       } catch (typeError) {
         console.log(`⚠️ customization_types table not found, creating customization without type_id`);
-        // Continue without type_id for backward compatibility
+      }
+
+      // Process customization data to create flexible diffs
+      const processedData = await this.processDiffBasedCustomization(customizationData, type);
+
+      if (useUpsert) {
+        // Use upsert for file modifications to avoid duplicates
+        const [result] = await sequelize.query(`
+          INSERT INTO customizations (
+            store_id, customization_type_id, type, name, description,
+            target_component, target_selector, customization_data,
+            priority, dependencies, conflicts_with, created_by, updated_at
+          ) VALUES (
+            :storeId, :typeId, :type, :name, :description,
+            :targetComponent, :targetSelector, :customizationData::jsonb,
+            :priority, '{}', '{}', :createdBy, NOW()
+          )
+          ON CONFLICT (store_id, target_component, type) 
+          DO UPDATE SET
+            customization_data = :customizationData::jsonb,
+            description = :description,
+            updated_at = NOW(),
+            version_number = customizations.version_number + 1
+          RETURNING id, version_number as version
+        `, {
+          replacements: {
+            storeId,
+            typeId: customizationType ? customizationType.id : null,
+            type,
+            name,
+            description,
+            targetComponent,
+            targetSelector: targetSelector || null,
+            customizationData: JSON.stringify(processedData),
+            priority,
+            createdBy
+          },
+          type: sequelize.QueryTypes.INSERT
+        });
+
+        this.clearStoreCache(storeId);
+        return {
+          success: true,
+          message: 'Customization upserted successfully',
+          data: {
+            id: result[0].id,
+            version: result[0].version,
+            isUpdate: true
+          }
+        };
       }
 
       // Check for conflicts
@@ -56,7 +106,7 @@ class CustomizationService {
         };
       }
 
-      // Create customization
+      // Create new customization
       const [result] = await sequelize.query(`
         INSERT INTO customizations (
           store_id, customization_type_id, type, name, description,
@@ -76,14 +126,13 @@ class CustomizationService {
           description,
           targetComponent,
           targetSelector: targetSelector || null,
-          customizationData: JSON.stringify(customizationData),
+          customizationData: JSON.stringify(processedData),
           priority,
           createdBy
         },
         type: sequelize.QueryTypes.INSERT
       });
 
-      // Clear cache for this store
       this.clearStoreCache(storeId);
 
       // Apply hooks
@@ -639,6 +688,353 @@ class CustomizationService {
     
     // Simple approximation - total lines changed
     return Math.abs(modifiedLines.length - originalLines.length);
+  }
+
+  /**
+   * Process customization data to create flexible, pattern-based diffs
+   */
+  async processDiffBasedCustomization(customizationData, type) {
+    if (type !== 'file_modification') {
+      return customizationData; // Non-file modifications don't need diff processing
+    }
+
+    const { originalCode, modifiedCode, filePath } = customizationData;
+    
+    if (!originalCode || !modifiedCode) {
+      return customizationData; // Can't create diff without both versions
+    }
+
+    try {
+      // Create semantic diffs instead of line-based diffs
+      const semanticDiffs = await this.createSemanticDiffs(originalCode, modifiedCode, filePath);
+      
+      return {
+        ...customizationData,
+        semanticDiffs,
+        diffType: 'semantic',
+        // Keep original data for fallback
+        originalCodeHash: this.createHash(originalCode),
+        modifiedCodeHash: this.createHash(modifiedCode),
+        // Remove full code to save space (keep only for debugging)
+        originalCode: process.env.NODE_ENV === 'development' ? originalCode : undefined,
+        modifiedCode: process.env.NODE_ENV === 'development' ? modifiedCode : undefined
+      };
+    } catch (error) {
+      console.warn('Failed to create semantic diffs, falling back to basic storage:', error);
+      return customizationData;
+    }
+  }
+
+  /**
+   * Create semantic, pattern-based diffs that are resilient to line number changes
+   */
+  async createSemanticDiffs(originalCode, modifiedCode, filePath) {
+    const changes = [];
+    
+    // Split into logical segments (functions, components, imports, etc.)
+    const originalSegments = this.parseCodeSegments(originalCode, filePath);
+    const modifiedSegments = this.parseCodeSegments(modifiedCode, filePath);
+    
+    // Find changes by semantic meaning rather than line numbers
+    for (const modifiedSegment of modifiedSegments) {
+      const originalSegment = originalSegments.find(seg => 
+        seg.name === modifiedSegment.name && seg.type === modifiedSegment.type
+      );
+      
+      if (!originalSegment) {
+        // New segment added
+        changes.push({
+          type: 'add',
+          segmentType: modifiedSegment.type,
+          segmentName: modifiedSegment.name,
+          content: modifiedSegment.content,
+          pattern: modifiedSegment.pattern,
+          insertAfter: this.findInsertionPoint(modifiedSegments, modifiedSegment),
+          metadata: modifiedSegment.metadata
+        });
+      } else if (originalSegment.content !== modifiedSegment.content) {
+        // Segment modified
+        changes.push({
+          type: 'modify',
+          segmentType: modifiedSegment.type,
+          segmentName: modifiedSegment.name,
+          originalContent: originalSegment.content,
+          newContent: modifiedSegment.content,
+          pattern: modifiedSegment.pattern,
+          metadata: {
+            ...modifiedSegment.metadata,
+            changeSize: modifiedSegment.content.length - originalSegment.content.length
+          }
+        });
+      }
+    }
+    
+    // Find removed segments
+    for (const originalSegment of originalSegments) {
+      const stillExists = modifiedSegments.find(seg => 
+        seg.name === originalSegment.name && seg.type === originalSegment.type
+      );
+      
+      if (!stillExists) {
+        changes.push({
+          type: 'remove',
+          segmentType: originalSegment.type,
+          segmentName: originalSegment.name,
+          pattern: originalSegment.pattern,
+          metadata: originalSegment.metadata
+        });
+      }
+    }
+    
+    return changes;
+  }
+
+  /**
+   * Parse code into logical segments (functions, components, imports, etc.)
+   */
+  parseCodeSegments(code, filePath) {
+    const segments = [];
+    const lines = code.split('\n');
+    let currentSegment = null;
+    let currentContent = [];
+    
+    const isJavaScript = filePath.endsWith('.js') || filePath.endsWith('.jsx') || 
+                        filePath.endsWith('.ts') || filePath.endsWith('.tsx');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      const originalLine = lines[i];
+      
+      if (isJavaScript) {
+        // Detect React components
+        if (line.match(/^(export\s+)?(default\s+)?const\s+\w+\s*=\s*\(/)) {
+          if (currentSegment) segments.push(currentSegment);
+          const componentName = line.match(/const\s+(\w+)/)?.[1];
+          currentSegment = {
+            type: 'component',
+            name: componentName,
+            pattern: `const ${componentName}`,
+            startLine: i,
+            content: '',
+            metadata: { isReactComponent: true }
+          };
+          currentContent = [originalLine];
+        }
+        // Detect function declarations
+        else if (line.match(/^(export\s+)?(async\s+)?function\s+\w+/)) {
+          if (currentSegment) segments.push(currentSegment);
+          const funcName = line.match(/function\s+(\w+)/)?.[1];
+          currentSegment = {
+            type: 'function',
+            name: funcName,
+            pattern: `function ${funcName}`,
+            startLine: i,
+            content: '',
+            metadata: { isAsync: line.includes('async') }
+          };
+          currentContent = [originalLine];
+        }
+        // Detect imports
+        else if (line.startsWith('import ')) {
+          if (currentSegment && currentSegment.type !== 'imports') {
+            segments.push(currentSegment);
+            currentSegment = null;
+          }
+          if (!currentSegment || currentSegment.type !== 'imports') {
+            currentSegment = {
+              type: 'imports',
+              name: 'imports',
+              pattern: 'import',
+              startLine: i,
+              content: '',
+              metadata: { importCount: 0 }
+            };
+            currentContent = [];
+          }
+          currentContent.push(originalLine);
+          currentSegment.metadata.importCount++;
+        }
+        // Add to current segment
+        else if (currentSegment) {
+          currentContent.push(originalLine);
+        }
+        // Standalone code
+        else {
+          currentContent.push(originalLine);
+        }
+      }
+      
+      // Update content for current segment
+      if (currentSegment) {
+        currentSegment.content = currentContent.join('\n');
+        currentSegment.endLine = i;
+      }
+    }
+    
+    // Add final segment
+    if (currentSegment) {
+      segments.push(currentSegment);
+    }
+    
+    return segments;
+  }
+
+  /**
+   * Find appropriate insertion point for new segments
+   */
+  findInsertionPoint(segments, newSegment) {
+    // Logic to determine where new segment should be inserted
+    // Based on type, dependencies, and conventions
+    if (newSegment.type === 'imports') return 'beginning';
+    if (newSegment.type === 'component') return 'before_export';
+    return 'end';
+  }
+
+  /**
+   * Create hash for content comparison
+   */
+  createHash(content) {
+    const crypto = require('crypto');
+    return crypto.createHash('md5').update(content).digest('hex');
+  }
+
+  /**
+   * Fetch customizations for a component/page when loading
+   */
+  async getCustomizationsForComponent(storeId, componentName, options = {}) {
+    try {
+      const { includeInactive = false, type = null } = options;
+      
+      let whereClause = 'store_id = :storeId AND target_component = :componentName';
+      const replacements = { storeId, componentName };
+      
+      if (!includeInactive) {
+        whereClause += ' AND is_active = true';
+      }
+      
+      if (type) {
+        whereClause += ' AND type = :type';
+        replacements.type = type;
+      }
+      
+      const [customizations] = await sequelize.query(`
+        SELECT 
+          id, type, name, description, target_component, target_selector,
+          customization_data, priority, created_at, updated_at, version_number
+        FROM customizations
+        WHERE ${whereClause}
+        ORDER BY priority ASC, created_at ASC
+      `, {
+        replacements,
+        type: sequelize.QueryTypes.SELECT
+      });
+      
+      return {
+        success: true,
+        customizations: customizations || [],
+        count: customizations ? customizations.length : 0
+      };
+      
+    } catch (error) {
+      console.error('❌ Error fetching component customizations:', error);
+      return {
+        success: false,
+        error: error.message,
+        customizations: []
+      };
+    }
+  }
+
+  /**
+   * Apply semantic diffs to current code
+   */
+  async applySemanticDiffs(baseCode, semanticDiffs, filePath) {
+    if (!semanticDiffs || semanticDiffs.length === 0) {
+      return baseCode;
+    }
+    
+    let modifiedCode = baseCode;
+    const segments = this.parseCodeSegments(baseCode, filePath);
+    
+    for (const diff of semanticDiffs) {
+      try {
+        if (diff.type === 'add') {
+          modifiedCode = this.insertSegment(modifiedCode, diff, segments);
+        } else if (diff.type === 'modify') {
+          modifiedCode = this.modifySegment(modifiedCode, diff, segments);
+        } else if (diff.type === 'remove') {
+          modifiedCode = this.removeSegment(modifiedCode, diff, segments);
+        }
+      } catch (error) {
+        console.warn(`Failed to apply diff ${diff.type} for ${diff.segmentName}:`, error);
+      }
+    }
+    
+    return modifiedCode;
+  }
+
+  /**
+   * Insert a new segment into code
+   */
+  insertSegment(code, diff, segments) {
+    // Implementation for inserting new code segments
+    const lines = code.split('\n');
+    const insertPoint = this.findActualInsertionPoint(lines, diff, segments);
+    lines.splice(insertPoint, 0, diff.content);
+    return lines.join('\n');
+  }
+
+  /**
+   * Modify an existing segment
+   */
+  modifySegment(code, diff, segments) {
+    // Find the segment by pattern rather than line number
+    const segment = segments.find(s => 
+      s.name === diff.segmentName && s.type === diff.segmentType
+    );
+    
+    if (segment) {
+      return code.replace(diff.originalContent, diff.newContent);
+    }
+    
+    return code;
+  }
+
+  /**
+   * Remove a segment from code
+   */
+  removeSegment(code, diff, segments) {
+    const segment = segments.find(s => 
+      s.name === diff.segmentName && s.type === diff.segmentType
+    );
+    
+    if (segment) {
+      const lines = code.split('\n');
+      lines.splice(segment.startLine, segment.endLine - segment.startLine + 1);
+      return lines.join('\n');
+    }
+    
+    return code;
+  }
+
+  findActualInsertionPoint(lines, diff, segments) {
+    // Smart insertion point detection based on code structure
+    if (diff.insertAfter === 'beginning') return 0;
+    if (diff.insertAfter === 'end') return lines.length;
+    
+    // Find export default line for 'before_export'
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (lines[i].trim().startsWith('export default')) {
+        return i;
+      }
+    }
+    
+    return lines.length;
+  }
+
+  // Legacy method for backward compatibility
+  async createCustomization(data) {
+    return this.createOrUpdateCustomization(data);
   }
 
   /**

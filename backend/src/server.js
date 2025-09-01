@@ -132,7 +132,12 @@ app.set('trust proxy', 1);
 // Security middleware with exceptions for preview route
 app.use((req, res, next) => {
   // Skip helmet for preview routes to allow iframe embedding
-  if (req.path.startsWith('/preview/')) {
+  if (req.path.startsWith('/preview/') || req.path.startsWith('/api/preview/')) {
+    // Force override CSP headers for preview routes
+    res.removeHeader('Content-Security-Policy');
+    res.removeHeader('X-Frame-Options');
+    res.setHeader('X-Frame-Options', 'ALLOWALL');
+    res.setHeader('Content-Security-Policy', 'frame-ancestors *; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' *; style-src \'self\' \'unsafe-inline\' *;');
     return next();
   }
   helmet()(req, res, next);

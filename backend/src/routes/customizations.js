@@ -12,7 +12,7 @@ const { sequelize } = require('../database/connection');
 const fs = require('fs');
 const path = require('path');
 
-// Create a new customization
+// Create or update a customization (with upsert support)
 router.post('/', authMiddleware, storeResolver(), async (req, res) => {
   try {
     const {
@@ -24,12 +24,13 @@ router.post('/', authMiddleware, storeResolver(), async (req, res) => {
       customizationData,
       priority = 10,
       dependencies = [],
-      conflictsWith = []
+      conflictsWith = [],
+      useUpsert = false
     } = req.body;
 
-    console.log(`🎨 Creating customization: ${name} (${type})`);
+    console.log(`🎨 ${useUpsert ? 'Upserting' : 'Creating'} customization: ${name} (${type})`);
 
-    const result = await customizationService.createCustomization({
+    const result = await customizationService.createOrUpdateCustomization({
       storeId: req.storeId,
       type,
       name,
@@ -40,7 +41,8 @@ router.post('/', authMiddleware, storeResolver(), async (req, res) => {
       priority,
       dependencies,
       conflictsWith,
-      createdBy: req.user.id
+      createdBy: req.user?.id,
+      useUpsert
     });
 
     if (result.success) {
@@ -349,6 +351,71 @@ router.post('/templates/:templateId/install', authMiddleware, storeResolver(), a
 
   } catch (error) {
     console.error('❌ Error installing template:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get customizations for a specific component (for loading pages/components)
+router.get('/component/:componentName', storeResolver({ required: false }), async (req, res) => {
+  try {
+    const { componentName } = req.params;
+    const storeId = req.storeId || req.query.store_id;
+    const { 
+      type = null, 
+      includeInactive = false,
+      applyDiffs = false 
+    } = req.query;
+
+    console.log(`🎯 Fetching customizations for component: ${componentName} (store: ${storeId})`);
+
+    const result = await customizationService.getCustomizationsForComponent(storeId, componentName, {
+      type,
+      includeInactive: includeInactive === 'true'
+    });
+
+    if (result.success) {
+      let responseData = {
+        component: componentName,
+        customizations: result.customizations,
+        count: result.count,
+        hasCustomizations: result.count > 0
+      };
+
+      // If applyDiffs is requested, apply semantic diffs to provided base code
+      if (applyDiffs === 'true' && req.body.baseCode) {
+        const filePath = req.body.filePath || `src/pages/${componentName}.jsx`;
+        let modifiedCode = req.body.baseCode;
+        
+        for (const customization of result.customizations) {
+          if (customization.type === 'file_modification' && customization.customization_data?.semanticDiffs) {
+            modifiedCode = await customizationService.applySemanticDiffs(
+              modifiedCode, 
+              customization.customization_data.semanticDiffs, 
+              filePath
+            );
+          }
+        }
+        
+        responseData.modifiedCode = modifiedCode;
+        responseData.diffsApplied = true;
+      }
+
+      res.json({
+        success: true,
+        data: responseData
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+  } catch (error) {
+    console.error('❌ Error fetching component customizations:', error);
     res.status(500).json({
       success: false,
       error: error.message
