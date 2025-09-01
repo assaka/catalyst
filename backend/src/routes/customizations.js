@@ -359,13 +359,13 @@ router.post('/templates/:templateId/install', authMiddleware, storeResolver(), a
 });
 
 // Get customizations for a specific component (for loading pages/components)
-router.get('/component/:componentPath', storeResolver({ required: false, fallbackStoreId: 'default-store' }), async (req, res) => {
+router.get('/component/:componentPath', storeResolver(), async (req, res) => {
   try {
     const { componentPath } = req.params;
     // URL decode the component path to handle file paths with slashes
     const decodedComponentPath = decodeURIComponent(componentPath);
-    // Default to store_id from query or use a default for development
-    const storeId = req.storeId || req.query.store_id || 'default-store';
+    // Store ID should always be resolved by storeResolver middleware
+    const storeId = req.storeId;
     const { 
       type = null, 
       includeInactive = false,
