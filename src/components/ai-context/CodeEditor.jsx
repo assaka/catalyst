@@ -43,7 +43,17 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { storeId, hasStoreId } = useStoreContext();
+  const { storeId, hasStoreId, loading: storeLoading } = useStoreContext();
+
+  // Debug store context
+  useEffect(() => {
+    console.log('🏪 PreviewFrame store context:', { 
+      storeId, 
+      hasStoreId, 
+      storeLoading,
+      storeIdType: typeof storeId 
+    });
+  }, [storeId, hasStoreId, storeLoading]);
 
   // Create preview session with server-side rendering
   useEffect(() => {
@@ -142,6 +152,29 @@ const PreviewFrame = ({ sourceCode, originalCode, fileName, language }) => {
       createPreviewSession();
     }
   }, [sourceCode, originalCode, fileName, language, storeId, hasStoreId]);
+
+  if (storeLoading) {
+    return (
+      <div className="h-full flex items-center justify-center bg-muted/20">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin text-blue-500" />
+          <p className="text-sm text-muted-foreground">Loading store context...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasStoreId || !storeId) {
+    return (
+      <div className="h-full flex items-center justify-center bg-yellow-50 dark:bg-yellow-900/10">
+        <div className="text-center">
+          <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-yellow-500" />
+          <p className="text-sm text-yellow-600 dark:text-yellow-400">No store selected</p>
+          <p className="text-xs text-muted-foreground mt-1">Please select a store to use preview functionality</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
