@@ -122,6 +122,14 @@ router.get('/render/:sessionId', async (req, res) => {
     console.log(`🖼 Rendering preview for session: ${sessionId}`);
 
     const result = await previewService.renderPreview(sessionId);
+    
+    console.log(`📊 Preview render result:`, {
+      success: result.success,
+      error: result.error,
+      hasContent: !!result.content,
+      contentType: result.contentType,
+      sessionFound: result.session ? 'yes' : 'no'
+    });
 
     if (result.success) {
       // Set headers for HTML content
