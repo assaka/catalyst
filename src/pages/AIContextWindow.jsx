@@ -388,6 +388,24 @@ const AIContextWindowPage = () => {
           
           // Fetch existing customizations for this file using full path
           console.log(`🌐 STEP 2: Making API call to: customizations/component/${encodeURIComponent(componentPath)}`);
+          
+          // Debug authentication
+          const token = apiClient.getToken();
+          const storeOwnerToken = localStorage.getItem('store_owner_auth_token');
+          const customerToken = localStorage.getItem('customer_auth_token');
+          const legacyToken = localStorage.getItem('auth_token');
+          
+          console.log(`🔐 STEP 2a: Authentication debug:`, {
+            hasToken: !!token,
+            tokenPreview: token ? token.substring(0, 20) + '...' : 'null',
+            hasStoreOwnerToken: !!storeOwnerToken,
+            hasCustomerToken: !!customerToken,
+            hasLegacyToken: !!legacyToken,
+            currentPath: window.location.pathname,
+            isAdminContext: window.location.pathname.startsWith('/editor/'),
+            userLoggedOut: localStorage.getItem('user_logged_out')
+          });
+          
           const customizationData = await apiClient.get(`customizations/component/${encodeURIComponent(componentPath)}`);
           
           console.log(`📡 STEP 3: API Response received:`, {

@@ -281,8 +281,13 @@ class PreviewService {
             // Replace body with preview content
             console.log('🎬 STEP 11: Replacing body content with preview');
             console.log('🎬 STEP 12: Current body content before replacement:', document.body.innerHTML.substring(0, 200));
+            console.log('🎬 STEP 12A: Document ready state:', document.readyState);
+            console.log('🎬 STEP 12B: Body children count:', document.body.children.length);
             
-            document.body.innerHTML = \`
+            // Add a small delay to ensure DOM is fully ready, then replace content
+            setTimeout(() => {
+              console.log('🎬 STEP 12C: Executing delayed content replacement');
+              document.body.innerHTML = \`
               <div style="
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
                 max-width: 1200px;
