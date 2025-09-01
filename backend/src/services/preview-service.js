@@ -251,8 +251,10 @@ class PreviewService {
           window.__CATALYST_PREVIEW_DATA__ = ${JSON.stringify({
             sessionId: session.sessionId,
             fileName: session.fileName,
-            originalCode: session.originalCode,
-            modifiedCode: session.modifiedCode,
+            originalCodeLength: session.originalCode?.length || 0,
+            modifiedCodeLength: session.modifiedCode?.length || 0,
+            originalCode: session.originalCode ? session.originalCode.substring(0, 1000) + '...' : '',
+            modifiedCode: session.modifiedCode ? session.modifiedCode.substring(0, 1000) + '...' : '',
             language: session.language,
             appliedAt: Date.now()
           })};
@@ -338,7 +340,7 @@ class PreviewService {
                     margin: 0;
                     max-height: 500px;
                     overflow-y: auto;
-                  ">\${window.__CATALYST_PREVIEW_DATA__.modifiedCode}</pre>
+                  ">" + window.__CATALYST_PREVIEW_DATA__.modifiedCode + "</pre>
                 </div>
               </div>
             \`;
