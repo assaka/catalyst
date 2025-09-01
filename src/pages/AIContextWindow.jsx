@@ -386,22 +386,12 @@ const AIContextWindowPage = () => {
           const componentName = filePath.split('/').pop(); // Get filename from path
           console.log(`🎨 Loading customizations for component: ${componentName}`);
           
-          // Fetch existing customizations for this component
-          const customizationResponse = await fetch(`/api/customizations/component/${encodeURIComponent(componentName)}`, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              // Include auth token if available for authenticated access
-              ...(localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token')) && {
-                'Authorization': `Bearer ${localStorage.getItem('store_owner_auth_token') || localStorage.getItem('auth_token') || localStorage.getItem('token')}`
-              }
-            }
-          });
+          // Fetch existing customizations for this component using apiClient
+          const customizationData = await apiClient.get(`customizations/component/${encodeURIComponent(componentName)}`);
           
-          if (customizationResponse.ok) {
-            const customizationData = await customizationResponse.json();
+          if (customizationData && customizationData.success) {
             
-            if (customizationData.success && customizationData.data.customizations.length > 0) {
+            if (customizationData.data.customizations.length > 0) {
               console.log(`✅ Found ${customizationData.data.customizations.length} customizations for ${componentName}`);
               
               // Apply customizations in order of priority

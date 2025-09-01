@@ -95,16 +95,29 @@ class PreviewService {
 
       // Fetch the original page
       const baseUrl = process.env.PUBLIC_STORE_BASE_URL || 'https://catalyst-pearl.vercel.app';
-      const Store = require('../models/Store');
-      const store = await Store.findByPk(session.storeId);
       
-      // Use fallback slug if store not found (for development/testing)
+      // Handle store lookup with UUID validation
       let storeSlug = 'store'; // Default fallback
-      if (store) {
-        storeSlug = store.slug || 'store';
-        console.log(`🏪 Using store: ${store.name} (${storeSlug})`);
-      } else {
-        console.log(`⚠️ Store not found for ID: ${session.storeId}, using default slug: ${storeSlug}`);
+      let store = null;
+      
+      try {
+        // Check if storeId looks like a valid UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(session.storeId)) {
+          const Store = require('../models/Store');
+          store = await Store.findByPk(session.storeId);
+          
+          if (store) {
+            storeSlug = store.slug || 'store';
+            console.log(`🏪 Using store: ${store.name} (${storeSlug})`);
+          } else {
+            console.log(`⚠️ Store not found for UUID: ${session.storeId}, using default slug: ${storeSlug}`);
+          }
+        } else {
+          console.log(`⚠️ Invalid store ID format: ${session.storeId}, using default slug: ${storeSlug}`);
+        }
+      } catch (error) {
+        console.log(`⚠️ Store lookup failed: ${error.message}, using default slug: ${storeSlug}`);
       }
 
       // Determine the target URL  
