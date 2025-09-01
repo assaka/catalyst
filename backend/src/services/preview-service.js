@@ -206,213 +206,174 @@ class PreviewService {
   }
 
   /**
-   * Apply code changes to HTML content
-   * @param {string} htmlContent - Original HTML content
+   * Apply code changes to HTML content using server-side rendering
+   * @param {string} htmlContent - Original HTML content (not used in new approach)
    * @param {Object} session - Preview session data
-   * @returns {string} Modified HTML content
+   * @param {Object} storeData - Store information
+   * @returns {string} Complete preview HTML
    */
   applyCodeChangesToHtml(htmlContent, session, storeData = {}) {
     try {
-      console.log(`🛠️  Starting HTML modification for session ${session.sessionId}`);
-      console.log(`🛠️  Session data:`, {
+      console.log(`🔧 SERVER-SIDE: Starting server-side code merging for ${session.fileName}`);
+      
+      // Helper function to escape HTML
+      const escapeHtml = (text) => {
+        if (!text) return '';
+        return text
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      };
+      
+      // Create the complete preview HTML server-side
+      const previewHtml = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="https://www.suprshop.com/logo_v2.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Preview: ${session.fileName}</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: #f8f9fa;
+        line-height: 1.6;
+      }
+      .preview-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        min-height: 100vh;
+      }
+      .preview-indicator {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #3b82f6;
+        color: white;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        z-index: 10000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+      .info-card, .code-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 24px;
+        margin-bottom: 20px;
+      }
+      .info-card h1 {
+        margin: 0 0 16px 0;
+        color: #1f2937;
+        font-size: 28px;
+        font-weight: bold;
+      }
+      .info-card p {
+        margin: 0;
+        color: #6b7280;
+        margin-bottom: 8px;
+      }
+      .code-card h2 {
+        margin: 0 0 16px 0;
+        color: #1f2937;
+        font-size: 20px;
+        font-weight: 600;
+      }
+      .code-preview {
+        background: #f3f4f6;
+        border-radius: 6px;
+        padding: 16px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+        font-size: 14px;
+        line-height: 1.5;
+        color: #374151;
+        margin: 0;
+        max-height: 600px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+      }
+      .diff-indicator {
+        background: #ecfdf5;
+        border: 1px solid #10b981;
+        border-radius: 4px;
+        padding: 8px 12px;
+        margin-bottom: 16px;
+        color: #065f46;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="preview-indicator">
+      👁 Preview Mode
+    </div>
+    
+    <div class="preview-container">
+      <div class="info-card">
+        <h1>Preview: ${session.fileName}</h1>
+        <p><strong>Target Path:</strong> ${session.targetPath}</p>
+        <p><strong>Store:</strong> ${storeData.slug || 'Unknown'}</p>
+        <p><strong>Session ID:</strong> ${session.sessionId}</p>
+        <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+      </div>
+      
+      <div class="code-card">
+        <h2>Modified Code</h2>
+        <div class="diff-indicator">
+          ✨ Showing modifications for ${session.fileName} (${session.modifiedCode?.length || 0} characters)
+        </div>
+        <pre class="code-preview">${escapeHtml(session.modifiedCode || 'No code available')}</pre>
+      </div>
+      
+      ${session.originalCode !== session.modifiedCode ? `
+      <div class="code-card">
+        <h2>Original Code (for comparison)</h2>
+        <pre class="code-preview">${escapeHtml(session.originalCode?.substring(0, 2000) + '...' || 'No original code available')}</pre>
+      </div>
+      ` : ''}
+    </div>
+
+    <script>
+      console.log('🎬 SERVER-SIDE: Preview rendered successfully');
+      console.log('📁 File:', '${session.fileName}');
+      console.log('🔧 Code Length:', ${session.modifiedCode?.length || 0});
+      console.log('🔄 Target Path:', '${session.targetPath}');
+      
+      // Set preview data for any client-side components that might need it
+      window.__CATALYST_PREVIEW_MODE__ = true;
+      window.__CATALYST_PREVIEW_DATA__ = ${JSON.stringify({
+        sessionId: session.sessionId,
         fileName: session.fileName,
         targetPath: session.targetPath,
-        hasOriginalCode: !!session.originalCode,
-        hasModifiedCode: !!session.modifiedCode,
-        originalCodeLength: session.originalCode?.length || 0,
-        modifiedCodeLength: session.modifiedCode?.length || 0
-      });
+        appliedAt: Date.now()
+      })};
+    </script>
+  </body>
+</html>`;
 
-      console.log(`🛠️  Removing React scripts and creating standalone preview`);
-      
-      // Remove all script tags that load the React app
-      htmlContent = htmlContent.replace(
-        /<script[^>]*src=["'][^"']*\.js["'][^>]*><\/script>/gi,
-        ''
-      );
-      
-      // Remove all CSS imports from the React app  
-      htmlContent = htmlContent.replace(
-        /<link[^>]*rel=["']stylesheet["'][^>]*>/gi,
-        ''
-      );
-      
-      console.log(`🔧 Removed React scripts and stylesheets`);
-
-      // Inject preview metadata and modified code into the HTML
-      console.log(`🛠️  Generating preview script for injection`);
-      const previewScript = `
-        <script>
-          // Catalyst Preview Mode
-          console.log('🎬 STEP 1: Catalyst Preview Mode script starting');
-          window.__CATALYST_PREVIEW_MODE__ = true;
-          console.log('🎬 STEP 2: Preview mode flag set');
-          
-          window.__CATALYST_PREVIEW_DATA__ = ${JSON.stringify({
-            sessionId: session.sessionId,
-            fileName: session.fileName,
-            originalCodeLength: session.originalCode?.length || 0,
-            modifiedCodeLength: session.modifiedCode?.length || 0,
-            originalCode: session.originalCode ? session.originalCode.substring(0, 1000) + '...' : '',
-            modifiedCode: session.modifiedCode ? session.modifiedCode.substring(0, 1000) + '...' : '',
-            language: session.language,
-            appliedAt: Date.now()
-          })};
-          console.log('🎬 STEP 3: Preview data set:', window.__CATALYST_PREVIEW_DATA__);
-          
-          // Instead of routing, create a simple preview content
-          console.log('🎬 STEP 4: Creating preview content for ${session.fileName}');
-          
-          // Check if DOM is already loaded
-          console.log('🎬 STEP 5: DOM ready state:', document.readyState);
-          
-          function initPreview() {
-            console.log('🎬 STEP 6: initPreview function called');
-            console.log('📁 STEP 7: File:', '${session.fileName}');
-            console.log('🔧 STEP 8: Modified Code Length:', ${session.modifiedCode?.length || 0});
-            console.log('🔄 STEP 9: Target Path:', '${session.targetPath}');
-            
-            // Dispatch preview event for components to listen to
-            console.log('🎬 STEP 10: Dispatching catalystPreviewReady event');
-            window.dispatchEvent(new CustomEvent('catalystPreviewReady', {
-              detail: window.__CATALYST_PREVIEW_DATA__
-            }));
-            
-            // Replace body with preview content
-            console.log('🎬 STEP 11: Replacing body content with preview');
-            console.log('🎬 STEP 12: Current body content before replacement:', document.body.innerHTML.substring(0, 200));
-            console.log('🎬 STEP 12A: Document ready state:', document.readyState);
-            console.log('🎬 STEP 12B: Body children count:', document.body.children.length);
-            
-            // Add a small delay to ensure DOM is fully ready, then replace content
-            setTimeout(() => {
-              console.log('🎬 STEP 12C: Executing delayed content replacement');
-              document.body.innerHTML = \`
-              <div style="
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                max-width: 1200px;
-                margin: 0 auto;
-                padding: 20px;
-                background: #f8f9fa;
-                min-height: 100vh;
-              ">
-                <div style="
-                  position: fixed;
-                  top: 10px;
-                  right: 10px;
-                  background: #3b82f6;
-                  color: white;
-                  padding: 8px 12px;
-                  border-radius: 6px;
-                  font-size: 12px;
-                  font-weight: 500;
-                  z-index: 10000;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-                ">
-                  👁 Preview Mode
-                </div>
-                
-                <div style="
-                  background: white;
-                  border-radius: 8px;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                  padding: 24px;
-                  margin-bottom: 20px;
-                ">
-                  <h1 style="margin: 0 0 16px 0; color: #1f2937;">Preview: ${session.fileName}</h1>
-                  <p style="margin: 0; color: #6b7280;">Target Path: ${session.targetPath}</p>
-                  <p style="margin: 8px 0 0 0; color: #6b7280;">Store: ${storeData.slug || 'Unknown'}</p>
-                </div>
-                
-                <div style="
-                  background: white;
-                  border-radius: 8px;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                  padding: 24px;
-                ">
-                  <h2 style="margin: 0 0 16px 0; color: #1f2937;">Modified Code</h2>
-                  <pre style="
-                    background: #f3f4f6;
-                    border-radius: 6px;
-                    padding: 16px;
-                    overflow-x: auto;
-                    white-space: pre-wrap;
-                    word-wrap: break-word;
-                    font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-                    font-size: 14px;
-                    line-height: 1.5;
-                    color: #374151;
-                    margin: 0;
-                    max-height: 500px;
-                    overflow-y: auto;
-                  ">" + window.__CATALYST_PREVIEW_DATA__.modifiedCode + "</pre>
-                </div>
-              </div>
-            \`;
-            
-            console.log('🎬 STEP 13: Body content replaced successfully');
-            console.log('🎬 STEP 14: New body content preview:', document.body.innerHTML.substring(0, 200));
-          }
-          
-          // Apply preview changes when DOM is ready
-          if (document.readyState === 'loading') {
-            console.log('🎬 STEP 5A: DOM still loading, adding listener');
-            document.addEventListener('DOMContentLoaded', function() {
-              console.log('🎬 STEP 5B: DOMContentLoaded event fired');
-              initPreview();
-            });
-          } else {
-            console.log('🎬 STEP 5C: DOM already loaded, calling initPreview immediately');
-            initPreview();
-          }
-        </script>
-      `;
-
-      // Inject the preview script before the closing head tag or body tag
-      console.log(`🛠️  Injecting preview script...`);
-      console.log(`🛠️  HTML contains </head>:`, htmlContent.includes('</head>'));
-      console.log(`🛠️  HTML contains </body>:`, htmlContent.includes('</body>'));
-      
-      if (htmlContent.includes('</head>')) {
-        htmlContent = htmlContent.replace('</head>', `${previewScript}</head>`);
-        console.log(`🛠️  Injected script before </head>`);
-      } else if (htmlContent.includes('</body>')) {
-        htmlContent = htmlContent.replace('</body>', `${previewScript}</body>`);
-        console.log(`🛠️  Injected script before </body>`);
-      } else {
-        // Fallback: append to end of content
-        htmlContent = htmlContent + previewScript;
-        console.log(`🛠️  Fallback: appended script to end of content`);
-      }
-
-      // Add preview mode CSS
-      const previewStyles = `
-        <style>
-          /* Catalyst Preview Mode Styles */
-          [data-catalyst-preview] {
-            outline: 2px dashed #3b82f6;
-            outline-offset: 2px;
-          }
-          
-          [data-catalyst-preview]:hover {
-            outline-color: #1d4ed8;
-            background-color: rgba(59, 130, 246, 0.05);
-          }
-        </style>
-      `;
-
-      if (htmlContent.includes('</head>')) {
-        htmlContent = htmlContent.replace('</head>', `${previewStyles}</head>`);
-      } else {
-        htmlContent = previewStyles + htmlContent;
-      }
-
-      console.log(`✅ Applied preview changes to HTML (${htmlContent.length} chars)`);
-      return htmlContent;
+      console.log(`✅ SERVER-SIDE: Generated complete preview HTML (${previewHtml.length} chars)`);
+      return previewHtml;
 
     } catch (error) {
-      console.error('❌ Error applying code changes to HTML:', error);
-      return htmlContent; // Return original content on error
+      console.error('❌ SERVER-SIDE: Error generating preview HTML:', error);
+      return `<!doctype html>
+<html>
+<head><title>Preview Error</title></head>
+<body>
+  <h1>Preview Error</h1>
+  <p>Failed to generate preview: ${error.message}</p>
+</body>
+</html>`;
     }
   }
 
