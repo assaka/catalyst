@@ -372,11 +372,26 @@ router.get('/component/:componentPath', storeResolver({ required: false, fallbac
       applyDiffs = false 
     } = req.query;
 
-    console.log(`🎯 Fetching customizations for file path: ${decodedComponentPath} (store: ${storeId})`);
+    console.log(`🎯 [Route] STEP I: Fetching customizations for file path: ${decodedComponentPath} (store: ${storeId})`);
+    console.log(`🎯 [Route] STEP II: Request details:`, {
+      originalPath: componentPath,
+      decodedPath: decodedComponentPath,
+      storeId,
+      type,
+      includeInactive,
+      query: req.query
+    });
 
     const result = await customizationService.getCustomizationsForComponent(storeId, decodedComponentPath, {
       type,
       includeInactive: includeInactive === 'true'
+    });
+    
+    console.log(`🎯 [Route] STEP III: Service result:`, {
+      success: result.success,
+      count: result.count,
+      customizationIds: result.customizations?.map(c => c.id) || [],
+      hasTargetCustomization: result.customizations?.some(c => c.id === 'e9d25cdd-39dd-4262-b152-9393a05d488c') || false
     });
 
     if (result.success) {

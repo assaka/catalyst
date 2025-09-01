@@ -28,6 +28,11 @@ class PreviewService {
     } = params;
 
     try {
+      console.log(`🔧 CUSTOMIZATION DEBUG: Should fetch customization with ID: e9d25cdd-39dd-4262-b152-9393a05d488c`);
+      console.log(`🔧 CUSTOMIZATION DEBUG: Original code length: ${originalCode?.length || 0}`);
+      console.log(`🔧 CUSTOMIZATION DEBUG: Modified code length: ${modifiedCode?.length || 0}`);
+      console.log(`🔧 CUSTOMIZATION DEBUG: Should merge changes for file: ${fileName}`);
+
       // Generate unique session ID
       const sessionId = crypto.randomBytes(16).toString('hex');
       const expiresAt = Date.now() + this.cacheTimeout;
@@ -239,8 +244,10 @@ class PreviewService {
       const previewScript = `
         <script>
           // Catalyst Preview Mode
-          console.log('🎬 Catalyst Preview Mode activated');
+          console.log('🎬 STEP 1: Catalyst Preview Mode script starting');
           window.__CATALYST_PREVIEW_MODE__ = true;
+          console.log('🎬 STEP 2: Preview mode flag set');
+          
           window.__CATALYST_PREVIEW_DATA__ = ${JSON.stringify({
             sessionId: session.sessionId,
             fileName: session.fileName,
@@ -249,23 +256,30 @@ class PreviewService {
             language: session.language,
             appliedAt: Date.now()
           })};
+          console.log('🎬 STEP 3: Preview data set:', window.__CATALYST_PREVIEW_DATA__);
           
           // Instead of routing, create a simple preview content
-          console.log('🎬 Creating preview content for ${session.fileName}');
+          console.log('🎬 STEP 4: Creating preview content for ${session.fileName}');
           
-          // Apply preview changes when DOM is ready
-          document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎬 Catalyst Preview Mode Active');
-            console.log('📁 File:', '${session.fileName}');
-            console.log('🔧 Modified Code Length:', ${session.modifiedCode?.length || 0});
-            console.log('🔄 Target Path:', '${session.targetPath}');
+          // Check if DOM is already loaded
+          console.log('🎬 STEP 5: DOM ready state:', document.readyState);
+          
+          function initPreview() {
+            console.log('🎬 STEP 6: initPreview function called');
+            console.log('📁 STEP 7: File:', '${session.fileName}');
+            console.log('🔧 STEP 8: Modified Code Length:', ${session.modifiedCode?.length || 0});
+            console.log('🔄 STEP 9: Target Path:', '${session.targetPath}');
             
             // Dispatch preview event for components to listen to
+            console.log('🎬 STEP 10: Dispatching catalystPreviewReady event');
             window.dispatchEvent(new CustomEvent('catalystPreviewReady', {
               detail: window.__CATALYST_PREVIEW_DATA__
             }));
             
             // Replace body with preview content
+            console.log('🎬 STEP 11: Replacing body content with preview');
+            console.log('🎬 STEP 12: Current body content before replacement:', document.body.innerHTML.substring(0, 200));
+            
             document.body.innerHTML = \`
               <div style="
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -328,7 +342,22 @@ class PreviewService {
                 </div>
               </div>
             \`;
-          });
+            
+            console.log('🎬 STEP 13: Body content replaced successfully');
+            console.log('🎬 STEP 14: New body content preview:', document.body.innerHTML.substring(0, 200));
+          }
+          
+          // Apply preview changes when DOM is ready
+          if (document.readyState === 'loading') {
+            console.log('🎬 STEP 5A: DOM still loading, adding listener');
+            document.addEventListener('DOMContentLoaded', function() {
+              console.log('🎬 STEP 5B: DOMContentLoaded event fired');
+              initPreview();
+            });
+          } else {
+            console.log('🎬 STEP 5C: DOM already loaded, calling initPreview immediately');
+            initPreview();
+          }
         </script>
       `;
 

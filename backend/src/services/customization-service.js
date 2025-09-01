@@ -929,6 +929,12 @@ class CustomizationService {
    */
   async getCustomizationsForComponent(storeId, componentName, options = {}) {
     try {
+      console.log(`🔍 [CustomizationService] STEP A: getCustomizationsForComponent called`, {
+        storeId,
+        componentName,
+        options
+      });
+      
       const { includeInactive = false, type = null } = options;
       
       let whereClause = 'store_id = :storeId AND target_component = :componentName';
@@ -943,7 +949,13 @@ class CustomizationService {
         replacements.type = type;
       }
       
-      const [customizations] = await sequelize.query(`
+      console.log(`🔍 [CustomizationService] STEP B: Executing query`, {
+        whereClause,
+        replacements,
+        fullQuery: `SELECT * FROM customizations WHERE ${whereClause} ORDER BY priority ASC, created_at ASC`
+      });
+      
+      const customizations = await sequelize.query(`
         SELECT 
           id, type, name, description, target_component, target_selector,
           customization_data, priority, created_at, updated_at, version_number
@@ -954,6 +966,39 @@ class CustomizationService {
         replacements,
         type: sequelize.QueryTypes.SELECT
       });
+      
+      console.log(`🔍 [CustomizationService] STEP C: Query completed`, {
+        foundCustomizations: customizations?.length || 0,
+        customizationIds: customizations?.map(c => c.id) || [],
+        customizationNames: customizations?.map(c => c.name) || []
+      });
+      
+      if (customizations?.length > 0) {
+        console.log(`🔍 [CustomizationService] STEP D: Detailed customizations info:`, 
+          customizations.map(c => ({
+            id: c.id,
+            name: c.name,
+            type: c.type,
+            target_component: c.target_component,
+            priority: c.priority,
+            has_customization_data: !!c.customization_data,
+            customization_data_type: typeof c.customization_data,
+            data_preview: typeof c.customization_data === 'string' ? c.customization_data.substring(0, 200) + '...' : JSON.stringify(c.customization_data).substring(0, 200) + '...'
+          }))
+        );
+        
+        // Check specifically for the target customization
+        const targetCustomization = customizations.find(c => c.id === 'e9d25cdd-39dd-4262-b152-9393a05d488c');
+        if (targetCustomization) {
+          console.log(`🎯 [CustomizationService] FOUND TARGET CUSTOMIZATION e9d25cdd-39dd-4262-b152-9393a05d488c:`, {
+            id: targetCustomization.id,
+            name: targetCustomization.name,
+            type: targetCustomization.type,
+            target_component: targetCustomization.target_component,
+            customization_data: targetCustomization.customization_data
+          });
+        }
+      }
       
       return {
         success: true,
