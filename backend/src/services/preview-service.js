@@ -475,10 +475,10 @@ class PreviewService {
       window.SeoHeadManager = () => null;
       window.CmsBlockRenderer = ({ position }) => React.createElement('div', { style: { padding: '10px', background: '#e7f3ff', borderRadius: '4px', margin: '10px 0', fontSize: '12px' } }, \`CMS Block: \${position}\`);
       
-      // Initialize React rendering
+      // Initialize actual Cart component rendering
       async function initializeReactPreview() {
         try {
-          console.log('🚀 REACT: Initializing React component preview');
+          console.log('🚀 REACT: Initializing actual Cart component preview');
           
           const mountPoint = document.getElementById('react-mount-point');
           const loadingPlaceholder = document.getElementById('loading-placeholder');
@@ -493,78 +493,128 @@ class PreviewService {
             loadingPlaceholder.remove();
           }
           
-          // Create preview component
-          const PreviewComponent = () => {
-            return React.createElement('div', {
-              style: {
-                fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-                lineHeight: 1.6
-              }
-            }, [
-              React.createElement('div', {
-                key: 'header',
-                style: {
-                  background: '#3b82f6',
-                  color: 'white',
-                  padding: '12px 16px',
-                  borderRadius: '6px',
-                  marginBottom: '20px',
-                  fontSize: '14px'
-                }
-              }, '🎯 Live Cart Component Preview - ${session.fileName}'),
+          console.log('🔧 REACT: Compiling actual Cart.jsx component');
+          
+          // Get the merged code (actual Cart component)
+          const cartComponentCode = \`${mergedCode.replace(/`/g, '\\`').replace(/\${/g, '\\${')}\`;
+          
+          console.log('🔧 REACT: Cart component code length:', cartComponentCode.length);
+          
+          try {
+            // Transform the Cart component code to work in browser environment
+            let transformedCode = cartComponentCode;
+            
+            // Replace ES6 imports with global references
+            transformedCode = transformedCode
+              // React imports
+              .replace(/import React.*?from ['"]react['"];?/g, 'const React = window.React;')
+              .replace(/import.*?{([^}]+)}.*?from ['"]react['"];?/g, 'const {$1} = window.React;')
               
-              React.createElement('div', {
-                key: 'preview-notice',
-                style: {
-                  background: '#fff3cd',
-                  border: '1px solid #ffeaa7',
-                  borderRadius: '6px',
-                  padding: '12px',
-                  marginBottom: '20px',
-                  fontSize: '14px'
-                }
-              }, '⚠️ This is a simplified preview. Some features may not work exactly as in the full application.'),
+              // React Router imports  
+              .replace(/import.*?{([^}]+)}.*?from ['"]react-router-dom['"];?/g, 'const {$1} = mockDependencies;')
+              .replace(/import.*?useNavigate.*?from ['"]react-router-dom['"];?/g, 'const useNavigate = mockDependencies.useNavigate;')
               
-              React.createElement('div', {
-                key: 'cart-preview',
-                style: {
-                  border: '2px dashed #3b82f6',
-                  borderRadius: '8px',
-                  padding: '20px',
-                  background: '#f8fafc',
-                  textAlign: 'center'
-                }
+              // Store and service imports
+              .replace(/import.*?useStore.*?from.*?['"]@\\/components\\/storefront\\/StoreProvider['"];?/g, 'const useStore = mockDependencies.useStore;')
+              .replace(/import.*?cartService.*?from.*?['"][^'"]*['"];?/g, 'const cartService = mockDependencies.cartService;')
+              .replace(/import.*?couponService.*?from.*?['"][^'"]*['"];?/g, 'const couponService = mockDependencies.couponService;')
+              .replace(/import.*?taxService.*?from.*?['"][^'"]*['"];?/g, 'const taxService = mockDependencies.taxService;')
+              
+              // UI Component imports
+              .replace(/import.*?{([^}]+)}.*?from ['"]@\\/components\\/ui\\/(button|input|card)['"];?/g, 'const {$1} = mockDependencies;')
+              .replace(/import.*?{([^}]+)}.*?from ['"]lucide-react['"];?/g, 'const {$1} = mockDependencies;')
+              
+              // Utility imports
+              .replace(/import.*?{([^}]+)}.*?from ['"]@\\/utils.*?['"];?/g, 'const {$1} = mockDependencies;')
+              .replace(/import.*?from ['"]@\\/utils.*?['"];?/g, '')
+              
+              // Component imports (mock them)
+              .replace(/import.*?RecommendedProducts.*?from.*?['"][^'"]*['"];?/g, 'const RecommendedProducts = window.RecommendedProducts;')
+              .replace(/import.*?FlashMessage.*?from.*?['"][^'"]*['"];?/g, 'const FlashMessage = window.FlashMessage;')
+              .replace(/import.*?SeoHeadManager.*?from.*?['"][^'"]*['"];?/g, 'const SeoHeadManager = window.SeoHeadManager;')
+              .replace(/import.*?CmsBlockRenderer.*?from.*?['"][^'"]*['"];?/g, 'const CmsBlockRenderer = window.CmsBlockRenderer;')
+              
+              // API entity imports
+              .replace(/import.*?{([^}]+)}.*?from ['"]@\\/api\\/(storefront-entities|entities)['"];?/g, 'const {$1} = window;')
+              
+              // Remove other imports
+              .replace(/import.*?['"][^'"]*['"];?\\n?/g, '')
+              
+              // Fix export
+              .replace(/export default function Cart/g, 'function Cart')
+              .replace(/export default Cart/g, '// Cart component defined above');
+            
+            console.log('🔧 REACT: Transformed component for browser execution');
+            
+            // Create a function that returns the Cart component
+            const componentFactory = new Function('React', 'mockDependencies', 'window', \`
+              const { useState, useEffect, useCallback, useMemo } = React;
+              \${transformedCode}
+              return Cart;
+            \`);
+            
+            // Get the Cart component
+            const CartComponent = componentFactory(React, mockDependencies, window);
+            
+            console.log('🔧 REACT: Cart component compiled successfully');
+            
+            // Render the actual Cart component
+            const root = ReactDOM.createRoot(mountPoint);
+            root.render(React.createElement(CartComponent));
+            
+            console.log('✅ REACT: Actual Cart component rendered successfully');
+            
+          } catch (compileError) {
+            console.error('❌ REACT: Error compiling Cart component:', compileError);
+            
+            // Fallback to demo preview with error message
+            const fallbackComponent = () => {
+              return React.createElement('div', {
+                style: { fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif' }
               }, [
-                React.createElement('div', { key: 'icon', style: { fontSize: '48px', marginBottom: '16px' } }, '🛒'),
-                React.createElement('h2', { key: 'title', style: { margin: '0 0 8px 0', color: '#1f2937' } }, 'Cart Component'),
-                React.createElement('p', { key: 'desc', style: { margin: 0, color: '#6b7280' } }, 'Your Cart.jsx component would render here with full React context'),
                 React.createElement('div', {
-                  key: 'mock-items',
-                  style: { marginTop: '20px', textAlign: 'left' }
+                  key: 'error-header',
+                  style: {
+                    background: '#dc2626',
+                    color: 'white', 
+                    padding: '12px 16px',
+                    borderRadius: '6px',
+                    marginBottom: '20px',
+                    fontSize: '14px'
+                  }
+                }, '❌ Cart Component Compilation Error'),
+                
+                React.createElement('div', {
+                  key: 'error-details',
+                  style: {
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '6px',
+                    padding: '12px',
+                    marginBottom: '20px',
+                    fontSize: '14px',
+                    color: '#991b1b'
+                  }
+                }, \`Error: \${compileError.message}\`),
+                
+                React.createElement('div', {
+                  key: 'fallback-info',
+                  style: {
+                    background: '#f3f4f6',
+                    padding: '20px',
+                    borderRadius: '8px',
+                    textAlign: 'center'
+                  }
                 }, [
-                  React.createElement('h4', { key: 'items-title' }, 'Sample Cart Items:'),
-                  React.createElement('div', {
-                    key: 'item-1',
-                    style: { padding: '10px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', marginBottom: '8px' }
-                  }, 'Product 1 - $29.99'),
-                  React.createElement('div', {
-                    key: 'item-2', 
-                    style: { padding: '10px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '4px', marginBottom: '8px' }
-                  }, 'Product 2 - $45.00'),
-                  React.createElement('div', {
-                    key: 'total',
-                    style: { padding: '10px', background: '#3b82f6', color: 'white', borderRadius: '4px', textAlign: 'center', fontWeight: 'bold' }
-                  }, 'Total: $74.99')
+                  React.createElement('h3', { key: 'title' }, 'Cart Component Preview'),
+                  React.createElement('p', { key: 'desc' }, 'Unable to compile the Cart component for live preview. The merged code is available below.'),
                 ])
-              ])
-            ]);
-          };
-          
-          // Render the preview component
-          const root = ReactDOM.createRoot(mountPoint);
-          root.render(React.createElement(PreviewComponent));
-          
-          console.log('✅ REACT: Preview component rendered successfully');
+              ]);
+            };
+            
+            const root = ReactDOM.createRoot(mountPoint);
+            root.render(React.createElement(fallbackComponent));
+          }
           
         } catch (error) {
           console.error('❌ REACT: Error rendering preview:', error);
