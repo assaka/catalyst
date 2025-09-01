@@ -47,6 +47,7 @@ const Job = require('./Job');
 const JobHistory = require('./JobHistory');
 const StoreSupabaseConnection = require('./StoreSupabaseConnection');
 const StoreDataMigration = require('./StoreDataMigration');
+const SlotConfiguration = require('./SlotConfiguration');
 
 // Define associations
 const defineAssociations = () => {
@@ -264,6 +265,12 @@ const defineAssociations = () => {
   StoreDataMigration.belongsTo(Store, { foreignKey: 'store_id' });
   Store.hasMany(StoreDataMigration, { foreignKey: 'store_id' });
 
+  // Phoenix Slot System associations
+  SlotConfiguration.belongsTo(User, { foreignKey: 'user_id' });
+  SlotConfiguration.belongsTo(Store, { foreignKey: 'store_id' });
+  User.hasMany(SlotConfiguration, { foreignKey: 'user_id' });
+  Store.hasMany(SlotConfiguration, { foreignKey: 'store_id' });
+
 };
 
 // Initialize associations
@@ -319,4 +326,5 @@ module.exports = {
   JobHistory,
   StoreSupabaseConnection,
   StoreDataMigration,
+  SlotConfiguration,
 };

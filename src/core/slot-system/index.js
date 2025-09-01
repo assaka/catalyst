@@ -15,6 +15,18 @@ import {
   ProductCardActions,
   ProductCardContent
 } from './default-components/ProductCardSlots.jsx';
+import {
+  CartPageContainer,
+  CartPageHeader,
+  EmptyCartDisplay,
+  CartItemsContainer,
+  CartItem,
+  CartSidebar,
+  CouponSection,
+  OrderSummary,
+  CheckoutButton,
+  CartGridLayout
+} from './default-components/CartSlots.jsx';
 
 /**
  * Initialize the slot system with default components
@@ -65,7 +77,68 @@ function initializeSlotSystem() {
     defaultProps: {}
   });
 
-  console.log('✅ Phoenix Slot System initialized with default components');
+  // Register Cart slots
+  slotRegistry.register('cart.page.container', CartPageContainer, {
+    order: 0,
+    required: true,
+    defaultProps: {}
+  });
+
+  slotRegistry.register('cart.page.header', CartPageHeader, {
+    order: 1,
+    required: true,
+    defaultProps: {}
+  });
+
+  slotRegistry.register('cart.empty.display', EmptyCartDisplay, {
+    order: 2,
+    required: false,
+    defaultProps: {}
+  });
+
+  slotRegistry.register('cart.layout.grid', CartGridLayout, {
+    order: 3,
+    required: true,
+    defaultProps: {}
+  });
+
+  slotRegistry.register('cart.items.container', CartItemsContainer, {
+    order: 4,
+    required: true,
+    defaultProps: {}
+  });
+
+  slotRegistry.register('cart.item.single', CartItem, {
+    order: 5,
+    required: true,
+    defaultProps: {}
+  });
+
+  slotRegistry.register('cart.sidebar.container', CartSidebar, {
+    order: 6,
+    required: true,
+    defaultProps: {}
+  });
+
+  slotRegistry.register('cart.coupon.section', CouponSection, {
+    order: 7,
+    required: false,
+    defaultProps: {}
+  });
+
+  slotRegistry.register('cart.summary.order', OrderSummary, {
+    order: 8,
+    required: true,
+    defaultProps: {}
+  });
+
+  slotRegistry.register('cart.checkout.button', CheckoutButton, {
+    order: 9,
+    required: true,
+    defaultProps: {}
+  });
+
+  console.log('✅ Phoenix Slot System initialized with ProductCard and Cart components');
 }
 
 /**
@@ -128,6 +201,18 @@ export {
   ProductCardAddToCart,
   ProductCardActions,
   ProductCardContent,
+  
+  // Cart components
+  CartPageContainer,
+  CartPageHeader,
+  EmptyCartDisplay,
+  CartItemsContainer,
+  CartItem,
+  CartSidebar,
+  CouponSection,
+  OrderSummary,
+  CheckoutButton,
+  CartGridLayout,
   
   // Utilities
   loadUserConfiguration,
