@@ -991,13 +991,9 @@ export default ExampleComponent;`;
                               const pageName = selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '');
                               console.log(`💾 Saving ${pageName} slots configuration...`);
                               
+                              // Save to localStorage for now (until backend API is ready)
                               try {
-                                // Check if configuration exists for this page
-                                const existing = await SlotConfiguration.findAll({
-                                  where: { page_name: pageName },
-                                  limit: 1
-                                });
-                                
+                                const storageKey = `slot_config_${pageName}`;
                                 const configData = {
                                   page_name: pageName,
                                   configuration: data.slotDefinitions,
@@ -1007,21 +1003,21 @@ export default ExampleComponent;`;
                                   updated_at: new Date().toISOString()
                                 };
                                 
-                                if (existing.data && existing.data.length > 0) {
-                                  // Update existing configuration
-                                  await SlotConfiguration.update(existing.data[0].id, configData);
-                                  console.log('✅ Configuration updated in database');
-                                } else {
-                                  // Create new configuration
-                                  await SlotConfiguration.create({
-                                    ...configData,
-                                    created_at: new Date().toISOString()
-                                  });
-                                  console.log('✅ Configuration saved to database');
-                                }
+                                localStorage.setItem(storageKey, JSON.stringify(configData));
+                                console.log('✅ Configuration saved to localStorage');
+                                
+                                // TODO: When backend is ready, uncomment this:
+                                // const existing = await SlotConfiguration.findAll({
+                                //   where: { page_name: pageName },
+                                //   limit: 1
+                                // });
+                                // if (existing.data && existing.data.length > 0) {
+                                //   await SlotConfiguration.update(existing.data[0].id, configData);
+                                // } else {
+                                //   await SlotConfiguration.create(configData);
+                                // }
                               } catch (error) {
                                 console.error('❌ Failed to save configuration:', error);
-                                // Could show a toast notification here
                               }
                             }}
                             onCancel={() => {

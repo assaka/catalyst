@@ -256,16 +256,14 @@ const GenericSlotEditor = ({
       try {
         console.log('📂 Loading slot config for:', pageName);
         
-        // First, try to load from database
+        // Try to load from localStorage first
         try {
-          const existing = await SlotConfiguration.findAll({
-            where: { page_name: pageName },
-            limit: 1
-          });
+          const storageKey = `slot_config_${pageName}`;
+          const savedData = localStorage.getItem(storageKey);
           
-          if (existing.data && existing.data.length > 0) {
-            const savedConfig = existing.data[0];
-            console.log('💾 Loaded configuration from database:', savedConfig);
+          if (savedData) {
+            const savedConfig = JSON.parse(savedData);
+            console.log('💾 Loaded configuration from localStorage:', savedConfig);
             
             if (savedConfig.configuration) {
               setSlotDefinitions(savedConfig.configuration);
@@ -294,13 +292,13 @@ const GenericSlotEditor = ({
             };
             
             setIsLoading(false);
-            return; // Skip loading from file if we have database config
+            return; // Skip loading from file if we have saved config
           }
-        } catch (dbError) {
-          console.log('📁 No saved configuration in database, loading from file...', dbError);
+        } catch (error) {
+          console.log('📁 No saved configuration in localStorage, loading from file...', error);
         }
         
-        // Fallback to loading from file if no database config
+        // Fallback to loading from file
         if (pageName === 'Cart') {
           try {
             // Import the actual components from CartSlots.jsx
