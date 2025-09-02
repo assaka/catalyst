@@ -48,6 +48,7 @@ import apiClient from '@/api/client';
 
 const GenericSlotEditor = ({
   pageName = 'Cart', // 'Cart', 'Product', 'Checkout', etc.
+  data = {}, // Real data to pass to slot components
   onSave = () => {},
   onCancel = () => {},
   className = ''
@@ -711,122 +712,19 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         });
       };
       
-      // Render actual slot component or realistic preview
+      // Render actual slot component or static preview
       const renderSlotContent = () => {
         // Try to render the actual component if available
         const SlotComponent = definition.component;
         
-        if (SlotComponent) {
+        if (SlotComponent && data) {
           try {
-            // Create mock props based on slot type for preview
-            const getMockProps = () => {
-              switch(slotId) {
-                case 'cart-page-container':
-                  return { 
-                    className: "bg-gray-50 cart-page",
-                    children: null // Will be populated by slot system
-                  };
-                  
-                case 'cart-page-header':
-                  return { 
-                    title: "My Cart", 
-                    className: "text-3xl font-bold text-gray-900 mb-8" 
-                  };
-                  
-                case 'cart-grid-layout':
-                  return { 
-                    className: "lg:grid lg:grid-cols-3 lg:gap-8",
-                    children: null // Will be populated by slot system
-                  };
-                  
-                case 'cart-items-container':
-                  return { 
-                    className: "lg:col-span-2",
-                    children: null // Will be populated by slot system
-                  };
-                  
-                case 'cart-sidebar':
-                  return { 
-                    className: "lg:col-span-1 space-y-6 mt-8 lg:mt-0",
-                    children: null // Will be populated by slot system
-                  };
-                  
-                case 'cart-empty-display':
-                  return { 
-                    store: {},
-                    icon: ShoppingCart,
-                    title: "Your cart is empty",
-                    message: "Looks like you haven't added anything to your cart yet.",
-                    buttonText: "Continue Shopping"
-                  };
-                  
-                case 'cart-coupon-section':
-                  return {
-                    appliedCoupon: null,
-                    couponCode: '',
-                    currencySymbol: '$',
-                    onCouponCodeChange: () => {},
-                    onApplyCoupon: () => {},
-                    onRemoveCoupon: () => {},
-                    onKeyPress: () => {},
-                    safeToFixed: (val) => val?.toFixed(2) || '0.00'
-                  };
-                  
-                case 'cart-order-summary':
-                  return {
-                    subtotal: 89.99,
-                    discount: 0,
-                    tax: 9.00,
-                    total: 98.99,
-                    currencySymbol: '$',
-                    safeToFixed: (val) => val?.toFixed(2) || '0.00',
-                    children: null // For CMS blocks
-                  };
-                  
-                case 'cart-checkout-button':
-                  return {
-                    onCheckout: () => console.log('Checkout clicked'),
-                    settings: { theme: { checkout_button_color: '#007bff' } },
-                    text: "Proceed to Checkout",
-                    className: "w-full",
-                    size: "lg"
-                  };
-                  
-                case 'cart-item-single':
-                  return {
-                    item: { 
-                      id: 'preview-item',
-                      quantity: 2,
-                      price: 29.99,
-                      selected_options: [{ name: 'Color: Blue', price: 5.00 }]
-                    },
-                    product: {
-                      name: 'Sample Product',
-                      price: 29.99,
-                      sale_price: null,
-                      compare_price: null,
-                      images: ['https://placehold.co/100x100?text=Product']
-                    },
-                    currencySymbol: '$',
-                    store: {},
-                    taxes: null,
-                    selectedCountry: null,
-                    formatPrice: (price) => parseFloat(price) || 0,
-                    calculateItemTotal: () => 64.98,
-                    onUpdateQuantity: () => {},
-                    onRemove: () => {}
-                  };
-                  
-                default:
-                  return {};
-              }
-            };
+            // Use real data passed from props
+            const componentProps = data[slotId] || definition.props || {};
             
-            // Render the actual component with preview props
-            const mockProps = getMockProps();
             return (
               <div className="relative">
-                <SlotComponent {...mockProps}>
+                <SlotComponent {...componentProps}>
                   {definition.children}
                 </SlotComponent>
                 
@@ -845,111 +743,18 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           }
         }
         
-        // Fallback static preview if component rendering fails
-        switch(slotId) {
-          case 'cart-page-header':
-            return (
-              <div className="relative">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
-                <Badge className="absolute top-0 right-0 text-xs bg-blue-600 text-white">{definition.name}</Badge>
-              </div>
-            );
-            
-          case 'cart-items-container':
-            return (
-              <div className="relative lg:col-span-2">
-                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                  <div className="flex items-center space-x-4 py-6 border-b border-gray-200">
-                    <img src="https://placehold.co/80x80?text=Product" alt="Product" className="w-20 h-20 object-cover rounded-lg" />
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold">Sample Product</h3>
-                      <p className="text-gray-600">$29.99 each</p>
-                      <div className="flex items-center space-x-3 mt-3">
-                        <Button size="sm" variant="outline"><Minus className="w-4 h-4" /></Button>
-                        <span className="text-lg font-semibold">2</span>
-                        <Button size="sm" variant="outline"><Plus className="w-4 h-4" /></Button>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xl font-bold">$59.98</p>
-                    </div>
-                  </div>
-                </div>
-                <Badge className="absolute top-2 right-2 text-xs bg-blue-600 text-white">{definition.name}</Badge>
-              </div>
-            );
-            
-          case 'cart-coupon-section':
-            return (
-              <div className="relative">
-                <Card>
-                  <CardHeader><CardTitle>Apply Coupon</CardTitle></CardHeader>
-                  <CardContent>
-                    <div className="flex space-x-2">
-                      <Input placeholder="Enter coupon code" className="flex-1" />
-                      <Button><Tag className="w-4 h-4 mr-2" />Apply</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Badge className="absolute top-2 right-2 text-xs bg-blue-600 text-white">{definition.name}</Badge>
-              </div>
-            );
-            
-          case 'cart-order-summary':
-            return (
-              <div className="relative">
-                <Card>
-                  <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex justify-between"><span>Subtotal</span><span>$89.99</span></div>
-                    <div className="flex justify-between"><span>Tax</span><span>$9.00</span></div>
-                    <div className="flex justify-between text-lg font-semibold border-t pt-4">
-                      <span>Total</span><span>$98.99</span>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Badge className="absolute top-2 right-2 text-xs bg-blue-600 text-white">{definition.name}</Badge>
-              </div>
-            );
-            
-          case 'cart-checkout-button':
-            return (
-              <div className="relative border-t mt-6 pt-6">
-                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
-                  Proceed to Checkout
-                </Button>
-                <Badge className="absolute top-0 right-0 text-xs bg-blue-600 text-white">{definition.name}</Badge>
-              </div>
-            );
-            
-          case 'cart-empty-display':
-            return (
-              <div className="relative">
-                <Card>
-                  <CardContent className="text-center py-12">
-                    <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                    <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-                    <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
-                    <Button>Continue Shopping</Button>
-                  </CardContent>
-                </Card>
-                <Badge className="absolute top-2 right-2 text-xs bg-blue-600 text-white">{definition.name}</Badge>
-              </div>
-            );
-            
-          default:
-            return (
-              <div className="p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 relative">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg">{visual.icon}</span>
-                  <span className="font-medium text-sm">{definition.name}</span>
-                </div>
-                <p className="text-xs text-gray-500">{definition.description}</p>
-                <div className="text-xs text-gray-400 font-mono mt-1">{slotId}</div>
-                <Badge className="absolute top-1 right-1 text-xs bg-blue-600 text-white">{definition.name}</Badge>
-              </div>
-            );
-        }
+        // Fallback static preview - only show slot structure without data
+        return (
+          <div className="p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 relative">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-lg">{visual.icon}</span>
+              <span className="font-medium text-sm">{definition.name}</span>
+            </div>
+            <p className="text-xs text-gray-500">{definition.description}</p>
+            <div className="text-xs text-gray-400 font-mono mt-1">{slotId}</div>
+            <Badge className="absolute top-1 right-1 text-xs bg-blue-600 text-white">{definition.name}</Badge>
+          </div>
+        );
       };
       
       return (
