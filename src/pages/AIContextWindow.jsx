@@ -993,8 +993,8 @@ export default ExampleComponent;`;
                               
                               try {
                                 // Check if configuration exists for this page
-                                const existing = await SlotConfiguration.list({
-                                  filters: { page_name: pageName },
+                                const existing = await SlotConfiguration.findAll({
+                                  where: { page_name: pageName },
                                   limit: 1
                                 });
                                 

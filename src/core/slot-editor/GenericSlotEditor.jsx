@@ -258,8 +258,8 @@ const GenericSlotEditor = ({
         
         // First, try to load from database
         try {
-          const existing = await SlotConfiguration.list({
-            filters: { page_name: pageName },
+          const existing = await SlotConfiguration.findAll({
+            where: { page_name: pageName },
             limit: 1
           });
           
@@ -409,6 +409,25 @@ const GenericSlotEditor = ({
     return result;
   }, [slotOrder, slotDefinitions]);
 
+  // Merge grid positions into slot definitions for saving
+  const mergePositionsIntoDefinitions = useCallback(() => {
+    const merged = { ...slotDefinitions };
+    Object.keys(slotPositions).forEach(slotId => {
+      if (merged[slotId] && slotPositions[slotId]) {
+        merged[slotId] = {
+          ...merged[slotId],
+          gridPosition: {
+            row: slotPositions[slotId].row,
+            col: slotPositions[slotId].col,
+            rowSpan: slotPositions[slotId].rowSpan || 1,
+            colSpan: slotPositions[slotId].colSpan || 1
+          }
+        };
+      }
+    });
+    return merged;
+  }, [slotDefinitions, slotPositions]);
+
   // Auto-save function with debouncing
   const triggerAutoSave = useCallback(() => {
     // Clear any existing timeout
@@ -439,7 +458,7 @@ const GenericSlotEditor = ({
         setSlotDefinitions(prev => ({ ...prev }));
       }
     }, 1000); // 1 second delay
-  }, [slotsFileCode, slotDefinitions, pageConfig, slotPositions, onSave]);
+  }, [slotsFileCode, pageConfig, onSave, mergePositionsIntoDefinitions]);
   
   // Slot management functions
   const handleSlotToggle = useCallback((slotId) => {
@@ -675,24 +694,6 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
     );
   };
 
-  // Merge grid positions into slot definitions for saving
-  const mergePositionsIntoDefinitions = () => {
-    const merged = { ...slotDefinitions };
-    Object.keys(slotPositions).forEach(slotId => {
-      if (merged[slotId] && slotPositions[slotId]) {
-        merged[slotId] = {
-          ...merged[slotId],
-          gridPosition: {
-            row: slotPositions[slotId].row,
-            col: slotPositions[slotId].col,
-            rowSpan: slotPositions[slotId].rowSpan || 1,
-            colSpan: slotPositions[slotId].colSpan || 1
-          }
-        };
-      }
-    });
-    return merged;
-  };
 
   // Visual Layout Preview - shows slots as they appear in the actual layout
   const LayoutPreview = ({ isDraggable = false, showSettings = false } = {}) => {
