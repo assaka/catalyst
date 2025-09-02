@@ -240,17 +240,52 @@ const GenericSlotEditor = ({
     const loadSlotConfig = async () => {
       setIsLoading(true);
       try {
-        // Try to load schema-based configuration first
-        const configData = await apiClient.get(`extensions/baseline/${encodeURIComponent(configFilePath)}`);
+        console.log('📂 Loading slot config for:', pageName);
+        
+        // For now, directly load Cart configuration if that's the page
+        // In production, this would come from the API endpoint
+        if (pageName === 'Cart') {
+          try {
+            // Dynamically import the configuration
+            const configModule = await import(`@/pages/${pageName}Slots.config.js`);
+            console.log('📦 Loaded config module:', configModule);
+            
+            if (configModule.CART_SLOT_DEFINITIONS && configModule.CART_SLOT_ORDER) {
+              console.log('✅ Successfully loaded Cart slot configuration:', {
+                definitions: Object.keys(configModule.CART_SLOT_DEFINITIONS).length,
+                order: configModule.CART_SLOT_ORDER.length
+              });
+              
+              setSlotDefinitions(configModule.CART_SLOT_DEFINITIONS);
+              setSlotOrder(configModule.CART_SLOT_ORDER);
+              setPageConfig({
+                slotOrder: configModule.CART_SLOT_ORDER,
+                layoutPresets: configModule.CART_LAYOUT_PRESETS || {}
+              });
+              
+              // Also set the code for the code editor view
+              const configCode = `// Cart Slots Configuration\nexport const CART_SLOT_DEFINITIONS = ${JSON.stringify(configModule.CART_SLOT_DEFINITIONS, null, 2)};\nexport const CART_SLOT_ORDER = ${JSON.stringify(configModule.CART_SLOT_ORDER, null, 2)};`;
+              setSlotsFileCode(configCode);
+              return;
+            }
+          } catch (importError) {
+            console.warn('Could not dynamically import config, trying API approach:', importError);
+          }
+        }
+        
+        // Fallback to API approach (for when backend is properly configured)
+        const apiPath = `extensions/baseline/${encodeURIComponent(configFilePath)}`;
+        console.log('🔗 Trying API path:', apiPath);
+        
+        const configData = await apiClient.get(apiPath);
         
         if (configData && configData.success && configData.data.hasBaseline) {
           const configCode = configData.data.baselineCode;
+          console.log('✅ Found baseline code via API');
           setSlotsFileCode(configCode);
-          
-          // Load the schema-based configuration
           await loadSchemaConfiguration(configCode);
         } else {
-          console.log('No schema config found, creating default config');
+          console.log('No config found via API, using defaults');
           await createDefaultSchemaConfig();
         }
       } catch (error) {
