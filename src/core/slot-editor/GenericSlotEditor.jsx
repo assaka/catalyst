@@ -467,6 +467,20 @@ const GenericSlotEditor = ({
       // Only save if there are actual changes
       if (JSON.stringify(saveData) !== JSON.stringify(lastSavedRef.current)) {
         console.log('🔄 Auto-saving changes...');
+        
+        // Save to localStorage
+        const storageKey = `slot_config_${pageName}`;
+        const storageData = {
+          configuration: saveData.slotDefinitions,
+          slot_order: saveData.pageConfig?.slotOrder || slotOrder,
+          slot_positions: saveData.slotPositions,
+          code: saveData.slotsFileCode,
+          timestamp: new Date().toISOString()
+        };
+        localStorage.setItem(storageKey, JSON.stringify(storageData));
+        console.log('💾 Saved to localStorage:', storageKey);
+        
+        // Call parent onSave
         onSave(saveData);
         lastSavedRef.current = saveData;
         setHasUnsavedChanges(false);
@@ -475,7 +489,7 @@ const GenericSlotEditor = ({
         setSlotDefinitions(prev => ({ ...prev }));
       }
     }, 1000); // 1 second delay
-  }, [slotsFileCode, pageConfig, onSave, mergePositionsIntoDefinitions]);
+  }, [slotsFileCode, slotDefinitions, pageConfig, slotPositions, slotOrder, pageName, onSave, mergePositionsIntoDefinitions]);
   
   // Slot management functions
   const handleSlotToggle = useCallback((slotId) => {
