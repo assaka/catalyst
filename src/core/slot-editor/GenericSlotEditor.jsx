@@ -198,11 +198,20 @@ const GenericSlotEditor = ({
           'gm'
         );
         
+        console.log('🔍 Looking for exports with pattern:', exportPattern);
+        console.log('🔍 Code length:', code.length, 'characters');
+        console.log('🔍 First 500 characters:', code.substring(0, 500));
+        
         const exports = {};
         let match;
+        let matchCount = 0;
         
         while ((match = exportPattern.exec(code)) !== null) {
-          const [, exportName, exportValue] = match;
+          matchCount++;
+          const [fullMatch, exportName, exportValue] = match;
+          
+          console.log(`🔍 Found export ${matchCount}:`, exportName);
+          console.log('🔍 Export value preview:', exportValue.substring(0, 100) + '...');
           
           try {
             // Create a safe function to evaluate the export value
@@ -215,12 +224,20 @@ const GenericSlotEditor = ({
             const result = evalFunction(...Object.values(sandbox));
             exports[exportName] = result;
             
-            console.log(`✅ Successfully parsed ${exportName}:`, Object.keys(result).length, 'items');
+            if (result && typeof result === 'object') {
+              console.log(`✅ Successfully parsed ${exportName}:`, Object.keys(result).length, 'items');
+            } else {
+              console.log(`✅ Successfully parsed ${exportName}:`, result);
+            }
             
           } catch (evalError) {
             console.warn(`⚠️ Could not evaluate ${exportName}:`, evalError.message);
+            console.warn('⚠️ Failed export value:', exportValue.substring(0, 200));
           }
         }
+        
+        console.log('🔍 Total matches found:', matchCount);
+        console.log('🔍 Parsed exports:', Object.keys(exports));
         
         return exports;
       };
