@@ -891,6 +891,20 @@ const CodeEditor = ({
     }
   }, [localCode, initialContent, originalCode, enableDiffDetection, generateFullFileDisplayLines]);
 
+  // Cleanup effect for Monaco Editor
+  useEffect(() => {
+    return () => {
+      // Cleanup Monaco editor on unmount
+      if (editorRef.current) {
+        // Dispose of event listeners
+        if (editorRef.current._disposables) {
+          editorRef.current._disposables.forEach(d => d?.dispose?.());
+        }
+        // Clear the editor reference
+        editorRef.current = null;
+      }
+    };
+  }, []);
 
   const handleCodeChange = (newCode) => {
     // Apply hooks before processing change
@@ -954,17 +968,21 @@ const CodeEditor = ({
   const handleEditorDidMount = (editor, monaco) => {
     editorRef.current = editor;
     
+    // Store disposables for cleanup
+    const disposables = [];
+    
     // Set up cursor position tracking
-    editor.onDidChangeCursorPosition((e) => {
+    const cursorDisposable = editor.onDidChangeCursorPosition((e) => {
       const position = { line: e.position.lineNumber, column: e.position.column };
       setCursorPosition(position);
       if (onCursorPositionChange) {
         onCursorPositionChange(position);
       }
     });
+    disposables.push(cursorDisposable);
     
     // Set up selection change tracking
-    editor.onDidChangeCursorSelection((e) => {
+    const selectionDisposable = editor.onDidChangeCursorSelection((e) => {
       if (onSelectionChange) {
         onSelectionChange({
           startLine: e.selection.startLineNumber,
@@ -974,6 +992,10 @@ const CodeEditor = ({
         });
       }
     });
+    disposables.push(selectionDisposable);
+    
+    // Store disposables for cleanup
+    editorRef.current._disposables = disposables;
   };
 
   const handleSave = () => {
