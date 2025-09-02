@@ -965,26 +965,43 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Mode Toggle */}
-          <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-100">
-            <Button
-              variant={mode === 'visual' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('visual')}
-              className="flex items-center gap-2"
+          {/* Current Mode Display */}
+          <span className="text-sm font-medium text-gray-500">
+            Mode: <span className="text-gray-900">{mode === 'visual' ? 'Visual' : 'Code'}</span>
+          </span>
+          
+          {/* Mode Toggle - Enhanced visibility */}
+          <div className="flex items-center bg-white border-2 border-gray-300 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => {
+                console.log('Switching to visual mode');
+                setMode('visual');
+              }}
+              className={`px-4 py-2 rounded-md font-medium transition-all flex items-center gap-2 ${
+                mode === 'visual' 
+                  ? 'bg-blue-500 text-white shadow-sm' 
+                  : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
               <Wand2 className="w-4 h-4" />
               Visual
-            </Button>
-            <Button
-              variant={mode === 'code' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('code')}
-              className="flex items-center gap-2"
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                console.log('Switching to code mode');
+                setMode('code');
+              }}
+              className={`px-4 py-2 rounded-md font-medium transition-all flex items-center gap-2 ${
+                mode === 'code' 
+                  ? 'bg-blue-500 text-white shadow-sm' 
+                  : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
             >
               <Code className="w-4 h-4" />
               Code
-            </Button>
+            </button>
           </div>
           
           <div className="flex gap-2">
