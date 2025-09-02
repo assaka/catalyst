@@ -707,13 +707,6 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                 <SlotComponent {...componentProps}>
                   {definition.children}
                 </SlotComponent>
-                
-                {/* Overlay badge to show slot name */}
-                <div className="absolute top-1 right-1 z-20">
-                  <Badge variant="secondary" className="text-xs bg-blue-600 text-white shadow-md">
-                    {definition.name}
-                  </Badge>
-                </div>
               </div>
             );
             
@@ -732,21 +725,23 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             </div>
             <p className="text-xs text-gray-500">{definition.description}</p>
             <div className="text-xs text-gray-400 font-mono mt-1">{slotId}</div>
-            <Badge className="absolute top-1 right-1 text-xs bg-blue-600 text-white">{definition.name}</Badge>
           </div>
         );
       };
+      
+      // Don't render disabled slots in preview mode
+      if (!isEnabled && !isDraggable) return null;
       
       return (
         <div
           key={slotId}
           data-slot-id={slotId}
-          draggable={isDraggable}
+          draggable={isDraggable && isEnabled}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          className={`relative transition-all duration-200
-            ${isEnabled ? 'opacity-100' : 'opacity-50'} 
-            ${isDraggable ? 'hover:shadow-lg hover:-translate-y-0.5 cursor-move' : 'cursor-default'}
+          className={`relative transition-all duration-200 group
+            ${isEnabled ? 'opacity-100' : 'opacity-30'} 
+            ${isDraggable && isEnabled ? 'hover:shadow-lg hover:-translate-y-0.5 cursor-move' : 'cursor-default'}
             ${isBeingDragged ? 'opacity-40 scale-95 rotate-1 shadow-2xl' : ''}`}
           style={{
             ...style,
@@ -755,41 +750,57 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           }}
           title={isDraggable ? 'Drag to reposition' : ''}
         >
-          {/* Drag Handle for draggable slots */}
-          {isDraggable && (
-            <div className="absolute -top-1 -right-1 z-10 bg-white rounded-full shadow-lg p-1">
-              {isBeingDragged ? (
-                <Badge variant="secondary" className="text-xs animate-pulse">
-                  <GripVertical className="w-3 h-3 mr-1" />
-                  Moving
+          {/* Hover-only controls for layout mode */}
+          {isDraggable && showSettings && (
+            <>
+              {/* Settings button - only visible on hover */}
+              <div className="absolute top-2 left-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 w-7 p-0 bg-white/95 hover:bg-white shadow-md"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSlotEdit(slotId);
+                  }}
+                  title="Edit slot settings"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </div>
+              
+              {/* Slot name badge - only visible on hover */}
+              <div className="absolute top-2 right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <Badge variant="secondary" className="text-xs bg-blue-600 text-white shadow-md">
+                  {definition.name}
                 </Badge>
-              ) : (
-                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+              </div>
+              
+              {/* Drag handle indicator - subtle, visible on hover */}
+              {isEnabled && (
+                <div className="absolute -top-1 -right-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  {isBeingDragged ? (
+                    <Badge variant="secondary" className="text-xs animate-pulse bg-white shadow-md">
+                      <GripVertical className="w-3 h-3 mr-1" />
+                      Moving
+                    </Badge>
+                  ) : (
+                    <div className="bg-white rounded-full shadow-md p-1">
+                      <GripVertical className="w-4 h-4 text-gray-400" />
+                    </div>
+                  )}
+                </div>
               )}
-            </div>
-          )}
-          
-          {/* Settings button for layout mode */}
-          {showSettings && (
-            <div className="absolute top-1 left-1 z-10">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 w-6 p-0 bg-white/90 hover:bg-white shadow-sm"
-                onClick={() => handleSlotEdit(slotId)}
-              >
-                <Settings className="w-3 h-3" />
-              </Button>
-            </div>
+            </>
           )}
 
-          {/* Slot Content with realistic styling */}
+          {/* Slot Content */}
           {renderSlotContent()}
 
-          {/* Disabled overlay */}
-          {!isEnabled && (
-            <div className="absolute inset-0 bg-gray-200/50 backdrop-blur-sm rounded-lg flex items-center justify-center">
-              <Badge variant="secondary" className="bg-gray-800 text-white">DISABLED</Badge>
+          {/* Disabled overlay for layout mode only */}
+          {!isEnabled && isDraggable && (
+            <div className="absolute inset-0 bg-gray-900/20 backdrop-blur-sm rounded-lg flex items-center justify-center pointer-events-none">
+              <Badge variant="secondary" className="bg-gray-800 text-white text-xs">HIDDEN</Badge>
             </div>
           )}
         </div>
