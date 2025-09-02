@@ -110,33 +110,124 @@ const GenericSlotEditor = ({
   // Load schema-based configuration from code
   const loadSchemaConfiguration = useCallback(async (configCode) => {
     try {
-      // Evaluate the configuration code to get the schema object
-      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-      const moduleCode = `
-        ${configCode}
-        return { 
-          CART_SLOTS_CONFIG, 
-          CART_SLOT_DEFINITIONS, 
-          CART_SLOT_ORDER, 
-          CART_LAYOUT_PRESETS 
+      console.log('🔄 Attempting to parse schema configuration...');
+      
+      // Parse the configuration using regex since it has imports we can't evaluate
+      const parseSchemaConfig = (code) => {
+        // Extract the built configuration
+        const configMatch = code.match(/\.build\(\)\s*;/);
+        if (!configMatch) {
+          console.warn('Could not find .build() in config');
+          return null;
+        }
+        
+        // Extract slot definitions
+        const slots = {};
+        const slotPattern = /\.addSlot\(\s*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}\s*\)/g;
+        let match;
+        
+        while ((match = slotPattern.exec(code)) !== null) {
+          const slotContent = match[1];
+          
+          // Extract slot properties
+          const idMatch = slotContent.match(/id\s*:\s*['"`]([^'"`]+)['"`]/);
+          const typeMatch = slotContent.match(/type\s*:\s*['"`]([^'"`]+)['"`]/);
+          const nameMatch = slotContent.match(/name\s*:\s*['"`]([^'"`]+)['"`]/);
+          const descMatch = slotContent.match(/description\s*:\s*['"`]([^'"`]+)['"`]/);
+          const componentMatch = slotContent.match(/component\s*:\s*['"`]([^'"`]+)['"`]/);
+          const requiredMatch = slotContent.match(/required\s*:\s*(\w+)/);
+          const orderMatch = slotContent.match(/order\s*:\s*(\d+)/);
+          const parentMatch = slotContent.match(/parent\s*:\s*['"`]([^'"`]+)['"`]/);
+          
+          if (idMatch) {
+            const slotId = idMatch[1];
+            slots[slotId] = {
+              id: slotId,
+              type: typeMatch ? typeMatch[1] : 'component',
+              name: nameMatch ? nameMatch[1] : slotId,
+              description: descMatch ? descMatch[1] : '',
+              component: componentMatch ? componentMatch[1] : slotId,
+              required: requiredMatch ? requiredMatch[1] === 'true' : false,
+              enabled: true,
+              order: orderMatch ? parseInt(orderMatch[1]) : 0,
+              parent: parentMatch ? parentMatch[1] : null
+            };
+          }
+        }
+        
+        // Extract slot order - check both array and config property formats
+        let slotOrder = Object.keys(slots);
+        
+        // Try to find CART_SLOT_ORDER export
+        const orderMatch = code.match(/CART_SLOT_ORDER\s*=\s*(?:\[([^\]]+)\]|CART_SLOTS_CONFIG\.slotOrder)/);
+        if (orderMatch) {
+          if (orderMatch[1]) {
+            // It's an array format
+            const orderContent = orderMatch[1];
+            slotOrder = orderContent
+              .split(',')
+              .map(s => s.trim().replace(/['"`]/g, ''))
+              .filter(s => s.length > 0);
+          } else {
+            // It's from config, extract from slotOrder arrays in presets
+            const presetOrderMatch = code.match(/slotOrder\s*:\s*\[([^\]]+)\]/);
+            if (presetOrderMatch) {
+              slotOrder = presetOrderMatch[1]
+                .split(',')
+                .map(s => s.trim().replace(/['"`]/g, ''))
+                .filter(s => s.length > 0);
+            }
+          }
+        }
+        
+        // Extract layout presets
+        const presets = {};
+        const presetPattern = /\.addLayoutPreset\(\s*['"`](\w+)['"`]\s*,\s*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}\s*\)/g;
+        
+        while ((match = presetPattern.exec(code)) !== null) {
+          const presetName = match[1];
+          const presetContent = match[2];
+          
+          const nameMatch = presetContent.match(/name\s*:\s*['"`]([^'"`]+)['"`]/);
+          const descMatch = presetContent.match(/description\s*:\s*['"`]([^'"`]+)['"`]/);
+          
+          presets[presetName] = {
+            name: nameMatch ? nameMatch[1] : presetName,
+            description: descMatch ? descMatch[1] : '',
+            slotOrder: slotOrder
+          };
+        }
+        
+        return {
+          definitions: slots,
+          order: slotOrder,
+          presets: presets
         };
-      `;
+      };
       
-      const configFunction = new AsyncFunction(moduleCode);
-      const { CART_SLOT_DEFINITIONS, CART_SLOT_ORDER, CART_LAYOUT_PRESETS } = await configFunction();
+      const parsed = parseSchemaConfig(configCode);
       
-      console.log('✅ Loaded schema-based configuration:', {
-        definitions: Object.keys(CART_SLOT_DEFINITIONS).length,
-        order: CART_SLOT_ORDER.length,
-        presets: Object.keys(CART_LAYOUT_PRESETS).length
-      });
-      
-      setSlotDefinitions(CART_SLOT_DEFINITIONS);
-      setSlotOrder(CART_SLOT_ORDER);
-      setPageConfig({
-        slotOrder: CART_SLOT_ORDER,
-        layoutPresets: CART_LAYOUT_PRESETS
-      });
+      if (parsed && Object.keys(parsed.definitions).length > 0) {
+        console.log('✅ Successfully parsed schema configuration:', {
+          definitions: Object.keys(parsed.definitions).length,
+          order: parsed.order.length,
+          presets: Object.keys(parsed.presets).length,
+          slotIds: Object.keys(parsed.definitions)
+        });
+        console.log('📋 Parsed slot definitions:', parsed.definitions);
+        console.log('📋 Parsed slot order:', parsed.order);
+        
+        setSlotDefinitions(parsed.definitions);
+        setSlotOrder(parsed.order);
+        setPageConfig({
+          slotOrder: parsed.order,
+          layoutPresets: parsed.presets
+        });
+      } else {
+        console.warn('⚠️ Could not parse schema config, using defaults');
+        console.log('Parsed result:', parsed);
+        await createDefaultSchemaConfig();
+      }
       
     } catch (error) {
       console.error('Error loading schema configuration:', error);
