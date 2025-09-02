@@ -145,6 +145,7 @@ const GenericSlotEditor = ({
         }
         
         console.log('🔍 Parsed slot definitions:', mockDefinitions);
+        console.log('🔍 Number of slots found:', Object.keys(mockDefinitions).length);
         setSlotDefinitions(mockDefinitions);
         
         // Initialize slot order
@@ -152,12 +153,18 @@ const GenericSlotEditor = ({
         let parsedOrder = definitionKeys;
         
         if (slotOrderMatch) {
-          // Extract slot order array items
+          // Extract slot order array items, handling comments
           const orderContent = slotOrderMatch[1];
           const orderItems = orderContent
             .split(',')
-            .map(item => item.trim().replace(/['"`]/g, ''))
+            .map(item => {
+              // Remove comments and whitespace
+              const cleanItem = item.replace(/\/\/.*$/, '').trim().replace(/['"`]/g, '');
+              return cleanItem;
+            })
             .filter(item => item && item !== '');
+          
+          console.log('🔍 Parsed slot order items:', orderItems);
           
           if (orderItems.length > 0) {
             parsedOrder = orderItems;
@@ -239,6 +246,8 @@ export const ${pageName.toUpperCase()}_PAGE_CONFIG = {
 
   // Generate sortable slot items from definitions in order
   const sortableSlots = useMemo(() => {
+    console.log('🎯 Generating sortableSlots:', { slotOrder, slotDefinitions });
+    
     // Get icon for slot type
     const getSlotIcon = (type) => {
       const icons = {
@@ -250,8 +259,14 @@ export const ${pageName.toUpperCase()}_PAGE_CONFIG = {
       return icons[type] || '⚙️';
     };
 
-    return slotOrder
-      .filter(id => slotDefinitions[id]) // Only include slots that exist in definitions
+    const result = slotOrder
+      .filter(id => {
+        const exists = slotDefinitions[id];
+        if (!exists) {
+          console.warn(`⚠️ Slot "${id}" not found in definitions`);
+        }
+        return exists;
+      })
       .map(id => {
         const definition = slotDefinitions[id];
         return {
@@ -263,6 +278,9 @@ export const ${pageName.toUpperCase()}_PAGE_CONFIG = {
           ...definition
         };
       });
+      
+    console.log('🎯 Generated sortableSlots:', result);
+    return result;
   }, [slotOrder, slotDefinitions]);
 
   // Slot management functions
