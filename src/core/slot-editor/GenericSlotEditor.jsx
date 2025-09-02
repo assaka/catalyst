@@ -233,11 +233,65 @@ const GenericSlotEditor = ({
           } catch (evalError) {
             console.warn(`⚠️ Could not evaluate ${exportName}:`, evalError.message);
             console.warn('⚠️ Failed export value:', exportValue.substring(0, 200));
+            
+            // Special handling for SLOT_DEFINITIONS - try to extract basic structure
+            if (exportName.includes('SLOT_DEFINITIONS')) {
+              console.log('🔧 Attempting manual parsing for SLOT_DEFINITIONS...');
+              try {
+                const manualDefinitions = parseSlotDefinitionsManually(exportValue);
+                if (Object.keys(manualDefinitions).length > 0) {
+                  exports[exportName] = manualDefinitions;
+                  console.log(`✅ Manually parsed ${exportName}:`, Object.keys(manualDefinitions).length, 'items');
+                }
+              } catch (manualError) {
+                console.warn('⚠️ Manual parsing also failed:', manualError.message);
+              }
+            }
           }
         }
         
         console.log('🔍 Total matches found:', matchCount);
         console.log('🔍 Parsed exports:', Object.keys(exports));
+        
+        // Manual parsing fallback for slot definitions with component references
+        const parseSlotDefinitionsManually = (exportValue) => {
+          const definitions = {};
+          
+          // Extract slot definitions using regex pattern matching
+          const slotPattern = /['"`]([^'"`-]+(?:-[^'"`]+)*?)['"`]\s*:\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g;
+          let match;
+          
+          while ((match = slotPattern.exec(exportValue)) !== null) {
+            const slotId = match[1];
+            const slotContent = match[2];
+            
+            // Extract properties using simple regex
+            const getId = () => slotId;
+            const getType = () => {
+              const typeMatch = /type\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+              return typeMatch ? typeMatch[1] : 'component';
+            };
+            const getName = () => {
+              const nameMatch = /name\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+              return nameMatch ? nameMatch[1] : slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            };
+            const getDescription = () => {
+              const descMatch = /description\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+              return descMatch ? descMatch[1] : `${getType()} slot`;
+            };
+            
+            definitions[slotId] = {
+              id: getId(),
+              type: getType(),
+              name: getName(),
+              description: getDescription(),
+              enabled: true,
+              required: true
+            };
+          }
+          
+          return definitions;
+        };
         
         return exports;
       };
