@@ -77,14 +77,14 @@ export const SlotCartItemsContainer = ({ children, className = "lg:col-span-2" }
 export const SlotCartItem = ({ 
   item, 
   product, 
-  currencySymbol, 
-  store, 
-  taxes, 
-  selectedCountry,
-  onUpdateQuantity, 
-  onRemove,
-  calculateItemTotal,
-  formatPrice
+  currencySymbol = '$', 
+  store = {}, 
+  taxes = null, 
+  selectedCountry = null,
+  onUpdateQuantity = () => {}, 
+  onRemove = () => {},
+  calculateItemTotal = () => 0,
+  formatPrice = (price) => parseFloat(price) || 0
 }) => {
   if (!product) return null;
 
@@ -174,13 +174,13 @@ export const SlotCartSidebar = ({ children, className = "lg:col-span-1 space-y-6
 // Slot: Coupon section
 export const SlotCouponSection = ({ 
   appliedCoupon, 
-  couponCode, 
-  onCouponCodeChange, 
-  onApplyCoupon, 
-  onRemoveCoupon, 
-  onKeyPress,
-  currencySymbol,
-  safeToFixed
+  couponCode = '', 
+  onCouponCodeChange = () => {}, 
+  onApplyCoupon = () => {}, 
+  onRemoveCoupon = () => {}, 
+  onKeyPress = () => {},
+  currencySymbol = '$',
+  safeToFixed = (val) => val?.toFixed(2) || '0.00'
 }) => (
   <Card>
     <CardHeader>
@@ -191,13 +191,13 @@ export const SlotCouponSection = ({
         <div className="flex space-x-2">
           <Input 
             placeholder="Enter coupon code" 
-            value={couponCode}
-            onChange={(e) => onCouponCodeChange(e.target.value.toUpperCase())}
+            value={couponCode || ''}
+            onChange={(e) => onCouponCodeChange && onCouponCodeChange(e.target.value.toUpperCase())}
             onKeyPress={onKeyPress}
           />
           <Button 
             onClick={onApplyCoupon}
-            disabled={!couponCode.trim()}
+            disabled={!couponCode || !couponCode.trim()}
           >
             <Tag className="w-4 h-4 mr-2" /> Apply
           </Button>
@@ -229,12 +229,12 @@ export const SlotCouponSection = ({
 
 // Slot: Order summary
 export const SlotOrderSummary = ({ 
-  subtotal, 
-  discount, 
-  tax, 
-  total, 
-  currencySymbol, 
-  safeToFixed,
+  subtotal = 0, 
+  discount = 0, 
+  tax = 0, 
+  total = 0, 
+  currencySymbol = '$', 
+  safeToFixed = (val) => val?.toFixed(2) || '0.00',
   children
 }) => (
   <Card>
