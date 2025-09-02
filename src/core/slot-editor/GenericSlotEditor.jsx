@@ -56,6 +56,8 @@ const GenericSlotEditor = ({
   const [pageConfig, setPageConfig] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [slotOrder, setSlotOrder] = useState([]);
+  const [editingSlot, setEditingSlot] = useState(null);
+  const [showSlotEditor, setShowSlotEditor] = useState(false);
 
   // File paths - Support both legacy and schema-based files
   const slotsFilePath = `src/pages/${pageName}Slots.jsx`;
@@ -352,8 +354,38 @@ const GenericSlotEditor = ({
     });
   }, []);
 
-  const handleSlotEdit = useCallback(() => {
-    // Slot editing functionality to be implemented
+  const handleSlotEdit = useCallback((slot) => {
+    // Generate code for this specific slot
+    const slotCode = `// ${slot.name} Configuration
+export const ${slot.id.toUpperCase().replace(/-/g, '_')}_CONFIG = {
+  id: '${slot.id}',
+  type: '${slot.type}',
+  name: '${slot.name}',
+  description: '${slot.description || ''}',
+  component: '${slot.component || slot.id}',
+  required: ${slot.required || false},
+  enabled: ${slot.enabled !== false},
+  order: ${slot.order || 0},
+  parent: ${slot.parent ? `'${slot.parent}'` : 'null'},
+  props: ${JSON.stringify(slot.props || {}, null, 2)},
+  layout: ${JSON.stringify(slot.layout || {}, null, 2)},
+  styling: ${JSON.stringify(slot.styling || {}, null, 2)},
+  conditions: ${JSON.stringify(slot.conditions || {}, null, 2)},
+  metadata: ${JSON.stringify(slot.metadata || {}, null, 2)}
+};
+
+// React Component Implementation
+const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
+  return (
+    <div className="${slot.styling?.className || ''}">
+      {/* ${slot.description || 'Slot implementation'} */}
+      {children}
+    </div>
+  );
+};`;
+    
+    setEditingSlot({ ...slot, code: slotCode });
+    setShowSlotEditor(true);
   }, []);
 
   const handleSlotDelete = useCallback((slotId) => {
@@ -541,6 +573,7 @@ const GenericSlotEditor = ({
 
   // Visual Layout Preview - shows slots as they appear in the actual layout
   const LayoutPreview = () => {
+    const [slotPositions, setSlotPositions] = useState({});
     if (!slotDefinitions || Object.keys(slotDefinitions).length === 0) {
       return (
         <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
@@ -566,25 +599,59 @@ const GenericSlotEditor = ({
       return iconMap[slotDef.type] || iconMap.default;
     };
 
-    // Render individual slot in layout context
-    const renderSlotInLayout = (slotId, index) => {
+    // Render individual slot in layout context with drag capability
+    const renderSlotInLayout = (slotId, index, isDraggable = false) => {
       const definition = slotDefinitions[slotId];
       if (!definition) return null;
 
       const visual = getSlotVisual(definition);
       const isEnabled = definition.enabled !== false;
       
+      // Get custom position if dragged
+      const customPosition = slotPositions[slotId];
+      const style = customPosition ? {
+        position: 'absolute',
+        left: customPosition.x,
+        top: customPosition.y,
+        minHeight: getSlotHeight(definition),
+        width: getSlotWidth(definition),
+        cursor: isDraggable ? 'move' : 'default'
+      } : {
+        minHeight: getSlotHeight(definition),
+        width: getSlotWidth(definition),
+        cursor: isDraggable ? 'move' : 'default'
+      };
+      
+      const handleDragStart = (e) => {
+        if (!isDraggable) return;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('slotId', slotId);
+        const rect = e.currentTarget.getBoundingClientRect();
+        const offsetX = e.clientX - rect.left;
+        const offsetY = e.clientY - rect.top;
+        e.dataTransfer.setData('offsetX', offsetX);
+        e.dataTransfer.setData('offsetY', offsetY);
+      };
+      
       return (
         <div
           key={slotId}
+          draggable={isDraggable}
+          onDragStart={handleDragStart}
           className={`relative border-2 rounded-lg p-4 m-2 transition-all duration-200 ${
             visual.color
-          } ${isEnabled ? 'opacity-100' : 'opacity-50'}`}
-          style={{
-            minHeight: getSlotHeight(definition),
-            width: getSlotWidth(definition)
-          }}
+          } ${isEnabled ? 'opacity-100' : 'opacity-50'} ${
+            isDraggable ? 'hover:shadow-xl hover:scale-105' : ''
+          }`}
+          style={style}
         >
+          {/* Drag Handle for draggable slots */}
+          {isDraggable && (
+            <div className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+              <GripVertical className="w-4 h-4" />
+            </div>
+          )}
+          
           {/* Slot Order Indicator */}
           <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${visual.textColor.replace('text-', 'bg-')} text-white text-xs font-bold flex items-center justify-center shadow-lg`}>
             {index + 1}
@@ -636,45 +703,71 @@ const GenericSlotEditor = ({
       return '100%'; // default
     };
 
+    // Handle drop event for layout canvas
+    const handleCanvasDrop = (e) => {
+      e.preventDefault();
+      const slotId = e.dataTransfer.getData('slotId');
+      const offsetX = parseInt(e.dataTransfer.getData('offsetX'));
+      const offsetY = parseInt(e.dataTransfer.getData('offsetY'));
+      
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left - offsetX;
+      const y = e.clientY - rect.top - offsetY;
+      
+      setSlotPositions(prev => ({
+        ...prev,
+        [slotId]: { x, y }
+      }));
+    };
+    
+    const handleDragOver = (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    };
+
     // Render layout structure
     const renderLayoutStructure = () => {
       const currentOrder = slotOrder.filter(id => slotDefinitions[id]);
 
       return (
-        <div className="p-6 bg-white min-h-full">
+        <div 
+          className="p-6 bg-white min-h-full relative"
+          onDrop={handleCanvasDrop}
+          onDragOver={handleDragOver}
+        >
           {/* Page Container */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
-            <div className="text-sm text-gray-500 mb-4 font-semibold">📦 Cart Page Layout</div>
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 relative">
+            <div className="text-sm text-gray-500 mb-4 font-semibold">📦 Cart Page Layout (Drag slots to reposition)</div>
             
             {currentOrder.map((slotId, index) => {
               // Special layout handling for grid structure
               if (slotId === 'cart-grid-layout') {
                 return (
                   <div key={slotId} className="mb-4">
-                    {renderSlotInLayout(slotId, index)}
+                    {renderSlotInLayout(slotId, index, true)}
                     {/* Grid Content */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4 p-4 border-2 border-dashed border-purple-200 rounded-lg bg-purple-50/30">
                       <div className="lg:col-span-2">
                         {/* Items Container */}
                         {currentOrder.includes('cart-items-container') && 
-                          renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'))
+                          renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'), true)
                         }
                       </div>
                       <div className="lg:col-span-1">
                         {/* Sidebar with nested slots */}
                         <div className="space-y-4">
                           {currentOrder.includes('cart-sidebar') && 
-                            renderSlotInLayout('cart-sidebar', currentOrder.indexOf('cart-sidebar'))
+                            renderSlotInLayout('cart-sidebar', currentOrder.indexOf('cart-sidebar'), true)
                           }
                           <div className="ml-4 space-y-2 border-l-2 border-green-200 pl-4">
                             {currentOrder.includes('cart-order-summary') && 
-                              renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'))
+                              renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'), true)
                             }
                             {currentOrder.includes('cart-coupon-section') && 
-                              renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'))
+                              renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'), true)
                             }
                             {currentOrder.includes('cart-checkout-button') && 
-                              renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'))
+                              renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'), true)
                             }
                           </div>
                         </div>
@@ -690,7 +783,7 @@ const GenericSlotEditor = ({
               }
               
               // Regular slot rendering
-              return renderSlotInLayout(slotId, index);
+              return renderSlotInLayout(slotId, index, true);
             })}
           </div>
         </div>
@@ -712,6 +805,80 @@ const GenericSlotEditor = ({
       </div>
     );
   }
+
+  // Slot Code Editor Modal
+  const SlotCodeEditor = () => {
+    if (!showSlotEditor || !editingSlot) return null;
+    
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b">
+            <div>
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Code className="w-5 h-5" />
+                Edit Slot: {editingSlot.name}
+              </h2>
+              <p className="text-sm text-gray-600">{editingSlot.id}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowSlotEditor(false);
+                  setEditingSlot(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  // Parse the code and update the slot definition
+                  try {
+                    // Simple extraction of the config object from the code
+                    const configMatch = editingSlot.code.match(/export const .+_CONFIG = ({[\s\S]+?});/);
+                    if (configMatch) {
+                      // eslint-disable-next-line no-eval
+                      const updatedConfig = eval(`(${configMatch[1]})`);
+                      setSlotDefinitions(prev => ({
+                        ...prev,
+                        [editingSlot.id]: {
+                          ...prev[editingSlot.id],
+                          ...updatedConfig
+                        }
+                      }));
+                    }
+                    setShowSlotEditor(false);
+                    setEditingSlot(null);
+                  } catch (error) {
+                    console.error('Error parsing slot code:', error);
+                    alert('Error parsing slot configuration. Please check the syntax.');
+                  }
+                }}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save Changes
+              </Button>
+            </div>
+          </div>
+          
+          {/* Code Editor */}
+          <div className="flex-1 overflow-hidden">
+            <CodeEditor
+              value={editingSlot.code}
+              onChange={(newCode) => {
+                setEditingSlot(prev => ({ ...prev, code: newCode }));
+              }}
+              fileName={`${editingSlot.id}.jsx`}
+              language="javascript"
+              className="h-full"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className={`generic-slot-editor h-screen flex flex-col ${className}`}>
@@ -850,6 +1017,9 @@ const GenericSlotEditor = ({
           </div>
         )}
       </div>
+      
+      {/* Slot Code Editor Modal */}
+      <SlotCodeEditor />
     </div>
   );
 };
