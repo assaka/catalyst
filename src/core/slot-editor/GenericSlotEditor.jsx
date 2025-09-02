@@ -3,7 +3,7 @@
  * Store owners only see and edit their PageSlots.jsx file
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -237,31 +237,33 @@ export const ${pageName.toUpperCase()}_PAGE_CONFIG = {
     await parseSlotDefinitions(defaultCode);
   };
 
-  // Get icon for slot type
-  const getSlotIcon = (type) => {
-    const icons = {
-      component: '🧩',
-      container: '📦', 
-      layout: '📐',
-      'micro-slot': '🔬'
-    };
-    return icons[type] || '⚙️';
-  };
-
   // Generate sortable slot items from definitions in order
-  const sortableSlots = slotOrder
-    .filter(id => slotDefinitions[id]) // Only include slots that exist in definitions
-    .map(id => {
-      const definition = slotDefinitions[id];
-      return {
-        id,
-        name: definition.name || id.split('-').pop(),
-        description: definition.description || `${definition.type} slot`,
-        icon: getSlotIcon(definition.type),
-        type: definition.type,
-        ...definition
+  const sortableSlots = useMemo(() => {
+    // Get icon for slot type
+    const getSlotIcon = (type) => {
+      const icons = {
+        component: '🧩',
+        container: '📦', 
+        layout: '📐',
+        'micro-slot': '🔬'
       };
-    });
+      return icons[type] || '⚙️';
+    };
+
+    return slotOrder
+      .filter(id => slotDefinitions[id]) // Only include slots that exist in definitions
+      .map(id => {
+        const definition = slotDefinitions[id];
+        return {
+          id,
+          name: definition.name || id.split('-').pop(),
+          description: definition.description || `${definition.type} slot`,
+          icon: getSlotIcon(definition.type),
+          type: definition.type,
+          ...definition
+        };
+      });
+  }, [slotOrder, slotDefinitions]);
 
   // Slot management functions
   const handleSlotToggle = useCallback((slotId) => {
