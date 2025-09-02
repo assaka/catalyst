@@ -201,29 +201,24 @@ const GenericSlotEditor = ({
         let parsedOrder = Object.keys(parsedDefinitions);
         
         if (slotOrderMatch) {
-          // Extract slot order array items, handling multiline comments
+          // Extract just the quoted strings (ignore comments completely)
           const orderContent = slotOrderMatch[1];
-          const orderItems = orderContent
-            .split(',')
-            .map(item => {
-              // Remove all comments (including multiline) and whitespace
-              let cleanItem = item
-                .replace(/\/\/.*$/gm, '') // Remove single-line comments
-                .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
-                .replace(/\r\n/g, ' ') // Replace line breaks with spaces
-                .replace(/\n/g, ' ') // Replace newlines with spaces
-                .replace(/\s+/g, ' ') // Replace multiple spaces with single space
-                .trim() // Remove leading/trailing whitespace
-                .replace(/['"`]/g, ''); // Remove quotes
-              
-              return cleanItem;
-            })
-            .filter(item => item && item !== '' && item !== ' ');
           
-          console.log('🎯 Cleaned slot order items:', orderItems);
+          // Use regex to find all quoted strings, ignoring everything else
+          const quotedStrings = orderContent.match(/'([^']+)'|"([^"]+)"|`([^`]+)`/g);
           
-          if (orderItems.length > 0) {
-            parsedOrder = orderItems;
+          if (quotedStrings) {
+            const orderItems = quotedStrings.map(quoted => 
+              quoted.slice(1, -1) // Remove the quotes
+            );
+            
+            console.log('🎯 Extracted slot IDs from quotes:', orderItems);
+            
+            if (orderItems.length > 0) {
+              parsedOrder = orderItems;
+            }
+          } else {
+            console.warn('⚠️ No quoted strings found in CART_SLOT_ORDER');
           }
         }
         
