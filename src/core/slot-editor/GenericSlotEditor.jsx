@@ -237,6 +237,17 @@ export const ${pageName.toUpperCase()}_PAGE_CONFIG = {
     await parseSlotDefinitions(defaultCode);
   };
 
+  // Get icon for slot type
+  const getSlotIcon = (type) => {
+    const icons = {
+      component: '🧩',
+      container: '📦', 
+      layout: '📐',
+      'micro-slot': '🔬'
+    };
+    return icons[type] || '⚙️';
+  };
+
   // Generate sortable slot items from definitions in order
   const sortableSlots = slotOrder
     .filter(id => slotDefinitions[id]) // Only include slots that exist in definitions
@@ -251,17 +262,6 @@ export const ${pageName.toUpperCase()}_PAGE_CONFIG = {
         ...definition
       };
     });
-
-  // Get icon for slot type
-  const getSlotIcon = (type) => {
-    const icons = {
-      component: '🧩',
-      container: '📦', 
-      layout: '📐',
-      'micro-slot': '🔬'
-    };
-    return icons[type] || '⚙️';
-  };
 
   // Slot management functions
   const handleSlotToggle = useCallback((slotId) => {
