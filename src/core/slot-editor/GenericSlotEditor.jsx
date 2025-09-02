@@ -12,7 +12,6 @@ import {
   Code, 
   Eye, 
   Settings,
-  Save,
   RefreshCw,
   GripVertical,
   Wand2,
@@ -1262,45 +1261,17 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
               </h2>
               <p className="text-sm text-gray-600">{editingSlot.id}</p>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowSlotEditor(false);
-                  setEditingSlot(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  // Parse the code and update the slot definition
-                  try {
-                    // Simple extraction of the config object from the code
-                    const configMatch = editingSlot.code.match(/export const .+_CONFIG = ({[\s\S]+?});/);
-                    if (configMatch) {
-                      // eslint-disable-next-line no-eval
-                      const updatedConfig = eval(`(${configMatch[1]})`);
-                      setSlotDefinitions(prev => ({
-                        ...prev,
-                        [editingSlot.id]: {
-                          ...prev[editingSlot.id],
-                          ...updatedConfig
-                        }
-                      }));
-                    }
-                    setShowSlotEditor(false);
-                    setEditingSlot(null);
-                  } catch (error) {
-                    console.error('Error parsing slot code:', error);
-                    alert('Error parsing slot configuration. Please check the syntax.');
-                  }
-                }}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </Button>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setShowSlotEditor(false);
+                setEditingSlot(null);
+              }}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X className="w-4 h-4" />
+            </Button>
           </div>
           
           {/* Code Editor */}
@@ -1309,6 +1280,26 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
               value={editingSlot.code}
               onChange={(newCode) => {
                 setEditingSlot(prev => ({ ...prev, code: newCode }));
+                
+                // Auto-save the slot configuration
+                try {
+                  const configMatch = newCode.match(/export const .+_CONFIG = ({[\s\S]+?});/);
+                  if (configMatch) {
+                    // eslint-disable-next-line no-eval
+                    const updatedConfig = eval(`(${configMatch[1]})`);
+                    setSlotDefinitions(prev => ({
+                      ...prev,
+                      [editingSlot.id]: {
+                        ...prev[editingSlot.id],
+                        ...updatedConfig
+                      }
+                    }));
+                    triggerAutoSave();
+                  }
+                } catch (error) {
+                  // Silently handle parsing errors during typing
+                  console.debug('Parsing in progress...', error);
+                }
               }}
               fileName={`${editingSlot.id}.jsx`}
               language="javascript"
@@ -1369,31 +1360,19 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
-            {hasUnsavedChanges && (
-              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse mr-2 inline-block" />
-                Auto-saving...
-              </Badge>
-            )}
-            <Button variant="outline" onClick={onCancel}>
-              Cancel
-            </Button>
-            <Button onClick={() => {
-              const saveData = {
-                slotsFileCode, 
-                slotDefinitions: mergePositionsIntoDefinitions(), 
-                pageConfig,
-                slotPositions 
-              };
-              onSave(saveData);
-              lastSavedRef.current = saveData;
-              setHasUnsavedChanges(false);
-            }}>
-              <Save className="w-4 h-4 mr-2" />
-              Save Changes
-            </Button>
-          </div>
+          {/* Auto-save indicator */}
+          {hasUnsavedChanges && (
+            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 flex items-center">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse mr-2" />
+              Auto-saving...
+            </Badge>
+          )}
+          {!hasUnsavedChanges && lastSavedRef.current && (
+            <Badge variant="secondary" className="bg-green-100 text-green-800 flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+              Saved
+            </Badge>
+          )}
         </div>
       </div>
 
