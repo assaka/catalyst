@@ -62,8 +62,9 @@ const GenericSlotEditor = ({
   const [editingSlot, setEditingSlot] = useState(null);
   const [slotOrder, setSlotOrder] = useState([]);
 
-  // File paths - Updated for single-file architecture
+  // File paths - Support both legacy and schema-based files
   const slotsFilePath = `src/pages/${pageName}Slots.jsx`;
+  const configFilePath = `src/pages/${pageName}Slots.config.js`;
   
   // Drag and drop sensors
   const sensors = useSensors(
@@ -73,175 +74,147 @@ const GenericSlotEditor = ({
     })
   );
 
-  // Load slots file
+  // Load schema-based slot configuration
   useEffect(() => {
-    const loadSlotsFile = async () => {
+    const loadSlotConfig = async () => {
       setIsLoading(true);
       try {
-        const data = await apiClient.get(`extensions/baseline/${encodeURIComponent(slotsFilePath)}`);
+        // Try to load schema-based configuration first
+        const configData = await apiClient.get(`extensions/baseline/${encodeURIComponent(configFilePath)}`);
         
-        if (data && data.success && data.data.hasBaseline) {
-          const code = data.data.baselineCode;
-          setSlotsFileCode(code);
+        if (configData && configData.success && configData.data.hasBaseline) {
+          const configCode = configData.data.baselineCode;
+          setSlotsFileCode(configCode);
           
-          // Parse the slots file to extract definitions and config
-          await parseSlotDefinitions(code);
+          // Load the schema-based configuration
+          await loadSchemaConfiguration(configCode);
         } else {
-          // Create default slots file for the page
-          await createDefaultSlotsFile();
+          // Fallback to legacy slots file
+          const slotsData = await apiClient.get(`extensions/baseline/${encodeURIComponent(slotsFilePath)}`);
+          
+          if (slotsData && slotsData.success && slotsData.data.hasBaseline) {
+            const slotsCode = slotsData.data.baselineCode;
+            setSlotsFileCode(slotsCode);
+            
+            // Create schema from legacy file
+            await createSchemaFromLegacy(slotsCode);
+          } else {
+            // Create default schema configuration
+            await createDefaultSchemaConfig();
+          }
         }
       } catch (error) {
-        console.error('Error loading slots file:', error);
-        await createDefaultSlotsFile();
+        console.error('Error loading slot configuration:', error);
+        await createDefaultSchemaConfig();
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadSlotsFile();
-  }, [pageName, slotsFilePath]);
+    loadSlotConfig();
+  }, [pageName, slotsFilePath, configFilePath]);
 
-  // Parse slot definitions from code using regex (more reliable than eval)
-  const parseSlotDefinitions = async (code) => {
+  // Load schema-based configuration from code
+  const loadSchemaConfiguration = async (configCode) => {
     try {
-      const pagePrefix = pageName.toUpperCase();
-      
-      // Extract SLOT_DEFINITIONS using regex
-      const slotDefRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_SLOT_DEFINITIONS\\s*=\\s*\\{([\\s\\S]*?)\\};`, 'gm');
-      const slotDefMatch = slotDefRegex.exec(code);
-      
-      // Extract SLOT_ORDER using regex  
-      const slotOrderRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_SLOT_ORDER\\s*=\\s*\\[([\\s\\S]*?)\\];`, 'gm');
-      const slotOrderMatch = slotOrderRegex.exec(code);
-      
-      // Extract LAYOUT_PRESETS using regex
-      const layoutPresetsRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_LAYOUT_PRESETS\\s*=\\s*\\{([\\s\\S]*?)\\};`, 'gm');
-      const layoutPresetsMatch = layoutPresetsRegex.exec(code);
-      
-      if (slotDefMatch) {
-        // Parse the slot definitions manually
-        const slotDefContent = slotDefMatch[1];
-        const mockDefinitions = {};
-        
-        // Extract each slot definition using regex
-        const slotRegex = /['"`]([^'"`]+)['"`]\s*:\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g;
-        let slotMatch;
-        
-        while ((slotMatch = slotRegex.exec(slotDefContent)) !== null) {
-          const slotId = slotMatch[1];
-          const slotContent = slotMatch[2];
-          
-          // Extract basic properties
-          const typeMatch = /type\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
-          const nameMatch = /name\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
-          const descMatch = /description\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
-          
-          mockDefinitions[slotId] = {
-            id: slotId,
-            type: typeMatch ? typeMatch[1] : 'component',
-            name: nameMatch ? nameMatch[1] : slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            description: descMatch ? descMatch[1] : `${typeMatch ? typeMatch[1] : 'component'} slot`
-          };
-        }
-        
-        console.log('🔍 Parsed slot definitions:', mockDefinitions);
-        console.log('🔍 Number of slots found:', Object.keys(mockDefinitions).length);
-        setSlotDefinitions(mockDefinitions);
-        
-        // Initialize slot order
-        const definitionKeys = Object.keys(mockDefinitions);
-        let parsedOrder = definitionKeys;
-        
-        if (slotOrderMatch) {
-          // Extract slot order array items, handling comments
-          const orderContent = slotOrderMatch[1];
-          const orderItems = orderContent
-            .split(',')
-            .map(item => {
-              // Remove comments and whitespace
-              const cleanItem = item.replace(/\/\/.*$/, '').trim().replace(/['"`]/g, '');
-              return cleanItem;
-            })
-            .filter(item => item && item !== '');
-          
-          console.log('🔍 Parsed slot order items:', orderItems);
-          
-          if (orderItems.length > 0) {
-            parsedOrder = orderItems;
-          }
-        }
-        
-        console.log('🔍 Parsed slot order:', parsedOrder);
-        setSlotOrder(parsedOrder);
-        
-        setPageConfig({
-          slotOrder: parsedOrder,
-          layoutPresets: layoutPresetsMatch ? {} : {} // TODO: Parse layout presets if needed
-        });
-      } else {
-        console.warn('⚠️ No slot definitions found in code');
-        // Create some default slots for demo
-        const defaultSlots = {
-          'page-header': {
-            id: 'page-header',
-            type: 'component',
-            name: 'Page Header',
-            description: 'Main page header section'
-          },
-          'main-content': {
-            id: 'main-content', 
-            type: 'container',
-            name: 'Main Content',
-            description: 'Primary content area'
-          }
+      // Evaluate the configuration code to get the schema object
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const moduleCode = `
+        ${configCode}
+        return { 
+          CART_SLOTS_CONFIG, 
+          CART_SLOT_DEFINITIONS, 
+          CART_SLOT_ORDER, 
+          CART_LAYOUT_PRESETS 
         };
-        setSlotDefinitions(defaultSlots);
-        setSlotOrder(Object.keys(defaultSlots));
-      }
-    } catch (error) {
-      console.error('Error parsing slot definitions:', error);
+      `;
       
-      // Fallback to basic parsing
-      setSlotDefinitions({
-        'fallback-slot': {
-          id: 'fallback-slot',
-          type: 'component', 
-          name: 'Fallback Slot',
-          description: 'Default slot when parsing fails'
-        }
+      const configFunction = new AsyncFunction(moduleCode);
+      const { CART_SLOT_DEFINITIONS, CART_SLOT_ORDER, CART_LAYOUT_PRESETS } = await configFunction();
+      
+      console.log('✅ Loaded schema-based configuration:', {
+        definitions: Object.keys(CART_SLOT_DEFINITIONS).length,
+        order: CART_SLOT_ORDER.length,
+        presets: Object.keys(CART_LAYOUT_PRESETS).length
       });
-      setSlotOrder(['fallback-slot']);
+      
+      setSlotDefinitions(CART_SLOT_DEFINITIONS);
+      setSlotOrder(CART_SLOT_ORDER);
+      setPageConfig({
+        slotOrder: CART_SLOT_ORDER,
+        layoutPresets: CART_LAYOUT_PRESETS
+      });
+      
+    } catch (error) {
+      console.error('Error loading schema configuration:', error);
+      await createDefaultSchemaConfig();
     }
   };
 
-  // Create default slots file
-  const createDefaultSlotsFile = async () => {
-    const defaultCode = `// Default ${pageName} Page Slots
-export const ${pageName.toUpperCase()}_SLOT_DEFINITIONS = {
-  'page-root': {
-    id: 'page-root',
-    type: 'layout',
-    defaultLayout: 'stack',
-    slots: ['main-content']
-  },
-  'main-content': {
-    id: 'main-content', 
-    type: 'component',
-    component: 'div',
-    className: 'container mx-auto p-6',
-    defaultProps: {
-      children: <h1>${pageName} Page</h1>
-    }
-  }
-};
-
-export const ${pageName.toUpperCase()}_PAGE_CONFIG = {
-  layout: 'stack',
-  slots: {}
-};`;
+  // Create schema configuration from legacy code (migration helper)
+  const createSchemaFromLegacy = async (legacyCode) => {
+    console.log('🔄 Converting legacy code to schema-based configuration');
     
-    setSlotsFileCode(defaultCode);
-    await parseSlotDefinitions(defaultCode);
+    // For now, create a basic config - in the future this could parse legacy format
+    const basicSlots = {
+      'page-header': {
+        id: 'page-header',
+        type: 'component',
+        name: 'Page Header',
+        description: 'Main page header'
+      },
+      'main-content': {
+        id: 'main-content',
+        type: 'container', 
+        name: 'Main Content',
+        description: 'Primary content area'
+      }
+    };
+    
+    setSlotDefinitions(basicSlots);
+    setSlotOrder(Object.keys(basicSlots));
+    setPageConfig({
+      slotOrder: Object.keys(basicSlots),
+      layoutPresets: {}
+    });
+  };
+
+  // Create default schema-based configuration
+  const createDefaultSchemaConfig = async () => {
+    const defaultSlots = {
+      'page-root': {
+        id: 'page-root',
+        type: 'layout',
+        name: 'Page Root',
+        description: 'Root layout container',
+        required: true,
+        order: 0
+      },
+      'main-content': {
+        id: 'main-content',
+        type: 'component',
+        name: 'Main Content',
+        description: 'Primary content area',
+        required: true,
+        order: 1
+      }
+    };
+    
+    const defaultOrder = Object.keys(defaultSlots);
+    
+    setSlotDefinitions(defaultSlots);
+    setSlotOrder(defaultOrder);
+    setPageConfig({
+      slotOrder: defaultOrder,
+      layoutPresets: {
+        default: {
+          name: 'Default Layout',
+          slotOrder: defaultOrder
+        }
+      }
+    });
+    
+    console.log('📝 Created default schema configuration');
   };
 
   // Generate sortable slot items from definitions in order
