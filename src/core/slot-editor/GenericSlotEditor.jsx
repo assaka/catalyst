@@ -498,17 +498,17 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         style={style}
         className={`relative border-2 rounded-lg transition-all duration-200 ${
           isDragging 
-            ? `shadow-2xl rotate-2 scale-105 ${visual.color}` 
-            : `shadow-sm hover:shadow-lg ${visual.color} ${isEnabled ? '' : 'opacity-50'}`
+            ? `shadow-2xl rotate-2 scale-105 ${visual.color} border-blue-400` 
+            : `shadow-md hover:shadow-xl ${visual.color} ${isEnabled ? 'hover:border-blue-300' : 'opacity-50'}`
         }`}
       >
         {/* Slot Order Indicator */}
-        <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${visual.textColor.replace('text-', 'bg-')} text-white text-xs font-bold flex items-center justify-center shadow-lg`}>
+        <div className={`absolute -top-3 -left-3 w-7 h-7 rounded-full ${visual.textColor.replace('text-', 'bg-')} text-white text-sm font-bold flex items-center justify-center shadow-lg border-2 border-white`}>
           {index + 1}
         </div>
 
         {/* Main Content */}
-        <div className="p-4 flex items-center gap-3">
+        <div className="p-4 flex items-center gap-3 bg-white/70 rounded-lg">
           {/* Drag Handle */}
           <div
             {...listeners}
@@ -1306,20 +1306,20 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       <div className="flex-1 min-h-0">
         {mode === 'layout' ? (
           /* LAYOUT MODE: Visual Slot Editor with Draggable Positions */
-          <div className="h-full grid grid-cols-1 xl:grid-cols-3 gap-4 p-4 overflow-auto">
-            {/* Left: Slot Management */}
-            <div className="xl:col-span-1">
-              <Card className="h-full">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <ArrowUpDown className="w-5 h-5" />
+          <div className="h-full grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 overflow-auto">
+            {/* Left: Slot Management - Made more prominent */}
+            <div className="lg:col-span-2">
+              <Card className="h-full border-2 border-blue-100 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <ArrowUpDown className="w-5 h-5 text-blue-600" />
                     Slot Manager
                   </CardTitle>
                   <p className="text-sm text-gray-600">
-                    Drag slots to rearrange your {pageName.toLowerCase()} page
+                    Organize and configure your {pageName.toLowerCase()} page slots
                   </p>
                 </CardHeader>
-                <CardContent className="p-4 h-full overflow-y-auto">
+                <CardContent className="p-4 h-full overflow-y-auto bg-gray-50/50">
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
@@ -1343,8 +1343,8 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                         
                         {/* Add New Slot Button */}
                         <Button 
-                          variant="dashed" 
-                          className="w-full py-6 border-2 border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800"
+                          variant="outline" 
+                          className="w-full py-8 border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/50 hover:bg-blue-100/50 text-blue-700 hover:text-blue-900 font-medium transition-all duration-200"
                           onClick={handleAddNewSlot}
                         >
                           <Plus className="w-5 h-5 mr-2" />
@@ -1358,8 +1358,8 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             </div>
             
             {/* Right: Slot Layout Canvas (Draggable) */}
-            <div className="xl:col-span-2">
-              <Card className="h-full">
+            <div className="lg:col-span-3">
+              <Card className="h-full border shadow-md">
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
