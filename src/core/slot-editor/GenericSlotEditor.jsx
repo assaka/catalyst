@@ -507,6 +507,11 @@ const GenericSlotEditor = ({
   }, [triggerAutoSave]);
 
   const handleSlotEdit = useCallback((slot) => {
+    // Get component name (handle function components)
+    const componentName = typeof slot.component === 'function' 
+      ? slot.component.name || 'SlotComponent'
+      : slot.component || 'SlotComponent';
+    
     // Generate code for this specific slot
     const slotCode = `// ${slot.name} Configuration
 export const ${slot.id.toUpperCase().replace(/-/g, '_')}_CONFIG = {
@@ -514,7 +519,7 @@ export const ${slot.id.toUpperCase().replace(/-/g, '_')}_CONFIG = {
   type: '${slot.type}',
   name: '${slot.name}',
   description: '${slot.description || ''}',
-  component: '${slot.component || slot.id}',
+  component: '${componentName}',
   required: ${slot.required || false},
   enabled: ${slot.enabled !== false},
   order: ${slot.order || 0},
@@ -527,14 +532,16 @@ export const ${slot.id.toUpperCase().replace(/-/g, '_')}_CONFIG = {
 };
 
 // React Component Implementation
-const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
+const ${componentName} = ({ children, className = "", ...props }) => {
   return (
-    <div className="${slot.styling?.className || ''}">
+    <div className={\`${slot.styling?.className || 'lg:grid lg:grid-cols-3 lg:gap-8'} \${className}\`}>
       {/* ${slot.description || 'Slot implementation'} */}
       {children}
     </div>
   );
-};`;
+};
+
+export default ${componentName};`;
     
     setEditingSlot({ ...slot, code: slotCode });
     setShowSlotEditor(true);
