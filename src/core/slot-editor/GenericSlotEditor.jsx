@@ -1005,7 +1005,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1">
+      <div className="flex-1 overflow-hidden">
         {mode === 'visual' ? (
           /* VISUAL MODE: Drag & Drop + Preview */
           <div className="h-full grid grid-cols-1 xl:grid-cols-3 gap-4 p-4">
