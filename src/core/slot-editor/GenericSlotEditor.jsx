@@ -3,11 +3,11 @@
  * Store owners only see and edit their PageSlots.jsx file
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Code, 
   Eye, 
@@ -20,9 +20,7 @@ import {
   Layout,
   FileCode,
   X,
-  Plus,
-  Edit,
-  Trash2
+  Plus
 } from 'lucide-react';
 
 import {
@@ -43,7 +41,6 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 import CodeEditor from '@/components/ai-context/CodeEditor.jsx';
-import SlotWrapper from '@/core/slot-system/SlotWrapper.jsx';
 import apiClient from '@/api/client';
 
 const GenericSlotEditor = ({
@@ -58,8 +55,6 @@ const GenericSlotEditor = ({
   const [slotDefinitions, setSlotDefinitions] = useState({});
   const [pageConfig, setPageConfig] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const [previewData, setPreviewData] = useState({});
-  const [editingSlot, setEditingSlot] = useState(null);
   const [slotOrder, setSlotOrder] = useState([]);
 
   // File paths - Support both legacy and schema-based files
@@ -89,19 +84,8 @@ const GenericSlotEditor = ({
           // Load the schema-based configuration
           await loadSchemaConfiguration(configCode);
         } else {
-          // Fallback to legacy slots file
-          const slotsData = await apiClient.get(`extensions/baseline/${encodeURIComponent(slotsFilePath)}`);
-          
-          if (slotsData && slotsData.success && slotsData.data.hasBaseline) {
-            const slotsCode = slotsData.data.baselineCode;
-            setSlotsFileCode(slotsCode);
-            
-            // Create schema from legacy file
-            await createSchemaFromLegacy(slotsCode);
-          } else {
-            // Create default schema configuration
-            await createDefaultSchemaConfig();
-          }
+          console.log('No schema config found, creating default config');
+          await createDefaultSchemaConfig();
         }
       } catch (error) {
         console.error('Error loading slot configuration:', error);
@@ -112,10 +96,10 @@ const GenericSlotEditor = ({
     };
 
     loadSlotConfig();
-  }, [pageName, slotsFilePath, configFilePath]);
+  }, [pageName, configFilePath, loadSchemaConfiguration]);
 
   // Load schema-based configuration from code
-  const loadSchemaConfiguration = async (configCode) => {
+  const loadSchemaConfiguration = useCallback(async (configCode) => {
     try {
       // Evaluate the configuration code to get the schema object
       const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
@@ -149,209 +133,8 @@ const GenericSlotEditor = ({
       console.error('Error loading schema configuration:', error);
       await createDefaultSchemaConfig();
     }
-  };
+  }, []);
 
-  // Create schema configuration from legacy code using safe evaluation
-  const createSchemaFromLegacy = async (legacyCode) => {
-    console.log('🔄 Converting legacy CartSlots.jsx using safe evaluation');
-    
-    try {
-      const pagePrefix = pageName.toUpperCase();
-      
-      // Create a safe evaluation environment
-      const evaluateSlotExports = (code) => {
-        // Create a sandbox with only the necessary globals
-        const sandbox = {
-          React: null, // We don't need React for data extraction
-          console: { log: () => {}, warn: () => {}, error: () => {} }, // Silent console
-          // Mock imports to prevent errors
-          Card: null,
-          CardContent: null,
-          CardHeader: null,
-          CardTitle: null,
-          Button: null,
-          Input: null,
-          Trash2: null,
-          Plus: null,
-          Minus: null,
-          Tag: null,
-          ShoppingCart: null,
-          formatDisplayPrice: () => '$0.00',
-          getStoreBaseUrl: () => '',
-          getExternalStoreUrl: () => '',
-          // Add component mocks
-          SlotCartPageContainer: 'SlotCartPageContainer',
-          SlotCartPageHeader: 'SlotCartPageHeader',
-          SlotCartGridLayout: 'SlotCartGridLayout',
-          SlotCartItemsContainer: 'SlotCartItemsContainer',
-          SlotCartItem: 'SlotCartItem',
-          SlotCartSidebar: 'SlotCartSidebar',
-          SlotCouponSection: 'SlotCouponSection',
-          SlotOrderSummary: 'SlotOrderSummary',
-          SlotCheckoutButton: 'SlotCheckoutButton',
-          SlotEmptyCartDisplay: 'SlotEmptyCartDisplay',
-        };
-        
-        // Extract just the export statements we need
-        const exportPattern = new RegExp(
-          `export\\s+const\\s+(${pagePrefix}_SLOT_DEFINITIONS|${pagePrefix}_SLOT_ORDER|${pagePrefix}_LAYOUT_PRESETS)\\s*=([^;]+);`, 
-          'gm'
-        );
-        
-        console.log('🔍 Looking for exports with pattern:', exportPattern);
-        console.log('🔍 Code length:', code.length, 'characters');
-        console.log('🔍 First 500 characters:', code.substring(0, 500));
-        
-        const exports = {};
-        let match;
-        let matchCount = 0;
-        
-        while ((match = exportPattern.exec(code)) !== null) {
-          matchCount++;
-          const [fullMatch, exportName, exportValue] = match;
-          
-          console.log(`🔍 Found export ${matchCount}:`, exportName);
-          console.log('🔍 Export value preview:', exportValue.substring(0, 100) + '...');
-          
-          try {
-            // Create a safe function to evaluate the export value
-            const evalFunction = new Function(
-              ...Object.keys(sandbox),
-              `return ${exportValue};`
-            );
-            
-            // Execute with our sandbox values
-            const result = evalFunction(...Object.values(sandbox));
-            exports[exportName] = result;
-            
-            if (result && typeof result === 'object') {
-              console.log(`✅ Successfully parsed ${exportName}:`, Object.keys(result).length, 'items');
-            } else {
-              console.log(`✅ Successfully parsed ${exportName}:`, result);
-            }
-            
-          } catch (evalError) {
-            console.warn(`⚠️ Could not evaluate ${exportName}:`, evalError.message);
-            console.warn('⚠️ Failed export value:', exportValue.substring(0, 200));
-            
-            // Special handling for SLOT_DEFINITIONS - try to extract basic structure
-            if (exportName.includes('SLOT_DEFINITIONS')) {
-              console.log('🔧 Attempting manual parsing for SLOT_DEFINITIONS...');
-              try {
-                const manualDefinitions = parseSlotDefinitionsManually(exportValue);
-                if (Object.keys(manualDefinitions).length > 0) {
-                  exports[exportName] = manualDefinitions;
-                  console.log(`✅ Manually parsed ${exportName}:`, Object.keys(manualDefinitions).length, 'items');
-                }
-              } catch (manualError) {
-                console.warn('⚠️ Manual parsing also failed:', manualError.message);
-              }
-            }
-          }
-        }
-        
-        console.log('🔍 Total matches found:', matchCount);
-        console.log('🔍 Parsed exports:', Object.keys(exports));
-        
-        // Manual parsing fallback for slot definitions with component references
-        const parseSlotDefinitionsManually = (exportValue) => {
-          const definitions = {};
-          
-          // Extract slot definitions using regex pattern matching
-          const slotPattern = /['"`]([^'"`-]+(?:-[^'"`]+)*?)['"`]\s*:\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g;
-          let match;
-          
-          while ((match = slotPattern.exec(exportValue)) !== null) {
-            const slotId = match[1];
-            const slotContent = match[2];
-            
-            // Extract properties using simple regex
-            const getId = () => slotId;
-            const getType = () => {
-              const typeMatch = /type\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
-              return typeMatch ? typeMatch[1] : 'component';
-            };
-            const getName = () => {
-              const nameMatch = /name\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
-              return nameMatch ? nameMatch[1] : slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            };
-            const getDescription = () => {
-              const descMatch = /description\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
-              return descMatch ? descMatch[1] : `${getType()} slot`;
-            };
-            
-            definitions[slotId] = {
-              id: getId(),
-              type: getType(),
-              name: getName(),
-              description: getDescription(),
-              enabled: true,
-              required: true
-            };
-          }
-          
-          return definitions;
-        };
-        
-        return exports;
-      };
-      
-      // Evaluate the exports
-      const exports = evaluateSlotExports(legacyCode);
-      
-      // Extract slot definitions
-      const slotDefinitionsKey = `${pagePrefix}_SLOT_DEFINITIONS`;
-      const slotOrderKey = `${pagePrefix}_SLOT_ORDER`;
-      
-      if (exports[slotDefinitionsKey]) {
-        const rawDefinitions = exports[slotDefinitionsKey];
-        const parsedDefinitions = {};
-        
-        // Process each slot definition
-        Object.entries(rawDefinitions).forEach(([slotId, definition]) => {
-          parsedDefinitions[slotId] = {
-            id: slotId,
-            type: definition.type || 'component',
-            name: definition.name || slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            description: definition.description || `${definition.type || 'component'} slot`,
-            enabled: true,
-            required: true,
-            component: definition.component || slotId,
-            ...definition // Include any other properties
-          };
-        });
-        
-        console.log('🎯 Processed slot definitions:', parsedDefinitions);
-        setSlotDefinitions(parsedDefinitions);
-        
-        // Process slot order
-        let parsedOrder = Object.keys(parsedDefinitions);
-        
-        if (exports[slotOrderKey] && Array.isArray(exports[slotOrderKey])) {
-          parsedOrder = exports[slotOrderKey];
-          console.log('🎯 Using defined slot order:', parsedOrder);
-        } else {
-          console.log('🎯 Using default slot order from definitions');
-        }
-        
-        setSlotOrder(parsedOrder);
-        setPageConfig({
-          slotOrder: parsedOrder,
-          layoutPresets: exports[`${pagePrefix}_LAYOUT_PRESETS`] || {}
-        });
-        
-        console.log('✅ Successfully loaded', Object.keys(parsedDefinitions).length, 'cart slots with safe evaluation');
-        
-      } else {
-        console.warn('⚠️ No slot definitions found, creating fallback');
-        await createDefaultSchemaConfig();
-      }
-      
-    } catch (error) {
-      console.error('❌ Error in safe evaluation parsing:', error);
-      await createDefaultSchemaConfig();
-    }
-  };
 
   // Create default schema-based configuration
   const createDefaultSchemaConfig = async () => {
@@ -444,8 +227,8 @@ const GenericSlotEditor = ({
     });
   }, []);
 
-  const handleSlotEdit = useCallback((slot) => {
-    setEditingSlot(slot);
+  const handleSlotEdit = useCallback(() => {
+    // Slot editing functionality to be implemented
   }, []);
 
   const handleSlotDelete = useCallback((slotId) => {
@@ -477,7 +260,7 @@ const GenericSlotEditor = ({
     }));
     
     setSlotOrder(prev => [...prev, newSlotId]);
-    setEditingSlot(newSlot);
+    // newSlot is now added to the slot order
   }, []);
 
   // Enhanced drag and drop handling
@@ -631,8 +414,8 @@ const GenericSlotEditor = ({
     );
   };
 
-  // Live preview component
-  const LivePreview = () => {
+  // Visual Layout Preview - shows slots as they appear in the actual layout
+  const LayoutPreview = () => {
     if (!slotDefinitions || Object.keys(slotDefinitions).length === 0) {
       return (
         <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
@@ -645,14 +428,153 @@ const GenericSlotEditor = ({
       );
     }
 
+    // Get slot visual representation
+    const getSlotVisual = (slotDef) => {
+      const iconMap = {
+        'container': { icon: '📦', color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
+        'component': { icon: '⚙️', color: 'bg-green-50 border-green-200', textColor: 'text-green-700' },
+        'layout': { icon: '📐', color: 'bg-purple-50 border-purple-200', textColor: 'text-purple-700' },
+        'content': { icon: '📄', color: 'bg-orange-50 border-orange-200', textColor: 'text-orange-700' },
+        'action': { icon: '🔘', color: 'bg-red-50 border-red-200', textColor: 'text-red-700' },
+        'default': { icon: '🧩', color: 'bg-gray-50 border-gray-200', textColor: 'text-gray-700' }
+      };
+      return iconMap[slotDef.type] || iconMap.default;
+    };
+
+    // Render individual slot in layout context
+    const renderSlotInLayout = (slotId, index) => {
+      const definition = slotDefinitions[slotId];
+      if (!definition) return null;
+
+      const visual = getSlotVisual(definition);
+      const isEnabled = definition.enabled !== false;
+      
+      return (
+        <div
+          key={slotId}
+          className={`relative border-2 rounded-lg p-4 m-2 transition-all duration-200 ${
+            visual.color
+          } ${isEnabled ? 'opacity-100' : 'opacity-50'}`}
+          style={{
+            minHeight: getSlotHeight(definition),
+            width: getSlotWidth(definition)
+          }}
+        >
+          {/* Slot Order Indicator */}
+          <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${visual.textColor.replace('text-', 'bg-')} text-white text-xs font-bold flex items-center justify-center shadow-lg`}>
+            {index + 1}
+          </div>
+
+          {/* Slot Content */}
+          <div className="flex items-center gap-3">
+            <div className="text-2xl">{visual.icon}</div>
+            <div className="flex-1">
+              <h4 className={`font-semibold ${visual.textColor}`}>
+                {definition.name || slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </h4>
+              <p className="text-sm text-gray-600 mt-1">
+                {definition.description || `${definition.type} slot`}
+              </p>
+              <div className="text-xs text-gray-400 font-mono mt-1">{slotId}</div>
+            </div>
+          </div>
+
+          {/* Disabled overlay */}
+          {!isEnabled && (
+            <div className="absolute inset-0 bg-gray-200/50 rounded-lg flex items-center justify-center">
+              <span className="text-gray-500 font-semibold text-sm">DISABLED</span>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // Get slot dimensions based on type and name
+    const getSlotHeight = (definition) => {
+      if (definition.id === 'cart-page-header') return '80px';
+      if (definition.id === 'cart-grid-layout') return '600px';
+      if (definition.id === 'cart-items-container') return '400px';
+      if (definition.id === 'cart-sidebar') return '400px';
+      if (definition.id === 'cart-order-summary') return '200px';
+      if (definition.id === 'cart-coupon-section') return '120px';
+      if (definition.id === 'cart-checkout-button') return '60px';
+      if (definition.id === 'cart-empty-display') return '200px';
+      return '100px'; // default
+    };
+
+    const getSlotWidth = (definition) => {
+      if (definition.id === 'cart-items-container') return '65%';
+      if (definition.id === 'cart-sidebar') return '30%';
+      if (definition.id === 'cart-order-summary') return '100%';
+      if (definition.id === 'cart-coupon-section') return '100%';
+      if (definition.id === 'cart-checkout-button') return '100%';
+      return '100%'; // default
+    };
+
+    // Render layout structure
+    const renderLayoutStructure = () => {
+      const currentOrder = slotOrder.filter(id => slotDefinitions[id]);
+
+      return (
+        <div className="p-6 bg-white min-h-full">
+          {/* Page Container */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+            <div className="text-sm text-gray-500 mb-4 font-semibold">📦 Cart Page Layout</div>
+            
+            {currentOrder.map((slotId, index) => {
+              // Special layout handling for grid structure
+              if (slotId === 'cart-grid-layout') {
+                return (
+                  <div key={slotId} className="mb-4">
+                    {renderSlotInLayout(slotId, index)}
+                    {/* Grid Content */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4 p-4 border-2 border-dashed border-purple-200 rounded-lg bg-purple-50/30">
+                      <div className="lg:col-span-2">
+                        {/* Items Container */}
+                        {currentOrder.includes('cart-items-container') && 
+                          renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'))
+                        }
+                      </div>
+                      <div className="lg:col-span-1">
+                        {/* Sidebar with nested slots */}
+                        <div className="space-y-4">
+                          {currentOrder.includes('cart-sidebar') && 
+                            renderSlotInLayout('cart-sidebar', currentOrder.indexOf('cart-sidebar'))
+                          }
+                          <div className="ml-4 space-y-2 border-l-2 border-green-200 pl-4">
+                            {currentOrder.includes('cart-order-summary') && 
+                              renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'))
+                            }
+                            {currentOrder.includes('cart-coupon-section') && 
+                              renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'))
+                            }
+                            {currentOrder.includes('cart-checkout-button') && 
+                              renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'))
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Skip slots that are rendered within grid-layout
+              if (['cart-items-container', 'cart-sidebar', 'cart-order-summary', 'cart-coupon-section', 'cart-checkout-button'].includes(slotId)) {
+                return null;
+              }
+              
+              // Regular slot rendering
+              return renderSlotInLayout(slotId, index);
+            })}
+          </div>
+        </div>
+      );
+    };
+
     return (
-      <div className="h-full bg-gray-50 overflow-y-auto">
-        <SlotWrapper
-          slotDefinitions={slotDefinitions}
-          slotOrder={pageConfig.slotOrder || Object.keys(slotDefinitions)}
-          layoutConfig={pageConfig.layoutPresets?.default || {}}
-          data={previewData}
-        />
+      <div className="h-full bg-gray-100 overflow-y-auto">
+        {renderLayoutStructure()}
       </div>
     );
   };
@@ -768,11 +690,11 @@ const GenericSlotEditor = ({
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <Eye className="w-5 h-5" />
-                    Live Preview
+                    Layout Preview
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 h-full">
-                  <LivePreview />
+                  <LayoutPreview />
                 </CardContent>
               </Card>
             </div>
