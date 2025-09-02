@@ -753,17 +753,32 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           {/* Hover-only controls for layout mode */}
           {isDraggable && showSettings && (
             <>
-              {/* Settings button - only visible on hover */}
-              <div className="absolute top-2 left-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              {/* Action buttons container - only visible on hover */}
+              <div className="absolute top-2 left-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
+                {/* Toggle Enable/Disable */}
                 <Button
+                  variant="ghost"
                   size="sm"
-                  variant="secondary"
-                  className="h-7 w-7 p-0 bg-white/95 hover:bg-white shadow-md"
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleSlotEdit(slotId);
+                    handleSlotToggle(slotId);
                   }}
-                  title="Edit slot settings"
+                  className={`w-8 h-8 bg-white/90 hover:bg-white shadow-sm ${isEnabled ? 'text-green-600 hover:text-green-800' : 'text-gray-400 hover:text-gray-600'}`}
+                  title={isEnabled ? 'Disable slot' : 'Enable slot'}
+                >
+                  <Eye className={`w-4 h-4 ${isEnabled ? '' : 'line-through'}`} />
+                </Button>
+                
+                {/* Edit Configuration */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSlotEdit(definition);
+                  }}
+                  className="w-8 h-8 text-blue-600 hover:text-blue-800 bg-white/90 hover:bg-white shadow-sm"
+                  title="Edit slot configuration"
                 >
                   <Settings className="w-4 h-4" />
                 </Button>
