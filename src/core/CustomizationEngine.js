@@ -651,36 +651,9 @@ class CustomizationEngine {
    * Create preview mode toggle UI
    */
   createPreviewToggle() {
-    // Always create for testing (can be configured later)
-    const toggle = document.createElement('div');
-    toggle.id = 'catalyst-preview-toggle';
-    toggle.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 10000;
-      background: #333;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-family: monospace;
-      font-size: 12px;
-      display: block;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    `;
-    toggle.innerHTML = '👁️ Preview Mode: OFF';
-    toggle.addEventListener('click', () => {
-      this.togglePreviewMode();
-      toggle.innerHTML = `👁️ Preview Mode: ${this.isPreviewMode ? 'ON' : 'OFF'}`;
-      toggle.style.background = this.isPreviewMode ? '#007bff' : '#333';
-      
-      // Changes are applied automatically via applyPreviewChanges()
-    });
-
-    document.body.appendChild(toggle);
-
-    // Note: Preview changes are now applied automatically when preview mode is enabled
+    // Preview toggle removed - using slot editor's preview mode instead
+    // The toggle UI is no longer needed as preview functionality
+    // is integrated into the GenericSlotEditor component
   }
 
   /**
