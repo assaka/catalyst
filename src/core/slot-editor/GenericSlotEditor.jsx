@@ -254,26 +254,26 @@ const GenericSlotEditor = ({
         // In production, this would come from the API endpoint
         if (pageName === 'Cart') {
           try {
-            // Dynamically import the configuration
-            const configModule = await import(`@/pages/${pageName}Slots.config.js`);
-            console.log('📦 Loaded config module:', configModule);
+            // Import the actual components from CartSlots.jsx
+            const slotsModule = await import(`@/pages/${pageName}Slots.jsx`);
+            console.log('📦 Loaded slots module:', slotsModule);
             
-            if (configModule.CART_SLOT_DEFINITIONS && configModule.CART_SLOT_ORDER) {
+            if (slotsModule.CART_SLOT_DEFINITIONS && slotsModule.CART_SLOT_ORDER) {
               console.log('✅ Successfully loaded Cart slot configuration:', {
-                definitions: Object.keys(configModule.CART_SLOT_DEFINITIONS).length,
-                order: configModule.CART_SLOT_ORDER.length
+                definitions: Object.keys(slotsModule.CART_SLOT_DEFINITIONS).length,
+                order: slotsModule.CART_SLOT_ORDER.length
               });
               
-              setSlotDefinitions(configModule.CART_SLOT_DEFINITIONS);
-              setSlotOrder(configModule.CART_SLOT_ORDER);
+              setSlotDefinitions(slotsModule.CART_SLOT_DEFINITIONS);
+              setSlotOrder(slotsModule.CART_SLOT_ORDER);
               setPageConfig({
-                slotOrder: configModule.CART_SLOT_ORDER,
-                layoutPresets: configModule.CART_LAYOUT_PRESETS || {}
+                slotOrder: slotsModule.CART_SLOT_ORDER,
+                layoutPresets: slotsModule.CART_LAYOUT_PRESETS || {}
               });
               
               // Load saved grid positions from slot definitions
               const savedPositions = {};
-              Object.entries(configModule.CART_SLOT_DEFINITIONS).forEach(([slotId, def]) => {
+              Object.entries(slotsModule.CART_SLOT_DEFINITIONS).forEach(([slotId, def]) => {
                 if (def.gridPosition) {
                   savedPositions[slotId] = {
                     row: def.gridPosition.row,
@@ -286,12 +286,32 @@ const GenericSlotEditor = ({
               setSlotPositions(savedPositions);
               
               // Also set the code for the code editor view
-              const configCode = `// Cart Slots Configuration\nexport const CART_SLOT_DEFINITIONS = ${JSON.stringify(configModule.CART_SLOT_DEFINITIONS, null, 2)};\nexport const CART_SLOT_ORDER = ${JSON.stringify(configModule.CART_SLOT_ORDER, null, 2)};`;
+              const configCode = `// Cart Slots Configuration\nexport const CART_SLOT_DEFINITIONS = ${JSON.stringify(slotsModule.CART_SLOT_DEFINITIONS, null, 2)};\nexport const CART_SLOT_ORDER = ${JSON.stringify(slotsModule.CART_SLOT_ORDER, null, 2)};`;
               setSlotsFileCode(configCode);
               return;
             }
           } catch (importError) {
-            console.warn('Could not dynamically import config, trying API approach:', importError);
+            console.warn('Could not dynamically import slots, trying config approach:', importError);
+            
+            // Fallback to config approach
+            try {
+              const configModule = await import(`@/pages/${pageName}Slots.config.js`);
+              console.log('📦 Loaded config module:', configModule);
+              
+              if (configModule.CART_SLOT_DEFINITIONS && configModule.CART_SLOT_ORDER) {
+                console.log('⚠️ Using config without components - preview may be limited');
+                
+                setSlotDefinitions(configModule.CART_SLOT_DEFINITIONS);
+                setSlotOrder(configModule.CART_SLOT_ORDER);
+                setPageConfig({
+                  slotOrder: configModule.CART_SLOT_ORDER,
+                  layoutPresets: configModule.CART_LAYOUT_PRESETS || {}
+                });
+                return;
+              }
+            } catch (configError) {
+              console.warn('Could not import config either:', configError);
+            }
           }
         }
         
@@ -701,11 +721,40 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             // Create mock props based on slot type for preview
             const getMockProps = () => {
               switch(slotId) {
+                case 'cart-page-container':
+                  return { 
+                    className: "bg-gray-50 cart-page",
+                    children: null // Will be populated by slot system
+                  };
+                  
                 case 'cart-page-header':
-                  return { title: "My Cart", className: "text-3xl font-bold text-gray-900 mb-8" };
+                  return { 
+                    title: "My Cart", 
+                    className: "text-3xl font-bold text-gray-900 mb-8" 
+                  };
+                  
+                case 'cart-grid-layout':
+                  return { 
+                    className: "lg:grid lg:grid-cols-3 lg:gap-8",
+                    children: null // Will be populated by slot system
+                  };
+                  
+                case 'cart-items-container':
+                  return { 
+                    className: "lg:col-span-2",
+                    children: null // Will be populated by slot system
+                  };
+                  
+                case 'cart-sidebar':
+                  return { 
+                    className: "lg:col-span-1 space-y-6 mt-8 lg:mt-0",
+                    children: null // Will be populated by slot system
+                  };
                   
                 case 'cart-empty-display':
                   return { 
+                    store: {},
+                    icon: ShoppingCart,
                     title: "Your cart is empty",
                     message: "Looks like you haven't added anything to your cart yet.",
                     buttonText: "Continue Shopping"
@@ -730,14 +779,17 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                     tax: 9.00,
                     total: 98.99,
                     currencySymbol: '$',
-                    safeToFixed: (val) => val?.toFixed(2) || '0.00'
+                    safeToFixed: (val) => val?.toFixed(2) || '0.00',
+                    children: null // For CMS blocks
                   };
                   
                 case 'cart-checkout-button':
                   return {
                     onCheckout: () => console.log('Checkout clicked'),
                     settings: { theme: { checkout_button_color: '#007bff' } },
-                    text: "Proceed to Checkout"
+                    text: "Proceed to Checkout",
+                    className: "w-full",
+                    size: "lg"
                   };
                   
                 case 'cart-item-single':
@@ -751,9 +803,14 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                     product: {
                       name: 'Sample Product',
                       price: 29.99,
+                      sale_price: null,
+                      compare_price: null,
                       images: ['https://placehold.co/100x100?text=Product']
                     },
                     currencySymbol: '$',
+                    store: {},
+                    taxes: null,
+                    selectedCountry: null,
                     formatPrice: (price) => parseFloat(price) || 0,
                     calculateItemTotal: () => 64.98,
                     onUpdateQuantity: () => {},
@@ -783,7 +840,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             );
             
           } catch (error) {
-            console.warn(`Error rendering component for slot ${slotId}:`, error);
+            console.error(`Error rendering component for slot ${slotId}:`, error);
             // Fallback to static preview
           }
         }
