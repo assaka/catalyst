@@ -69,43 +69,6 @@ const GenericSlotEditor = ({
     })
   );
 
-  // Load schema-based configuration from code
-  const loadSchemaConfiguration = useCallback(async (configCode) => {
-    try {
-      // Evaluate the configuration code to get the schema object
-      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-      const moduleCode = `
-        ${configCode}
-        return { 
-          CART_SLOTS_CONFIG, 
-          CART_SLOT_DEFINITIONS, 
-          CART_SLOT_ORDER, 
-          CART_LAYOUT_PRESETS 
-        };
-      `;
-      
-      const configFunction = new AsyncFunction(moduleCode);
-      const { CART_SLOT_DEFINITIONS, CART_SLOT_ORDER, CART_LAYOUT_PRESETS } = await configFunction();
-      
-      console.log('✅ Loaded schema-based configuration:', {
-        definitions: Object.keys(CART_SLOT_DEFINITIONS).length,
-        order: CART_SLOT_ORDER.length,
-        presets: Object.keys(CART_LAYOUT_PRESETS).length
-      });
-      
-      setSlotDefinitions(CART_SLOT_DEFINITIONS);
-      setSlotOrder(CART_SLOT_ORDER);
-      setPageConfig({
-        slotOrder: CART_SLOT_ORDER,
-        layoutPresets: CART_LAYOUT_PRESETS
-      });
-      
-    } catch (error) {
-      console.error('Error loading schema configuration:', error);
-      await createDefaultSchemaConfig();
-    }
-  }, [createDefaultSchemaConfig]);
-
   // Create default schema-based configuration
   const createDefaultSchemaConfig = useCallback(async () => {
     const defaultSlots = {
@@ -143,6 +106,43 @@ const GenericSlotEditor = ({
     
     console.log('📝 Created default schema configuration');
   }, []);
+
+  // Load schema-based configuration from code
+  const loadSchemaConfiguration = useCallback(async (configCode) => {
+    try {
+      // Evaluate the configuration code to get the schema object
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const moduleCode = `
+        ${configCode}
+        return { 
+          CART_SLOTS_CONFIG, 
+          CART_SLOT_DEFINITIONS, 
+          CART_SLOT_ORDER, 
+          CART_LAYOUT_PRESETS 
+        };
+      `;
+      
+      const configFunction = new AsyncFunction(moduleCode);
+      const { CART_SLOT_DEFINITIONS, CART_SLOT_ORDER, CART_LAYOUT_PRESETS } = await configFunction();
+      
+      console.log('✅ Loaded schema-based configuration:', {
+        definitions: Object.keys(CART_SLOT_DEFINITIONS).length,
+        order: CART_SLOT_ORDER.length,
+        presets: Object.keys(CART_LAYOUT_PRESETS).length
+      });
+      
+      setSlotDefinitions(CART_SLOT_DEFINITIONS);
+      setSlotOrder(CART_SLOT_ORDER);
+      setPageConfig({
+        slotOrder: CART_SLOT_ORDER,
+        layoutPresets: CART_LAYOUT_PRESETS
+      });
+      
+    } catch (error) {
+      console.error('Error loading schema configuration:', error);
+      await createDefaultSchemaConfig();
+    }
+  }, [createDefaultSchemaConfig]);
 
   // Load schema-based slot configuration
   useEffect(() => {
