@@ -71,6 +71,11 @@ async function walkDirectory(dir, fileList = [], baseDir = null) {
     const files = await walkDirectory(path.join(projectRoot, 'src'), [], projectRoot);
     console.log('📊 Found', files.length, 'source files');
     
+    // Truncate existing baselines to start fresh
+    console.log('🗑️  Clearing existing baselines...');
+    await sequelize.query('TRUNCATE file_baselines');
+    console.log('✅ Existing baselines cleared');
+    
     let inserted = 0;
     let skipped = 0;
     let errors = 0;
@@ -82,7 +87,7 @@ async function walkDirectory(dir, fileList = [], baseDir = null) {
         const codeHash = generateCodeHash(content);
         const fileType = getFileType(file.relativePath);
         
-        // Use ON CONFLICT DO NOTHING to prevent duplicates
+        // Simple INSERT without conflict handling
         const result = await sequelize.query(`
           INSERT INTO file_baselines (
             file_path, 
@@ -102,7 +107,6 @@ async function walkDirectory(dir, fileList = [], baseDir = null) {
             :fileSize,
             :lastModified
           )
-          ON CONFLICT (file_path, version) DO NOTHING
           RETURNING id
         `, {
           replacements: {
