@@ -66,9 +66,9 @@ const GenericSlotEditor = ({
   const [isDragging, setIsDragging] = useState(false);
   const [draggedSlotId, setDraggedSlotId] = useState(null);
 
-  // File paths - Support both legacy and schema-based files
+  // File path to the actual file being edited
   const slotsFilePath = `src/pages/${pageName}Slots.jsx`;
-  const configFilePath = `src/pages/${pageName}Slots.config.js`;
+  const configFilePath = slotsFilePath; // Use the same path since config files are removed
   
   // Drag and drop sensors
   const sensors = useSensors(
@@ -292,27 +292,7 @@ const GenericSlotEditor = ({
               return;
             }
           } catch (importError) {
-            console.warn('Could not dynamically import slots, trying config approach:', importError);
-            
-            // Fallback to config approach
-            try {
-              const configModule = await import(`@/pages/${pageName}Slots.config.js`);
-              console.log('📦 Loaded config module:', configModule);
-              
-              if (configModule.CART_SLOT_DEFINITIONS && configModule.CART_SLOT_ORDER) {
-                console.log('⚠️ Using config without components - preview may be limited');
-                
-                setSlotDefinitions(configModule.CART_SLOT_DEFINITIONS);
-                setSlotOrder(configModule.CART_SLOT_ORDER);
-                setPageConfig({
-                  slotOrder: configModule.CART_SLOT_ORDER,
-                  layoutPresets: configModule.CART_LAYOUT_PRESETS || {}
-                });
-                return;
-              }
-            } catch (configError) {
-              console.warn('Could not import config either:', configError);
-            }
+            console.error('Could not dynamically import slots:', importError);
           }
         }
         
