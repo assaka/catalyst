@@ -30,8 +30,7 @@ import {
 // Import slot editor components
 import ConfigurationEditor from './ConfigurationEditor.jsx';
 import ConfigurationPreview from './ConfigurationPreview.jsx';
-import VisualSlotManager from './VisualSlotManager.jsx';
-import SimplifiedSlotsWorkspace from './SimplifiedSlotsWorkspace.jsx';
+import GenericSlotEditor from './GenericSlotEditor.jsx';
 import { ComponentSlotDefinitions, ValidationUtils } from './types.js';
 
 // Import slot system and API
@@ -447,32 +446,27 @@ const SlotsWorkspace = ({
         </div>
 
         <TabsContent value="simple" className="h-full">
-          <SimplifiedSlotsWorkspace
-            componentName={componentName}
-            userId={userId}
-            storeId={effectiveStoreId}
-            initialUserConfig={currentUserConfig}
+          <GenericSlotEditor
+            pageName={componentName}
             onSave={handleSlotSave}
             onCancel={onCancel}
           />
         </TabsContent>
 
         <TabsContent value="visual" className="h-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-            <VisualSlotManager
-              config={currentUserConfig}
-              componentName={componentName}
-              onChange={handleConfigurationChange}
-              availableSlots={componentDef.availableSlots}
-            />
-            <ConfigurationPreview
-              defaultConfig={defaultConfig}
-              userConfig={currentUserConfig}
-              componentName={componentName}
-              componentProps={componentDef.defaultProps}
-              storeContext={{ store: selectedStore }}
-              onError={handlePreviewError}
-            />
+          <div className="text-center p-8 bg-blue-50 rounded-lg border-2 border-blue-200">
+            <Settings className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Visual Mode Replaced</h3>
+            <p className="text-gray-600 mb-4">
+              Visual slot editing is now available in Simple Mode with the new generic architecture.
+            </p>
+            <Button 
+              onClick={() => setActiveTab('simple')}
+              className="flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              Switch to Simple Mode
+            </Button>
           </div>
         </TabsContent>
 

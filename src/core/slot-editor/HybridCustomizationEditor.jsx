@@ -26,7 +26,7 @@ import {
 
 // Import both editing systems
 import SlotsWorkspace from './SlotsWorkspace.jsx';
-import ImprovedCartSlottedEditor from './ImprovedCartSlottedEditor.jsx';
+import GenericSlotEditor from './GenericSlotEditor.jsx';
 import CodeEditor from '@/components/ai-context/CodeEditor.jsx';
 import { SlotConfiguration } from '@/api/entities';
 import { useStoreSelection } from '@/contexts/StoreSelectionContext';
@@ -317,17 +317,17 @@ const HybridCustomizationEditor = ({
   if (fileName === 'CartSlotted.jsx' || filePath.includes('CartSlotted')) {
     return (
       <div className={`hybrid-customization-editor ${className}`}>
-        <ImprovedCartSlottedEditor
+        <GenericSlotEditor
+          pageName="Cart"
           onSave={(data) => {
-            console.log('CartSlotted configuration saved:', data);
+            console.log('Cart slots configuration saved:', data);
             onSave({
-              type: 'cart_slots',
+              type: 'generic_slots',
               fileName: fileName,
               filePath: filePath,
-              mode: data.mode,
-              slotsConfig: data.activeSlots,
-              slotOrder: data.slotOrder,
-              code: data.cartCode
+              slotsFileCode: data.slotsFileCode,
+              slotDefinitions: data.slotDefinitions,
+              pageConfig: data.pageConfig
             });
           }}
           onCancel={onCancel}

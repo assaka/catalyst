@@ -1,6 +1,14 @@
 /**
- * Default Slot Components for Cart Page
- * These components replace the monolithic Cart structure with micro-slots
+ * CartSlots.jsx - SINGLE FILE FOR STORE OWNERS
+ * 
+ * This is the ONLY file you need to edit to customize your cart page.
+ * Everything is in one place: components, layouts, and slot definitions.
+ * 
+ * 🎯 DRAG & DROP: Change the order in "slotOrder" arrays
+ * 🎨 LAYOUTS: Choose layouts for each section  
+ * 📱 RESPONSIVE: Different layouts for mobile/desktop
+ * ✨ MICRO-SLOTS: Rearrange elements within cart items
+ * 🧩 COMPONENTS: Modify components directly in this file
  */
 
 import React from 'react';
@@ -11,6 +19,11 @@ import { Input } from '@/components/ui/input';
 import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
 import { formatDisplayPrice } from '@/utils/priceUtils';
 import { getStoreBaseUrl, getExternalStoreUrl } from '@/utils/urlUtils';
+import SlotWrapper from '@/core/slot-system/SlotWrapper.jsx';
+
+// =============================================================================
+// 🧩 CART COMPONENTS (Store owners can modify these)
+// =============================================================================
 
 // Cart page container
 export const CartPageContainer = ({ children, className = "bg-gray-50 cart-page" }) => (
@@ -281,3 +294,218 @@ export const CartGridLayout = ({ children, className = "lg:grid lg:grid-cols-3 l
     {children}
   </div>
 );
+
+// =============================================================================
+// 🎯 SLOT CONFIGURATION (Store owners customize this)
+// =============================================================================
+
+// Slot definitions - what can be rearranged
+export const CART_SLOT_DEFINITIONS = {
+  // Page structure slots
+  'cart-page-container': {
+    id: 'cart-page-container',
+    type: 'component',
+    component: CartPageContainer,
+    name: 'Page Container',
+    description: 'Main cart page wrapper'
+  },
+  
+  'cart-page-header': {
+    id: 'cart-page-header', 
+    type: 'component',
+    component: CartPageHeader,
+    name: 'Page Header',
+    description: 'Cart title and main heading'
+  },
+  
+  'cart-grid-layout': {
+    id: 'cart-grid-layout',
+    type: 'component', 
+    component: CartGridLayout,
+    name: 'Grid Layout',
+    description: 'Responsive grid container'
+  },
+  
+  // Content slots
+  'cart-items-container': {
+    id: 'cart-items-container',
+    type: 'component',
+    component: CartItemsContainer,
+    name: 'Items Container', 
+    description: 'Container for all cart items'
+  },
+  
+  'cart-item-single': {
+    id: 'cart-item-single',
+    type: 'component',
+    component: CartItem,
+    name: 'Individual Item',
+    description: 'Each product in the cart'
+  },
+  
+  'cart-sidebar': {
+    id: 'cart-sidebar',
+    type: 'component',
+    component: CartSidebar,
+    name: 'Sidebar Container',
+    description: 'Right sidebar container'
+  },
+  
+  'cart-coupon-section': {
+    id: 'cart-coupon-section',
+    type: 'component',
+    component: CouponSection,
+    name: 'Coupon Code',
+    description: 'Discount code input area'
+  },
+  
+  'cart-order-summary': {
+    id: 'cart-order-summary',
+    type: 'component', 
+    component: OrderSummary,
+    name: 'Order Summary',
+    description: 'Subtotal, tax, and total'
+  },
+  
+  'cart-checkout-button': {
+    id: 'cart-checkout-button',
+    type: 'component',
+    component: CheckoutButton,
+    name: 'Checkout Button', 
+    description: 'Primary checkout action'
+  },
+  
+  'cart-empty-display': {
+    id: 'cart-empty-display',
+    type: 'component',
+    component: EmptyCartDisplay,
+    name: 'Empty Cart Message',
+    description: 'Shown when cart has no items'
+  }
+};
+
+// =============================================================================
+// 🎨 LAYOUT CONFIGURATION (Store owners customize this)  
+// =============================================================================
+
+// 🎯 CHANGE SLOT ORDER HERE - This controls what appears and in what sequence
+export const CART_SLOT_ORDER = [
+  'cart-page-header',      // 1. Page title first
+  'cart-grid-layout',      // 2. Then main grid container
+  'cart-items-container',  // 3. Items list (left side)
+  'cart-sidebar',          // 4. Sidebar (right side)
+  'cart-order-summary',    // 5. Summary in sidebar  
+  'cart-coupon-section',   // 6. Coupon in sidebar
+  'cart-checkout-button'   // 7. Checkout button last
+];
+
+// 🎯 CART ITEM MICRO-SLOTS - Rearrange elements within each cart item
+export const CART_ITEM_LAYOUT = {
+  // Change this order to move button next to title!
+  elementOrder: [
+    'image',           // Product image
+    'details',         // Title, price, options
+    'quantity',        // Quantity controls  
+    'total',          // Item total price
+    'remove'          // Remove button
+    // To move button next to title, change to: ['image', 'title', 'quantity', 'price', 'total', 'remove']
+  ],
+  
+  layout: 'flex', // 'flex' | 'grid' | 'stack'
+  direction: 'row', // 'row' | 'column'  
+  gap: 4,
+  align: 'center'
+};
+
+// 🎯 SIDEBAR ORDER - Rearrange sidebar sections
+export const CART_SIDEBAR_ORDER = [
+  'cart-order-summary',    // Summary first
+  'cart-coupon-section',   // Coupon second
+  'cart-checkout-button'   // Button last
+];
+
+// Layout presets for quick switching
+export const CART_LAYOUT_PRESETS = {
+  'default': {
+    slotOrder: CART_SLOT_ORDER,
+    sidebarOrder: CART_SIDEBAR_ORDER,
+    itemLayout: CART_ITEM_LAYOUT
+  },
+  
+  'compact': {
+    slotOrder: [
+      'cart-page-header',
+      'cart-items-container', 
+      'cart-order-summary',
+      'cart-checkout-button'
+    ],
+    itemLayout: {
+      ...CART_ITEM_LAYOUT,
+      direction: 'column',
+      gap: 2
+    }
+  },
+  
+  'checkout-first': {
+    slotOrder: CART_SLOT_ORDER,
+    sidebarOrder: [
+      'cart-checkout-button',  // Button first!
+      'cart-order-summary',
+      'cart-coupon-section'
+    ],
+    itemLayout: CART_ITEM_LAYOUT
+  }
+};
+
+// =============================================================================
+// 🚀 MAIN CART COMPONENT (Uses SlotWrapper automatically)
+// =============================================================================
+
+const CartSlotted = (props) => {
+  const currentLayout = CART_LAYOUT_PRESETS.default; // Change to 'compact' or 'checkout-first'
+  
+  return (
+    <SlotWrapper
+      slotDefinitions={CART_SLOT_DEFINITIONS}
+      slotOrder={currentLayout.slotOrder}
+      layoutConfig={{
+        sidebarOrder: currentLayout.sidebarOrder,
+        itemLayout: currentLayout.itemLayout
+      }}
+      data={props.data || {}}
+      {...props}
+    />
+  );
+};
+
+export default CartSlotted;
+
+// =============================================================================
+// 📖 CUSTOMIZATION GUIDE
+// =============================================================================
+
+/**
+ * 🎯 HOW TO CUSTOMIZE YOUR CART:
+ * 
+ * 1. MOVE BUTTON NEXT TO PRODUCT TITLE:
+ *    Change CART_ITEM_LAYOUT.elementOrder to:
+ *    ['image', 'title', 'quantity', 'price', 'total', 'remove']
+ *    
+ * 2. REARRANGE MAIN SECTIONS:
+ *    Modify CART_SLOT_ORDER array - drag items up/down in the list
+ *    
+ * 3. REARRANGE SIDEBAR:
+ *    Change CART_SIDEBAR_ORDER to put checkout button first, etc.
+ *    
+ * 4. USE PRESET LAYOUTS:
+ *    Change `CART_LAYOUT_PRESETS.default` to `.compact` or `.checkout-first`
+ *    
+ * 5. MODIFY COMPONENTS:
+ *    Edit the component functions above (CartItem, OrderSummary, etc.)
+ *    
+ * 6. ADD NEW SLOTS:
+ *    Add to CART_SLOT_DEFINITIONS and CART_SLOT_ORDER
+ *    
+ * 7. CUSTOM LAYOUTS:
+ *    Modify layout objects (direction: 'column', gap: 2, etc.)
+ */
