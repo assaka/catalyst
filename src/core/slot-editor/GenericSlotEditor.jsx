@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { 
   Code, 
   Eye, 
@@ -19,7 +20,10 @@ import {
   Layout,
   FileCode,
   X,
-  Plus
+  Plus,
+  Tag,
+  ShoppingCart,
+  Minus
 } from 'lucide-react';
 
 import {
@@ -677,16 +681,219 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         setDraggedSlotId(null);
       };
       
+      // Render actual slot component or realistic preview
+      const renderSlotContent = () => {
+        // Try to render the actual component if available
+        const SlotComponent = definition.component;
+        
+        if (SlotComponent) {
+          try {
+            // Create mock props based on slot type for preview
+            const getMockProps = () => {
+              switch(slotId) {
+                case 'cart-page-header':
+                  return { title: "My Cart", className: "text-3xl font-bold text-gray-900 mb-8" };
+                  
+                case 'cart-empty-display':
+                  return { 
+                    title: "Your cart is empty",
+                    message: "Looks like you haven't added anything to your cart yet.",
+                    buttonText: "Continue Shopping"
+                  };
+                  
+                case 'cart-coupon-section':
+                  return {
+                    appliedCoupon: null,
+                    couponCode: '',
+                    currencySymbol: '$',
+                    onCouponCodeChange: () => {},
+                    onApplyCoupon: () => {},
+                    onRemoveCoupon: () => {},
+                    onKeyPress: () => {},
+                    safeToFixed: (val) => val?.toFixed(2) || '0.00'
+                  };
+                  
+                case 'cart-order-summary':
+                  return {
+                    subtotal: 89.99,
+                    discount: 0,
+                    tax: 9.00,
+                    total: 98.99,
+                    currencySymbol: '$',
+                    safeToFixed: (val) => val?.toFixed(2) || '0.00'
+                  };
+                  
+                case 'cart-checkout-button':
+                  return {
+                    onCheckout: () => console.log('Checkout clicked'),
+                    settings: { theme: { checkout_button_color: '#007bff' } },
+                    text: "Proceed to Checkout"
+                  };
+                  
+                case 'cart-item-single':
+                  return {
+                    item: { 
+                      id: 'preview-item',
+                      quantity: 2,
+                      price: 29.99,
+                      selected_options: [{ name: 'Color: Blue', price: 5.00 }]
+                    },
+                    product: {
+                      name: 'Sample Product',
+                      price: 29.99,
+                      images: ['https://placehold.co/100x100?text=Product']
+                    },
+                    currencySymbol: '$',
+                    formatPrice: (price) => parseFloat(price) || 0,
+                    calculateItemTotal: () => 64.98,
+                    onUpdateQuantity: () => {},
+                    onRemove: () => {}
+                  };
+                  
+                default:
+                  return {};
+              }
+            };
+            
+            // Render the actual component with preview props
+            const mockProps = getMockProps();
+            return (
+              <div className="relative">
+                <SlotComponent {...mockProps}>
+                  {definition.children}
+                </SlotComponent>
+                
+                {/* Overlay badge to show slot name */}
+                <div className="absolute top-1 right-1 z-20">
+                  <Badge variant="secondary" className="text-xs bg-blue-600 text-white shadow-md">
+                    {definition.name}
+                  </Badge>
+                </div>
+              </div>
+            );
+            
+          } catch (error) {
+            console.warn(`Error rendering component for slot ${slotId}:`, error);
+            // Fallback to static preview
+          }
+        }
+        
+        // Fallback static preview if component rendering fails
+        switch(slotId) {
+          case 'cart-page-header':
+            return (
+              <div className="relative">
+                <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
+                <Badge className="absolute top-0 right-0 text-xs bg-blue-600 text-white">{definition.name}</Badge>
+              </div>
+            );
+            
+          case 'cart-items-container':
+            return (
+              <div className="relative lg:col-span-2">
+                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                  <div className="flex items-center space-x-4 py-6 border-b border-gray-200">
+                    <img src="https://placehold.co/80x80?text=Product" alt="Product" className="w-20 h-20 object-cover rounded-lg" />
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold">Sample Product</h3>
+                      <p className="text-gray-600">$29.99 each</p>
+                      <div className="flex items-center space-x-3 mt-3">
+                        <Button size="sm" variant="outline"><Minus className="w-4 h-4" /></Button>
+                        <span className="text-lg font-semibold">2</span>
+                        <Button size="sm" variant="outline"><Plus className="w-4 h-4" /></Button>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xl font-bold">$59.98</p>
+                    </div>
+                  </div>
+                </div>
+                <Badge className="absolute top-2 right-2 text-xs bg-blue-600 text-white">{definition.name}</Badge>
+              </div>
+            );
+            
+          case 'cart-coupon-section':
+            return (
+              <div className="relative">
+                <Card>
+                  <CardHeader><CardTitle>Apply Coupon</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="flex space-x-2">
+                      <Input placeholder="Enter coupon code" className="flex-1" />
+                      <Button><Tag className="w-4 h-4 mr-2" />Apply</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Badge className="absolute top-2 right-2 text-xs bg-blue-600 text-white">{definition.name}</Badge>
+              </div>
+            );
+            
+          case 'cart-order-summary':
+            return (
+              <div className="relative">
+                <Card>
+                  <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between"><span>Subtotal</span><span>$89.99</span></div>
+                    <div className="flex justify-between"><span>Tax</span><span>$9.00</span></div>
+                    <div className="flex justify-between text-lg font-semibold border-t pt-4">
+                      <span>Total</span><span>$98.99</span>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Badge className="absolute top-2 right-2 text-xs bg-blue-600 text-white">{definition.name}</Badge>
+              </div>
+            );
+            
+          case 'cart-checkout-button':
+            return (
+              <div className="relative border-t mt-6 pt-6">
+                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                  Proceed to Checkout
+                </Button>
+                <Badge className="absolute top-0 right-0 text-xs bg-blue-600 text-white">{definition.name}</Badge>
+              </div>
+            );
+            
+          case 'cart-empty-display':
+            return (
+              <div className="relative">
+                <Card>
+                  <CardContent className="text-center py-12">
+                    <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
+                    <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                    <Button>Continue Shopping</Button>
+                  </CardContent>
+                </Card>
+                <Badge className="absolute top-2 right-2 text-xs bg-blue-600 text-white">{definition.name}</Badge>
+              </div>
+            );
+            
+          default:
+            return (
+              <div className="p-4 bg-white rounded-lg border-2 border-dashed border-gray-300 relative">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{visual.icon}</span>
+                  <span className="font-medium text-sm">{definition.name}</span>
+                </div>
+                <p className="text-xs text-gray-500">{definition.description}</p>
+                <div className="text-xs text-gray-400 font-mono mt-1">{slotId}</div>
+                <Badge className="absolute top-1 right-1 text-xs bg-blue-600 text-white">{definition.name}</Badge>
+              </div>
+            );
+        }
+      };
+      
       return (
         <div
           key={slotId}
           draggable={isDraggable}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          className={`relative border-2 rounded-lg p-4 m-2 transition-all duration-200 cursor-move
-            ${visual.color} 
+          className={`relative transition-all duration-200 cursor-move
             ${isEnabled ? 'opacity-100' : 'opacity-50'} 
-            ${isDraggable ? 'hover:shadow-xl hover:-translate-y-1 hover:scale-105 active:scale-95 active:opacity-80' : ''}
+            ${isDraggable ? 'hover:shadow-lg hover:-translate-y-0.5' : ''}
             ${isBeingDragged ? 'opacity-40 scale-95 rotate-1 shadow-2xl' : ''}`}
           style={{
             ...style,
@@ -697,40 +904,25 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         >
           {/* Drag Handle for draggable slots */}
           {isDraggable && (
-            <div className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 pointer-events-none">
+            <div className="absolute -top-1 -right-1 z-10 bg-white rounded-full shadow-lg p-1">
               {isBeingDragged ? (
                 <Badge variant="secondary" className="text-xs animate-pulse">
-                  Moving...
+                  <GripVertical className="w-3 h-3 mr-1" />
+                  Moving
                 </Badge>
               ) : (
-                <GripVertical className="w-4 h-4" />
+                <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
               )}
             </div>
           )}
-          
-          {/* Slot Order Indicator */}
-          <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${visual.textColor.replace('text-', 'bg-')} text-white text-xs font-bold flex items-center justify-center shadow-lg`}>
-            {index + 1}
-          </div>
 
-          {/* Slot Content */}
-          <div className="flex items-center gap-3">
-            <div className="text-2xl">{visual.icon}</div>
-            <div className="flex-1">
-              <h4 className={`font-semibold ${visual.textColor}`}>
-                {definition.name || slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-              </h4>
-              <p className="text-sm text-gray-600 mt-1">
-                {definition.description || `${definition.type} slot`}
-              </p>
-              <div className="text-xs text-gray-400 font-mono mt-1">{slotId}</div>
-            </div>
-          </div>
+          {/* Slot Content with realistic styling */}
+          {renderSlotContent()}
 
           {/* Disabled overlay */}
           {!isEnabled && (
-            <div className="absolute inset-0 bg-gray-200/50 rounded-lg flex items-center justify-center">
-              <span className="text-gray-500 font-semibold text-sm">DISABLED</span>
+            <div className="absolute inset-0 bg-gray-200/50 backdrop-blur-sm rounded-lg flex items-center justify-center">
+              <Badge variant="secondary" className="bg-gray-800 text-white">DISABLED</Badge>
             </div>
           )}
         </div>
