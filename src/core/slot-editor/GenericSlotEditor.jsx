@@ -58,6 +58,8 @@ const GenericSlotEditor = ({
   const [editingSlot, setEditingSlot] = useState(null);
   const [showSlotEditor, setShowSlotEditor] = useState(false);
   const [slotPositions, setSlotPositions] = useState({}); // Will store grid positions like { row: 2, col: 3 }
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedSlotId, setDraggedSlotId] = useState(null);
 
   // File paths - Support both legacy and schema-based files
   const slotsFilePath = `src/pages/${pageName}Slots.jsx`;
@@ -656,6 +658,8 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         if (!isDraggable) return;
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('slotId', slotId);
+        setIsDragging(true);
+        setDraggedSlotId(slotId);
         const rect = e.currentTarget.getBoundingClientRect();
         const offsetX = e.clientX - rect.left;
         const offsetY = e.clientY - rect.top;
@@ -668,6 +672,8 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       const handleDragEnd = (e) => {
         // Restore opacity after drag
         e.currentTarget.style.opacity = '';
+        setIsDragging(false);
+        setDraggedSlotId(null);
       };
       
       return (
@@ -680,7 +686,11 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             visual.color
           } ${isEnabled ? 'opacity-100' : 'opacity-50'} ${
             isDraggable ? 'hover:shadow-xl hover:scale-105 cursor-move' : ''
-          }`}
+          } ${draggedSlotId === slotId ? 'opacity-50 scale-95' : ''}`}
+          style={{
+            cursor: isDraggable ? 'move' : 'default',
+            userSelect: 'none'
+          }}
           style={style}
           title={isDraggable ? 'Drag to reposition' : ''}
         >
@@ -750,6 +760,9 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       const slotId = e.dataTransfer.getData('slotId');
       if (!slotId) return;
       
+      setIsDragging(false);
+      setDraggedSlotId(null);
+      
       const offsetX = parseInt(e.dataTransfer.getData('offsetX') || '0');
       const offsetY = parseInt(e.dataTransfer.getData('offsetY') || '0');
       
@@ -788,74 +801,169 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       e.preventDefault();
       e.stopPropagation();
       e.dataTransfer.dropEffect = 'move';
+      
+      // Add visual feedback for drop zones
+      const target = e.currentTarget;
+      if (target && isDragging) {
+        target.classList.add('drag-over');
+      }
+    };
+    
+    const handleDragLeave = (e) => {
+      const target = e.currentTarget;
+      if (target) {
+        target.classList.remove('drag-over');
+      }
     };
 
-    // Render layout structure
+    // Render layout structure - matching actual Cart.jsx layout
     const renderLayoutStructure = () => {
       const currentOrder = slotOrder.filter(id => slotDefinitions[id]);
 
       return (
         <div 
-          className="p-6 bg-white min-h-full relative"
+          className={`bg-gray-50 min-h-full relative ${
+            isDragging ? 'dragging-active' : ''
+          }`}
           onDrop={handleCanvasDrop}
           onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          style={{ position: 'relative' }}
         >
-          {/* Page Container - Drop Zone */}
-          <div 
-            className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 relative min-h-[600px]"
-            onDrop={handleCanvasDrop}
-            onDragOver={handleDragOver}
-            style={{ position: 'relative' }}
-          >
-            <div className="text-sm text-gray-500 mb-4 font-semibold">📦 Cart Page Layout (Drag slots to reposition)</div>
+          {/* Actual Cart Page Layout Structure from Cart.jsx */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             
-            {currentOrder.map((slotId, index) => {
-              // Special layout handling for grid structure
-              if (slotId === 'cart-grid-layout') {
-                return (
-                  <div key={slotId} className="mb-4">
-                    {renderSlotInLayout(slotId, index, true)}
-                    {/* Grid Content */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4 p-4 border-2 border-dashed border-purple-200 rounded-lg bg-purple-50/30">
-                      <div className="lg:col-span-2">
-                        {/* Items Container */}
-                        {currentOrder.includes('cart-items-container') && 
-                          renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'), true)
-                        }
-                      </div>
-                      <div className="lg:col-span-1">
-                        {/* Sidebar with nested slots */}
-                        <div className="space-y-4">
-                          {currentOrder.includes('cart-sidebar') && 
-                            renderSlotInLayout('cart-sidebar', currentOrder.indexOf('cart-sidebar'), true)
-                          }
-                          <div className="ml-4 space-y-2 border-l-2 border-green-200 pl-4">
-                            {currentOrder.includes('cart-order-summary') && 
-                              renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'), true)
-                            }
-                            {currentOrder.includes('cart-coupon-section') && 
-                              renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'), true)
-                            }
-                            {currentOrder.includes('cart-checkout-button') && 
-                              renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'), true)
-                            }
+            {/* Page Header */}
+            {currentOrder.includes('cart-page-header') && (
+              <div className="mb-8">
+                {renderSlotInLayout('cart-page-header', currentOrder.indexOf('cart-page-header'), true)}
+              </div>
+            )}
+            
+            {/* CMS Block Above Items */}
+            {currentOrder.includes('cart-cms-above') && (
+              <div className="mb-4">
+                {renderSlotInLayout('cart-cms-above', currentOrder.indexOf('cart-cms-above'), true)}
+              </div>
+            )}
+            
+            {/* Main Grid Layout - matching Cart.jsx lg:grid-cols-3 */}
+            <div 
+              className="lg:grid lg:grid-cols-3 lg:gap-8"
+              style={{
+                position: 'relative'
+              }}
+            >
+              {/* Left Column - Cart Items (lg:col-span-2) */}
+              <div 
+                className="lg:col-span-2"
+                onDrop={handleCanvasDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+              >
+                {/* Empty Cart Message */}
+                {currentOrder.includes('cart-empty-display') && (
+                  <div className="mb-4">
+                    {renderSlotInLayout('cart-empty-display', currentOrder.indexOf('cart-empty-display'), true)}
+                  </div>
+                )}
+                
+                {/* Cart Items Container */}
+                {currentOrder.includes('cart-items-container') && (
+                  <Card className="bg-white">
+                    <CardHeader>
+                      <CardTitle>Shopping Cart Items</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'), true)}
+                      
+                      {/* Individual Cart Items */}
+                      {currentOrder.includes('cart-item-single') && (
+                        <div className="space-y-4 mt-4">
+                          {/* Render sample cart items */}
+                          <div className="border-b pb-4">
+                            {renderSlotInLayout('cart-item-single', currentOrder.indexOf('cart-item-single'), true)}
                           </div>
                         </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+              
+              {/* Right Column - Order Summary (lg:col-span-1) */}
+              <div 
+                className="lg:col-span-1 space-y-6 mt-8 lg:mt-0"
+                onDrop={handleCanvasDrop}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+              >
+                <Card className="bg-white sticky top-4">
+                  <CardHeader>
+                    <CardTitle>Order Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Coupon Section */}
+                    {currentOrder.includes('cart-coupon-section') && (
+                      <div className="pb-4 border-b">
+                        {renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'), true)}
                       </div>
-                    </div>
-                  </div>
-                );
-              }
-              
-              // Skip slots that are rendered within grid-layout
-              if (['cart-items-container', 'cart-sidebar', 'cart-order-summary', 'cart-coupon-section', 'cart-checkout-button'].includes(slotId)) {
-                return null;
-              }
-              
-              // Regular slot rendering
-              return renderSlotInLayout(slotId, index, true);
-            })}
+                    )}
+                    
+                    {/* Order Summary Details */}
+                    {currentOrder.includes('cart-order-summary') && (
+                      <div className="space-y-2">
+                        {renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'), true)}
+                      </div>
+                    )}
+                    
+                    {/* CMS Block Above Total */}
+                    {currentOrder.includes('cart-cms-above-total') && (
+                      <div className="py-2">
+                        {renderSlotInLayout('cart-cms-above-total', currentOrder.indexOf('cart-cms-above-total'), true)}
+                      </div>
+                    )}
+                    
+                    {/* Checkout Button */}
+                    {currentOrder.includes('cart-checkout-button') && (
+                      <div className="pt-4 border-t">
+                        {renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'), true)}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+            
+            {/* Recommended Products Below Cart */}
+            {currentOrder.includes('cart-recommended-products') && (
+              <div className="mt-12">
+                {renderSlotInLayout('cart-recommended-products', currentOrder.indexOf('cart-recommended-products'), true)}
+              </div>
+            )}
           </div>
+          
+          {/* Grid Overlay for Drop Zones (visible on drag) */}
+          {isDragging && (
+            <div 
+              className="absolute inset-0 pointer-events-none z-10"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(12, 1fr)',
+                gridTemplateRows: 'repeat(auto-fill, 100px)',
+                gap: '1px',
+                background: 'rgba(59, 130, 246, 0.05)'
+              }}
+            >
+              {/* Grid cells for visual feedback */}
+              {Array.from({ length: 12 * 10 }, (_, i) => (
+                <div 
+                  key={i}
+                  className="border border-dashed border-blue-300 bg-blue-50/20 transition-all hover:bg-blue-100/30"
+                />
+              ))}
+            </div>
+          )}
         </div>
       );
     };
@@ -986,20 +1094,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
               Code
             </Button>
           </div>
-          
-          {/* Alternative: Simple select dropdown */}
-          <select
-            value={mode}
-            onChange={(e) => {
-              console.log('Mode changed to:', e.target.value);
-              setMode(e.target.value);
-            }}
-            className="px-3 py-2 border border-gray-300 rounded-md bg-white"
-          >
-            <option value="visual">Visual Mode</option>
-            <option value="code">Code Mode</option>
-          </select>
-          
+
           <div className="flex gap-2">
             <Button variant="outline" onClick={onCancel}>
               Cancel
@@ -1121,3 +1216,73 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
 };
 
 export default GenericSlotEditor;
+
+// Add custom styles for drag and drop
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    /* Drag and Drop Styles */
+    .dragging-active {
+      background: linear-gradient(to bottom, rgba(59, 130, 246, 0.02), rgba(59, 130, 246, 0.05));
+    }
+    
+    .drag-over {
+      background-color: rgba(59, 130, 246, 0.1) !important;
+      border: 2px dashed rgb(59, 130, 246) !important;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Draggable slot cursor and hover effects */
+    [draggable="true"] {
+      cursor: move !important;
+      transition: all 0.2s ease;
+    }
+    
+    [draggable="true"]:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    [draggable="true"]:active {
+      cursor: grabbing !important;
+      transform: scale(0.98);
+      opacity: 0.8;
+    }
+    
+    /* Grid overlay visual feedback */
+    .grid-overlay-active {
+      pointer-events: auto !important;
+    }
+    
+    .grid-cell-hover {
+      background-color: rgba(59, 130, 246, 0.2) !important;
+      border-color: rgb(59, 130, 246) !important;
+    }
+    
+    /* Layout preview container scrolling */
+    .layout-preview-container {
+      overflow-y: auto;
+      max-height: calc(100vh - 200px);
+    }
+    
+    /* Slot badge animations */
+    .slot-badge {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+  `;
+  
+  // Only add styles once
+  if (!document.getElementById('generic-slot-editor-styles')) {
+    style.id = 'generic-slot-editor-styles';
+    document.head.appendChild(style);
+  }
+}

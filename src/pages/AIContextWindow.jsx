@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
-import {Code, Diff, Download, Eye, Upload, RefreshCw, CheckCircle} from 'lucide-react';
+import {Code, Diff, Download, Eye, Upload, RefreshCw, CheckCircle, Maximize2, Minimize2} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FileTreeNavigator from '@/components/ai-context/FileTreeNavigator';
 import CodeEditor from '@/components/ai-context/CodeEditor';
@@ -137,6 +137,7 @@ const AIContextWindowPage = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishSuccess, setPublishSuccess] = useState(null);
   const [rollbackSuccess, setRollbackSuccess] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   // Auto-save debounce timer
   const autoSaveTimeoutRef = useRef(null);
@@ -811,45 +812,49 @@ export default ExampleComponent;`;
       {/* Main Content */}
       <div className="flex-1 min-h-0 overflow-hidden">
         <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-200px)] ">
-          {/* AI Context Window - First Column */}
-          <ResizablePanel
-            size={25}
-            minSize={15}
-            maxSize={30}
-          >
-            <AIContextWindow
-              sourceCode={sourceCode}
-              filePath={selectedFile?.path || ''}
-              onPatchGenerated={handlePatchGenerated}
-              onPreviewGenerated={handlePreviewGenerated}
-              className="h-full"
-            />
-          </ResizablePanel>
+          {/* AI Context Window - First Column - Hidden in fullscreen */}
+          {!isFullscreen && (
+            <>
+              <ResizablePanel
+                size={25}
+                minSize={15}
+                maxSize={30}
+              >
+                <AIContextWindow
+                  sourceCode={sourceCode}
+                  filePath={selectedFile?.path || ''}
+                  onPatchGenerated={handlePatchGenerated}
+                  onPreviewGenerated={handlePreviewGenerated}
+                  className="h-full"
+                />
+              </ResizablePanel>
 
-          <ResizableHandle />
+              <ResizableHandle />
 
-          {/* File Tree Navigator */}
+              {/* File Tree Navigator - Hidden in fullscreen */}
+              <ResizablePanel 
+                size={10}
+                minSize={10}
+                maxSize={15}
+              >
+                <FileTreeNavigator
+                  onFileSelect={handleFileSelect}
+                  selectedFile={selectedFile}
+                  modifiedFiles={modifiedFiles}
+                  onRefresh={handleFileTreeRefresh}
+                  className="h-[calc(100vh-200px)]"
+                />
+              </ResizablePanel>
+
+              <ResizableHandle />
+            </>
+          )}
+
+          {/* Code Editor and Preview Panel - Expands to full width in fullscreen */}
           <ResizablePanel 
-            size={10}
-            minSize={10}
-            maxSize={15}
-          >
-            <FileTreeNavigator
-              onFileSelect={handleFileSelect}
-              selectedFile={selectedFile}
-              modifiedFiles={modifiedFiles}
-              onRefresh={handleFileTreeRefresh}
-              className="h-[calc(100vh-200px)]"
-            />
-          </ResizablePanel>
-
-          <ResizableHandle />
-
-          {/* Code Editor and Preview Panel */}
-          <ResizablePanel 
-            size={60}
-            minSize={40}
-            maxSize={85}
+            size={isFullscreen ? 100 : 60}
+            minSize={isFullscreen ? 100 : 40}
+            maxSize={isFullscreen ? 100 : 85}
           >
             <div className="h-[calc(100vh-200px)] flex flex-col">
               {selectedFile ? (
@@ -916,6 +921,18 @@ export default ExampleComponent;`;
                       {modifiedFiles.includes(selectedFile.path) && (
                         <span className="w-2 h-2 bg-yellow-500 rounded-full" title="Modified" />
                       )}
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      {/* Fullscreen Toggle Button */}
+                      <button
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                        title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                      >
+                        {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                      </button>
+                      
                       {/* Download Button - Only show in Preview mode */}
                       {previewMode === 'live' && (
                         <button
