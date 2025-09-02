@@ -679,6 +679,16 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         e.currentTarget.style.opacity = '';
         setIsDragging(false);
         setDraggedSlotId(null);
+        
+        // Clean up any remaining drop indicators
+        document.querySelectorAll('.drop-indicator').forEach(indicator => {
+          indicator.remove();
+        });
+        
+        // Clean up container hover effects
+        document.querySelectorAll('.bg-blue-50\\/30').forEach(container => {
+          container.classList.remove('bg-blue-50/30');
+        });
       };
       
       // Render actual slot component or realistic preview
@@ -888,6 +898,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       return (
         <div
           key={slotId}
+          data-slot-id={slotId}
           draggable={isDraggable}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
@@ -951,7 +962,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       return '100%'; // default
     };
 
-    // Handle drop event for layout canvas - calculate grid position
+    // Handle drop event for layout canvas - reorder slots based on drop position
     const handleCanvasDrop = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -962,38 +973,62 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       setIsDragging(false);
       setDraggedSlotId(null);
       
-      const offsetX = parseInt(e.dataTransfer.getData('offsetX') || '0');
-      const offsetY = parseInt(e.dataTransfer.getData('offsetY') || '0');
-      
-      // Find the container element (the one with relative position)
-      const container = e.currentTarget.querySelector('.relative.border-2.border-dashed') || e.currentTarget;
+      // Get drop position relative to page layout
+      const container = e.currentTarget;
       const rect = container.getBoundingClientRect();
+      const y = e.clientY - rect.top;
       
-      const x = e.clientX - rect.left - offsetX;
-      const y = e.clientY - rect.top - offsetY;
+      // Find all slot elements in the current order
+      const slotElements = Array.from(container.querySelectorAll('[data-slot-id]'));
       
-      // Calculate grid position (12 column grid, rows of 100px height)
-      const GRID_COLS = 12;
-      const GRID_ROW_HEIGHT = 100;
-      const GRID_COL_WIDTH = rect.width / GRID_COLS;
+      // Determine where to insert based on Y position
+      let targetSlotId = null;
+      let insertPosition = 'after';
       
-      const gridCol = Math.round(x / GRID_COL_WIDTH);
-      const gridRow = Math.round(y / GRID_ROW_HEIGHT);
-      
-      console.log('Dropping slot:', slotId, 'at grid position:', { 
-        row: Math.max(0, gridRow), 
-        col: Math.max(0, Math.min(GRID_COLS - 1, gridCol))
-      });
-      
-      setSlotPositions(prev => ({
-        ...prev,
-        [slotId]: { 
-          row: Math.max(0, gridRow),
-          col: Math.max(0, Math.min(GRID_COLS - 1, gridCol)),
-          rowSpan: prev[slotId]?.rowSpan || 1,
-          colSpan: prev[slotId]?.colSpan || 3 // Default to 3 columns width
+      for (let i = 0; i < slotElements.length; i++) {
+        const element = slotElements[i];
+        const elementRect = element.getBoundingClientRect();
+        const elementY = elementRect.top - rect.top;
+        const elementMidpoint = elementY + (elementRect.height / 2);
+        
+        if (y < elementMidpoint) {
+          targetSlotId = element.getAttribute('data-slot-id');
+          insertPosition = 'before';
+          break;
+        } else if (i === slotElements.length - 1) {
+          targetSlotId = element.getAttribute('data-slot-id');
+          insertPosition = 'after';
         }
-      }));
+      }
+      
+      console.log('🎯 Dropping slot:', slotId, insertPosition, 'slot:', targetSlotId);
+      
+      // Reorder the slots based on drop position
+      if (targetSlotId && targetSlotId !== slotId) {
+        setSlotOrder(prevOrder => {
+          const currentIndex = prevOrder.indexOf(slotId);
+          const targetIndex = prevOrder.indexOf(targetSlotId);
+          
+          if (currentIndex === -1 || targetIndex === -1) return prevOrder;
+          
+          // Remove the dragged slot from current position
+          const newOrder = prevOrder.filter(id => id !== slotId);
+          
+          // Calculate insert index
+          let insertIndex;
+          if (insertPosition === 'before') {
+            insertIndex = targetIndex > currentIndex ? targetIndex - 1 : targetIndex;
+          } else {
+            insertIndex = targetIndex >= currentIndex ? targetIndex : targetIndex + 1;
+          }
+          
+          // Insert the slot at the new position
+          newOrder.splice(insertIndex, 0, slotId);
+          
+          console.log('🔄 Reordered slots:', newOrder);
+          return newOrder;
+        });
+      }
     };
     
     const handleDragOver = (e) => {
@@ -1002,16 +1037,58 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       e.dataTransfer.dropEffect = 'move';
       
       // Add visual feedback for drop zones
-      const target = e.currentTarget;
-      if (target && isDragging) {
-        target.classList.add('bg-blue-100/30', 'border-2', 'border-dashed', 'border-blue-400', 'shadow-xl');
+      if (isDragging) {
+        const container = e.currentTarget;
+        const rect = container.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        
+        // Find the closest slot element for drop indicator
+        const slotElements = Array.from(container.querySelectorAll('[data-slot-id]'));
+        
+        // Clear existing drop indicators
+        container.querySelectorAll('.drop-indicator').forEach(indicator => {
+          indicator.remove();
+        });
+        
+        // Find insertion point and add drop indicator
+        for (let i = 0; i < slotElements.length; i++) {
+          const element = slotElements[i];
+          const elementRect = element.getBoundingClientRect();
+          const elementY = elementRect.top - rect.top;
+          const elementMidpoint = elementY + (elementRect.height / 2);
+          
+          if (y < elementMidpoint) {
+            // Add drop indicator before this element
+            const indicator = document.createElement('div');
+            indicator.className = 'drop-indicator absolute w-full h-1 bg-blue-500 rounded z-50 shadow-lg';
+            indicator.style.top = (elementY - 2) + 'px';
+            indicator.style.left = '0px';
+            container.appendChild(indicator);
+            break;
+          } else if (i === slotElements.length - 1) {
+            // Add drop indicator after the last element
+            const indicator = document.createElement('div');
+            indicator.className = 'drop-indicator absolute w-full h-1 bg-blue-500 rounded z-50 shadow-lg';
+            indicator.style.top = (elementY + elementRect.height + 2) + 'px';
+            indicator.style.left = '0px';
+            container.appendChild(indicator);
+            break;
+          }
+        }
+        
+        // Add general hover effect to container
+        container.classList.add('bg-blue-50/30');
       }
     };
     
     const handleDragLeave = (e) => {
       const target = e.currentTarget;
       if (target) {
-        target.classList.remove('bg-blue-100/30', 'border-2', 'border-dashed', 'border-blue-400', 'shadow-xl');
+        // Remove drop indicators
+        target.querySelectorAll('.drop-indicator').forEach(indicator => {
+          indicator.remove();
+        });
+        target.classList.remove('bg-blue-50/30');
       }
     };
 
