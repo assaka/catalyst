@@ -101,47 +101,109 @@ const GenericSlotEditor = ({
     loadSlotsFile();
   }, [pageName, slotsFilePath]);
 
-  // Parse slot definitions from code
+  // Parse slot definitions from code using regex (more reliable than eval)
   const parseSlotDefinitions = async (code) => {
     try {
-      // Create a temporary module to extract exports
-      const tempModule = {};
       const pagePrefix = pageName.toUpperCase();
-      const moduleCode = code + `
-        // Try different naming patterns for slot definitions
-        if (typeof ${pagePrefix}_SLOT_DEFINITIONS !== 'undefined') {
-          tempModule.SLOT_DEFINITIONS = ${pagePrefix}_SLOT_DEFINITIONS;
+      
+      // Extract SLOT_DEFINITIONS using regex
+      const slotDefRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_SLOT_DEFINITIONS\\s*=\\s*\\{([\\s\\S]*?)\\};`, 'gm');
+      const slotDefMatch = slotDefRegex.exec(code);
+      
+      // Extract SLOT_ORDER using regex  
+      const slotOrderRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_SLOT_ORDER\\s*=\\s*\\[([\\s\\S]*?)\\];`, 'gm');
+      const slotOrderMatch = slotOrderRegex.exec(code);
+      
+      // Extract LAYOUT_PRESETS using regex
+      const layoutPresetsRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_LAYOUT_PRESETS\\s*=\\s*\\{([\\s\\S]*?)\\};`, 'gm');
+      const layoutPresetsMatch = layoutPresetsRegex.exec(code);
+      
+      if (slotDefMatch) {
+        // Parse the slot definitions manually
+        const slotDefContent = slotDefMatch[1];
+        const mockDefinitions = {};
+        
+        // Extract each slot definition using regex
+        const slotRegex = /['"`]([^'"`]+)['"`]\s*:\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g;
+        let slotMatch;
+        
+        while ((slotMatch = slotRegex.exec(slotDefContent)) !== null) {
+          const slotId = slotMatch[1];
+          const slotContent = slotMatch[2];
+          
+          // Extract basic properties
+          const typeMatch = /type\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+          const nameMatch = /name\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+          const descMatch = /description\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+          
+          mockDefinitions[slotId] = {
+            id: slotId,
+            type: typeMatch ? typeMatch[1] : 'component',
+            name: nameMatch ? nameMatch[1] : slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            description: descMatch ? descMatch[1] : `${typeMatch ? typeMatch[1] : 'component'} slot`
+          };
         }
         
-        if (typeof ${pagePrefix}_SLOT_ORDER !== 'undefined') {
-          tempModule.SLOT_ORDER = ${pagePrefix}_SLOT_ORDER;
+        console.log('🔍 Parsed slot definitions:', mockDefinitions);
+        setSlotDefinitions(mockDefinitions);
+        
+        // Initialize slot order
+        const definitionKeys = Object.keys(mockDefinitions);
+        let parsedOrder = definitionKeys;
+        
+        if (slotOrderMatch) {
+          // Extract slot order array items
+          const orderContent = slotOrderMatch[1];
+          const orderItems = orderContent
+            .split(',')
+            .map(item => item.trim().replace(/['"`]/g, ''))
+            .filter(item => item && item !== '');
+          
+          if (orderItems.length > 0) {
+            parsedOrder = orderItems;
+          }
         }
         
-        if (typeof ${pagePrefix}_LAYOUT_PRESETS !== 'undefined') {
-          tempModule.LAYOUT_PRESETS = ${pagePrefix}_LAYOUT_PRESETS;
-        }
-      `;
-      
-      // Execute in sandbox (simplified for demo)
-      // In production, use a proper parser or require the module
-      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-      const parseFunction = new AsyncFunction('tempModule', moduleCode);
-      await parseFunction(tempModule);
-      
-      if (tempModule.SLOT_DEFINITIONS) {
-        setSlotDefinitions(tempModule.SLOT_DEFINITIONS);
-        // Initialize slot order from definitions if not provided
-        const definitionKeys = Object.keys(tempModule.SLOT_DEFINITIONS);
-        setSlotOrder(tempModule.SLOT_ORDER || definitionKeys);
-      }
-      if (tempModule.SLOT_ORDER || tempModule.LAYOUT_PRESETS) {
+        console.log('🔍 Parsed slot order:', parsedOrder);
+        setSlotOrder(parsedOrder);
+        
         setPageConfig({
-          slotOrder: tempModule.SLOT_ORDER || [],
-          layoutPresets: tempModule.LAYOUT_PRESETS || {}
+          slotOrder: parsedOrder,
+          layoutPresets: layoutPresetsMatch ? {} : {} // TODO: Parse layout presets if needed
         });
+      } else {
+        console.warn('⚠️ No slot definitions found in code');
+        // Create some default slots for demo
+        const defaultSlots = {
+          'page-header': {
+            id: 'page-header',
+            type: 'component',
+            name: 'Page Header',
+            description: 'Main page header section'
+          },
+          'main-content': {
+            id: 'main-content', 
+            type: 'container',
+            name: 'Main Content',
+            description: 'Primary content area'
+          }
+        };
+        setSlotDefinitions(defaultSlots);
+        setSlotOrder(Object.keys(defaultSlots));
       }
     } catch (error) {
       console.error('Error parsing slot definitions:', error);
+      
+      // Fallback to basic parsing
+      setSlotDefinitions({
+        'fallback-slot': {
+          id: 'fallback-slot',
+          type: 'component', 
+          name: 'Fallback Slot',
+          description: 'Default slot when parsing fails'
+        }
+      });
+      setSlotOrder(['fallback-slot']);
     }
   };
 
