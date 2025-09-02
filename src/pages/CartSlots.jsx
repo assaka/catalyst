@@ -35,7 +35,7 @@ export const SlotCartPageContainer = ({ children, className = "bg-gray-50 cart-p
 );
 
 // Slot: Cart page header
-export const SlotCartPageHeader = ({ title = "My Cart", className = "text-3xl font-bold text-gray-900 mb-8" }) => (
+export const SlotCartPageHeader = ({ title = "Your Cart", className = "text-3xl font-bold text-gray-900 mb-8" }) => (
   <h1 className={className}>{title}</h1>
 );
 
@@ -280,7 +280,7 @@ export const SlotCheckoutButton = ({
       onClick={onCheckout}
       style={{
         backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
-        color: '#FFFFFF',
+        color: '#f00',
       }}
     >
       {text}
