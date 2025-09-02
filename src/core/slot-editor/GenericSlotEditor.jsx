@@ -11,14 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Code, 
   Eye, 
-  Settings, 
-  ShoppingCart,
+  Settings,
   Save,
   RefreshCw,
   GripVertical,
   Wand2,
   ArrowUpDown,
-  Layout
+  Layout,
+  FileCode
 } from 'lucide-react';
 
 import {
@@ -56,8 +56,8 @@ const GenericSlotEditor = ({
   const [isLoading, setIsLoading] = useState(true);
   const [previewData, setPreviewData] = useState({});
 
-  // File paths
-  const slotsFilePath = `src/pages/slots/${pageName}PageSlots.jsx`;
+  // File paths - Updated for single-file architecture
+  const slotsFilePath = `src/pages/${pageName}Slots.jsx`;
   
   // Drag and drop sensors
   const sensors = useSensors(
@@ -100,12 +100,19 @@ const GenericSlotEditor = ({
     try {
       // Create a temporary module to extract exports
       const tempModule = {};
+      const pagePrefix = pageName.toUpperCase();
       const moduleCode = code + `
-        if (typeof CART_SLOT_DEFINITIONS !== 'undefined') {
-          tempModule.SLOT_DEFINITIONS = CART_SLOT_DEFINITIONS;
+        // Try different naming patterns for slot definitions
+        if (typeof ${pagePrefix}_SLOT_DEFINITIONS !== 'undefined') {
+          tempModule.SLOT_DEFINITIONS = ${pagePrefix}_SLOT_DEFINITIONS;
         }
-        if (typeof CART_PAGE_CONFIG !== 'undefined') {
-          tempModule.PAGE_CONFIG = CART_PAGE_CONFIG;  
+        
+        if (typeof ${pagePrefix}_SLOT_ORDER !== 'undefined') {
+          tempModule.SLOT_ORDER = ${pagePrefix}_SLOT_ORDER;
+        }
+        
+        if (typeof ${pagePrefix}_LAYOUT_PRESETS !== 'undefined') {
+          tempModule.LAYOUT_PRESETS = ${pagePrefix}_LAYOUT_PRESETS;
         }
       `;
       
@@ -118,8 +125,11 @@ const GenericSlotEditor = ({
       if (tempModule.SLOT_DEFINITIONS) {
         setSlotDefinitions(tempModule.SLOT_DEFINITIONS);
       }
-      if (tempModule.PAGE_CONFIG) {
-        setPageConfig(tempModule.PAGE_CONFIG);
+      if (tempModule.SLOT_ORDER || tempModule.LAYOUT_PRESETS) {
+        setPageConfig({
+          slotOrder: tempModule.SLOT_ORDER || [],
+          layoutPresets: tempModule.LAYOUT_PRESETS || {}
+        });
       }
     } catch (error) {
       console.error('Error parsing slot definitions:', error);
@@ -260,7 +270,8 @@ export const ${pageName.toUpperCase()}_PAGE_CONFIG = {
       <div className="h-full bg-gray-50 overflow-y-auto">
         <SlotWrapper
           slotDefinitions={slotDefinitions}
-          pageConfig={pageConfig}
+          slotOrder={pageConfig.slotOrder || Object.keys(slotDefinitions)}
+          layoutConfig={pageConfig.layoutPresets?.default || {}}
           data={previewData}
         />
       </div>
@@ -282,7 +293,7 @@ export const ${pageName.toUpperCase()}_PAGE_CONFIG = {
       <div className="flex items-center justify-between p-4 border-b bg-white">
         <div>
           <h1 className="text-xl font-semibold flex items-center gap-2">
-            <ShoppingCart className="w-6 h-6" />
+            <FileCode className="w-6 h-6" />
             {pageName} Page Editor
           </h1>
           <p className="text-sm text-gray-600">
