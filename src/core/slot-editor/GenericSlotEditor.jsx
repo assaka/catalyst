@@ -7,7 +7,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Code, 
   Eye, 
@@ -967,18 +966,26 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         
         <div className="flex items-center gap-3">
           {/* Mode Toggle */}
-          <Tabs value={mode} onValueChange={setMode}>
-            <TabsList>
-              <TabsTrigger value="visual" className="flex items-center gap-2">
-                <Wand2 className="w-4 h-4" />
-                Visual
-              </TabsTrigger>
-              <TabsTrigger value="code" className="flex items-center gap-2">
-                <Code className="w-4 h-4" />
-                Code
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-100">
+            <Button
+              variant={mode === 'visual' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('visual')}
+              className="flex items-center gap-2"
+            >
+              <Wand2 className="w-4 h-4" />
+              Visual
+            </Button>
+            <Button
+              variant={mode === 'code' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('code')}
+              className="flex items-center gap-2"
+            >
+              <Code className="w-4 h-4" />
+              Code
+            </Button>
+          </div>
           
           <div className="flex gap-2">
             <Button variant="outline" onClick={onCancel}>
