@@ -8,7 +8,7 @@ import CodeEditor from '@/components/ai-context/CodeEditor';
 import AIContextWindow from '@/components/ai-context/AIContextWindow';
 import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import VersionHistory from '@/components/ai-context/VersionHistory';
-import HybridCustomizationEditor from '@/core/slot-editor/HybridCustomizationEditor';
+import GenericSlotEditor from '@/core/slot-editor/GenericSlotEditor.jsx';
 import apiClient from '@/api/client';
 // Store context no longer needed - backend resolves store automatically
 // import { useStoreSelection } from '@/contexts/StoreSelectionContext';
@@ -963,27 +963,38 @@ export default ExampleComponent;`;
                         onDiffStatsChange={handleDiffStatsChange}
                       />
                     ) : (
-                      // Hybrid Customization Editor - Three-mode editor with scrollable content
+                      // Smart Editor Selection - GenericSlotEditor for slots files, CodeEditor for others
                       <div className="h-full overflow-y-auto">
-                        <HybridCustomizationEditor
-                          fileName={selectedFile.name}
-                          filePath={selectedFile.path}
-                          initialCode={sourceCode}
-                          language={getLanguageFromFileName(selectedFile.name)}
-                          onSave={(data) => {
-                            // Handle both slot configurations and code changes
-                            if (data.type === 'slot_config') {
-                              console.log('Slot configuration saved:', data);
-                            } else if (data.type === 'code_change') {
-                              handleCodeChange(data.modifiedCode);
-                            }
-                          }}
-                          onCancel={() => {
-                            // Switch back to code mode
-                            setPreviewMode('code');
-                          }}
-                          className="min-h-full"
-                        />
+                        {selectedFile.name.includes('Slots.jsx') || selectedFile.path.includes('Slots.jsx') ? (
+                          // This is a slots file - use GenericSlotEditor
+                          <GenericSlotEditor
+                            pageName={selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '')}
+                            onSave={(data) => {
+                              console.log(`${selectedFile.name} slots configuration saved:`, data);
+                              // Could handle saving here if needed
+                            }}
+                            onCancel={() => {
+                              setPreviewMode('code');
+                            }}
+                            className="min-h-full"
+                          />
+                        ) : (
+                          // Regular file - use CodeEditor
+                          <CodeEditor
+                            value={sourceCode}
+                            onChange={handleCodeChange}
+                            fileName={selectedFile.name}
+                            language={getLanguageFromFileName(selectedFile.name)}
+                            onCursorPositionChange={setCursorPosition}
+                            onSelectionChange={setSelection}
+                            onManualEdit={handleManualEdit}
+                            originalCode={originalCode}
+                            initialContent={originalCode}
+                            enableDiffDetection={true}
+                            enableTabs={true}
+                            className="h-full"
+                          />
+                        )}
                       </div>
                     )}
                   </div>
