@@ -54,7 +54,7 @@ const GenericSlotEditor = ({
   className = ''
 }) => {
   // State
-  const [mode, setMode] = useState('visual'); // 'visual' | 'code'
+  const [mode, setMode] = useState('layout'); // 'layout' | 'preview' | 'code'
   const [slotsFileCode, setSlotsFileCode] = useState('');
   const [slotDefinitions, setSlotDefinitions] = useState({});
   const [pageConfig, setPageConfig] = useState({});
@@ -612,7 +612,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
   };
 
   // Visual Layout Preview - shows slots as they appear in the actual layout
-  const LayoutPreview = () => {
+  const LayoutPreview = ({ isDraggable = false, showSettings = false } = {}) => {
     if (!slotDefinitions || Object.keys(slotDefinitions).length === 0) {
       return (
         <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
@@ -638,8 +638,8 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       return iconMap[slotDef.type] || iconMap.default;
     };
 
-    // Render individual slot in layout context with drag capability
-    const renderSlotInLayout = (slotId, index, isDraggable = false) => {
+    // Render individual slot in layout context
+    const renderSlotInLayout = (slotId, index) => {
       const definition = slotDefinitions[slotId];
       if (!definition) return null;
 
@@ -744,9 +744,9 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           draggable={isDraggable}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          className={`relative transition-all duration-200 cursor-move
+          className={`relative transition-all duration-200
             ${isEnabled ? 'opacity-100' : 'opacity-50'} 
-            ${isDraggable ? 'hover:shadow-lg hover:-translate-y-0.5' : ''}
+            ${isDraggable ? 'hover:shadow-lg hover:-translate-y-0.5 cursor-move' : 'cursor-default'}
             ${isBeingDragged ? 'opacity-40 scale-95 rotate-1 shadow-2xl' : ''}`}
           style={{
             ...style,
@@ -766,6 +766,20 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
               ) : (
                 <GripVertical className="w-4 h-4 text-gray-400 hover:text-gray-600" />
               )}
+            </div>
+          )}
+          
+          {/* Settings button for layout mode */}
+          {showSettings && (
+            <div className="absolute top-1 left-1 z-10">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0 bg-white/90 hover:bg-white shadow-sm"
+                onClick={() => handleSlotEdit(slotId)}
+              >
+                <Settings className="w-3 h-3" />
+              </Button>
             </div>
           )}
 
@@ -953,14 +967,14 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             {/* Page Header */}
             {currentOrder.includes('cart-page-header') && (
               <div className="mb-8">
-                {renderSlotInLayout('cart-page-header', currentOrder.indexOf('cart-page-header'), true)}
+                {renderSlotInLayout('cart-page-header', currentOrder.indexOf('cart-page-header'))}
               </div>
             )}
             
             {/* CMS Block Above Items */}
             {currentOrder.includes('cart-cms-above') && (
               <div className="mb-4">
-                {renderSlotInLayout('cart-cms-above', currentOrder.indexOf('cart-cms-above'), true)}
+                {renderSlotInLayout('cart-cms-above', currentOrder.indexOf('cart-cms-above'))}
               </div>
             )}
             
@@ -981,7 +995,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                 {/* Empty Cart Message */}
                 {currentOrder.includes('cart-empty-display') && (
                   <div className="mb-4">
-                    {renderSlotInLayout('cart-empty-display', currentOrder.indexOf('cart-empty-display'), true)}
+                    {renderSlotInLayout('cart-empty-display', currentOrder.indexOf('cart-empty-display'))}
                   </div>
                 )}
                 
@@ -992,14 +1006,14 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                       <CardTitle>Shopping Cart Items</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'), true)}
+                      {renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'))}
                       
                       {/* Individual Cart Items */}
                       {currentOrder.includes('cart-item-single') && (
                         <div className="space-y-4 mt-4">
                           {/* Render sample cart items */}
                           <div className="border-b pb-4">
-                            {renderSlotInLayout('cart-item-single', currentOrder.indexOf('cart-item-single'), true)}
+                            {renderSlotInLayout('cart-item-single', currentOrder.indexOf('cart-item-single'))}
                           </div>
                         </div>
                       )}
@@ -1023,28 +1037,28 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                     {/* Coupon Section */}
                     {currentOrder.includes('cart-coupon-section') && (
                       <div className="pb-4 border-b">
-                        {renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'), true)}
+                        {renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'))}
                       </div>
                     )}
                     
                     {/* Order Summary Details */}
                     {currentOrder.includes('cart-order-summary') && (
                       <div className="space-y-2">
-                        {renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'), true)}
+                        {renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'))}
                       </div>
                     )}
                     
                     {/* CMS Block Above Total */}
                     {currentOrder.includes('cart-cms-above-total') && (
                       <div className="py-2">
-                        {renderSlotInLayout('cart-cms-above-total', currentOrder.indexOf('cart-cms-above-total'), true)}
+                        {renderSlotInLayout('cart-cms-above-total', currentOrder.indexOf('cart-cms-above-total'))}
                       </div>
                     )}
                     
                     {/* Checkout Button */}
                     {currentOrder.includes('cart-checkout-button') && (
                       <div className="pt-4 border-t">
-                        {renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'), true)}
+                        {renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'))}
                       </div>
                     )}
                   </CardContent>
@@ -1055,7 +1069,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             {/* Recommended Products Below Cart */}
             {currentOrder.includes('cart-recommended-products') && (
               <div className="mt-12">
-                {renderSlotInLayout('cart-recommended-products', currentOrder.indexOf('cart-recommended-products'), true)}
+                {renderSlotInLayout('cart-recommended-products', currentOrder.indexOf('cart-recommended-products'))}
               </div>
             )}
           </div>
@@ -1198,19 +1212,31 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           {/* Mode Toggle */}
           <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-100">
             <Button
-              variant={mode === 'visual' ? 'default' : 'ghost'}
+              variant={mode === 'layout' ? 'default' : 'ghost'}
               size="sm"
-              onClick={() => setMode('visual')}
+              onClick={() => setMode('layout')}
               className="flex items-center gap-2"
+              title="Slot Layout Editor"
             >
-              <Wand2 className="w-4 h-4" />
-              Visual
+              <Layout className="w-4 h-4" />
+              Layout
+            </Button>
+            <Button
+              variant={mode === 'preview' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('preview')}
+              className="flex items-center gap-2"
+              title="Interactive Preview"
+            >
+              <Eye className="w-4 h-4" />
+              Preview
             </Button>
             <Button
               variant={mode === 'code' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setMode('code')}
               className="flex items-center gap-2"
+              title="Code Editor"
             >
               <Code className="w-4 h-4" />
               Code
@@ -1236,8 +1262,8 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
 
       {/* Main Content */}
       <div className="flex-1 min-h-0">
-        {mode === 'visual' ? (
-          /* VISUAL MODE: Drag & Drop + Preview */
+        {mode === 'layout' ? (
+          /* LAYOUT MODE: Visual Slot Editor with Draggable Positions */
           <div className="h-full grid grid-cols-1 xl:grid-cols-3 gap-4 p-4 overflow-auto">
             {/* Left: Slot Management */}
             <div className="xl:col-span-1">
@@ -1245,7 +1271,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
                     <ArrowUpDown className="w-5 h-5" />
-                    Slot Layout
+                    Slot Manager
                   </CardTitle>
                   <p className="text-sm text-gray-600">
                     Drag slots to rearrange your {pageName.toLowerCase()} page
@@ -1289,20 +1315,43 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
               </Card>
             </div>
             
-            {/* Right: Live Preview */}
+            {/* Right: Slot Layout Canvas (Draggable) */}
             <div className="xl:col-span-2">
               <Card className="h-full">
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Eye className="w-5 h-5" />
-                    Layout Preview
+                    <Layout className="w-5 h-5" />
+                    Slot Layout Editor
                   </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    Drag slots to position them. Click settings to edit properties.
+                  </p>
                 </CardHeader>
                 <CardContent className="p-0 h-full">
-                  <LayoutPreview />
+                  <LayoutPreview isDraggable={true} showSettings={true} />
                 </CardContent>
               </Card>
             </div>
+          </div>
+        ) : mode === 'preview' ? (
+          /* PREVIEW MODE: Interactive Full Page Preview */
+          <div className="h-full p-4">
+            <Card className="h-full">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Eye className="w-5 h-5" />
+                  Interactive Preview
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Interact with your {pageName.toLowerCase()} page components. Buttons, forms, and inputs are fully functional.
+                </p>
+              </CardHeader>
+              <CardContent className="p-0 h-full">
+                <div className="h-full overflow-auto bg-white">
+                  <LayoutPreview isDraggable={false} showSettings={false} />
+                </div>
+              </CardContent>
+            </Card>
           </div>
         ) : (
           /* CODE MODE: Direct File Editing */
