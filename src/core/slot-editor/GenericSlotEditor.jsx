@@ -151,32 +151,92 @@ const GenericSlotEditor = ({
     }
   };
 
-  // Create schema configuration from legacy code (migration helper)
+  // Create schema configuration from legacy code (enhanced to parse actual slots)
   const createSchemaFromLegacy = async (legacyCode) => {
-    console.log('🔄 Converting legacy code to schema-based configuration');
+    console.log('🔄 Converting legacy CartSlots.jsx to display format');
     
-    // For now, create a basic config - in the future this could parse legacy format
-    const basicSlots = {
-      'page-header': {
-        id: 'page-header',
-        type: 'component',
-        name: 'Page Header',
-        description: 'Main page header'
-      },
-      'main-content': {
-        id: 'main-content',
-        type: 'container', 
-        name: 'Main Content',
-        description: 'Primary content area'
+    try {
+      const pagePrefix = pageName.toUpperCase();
+      
+      // Extract SLOT_DEFINITIONS using regex
+      const slotDefRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_SLOT_DEFINITIONS\\s*=\\s*\\{([\\s\\S]*?)\\};`, 'gm');
+      const slotDefMatch = slotDefRegex.exec(legacyCode);
+      
+      // Extract SLOT_ORDER using regex  
+      const slotOrderRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_SLOT_ORDER\\s*=\\s*\\[([\\s\\S]*?)\\];`, 'gm');
+      const slotOrderMatch = slotOrderRegex.exec(legacyCode);
+      
+      if (slotDefMatch) {
+        // Parse the slot definitions manually
+        const slotDefContent = slotDefMatch[1];
+        const parsedDefinitions = {};
+        
+        // Extract each slot definition using regex
+        const slotRegex = /['"`]([^'"`]+)['"`]\s*:\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g;
+        let slotMatch;
+        
+        while ((slotMatch = slotRegex.exec(slotDefContent)) !== null) {
+          const slotId = slotMatch[1];
+          const slotContent = slotMatch[2];
+          
+          // Extract basic properties
+          const typeMatch = /type\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+          const nameMatch = /name\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+          const descMatch = /description\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+          
+          parsedDefinitions[slotId] = {
+            id: slotId,
+            type: typeMatch ? typeMatch[1] : 'component',
+            name: nameMatch ? nameMatch[1] : slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            description: descMatch ? descMatch[1] : `${typeMatch ? typeMatch[1] : 'component'} slot`,
+            enabled: true,
+            required: true // Assume legacy slots are required
+          };
+        }
+        
+        console.log('🎯 Parsed actual cart slot definitions:', parsedDefinitions);
+        setSlotDefinitions(parsedDefinitions);
+        
+        // Parse slot order
+        let parsedOrder = Object.keys(parsedDefinitions);
+        
+        if (slotOrderMatch) {
+          // Extract slot order array items, handling comments
+          const orderContent = slotOrderMatch[1];
+          const orderItems = orderContent
+            .split(',')
+            .map(item => {
+              // Remove comments and whitespace
+              const cleanItem = item.replace(/\/\/.*$/, '').trim().replace(/['"`]/g, '');
+              return cleanItem;
+            })
+            .filter(item => item && item !== '');
+          
+          console.log('🎯 Parsed actual slot order:', orderItems);
+          
+          if (orderItems.length > 0) {
+            parsedOrder = orderItems;
+          }
+        }
+        
+        setSlotOrder(parsedOrder);
+        setPageConfig({
+          slotOrder: parsedOrder,
+          layoutPresets: {}
+        });
+        
+        console.log('✅ Successfully loaded', Object.keys(parsedDefinitions).length, 'cart slots');
+        
+      } else {
+        // Fallback if no slot definitions found
+        console.warn('⚠️ No CART_SLOT_DEFINITIONS found, creating fallback');
+        await createDefaultSchemaConfig();
       }
-    };
-    
-    setSlotDefinitions(basicSlots);
-    setSlotOrder(Object.keys(basicSlots));
-    setPageConfig({
-      slotOrder: Object.keys(basicSlots),
-      layoutPresets: {}
-    });
+      
+    } catch (error) {
+      console.error('❌ Error parsing legacy cart slots:', error);
+      await createDefaultSchemaConfig();
+    }
   };
 
   // Create default schema-based configuration
