@@ -69,35 +69,6 @@ const GenericSlotEditor = ({
     })
   );
 
-  // Load schema-based slot configuration
-  useEffect(() => {
-    const loadSlotConfig = async () => {
-      setIsLoading(true);
-      try {
-        // Try to load schema-based configuration first
-        const configData = await apiClient.get(`extensions/baseline/${encodeURIComponent(configFilePath)}`);
-        
-        if (configData && configData.success && configData.data.hasBaseline) {
-          const configCode = configData.data.baselineCode;
-          setSlotsFileCode(configCode);
-          
-          // Load the schema-based configuration
-          await loadSchemaConfiguration(configCode);
-        } else {
-          console.log('No schema config found, creating default config');
-          await createDefaultSchemaConfig();
-        }
-      } catch (error) {
-        console.error('Error loading slot configuration:', error);
-        await createDefaultSchemaConfig();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSlotConfig();
-  }, [pageName, configFilePath, loadSchemaConfiguration]);
-
   // Load schema-based configuration from code
   const loadSchemaConfiguration = useCallback(async (configCode) => {
     try {
@@ -133,11 +104,39 @@ const GenericSlotEditor = ({
       console.error('Error loading schema configuration:', error);
       await createDefaultSchemaConfig();
     }
-  }, []);
+  }, [createDefaultSchemaConfig]);
 
+  // Load schema-based slot configuration
+  useEffect(() => {
+    const loadSlotConfig = async () => {
+      setIsLoading(true);
+      try {
+        // Try to load schema-based configuration first
+        const configData = await apiClient.get(`extensions/baseline/${encodeURIComponent(configFilePath)}`);
+        
+        if (configData && configData.success && configData.data.hasBaseline) {
+          const configCode = configData.data.baselineCode;
+          setSlotsFileCode(configCode);
+          
+          // Load the schema-based configuration
+          await loadSchemaConfiguration(configCode);
+        } else {
+          console.log('No schema config found, creating default config');
+          await createDefaultSchemaConfig();
+        }
+      } catch (error) {
+        console.error('Error loading slot configuration:', error);
+        await createDefaultSchemaConfig();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSlotConfig();
+  }, [pageName, configFilePath, loadSchemaConfiguration, createDefaultSchemaConfig]);
 
   // Create default schema-based configuration
-  const createDefaultSchemaConfig = async () => {
+  const createDefaultSchemaConfig = useCallback(async () => {
     const defaultSlots = {
       'page-root': {
         id: 'page-root',
@@ -172,7 +171,7 @@ const GenericSlotEditor = ({
     });
     
     console.log('📝 Created default schema configuration');
-  };
+  }, []);
 
   // Generate sortable slot items from definitions in order
   const sortableSlots = useMemo(() => {
