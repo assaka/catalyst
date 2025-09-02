@@ -318,10 +318,23 @@ const GenericSlotEditor = ({
                 layoutPresets: slotsModule.CART_LAYOUT_PRESETS || {}
               });
               
-              // Load saved grid positions from slot definitions
+              // Load saved positions from slot definitions
               const savedPositions = {};
               Object.entries(slotsModule.CART_SLOT_DEFINITIONS).forEach(([slotId, def]) => {
-                if (def.gridPosition) {
+                if (def.position) {
+                  savedPositions[slotId] = def.position.absolute ? {
+                    x: def.position.x,
+                    y: def.position.y,
+                    absolute: true,
+                    width: def.position.width
+                  } : {
+                    row: def.position.row || 0,
+                    col: def.position.col || 0,
+                    rowSpan: def.position.rowSpan || 1,
+                    colSpan: def.position.colSpan || 1
+                  };
+                } else if (def.gridPosition) {
+                  // Backwards compatibility
                   savedPositions[slotId] = {
                     row: def.gridPosition.row,
                     col: def.gridPosition.col,
@@ -407,18 +420,24 @@ const GenericSlotEditor = ({
     return result;
   }, [slotOrder, slotDefinitions]);
 
-  // Merge grid positions into slot definitions for saving
+  // Merge positions into slot definitions for saving
   const mergePositionsIntoDefinitions = useCallback(() => {
     const merged = { ...slotDefinitions };
     Object.keys(slotPositions).forEach(slotId => {
       if (merged[slotId] && slotPositions[slotId]) {
+        const pos = slotPositions[slotId];
         merged[slotId] = {
           ...merged[slotId],
-          gridPosition: {
-            row: slotPositions[slotId].row,
-            col: slotPositions[slotId].col,
-            rowSpan: slotPositions[slotId].rowSpan || 1,
-            colSpan: slotPositions[slotId].colSpan || 1
+          position: pos.absolute ? {
+            x: pos.x,
+            y: pos.y,
+            absolute: true,
+            width: pos.width
+          } : {
+            row: pos.row,
+            col: pos.col,
+            rowSpan: pos.rowSpan || 1,
+            colSpan: pos.colSpan || 1
           }
         };
       }
@@ -748,18 +767,37 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         e.dataTransfer.setData('slotId', slotId);
         setIsDragging(true);
         setDraggedSlotId(slotId);
+        
+        // Calculate offset from the drag point to the element's top-left corner
         const rect = e.currentTarget.getBoundingClientRect();
         const offsetX = e.clientX - rect.left;
         const offsetY = e.clientY - rect.top;
         e.dataTransfer.setData('offsetX', offsetX.toString());
         e.dataTransfer.setData('offsetY', offsetY.toString());
-        // Add visual feedback
-        e.currentTarget.style.opacity = '0.5';
+        
+        // Create a custom drag image
+        const dragImage = e.currentTarget.cloneNode(true);
+        dragImage.style.position = 'absolute';
+        dragImage.style.top = '-9999px';
+        dragImage.style.opacity = '0.8';
+        dragImage.style.transform = 'rotate(2deg)';
+        document.body.appendChild(dragImage);
+        e.dataTransfer.setDragImage(dragImage, offsetX, offsetY);
+        
+        // Clean up drag image after a short delay
+        setTimeout(() => {
+          document.body.removeChild(dragImage);
+        }, 0);
+        
+        // Add visual feedback to original element
+        e.currentTarget.style.opacity = '0.4';
+        e.currentTarget.style.transform = 'scale(0.95)';
       };
       
       const handleDragEnd = (e) => {
-        // Restore opacity after drag
+        // Restore visual state
         e.currentTarget.style.opacity = '';
+        e.currentTarget.style.transform = '';
         setIsDragging(false);
         setDraggedSlotId(null);
         
@@ -909,6 +947,61 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
 
           {/* Slot Content */}
           {renderSlotContent()}
+
+          {/* Resize handles for positioned slots */}
+          {isDraggable && isEnabled && position?.absolute && (
+            <>
+              {/* Resize handle - bottom right */}
+              <div 
+                className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 rounded-tl-md cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  
+                  const startX = e.clientX;
+                  const startY = e.clientY;
+                  const startWidth = e.currentTarget.parentElement.offsetWidth;
+                  const startHeight = e.currentTarget.parentElement.offsetHeight;
+                  
+                  const handleMouseMove = (moveEvent) => {
+                    const deltaX = moveEvent.clientX - startX;
+                    const deltaY = moveEvent.clientY - startY;
+                    
+                    const newWidth = Math.max(200, startWidth + deltaX);
+                    const newHeight = Math.max(100, startHeight + deltaY);
+                    
+                    // Update the element size directly
+                    e.currentTarget.parentElement.style.width = `${newWidth}px`;
+                    e.currentTarget.parentElement.style.height = `${newHeight}px`;
+                  };
+                  
+                  const handleMouseUp = () => {
+                    // Save the new size
+                    const finalWidth = e.currentTarget.parentElement.offsetWidth;
+                    const finalHeight = e.currentTarget.parentElement.offsetHeight;
+                    
+                    setSlotPositions(prev => ({
+                      ...prev,
+                      [slotId]: {
+                        ...prev[slotId],
+                        width: `${finalWidth}px`,
+                        height: `${finalHeight}px`
+                      }
+                    }));
+                    
+                    triggerAutoSave();
+                    
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                  };
+                  
+                  document.addEventListener('mousemove', handleMouseMove);
+                  document.addEventListener('mouseup', handleMouseUp);
+                }}
+                title="Resize"
+              />
+            </>
+          )}
 
           {/* Disabled overlay for layout mode only */}
           {!isEnabled && isDraggable && (
@@ -1072,147 +1165,113 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       }
     };
 
-    // Render layout structure - matching actual Cart.jsx layout
+    // Render layout structure - Free positioning grid layout
     const renderLayoutStructure = () => {
       const currentOrder = slotOrder.filter(id => slotDefinitions[id]);
 
+      // Handle drop on grid for free positioning
+      const handleGridDrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const slotId = e.dataTransfer.getData('slotId');
+        if (!slotId) return;
+        
+        const container = e.currentTarget;
+        const rect = container.getBoundingClientRect();
+        
+        // Get the offset from drag start
+        const offsetX = parseInt(e.dataTransfer.getData('offsetX') || '0');
+        const offsetY = parseInt(e.dataTransfer.getData('offsetY') || '0');
+        
+        // Calculate actual position accounting for drag offset
+        const x = e.clientX - rect.left - offsetX;
+        const y = e.clientY - rect.top - offsetY;
+        
+        // Update slot position
+        setSlotPositions(prev => ({
+          ...prev,
+          [slotId]: {
+            x: Math.max(0, x),
+            y: Math.max(0, y),
+            absolute: true
+          }
+        }));
+        
+        setIsDragging(false);
+        setDraggedSlotId(null);
+        
+        // Trigger auto-save
+        triggerAutoSave();
+      };
+
       return (
         <div 
-          className={`bg-gray-50 min-h-full relative transition-all duration-300 ${
+          className={`bg-gray-50 min-h-[800px] relative transition-all duration-300 ${
             isDragging ? 'bg-gradient-to-b from-blue-50/50 to-blue-100/30' : ''
           }`}
-          onDrop={handleCanvasDrop}
+          onDrop={handleGridDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
+          style={{ position: 'relative' }}
         >
-          {/* Actual Cart Page Layout Structure from Cart.jsx */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Free Positioning Container */}
+          <div className="relative w-full h-full min-h-[800px] p-8">
             
-            {/* Page Header */}
-            {currentOrder.includes('cart-page-header') && (
-              <div className="mb-8">
-                {renderSlotInLayout('cart-page-header', currentOrder.indexOf('cart-page-header'))}
-              </div>
-            )}
-            
-            {/* CMS Block Above Items */}
-            {currentOrder.includes('cart-cms-above') && (
-              <div className="mb-4">
-                {renderSlotInLayout('cart-cms-above', currentOrder.indexOf('cart-cms-above'))}
-              </div>
-            )}
-            
-            {/* Main Grid Layout - matching Cart.jsx lg:grid-cols-3 */}
-            <div 
-              className="lg:grid lg:grid-cols-3 lg:gap-8"
-              style={{
-                position: 'relative'
-              }}
-            >
-              {/* Left Column - Cart Items (lg:col-span-2) */}
-              <div 
-                className="lg:col-span-2"
-                onDrop={handleCanvasDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-              >
-                {/* Empty Cart Message */}
-                {currentOrder.includes('cart-empty-display') && (
-                  <div className="mb-4">
-                    {renderSlotInLayout('cart-empty-display', currentOrder.indexOf('cart-empty-display'))}
-                  </div>
-                )}
-                
-                {/* Cart Items Container */}
-                {currentOrder.includes('cart-items-container') && (
-                  <Card className="bg-white">
-                    <CardHeader>
-                      <CardTitle>Shopping Cart Items</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'))}
-                      
-                      {/* Individual Cart Items */}
-                      {currentOrder.includes('cart-item-single') && (
-                        <div className="space-y-4 mt-4">
-                          {/* Render sample cart items */}
-                          <div className="border-b pb-4">
-                            {renderSlotInLayout('cart-item-single', currentOrder.indexOf('cart-item-single'))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+            {/* Render all slots with absolute positioning if they have positions */}
+            {currentOrder.map((slotId, index) => {
+              const definition = slotDefinitions[slotId];
+              if (!definition) return null;
               
-              {/* Right Column - Order Summary (lg:col-span-1) */}
-              <div 
-                className="lg:col-span-1 space-y-6 mt-8 lg:mt-0"
-                onDrop={handleCanvasDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-              >
-                <Card className="bg-white sticky top-4">
-                  <CardHeader>
-                    <CardTitle>Order Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Coupon Section */}
-                    {currentOrder.includes('cart-coupon-section') && (
-                      <div className="pb-4 border-b">
-                        {renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'))}
-                      </div>
-                    )}
-                    
-                    {/* Order Summary Details */}
-                    {currentOrder.includes('cart-order-summary') && (
-                      <div className="space-y-2">
-                        {renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'))}
-                      </div>
-                    )}
-                    
-                    {/* CMS Block Above Total */}
-                    {currentOrder.includes('cart-cms-above-total') && (
-                      <div className="py-2">
-                        {renderSlotInLayout('cart-cms-above-total', currentOrder.indexOf('cart-cms-above-total'))}
-                      </div>
-                    )}
-                    
-                    {/* Checkout Button */}
-                    {currentOrder.includes('cart-checkout-button') && (
-                      <div className="pt-4 border-t">
-                        {renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-            
-            {/* Recommended Products Below Cart */}
-            {currentOrder.includes('cart-recommended-products') && (
-              <div className="mt-12">
-                {renderSlotInLayout('cart-recommended-products', currentOrder.indexOf('cart-recommended-products'))}
-              </div>
-            )}
+              const position = slotPositions[slotId];
+              const isEnabled = definition.enabled !== false;
+              
+              // Skip disabled slots in preview
+              if (!isEnabled && !isDraggable) return null;
+              
+              // Determine positioning style
+              const positionStyle = position?.absolute ? {
+                position: 'absolute',
+                left: `${position.x}px`,
+                top: `${position.y}px`,
+                width: position.width || 'auto',
+                height: position.height || 'auto',
+                minWidth: '200px',
+                minHeight: '100px',
+                zIndex: draggedSlotId === slotId ? 1000 : 10 + index
+              } : {
+                position: 'relative',
+                marginBottom: '16px',
+                width: '100%'
+              };
+              
+              return (
+                <div
+                  key={slotId}
+                  style={positionStyle}
+                >
+                  {renderSlotInLayout(slotId, index)}
+                </div>
+              );
+            })}
           </div>
           
           {/* Grid Overlay for Drop Zones (visible on drag) */}
           {isDragging && (
             <div 
-              className="absolute inset-0 pointer-events-none z-10 grid grid-cols-12 gap-px bg-blue-50/50"
+              className="absolute inset-0 pointer-events-none z-5"
               style={{
-                gridTemplateRows: 'repeat(auto-fill, 100px)'
+                backgroundImage: `
+                  repeating-linear-gradient(0deg, rgba(59, 130, 246, 0.1) 0px, transparent 1px, transparent 39px, rgba(59, 130, 246, 0.1) 40px),
+                  repeating-linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0px, transparent 1px, transparent 39px, rgba(59, 130, 246, 0.1) 40px)
+                `,
+                backgroundSize: '40px 40px'
               }}
             >
-              {/* Grid cells for visual feedback */}
-              {Array.from({ length: 12 * 10 }, (_, i) => (
-                <div 
-                  key={i}
-                  className="border border-dashed border-blue-300 bg-blue-50/20 transition-colors"
-                />
-              ))}
+              {/* Positioning guide */}
+              <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-md text-sm">
+                Drop anywhere to position
+              </div>
             </div>
           )}
         </div>
@@ -1392,15 +1451,31 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                       Drag slots to position them. Hover to see controls. Click settings to edit properties.
                     </p>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleAddNewSlot}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add New Slot
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        // Reset all positions to default layout
+                        setSlotPositions({});
+                        triggerAutoSave();
+                      }}
+                      className="flex items-center gap-2"
+                      title="Reset all slots to default positions"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Reset Layout
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleAddNewSlot}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add New Slot
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0 h-full">
