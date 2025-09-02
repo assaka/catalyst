@@ -629,8 +629,15 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         const rect = e.currentTarget.getBoundingClientRect();
         const offsetX = e.clientX - rect.left;
         const offsetY = e.clientY - rect.top;
-        e.dataTransfer.setData('offsetX', offsetX);
-        e.dataTransfer.setData('offsetY', offsetY);
+        e.dataTransfer.setData('offsetX', offsetX.toString());
+        e.dataTransfer.setData('offsetY', offsetY.toString());
+        // Add visual feedback
+        e.currentTarget.style.opacity = '0.5';
+      };
+      
+      const handleDragEnd = (e) => {
+        // Restore opacity after drag
+        e.currentTarget.style.opacity = '';
       };
       
       return (
@@ -638,16 +645,18 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           key={slotId}
           draggable={isDraggable}
           onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
           className={`relative border-2 rounded-lg p-4 m-2 transition-all duration-200 ${
             visual.color
           } ${isEnabled ? 'opacity-100' : 'opacity-50'} ${
-            isDraggable ? 'hover:shadow-xl hover:scale-105' : ''
+            isDraggable ? 'hover:shadow-xl hover:scale-105 cursor-move' : ''
           }`}
           style={style}
+          title={isDraggable ? 'Drag to reposition' : ''}
         >
           {/* Drag Handle for draggable slots */}
           {isDraggable && (
-            <div className="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+            <div className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 pointer-events-none">
               <GripVertical className="w-4 h-4" />
             </div>
           )}
@@ -706,22 +715,32 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
     // Handle drop event for layout canvas
     const handleCanvasDrop = (e) => {
       e.preventDefault();
-      const slotId = e.dataTransfer.getData('slotId');
-      const offsetX = parseInt(e.dataTransfer.getData('offsetX'));
-      const offsetY = parseInt(e.dataTransfer.getData('offsetY'));
+      e.stopPropagation();
       
-      const rect = e.currentTarget.getBoundingClientRect();
+      const slotId = e.dataTransfer.getData('slotId');
+      if (!slotId) return;
+      
+      const offsetX = parseInt(e.dataTransfer.getData('offsetX') || '0');
+      const offsetY = parseInt(e.dataTransfer.getData('offsetY') || '0');
+      
+      // Find the container element (the one with relative position)
+      const container = e.currentTarget.querySelector('.relative.border-2.border-dashed') || e.currentTarget;
+      const rect = container.getBoundingClientRect();
+      
       const x = e.clientX - rect.left - offsetX;
       const y = e.clientY - rect.top - offsetY;
       
+      console.log('Dropping slot:', slotId, 'at position:', { x, y });
+      
       setSlotPositions(prev => ({
         ...prev,
-        [slotId]: { x, y }
+        [slotId]: { x: Math.max(0, x), y: Math.max(0, y) }
       }));
     };
     
     const handleDragOver = (e) => {
       e.preventDefault();
+      e.stopPropagation();
       e.dataTransfer.dropEffect = 'move';
     };
 
@@ -735,8 +754,13 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           onDrop={handleCanvasDrop}
           onDragOver={handleDragOver}
         >
-          {/* Page Container */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 relative">
+          {/* Page Container - Drop Zone */}
+          <div 
+            className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 relative min-h-[600px]"
+            onDrop={handleCanvasDrop}
+            onDragOver={handleDragOver}
+            style={{ position: 'relative' }}
+          >
             <div className="text-sm text-gray-500 mb-4 font-semibold">📦 Cart Page Layout (Drag slots to reposition)</div>
             
             {currentOrder.map((slotId, index) => {
