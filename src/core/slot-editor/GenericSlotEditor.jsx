@@ -1359,7 +1359,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                   console.debug('Parsing in progress...', error);
                 }
               }}
-              fileName={`${editingSlot.id}.jsx`}
+              fileName={`${editingSlot.id.replace(/[^a-zA-Z0-9_]/g, '_')}.jsx`}
               language="javascript"
               className="h-full"
             />
@@ -1523,7 +1523,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                     setSlotsFileCode(newCode);
                     triggerAutoSave();
                   }}
-                  fileName={`${pageName}PageSlots.jsx`}
+                  fileName={`${pageName.replace(/[^a-zA-Z0-9_]/g, '_')}PageSlots.jsx`}
                   language="javascript"
                   className="h-full"
                 />
