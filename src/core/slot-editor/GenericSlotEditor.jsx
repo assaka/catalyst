@@ -1306,87 +1306,34 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       <div className="flex-1 min-h-0">
         {mode === 'layout' ? (
           /* LAYOUT MODE: Visual Slot Editor with Draggable Positions */
-          <div className="h-full grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 overflow-auto">
-            {/* Left: Slot Management - Made more prominent */}
-            <div className="lg:col-span-2">
-              <Card className="h-full border-2 border-blue-100 shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <ArrowUpDown className="w-5 h-5 text-blue-600" />
-                    Slot Manager
-                  </CardTitle>
-                  <p className="text-sm text-gray-600">
-                    Organize and configure your {pageName.toLowerCase()} page slots
-                  </p>
-                </CardHeader>
-                <CardContent className="p-4 h-full overflow-y-auto bg-gray-50/50">
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext 
-                      items={sortableSlots.map(s => s.id)} 
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-3">
-                        {sortableSlots.map((slot, index) => (
-                          <SortableSlotItem 
-                            key={slot.id} 
-                            slot={slot} 
-                            index={index}
-                            onEdit={handleSlotEdit}
-                            onToggle={handleSlotToggle}
-                            onDelete={handleSlotDelete}
-                          />
-                        ))}
-                        
-                        {/* Add New Slot Button */}
-                        <Button 
-                          variant="outline" 
-                          className="w-full py-8 border-2 border-dashed border-blue-300 hover:border-blue-500 bg-blue-50/50 hover:bg-blue-100/50 text-blue-700 hover:text-blue-900 font-medium transition-all duration-200"
-                          onClick={handleAddNewSlot}
-                        >
-                          <Plus className="w-5 h-5 mr-2" />
-                          Add New Slot
-                        </Button>
-                      </div>
-                    </SortableContext>
-                  </DndContext>
-                </CardContent>
-              </Card>
-            </div>
-            
-            {/* Right: Slot Layout Canvas (Draggable) */}
-            <div className="lg:col-span-3">
-              <Card className="h-full border shadow-md">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Layout className="w-5 h-5" />
-                        Slot Layout Editor
-                      </CardTitle>
-                      <p className="text-sm text-gray-600 mt-1">
-                        Drag slots to position them. Click settings to edit properties.
-                      </p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleAddNewSlot}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add New Slot
-                    </Button>
+          <div className="h-full p-4">
+            <Card className="h-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Layout className="w-5 h-5" />
+                      Slot Layout Editor
+                    </CardTitle>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Drag slots to position them. Hover to see controls. Click settings to edit properties.
+                    </p>
                   </div>
-                </CardHeader>
-                <CardContent className="p-0 h-full">
-                  <LayoutPreview isDraggable={true} showSettings={true} />
-                </CardContent>
-              </Card>
-            </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleAddNewSlot}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add New Slot
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0 h-full">
+                <LayoutPreview isDraggable={true} showSettings={true} />
+              </CardContent>
+            </Card>
           </div>
         ) : mode === 'preview' ? (
           /* PREVIEW MODE: Interactive Full Page Preview */
