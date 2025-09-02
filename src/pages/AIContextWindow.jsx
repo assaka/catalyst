@@ -986,9 +986,23 @@ export default ExampleComponent;`;
                           // This is a slots file - use GenericSlotEditor
                           <GenericSlotEditor
                             pageName={selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '')}
-                            onSave={(data) => {
+                            onSave={async (data) => {
                               console.log(`${selectedFile.name} slots configuration saved:`, data);
-                              // Could handle saving here if needed
+                              
+                              // TODO: Implement actual save to database
+                              // Example API call:
+                              // try {
+                              //   await apiClient.post('/api/slot-configurations', {
+                              //     page_name: selectedFile.name.replace('Slots.jsx', ''),
+                              //     configuration: data.slotDefinitions,
+                              //     slot_order: data.pageConfig?.slotOrder,
+                              //     slot_positions: data.slotPositions,
+                              //     code: data.slotsFileCode
+                              //   });
+                              //   console.log('✅ Saved to database');
+                              // } catch (error) {
+                              //   console.error('❌ Failed to save:', error);
+                              // }
                             }}
                             onCancel={() => {
                               setPreviewMode('code');
