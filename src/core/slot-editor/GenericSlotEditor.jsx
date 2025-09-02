@@ -782,6 +782,22 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
                 >
                   <Settings className="w-4 h-4" />
                 </Button>
+                
+                {/* Delete (only if not required) */}
+                {!definition.required && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSlotDelete(slotId);
+                    }}
+                    className="w-8 h-8 text-red-600 hover:text-red-800 bg-white/90 hover:bg-white shadow-sm"
+                    title="Remove slot"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
               
               {/* Slot name badge - only visible on hover */}
@@ -1345,13 +1361,26 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             <div className="xl:col-span-2">
               <Card className="h-full">
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Layout className="w-5 h-5" />
-                    Slot Layout Editor
-                  </CardTitle>
-                  <p className="text-sm text-gray-600">
-                    Drag slots to position them. Click settings to edit properties.
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <Layout className="w-5 h-5" />
+                        Slot Layout Editor
+                      </CardTitle>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Drag slots to position them. Click settings to edit properties.
+                      </p>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleAddNewSlot}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add New Slot
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="p-0 h-full">
                   <LayoutPreview isDraggable={true} showSettings={true} />
