@@ -53,6 +53,23 @@ import { CSS } from '@dnd-kit/utilities';
 import CodeEditor from '@/components/ai-context/CodeEditor.jsx';
 import apiClient from '@/api/client';
 
+// Import actual cart slot components
+import {
+  CartPageContainer,
+  CartPageHeader,
+  EmptyCartDisplay,
+  CartItemsContainer,
+  CartItem,
+  CartSidebar,
+  CouponSection,
+  OrderSummary,
+  CheckoutButton,
+  CartGridLayout
+} from '@/core/slot-system/default-components/CartSlots.jsx';
+
+// Import slot system
+import { SlotRenderer } from '@/core/slot-system';
+
 const ImprovedCartSlottedEditor = ({
   onSave = () => {},
   onCancel = () => {},
@@ -100,63 +117,87 @@ const ImprovedCartSlottedEditor = ({
     total: 118.77
   });
 
-  // Available slots for CartSlotted
+  // Available slots for CartSlotted (based on actual slot system)
   const availableSlots = [
+    {
+      id: 'cart.page.container',
+      name: 'Page Container',
+      description: 'Main cart page wrapper with styling',
+      defaultEnabled: true,
+      icon: '📄',
+      component: 'CartPageContainer'
+    },
     {
       id: 'cart.page.header',
       name: 'Page Header',
-      description: 'Title and cart summary at the top',
+      description: 'Cart title and main heading',
       defaultEnabled: true,
-      icon: '📋'
+      icon: '📋',
+      component: 'CartPageHeader'
+    },
+    {
+      id: 'cart.grid.layout',
+      name: 'Grid Layout',
+      description: 'Responsive grid container for cart and sidebar',
+      defaultEnabled: true,
+      icon: '⚏',
+      component: 'CartGridLayout'
     },
     {
       id: 'cart.empty.display',
       name: 'Empty Cart Message',
       description: 'Shown when cart has no items',
       defaultEnabled: true,
-      icon: '🛒'
+      icon: '🛒',
+      component: 'EmptyCartDisplay'
     },
     {
       id: 'cart.items.container',
-      name: 'Items List',
+      name: 'Items Container',
       description: 'Container for all cart items',
       defaultEnabled: true,
-      icon: '📦'
+      icon: '📦',
+      component: 'CartItemsContainer'
     },
     {
       id: 'cart.item.single',
       name: 'Individual Item',
-      description: 'Each product in the cart',
+      description: 'Each product in the cart with controls',
       defaultEnabled: true,
-      icon: '🏷️'
+      icon: '🏷️',
+      component: 'CartItem'
+    },
+    {
+      id: 'cart.sidebar.container',
+      name: 'Sidebar',
+      description: 'Right sidebar container',
+      defaultEnabled: true,
+      icon: '📊',
+      component: 'CartSidebar'
     },
     {
       id: 'cart.coupon.section',
       name: 'Coupon Code',
       description: 'Discount code input area',
       defaultEnabled: false,
-      icon: '🎫'
-    },
-    {
-      id: 'cart.sidebar.container',
-      name: 'Sidebar',
-      description: 'Right sidebar with summary',
-      defaultEnabled: true,
-      icon: '📊'
+      icon: '🎫',
+      component: 'CouponSection'
     },
     {
       id: 'cart.summary.order',
       name: 'Order Summary',
-      description: 'Subtotal, tax, and total',
+      description: 'Subtotal, tax, and total calculations',
       defaultEnabled: true,
-      icon: '🧾'
+      icon: '🧾',
+      component: 'OrderSummary'
     },
     {
       id: 'cart.checkout.button',
       name: 'Checkout Button',
-      description: 'Primary checkout action',
+      description: 'Primary checkout action button',
       defaultEnabled: true,
-      icon: '💳'
+      icon: '💳',
+      component: 'CheckoutButton'
     }
   ];
 
@@ -334,134 +375,186 @@ export default CartSlotted;`);
     );
   };
 
-  // Live preview component
-  const LivePreview = ({ showBadges = true }) => (
-    <div className="h-full bg-gray-50 p-4 overflow-y-auto">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow">
-        {/* Render slots in order */}
-        {slotOrder.map(slotId => {
-          const slot = availableSlots.find(s => s.id === slotId);
-          const slotConfig = activeSlots[slotId];
-          
-          if (!slotConfig?.enabled || !slot) return null;
+  // Live preview component using actual cart slots
+  const LivePreview = ({ showBadges = true }) => {
+    // Mock store data for preview
+    const mockStore = {
+      id: 1,
+      slug: 'preview-store',
+      name: 'Preview Store'
+    };
+    
+    const mockSettings = {
+      currency_symbol: '$',
+      theme: {
+        checkout_button_color: '#007bff'
+      }
+    };
 
-          return (
-            <div key={slotId} className="relative">
-              {/* Slot content based on type */}
-              {slotId === 'cart.page.header' && (
-                <div className="border-b p-6">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h1 className="text-2xl font-bold">Shopping Cart</h1>
-                      <p className="text-gray-600">{previewData.cartItems.length} items in your cart</p>
-                    </div>
-                    <ShoppingCart className="w-8 h-8 text-blue-600" />
-                  </div>
-                </div>
-              )}
+    return (
+      <div className="h-full bg-gray-50 p-4 overflow-y-auto">
+        {slotOrder.includes('cart.page.container') && activeSlots['cart.page.container']?.enabled ? (
+          <CartPageContainer>
+            {renderSlotContent()}
+          </CartPageContainer>
+        ) : (
+          <div className="max-w-7xl mx-auto px-4 py-12">
+            {renderSlotContent()}
+          </div>
+        )}
+      </div>
+    );
 
-              {slotId === 'cart.items.container' && (
-                <div className="p-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 space-y-4">
-                      {previewData.cartItems.map(item => (
-                        <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                          <img 
-                            src={item.product.images[0]} 
-                            alt={item.product.name}
-                            className="w-16 h-16 rounded object-cover"
-                          />
-                          <div className="flex-1">
-                            <h3 className="font-medium">{item.product.name}</h3>
-                            <p className="text-gray-600">Qty: {item.quantity}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {slotId === 'cart.coupon.section' && (
-                <div className="px-6 pb-4">
-                  <div className="border rounded-lg p-4">
-                    <h3 className="font-medium mb-3">🎫 Discount Code</h3>
-                    <div className="flex gap-2">
-                      <Input placeholder="Enter coupon code" className="flex-1" />
-                      <Button>Apply</Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {slotId === 'cart.sidebar.container' && (
-                <div className="px-6 pb-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-start-3">
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Order Summary</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <div className="flex justify-between">
-                            <span>Subtotal:</span>
-                            <span>${previewData.subtotal.toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Tax:</span>
-                            <span>${previewData.tax.toFixed(2)}</span>
-                          </div>
-                          <hr />
-                          <div className="flex justify-between font-bold text-lg">
-                            <span>Total:</span>
-                            <span>${previewData.total.toFixed(2)}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {slotId === 'cart.checkout.button' && (
-                <div className="px-6 pb-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-start-3">
-                      <Button className="w-full" size="lg">
-                        💳 Proceed to Checkout
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Slot badge */}
+    function renderSlotContent() {
+      return (
+        <>
+          {/* Page Header */}
+          {slotOrder.includes('cart.page.header') && activeSlots['cart.page.header']?.enabled && (
+            <div className="relative mb-8">
+              <CartPageHeader title="My Cart" />
               {showBadges && mode === 'advanced' && (
-                <div className="absolute top-2 right-2">
+                <div className="absolute top-0 right-0">
                   <Badge variant="outline" className="text-xs bg-white">
-                    {slot.icon} {slot.name}
+                    📋 Page Header
                   </Badge>
                 </div>
               )}
             </div>
-          );
-        })}
+          )}
+          
+          {/* Grid Layout */}
+          {slotOrder.includes('cart.grid.layout') && activeSlots['cart.grid.layout']?.enabled ? (
+            <CartGridLayout>
+              {renderGridContent()}
+            </CartGridLayout>
+          ) : (
+            <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+              {renderGridContent()}
+            </div>
+          )}
+        </>
+      );
+    }
 
-        {/* Empty cart state */}
-        {slotOrder.includes('cart.empty.display') && previewData.cartItems.length === 0 && (
-          <div className="text-center py-12 relative">
-            <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-            <p className="text-gray-600 mb-4">Add some products to get started</p>
-            <Button>Continue Shopping</Button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    function renderGridContent() {
+      return (
+        <>
+          {/* Items Container */}
+          {slotOrder.includes('cart.items.container') && activeSlots['cart.items.container']?.enabled && (
+            <div className="relative">
+              <CartItemsContainer>
+                {previewData.cartItems.length > 0 ? (
+                  previewData.cartItems.map(item => (
+                    slotOrder.includes('cart.item.single') && activeSlots['cart.item.single']?.enabled && (
+                      <CartItem
+                        key={item.id}
+                        item={item}
+                        product={item.product}
+                        currencySymbol="$"
+                        store={mockStore}
+                        taxes={[]}
+                        selectedCountry="US"
+                        onUpdateQuantity={() => {}}
+                        onRemove={() => {}}
+                        calculateItemTotal={(item) => item.price * item.quantity}
+                        formatPrice={(value) => parseFloat(value) || 0}
+                      />
+                    )
+                  ))
+                ) : (
+                  slotOrder.includes('cart.empty.display') && activeSlots['cart.empty.display']?.enabled && (
+                    <EmptyCartDisplay store={mockStore} />
+                  )
+                )}
+              </CartItemsContainer>
+              {showBadges && mode === 'advanced' && (
+                <div className="absolute top-2 right-2">
+                  <Badge variant="outline" className="text-xs bg-white">
+                    📦 Items Container
+                  </Badge>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Sidebar */}
+          {slotOrder.includes('cart.sidebar.container') && activeSlots['cart.sidebar.container']?.enabled && (
+            <div className="relative">
+              <CartSidebar>
+                {/* Coupon Section */}
+                {slotOrder.includes('cart.coupon.section') && activeSlots['cart.coupon.section']?.enabled && (
+                  <div className="relative">
+                    <CouponSection
+                      appliedCoupon={null}
+                      couponCode=""
+                      onCouponCodeChange={() => {}}
+                      onApplyCoupon={() => {}}
+                      onRemoveCoupon={() => {}}
+                      onKeyPress={() => {}}
+                      currencySymbol="$"
+                      safeToFixed={(val) => parseFloat(val).toFixed(2)}
+                    />
+                    {showBadges && mode === 'advanced' && (
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="outline" className="text-xs bg-white">
+                          🎫 Coupon Code
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Order Summary */}
+                {slotOrder.includes('cart.summary.order') && activeSlots['cart.summary.order']?.enabled && (
+                  <div className="relative">
+                    <OrderSummary
+                      subtotal={previewData.subtotal}
+                      discount={0}
+                      tax={previewData.tax}
+                      total={previewData.total}
+                      currencySymbol="$"
+                      safeToFixed={(val) => parseFloat(val).toFixed(2)}
+                    />
+                    {showBadges && mode === 'advanced' && (
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="outline" className="text-xs bg-white">
+                          🧾 Order Summary
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Checkout Button */}
+                {slotOrder.includes('cart.checkout.button') && activeSlots['cart.checkout.button']?.enabled && (
+                  <div className="relative">
+                    <CheckoutButton
+                      onCheckout={() => {}}
+                      settings={mockSettings}
+                    />
+                    {showBadges && mode === 'advanced' && (
+                      <div className="absolute top-2 right-2">
+                        <Badge variant="outline" className="text-xs bg-white">
+                          💳 Checkout Button
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CartSidebar>
+              {showBadges && mode === 'advanced' && (
+                <div className="absolute top-2 right-2">
+                  <Badge variant="outline" className="text-xs bg-white">
+                    📊 Sidebar
+                  </Badge>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      );
+    }
+  };
 
   // Slot enhancement dialog
   const EnhancementDialog = () => {
