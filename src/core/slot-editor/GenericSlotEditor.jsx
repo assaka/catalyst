@@ -949,7 +949,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           {renderSlotContent()}
 
           {/* Resize handles for positioned slots */}
-          {isDraggable && isEnabled && position?.absolute && (
+          {isDraggable && isEnabled && gridPosition?.absolute && (
             <>
               {/* Resize handle - bottom right */}
               <div 
