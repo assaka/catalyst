@@ -58,6 +58,7 @@ const GenericSlotEditor = ({
   const [slotOrder, setSlotOrder] = useState([]);
   const [editingSlot, setEditingSlot] = useState(null);
   const [showSlotEditor, setShowSlotEditor] = useState(false);
+  const [slotPositions, setSlotPositions] = useState({}); // Will store grid positions like { row: 2, col: 3 }
 
   // File paths - Support both legacy and schema-based files
   const slotsFilePath = `src/pages/${pageName}Slots.jsx`;
@@ -264,6 +265,20 @@ const GenericSlotEditor = ({
                 slotOrder: configModule.CART_SLOT_ORDER,
                 layoutPresets: configModule.CART_LAYOUT_PRESETS || {}
               });
+              
+              // Load saved grid positions from slot definitions
+              const savedPositions = {};
+              Object.entries(configModule.CART_SLOT_DEFINITIONS).forEach(([slotId, def]) => {
+                if (def.gridPosition) {
+                  savedPositions[slotId] = {
+                    row: def.gridPosition.row,
+                    col: def.gridPosition.col,
+                    rowSpan: def.gridPosition.rowSpan || 1,
+                    colSpan: def.gridPosition.colSpan || 1
+                  };
+                }
+              });
+              setSlotPositions(savedPositions);
               
               // Also set the code for the code editor view
               const configCode = `// Cart Slots Configuration\nexport const CART_SLOT_DEFINITIONS = ${JSON.stringify(configModule.CART_SLOT_DEFINITIONS, null, 2)};\nexport const CART_SLOT_ORDER = ${JSON.stringify(configModule.CART_SLOT_ORDER, null, 2)};`;
@@ -571,9 +586,27 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
     );
   };
 
+  // Merge grid positions into slot definitions for saving
+  const mergePositionsIntoDefinitions = () => {
+    const merged = { ...slotDefinitions };
+    Object.keys(slotPositions).forEach(slotId => {
+      if (merged[slotId] && slotPositions[slotId]) {
+        merged[slotId] = {
+          ...merged[slotId],
+          gridPosition: {
+            row: slotPositions[slotId].row,
+            col: slotPositions[slotId].col,
+            rowSpan: slotPositions[slotId].rowSpan || 1,
+            colSpan: slotPositions[slotId].colSpan || 1
+          }
+        };
+      }
+    });
+    return merged;
+  };
+
   // Visual Layout Preview - shows slots as they appear in the actual layout
   const LayoutPreview = () => {
-    const [slotPositions, setSlotPositions] = useState({});
     if (!slotDefinitions || Object.keys(slotDefinitions).length === 0) {
       return (
         <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg">
@@ -607,14 +640,12 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       const visual = getSlotVisual(definition);
       const isEnabled = definition.enabled !== false;
       
-      // Get custom position if dragged
-      const customPosition = slotPositions[slotId];
-      const style = customPosition ? {
-        position: 'absolute',
-        left: customPosition.x,
-        top: customPosition.y,
+      // Get custom grid position if dragged
+      const gridPosition = slotPositions[slotId];
+      const style = gridPosition ? {
+        gridColumn: `${gridPosition.col + 1} / span ${gridPosition.colSpan || 3}`,
+        gridRow: `${gridPosition.row + 1} / span ${gridPosition.rowSpan || 1}`,
         minHeight: getSlotHeight(definition),
-        width: getSlotWidth(definition),
         cursor: isDraggable ? 'move' : 'default'
       } : {
         minHeight: getSlotHeight(definition),
@@ -712,7 +743,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       return '100%'; // default
     };
 
-    // Handle drop event for layout canvas
+    // Handle drop event for layout canvas - calculate grid position
     const handleCanvasDrop = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -730,11 +761,27 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       const x = e.clientX - rect.left - offsetX;
       const y = e.clientY - rect.top - offsetY;
       
-      console.log('Dropping slot:', slotId, 'at position:', { x, y });
+      // Calculate grid position (12 column grid, rows of 100px height)
+      const GRID_COLS = 12;
+      const GRID_ROW_HEIGHT = 100;
+      const GRID_COL_WIDTH = rect.width / GRID_COLS;
+      
+      const gridCol = Math.round(x / GRID_COL_WIDTH);
+      const gridRow = Math.round(y / GRID_ROW_HEIGHT);
+      
+      console.log('Dropping slot:', slotId, 'at grid position:', { 
+        row: Math.max(0, gridRow), 
+        col: Math.max(0, Math.min(GRID_COLS - 1, gridCol))
+      });
       
       setSlotPositions(prev => ({
         ...prev,
-        [slotId]: { x: Math.max(0, x), y: Math.max(0, y) }
+        [slotId]: { 
+          row: Math.max(0, gridRow),
+          col: Math.max(0, Math.min(GRID_COLS - 1, gridCol)),
+          rowSpan: prev[slotId]?.rowSpan || 1,
+          colSpan: prev[slotId]?.colSpan || 3 // Default to 3 columns width
+        }
       }));
     };
     
@@ -937,7 +984,12 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             <Button variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button onClick={() => onSave({ slotsFileCode, slotDefinitions, pageConfig })}>
+            <Button onClick={() => onSave({ 
+              slotsFileCode, 
+              slotDefinitions: mergePositionsIntoDefinitions(), 
+              pageConfig,
+              slotPositions 
+            })}>
               <Save className="w-4 h-4 mr-2" />
               Save Changes
             </Button>
