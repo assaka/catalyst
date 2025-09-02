@@ -10,6 +10,7 @@ import DiffPreviewSystem from '@/components/ai-context/DiffPreviewSystem';
 import VersionHistory from '@/components/ai-context/VersionHistory';
 import GenericSlotEditor from '@/core/slot-editor/GenericSlotEditor.jsx';
 import apiClient from '@/api/client';
+import { SlotConfiguration } from '@/api/entities';
 // Store context no longer needed - backend resolves store automatically
 // import { useStoreSelection } from '@/contexts/StoreSelectionContext';
 
@@ -987,22 +988,41 @@ export default ExampleComponent;`;
                           <GenericSlotEditor
                             pageName={selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '')}
                             onSave={async (data) => {
-                              console.log(`${selectedFile.name} slots configuration saved:`, data);
+                              const pageName = selectedFile.name.replace('Slots.jsx', '').replace('.jsx', '');
+                              console.log(`💾 Saving ${pageName} slots configuration...`);
                               
-                              // TODO: Implement actual save to database
-                              // Example API call:
-                              // try {
-                              //   await apiClient.post('/api/slot-configurations', {
-                              //     page_name: selectedFile.name.replace('Slots.jsx', ''),
-                              //     configuration: data.slotDefinitions,
-                              //     slot_order: data.pageConfig?.slotOrder,
-                              //     slot_positions: data.slotPositions,
-                              //     code: data.slotsFileCode
-                              //   });
-                              //   console.log('✅ Saved to database');
-                              // } catch (error) {
-                              //   console.error('❌ Failed to save:', error);
-                              // }
+                              try {
+                                // Check if configuration exists for this page
+                                const existing = await SlotConfiguration.list({
+                                  filters: { page_name: pageName },
+                                  limit: 1
+                                });
+                                
+                                const configData = {
+                                  page_name: pageName,
+                                  configuration: data.slotDefinitions,
+                                  slot_order: data.pageConfig?.slotOrder || [],
+                                  slot_positions: data.slotPositions || {},
+                                  code: data.slotsFileCode,
+                                  updated_at: new Date().toISOString()
+                                };
+                                
+                                if (existing.data && existing.data.length > 0) {
+                                  // Update existing configuration
+                                  await SlotConfiguration.update(existing.data[0].id, configData);
+                                  console.log('✅ Configuration updated in database');
+                                } else {
+                                  // Create new configuration
+                                  await SlotConfiguration.create({
+                                    ...configData,
+                                    created_at: new Date().toISOString()
+                                  });
+                                  console.log('✅ Configuration saved to database');
+                                }
+                              } catch (error) {
+                                console.error('❌ Failed to save configuration:', error);
+                                // Could show a toast notification here
+                              }
                             }}
                             onCancel={() => {
                               setPreviewMode('code');

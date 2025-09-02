@@ -45,6 +45,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 import CodeEditor from '@/components/ai-context/CodeEditor.jsx';
 import apiClient from '@/api/client';
+import { SlotConfiguration } from '@/api/entities';
 
 const GenericSlotEditor = ({
   pageName = 'Cart', // 'Cart', 'Product', 'Checkout', etc.
@@ -256,8 +257,51 @@ const GenericSlotEditor = ({
       try {
         console.log('📂 Loading slot config for:', pageName);
         
-        // For now, directly load Cart configuration if that's the page
-        // In production, this would come from the API endpoint
+        // First, try to load from database
+        try {
+          const existing = await SlotConfiguration.list({
+            filters: { page_name: pageName },
+            limit: 1
+          });
+          
+          if (existing.data && existing.data.length > 0) {
+            const savedConfig = existing.data[0];
+            console.log('💾 Loaded configuration from database:', savedConfig);
+            
+            if (savedConfig.configuration) {
+              setSlotDefinitions(savedConfig.configuration);
+            }
+            if (savedConfig.slot_order) {
+              setSlotOrder(savedConfig.slot_order);
+            }
+            if (savedConfig.slot_positions) {
+              setSlotPositions(savedConfig.slot_positions);
+            }
+            if (savedConfig.code) {
+              setSlotsFileCode(savedConfig.code);
+            }
+            
+            setPageConfig({
+              slotOrder: savedConfig.slot_order || [],
+              layoutPresets: {}
+            });
+            
+            // Set as last saved for comparison
+            lastSavedRef.current = {
+              slotsFileCode: savedConfig.code || '',
+              slotDefinitions: savedConfig.configuration || {},
+              pageConfig: { slotOrder: savedConfig.slot_order || [] },
+              slotPositions: savedConfig.slot_positions || {}
+            };
+            
+            setIsLoading(false);
+            return; // Skip loading from file if we have database config
+          }
+        } catch (dbError) {
+          console.log('📁 No saved configuration in database, loading from file...', dbError);
+        }
+        
+        // Fallback to loading from file if no database config
         if (pageName === 'Cart') {
           try {
             // Import the actual components from CartSlots.jsx
