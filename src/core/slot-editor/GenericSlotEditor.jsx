@@ -3,7 +3,7 @@
  * Store owners only see and edit their PageSlots.jsx file
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +65,11 @@ const GenericSlotEditor = ({
   const [slotPositions, setSlotPositions] = useState({}); // Will store grid positions like { row: 2, col: 3 }
   const [isDragging, setIsDragging] = useState(false);
   const [draggedSlotId, setDraggedSlotId] = useState(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  
+  // Auto-save refs
+  const saveTimeoutRef = useRef(null);
+  const lastSavedRef = useRef(null);
 
   // File path to the actual file being edited
   const slotsFilePath = `src/pages/${pageName}Slots.jsx`;
@@ -361,6 +366,38 @@ const GenericSlotEditor = ({
     return result;
   }, [slotOrder, slotDefinitions]);
 
+  // Auto-save function with debouncing
+  const triggerAutoSave = useCallback(() => {
+    // Clear any existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set unsaved changes indicator
+    setHasUnsavedChanges(true);
+    
+    // Debounce the save operation by 1 second
+    saveTimeoutRef.current = setTimeout(() => {
+      const saveData = {
+        slotsFileCode,
+        slotDefinitions: mergePositionsIntoDefinitions(),
+        pageConfig,
+        slotPositions
+      };
+      
+      // Only save if there are actual changes
+      if (JSON.stringify(saveData) !== JSON.stringify(lastSavedRef.current)) {
+        console.log('🔄 Auto-saving changes...');
+        onSave(saveData);
+        lastSavedRef.current = saveData;
+        setHasUnsavedChanges(false);
+        
+        // Force re-render of preview by updating definitions
+        setSlotDefinitions(prev => ({ ...prev }));
+      }
+    }, 1000); // 1 second delay
+  }, [slotsFileCode, slotDefinitions, pageConfig, slotPositions, onSave]);
+  
   // Slot management functions
   const handleSlotToggle = useCallback((slotId) => {
     setSlotDefinitions(prev => {
@@ -373,7 +410,8 @@ const GenericSlotEditor = ({
       }
       return updated;
     });
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   const handleSlotEdit = useCallback((slot) => {
     // Generate code for this specific slot
@@ -418,8 +456,9 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       });
       
       setSlotOrder(prev => prev.filter(id => id !== slotId));
+      triggerAutoSave();
     }
-  }, []);
+  }, [triggerAutoSave]);
 
   const handleAddNewSlot = useCallback(() => {
     const newSlotId = `new-slot-${Date.now()}`;
@@ -457,7 +496,8 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       console.log('🔄 Slot order updated:', newOrder);
       return newOrder;
     });
-  }, []);
+    triggerAutoSave();
+  }, [triggerAutoSave]);
 
   // Enhanced slot item with better visualization and editing
   const SortableSlotItem = ({ slot, index, onEdit, onToggle, onDelete }) => {
@@ -1285,16 +1325,27 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
             </Button>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {hasUnsavedChanges && (
+              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse mr-2 inline-block" />
+                Auto-saving...
+              </Badge>
+            )}
             <Button variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button onClick={() => onSave({ 
-              slotsFileCode, 
-              slotDefinitions: mergePositionsIntoDefinitions(), 
-              pageConfig,
-              slotPositions 
-            })}>
+            <Button onClick={() => {
+              const saveData = {
+                slotsFileCode, 
+                slotDefinitions: mergePositionsIntoDefinitions(), 
+                pageConfig,
+                slotPositions 
+              };
+              onSave(saveData);
+              lastSavedRef.current = saveData;
+              setHasUnsavedChanges(false);
+            }}>
               <Save className="w-4 h-4 mr-2" />
               Save Changes
             </Button>
@@ -1371,7 +1422,10 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
               <CardContent className="p-0 h-full">
                 <CodeEditor
                   value={slotsFileCode}
-                  onChange={setSlotsFileCode}
+                  onChange={(newCode) => {
+                    setSlotsFileCode(newCode);
+                    triggerAutoSave();
+                  }}
                   fileName={`${pageName}PageSlots.jsx`}
                   language="javascript"
                   className="h-full"
