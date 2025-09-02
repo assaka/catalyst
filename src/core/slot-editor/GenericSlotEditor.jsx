@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Code, 
   Eye, 
@@ -55,9 +56,6 @@ const GenericSlotEditor = ({
   const [pageConfig, setPageConfig] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [slotOrder, setSlotOrder] = useState([]);
-  const [editingSlot, setEditingSlot] = useState(null);
-  const [showSlotEditor, setShowSlotEditor] = useState(false);
-  const [slotPositions, setSlotPositions] = useState({}); // Will store grid positions like { row: 2, col: 3 }
 
   // File paths - Support both legacy and schema-based files
   const slotsFilePath = `src/pages/${pageName}Slots.jsx`;
@@ -71,8 +69,287 @@ const GenericSlotEditor = ({
     })
   );
 
+  // Load schema-based slot configuration
+  useEffect(() => {
+    const loadSlotConfig = async () => {
+      setIsLoading(true);
+      try {
+        // Try to load schema-based configuration first
+        const configData = await apiClient.get(`extensions/baseline/${encodeURIComponent(configFilePath)}`);
+        
+        if (configData && configData.success && configData.data.hasBaseline) {
+          const configCode = configData.data.baselineCode;
+          setSlotsFileCode(configCode);
+          
+          // Load the schema-based configuration
+          await loadSchemaConfiguration(configCode);
+        } else {
+          // Fallback to legacy slots file
+          const slotsData = await apiClient.get(`extensions/baseline/${encodeURIComponent(slotsFilePath)}`);
+          
+          if (slotsData && slotsData.success && slotsData.data.hasBaseline) {
+            const slotsCode = slotsData.data.baselineCode;
+            setSlotsFileCode(slotsCode);
+            
+            // Create schema from legacy file
+            await createSchemaFromLegacy(slotsCode);
+          } else {
+            // Create default schema configuration
+            await createDefaultSchemaConfig();
+          }
+        }
+      } catch (error) {
+        console.error('Error loading slot configuration:', error);
+        await createDefaultSchemaConfig();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSlotConfig();
+  }, [pageName, slotsFilePath, configFilePath]);
+
+  // Load schema-based configuration from code
+  const loadSchemaConfiguration = async (configCode) => {
+    try {
+      // Evaluate the configuration code to get the schema object
+      const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+      const moduleCode = `
+        ${configCode}
+        return { 
+          CART_SLOTS_CONFIG, 
+          CART_SLOT_DEFINITIONS, 
+          CART_SLOT_ORDER, 
+          CART_LAYOUT_PRESETS 
+        };
+      `;
+      
+      const configFunction = new AsyncFunction(moduleCode);
+      const { CART_SLOT_DEFINITIONS, CART_SLOT_ORDER, CART_LAYOUT_PRESETS } = await configFunction();
+      
+      console.log('✅ Loaded schema-based configuration:', {
+        definitions: Object.keys(CART_SLOT_DEFINITIONS).length,
+        order: CART_SLOT_ORDER.length,
+        presets: Object.keys(CART_LAYOUT_PRESETS).length
+      });
+      
+      setSlotDefinitions(CART_SLOT_DEFINITIONS);
+      setSlotOrder(CART_SLOT_ORDER);
+      setPageConfig({
+        slotOrder: CART_SLOT_ORDER,
+        layoutPresets: CART_LAYOUT_PRESETS
+      });
+      
+    } catch (error) {
+      console.error('Error loading schema configuration:', error);
+      await createDefaultSchemaConfig();
+    }
+  };
+
+  // Create schema configuration from legacy code using safe evaluation
+  const createSchemaFromLegacy = async (legacyCode) => {
+    console.log('🔄 Converting legacy CartSlots.jsx using safe evaluation');
+    
+    try {
+      const pagePrefix = pageName.toUpperCase();
+      
+      // Create a safe evaluation environment
+      const evaluateSlotExports = (code) => {
+        // Create a sandbox with only the necessary globals
+        const sandbox = {
+          React: null, // We don't need React for data extraction
+          console: { log: () => {}, warn: () => {}, error: () => {} }, // Silent console
+          // Mock imports to prevent errors
+          Card: null,
+          CardContent: null,
+          CardHeader: null,
+          CardTitle: null,
+          Button: null,
+          Input: null,
+          Trash2: null,
+          Plus: null,
+          Minus: null,
+          Tag: null,
+          ShoppingCart: null,
+          formatDisplayPrice: () => '$0.00',
+          getStoreBaseUrl: () => '',
+          getExternalStoreUrl: () => '',
+          // Add component mocks
+          SlotCartPageContainer: 'SlotCartPageContainer',
+          SlotCartPageHeader: 'SlotCartPageHeader',
+          SlotCartGridLayout: 'SlotCartGridLayout',
+          SlotCartItemsContainer: 'SlotCartItemsContainer',
+          SlotCartItem: 'SlotCartItem',
+          SlotCartSidebar: 'SlotCartSidebar',
+          SlotCouponSection: 'SlotCouponSection',
+          SlotOrderSummary: 'SlotOrderSummary',
+          SlotCheckoutButton: 'SlotCheckoutButton',
+          SlotEmptyCartDisplay: 'SlotEmptyCartDisplay',
+        };
+        
+        // Extract just the export statements we need
+        const exportPattern = new RegExp(
+          `export\\s+const\\s+(${pagePrefix}_SLOT_DEFINITIONS|${pagePrefix}_SLOT_ORDER|${pagePrefix}_LAYOUT_PRESETS)\\s*=([^;]+);`, 
+          'gm'
+        );
+        
+        console.log('🔍 Looking for exports with pattern:', exportPattern);
+        console.log('🔍 Code length:', code.length, 'characters');
+        console.log('🔍 First 500 characters:', code.substring(0, 500));
+        
+        const exports = {};
+        let match;
+        let matchCount = 0;
+        
+        while ((match = exportPattern.exec(code)) !== null) {
+          matchCount++;
+          const [fullMatch, exportName, exportValue] = match;
+          
+          console.log(`🔍 Found export ${matchCount}:`, exportName);
+          console.log('🔍 Export value preview:', exportValue.substring(0, 100) + '...');
+          
+          try {
+            // Create a safe function to evaluate the export value
+            const evalFunction = new Function(
+              ...Object.keys(sandbox),
+              `return ${exportValue};`
+            );
+            
+            // Execute with our sandbox values
+            const result = evalFunction(...Object.values(sandbox));
+            exports[exportName] = result;
+            
+            if (result && typeof result === 'object') {
+              console.log(`✅ Successfully parsed ${exportName}:`, Object.keys(result).length, 'items');
+            } else {
+              console.log(`✅ Successfully parsed ${exportName}:`, result);
+            }
+            
+          } catch (evalError) {
+            console.warn(`⚠️ Could not evaluate ${exportName}:`, evalError.message);
+            console.warn('⚠️ Failed export value:', exportValue.substring(0, 200));
+            
+            // Special handling for SLOT_DEFINITIONS - try to extract basic structure
+            if (exportName.includes('SLOT_DEFINITIONS')) {
+              console.log('🔧 Attempting manual parsing for SLOT_DEFINITIONS...');
+              try {
+                const manualDefinitions = parseSlotDefinitionsManually(exportValue);
+                if (Object.keys(manualDefinitions).length > 0) {
+                  exports[exportName] = manualDefinitions;
+                  console.log(`✅ Manually parsed ${exportName}:`, Object.keys(manualDefinitions).length, 'items');
+                }
+              } catch (manualError) {
+                console.warn('⚠️ Manual parsing also failed:', manualError.message);
+              }
+            }
+          }
+        }
+        
+        console.log('🔍 Total matches found:', matchCount);
+        console.log('🔍 Parsed exports:', Object.keys(exports));
+        
+        // Manual parsing fallback for slot definitions with component references
+        const parseSlotDefinitionsManually = (exportValue) => {
+          const definitions = {};
+          
+          // Extract slot definitions using regex pattern matching
+          const slotPattern = /['"`]([^'"`-]+(?:-[^'"`]+)*?)['"`]\s*:\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g;
+          let match;
+          
+          while ((match = slotPattern.exec(exportValue)) !== null) {
+            const slotId = match[1];
+            const slotContent = match[2];
+            
+            // Extract properties using simple regex
+            const getId = () => slotId;
+            const getType = () => {
+              const typeMatch = /type\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+              return typeMatch ? typeMatch[1] : 'component';
+            };
+            const getName = () => {
+              const nameMatch = /name\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+              return nameMatch ? nameMatch[1] : slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            };
+            const getDescription = () => {
+              const descMatch = /description\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
+              return descMatch ? descMatch[1] : `${getType()} slot`;
+            };
+            
+            definitions[slotId] = {
+              id: getId(),
+              type: getType(),
+              name: getName(),
+              description: getDescription(),
+              enabled: true,
+              required: true
+            };
+          }
+          
+          return definitions;
+        };
+        
+        return exports;
+      };
+      
+      // Evaluate the exports
+      const exports = evaluateSlotExports(legacyCode);
+      
+      // Extract slot definitions
+      const slotDefinitionsKey = `${pagePrefix}_SLOT_DEFINITIONS`;
+      const slotOrderKey = `${pagePrefix}_SLOT_ORDER`;
+      
+      if (exports[slotDefinitionsKey]) {
+        const rawDefinitions = exports[slotDefinitionsKey];
+        const parsedDefinitions = {};
+        
+        // Process each slot definition
+        Object.entries(rawDefinitions).forEach(([slotId, definition]) => {
+          parsedDefinitions[slotId] = {
+            id: slotId,
+            type: definition.type || 'component',
+            name: definition.name || slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            description: definition.description || `${definition.type || 'component'} slot`,
+            enabled: true,
+            required: true,
+            component: definition.component || slotId,
+            ...definition // Include any other properties
+          };
+        });
+        
+        console.log('🎯 Processed slot definitions:', parsedDefinitions);
+        setSlotDefinitions(parsedDefinitions);
+        
+        // Process slot order
+        let parsedOrder = Object.keys(parsedDefinitions);
+        
+        if (exports[slotOrderKey] && Array.isArray(exports[slotOrderKey])) {
+          parsedOrder = exports[slotOrderKey];
+          console.log('🎯 Using defined slot order:', parsedOrder);
+        } else {
+          console.log('🎯 Using default slot order from definitions');
+        }
+        
+        setSlotOrder(parsedOrder);
+        setPageConfig({
+          slotOrder: parsedOrder,
+          layoutPresets: exports[`${pagePrefix}_LAYOUT_PRESETS`] || {}
+        });
+        
+        console.log('✅ Successfully loaded', Object.keys(parsedDefinitions).length, 'cart slots with safe evaluation');
+        
+      } else {
+        console.warn('⚠️ No slot definitions found, creating fallback');
+        await createDefaultSchemaConfig();
+      }
+      
+    } catch (error) {
+      console.error('❌ Error in safe evaluation parsing:', error);
+      await createDefaultSchemaConfig();
+    }
+  };
+
   // Create default schema-based configuration
-  const createDefaultSchemaConfig = useCallback(async () => {
+  const createDefaultSchemaConfig = async () => {
     const defaultSlots = {
       'page-root': {
         id: 'page-root',
@@ -107,213 +384,7 @@ const GenericSlotEditor = ({
     });
     
     console.log('📝 Created default schema configuration');
-  }, []);
-
-  // Load schema-based configuration from code
-  const loadSchemaConfiguration = useCallback(async (configCode) => {
-    try {
-      console.log('🔄 Attempting to parse schema configuration...');
-      
-      // Parse the configuration using regex since it has imports we can't evaluate
-      const parseSchemaConfig = (code) => {
-        // Extract the built configuration
-        const configMatch = code.match(/\.build\(\)\s*;/);
-        if (!configMatch) {
-          console.warn('Could not find .build() in config');
-          return null;
-        }
-        
-        // Extract slot definitions
-        const slots = {};
-        const slotPattern = /\.addSlot\(\s*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}\s*\)/g;
-        let match;
-        
-        while ((match = slotPattern.exec(code)) !== null) {
-          const slotContent = match[1];
-          
-          // Extract slot properties
-          const idMatch = slotContent.match(/id\s*:\s*['"`]([^'"`]+)['"`]/);
-          const typeMatch = slotContent.match(/type\s*:\s*['"`]([^'"`]+)['"`]/);
-          const nameMatch = slotContent.match(/name\s*:\s*['"`]([^'"`]+)['"`]/);
-          const descMatch = slotContent.match(/description\s*:\s*['"`]([^'"`]+)['"`]/);
-          const componentMatch = slotContent.match(/component\s*:\s*['"`]([^'"`]+)['"`]/);
-          const requiredMatch = slotContent.match(/required\s*:\s*(\w+)/);
-          const orderMatch = slotContent.match(/order\s*:\s*(\d+)/);
-          const parentMatch = slotContent.match(/parent\s*:\s*['"`]([^'"`]+)['"`]/);
-          
-          if (idMatch) {
-            const slotId = idMatch[1];
-            slots[slotId] = {
-              id: slotId,
-              type: typeMatch ? typeMatch[1] : 'component',
-              name: nameMatch ? nameMatch[1] : slotId,
-              description: descMatch ? descMatch[1] : '',
-              component: componentMatch ? componentMatch[1] : slotId,
-              required: requiredMatch ? requiredMatch[1] === 'true' : false,
-              enabled: true,
-              order: orderMatch ? parseInt(orderMatch[1]) : 0,
-              parent: parentMatch ? parentMatch[1] : null
-            };
-          }
-        }
-        
-        // Extract slot order - check both array and config property formats
-        let slotOrder = Object.keys(slots);
-        
-        // Try to find CART_SLOT_ORDER export
-        const orderMatch = code.match(/CART_SLOT_ORDER\s*=\s*(?:\[([^\]]+)\]|CART_SLOTS_CONFIG\.slotOrder)/);
-        if (orderMatch) {
-          if (orderMatch[1]) {
-            // It's an array format
-            const orderContent = orderMatch[1];
-            slotOrder = orderContent
-              .split(',')
-              .map(s => s.trim().replace(/['"`]/g, ''))
-              .filter(s => s.length > 0);
-          } else {
-            // It's from config, extract from slotOrder arrays in presets
-            const presetOrderMatch = code.match(/slotOrder\s*:\s*\[([^\]]+)\]/);
-            if (presetOrderMatch) {
-              slotOrder = presetOrderMatch[1]
-                .split(',')
-                .map(s => s.trim().replace(/['"`]/g, ''))
-                .filter(s => s.length > 0);
-            }
-          }
-        }
-        
-        // Extract layout presets
-        const presets = {};
-        const presetPattern = /\.addLayoutPreset\(\s*['"`](\w+)['"`]\s*,\s*\{([^}]+(?:\{[^}]*\}[^}]*)*)\}\s*\)/g;
-        
-        while ((match = presetPattern.exec(code)) !== null) {
-          const presetName = match[1];
-          const presetContent = match[2];
-          
-          const nameMatch = presetContent.match(/name\s*:\s*['"`]([^'"`]+)['"`]/);
-          const descMatch = presetContent.match(/description\s*:\s*['"`]([^'"`]+)['"`]/);
-          
-          presets[presetName] = {
-            name: nameMatch ? nameMatch[1] : presetName,
-            description: descMatch ? descMatch[1] : '',
-            slotOrder: slotOrder
-          };
-        }
-        
-        return {
-          definitions: slots,
-          order: slotOrder,
-          presets: presets
-        };
-      };
-      
-      const parsed = parseSchemaConfig(configCode);
-      
-      if (parsed && Object.keys(parsed.definitions).length > 0) {
-        console.log('✅ Successfully parsed schema configuration:', {
-          definitions: Object.keys(parsed.definitions).length,
-          order: parsed.order.length,
-          presets: Object.keys(parsed.presets).length,
-          slotIds: Object.keys(parsed.definitions)
-        });
-        console.log('📋 Parsed slot definitions:', parsed.definitions);
-        console.log('📋 Parsed slot order:', parsed.order);
-        
-        setSlotDefinitions(parsed.definitions);
-        setSlotOrder(parsed.order);
-        setPageConfig({
-          slotOrder: parsed.order,
-          layoutPresets: parsed.presets
-        });
-      } else {
-        console.warn('⚠️ Could not parse schema config, using defaults');
-        console.log('Parsed result:', parsed);
-        await createDefaultSchemaConfig();
-      }
-      
-    } catch (error) {
-      console.error('Error loading schema configuration:', error);
-      await createDefaultSchemaConfig();
-    }
-  }, [createDefaultSchemaConfig]);
-
-  // Load schema-based slot configuration
-  useEffect(() => {
-    const loadSlotConfig = async () => {
-      setIsLoading(true);
-      try {
-        console.log('📂 Loading slot config for:', pageName);
-        
-        // For now, directly load Cart configuration if that's the page
-        // In production, this would come from the API endpoint
-        if (pageName === 'Cart') {
-          try {
-            // Dynamically import the configuration
-            const configModule = await import(`@/pages/${pageName}Slots.config.js`);
-            console.log('📦 Loaded config module:', configModule);
-            
-            if (configModule.CART_SLOT_DEFINITIONS && configModule.CART_SLOT_ORDER) {
-              console.log('✅ Successfully loaded Cart slot configuration:', {
-                definitions: Object.keys(configModule.CART_SLOT_DEFINITIONS).length,
-                order: configModule.CART_SLOT_ORDER.length
-              });
-              
-              setSlotDefinitions(configModule.CART_SLOT_DEFINITIONS);
-              setSlotOrder(configModule.CART_SLOT_ORDER);
-              setPageConfig({
-                slotOrder: configModule.CART_SLOT_ORDER,
-                layoutPresets: configModule.CART_LAYOUT_PRESETS || {}
-              });
-              
-              // Load saved grid positions from slot definitions
-              const savedPositions = {};
-              Object.entries(configModule.CART_SLOT_DEFINITIONS).forEach(([slotId, def]) => {
-                if (def.gridPosition) {
-                  savedPositions[slotId] = {
-                    row: def.gridPosition.row,
-                    col: def.gridPosition.col,
-                    rowSpan: def.gridPosition.rowSpan || 1,
-                    colSpan: def.gridPosition.colSpan || 1
-                  };
-                }
-              });
-              setSlotPositions(savedPositions);
-              
-              // Also set the code for the code editor view
-              const configCode = `// Cart Slots Configuration\nexport const CART_SLOT_DEFINITIONS = ${JSON.stringify(configModule.CART_SLOT_DEFINITIONS, null, 2)};\nexport const CART_SLOT_ORDER = ${JSON.stringify(configModule.CART_SLOT_ORDER, null, 2)};`;
-              setSlotsFileCode(configCode);
-              return;
-            }
-          } catch (importError) {
-            console.warn('Could not dynamically import config, trying API approach:', importError);
-          }
-        }
-        
-        // Fallback to API approach (for when backend is properly configured)
-        const apiPath = `extensions/baseline/${encodeURIComponent(configFilePath)}`;
-        console.log('🔗 Trying API path:', apiPath);
-        
-        const configData = await apiClient.get(apiPath);
-        
-        if (configData && configData.success && configData.data.hasBaseline) {
-          const configCode = configData.data.baselineCode;
-          console.log('✅ Found baseline code via API');
-          setSlotsFileCode(configCode);
-          await loadSchemaConfiguration(configCode);
-        } else {
-          console.log('No config found via API, using defaults');
-          await createDefaultSchemaConfig();
-        }
-      } catch (error) {
-        console.error('Error loading slot configuration:', error);
-        await createDefaultSchemaConfig();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSlotConfig();
-  }, [pageName, configFilePath, loadSchemaConfiguration, createDefaultSchemaConfig]);
+  };
 
   // Generate sortable slot items from definitions in order
   const sortableSlots = useMemo(() => {
@@ -369,37 +440,7 @@ const GenericSlotEditor = ({
   }, []);
 
   const handleSlotEdit = useCallback((slot) => {
-    // Generate code for this specific slot
-    const slotCode = `// ${slot.name} Configuration
-export const ${slot.id.toUpperCase().replace(/-/g, '_')}_CONFIG = {
-  id: '${slot.id}',
-  type: '${slot.type}',
-  name: '${slot.name}',
-  description: '${slot.description || ''}',
-  component: '${slot.component || slot.id}',
-  required: ${slot.required || false},
-  enabled: ${slot.enabled !== false},
-  order: ${slot.order || 0},
-  parent: ${slot.parent ? `'${slot.parent}'` : 'null'},
-  props: ${JSON.stringify(slot.props || {}, null, 2)},
-  layout: ${JSON.stringify(slot.layout || {}, null, 2)},
-  styling: ${JSON.stringify(slot.styling || {}, null, 2)},
-  conditions: ${JSON.stringify(slot.conditions || {}, null, 2)},
-  metadata: ${JSON.stringify(slot.metadata || {}, null, 2)}
-};
-
-// React Component Implementation
-const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
-  return (
-    <div className="${slot.styling?.className || ''}">
-      {/* ${slot.description || 'Slot implementation'} */}
-      {children}
-    </div>
-  );
-};`;
-    
-    setEditingSlot({ ...slot, code: slotCode });
-    setShowSlotEditor(true);
+    setEditingSlot(slot);
   }, []);
 
   const handleSlotDelete = useCallback((slotId) => {
@@ -431,7 +472,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
     }));
     
     setSlotOrder(prev => [...prev, newSlotId]);
-    // newSlot is now added to the slot order
+    setEditingSlot(newSlot);
   }, []);
 
   // Enhanced drag and drop handling
@@ -585,25 +626,6 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
     );
   };
 
-  // Merge grid positions into slot definitions for saving
-  const mergePositionsIntoDefinitions = () => {
-    const merged = { ...slotDefinitions };
-    Object.keys(slotPositions).forEach(slotId => {
-      if (merged[slotId] && slotPositions[slotId]) {
-        merged[slotId] = {
-          ...merged[slotId],
-          gridPosition: {
-            row: slotPositions[slotId].row,
-            col: slotPositions[slotId].col,
-            rowSpan: slotPositions[slotId].rowSpan || 1,
-            colSpan: slotPositions[slotId].colSpan || 1
-          }
-        };
-      }
-    });
-    return merged;
-  };
-
   // Visual Layout Preview - shows slots as they appear in the actual layout
   const LayoutPreview = () => {
     if (!slotDefinitions || Object.keys(slotDefinitions).length === 0) {
@@ -631,66 +653,25 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       return iconMap[slotDef.type] || iconMap.default;
     };
 
-    // Render individual slot in layout context with drag capability
-    const renderSlotInLayout = (slotId, index, isDraggable = false) => {
+    // Render individual slot in layout context
+    const renderSlotInLayout = (slotId, index) => {
       const definition = slotDefinitions[slotId];
       if (!definition) return null;
 
       const visual = getSlotVisual(definition);
       const isEnabled = definition.enabled !== false;
       
-      // Get custom grid position if dragged
-      const gridPosition = slotPositions[slotId];
-      const style = gridPosition ? {
-        gridColumn: `${gridPosition.col + 1} / span ${gridPosition.colSpan || 3}`,
-        gridRow: `${gridPosition.row + 1} / span ${gridPosition.rowSpan || 1}`,
-        minHeight: getSlotHeight(definition),
-        cursor: isDraggable ? 'move' : 'default'
-      } : {
-        minHeight: getSlotHeight(definition),
-        width: getSlotWidth(definition),
-        cursor: isDraggable ? 'move' : 'default'
-      };
-      
-      const handleDragStart = (e) => {
-        if (!isDraggable) return;
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('slotId', slotId);
-        const rect = e.currentTarget.getBoundingClientRect();
-        const offsetX = e.clientX - rect.left;
-        const offsetY = e.clientY - rect.top;
-        e.dataTransfer.setData('offsetX', offsetX.toString());
-        e.dataTransfer.setData('offsetY', offsetY.toString());
-        // Add visual feedback
-        e.currentTarget.style.opacity = '0.5';
-      };
-      
-      const handleDragEnd = (e) => {
-        // Restore opacity after drag
-        e.currentTarget.style.opacity = '';
-      };
-      
       return (
         <div
           key={slotId}
-          draggable={isDraggable}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
           className={`relative border-2 rounded-lg p-4 m-2 transition-all duration-200 ${
             visual.color
-          } ${isEnabled ? 'opacity-100' : 'opacity-50'} ${
-            isDraggable ? 'hover:shadow-xl hover:scale-105 cursor-move' : ''
-          }`}
-          style={style}
-          title={isDraggable ? 'Drag to reposition' : ''}
+          } ${isEnabled ? 'opacity-100' : 'opacity-50'}`}
+          style={{
+            minHeight: getSlotHeight(definition),
+            width: getSlotWidth(definition)
+          }}
         >
-          {/* Drag Handle for draggable slots */}
-          {isDraggable && (
-            <div className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 pointer-events-none">
-              <GripVertical className="w-4 h-4" />
-            </div>
-          )}
-          
           {/* Slot Order Indicator */}
           <div className={`absolute -top-2 -left-2 w-6 h-6 rounded-full ${visual.textColor.replace('text-', 'bg-')} text-white text-xs font-bold flex items-center justify-center shadow-lg`}>
             {index + 1}
@@ -742,102 +723,47 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       return '100%'; // default
     };
 
-    // Handle drop event for layout canvas - calculate grid position
-    const handleCanvasDrop = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const slotId = e.dataTransfer.getData('slotId');
-      if (!slotId) return;
-      
-      const offsetX = parseInt(e.dataTransfer.getData('offsetX') || '0');
-      const offsetY = parseInt(e.dataTransfer.getData('offsetY') || '0');
-      
-      // Find the container element (the one with relative position)
-      const container = e.currentTarget.querySelector('.relative.border-2.border-dashed') || e.currentTarget;
-      const rect = container.getBoundingClientRect();
-      
-      const x = e.clientX - rect.left - offsetX;
-      const y = e.clientY - rect.top - offsetY;
-      
-      // Calculate grid position (12 column grid, rows of 100px height)
-      const GRID_COLS = 12;
-      const GRID_ROW_HEIGHT = 100;
-      const GRID_COL_WIDTH = rect.width / GRID_COLS;
-      
-      const gridCol = Math.round(x / GRID_COL_WIDTH);
-      const gridRow = Math.round(y / GRID_ROW_HEIGHT);
-      
-      console.log('Dropping slot:', slotId, 'at grid position:', { 
-        row: Math.max(0, gridRow), 
-        col: Math.max(0, Math.min(GRID_COLS - 1, gridCol))
-      });
-      
-      setSlotPositions(prev => ({
-        ...prev,
-        [slotId]: { 
-          row: Math.max(0, gridRow),
-          col: Math.max(0, Math.min(GRID_COLS - 1, gridCol)),
-          rowSpan: prev[slotId]?.rowSpan || 1,
-          colSpan: prev[slotId]?.colSpan || 3 // Default to 3 columns width
-        }
-      }));
-    };
-    
-    const handleDragOver = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      e.dataTransfer.dropEffect = 'move';
-    };
-
     // Render layout structure
     const renderLayoutStructure = () => {
       const currentOrder = slotOrder.filter(id => slotDefinitions[id]);
 
       return (
-        <div 
-          className="p-6 bg-white min-h-full relative"
-          onDrop={handleCanvasDrop}
-          onDragOver={handleDragOver}
-        >
-          {/* Page Container - Drop Zone */}
-          <div 
-            className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 relative min-h-[600px]"
-            onDrop={handleCanvasDrop}
-            onDragOver={handleDragOver}
-            style={{ position: 'relative' }}
-          >
-            <div className="text-sm text-gray-500 mb-4 font-semibold">📦 Cart Page Layout (Drag slots to reposition)</div>
+        <div className="p-6 bg-white min-h-full">
+          {/* Page Container */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+            <div className="text-sm text-gray-500 mb-4 font-semibold">📦 Cart Page Layout</div>
             
             {currentOrder.map((slotId, index) => {
+              const definition = slotDefinitions[slotId];
+              
               // Special layout handling for grid structure
               if (slotId === 'cart-grid-layout') {
                 return (
                   <div key={slotId} className="mb-4">
-                    {renderSlotInLayout(slotId, index, true)}
+                    {renderSlotInLayout(slotId, index)}
                     {/* Grid Content */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-4 p-4 border-2 border-dashed border-purple-200 rounded-lg bg-purple-50/30">
                       <div className="lg:col-span-2">
                         {/* Items Container */}
                         {currentOrder.includes('cart-items-container') && 
-                          renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'), true)
+                          renderSlotInLayout('cart-items-container', currentOrder.indexOf('cart-items-container'))
                         }
                       </div>
                       <div className="lg:col-span-1">
                         {/* Sidebar with nested slots */}
                         <div className="space-y-4">
                           {currentOrder.includes('cart-sidebar') && 
-                            renderSlotInLayout('cart-sidebar', currentOrder.indexOf('cart-sidebar'), true)
+                            renderSlotInLayout('cart-sidebar', currentOrder.indexOf('cart-sidebar'))
                           }
                           <div className="ml-4 space-y-2 border-l-2 border-green-200 pl-4">
                             {currentOrder.includes('cart-order-summary') && 
-                              renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'), true)
+                              renderSlotInLayout('cart-order-summary', currentOrder.indexOf('cart-order-summary'))
                             }
                             {currentOrder.includes('cart-coupon-section') && 
-                              renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'), true)
+                              renderSlotInLayout('cart-coupon-section', currentOrder.indexOf('cart-coupon-section'))
                             }
                             {currentOrder.includes('cart-checkout-button') && 
-                              renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'), true)
+                              renderSlotInLayout('cart-checkout-button', currentOrder.indexOf('cart-checkout-button'))
                             }
                           </div>
                         </div>
@@ -853,7 +779,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
               }
               
               // Regular slot rendering
-              return renderSlotInLayout(slotId, index, true);
+              return renderSlotInLayout(slotId, index);
             })}
           </div>
         </div>
@@ -876,80 +802,6 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
     );
   }
 
-  // Slot Code Editor Modal
-  const SlotCodeEditor = () => {
-    if (!showSlotEditor || !editingSlot) return null;
-    
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
-            <div>
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Code className="w-5 h-5" />
-                Edit Slot: {editingSlot.name}
-              </h2>
-              <p className="text-sm text-gray-600">{editingSlot.id}</p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowSlotEditor(false);
-                  setEditingSlot(null);
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  // Parse the code and update the slot definition
-                  try {
-                    // Simple extraction of the config object from the code
-                    const configMatch = editingSlot.code.match(/export const .+_CONFIG = ({[\s\S]+?});/);
-                    if (configMatch) {
-                      // eslint-disable-next-line no-eval
-                      const updatedConfig = eval(`(${configMatch[1]})`);
-                      setSlotDefinitions(prev => ({
-                        ...prev,
-                        [editingSlot.id]: {
-                          ...prev[editingSlot.id],
-                          ...updatedConfig
-                        }
-                      }));
-                    }
-                    setShowSlotEditor(false);
-                    setEditingSlot(null);
-                  } catch (error) {
-                    console.error('Error parsing slot code:', error);
-                    alert('Error parsing slot configuration. Please check the syntax.');
-                  }
-                }}
-              >
-                <Save className="w-4 h-4 mr-2" />
-                Save Changes
-              </Button>
-            </div>
-          </div>
-          
-          {/* Code Editor */}
-          <div className="flex-1 overflow-hidden">
-            <CodeEditor
-              value={editingSlot.code}
-              onChange={(newCode) => {
-                setEditingSlot(prev => ({ ...prev, code: newCode }));
-              }}
-              fileName={`${editingSlot.id}.jsx`}
-              language="javascript"
-              className="h-full"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className={`generic-slot-editor h-screen flex flex-col ${className}`}>
       {/* Header */}
@@ -965,55 +817,25 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Current Mode Display */}
-          <span className="text-sm font-medium text-gray-500">
-            Mode: <span className="text-gray-900">{mode === 'visual' ? 'Visual' : 'Code'}</span>
-          </span>
-          
-          {/* Mode Toggle - Enhanced visibility */}
-          <div className="flex items-center bg-white border-2 border-gray-300 rounded-lg p-1">
-            <button
-              type="button"
-              onClick={() => {
-                console.log('Switching to visual mode');
-                setMode('visual');
-              }}
-              className={`px-4 py-2 rounded-md font-medium transition-all flex items-center gap-2 ${
-                mode === 'visual' 
-                  ? 'bg-blue-500 text-white shadow-sm' 
-                  : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              <Wand2 className="w-4 h-4" />
-              Visual
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                console.log('Switching to code mode');
-                setMode('code');
-              }}
-              className={`px-4 py-2 rounded-md font-medium transition-all flex items-center gap-2 ${
-                mode === 'code' 
-                  ? 'bg-blue-500 text-white shadow-sm' 
-                  : 'bg-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              <Code className="w-4 h-4" />
-              Code
-            </button>
-          </div>
+          {/* Mode Toggle */}
+          <Tabs value={mode} onValueChange={setMode}>
+            <TabsList>
+              <TabsTrigger value="visual" className="flex items-center gap-2">
+                <Wand2 className="w-4 h-4" />
+                Visual
+              </TabsTrigger>
+              <TabsTrigger value="code" className="flex items-center gap-2">
+                <Code className="w-4 h-4" />
+                Code
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
           
           <div className="flex gap-2">
             <Button variant="outline" onClick={onCancel}>
               Cancel
             </Button>
-            <Button onClick={() => onSave({ 
-              slotsFileCode, 
-              slotDefinitions: mergePositionsIntoDefinitions(), 
-              pageConfig,
-              slotPositions 
-            })}>
+            <Button onClick={() => onSave({ slotsFileCode, slotDefinitions, pageConfig })}>
               <Save className="w-4 h-4 mr-2" />
               Save Changes
             </Button>
@@ -1022,10 +844,10 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 overflow-hidden">
         {mode === 'visual' ? (
           /* VISUAL MODE: Drag & Drop + Preview */
-          <div className="h-full grid grid-cols-1 xl:grid-cols-3 gap-4 p-4 overflow-auto">
+          <div className="h-full grid grid-cols-1 xl:grid-cols-3 gap-4 p-4">
             {/* Left: Slot Management */}
             <div className="xl:col-span-1">
               <Card className="h-full">
@@ -1117,9 +939,6 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           </div>
         )}
       </div>
-      
-      {/* Slot Code Editor Modal */}
-      <SlotCodeEditor />
     </div>
   );
 };
