@@ -640,6 +640,7 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
 
       const visual = getSlotVisual(definition);
       const isEnabled = definition.enabled !== false;
+      const isBeingDragged = draggedSlotId === slotId;
       
       // Get custom grid position if dragged
       const gridPosition = slotPositions[slotId];
@@ -682,22 +683,28 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           draggable={isDraggable}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          className={`relative border-2 rounded-lg p-4 m-2 transition-all duration-200 ${
-            visual.color
-          } ${isEnabled ? 'opacity-100' : 'opacity-50'} ${
-            isDraggable ? 'hover:shadow-xl hover:scale-105 cursor-move' : ''
-          } ${draggedSlotId === slotId ? 'opacity-50 scale-95' : ''}`}
+          className={`relative border-2 rounded-lg p-4 m-2 transition-all duration-200 cursor-move
+            ${visual.color} 
+            ${isEnabled ? 'opacity-100' : 'opacity-50'} 
+            ${isDraggable ? 'hover:shadow-xl hover:-translate-y-1 hover:scale-105 active:scale-95 active:opacity-80' : ''}
+            ${isBeingDragged ? 'opacity-40 scale-95 rotate-1 shadow-2xl' : ''}`}
           style={{
-            cursor: isDraggable ? 'move' : 'default',
-            userSelect: 'none'
+            ...style,
+            userSelect: 'none',
+            zIndex: isBeingDragged ? 1000 : 'auto'
           }}
-          style={style}
           title={isDraggable ? 'Drag to reposition' : ''}
         >
           {/* Drag Handle for draggable slots */}
           {isDraggable && (
             <div className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 pointer-events-none">
-              <GripVertical className="w-4 h-4" />
+              {isBeingDragged ? (
+                <Badge variant="secondary" className="text-xs animate-pulse">
+                  Moving...
+                </Badge>
+              ) : (
+                <GripVertical className="w-4 h-4" />
+              )}
             </div>
           )}
           
@@ -805,14 +812,14 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
       // Add visual feedback for drop zones
       const target = e.currentTarget;
       if (target && isDragging) {
-        target.classList.add('drag-over');
+        target.classList.add('bg-blue-100/30', 'border-2', 'border-dashed', 'border-blue-400', 'shadow-xl');
       }
     };
     
     const handleDragLeave = (e) => {
       const target = e.currentTarget;
       if (target) {
-        target.classList.remove('drag-over');
+        target.classList.remove('bg-blue-100/30', 'border-2', 'border-dashed', 'border-blue-400', 'shadow-xl');
       }
     };
 
@@ -822,13 +829,12 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
 
       return (
         <div 
-          className={`bg-gray-50 min-h-full relative ${
-            isDragging ? 'dragging-active' : ''
+          className={`bg-gray-50 min-h-full relative transition-all duration-300 ${
+            isDragging ? 'bg-gradient-to-b from-blue-50/50 to-blue-100/30' : ''
           }`}
           onDrop={handleCanvasDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
-          style={{ position: 'relative' }}
         >
           {/* Actual Cart Page Layout Structure from Cart.jsx */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -946,20 +952,16 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
           {/* Grid Overlay for Drop Zones (visible on drag) */}
           {isDragging && (
             <div 
-              className="absolute inset-0 pointer-events-none z-10"
+              className="absolute inset-0 pointer-events-none z-10 grid grid-cols-12 gap-px bg-blue-50/50"
               style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(12, 1fr)',
-                gridTemplateRows: 'repeat(auto-fill, 100px)',
-                gap: '1px',
-                background: 'rgba(59, 130, 246, 0.05)'
+                gridTemplateRows: 'repeat(auto-fill, 100px)'
               }}
             >
               {/* Grid cells for visual feedback */}
               {Array.from({ length: 12 * 10 }, (_, i) => (
                 <div 
                   key={i}
-                  className="border border-dashed border-blue-300 bg-blue-50/20 transition-all hover:bg-blue-100/30"
+                  className="border border-dashed border-blue-300 bg-blue-50/20 transition-colors"
                 />
               ))}
             </div>
@@ -969,7 +971,16 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
     };
 
     return (
-      <div className="h-full bg-gray-100 overflow-y-auto">
+      <div className="h-full bg-gray-100 overflow-y-auto max-h-[calc(100vh-200px)] relative">
+        {/* Add instructions when dragging */}
+        {isDragging && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse">
+            <div className="flex items-center gap-2">
+              <ArrowUpDown className="w-4 h-4" />
+              <span className="text-sm font-medium">Drag and drop slot to reposition</span>
+            </div>
+          </div>
+        )}
         {renderLayoutStructure()}
       </div>
     );
@@ -1216,73 +1227,3 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
 };
 
 export default GenericSlotEditor;
-
-// Add custom styles for drag and drop
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = `
-    /* Drag and Drop Styles */
-    .dragging-active {
-      background: linear-gradient(to bottom, rgba(59, 130, 246, 0.02), rgba(59, 130, 246, 0.05));
-    }
-    
-    .drag-over {
-      background-color: rgba(59, 130, 246, 0.1) !important;
-      border: 2px dashed rgb(59, 130, 246) !important;
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
-    }
-    
-    /* Draggable slot cursor and hover effects */
-    [draggable="true"] {
-      cursor: move !important;
-      transition: all 0.2s ease;
-    }
-    
-    [draggable="true"]:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    }
-    
-    [draggable="true"]:active {
-      cursor: grabbing !important;
-      transform: scale(0.98);
-      opacity: 0.8;
-    }
-    
-    /* Grid overlay visual feedback */
-    .grid-overlay-active {
-      pointer-events: auto !important;
-    }
-    
-    .grid-cell-hover {
-      background-color: rgba(59, 130, 246, 0.2) !important;
-      border-color: rgb(59, 130, 246) !important;
-    }
-    
-    /* Layout preview container scrolling */
-    .layout-preview-container {
-      overflow-y: auto;
-      max-height: calc(100vh - 200px);
-    }
-    
-    /* Slot badge animations */
-    .slot-badge {
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.7;
-      }
-    }
-  `;
-  
-  // Only add styles once
-  if (!document.getElementById('generic-slot-editor-styles')) {
-    style.id = 'generic-slot-editor-styles';
-    document.head.appendChild(style);
-  }
-}
