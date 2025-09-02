@@ -22,11 +22,11 @@ import { getStoreBaseUrl, getExternalStoreUrl } from '@/utils/urlUtils';
 import SlotWrapper from '@/core/slot-system/SlotWrapper.jsx';
 
 // =============================================================================
-// 🧩 CART COMPONENTS (Store owners can modify these)
+// 🧩 SLOT COMPONENTS (Store owners can modify these - prefixed with 'Slot')
 // =============================================================================
 
-// Cart page container
-export const CartPageContainer = ({ children, className = "bg-gray-50 cart-page" }) => (
+// Slot: Cart page container
+export const SlotCartPageContainer = ({ children, className = "bg-gray-50 cart-page" }) => (
   <div className={className}>
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       {children}
@@ -34,13 +34,13 @@ export const CartPageContainer = ({ children, className = "bg-gray-50 cart-page"
   </div>
 );
 
-// Cart page header
-export const CartPageHeader = ({ title = "My Cart", className = "text-3xl font-bold text-gray-900 mb-8" }) => (
+// Slot: Cart page header
+export const SlotCartPageHeader = ({ title = "My Cart", className = "text-3xl font-bold text-gray-900 mb-8" }) => (
   <h1 className={className}>{title}</h1>
 );
 
-// Empty cart display
-export const EmptyCartDisplay = ({ 
+// Slot: Empty cart display
+export const SlotEmptyCartDisplay = ({ 
   store, 
   icon: Icon = ShoppingCart,
   title = "Your cart is empty",
@@ -62,8 +62,8 @@ export const EmptyCartDisplay = ({
   </Card>
 );
 
-// Cart items container
-export const CartItemsContainer = ({ children, className = "lg:col-span-2" }) => (
+// Slot: Cart items container
+export const SlotCartItemsContainer = ({ children, className = "lg:col-span-2" }) => (
   <div className={className}>
     <Card>
       <CardContent className="px-4 divide-y divide-gray-200">
@@ -73,8 +73,8 @@ export const CartItemsContainer = ({ children, className = "lg:col-span-2" }) =>
   </div>
 );
 
-// Individual cart item
-export const CartItem = ({ 
+// Slot: Individual cart item
+export const SlotCartItem = ({ 
   item, 
   product, 
   currencySymbol, 
@@ -164,15 +164,15 @@ export const CartItem = ({
   );
 };
 
-// Cart sidebar container
-export const CartSidebar = ({ children, className = "lg:col-span-1 space-y-6 mt-8 lg:mt-0" }) => (
+// Slot: Cart sidebar container
+export const SlotCartSidebar = ({ children, className = "lg:col-span-1 space-y-6 mt-8 lg:mt-0" }) => (
   <div className={className}>
     {children}
   </div>
 );
 
-// Coupon section
-export const CouponSection = ({ 
+// Slot: Coupon section
+export const SlotCouponSection = ({ 
   appliedCoupon, 
   couponCode, 
   onCouponCodeChange, 
@@ -227,8 +227,8 @@ export const CouponSection = ({
   </Card>
 );
 
-// Order summary
-export const OrderSummary = ({ 
+// Slot: Order summary
+export const SlotOrderSummary = ({ 
   subtotal, 
   discount, 
   tax, 
@@ -265,8 +265,8 @@ export const OrderSummary = ({
   </Card>
 );
 
-// Checkout button
-export const CheckoutButton = ({ 
+// Slot: Checkout button
+export const SlotCheckoutButton = ({ 
   onCheckout, 
   settings,
   text = "Proceed to Checkout",
@@ -288,8 +288,8 @@ export const CheckoutButton = ({
   </div>
 );
 
-// Cart grid layout
-export const CartGridLayout = ({ children, className = "lg:grid lg:grid-cols-3 lg:gap-8" }) => (
+// Slot: Cart grid layout
+export const SlotCartGridLayout = ({ children, className = "lg:grid lg:grid-cols-3 lg:gap-8" }) => (
   <div className={className}>
     {children}
   </div>
@@ -305,7 +305,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-page-container': {
     id: 'cart-page-container',
     type: 'component',
-    component: CartPageContainer,
+    component: SlotCartPageContainer,
     name: 'Page Container',
     description: 'Main cart page wrapper'
   },
@@ -313,7 +313,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-page-header': {
     id: 'cart-page-header', 
     type: 'component',
-    component: CartPageHeader,
+    component: SlotCartPageHeader,
     name: 'Page Header',
     description: 'Cart title and main heading'
   },
@@ -321,7 +321,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-grid-layout': {
     id: 'cart-grid-layout',
     type: 'component', 
-    component: CartGridLayout,
+    component: SlotCartGridLayout,
     name: 'Grid Layout',
     description: 'Responsive grid container'
   },
@@ -330,7 +330,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-items-container': {
     id: 'cart-items-container',
     type: 'component',
-    component: CartItemsContainer,
+    component: SlotCartItemsContainer,
     name: 'Items Container', 
     description: 'Container for all cart items'
   },
@@ -338,7 +338,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-item-single': {
     id: 'cart-item-single',
     type: 'component',
-    component: CartItem,
+    component: SlotCartItem,
     name: 'Individual Item',
     description: 'Each product in the cart'
   },
@@ -346,7 +346,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-sidebar': {
     id: 'cart-sidebar',
     type: 'component',
-    component: CartSidebar,
+    component: SlotCartSidebar,
     name: 'Sidebar Container',
     description: 'Right sidebar container'
   },
@@ -354,7 +354,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-coupon-section': {
     id: 'cart-coupon-section',
     type: 'component',
-    component: CouponSection,
+    component: SlotCouponSection,
     name: 'Coupon Code',
     description: 'Discount code input area'
   },
@@ -362,7 +362,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-order-summary': {
     id: 'cart-order-summary',
     type: 'component', 
-    component: OrderSummary,
+    component: SlotOrderSummary,
     name: 'Order Summary',
     description: 'Subtotal, tax, and total'
   },
@@ -370,7 +370,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-checkout-button': {
     id: 'cart-checkout-button',
     type: 'component',
-    component: CheckoutButton,
+    component: SlotCheckoutButton,
     name: 'Checkout Button', 
     description: 'Primary checkout action'
   },
@@ -378,7 +378,7 @@ export const CART_SLOT_DEFINITIONS = {
   'cart-empty-display': {
     id: 'cart-empty-display',
     type: 'component',
-    component: EmptyCartDisplay,
+    component: SlotEmptyCartDisplay,
     name: 'Empty Cart Message',
     description: 'Shown when cart has no items'
   }
