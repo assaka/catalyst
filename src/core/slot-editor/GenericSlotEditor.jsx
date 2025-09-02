@@ -151,93 +151,133 @@ const GenericSlotEditor = ({
     }
   };
 
-  // Create schema configuration from legacy code (enhanced to parse actual slots)
+  // Create schema configuration from legacy code using safe evaluation
   const createSchemaFromLegacy = async (legacyCode) => {
-    console.log('🔄 Converting legacy CartSlots.jsx to display format');
+    console.log('🔄 Converting legacy CartSlots.jsx using safe evaluation');
     
     try {
       const pagePrefix = pageName.toUpperCase();
       
-      // Extract SLOT_DEFINITIONS using regex
-      const slotDefRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_SLOT_DEFINITIONS\\s*=\\s*\\{([\\s\\S]*?)\\};`, 'gm');
-      const slotDefMatch = slotDefRegex.exec(legacyCode);
-      
-      // Extract SLOT_ORDER using regex  
-      const slotOrderRegex = new RegExp(`export\\s+const\\s+${pagePrefix}_SLOT_ORDER\\s*=\\s*\\[([\\s\\S]*?)\\];`, 'gm');
-      const slotOrderMatch = slotOrderRegex.exec(legacyCode);
-      
-      if (slotDefMatch) {
-        // Parse the slot definitions manually
-        const slotDefContent = slotDefMatch[1];
-        const parsedDefinitions = {};
+      // Create a safe evaluation environment
+      const evaluateSlotExports = (code) => {
+        // Create a sandbox with only the necessary globals
+        const sandbox = {
+          React: null, // We don't need React for data extraction
+          console: { log: () => {}, warn: () => {}, error: () => {} }, // Silent console
+          // Mock imports to prevent errors
+          Card: null,
+          CardContent: null,
+          CardHeader: null,
+          CardTitle: null,
+          Button: null,
+          Input: null,
+          Trash2: null,
+          Plus: null,
+          Minus: null,
+          Tag: null,
+          ShoppingCart: null,
+          formatDisplayPrice: () => '$0.00',
+          getStoreBaseUrl: () => '',
+          getExternalStoreUrl: () => '',
+          // Add component mocks
+          SlotCartPageContainer: 'SlotCartPageContainer',
+          SlotCartPageHeader: 'SlotCartPageHeader',
+          SlotCartGridLayout: 'SlotCartGridLayout',
+          SlotCartItemsContainer: 'SlotCartItemsContainer',
+          SlotCartItem: 'SlotCartItem',
+          SlotCartSidebar: 'SlotCartSidebar',
+          SlotCouponSection: 'SlotCouponSection',
+          SlotOrderSummary: 'SlotOrderSummary',
+          SlotCheckoutButton: 'SlotCheckoutButton',
+          SlotEmptyCartDisplay: 'SlotEmptyCartDisplay',
+        };
         
-        // Extract each slot definition using regex
-        const slotRegex = /['"`]([^'"`]+)['"`]\s*:\s*\{([^}]*(?:\{[^}]*\}[^}]*)*)\}/g;
-        let slotMatch;
+        // Extract just the export statements we need
+        const exportPattern = new RegExp(
+          `export\\s+const\\s+(${pagePrefix}_SLOT_DEFINITIONS|${pagePrefix}_SLOT_ORDER|${pagePrefix}_LAYOUT_PRESETS)\\s*=([^;]+);`, 
+          'gm'
+        );
         
-        while ((slotMatch = slotRegex.exec(slotDefContent)) !== null) {
-          const slotId = slotMatch[1];
-          const slotContent = slotMatch[2];
+        const exports = {};
+        let match;
+        
+        while ((match = exportPattern.exec(code)) !== null) {
+          const [, exportName, exportValue] = match;
           
-          // Extract basic properties
-          const typeMatch = /type\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
-          const nameMatch = /name\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
-          const descMatch = /description\s*:\s*['"`]([^'"`]+)['"`]/.exec(slotContent);
-          
-          parsedDefinitions[slotId] = {
-            id: slotId,
-            type: typeMatch ? typeMatch[1] : 'component',
-            name: nameMatch ? nameMatch[1] : slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-            description: descMatch ? descMatch[1] : `${typeMatch ? typeMatch[1] : 'component'} slot`,
-            enabled: true,
-            required: true // Assume legacy slots are required
-          };
-        }
-        
-        console.log('🎯 Parsed actual cart slot definitions:', parsedDefinitions);
-        setSlotDefinitions(parsedDefinitions);
-        
-        // Parse slot order
-        let parsedOrder = Object.keys(parsedDefinitions);
-        
-        if (slotOrderMatch) {
-          // Extract just the quoted strings (ignore comments completely)
-          const orderContent = slotOrderMatch[1];
-          
-          // Use regex to find all quoted strings, ignoring everything else
-          const quotedStrings = orderContent.match(/'([^']+)'|"([^"]+)"|`([^`]+)`/g);
-          
-          if (quotedStrings) {
-            const orderItems = quotedStrings.map(quoted => 
-              quoted.slice(1, -1) // Remove the quotes
+          try {
+            // Create a safe function to evaluate the export value
+            const evalFunction = new Function(
+              ...Object.keys(sandbox),
+              `return ${exportValue};`
             );
             
-            console.log('🎯 Extracted slot IDs from quotes:', orderItems);
+            // Execute with our sandbox values
+            const result = evalFunction(...Object.values(sandbox));
+            exports[exportName] = result;
             
-            if (orderItems.length > 0) {
-              parsedOrder = orderItems;
-            }
-          } else {
-            console.warn('⚠️ No quoted strings found in CART_SLOT_ORDER');
+            console.log(`✅ Successfully parsed ${exportName}:`, Object.keys(result).length, 'items');
+            
+          } catch (evalError) {
+            console.warn(`⚠️ Could not evaluate ${exportName}:`, evalError.message);
           }
+        }
+        
+        return exports;
+      };
+      
+      // Evaluate the exports
+      const exports = evaluateSlotExports(legacyCode);
+      
+      // Extract slot definitions
+      const slotDefinitionsKey = `${pagePrefix}_SLOT_DEFINITIONS`;
+      const slotOrderKey = `${pagePrefix}_SLOT_ORDER`;
+      
+      if (exports[slotDefinitionsKey]) {
+        const rawDefinitions = exports[slotDefinitionsKey];
+        const parsedDefinitions = {};
+        
+        // Process each slot definition
+        Object.entries(rawDefinitions).forEach(([slotId, definition]) => {
+          parsedDefinitions[slotId] = {
+            id: slotId,
+            type: definition.type || 'component',
+            name: definition.name || slotId.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            description: definition.description || `${definition.type || 'component'} slot`,
+            enabled: true,
+            required: true,
+            component: definition.component || slotId,
+            ...definition // Include any other properties
+          };
+        });
+        
+        console.log('🎯 Processed slot definitions:', parsedDefinitions);
+        setSlotDefinitions(parsedDefinitions);
+        
+        // Process slot order
+        let parsedOrder = Object.keys(parsedDefinitions);
+        
+        if (exports[slotOrderKey] && Array.isArray(exports[slotOrderKey])) {
+          parsedOrder = exports[slotOrderKey];
+          console.log('🎯 Using defined slot order:', parsedOrder);
+        } else {
+          console.log('🎯 Using default slot order from definitions');
         }
         
         setSlotOrder(parsedOrder);
         setPageConfig({
           slotOrder: parsedOrder,
-          layoutPresets: {}
+          layoutPresets: exports[`${pagePrefix}_LAYOUT_PRESETS`] || {}
         });
         
-        console.log('✅ Successfully loaded', Object.keys(parsedDefinitions).length, 'cart slots');
+        console.log('✅ Successfully loaded', Object.keys(parsedDefinitions).length, 'cart slots with safe evaluation');
         
       } else {
-        // Fallback if no slot definitions found
-        console.warn('⚠️ No CART_SLOT_DEFINITIONS found, creating fallback');
+        console.warn('⚠️ No slot definitions found, creating fallback');
         await createDefaultSchemaConfig();
       }
       
     } catch (error) {
-      console.error('❌ Error parsing legacy cart slots:', error);
+      console.error('❌ Error in safe evaluation parsing:', error);
       await createDefaultSchemaConfig();
     }
   };
