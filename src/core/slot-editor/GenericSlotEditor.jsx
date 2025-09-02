@@ -201,18 +201,26 @@ const GenericSlotEditor = ({
         let parsedOrder = Object.keys(parsedDefinitions);
         
         if (slotOrderMatch) {
-          // Extract slot order array items, handling comments
+          // Extract slot order array items, handling multiline comments
           const orderContent = slotOrderMatch[1];
           const orderItems = orderContent
             .split(',')
             .map(item => {
-              // Remove comments and whitespace
-              const cleanItem = item.replace(/\/\/.*$/, '').trim().replace(/['"`]/g, '');
+              // Remove all comments (including multiline) and whitespace
+              let cleanItem = item
+                .replace(/\/\/.*$/gm, '') // Remove single-line comments
+                .replace(/\/\*[\s\S]*?\*\//g, '') // Remove multi-line comments
+                .replace(/\r\n/g, ' ') // Replace line breaks with spaces
+                .replace(/\n/g, ' ') // Replace newlines with spaces
+                .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+                .trim() // Remove leading/trailing whitespace
+                .replace(/['"`]/g, ''); // Remove quotes
+              
               return cleanItem;
             })
-            .filter(item => item && item !== '');
+            .filter(item => item && item !== '' && item !== ' ');
           
-          console.log('🎯 Parsed actual slot order:', orderItems);
+          console.log('🎯 Cleaned slot order items:', orderItems);
           
           if (orderItems.length > 0) {
             parsedOrder = orderItems;
