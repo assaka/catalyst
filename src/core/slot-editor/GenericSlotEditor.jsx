@@ -965,36 +965,26 @@ const ${slot.component || 'SlotComponent'} = ({ children, ...props }) => {
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Mode Toggle - Simple radio buttons approach */}
-          <div className="flex items-center gap-4 px-4 py-2 bg-gray-100 rounded-lg">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="editor-mode"
-                value="visual"
-                checked={mode === 'visual'}
-                onChange={() => {
-                  console.log('Switching to visual mode');
-                  setMode('visual');
-                }}
-                className="w-4 h-4"
-              />
-              <span className="font-medium">Visual</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="editor-mode"
-                value="code"
-                checked={mode === 'code'}
-                onChange={() => {
-                  console.log('Switching to code mode');
-                  setMode('code');
-                }}
-                className="w-4 h-4"
-              />
-              <span className="font-medium">Code</span>
-            </label>
+          {/* Mode Toggle */}
+          <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-100">
+            <Button
+              variant={mode === 'visual' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('visual')}
+              className="flex items-center gap-2"
+            >
+              <Wand2 className="w-4 h-4" />
+              Visual
+            </Button>
+            <Button
+              variant={mode === 'code' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMode('code')}
+              className="flex items-center gap-2"
+            >
+              <Code className="w-4 h-4" />
+              Code
+            </Button>
           </div>
           
           {/* Alternative: Simple select dropdown */}
