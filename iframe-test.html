@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cart Page Preview Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .preview-section {
+            margin-bottom: 30px;
+        }
+        .preview-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .iframe-container {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #fff;
+        }
+        iframe {
+            width: 100%;
+            border: none;
+            display: block;
+        }
+        .controls {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        button {
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .size-info {
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Cart Page Preview Test</h1>
+        <p>This test demonstrates how to display the Cart.jsx page in an iframe for preview purposes.</p>
+        
+        <div class="preview-section">
+            <div class="preview-title">Desktop Preview (1200x800)</div>
+            <div class="controls">
+                <button onclick="refreshIframe('desktop')">Refresh</button>
+                <span class="size-info">1200px × 800px</span>
+            </div>
+            <div class="iframe-container">
+                <iframe 
+                    id="desktop-iframe" 
+                    src="http://localhost:3000/cart" 
+                    width="1200" 
+                    height="800">
+                    Your browser doesn't support iframes.
+                </iframe>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <div class="preview-title">Mobile Preview (375x667)</div>
+            <div class="controls">
+                <button onclick="refreshIframe('mobile')">Refresh</button>
+                <span class="size-info">375px × 667px</span>
+            </div>
+            <div class="iframe-container">
+                <iframe 
+                    id="mobile-iframe" 
+                    src="http://localhost:3000/cart" 
+                    width="375" 
+                    height="667">
+                    Your browser doesn't support iframes.
+                </iframe>
+            </div>
+        </div>
+
+        <div class="preview-section">
+            <div class="preview-title">Tablet Preview (768x1024)</div>
+            <div class="controls">
+                <button onclick="refreshIframe('tablet')">Refresh</button>
+                <span class="size-info">768px × 1024px</span>
+            </div>
+            <div class="iframe-container">
+                <iframe 
+                    id="tablet-iframe" 
+                    src="http://localhost:3000/cart" 
+                    width="768" 
+                    height="1024">
+                    Your browser doesn't support iframes.
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function refreshIframe(type) {
+            const iframe = document.getElementById(type + '-iframe');
+            const currentSrc = iframe.src;
+            iframe.src = '';
+            setTimeout(() => {
+                iframe.src = currentSrc;
+            }, 100);
+        }
+
+        // Auto-refresh iframes every 30 seconds to show live changes
+        let autoRefresh = false;
+        
+        function toggleAutoRefresh() {
+            autoRefresh = !autoRefresh;
+            if (autoRefresh) {
+                setInterval(() => {
+                    if (autoRefresh) {
+                        refreshIframe('desktop');
+                        setTimeout(() => refreshIframe('mobile'), 1000);
+                        setTimeout(() => refreshIframe('tablet'), 2000);
+                    }
+                }, 30000);
+            }
+        }
+
+        // Handle iframe load errors
+        document.querySelectorAll('iframe').forEach(iframe => {
+            iframe.addEventListener('error', function() {
+                console.error('Failed to load iframe:', this.src);
+                this.style.background = '#f8f9fa';
+                this.style.display = 'flex';
+                this.style.alignItems = 'center';
+                this.style.justifyContent = 'center';
+            });
+        });
+
+        console.log('Cart Page Preview Test loaded. Make sure your development server is running on http://localhost:3000');
+    </script>
+</body>
+</html>
