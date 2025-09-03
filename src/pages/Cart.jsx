@@ -112,14 +112,23 @@ export default function Cart() {
             if (!store?.id) return;
             
             try {
+                // Build the API URL based on environment
+                const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+                const endpoint = `${apiBaseUrl}/api/public/slot-configurations?store_id=${store.id}&page_name=Cart&slot_type=cart_layout`;
+                
+                console.log('Loading cart configuration from:', endpoint);
+                
                 // Load from slot_configurations table (public endpoint for storefront)
-                const response = await fetch(`/api/public/slot-configurations?store_id=${store.id}&page_name=Cart&slot_type=cart_layout`);
+                const response = await fetch(endpoint);
                 
                 if (response.ok) {
                     const data = await response.json();
                     if (data?.data?.length > 0) {
-                        setCartLayoutConfig(data.data[0].configuration);
-                        console.log('✅ Loaded cart layout configuration for storefront');
+                        // Configuration might be a JSON string that needs parsing
+                        const config = data.data[0].configuration;
+                        const parsedConfig = typeof config === 'string' ? JSON.parse(config) : config;
+                        setCartLayoutConfig(parsedConfig);
+                        console.log('✅ Loaded cart layout configuration for storefront:', parsedConfig);
                     }
                 }
             } catch (error) {
@@ -838,6 +847,7 @@ export default function Cart() {
     
     // If custom layout configuration exists and not in layout loading state, use CartSlots
     if (cartLayoutConfig && !layoutLoading) {
+        console.log('Using CartSlots with custom layout configuration');
         return <CartSlots data={cartSlotsData} layoutConfig={cartLayoutConfig} enableDragDrop={false} />;
     }
     
