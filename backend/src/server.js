@@ -73,6 +73,7 @@ const consentLogRoutes = require('./routes/consent-logs');
 const customOptionRuleRoutes = require('./routes/custom-option-rules');
 const addCustomOptionRulesTableRoutes = require('./routes/add-custom-option-rules-table');
 const addressRoutes = require('./routes/addresses');
+const slotConfigurationRoutes = require('./routes/slot-configurations');
 const createCmsBlocksTableRoutes = require('./routes/create-cms-blocks-table');
 const checkCmsBlocksSchemaRoutes = require('./routes/check-cms-blocks-schema');
 const addCmsBlocksColumnsRoutes = require('./routes/add-cms-blocks-columns');
@@ -1433,6 +1434,7 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/stores', authMiddleware, storeRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use(slotConfigurationRoutes); // Slot configurations for cart layout
 
 // Public order lookup by payment reference (MUST be before authenticated routes)
 app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) => {
