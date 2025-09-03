@@ -70,10 +70,45 @@ const GenericSlotEditor = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
   // Cart layout configuration state
-  const [cartLayoutConfig, setCartLayoutConfig] = useState(() => {
-    const saved = localStorage.getItem('cart_slots_layout_config');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
+  
+  // Load cart layout configuration from database
+  useEffect(() => {
+    const loadCartLayoutConfig = async () => {
+      if (pageName !== 'Cart') return;
+      
+      try {
+        // Try to load from database first
+        const response = await apiClient.get('slot-configurations', {
+          params: { page_name: 'Cart', slot_type: 'cart_layout', is_active: true }
+        });
+        
+        if (response?.data?.length > 0) {
+          const config = response.data[0].configuration;
+          setCartLayoutConfig(config);
+          // Also save to localStorage for offline access
+          localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
+          console.log('✅ Loaded cart layout configuration from database');
+        } else {
+          // Fallback to localStorage
+          const saved = localStorage.getItem('cart_slots_layout_config');
+          if (saved) {
+            setCartLayoutConfig(JSON.parse(saved));
+            console.log('📦 Loaded cart layout configuration from localStorage');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load cart layout configuration:', error);
+        // Fallback to localStorage
+        const saved = localStorage.getItem('cart_slots_layout_config');
+        if (saved) {
+          setCartLayoutConfig(JSON.parse(saved));
+        }
+      }
+    };
+    
+    loadCartLayoutConfig();
+  }, [pageName]);
   
   // Auto-save refs
   const saveTimeoutRef = useRef(null);
@@ -1506,13 +1541,43 @@ export default ${componentName};`;
                 {pageName === 'Cart' ? (
                   <CartSlotsEditor 
                     data={{}}
-                    onSave={(config) => {
+                    onSave={async (config) => {
                       console.log('Saving Cart layout configuration:', config);
-                      // Save layout configuration
+                      
+                      // Save layout configuration to state
                       setCartLayoutConfig(config);
+                      
+                      // Save to localStorage for quick access
                       localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
-                      // Also save to the main editor config
-                      localStorage.setItem('cart_slots_editor_config', JSON.stringify(config));
+                      
+                      // Save to database via API
+                      try {
+                        const slotConfig = {
+                          page_name: 'Cart',
+                          slot_type: 'cart_layout',
+                          configuration: config,
+                          is_active: true
+                        };
+                        
+                        // Check if configuration exists
+                        const existing = await apiClient.get('slot-configurations', {
+                          params: { page_name: 'Cart', slot_type: 'cart_layout' }
+                        });
+                        
+                        if (existing?.data?.length > 0) {
+                          // Update existing configuration
+                          await apiClient.put(`slot-configurations/${existing.data[0].id}`, slotConfig);
+                          console.log('✅ Updated cart layout configuration in database');
+                        } else {
+                          // Create new configuration
+                          await apiClient.post('slot-configurations', slotConfig);
+                          console.log('✅ Created cart layout configuration in database');
+                        }
+                      } catch (error) {
+                        console.error('Failed to save to database:', error);
+                        // Fallback to localStorage is already done
+                      }
+                      
                       triggerAutoSave();
                     }}
                   />
