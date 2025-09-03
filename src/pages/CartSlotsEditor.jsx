@@ -851,26 +851,26 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       style={style}
       className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
     >
-      {/* Invisible hover zone that extends to include icons - adjusted to cover drag handle properly */}
+      {/* Invisible hover zone - smaller to avoid resize conflicts */}
       <div 
-        className="absolute -inset-y-8 z-0"
-        style={{ left: '-40px', right: '-40px' }}
+        className="absolute -inset-y-2 z-0"
+        style={{ left: '-20px', right: '-20px' }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       />
       
       {isDraggable && isHovered && (
         <div 
-          className="absolute -left-8 top-1/2 -translate-y-1/2 transition-opacity z-10"
+          className="absolute left-1 top-1 transition-opacity z-10"
           onMouseEnter={() => setIsHovered(true)}
         >
           <div
             {...listeners}
             {...attributes}
-            className="p-1.5 bg-blue-100 rounded cursor-grab active:cursor-grabbing hover:bg-blue-200"
+            className="p-1 bg-blue-100/80 rounded cursor-grab active:cursor-grabbing hover:bg-blue-200"
             title="Drag to reorder within parent"
           >
-            <Move className="w-4 h-4 text-blue-600" />
+            <Move className="w-3 h-3 text-blue-600" />
           </div>
         </div>
       )}
@@ -878,17 +878,17 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       {onEdit && isHovered && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute -right-8 top-1/2 -translate-y-1/2 p-1.5 bg-gray-100 rounded transition-opacity z-10 hover:bg-gray-200"
+          className="absolute right-1 top-1 p-1 bg-gray-100/80 rounded transition-opacity z-10 hover:bg-gray-200"
           title="Edit micro-slot"
           onMouseEnter={() => setIsHovered(true)}
         >
-          <Edit className="w-4 h-4 text-gray-600" />
+          <Edit className="w-3 h-3 text-gray-600" />
         </button>
       )}
       
-      {/* Span controls */}
+      {/* Span controls - moved inside to avoid conflicts */}
       {onSpanChange && isHovered && (
-        <div className="absolute -bottom-6 left-0 flex gap-2 transition-opacity z-10">
+        <div className="absolute bottom-1 left-1 flex gap-1 transition-opacity z-10">
           <div className="flex items-center bg-white rounded shadow-sm border px-1">
             <span className="text-xs text-gray-500 mr-1">W:</span>
             <input
@@ -985,40 +985,40 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       style={style}
       className={`relative ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
     >
-      {/* Invisible hover zone that extends to include parent icons - increased area */}
+      {/* Invisible hover zone - smaller area to avoid conflicts */}
       <div 
-        className="absolute -inset-y-4 z-0"
-        style={{ left: '-50px', right: '-50px' }}
+        className="absolute -inset-y-2 z-0"
+        style={{ left: '-25px', right: '-25px' }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       />
       
-      {/* Parent drag handle */}
+      {/* Parent drag handle - moved inside */}
       {isDraggable && isHovered && (
         <div 
-          className="absolute -left-12 top-4 transition-opacity z-10"
+          className="absolute left-2 top-2 transition-opacity z-10"
           onMouseEnter={() => setIsHovered(true)}
         >
           <div
             {...listeners}
             {...attributes}
-            className="p-2 bg-gray-100 rounded cursor-grab active:cursor-grabbing hover:bg-gray-200"
+            className="p-1.5 bg-gray-100/90 rounded cursor-grab active:cursor-grabbing hover:bg-gray-200"
             title="Drag to reorder section"
           >
-            <GripVertical className="w-5 h-5 text-gray-600" />
+            <GripVertical className="w-4 h-4 text-gray-600" />
           </div>
         </div>
       )}
       
-      {/* Parent edit button */}
+      {/* Parent edit button - moved inside */}
       {onEdit && isHovered && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute -right-12 top-4 p-2 bg-blue-100 rounded transition-opacity z-10 hover:bg-blue-200"
+          className="absolute right-2 top-2 p-1.5 bg-blue-100/90 rounded transition-opacity z-10 hover:bg-blue-200"
           title="Edit section"
           onMouseEnter={() => setIsHovered(true)}
         >
-          <Edit className="w-5 h-5 text-blue-600" />
+          <Edit className="w-4 h-4 text-blue-600" />
         </button>
       )}
       
