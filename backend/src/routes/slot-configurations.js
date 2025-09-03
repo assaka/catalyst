@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { SlotConfiguration } = require('../models');
-const { authenticate } = require('../middleware/auth');
+const { authMiddleware } = require('../middleware/auth');
 
 // Public endpoint to get active slot configurations for storefront
 router.get('/api/public/slot-configurations', async (req, res) => {
@@ -40,8 +40,8 @@ router.get('/api/public/slot-configurations', async (req, res) => {
   }
 });
 
-// Get slot configurations (authenticated)
-router.get('/api/slot-configurations', authenticate, async (req, res) => {
+// Get slot configurations (authMiddlewared)
+router.get('/api/slot-configurations', authMiddleware, async (req, res) => {
   try {
     const { store_id, page_name, slot_type, is_active } = req.query;
     
@@ -76,7 +76,7 @@ router.get('/api/slot-configurations', authenticate, async (req, res) => {
 });
 
 // Get single slot configuration
-router.get('/api/slot-configurations/:id', authenticate, async (req, res) => {
+router.get('/api/slot-configurations/:id', authMiddleware, async (req, res) => {
   try {
     const configuration = await SlotConfiguration.findOne({
       where: {
@@ -97,7 +97,7 @@ router.get('/api/slot-configurations/:id', authenticate, async (req, res) => {
 });
 
 // Create slot configuration
-router.post('/api/slot-configurations', authenticate, async (req, res) => {
+router.post('/api/slot-configurations', authMiddleware, async (req, res) => {
   try {
     const { page_name, slot_type, configuration, is_active, store_id } = req.body;
     
@@ -146,7 +146,7 @@ router.post('/api/slot-configurations', authenticate, async (req, res) => {
 });
 
 // Update slot configuration
-router.put('/api/slot-configurations/:id', authenticate, async (req, res) => {
+router.put('/api/slot-configurations/:id', authMiddleware, async (req, res) => {
   try {
     const configuration = await SlotConfiguration.findOne({
       where: {
@@ -182,7 +182,7 @@ router.put('/api/slot-configurations/:id', authenticate, async (req, res) => {
 });
 
 // Delete slot configuration
-router.delete('/api/slot-configurations/:id', authenticate, async (req, res) => {
+router.delete('/api/slot-configurations/:id', authMiddleware, async (req, res) => {
   try {
     const configuration = await SlotConfiguration.findOne({
       where: {
