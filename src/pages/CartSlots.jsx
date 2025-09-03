@@ -358,9 +358,11 @@ export default function CartSlots({
           </>
         )}
         
-        <div className="mt-12">
-          <RecommendedProducts />
-        </div>
+        {store && store.id && (
+          <div className="mt-12">
+            <RecommendedProducts storeId={store.id} />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -104,7 +104,8 @@ const fetchRecommendationData = async (storeId, context = 'default') => {
 
 
 export default function RecommendedProducts({ product: currentProduct, storeId, products: providedProducts, selectedOptions = [] }) {
-    const { settings, store } = useStore();
+    const storeContext = useStore();
+    const { settings, store } = storeContext || { settings: null, store: null };
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [cartItems, setCartItems] = useState([]);
@@ -268,6 +269,11 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
         };
     }, [currentProduct?.id, providedProducts, rateLimitHit, store?.id]); // Removed selectedOptions to reduce triggers
 
+    // Early return if no store context (when used outside StoreProvider)
+    if (!storeContext && !storeId) {
+        return null;
+    }
+
     if (loading || products.length === 0) {
         return null;
     }
@@ -277,7 +283,7 @@ export default function RecommendedProducts({ product: currentProduct, storeId, 
             <h2 className="text-3xl font-bold text-center mb-8">You Might Also Like</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {products.map(product => (
-                    <ProductCard key={product.id} product={product} settings={settings} />
+                    <ProductCard key={product.id} product={product} settings={settings || {}} />
                 ))}
             </div>
         </div>
