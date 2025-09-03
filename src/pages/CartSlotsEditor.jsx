@@ -825,6 +825,10 @@ export default function CartSlotsEditorWithMicroSlots({
   // State for major slot order
   const [majorSlots, setMajorSlots] = useState(['header', 'cartItems', 'coupon', 'orderSummary', 'recommendedProducts']);
   
+  // State for resizing indicators
+  const [isResizingIcon, setIsResizingIcon] = useState(null);
+  const [isResizingButton, setIsResizingButton] = useState(null);
+  
   // State for micro-slot orders within each parent
   const [microSlotOrders, setMicroSlotOrders] = useState(() => {
     const orders = {};
@@ -1075,22 +1079,44 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <ShoppingCart 
-                    className="text-gray-400" 
-                    style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
-                  />
-                  <div className="flex items-center gap-2 mt-2 bg-white p-2 rounded shadow-sm border">
-                    <span className="text-xs text-gray-500">Icon Size:</span>
-                    <Slider
-                      value={[iconSize]}
-                      onValueChange={([value]) => handleSizeChange(slotId, value)}
-                      min={16}
-                      max={128}
-                      step={8}
-                      className="w-24"
+                  <div className="relative group">
+                    <ShoppingCart 
+                      className="text-gray-400" 
+                      style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
                     />
-                    <span className="text-xs text-gray-600 w-12">{iconSize}px</span>
+                    {/* Icon resize handle - bottom-right corner */}
+                    <div
+                      className={`absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-sm cursor-nwse-resize transition-opacity ${
+                        isResizingIcon === slotId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setIsResizingIcon(slotId);
+                        const startSize = iconSize;
+                        const startX = e.clientX;
+                        const startY = e.clientY;
+                        
+                        const handleMouseMove = (e) => {
+                          const deltaX = e.clientX - startX;
+                          const deltaY = e.clientY - startY;
+                          const delta = Math.max(deltaX, deltaY);
+                          const newSize = Math.min(128, Math.max(16, startSize + delta));
+                          handleSizeChange(slotId, newSize);
+                        };
+                        
+                        const handleMouseUp = () => {
+                          setIsResizingIcon(null);
+                          document.removeEventListener('mousemove', handleMouseMove);
+                          document.removeEventListener('mouseup', handleMouseUp);
+                        };
+                        
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', handleMouseUp);
+                      }}
+                    />
                   </div>
+                  <div className="text-xs text-gray-500">Icon: {iconSize}px (drag corner to resize)</div>
                 </div>
               </MicroSlot>
             );
@@ -1153,33 +1179,64 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
                 <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <Button 
-                    size={buttonSize}
-                    onClick={() => {
-                      const baseUrl = getStoreBaseUrl(store);
-                      window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-                    }}
-                  >
-                    <InlineEdit
-                      value={textContent[slotId]}
-                      onChange={(newText) => handleTextChange(slotId, newText)}
-                      className="text-white"
-                      tag="span"
+                  <div className="relative group inline-block">
+                    <Button 
+                      size={buttonSize}
+                      onClick={() => {
+                        const baseUrl = getStoreBaseUrl(store);
+                        window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+                      }}
+                    >
+                      <InlineEdit
+                        value={textContent[slotId]}
+                        onChange={(newText) => handleTextChange(slotId, newText)}
+                        className="text-white"
+                        tag="span"
+                      />
+                    </Button>
+                    {/* Button resize handle - bottom-right corner */}
+                    <div
+                      className={`absolute -bottom-1 -right-1 w-4 h-4 bg-blue-500 rounded-sm cursor-nwse-resize z-20 transition-opacity ${
+                        isResizingButton === slotId ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}
+                      onMouseDown={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setIsResizingButton(slotId);
+                        const currentSize = buttonSize;
+                        const sizes = ['sm', 'default', 'lg'];
+                        const startX = e.clientX;
+                        const startIndex = sizes.indexOf(currentSize);
+                        
+                        const handleMouseMove = (e) => {
+                          const deltaX = e.clientX - startX;
+                          
+                          // Change size based on drag distance (every 50px)
+                          let newIndex = startIndex;
+                          if (deltaX > 50) {
+                            newIndex = Math.min(sizes.length - 1, startIndex + Math.floor(deltaX / 50));
+                          } else if (deltaX < -50) {
+                            newIndex = Math.max(0, startIndex + Math.ceil(deltaX / 50));
+                          }
+                          
+                          const newSize = sizes[newIndex];
+                          if (newSize !== componentSizes[slotId]) {
+                            handleSizeChange(slotId, newSize);
+                          }
+                        };
+                        
+                        const handleMouseUp = () => {
+                          setIsResizingButton(null);
+                          document.removeEventListener('mousemove', handleMouseMove);
+                          document.removeEventListener('mouseup', handleMouseUp);
+                        };
+                        
+                        document.addEventListener('mousemove', handleMouseMove);
+                        document.addEventListener('mouseup', handleMouseUp);
+                      }}
                     />
-                  </Button>
-                  <div className="flex items-center gap-2 mt-2 bg-white p-2 rounded shadow-sm border">
-                    <span className="text-xs text-gray-500">Button Size:</span>
-                    <Select value={buttonSize} onValueChange={(value) => handleSizeChange(slotId, value)}>
-                      <SelectTrigger className="h-7 w-24 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="sm">Small</SelectItem>
-                        <SelectItem value="default">Default</SelectItem>
-                        <SelectItem value="lg">Large</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
+                  <div className="text-xs text-gray-500">Button: {buttonSize} (drag corner to resize)</div>
                 </div>
               </MicroSlot>
             );
