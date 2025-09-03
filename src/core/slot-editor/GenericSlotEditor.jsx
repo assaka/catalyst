@@ -1566,15 +1566,23 @@ export default ${componentName};`;
                       
                       // Save to database via API
                       try {
-                        // Get user data with store information
-                        const userData = localStorage.getItem('store_owner_user_data');
-                        const user = userData ? JSON.parse(userData) : null;
-                        const storeId = user?.active_store_id || user?.stores?.[0]?.id;
+                        // Get store ID from various sources
+                        let storeId = localStorage.getItem('selectedStoreId');
                         
                         if (!storeId) {
-                          console.error('No store ID found for saving configuration');
+                          // Try to get from user data
+                          const userData = localStorage.getItem('store_owner_user_data');
+                          const user = userData ? JSON.parse(userData) : null;
+                          storeId = user?.active_store_id || user?.stores?.[0]?.id;
+                        }
+                        
+                        if (!storeId) {
+                          console.error('No store ID found for saving configuration. Please select a store first.');
+                          alert('Please select a store before saving the cart layout configuration.');
                           return;
                         }
+                        
+                        console.log('Saving with store ID:', storeId);
                         
                         const slotConfig = {
                           page_name: 'Cart',
@@ -1583,6 +1591,8 @@ export default ${componentName};`;
                           is_active: true,
                           store_id: storeId
                         };
+                        
+                        console.log('Saving slot configuration:', slotConfig);
                         
                         // Check if configuration exists
                         const existing = await apiClient.get('slot-configurations', {
@@ -1593,17 +1603,21 @@ export default ${componentName};`;
                           }
                         });
                         
-                        if (existing?.data?.length > 0) {
+                        if (existing?.data?.data?.length > 0) {
                           // Update existing configuration
-                          await apiClient.put(`slot-configurations/${existing.data[0].id}`, slotConfig);
-                          console.log('✅ Updated cart layout configuration in database');
+                          const response = await apiClient.put(`slot-configurations/${existing.data.data[0].id}`, slotConfig);
+                          console.log('✅ Updated cart layout configuration in database', response);
+                          alert('Cart layout configuration updated successfully!');
                         } else {
                           // Create new configuration
-                          await apiClient.post('slot-configurations', slotConfig);
-                          console.log('✅ Created cart layout configuration in database');
+                          const response = await apiClient.post('slot-configurations', slotConfig);
+                          console.log('✅ Created cart layout configuration in database', response);
+                          alert('Cart layout configuration saved successfully!');
                         }
                       } catch (error) {
                         console.error('Failed to save to database:', error);
+                        console.error('Error details:', error.response?.data || error.message);
+                        alert(`Failed to save configuration: ${error.response?.data?.error || error.message}`);
                         // Fallback to localStorage is already done
                       }
                       
