@@ -20,7 +20,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Pencil, EyeOff, GripVertical } from "react-feather";
+import { Pencil, EyeOff, GripVertical } from "lucide-react";
 
 // Basic SlotWrapper to add cancel button while editing
 const SlotWrapper = ({ children, isEditing, onEditCancel }) => (
