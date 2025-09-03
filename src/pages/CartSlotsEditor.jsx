@@ -41,41 +41,63 @@ const MICRO_SLOT_DEFINITIONS = {
     id: 'emptyCart',
     name: 'Empty Cart',
     microSlots: ['emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button'],
-    defaultOrder: ['emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button'],
-    defaultLayout: 'grid', // Can be 'vertical', 'horizontal', or 'grid'
-    gridCols: 2 // Used when layout is 'grid' - allows icon and title on one row, text and button on another
+    gridCols: 12, // Total columns in the grid
+    defaultSpans: {
+      'emptyCart.icon': { col: 2, row: 1 },
+      'emptyCart.title': { col: 10, row: 1 },
+      'emptyCart.text': { col: 12, row: 1 },
+      'emptyCart.button': { col: 12, row: 1 }
+    }
   },
   header: {
     id: 'header',
     name: 'Page Header',
     microSlots: ['header.flashMessage', 'header.title', 'header.cmsBlock'],
-    defaultOrder: ['header.flashMessage', 'header.title', 'header.cmsBlock'],
-    defaultLayout: 'vertical',
-    gridCols: 2
+    gridCols: 12,
+    defaultSpans: {
+      'header.flashMessage': { col: 12, row: 1 },
+      'header.title': { col: 12, row: 1 },
+      'header.cmsBlock': { col: 12, row: 1 }
+    }
   },
   cartItem: {
     id: 'cartItem',
     name: 'Cart Item',
     microSlots: ['cartItem.image', 'cartItem.details', 'cartItem.quantity', 'cartItem.price', 'cartItem.remove'],
-    defaultOrder: ['cartItem.image', 'cartItem.details', 'cartItem.quantity', 'cartItem.price', 'cartItem.remove'],
-    defaultLayout: 'horizontal',
-    gridCols: 3
+    gridCols: 12,
+    defaultSpans: {
+      'cartItem.image': { col: 2, row: 2 },
+      'cartItem.details': { col: 4, row: 2 },
+      'cartItem.quantity': { col: 3, row: 1 },
+      'cartItem.price': { col: 2, row: 1 },
+      'cartItem.remove': { col: 1, row: 1 }
+    }
   },
   coupon: {
     id: 'coupon',
     name: 'Coupon Section',
     microSlots: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.applied'],
-    defaultOrder: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.applied'],
-    defaultLayout: 'horizontal',
-    gridCols: 2
+    gridCols: 12,
+    defaultSpans: {
+      'coupon.title': { col: 12, row: 1 },
+      'coupon.input': { col: 8, row: 1 },
+      'coupon.button': { col: 4, row: 1 },
+      'coupon.applied': { col: 12, row: 1 }
+    }
   },
   orderSummary: {
     id: 'orderSummary',
     name: 'Order Summary',
     microSlots: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton'],
-    defaultOrder: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton'],
-    defaultLayout: 'vertical',
-    gridCols: 2
+    gridCols: 12,
+    defaultSpans: {
+      'orderSummary.title': { col: 12, row: 1 },
+      'orderSummary.subtotal': { col: 12, row: 1 },
+      'orderSummary.discount': { col: 12, row: 1 },
+      'orderSummary.tax': { col: 12, row: 1 },
+      'orderSummary.total': { col: 12, row: 1 },
+      'orderSummary.checkoutButton': { col: 12, row: 1 }
+    }
   }
 };
 
@@ -106,7 +128,7 @@ const MICRO_SLOT_TEMPLATES = {
 };
 
 // Micro-slot wrapper component
-function MicroSlot({ id, children, onEdit, isDraggable = true }) {
+function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange }) {
   const {
     attributes,
     listeners,
@@ -115,6 +137,36 @@ function MicroSlot({ id, children, onEdit, isDraggable = true }) {
     transition,
     isDragging,
   } = useSortable({ id, disabled: !isDraggable });
+
+  // Calculate grid span classes
+  const getGridSpanClass = () => {
+    // Use explicit Tailwind classes for column spans
+    const colClasses = {
+      1: 'col-span-1',
+      2: 'col-span-2',
+      3: 'col-span-3',
+      4: 'col-span-4',
+      5: 'col-span-5',
+      6: 'col-span-6',
+      7: 'col-span-7',
+      8: 'col-span-8',
+      9: 'col-span-9',
+      10: 'col-span-10',
+      11: 'col-span-11',
+      12: 'col-span-12'
+    };
+    
+    const rowClasses = {
+      1: '',
+      2: 'row-span-2',
+      3: 'row-span-3',
+      4: 'row-span-4'
+    };
+    
+    const colClass = colClasses[Math.min(12, Math.max(1, colSpan))] || 'col-span-12';
+    const rowClass = rowClasses[Math.min(4, Math.max(1, rowSpan))] || '';
+    return `${colClass} ${rowClass}`;
+  };
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -126,7 +178,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group ${isDragging ? 'z-50' : ''}`}
+      className={`relative group ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
     >
       {isDraggable && (
         <div className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -151,6 +203,34 @@ function MicroSlot({ id, children, onEdit, isDraggable = true }) {
         </button>
       )}
       
+      {/* Span controls */}
+      {onSpanChange && (
+        <div className="absolute -bottom-6 left-0 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <div className="flex items-center bg-white rounded shadow-sm border px-1">
+            <span className="text-xs text-gray-500 mr-1">W:</span>
+            <input
+              type="number"
+              min="1"
+              max="12"
+              value={colSpan}
+              onChange={(e) => onSpanChange(id, { col: parseInt(e.target.value) || 1, row: rowSpan })}
+              className="w-8 text-xs border-0 focus:ring-0 p-0"
+            />
+          </div>
+          <div className="flex items-center bg-white rounded shadow-sm border px-1">
+            <span className="text-xs text-gray-500 mr-1">H:</span>
+            <input
+              type="number"
+              min="1"
+              max="4"
+              value={rowSpan}
+              onChange={(e) => onSpanChange(id, { col: colSpan, row: parseInt(e.target.value) || 1 })}
+              className="w-8 text-xs border-0 focus:ring-0 p-0"
+            />
+          </div>
+        </div>
+      )}
+      
       <div className={`${isDragging ? 'ring-2 ring-blue-400' : 'hover:ring-1 hover:ring-gray-300'} rounded transition-all`}>
         {children}
       </div>
@@ -159,7 +239,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true }) {
 }
 
 // Parent slot container with micro-slots
-function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, layout = 'vertical', onLayoutChange, gridCols = 2 }) {
+function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, gridCols = 12 }) {
   const {
     attributes,
     listeners,
@@ -188,34 +268,6 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
     // Only allow reordering within the same parent
     if (active.id.split('.')[0] === over.id.split('.')[0]) {
       onMicroSlotReorder(id, active.id, over.id);
-    }
-  };
-
-  // Choose sorting strategy based on layout
-  const getSortingStrategy = () => {
-    switch (layout) {
-      case 'horizontal':
-        return horizontalListSortingStrategy;
-      case 'grid':
-        return rectSortingStrategy;
-      default:
-        return verticalListSortingStrategy;
-    }
-  };
-
-  // Get container styles based on layout
-  const getContainerStyles = () => {
-    switch (layout) {
-      case 'horizontal':
-        return 'flex flex-row gap-4 items-start flex-wrap';
-      case 'grid':
-        // Use fixed grid column classes that Tailwind can recognize
-        const gridClass = gridCols === 2 ? 'grid-cols-2' : 
-                         gridCols === 3 ? 'grid-cols-3' : 
-                         gridCols === 4 ? 'grid-cols-4' : 'grid-cols-2';
-        return `grid gap-4 ${gridClass}`;
-      default:
-        return 'space-y-2';
     }
   };
 
@@ -250,45 +302,16 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         </button>
       )}
       
-      {/* Section label and layout selector */}
-      <div className="absolute -top-3 left-4 right-4 flex justify-between items-center">
-        <span className="px-2 bg-white text-xs font-medium text-gray-500">
-          {name}
-        </span>
-        {onLayoutChange && (
-          <Select value={layout} onValueChange={(value) => onLayoutChange(id, value)}>
-            <SelectTrigger className="h-6 w-32 text-xs bg-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="vertical">
-                <div className="flex items-center gap-1">
-                  <AlignJustify className="w-3 h-3" />
-                  <span>Vertical</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="horizontal">
-                <div className="flex items-center gap-1">
-                  <AlignLeft className="w-3 h-3 rotate-90" />
-                  <span>Horizontal</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="grid">
-                <div className="flex items-center gap-1">
-                  <LayoutGrid className="w-3 h-3" />
-                  <span>Grid</span>
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        )}
+      {/* Section label */}
+      <div className="absolute -top-3 left-4 px-2 bg-white text-xs font-medium text-gray-500">
+        {name} (12 column grid)
       </div>
       
       {/* Micro-slots container */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMicroDragEnd}>
-          <SortableContext items={microSlotOrder} strategy={getSortingStrategy()}>
-            <div className={getContainerStyles()}>
+          <SortableContext items={microSlotOrder} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-12 gap-2 auto-rows-min">
               {children}
             </div>
           </SortableContext>
@@ -310,18 +333,18 @@ export default function CartSlotsEditorWithMicroSlots({
   const [microSlotOrders, setMicroSlotOrders] = useState(() => {
     const orders = {};
     Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
-      orders[key] = [...def.defaultOrder];
+      orders[key] = [...def.microSlots];
     });
     return orders;
   });
   
-  // State for layout modes of each parent slot
-  const [slotLayouts, setSlotLayouts] = useState(() => {
-    const layouts = {};
+  // State for micro-slot spans
+  const [microSlotSpans, setMicroSlotSpans] = useState(() => {
+    const spans = {};
     Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
-      layouts[key] = def.defaultLayout || 'vertical';
+      spans[key] = { ...def.defaultSpans };
     });
-    return layouts;
+    return spans;
   });
   
   // State for component code
@@ -405,11 +428,14 @@ export default function CartSlotsEditorWithMicroSlots({
     });
   }, []);
   
-  // Handle layout change for a parent slot
-  const handleLayoutChange = useCallback((slotId, newLayout) => {
-    setSlotLayouts(prev => ({
+  // Handle span change for a micro-slot
+  const handleSpanChange = useCallback((parentId, microSlotId, newSpans) => {
+    setMicroSlotSpans(prev => ({
       ...prev,
-      [slotId]: newLayout
+      [parentId]: {
+        ...prev[parentId],
+        [microSlotId]: newSpans
+      }
     }));
   }, []);
 
@@ -431,7 +457,7 @@ export default function CartSlotsEditorWithMicroSlots({
         componentCode: { ...componentCode, [editingComponent]: tempCode },
         majorSlots,
         microSlotOrders,
-        slotLayouts,
+        microSlotSpans,
         timestamp: new Date().toISOString()
       });
     }
@@ -441,8 +467,8 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Render empty cart with micro-slots
   const renderEmptyCart = () => {
-    const microSlots = microSlotOrders.emptyCart || MICRO_SLOT_DEFINITIONS.emptyCart.defaultOrder;
-    const layout = slotLayouts.emptyCart || 'vertical';
+    const microSlots = microSlotOrders.emptyCart || MICRO_SLOT_DEFINITIONS.emptyCart.microSlots;
+    const spans = microSlotSpans.emptyCart || MICRO_SLOT_DEFINITIONS.emptyCart.defaultSpans;
     
     return (
       <ParentSlot
@@ -451,31 +477,52 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('emptyCart')}
-        layout={layout}
-        onLayoutChange={handleLayoutChange}
         gridCols={MICRO_SLOT_DEFINITIONS.emptyCart.gridCols}
       >
         {microSlots.map(slotId => {
+          const slotSpan = spans[slotId] || { col: 12, row: 1 };
+          
           if (slotId === 'emptyCart.icon') {
             return (
-              <MicroSlot key={slotId} id={slotId} onEdit={handleEditMicroSlot}>
-                <div className="text-center">
-                  <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <MicroSlot 
+                key={slotId} 
+                id={slotId} 
+                onEdit={handleEditMicroSlot}
+                colSpan={slotSpan.col}
+                rowSpan={slotSpan.row}
+                onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+              >
+                <div className="flex items-center justify-center h-full">
+                  <ShoppingCart className="w-16 h-16 text-gray-400" />
                 </div>
               </MicroSlot>
             );
           }
           if (slotId === 'emptyCart.title') {
             return (
-              <MicroSlot key={slotId} id={slotId} onEdit={handleEditMicroSlot}>
-                <h2 className="text-xl font-semibold mb-2 text-center">Your cart is empty</h2>
+              <MicroSlot 
+                key={slotId} 
+                id={slotId} 
+                onEdit={handleEditMicroSlot}
+                colSpan={slotSpan.col}
+                rowSpan={slotSpan.row}
+                onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+              >
+                <h2 className="text-xl font-semibold flex items-center h-full">Your cart is empty</h2>
               </MicroSlot>
             );
           }
           if (slotId === 'emptyCart.text') {
             return (
-              <MicroSlot key={slotId} id={slotId} onEdit={handleEditMicroSlot}>
-                <p className="text-gray-600 mb-6 text-center">
+              <MicroSlot 
+                key={slotId} 
+                id={slotId} 
+                onEdit={handleEditMicroSlot}
+                colSpan={slotSpan.col}
+                rowSpan={slotSpan.row}
+                onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+              >
+                <p className="text-gray-600">
                   Looks like you haven't added anything to your cart yet.
                 </p>
               </MicroSlot>
@@ -483,8 +530,15 @@ export default function CartSlotsEditorWithMicroSlots({
           }
           if (slotId === 'emptyCart.button') {
             return (
-              <MicroSlot key={slotId} id={slotId} onEdit={handleEditMicroSlot}>
-                <div className="text-center">
+              <MicroSlot 
+                key={slotId} 
+                id={slotId} 
+                onEdit={handleEditMicroSlot}
+                colSpan={slotSpan.col}
+                rowSpan={slotSpan.row}
+                onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
+              >
+                <div className="flex items-center justify-center h-full">
                   <Button onClick={() => {
                     const baseUrl = getStoreBaseUrl(store);
                     window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
@@ -503,8 +557,8 @@ export default function CartSlotsEditorWithMicroSlots({
 
   // Render header with micro-slots
   const renderHeader = () => {
-    const microSlots = microSlotOrders.header || MICRO_SLOT_DEFINITIONS.header.defaultOrder;
-    const layout = slotLayouts.header || 'vertical';
+    const microSlots = microSlotOrders.header || MICRO_SLOT_DEFINITIONS.header.microSlots;
+    const spans = microSlotSpans.header || MICRO_SLOT_DEFINITIONS.header.defaultSpans;
     
     return (
       <ParentSlot
@@ -513,28 +567,49 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('header')}
-        layout={layout}
-        onLayoutChange={handleLayoutChange}
         gridCols={MICRO_SLOT_DEFINITIONS.header.gridCols}
       >
         {microSlots.map(slotId => {
+          const slotSpan = spans[slotId] || { col: 12, row: 1 };
+          
           if (slotId === 'header.flashMessage') {
             return (
-              <MicroSlot key={slotId} id={slotId} onEdit={handleEditMicroSlot}>
+              <MicroSlot 
+                key={slotId} 
+                id={slotId} 
+                onEdit={handleEditMicroSlot}
+                colSpan={slotSpan.col}
+                rowSpan={slotSpan.row}
+                onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+              >
                 <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
               </MicroSlot>
             );
           }
           if (slotId === 'header.title') {
             return (
-              <MicroSlot key={slotId} id={slotId} onEdit={handleEditMicroSlot}>
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
+              <MicroSlot 
+                key={slotId} 
+                id={slotId} 
+                onEdit={handleEditMicroSlot}
+                colSpan={slotSpan.col}
+                rowSpan={slotSpan.row}
+                onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+              >
+                <h1 className="text-3xl font-bold text-gray-900">My Cart</h1>
               </MicroSlot>
             );
           }
           if (slotId === 'header.cmsBlock') {
             return (
-              <MicroSlot key={slotId} id={slotId} onEdit={handleEditMicroSlot}>
+              <MicroSlot 
+                key={slotId} 
+                id={slotId} 
+                onEdit={handleEditMicroSlot}
+                colSpan={slotSpan.col}
+                rowSpan={slotSpan.row}
+                onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
+              >
                 <CmsBlockRenderer position="cart_above_items" />
               </MicroSlot>
             );
@@ -567,18 +642,23 @@ export default function CartSlotsEditorWithMicroSlots({
         {/* Instructions */}
         <div className="bg-blue-50 border-b border-blue-200 p-4">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="bg-blue-100">
                 <GripVertical className="w-3 h-3 mr-1" />
-                Major Slots
+                Sections
               </Badge>
               <span className="text-sm text-blue-800">Drag to reorder sections</span>
               <span className="mx-2 text-blue-400">•</span>
               <Badge variant="secondary" className="bg-purple-100">
                 <Move className="w-3 h-3 mr-1" />
-                Micro Slots
+                Grid Slots
               </Badge>
-              <span className="text-sm text-blue-800">Drag within parent only</span>
+              <span className="text-sm text-blue-800">Drag & resize within 12-column grid</span>
+              <span className="mx-2 text-blue-400">•</span>
+              <Badge variant="secondary" className="bg-green-100">
+                W/H
+              </Badge>
+              <span className="text-sm text-blue-800">Hover to adjust width (1-12) and height (1-4)</span>
             </div>
           </div>
         </div>
