@@ -1374,14 +1374,14 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
                 <div className="relative">
-                  <SimpleInlineEdit
-                    text={textContent[slotId]}
-                    className={elementClasses[slotId] || 'text-xl font-semibold'}
+                  <InlineEdit
+                    value={textContent[slotId]}
                     onChange={(newText) => handleTextChange(slotId, newText)}
-                    slotId={slotId}
-                    onClassChange={handleClassChange}
+                    className="text-xl font-semibold block border-b-2 border-dashed border-gray-300 pb-1"
+                    tag="h2"
+                    richText
                   />
-                  <span className="absolute -top-5 left-0 text-xs text-blue-600">Click to edit text & style</span>
+                  <span className="absolute -top-5 left-0 text-xs text-blue-600">Click to edit with rich text</span>
                 </div>
               </MicroSlot>
             );
@@ -1397,14 +1397,14 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
                 <div className="relative">
-                  <SimpleInlineEdit
-                    text={textContent[slotId]}
-                    className={elementClasses[slotId] || 'text-gray-600'}
+                  <InlineEdit
+                    value={textContent[slotId]}
                     onChange={(newText) => handleTextChange(slotId, newText)}
-                    slotId={slotId}
-                    onClassChange={handleClassChange}
+                    className="text-gray-600 block border-2 border-dashed border-gray-300 p-2 rounded"
+                    tag="div"
+                    richText
                   />
-                  <span className="absolute -top-2 left-2 text-xs bg-white px-1 text-blue-600">Click to edit text & style</span>
+                  <span className="absolute -top-2 left-2 text-xs bg-white px-1 text-blue-600">Click to edit with rich text</span>
                 </div>
               </MicroSlot>
             );
@@ -1531,14 +1531,14 @@ export default function CartSlotsEditorWithMicroSlots({
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
               >
                 <div className="relative">
-                  <SimpleInlineEdit
-                    text={textContent[slotId]}
-                    className={elementClasses[slotId] || 'text-3xl font-bold text-gray-900'}
+                  <InlineEdit
+                    value={textContent[slotId]}
                     onChange={(newText) => handleTextChange(slotId, newText)}
-                    slotId={slotId}
-                    onClassChange={handleClassChange}
+                    className="text-3xl font-bold text-gray-900 block border-b-2 border-dashed border-gray-300 pb-2"
+                    tag="h1"
+                    richText
                   />
-                  <span className="absolute -top-5 left-0 text-xs text-blue-600">Click to edit text & style</span>
+                  <span className="absolute -top-5 left-0 text-xs text-blue-600">Click to edit with rich text</span>
                 </div>
               </MicroSlot>
             );
