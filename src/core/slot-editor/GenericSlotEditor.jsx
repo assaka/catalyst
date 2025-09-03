@@ -1594,6 +1594,16 @@ export default ${componentName};`;
                         
                         console.log('Saving slot configuration:', slotConfig);
                         
+                        // Check if we have an auth token
+                        const authToken = localStorage.getItem('store_owner_auth_token');
+                        console.log('Auth token available:', !!authToken);
+                        
+                        if (!authToken) {
+                          console.error('No authentication token found. Please log in first.');
+                          alert('Please log in as a store owner to save configurations.');
+                          return;
+                        }
+                        
                         // Check if configuration exists
                         const existing = await apiClient.get('slot-configurations', {
                           params: { 
@@ -1616,8 +1626,18 @@ export default ${componentName};`;
                         }
                       } catch (error) {
                         console.error('Failed to save to database:', error);
+                        console.error('Error response:', error.response);
                         console.error('Error details:', error.response?.data || error.message);
-                        alert(`Failed to save configuration: ${error.response?.data?.error || error.message}`);
+                        console.error('Error status:', error.response?.status);
+                        
+                        // Check if it's an auth error
+                        if (error.response?.status === 401 || error.response?.status === 403) {
+                          alert('Authentication required. Please log in as a store owner.');
+                        } else if (error.message?.includes('NetworkError')) {
+                          alert('Network error. Please check your connection and try again.');
+                        } else {
+                          alert(`Failed to save configuration: ${error.response?.data?.error || error.message}`);
+                        }
                         // Fallback to localStorage is already done
                       }
                       
