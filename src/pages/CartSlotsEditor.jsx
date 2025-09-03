@@ -4,7 +4,7 @@
  * Micro-slots can only be moved within their parent container
  */
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -31,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, Move, LayoutGrid, AlignJustify, AlignLeft } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, Move, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical } from "lucide-react";
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -127,8 +127,87 @@ const MICRO_SLOT_TEMPLATES = {
   'orderSummary.checkoutButton': `<Button size="lg" className="w-full">Proceed to Checkout</Button>`
 };
 
-// Micro-slot wrapper component
-function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange }) {
+// Inline editable text component
+function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multiline = false }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempValue, setTempValue] = useState(value);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    setTempValue(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      if (inputRef.current.select) {
+        inputRef.current.select();
+      }
+    }
+  }, [isEditing]);
+
+  const handleSave = () => {
+    onChange(tempValue);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setTempValue(value);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !multiline) {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  if (isEditing) {
+    if (multiline) {
+      return (
+        <textarea
+          ref={inputRef}
+          value={tempValue}
+          onChange={(e) => setTempValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          className={`${className} w-full min-h-[60px] p-1 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500`}
+        />
+      );
+    }
+    return (
+      <input
+        ref={inputRef}
+        type="text"
+        value={tempValue}
+        onChange={(e) => setTempValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        className={`${className} w-full p-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
+      />
+    );
+  }
+
+  return (
+    <Tag
+      onClick={() => setIsEditing(true)}
+      className={`${className} cursor-text hover:bg-gray-100 px-1 rounded transition-colors`}
+      title="Click to edit"
+    >
+      {value || <span className="text-gray-400">Click to edit...</span>}
+    </Tag>
+  );
+}
+
+// Micro-slot wrapper component  
+function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange }) {
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeStart, setResizeStart] = useState(null);
+  const slotRef = useRef(null);
+  
   const {
     attributes,
     listeners,
@@ -136,7 +215,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
     transform,
     transition,
     isDragging,
-  } = useSortable({ id, disabled: !isDraggable });
+  } = useSortable({ id, disabled: !isDraggable || isResizing });
 
   // Calculate grid span classes
   const getGridSpanClass = () => {
@@ -170,13 +249,74 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isResizing ? 'none' : transition,
     opacity: isDragging ? 0.5 : 1,
+    cursor: isResizing ? 'nwse-resize' : 'auto',
   };
+
+  // Handle resize start
+  const handleResizeStart = useCallback((e, direction) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setResizeStart({
+      x: e.clientX,
+      y: e.clientY,
+      colSpan,
+      rowSpan,
+      direction
+    });
+  }, [colSpan, rowSpan]);
+
+  // Handle resize move
+  useEffect(() => {
+    if (!isResizing || !resizeStart) return;
+
+    const handleMouseMove = (e) => {
+      const gridCellWidth = slotRef.current ? slotRef.current.offsetWidth / colSpan : 50;
+      const gridCellHeight = slotRef.current ? slotRef.current.offsetHeight / rowSpan : 50;
+      
+      const deltaX = e.clientX - resizeStart.x;
+      const deltaY = e.clientY - resizeStart.y;
+      
+      const colDelta = Math.round(deltaX / gridCellWidth);
+      const rowDelta = Math.round(deltaY / gridCellHeight);
+      
+      let newColSpan = resizeStart.colSpan;
+      let newRowSpan = resizeStart.rowSpan;
+      
+      if (resizeStart.direction.includes('right')) {
+        newColSpan = Math.min(12, Math.max(1, resizeStart.colSpan + colDelta));
+      }
+      if (resizeStart.direction.includes('bottom')) {
+        newRowSpan = Math.min(4, Math.max(1, resizeStart.rowSpan + rowDelta));
+      }
+      
+      if (newColSpan !== colSpan || newRowSpan !== rowSpan) {
+        onSpanChange(id, { col: newColSpan, row: newRowSpan });
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      setResizeStart(null);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isResizing, resizeStart, colSpan, rowSpan, id, onSpanChange]);
 
   return (
     <div
-      ref={setNodeRef}
+      ref={(el) => {
+        setNodeRef(el);
+        slotRef.current = el;
+      }}
       style={style}
       className={`relative group ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
     >
@@ -233,6 +373,29 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       
       <div className={`${isDragging ? 'ring-2 ring-blue-400' : 'hover:ring-1 hover:ring-gray-300'} rounded transition-all`}>
         {children}
+        
+        {/* Resize handles */}
+        {onSpanChange && !isDragging && (
+          <>
+            {/* Right edge */}
+            <div
+              className="absolute top-0 right-0 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 bg-blue-500/20 hover:bg-blue-500/30"
+              onMouseDown={(e) => handleResizeStart(e, 'right')}
+            />
+            {/* Bottom edge */}
+            <div
+              className="absolute bottom-0 left-0 w-full h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 bg-blue-500/20 hover:bg-blue-500/30"
+              onMouseDown={(e) => handleResizeStart(e, 'bottom')}
+            />
+            {/* Bottom-right corner */}
+            <div
+              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100"
+              onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
+            >
+              <div className="absolute bottom-1 right-1 w-2 h-2 bg-blue-500 rounded-sm" />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -353,6 +516,14 @@ export default function CartSlotsEditorWithMicroSlots({
   const [tempCode, setTempCode] = useState('');
   const [activeDragSlot, setActiveDragSlot] = useState(null);
   
+  // State for inline editable content
+  const [textContent, setTextContent] = useState({
+    'emptyCart.title': 'Your cart is empty',
+    'emptyCart.text': "Looks like you haven't added anything to your cart yet.",
+    'emptyCart.button': 'Continue Shopping',
+    'header.title': 'My Cart',
+  });
+  
   // Props from data
   const {
     store = {},
@@ -438,6 +609,14 @@ export default function CartSlotsEditorWithMicroSlots({
       }
     }));
   }, []);
+  
+  // Handle text content change
+  const handleTextChange = useCallback((slotId, newText) => {
+    setTextContent(prev => ({
+      ...prev,
+      [slotId]: newText
+    }));
+  }, []);
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((microSlotId) => {
@@ -508,7 +687,12 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
-                <h2 className="text-xl font-semibold flex items-center h-full">Your cart is empty</h2>
+                <InlineEdit
+                  value={textContent[slotId]}
+                  onChange={(newText) => handleTextChange(slotId, newText)}
+                  className="text-xl font-semibold block"
+                  tag="h2"
+                />
               </MicroSlot>
             );
           }
@@ -522,9 +706,13 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
-                <p className="text-gray-600">
-                  Looks like you haven't added anything to your cart yet.
-                </p>
+                <InlineEdit
+                  value={textContent[slotId]}
+                  onChange={(newText) => handleTextChange(slotId, newText)}
+                  className="text-gray-600 block"
+                  tag="p"
+                  multiline
+                />
               </MicroSlot>
             );
           }
@@ -543,7 +731,12 @@ export default function CartSlotsEditorWithMicroSlots({
                     const baseUrl = getStoreBaseUrl(store);
                     window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
                   }}>
-                    Continue Shopping
+                    <InlineEdit
+                      value={textContent[slotId]}
+                      onChange={(newText) => handleTextChange(slotId, newText)}
+                      className="text-white"
+                      tag="span"
+                    />
                   </Button>
                 </div>
               </MicroSlot>
@@ -596,7 +789,12 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('header', id, newSpan)}
               >
-                <h1 className="text-3xl font-bold text-gray-900">My Cart</h1>
+                <InlineEdit
+                  value={textContent[slotId]}
+                  onChange={(newText) => handleTextChange(slotId, newText)}
+                  className="text-3xl font-bold text-gray-900 block"
+                  tag="h1"
+                />
               </MicroSlot>
             );
           }
