@@ -1402,43 +1402,76 @@ export default ${componentName};`;
             {pageName} Page Editor
           </h1>
           <p className="text-sm text-gray-600">
-            Customize layout by editing <code>{slotsFilePath}</code>
+            {mode === 'layout' && 'Drag slots to position them. Hover to see controls. Click settings to edit properties.'}
+            {mode === 'preview' && 'Interact with your cart page components. Buttons, forms, and inputs are fully functional.'}
+            {mode === 'code' && 'Edit slot definitions and layout configuration directly'}
           </p>
         </div>
         
         <div className="flex items-center gap-3">
-          {/* Mode Toggle */}
-          <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-100">
-            <Button
-              variant={mode === 'layout' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('layout')}
-              className="flex items-center gap-2"
-              title="Slot Layout Editor"
-            >
-              <Layout className="w-4 h-4" />
-              Layout
-            </Button>
-            <Button
-              variant={mode === 'preview' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('preview')}
-              className="flex items-center gap-2"
-              title="Interactive Preview"
-            >
-              <Eye className="w-4 h-4" />
-              Preview
-            </Button>
-            <Button
-              variant={mode === 'code' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMode('code')}
-              className="flex items-center gap-2"
-              title="Code Editor"
-            >
-              <Code className="w-4 h-4" />
-              Code
-            </Button>
+          {/* Mode Toggle and Layout Buttons */}
+          <div className="flex flex-col gap-3 items-end">
+            <div className="flex rounded-lg border border-gray-300 p-1 bg-gray-100">
+              <Button
+                variant={mode === 'layout' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setMode('layout')}
+                className="flex items-center gap-2"
+                title="Slot Layout Editor"
+              >
+                <Layout className="w-4 h-4" />
+                Layout
+              </Button>
+              <Button
+                variant={mode === 'preview' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setMode('preview')}
+                className="flex items-center gap-2"
+                title="Interactive Preview"
+              >
+                <Eye className="w-4 h-4" />
+                Preview
+              </Button>
+              <Button
+                variant={mode === 'code' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setMode('code')}
+                className="flex items-center gap-2"
+                title="Code Editor"
+              >
+                <Code className="w-4 h-4" />
+                Code
+              </Button>
+            </div>
+            
+            {/* Layout Mode Buttons */}
+            {mode === 'layout' && (
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    // Reset all positions to default layout
+                    setSlotPositions({});
+                    triggerAutoSave();
+                  }}
+                  className="flex items-center gap-2"
+                  title="Reset all slots to default positions"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Reset Layout
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleAddNewSlot}
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add New Slot
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Auto-save indicator */}
@@ -1464,42 +1497,10 @@ export default ${componentName};`;
           <div className="h-full p-4">
             <Card className="h-full">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Layout className="w-5 h-5" />
-                      Slot Layout Editor
-                    </CardTitle>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Drag slots to position them. Hover to see controls. Click settings to edit properties.
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        // Reset all positions to default layout
-                        setSlotPositions({});
-                        triggerAutoSave();
-                      }}
-                      className="flex items-center gap-2"
-                      title="Reset all slots to default positions"
-                    >
-                      <RefreshCw className="w-4 h-4" />
-                      Reset Layout
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleAddNewSlot}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add New Slot
-                    </Button>
-                  </div>
-                </div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Layout className="w-5 h-5" />
+                  Slot Layout Editor
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-0 h-full overflow-auto">
                 {pageName === 'Cart' ? (
@@ -1526,9 +1527,6 @@ export default ${componentName};`;
                   <Eye className="w-5 h-5" />
                   Interactive Preview
                 </CardTitle>
-                <p className="text-sm text-gray-600">
-                  Interact with your {pageName.toLowerCase()} page components. Buttons, forms, and inputs are fully functional.
-                </p>
               </CardHeader>
               <CardContent className="p-0 h-full">
                 <div className="h-full overflow-auto bg-white">
@@ -1550,9 +1548,6 @@ export default ${componentName};`;
                   <Code className="w-4 h-4" />
                   {slotsFilePath}
                 </CardTitle>
-                <p className="text-sm text-gray-600">
-                  Edit slot definitions and layout configuration directly
-                </p>
               </CardHeader>
               <CardContent className="p-0 h-full">
                 <CodeEditor
