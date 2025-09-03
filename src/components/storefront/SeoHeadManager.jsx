@@ -3,8 +3,13 @@ import { useStore } from './StoreProvider';
 import { useSeoSettings } from './SeoSettingsProvider';
 
 export default function SeoHeadManager({ pageType, pageData, pageTitle, pageDescription, imageUrl }) {
-    const { store, seoTemplates } = useStore();
-    const { seoSettings } = useSeoSettings();
+    const storeContext = useStore();
+    const seoContext = useSeoSettings();
+    
+    // Handle cases where components are used outside of providers
+    const store = storeContext?.store || {};
+    const seoTemplates = storeContext?.seoTemplates || {};
+    const seoSettings = seoContext?.seoSettings || {};
 
     useEffect(() => {
         // Don't proceed if we don't have store data yet
