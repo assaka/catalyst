@@ -13,7 +13,7 @@ import {
   verticalListSortingStrategy
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Pencil, EyeOff, GripVertical } from "react-feather";
+import { Pencil, EyeOff, GripVertical } from "lucide-react";
 
 function SlotWrapper({ children, isEditing, onEditCancel }) {
   return (
