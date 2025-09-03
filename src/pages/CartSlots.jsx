@@ -11,506 +11,360 @@
  * 🧩 COMPONENTS: Modify components directly in this file
  */
 
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Trash2, Plus, Minus, Tag, ShoppingCart } from 'lucide-react';
-import { formatDisplayPrice } from '@/utils/priceUtils';
-import { getStoreBaseUrl, getExternalStoreUrl } from '@/utils/urlUtils';
-import SlotWrapper from '@/core/slot-system/SlotWrapper.jsx';
+import React, { useState, useEffect } from "react";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { Pencil, EyeOff, GripVertical } from "react-feather";
 
-// =============================================================================
-// 🧩 SLOT COMPONENTS (Store owners can modify these - prefixed with 'Slot')
-// =============================================================================
-
-// Slot: Cart page container
-export const SlotCartPageContainer = ({ children, className = "bg-gray-50 cart-page" }) => (
-  <div className={className}>
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+// Basic SlotWrapper to add cancel button while editing
+const SlotWrapper = ({ children, isEditing, onEditCancel }) => (
+    <div className="relative p-4 border rounded bg-white shadow-sm">
       {children}
-    </div>
-  </div>
-);
-
-// Slot: Cart page header
-export const SlotCartPageHeader = ({ title = "Your Cart", className = "text-3xl font-bold text-gray-900 mb-8" }) => (
-  <h1 className={className}>{title}</h1>
-);
-
-// Slot: Empty cart display
-export const SlotEmptyCartDisplay = ({ 
-  store, 
-  icon: Icon = ShoppingCart,
-  title = "Your cart is empty",
-  message = "Looks like you haven't added anything to your cart yet.",
-  buttonText = "Continue Shopping"
-}) => (
-  <Card>
-    <CardContent className="text-center py-12">
-      <Icon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-      <h2 className="text-xl font-semibold mb-2">{title}</h2>
-      <p className="text-gray-600 mb-6">{message}</p>
-      <Button onClick={() => {
-        const baseUrl = getStoreBaseUrl(store);
-        window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-      }}>
-        {buttonText}
-      </Button>
-    </CardContent>
-  </Card>
-);
-
-// Slot: Cart items container
-export const SlotCartItemsContainer = ({ children, className = "lg:col-span-2" }) => (
-  <div className={className}>
-    <Card>
-      <CardContent className="px-4 divide-y divide-gray-200">
-        {children}
-      </CardContent>
-    </Card>
-  </div>
-);
-
-// Slot: Individual cart item
-export const SlotCartItem = ({ 
-  item, 
-  product, 
-  currencySymbol = '$', 
-  store = {}, 
-  taxes = null, 
-  selectedCountry = null,
-  onUpdateQuantity = () => {}, 
-  onRemove = () => {},
-  calculateItemTotal = () => 0,
-  formatPrice = (price) => parseFloat(price) || 0
-}) => {
-  if (!product) return null;
-
-  // Logic for basePrice for display
-  let basePriceForDisplay;
-  const itemPriceAsNumber = formatPrice(item.price);
-
-  if (itemPriceAsNumber > 0) {
-    basePriceForDisplay = itemPriceAsNumber;
-  } else {
-    let productCurrentPrice = formatPrice(product.sale_price || product.price);
-    const comparePrice = formatPrice(product.compare_price);
-    if (comparePrice > 0 && comparePrice < productCurrentPrice) {
-      basePriceForDisplay = comparePrice;
-    } else {
-      basePriceForDisplay = productCurrentPrice;
-    }
-  }
-
-  const itemTotal = calculateItemTotal(item, product);
-
-  return (
-    <div className="flex items-center space-x-4 py-6 border-b border-gray-200">
-      <img 
-        src={product.images?.[0] || 'https://placehold.co/100x100?text=No+Image'} 
-        alt={product.name}
-        className="w-20 h-20 object-cover rounded-lg"
-      />
-      <div className="flex-1">
-        <h3 className="text-lg font-semibold">{product.name}</h3>
-        <p className="text-gray-600">
-          {formatDisplayPrice(basePriceForDisplay, currencySymbol, store, taxes, selectedCountry)} each
-        </p>
-        
-        {item.selected_options && item.selected_options.length > 0 && (
-          <div className="text-sm text-gray-500 mt-1">
-            {item.selected_options.map((option, idx) => (
-              <div key={idx}>
-                + {option.name} (+{formatDisplayPrice(option.price, currencySymbol, store, taxes, selectedCountry)})
-              </div>
-            ))}
+      {isEditing && (
+          <div className="mt-2 text-right">
+            <button
+                onClick={onEditCancel}
+                className="px-3 py-1 bg-red-200 rounded hover:bg-red-300 text-sm"
+            >
+              Cancel Edit
+            </button>
           </div>
-        )}
-        
-        <div className="flex items-center space-x-3 mt-3">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onUpdateQuantity(item.id, Math.max(1, (item.quantity || 1) - 1))}
-          >
-            <Minus className="w-4 h-4" />
-          </Button>
-          <span className="text-lg font-semibold">{item.quantity || 1}</span>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onUpdateQuantity(item.id, (item.quantity || 1) + 1)}
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => onRemove(item.id)}
-            className="ml-auto"
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-      <div className="text-right">
-        <p className="text-xl font-bold">
-          {formatDisplayPrice(itemTotal, currencySymbol, store, taxes, selectedCountry)}
-        </p>
-      </div>
+      )}
     </div>
-  );
-};
-
-// Slot: Cart sidebar container
-export const SlotCartSidebar = ({ children, className = "lg:col-span-1 space-y-6 mt-8 lg:mt-0" }) => (
-  <div className={className}>
-    {children}
-  </div>
 );
 
-// Slot: Coupon section
-export const SlotCouponSection = ({ 
-  appliedCoupon, 
-  couponCode = '', 
-  onCouponCodeChange = () => {}, 
-  onApplyCoupon = () => {}, 
-  onRemoveCoupon = () => {}, 
-  onKeyPress = () => {},
-  currencySymbol = '$',
-  safeToFixed = (val) => val?.toFixed(2) || '0.00'
-}) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Apply Coupon</CardTitle>
-    </CardHeader>
-    <CardContent>
-      {!appliedCoupon ? (
-        <div className="flex space-x-2">
-          <Input 
-            placeholder="Enter coupon code" 
-            value={couponCode || ''}
-            onChange={(e) => onCouponCodeChange && onCouponCodeChange(e.target.value.toUpperCase())}
-            onKeyPress={onKeyPress}
+// Example Slot Components (simplified)
+const HeaderSlot = ({ content, onChange, isEditing, onCancelEdit }) => (
+    <SlotWrapper isEditing={isEditing} onEditCancel={onCancelEdit}>
+      <h2 className="text-xl font-bold mb-2">Header</h2>
+      {isEditing ? (
+          <textarea
+              className="w-full p-2 border rounded"
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              rows={3}
           />
-          <Button 
-            onClick={onApplyCoupon}
-            disabled={!couponCode || !couponCode.trim()}
-          >
-            <Tag className="w-4 h-4 mr-2" /> Apply
-          </Button>
-        </div>
       ) : (
-        <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
-          <div>
-            <p className="text-sm font-medium text-green-800">Applied: {appliedCoupon.name}</p>
-            <p className="text-xs text-green-600">
-              {appliedCoupon.discount_type === 'fixed' 
-                ? `${currencySymbol}${safeToFixed(appliedCoupon.discount_value)} off`
-                : `${safeToFixed(appliedCoupon.discount_value)}% off`
-              }
-            </p>
-          </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={onRemoveCoupon}
-            className="text-red-600 hover:text-red-800"
-          >
-            Remove
-          </Button>
-        </div>
+          <p>{content}</p>
       )}
-    </CardContent>
-  </Card>
+    </SlotWrapper>
 );
 
-// Slot: Order summary
-export const SlotOrderSummary = ({ 
-  subtotal = 0, 
-  discount = 0, 
-  tax = 0, 
-  total = 0, 
-  currencySymbol = '$', 
-  safeToFixed = (val) => val?.toFixed(2) || '0.00',
-  children
-}) => (
-  <Card>
-    <CardHeader>
-      <CardTitle>Order Summary</CardTitle>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <div className="flex justify-between">
-        <span>Subtotal</span>
-        <span>{currencySymbol}{safeToFixed(subtotal)}</span>
-      </div>
-      {discount > 0 && (
-        <div className="flex justify-between">
-          <span>Discount</span>
-          <span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span>
-        </div>
+const CartItemsSlot = ({ content, onChange, isEditing, onCancelEdit }) => (
+    <SlotWrapper isEditing={isEditing} onEditCancel={onCancelEdit}>
+      <h2 className="text-xl font-bold mb-2">Cart Items</h2>
+      {isEditing ? (
+          <textarea
+              className="w-full p-2 border rounded"
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              rows={4}
+          />
+      ) : (
+          <p>{content}</p>
       )}
-      <div className="flex justify-between">
-        <span>Tax</span>
-        <span>{currencySymbol}{safeToFixed(tax)}</span>
-      </div>
-      {children} {/* For CMS blocks above total */}
-      <div className="flex justify-between text-lg font-semibold border-t pt-4">
-        <span>Total</span>
-        <span>{currencySymbol}{safeToFixed(total)}</span>
-      </div>
-    </CardContent>
-  </Card>
+    </SlotWrapper>
 );
 
-// Slot: Checkout button
-export const SlotCheckoutButton = ({ 
-  onCheckout, 
-  settings,
-  text = "Proceed to Checkout",
-  className = "w-full",
-  size = "lg"
-}) => (
-  <div className="border-t mt-6 pt-6">
-    <Button 
-      size={size} 
-      className={className}
-      onClick={onCheckout}
-      style={{
-        backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
-        color: '#f00',
-      }}
-    >
-      {text}
-    </Button>
-  </div>
+const CouponSlot = ({ content, onChange, isEditing, onCancelEdit }) => (
+    <SlotWrapper isEditing={isEditing} onEditCancel={onCancelEdit}>
+      <h2 className="text-xl font-bold mb-2">Coupon</h2>
+      {isEditing ? (
+          <textarea
+              className="w-full p-2 border rounded"
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              rows={2}
+          />
+      ) : (
+          <p>{content}</p>
+      )}
+    </SlotWrapper>
 );
 
-// Slot: Cart grid layout
-export const SlotCartGridLayout = ({ children, className = "lg:grid lg:grid-cols-3 lg:gap-8" }) => (
-  <div className={className}>
-    {children}
-  </div>
+const OrderSummarySlot = ({ content, onChange, isEditing, onCancelEdit }) => (
+    <SlotWrapper isEditing={isEditing} onEditCancel={onCancelEdit}>
+      <h2 className="text-xl font-bold mb-2">Order Summary</h2>
+      {isEditing ? (
+          <textarea
+              className="w-full p-2 border rounded"
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              rows={3}
+          />
+      ) : (
+          <p>{content}</p>
+      )}
+    </SlotWrapper>
 );
 
-// =============================================================================
-// 🎯 SLOT CONFIGURATION (Store owners customize this)
-// =============================================================================
+const RecommendedProductsSlot = ({ content, onChange, isEditing, onCancelEdit }) => (
+    <SlotWrapper isEditing={isEditing} onEditCancel={onCancelEdit}>
+      <h2 className="text-xl font-bold mb-2">Recommended Products</h2>
+      {isEditing ? (
+          <textarea
+              className="w-full p-2 border rounded"
+              value={content}
+              onChange={(e) => onChange(e.target.value)}
+              rows={3}
+          />
+      ) : (
+          <p>{content}</p>
+      )}
+    </SlotWrapper>
+);
 
-// Slot definitions - what can be rearranged
-export const CART_SLOT_DEFINITIONS = {
-  // Page structure slots
-  'cart-page-container': {
-    id: 'cart-page-container',
-    type: 'component',
-    component: SlotCartPageContainer,
-    name: 'Page Container',
-    description: 'Main cart page wrapper'
-  },
-  
-  'cart-page-header': {
-    id: 'cart-page-header', 
-    type: 'component',
-    component: SlotCartPageHeader,
-    name: 'Page Header',
-    description: 'Cart title and main heading'
-  },
-  
-  'cart-grid-layout': {
-    id: 'cart-grid-layout',
-    type: 'component', 
-    component: SlotCartGridLayout,
-    name: 'Grid Layout',
-    description: 'Responsive grid container'
-  },
-  
-  // Content slots
-  'cart-items-container': {
-    id: 'cart-items-container',
-    type: 'component',
-    component: SlotCartItemsContainer,
-    name: 'Items Container', 
-    description: 'Container for all cart items'
-  },
-  
-  'cart-item-single': {
-    id: 'cart-item-single',
-    type: 'component',
-    component: SlotCartItem,
-    name: 'Individual Item',
-    description: 'Each product in the cart'
-  },
-  
-  'cart-sidebar': {
-    id: 'cart-sidebar',
-    type: 'component',
-    component: SlotCartSidebar,
-    name: 'Sidebar Container',
-    description: 'Right sidebar container'
-  },
-  
-  'cart-coupon-section': {
-    id: 'cart-coupon-section',
-    type: 'component',
-    component: SlotCouponSection,
-    name: 'Coupon Code',
-    description: 'Discount code input area'
-  },
-  
-  'cart-order-summary': {
-    id: 'cart-order-summary',
-    type: 'component', 
-    component: SlotOrderSummary,
-    name: 'Order Summary',
-    description: 'Subtotal, tax, and total'
-  },
-  
-  'cart-checkout-button': {
-    id: 'cart-checkout-button',
-    type: 'component',
-    component: SlotCheckoutButton,
-    name: 'Checkout Button', 
-    description: 'Primary checkout action'
-  },
-  
-  'cart-empty-display': {
-    id: 'cart-empty-display',
-    type: 'component',
-    component: SlotEmptyCartDisplay,
-    name: 'Empty Cart Message',
-    description: 'Shown when cart has no items'
+// Sortable item with drag handle, hover toolbar (edit, hide)
+function SortableItem({ id, children, disabled = false, onEditClick, onHideClick, isEditing }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative",
+    padding: "1rem",
+    marginBottom: "1rem",
+    border: "1px dashed #ccc",
+    borderRadius: "6px",
+    backgroundColor: "#fff",
+  };
+
+  // If not draggable, skip drag handle and disable drag-related attributes
+  if (disabled) {
+    return (
+        <div
+            style={style}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
+          {children}
+          {isHovered && (
+              <div
+                  style={{
+                    position: "absolute",
+                    top: 8,
+                    right: 8,
+                    display: "flex",
+                    gap: 8,
+                  }}
+              >
+                <button
+                    onClick={() => onEditClick(id)}
+                    title="Edit"
+                    className="hover:text-blue-600 focus:outline-none"
+                >
+                  <Pencil size={16} />
+                </button>
+                <button
+                    onClick={() => onHideClick(id)}
+                    title="Hide"
+                    className="hover:text-red-600 focus:outline-none"
+                >
+                  <EyeOff size={16} />
+                </button>
+              </div>
+          )}
+        </div>
+    );
   }
-};
-
-// =============================================================================
-// 🎨 LAYOUT CONFIGURATION (Store owners customize this)  
-// =============================================================================
-
-// 🎯 CHANGE SLOT ORDER HERE - This controls what appears and in what sequence
-export const CART_SLOT_ORDER = [
-  'cart-page-header',      // 1. Page title first
-  'cart-grid-layout',      // 2. Then main grid container
-  'cart-items-container',  // 3. Items list (left side)
-  'cart-sidebar',          // 4. Sidebar (right side)
-  'cart-order-summary',    // 5. Summary in sidebar  
-  'cart-coupon-section',   // 6. Coupon in sidebar
-  'cart-checkout-button'   // 7. Checkout button last
-];
-
-// 🎯 CART ITEM MICRO-SLOTS - Rearrange elements within each cart item
-export const CART_ITEM_LAYOUT = {
-  // Change this order to move button next to title!
-  elementOrder: [
-    'image',           // Product image
-    'details',         // Title, price, options
-    'quantity',        // Quantity controls  
-    'total',          // Item total price
-    'remove'          // Remove button
-    // To move button next to title, change to: ['image', 'title', 'quantity', 'price', 'total', 'remove']
-  ],
-  
-  layout: 'flex', // 'flex' | 'grid' | 'stack'
-  direction: 'row', // 'row' | 'column'  
-  gap: 4,
-  align: 'center'
-};
-
-// 🎯 SIDEBAR ORDER - Rearrange sidebar sections
-export const CART_SIDEBAR_ORDER = [
-  'cart-order-summary',    // Summary first
-  'cart-coupon-section',   // Coupon second
-  'cart-checkout-button'   // Button last
-];
-
-// Layout presets for quick switching
-export const CART_LAYOUT_PRESETS = {
-  'default': {
-    slotOrder: CART_SLOT_ORDER,
-    sidebarOrder: CART_SIDEBAR_ORDER,
-    itemLayout: CART_ITEM_LAYOUT
-  },
-  
-  'compact': {
-    slotOrder: [
-      'cart-page-header',
-      'cart-items-container', 
-      'cart-order-summary',
-      'cart-checkout-button'
-    ],
-    itemLayout: {
-      ...CART_ITEM_LAYOUT,
-      direction: 'column',
-      gap: 2
-    }
-  },
-  
-  'checkout-first': {
-    slotOrder: CART_SLOT_ORDER,
-    sidebarOrder: [
-      'cart-checkout-button',  // Button first!
-      'cart-order-summary',
-      'cart-coupon-section'
-    ],
-    itemLayout: CART_ITEM_LAYOUT
-  }
-};
-
-// =============================================================================
-// 🚀 MAIN CART COMPONENT (Uses SlotWrapper automatically)
-// =============================================================================
-
-const CartSlotted = (props) => {
-  const currentLayout = CART_LAYOUT_PRESETS.default;
-
-  // Make slotOrder stateful so it can be updated when reordered via drag-and-drop
-  const [slotOrder, setSlotOrder] = useState(currentLayout.slotOrder);
 
   return (
-      <SlotWrapper
-          slotDefinitions={CART_SLOT_DEFINITIONS}
-          slotOrder={slotOrder}
-          onMoveSlot={setSlotOrder}
-          enableDnD={true}
-          layoutConfig={{
-            sidebarOrder: currentLayout.sidebarOrder,
-            itemLayout: currentLayout.itemLayout
-          }}
-          data={props.data || {}}
-          {...props}
-      />
+      <div
+          ref={setNodeRef}
+          style={style}
+          {...attributes}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Drag handle */}
+        {isHovered && (
+            <div
+                {...listeners}
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  left: 8,
+                  cursor: "grab",
+                  color: isDragging ? "#aaa" : "#666",
+                }}
+                title="Drag"
+            >
+              <GripVertical size={20} />
+            </div>
+        )}
+
+        {children}
+
+        {/* Toolbar */}
+        {isHovered && (
+            <div
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  right: 8,
+                  display: "flex",
+                  gap: 8,
+                }}
+            >
+              <button
+                  onClick={() => onEditClick(id)}
+                  title="Edit"
+                  className="hover:text-blue-600 focus:outline-none"
+              >
+                <Pencil size={16} />
+              </button>
+              <button
+                  onClick={() => onHideClick(id)}
+                  title="Hide"
+                  className="hover:text-red-600 focus:outline-none"
+              >
+                <EyeOff size={16} />
+              </button>
+            </div>
+        )}
+      </div>
   );
-};
+}
 
-export default CartSlotted;
+const defaultSlots = [
+  { id: "header", component: HeaderSlot, editable: true, draggable: false },
+  { id: "cartItems", component: CartItemsSlot, editable: true, draggable: true },
+  { id: "coupon", component: CouponSlot, editable: true, draggable: true },
+  { id: "orderSummary", component: OrderSummarySlot, editable: true, draggable: true },
+  { id: "recommendedProducts", component: RecommendedProductsSlot, editable: true, draggable: true },
+];
 
-// =============================================================================
-// 📖 CUSTOMIZATION GUIDE
-// =============================================================================
+export default function CartSlots() {
+  // Load saved order from localStorage or default
+  const [slotOrder, setSlotOrder] = useState(() => {
+    try {
+      const saved = localStorage.getItem("cartSlotsOrder");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return defaultSlots.map((s) => s.id);
+  });
 
-/**
- * 🎯 HOW TO CUSTOMIZE YOUR CART:
- * 
- * 1. MOVE BUTTON NEXT TO PRODUCT TITLE:
- *    Change CART_ITEM_LAYOUT.elementOrder to:
- *    ['image', 'title', 'quantity', 'price', 'total', 'remove']
- *    
- * 2. REARRANGE MAIN SECTIONS:
- *    Modify CART_SLOT_ORDER array - drag items up/down in the list
- *    
- * 3. REARRANGE SIDEBAR:
- *    Change CART_SIDEBAR_ORDER to put checkout button first, etc.
- *    
- * 4. USE PRESET LAYOUTS:
- *    Change `CART_LAYOUT_PRESETS.default` to `.compact` or `.checkout-first`
- *    
- * 5. MODIFY COMPONENTS:
- *    Edit the component functions above (CartItem, OrderSummary, etc.)
- *    
- * 6. ADD NEW SLOTS:
- *    Add to CART_SLOT_DEFINITIONS and CART_SLOT_ORDER
- *    
- * 7. CUSTOM LAYOUTS:
- *    Modify layout objects (direction: 'column', gap: 2, etc.)
- */
+  // Load saved slot content or default text
+  const [slotContents, setSlotContents] = useState(() => {
+    try {
+      const saved = localStorage.getItem("cartSlotsContent");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      header: "Welcome to your cart!",
+      cartItems: "Here are your items...",
+      coupon: "Apply coupons here",
+      orderSummary: "Summary of your order",
+      recommendedProducts: "Recommended products for you",
+    };
+  });
+
+  // Slots hidden by user
+  const [hiddenSlots, setHiddenSlots] = useState(() => {
+    try {
+      const saved = localStorage.getItem("cartSlotsHidden");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  // Currently editing slot ID (only one at a time)
+  const [editingSlot, setEditingSlot] = useState(null);
+
+  // Persist slot order on change
+  useEffect(() => {
+    localStorage.setItem("cartSlotsOrder", JSON.stringify(slotOrder));
+  }, [slotOrder]);
+
+  // Persist slot content on change
+  useEffect(() => {
+    localStorage.setItem("cartSlotsContent", JSON.stringify(slotContents));
+  }, [slotContents]);
+
+  // Persist hidden slots on change
+  useEffect(() => {
+    localStorage.setItem("cartSlotsHidden", JSON.stringify(hiddenSlots));
+  }, [hiddenSlots]);
+
+  // Setup drag sensors
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  // Handle drag end - reorder slotOrder
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = slotOrder.indexOf(active.id);
+      const newIndex = slotOrder.indexOf(over.id);
+      const newOrder = arrayMove(slotOrder, oldIndex, newIndex);
+      setSlotOrder(newOrder);
+    }
+  };
+
+  // Update slot content handler
+  const updateSlotContent = (id, content) => {
+    setSlotContents((prev) => ({ ...prev, [id]: content }));
+  };
+
+  // Get slot object by id
+  const getSlotById = (id) => defaultSlots.find((s) => s.id === id);
+
+  // Toggle hiding a slot
+  const toggleHideSlot = (id) => {
+    setHiddenSlots((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+    // If editing this slot, cancel edit on hide
+    if (editingSlot === id) setEditingSlot(null);
+  };
+
+  // Start editing a slot
+  const startEditing = (id) => {
+    setEditingSlot(id);
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingSlot(null);
+  };
+
+  return (
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={slotOrder} strategy={verticalListSortingStrategy}>
+          {slotOrder.map((slotId) => {
+            if (hiddenSlots.includes(slotId)) return null; // skip hidden slots
+
+            const slot = getSlotById(slotId);
+            if (!slot) return null;
+
+            const SlotComponent = slot.component;
+
+            return (
+                <SortableItem
+                    key={slot.id}
+                    id={slot.id}
+                    disabled={!slot.draggable}
+                    onEditClick={startEditing}
+                    onHideClick={toggleHideSlot}
+                    isEditing={editingSlot === slot.id}
+                >
+                  <SlotComponent
+                      content={slotContents[slot.id]}
+                      onChange={slot.editable ? (content) => updateSlotContent(slot.id, content) : undefined}
+                      isEditing={editingSlot === slot.id}
+                      onCancelEdit={cancelEditing}
+                  />
+                </SortableItem>
+            );
+          })}
+        </SortableContext>
+      </DndContext>
+  );
+}
