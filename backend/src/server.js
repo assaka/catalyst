@@ -1434,7 +1434,7 @@ app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/stores', authMiddleware, storeRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
-app.use(slotConfigurationRoutes); // Slot configurations for cart layout
+app.use('/api', slotConfigurationRoutes); // Slot configurations for cart layout
 
 // Public order lookup by payment reference (MUST be before authenticated routes)
 app.get('/api/orders/by-payment-reference/:payment_reference', async (req, res) => {
