@@ -851,22 +851,26 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       style={style}
       className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
     >
-      {/* Invisible hover zone that extends to include icons */}
+      {/* Invisible hover zone that extends to include icons - adjusted to cover drag handle properly */}
       <div 
-        className="absolute -inset-x-12 -inset-y-8 z-0"
+        className="absolute -inset-y-8 z-0"
+        style={{ left: '-40px', right: '-40px' }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       />
       
       {isDraggable && isHovered && (
-        <div className="absolute -left-6 top-1/2 -translate-y-1/2 transition-opacity z-10">
+        <div 
+          className="absolute -left-8 top-1/2 -translate-y-1/2 transition-opacity z-10"
+          onMouseEnter={() => setIsHovered(true)}
+        >
           <div
             {...listeners}
             {...attributes}
-            className="p-1 bg-blue-100 rounded cursor-grab active:cursor-grabbing"
+            className="p-1.5 bg-blue-100 rounded cursor-grab active:cursor-grabbing hover:bg-blue-200"
             title="Drag to reorder within parent"
           >
-            <Move className="w-3 h-3 text-blue-600" />
+            <Move className="w-4 h-4 text-blue-600" />
           </div>
         </div>
       )}
@@ -874,10 +878,11 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       {onEdit && isHovered && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute -right-6 top-1/2 -translate-y-1/2 p-1 bg-gray-100 rounded transition-opacity z-10"
+          className="absolute -right-8 top-1/2 -translate-y-1/2 p-1.5 bg-gray-100 rounded transition-opacity z-10 hover:bg-gray-200"
           title="Edit micro-slot"
+          onMouseEnter={() => setIsHovered(true)}
         >
-          <Edit className="w-3 h-3 text-gray-600" />
+          <Edit className="w-4 h-4 text-gray-600" />
         </button>
       )}
       
@@ -980,23 +985,27 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       style={style}
       className={`relative ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
     >
-      {/* Invisible hover zone that extends to include parent icons */}
+      {/* Invisible hover zone that extends to include parent icons - increased area */}
       <div 
-        className="absolute -inset-x-14 -inset-y-4 z-0"
+        className="absolute -inset-y-4 z-0"
+        style={{ left: '-50px', right: '-50px' }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       />
       
       {/* Parent drag handle */}
       {isDraggable && isHovered && (
-        <div className="absolute -left-10 top-4 transition-opacity z-10">
+        <div 
+          className="absolute -left-12 top-4 transition-opacity z-10"
+          onMouseEnter={() => setIsHovered(true)}
+        >
           <div
             {...listeners}
             {...attributes}
-            className="p-2 bg-gray-100 rounded cursor-grab active:cursor-grabbing"
+            className="p-2 bg-gray-100 rounded cursor-grab active:cursor-grabbing hover:bg-gray-200"
             title="Drag to reorder section"
           >
-            <GripVertical className="w-4 h-4 text-gray-600" />
+            <GripVertical className="w-5 h-5 text-gray-600" />
           </div>
         </div>
       )}
@@ -1005,10 +1014,11 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       {onEdit && isHovered && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute -right-10 top-4 p-2 bg-blue-100 rounded transition-opacity z-10"
+          className="absolute -right-12 top-4 p-2 bg-blue-100 rounded transition-opacity z-10 hover:bg-blue-200"
           title="Edit section"
+          onMouseEnter={() => setIsHovered(true)}
         >
-          <Edit className="w-4 h-4 text-blue-600" />
+          <Edit className="w-5 h-5 text-blue-600" />
         </button>
       )}
       
