@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import CartSlots from '@/pages/CartSlots';
+import CartSlotsEditor from '@/pages/CartSlotsEditor';
 import { 
   Code, 
   Eye, 
@@ -1501,7 +1502,18 @@ export default ${componentName};`;
                 </div>
               </CardHeader>
               <CardContent className="p-0 h-full">
-                <LayoutPreview isDraggable={true} showSettings={true} />
+                {pageName === 'Cart' ? (
+                  <CartSlotsEditor 
+                    onSave={(config) => {
+                      console.log('Saving Cart layout configuration:', config);
+                      // Save to localStorage or API
+                      localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
+                      triggerAutoSave();
+                    }}
+                  />
+                ) : (
+                  <LayoutPreview isDraggable={true} showSettings={true} />
+                )}
               </CardContent>
             </Card>
           </div>
