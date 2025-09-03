@@ -15,6 +15,7 @@ import RecommendedProducts from '@/components/storefront/RecommendedProducts';
 import FlashMessage from '@/components/storefront/FlashMessage';
 import SeoHeadManager from '@/components/storefront/SeoHeadManager';
 import CmsBlockRenderer from '@/components/storefront/CmsBlockRenderer';
+import CartSlots from './CartSlots';
 import { formatDisplayPrice, calculateDisplayPrice } from '@/utils/priceUtils';
 
 // Import new hook system
@@ -100,6 +101,36 @@ export default function Cart() {
     const navigate = useNavigate();
     // Use StoreProvider data instead of making separate API calls
     const { store, settings, taxes, selectedCountry, loading: storeLoading } = useStore();
+    
+    // State for cart layout configuration
+    const [cartLayoutConfig, setCartLayoutConfig] = useState(null);
+    const [layoutLoading, setLayoutLoading] = useState(true);
+    
+    // Load cart layout configuration from database
+    useEffect(() => {
+        const loadCartLayoutConfig = async () => {
+            if (!store?.id) return;
+            
+            try {
+                // Load from slot_configurations table
+                const response = await fetch(`/api/slot-configurations?store_id=${store.id}&page_name=Cart&slot_type=cart_layout&is_active=true`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data?.data?.length > 0) {
+                        setCartLayoutConfig(data.data[0].configuration);
+                        console.log('✅ Loaded cart layout configuration for storefront');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load cart layout configuration:', error);
+            } finally {
+                setLayoutLoading(false);
+            }
+        };
+        
+        loadCartLayoutConfig();
+    }, [store?.id]);
     
     // Initialize customization system for Cart component
     const {
@@ -773,6 +804,44 @@ export default function Cart() {
         );
     }
     
+    // Prepare data object for CartSlots component
+    const cartSlotsData = {
+        store,
+        cartItems,
+        appliedCoupon,
+        couponCode,
+        subtotal,
+        discount,
+        tax,
+        total,
+        currencySymbol,
+        settings,
+        flashMessage,
+        selectedCountry,
+        taxes,
+        loading,
+        storeLoading,
+        calculateItemTotal,
+        safeToFixed,
+        updateQuantity,
+        removeItem,
+        handleCheckout,
+        handleApplyCoupon,
+        handleRemoveCoupon,
+        handleCouponKeyPress,
+        setCouponCode,
+        setFlashMessage,
+        formatDisplayPrice,
+        getStoreBaseUrl,
+        getExternalStoreUrl
+    };
+    
+    // If custom layout configuration exists and not in layout loading state, use CartSlots
+    if (cartLayoutConfig && !layoutLoading) {
+        return <CartSlots data={cartSlotsData} layoutConfig={cartLayoutConfig} enableDragDrop={false} />;
+    }
+    
+    // Otherwise render the default cart layout
     return (
         <div 
             {...getCustomProps({ className: "bg-gray-50 cart-page" })}
