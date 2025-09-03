@@ -166,6 +166,8 @@ export default function CartSlots({
     const text = getCustomText(key, defaultContent);
     const classes = getCustomClasses(key, defaultClasses);
     
+    console.log(`Rendering ${key} with classes:`, classes, 'and text:', text);
+    
     return <span className={classes}>{text}</span>;
   };
 
