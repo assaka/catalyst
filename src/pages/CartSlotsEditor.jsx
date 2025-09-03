@@ -636,11 +636,16 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       }}
       style={style}
       className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Invisible hover zone that extends to include icons */}
+      <div 
+        className="absolute -inset-x-12 -inset-y-8 z-0"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      />
+      
       {isDraggable && isHovered && (
-        <div className="absolute -left-6 top-1/2 -translate-y-1/2 transition-opacity">
+        <div className="absolute -left-6 top-1/2 -translate-y-1/2 transition-opacity z-10">
           <div
             {...listeners}
             {...attributes}
@@ -655,7 +660,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       {onEdit && isHovered && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute -right-6 top-1/2 -translate-y-1/2 p-1 bg-gray-100 rounded transition-opacity"
+          className="absolute -right-6 top-1/2 -translate-y-1/2 p-1 bg-gray-100 rounded transition-opacity z-10"
           title="Edit micro-slot"
         >
           <Edit className="w-3 h-3 text-gray-600" />
@@ -690,7 +695,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         </div>
       )}
       
-      <div className={`${isDragging ? 'ring-2 ring-blue-400' : 'hover:ring-1 hover:ring-gray-300'} rounded transition-all`}>
+      <div className={`${isDragging ? 'ring-2 ring-blue-400' : 'hover:ring-1 hover:ring-gray-300'} rounded transition-all relative z-1`}>
         {children}
         
         {/* Resize handles */}
@@ -760,12 +765,17 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       ref={setNodeRef}
       style={style}
       className={`relative ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Invisible hover zone that extends to include parent icons */}
+      <div 
+        className="absolute -inset-x-14 -inset-y-4 z-0"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      />
+      
       {/* Parent drag handle */}
       {isDraggable && isHovered && (
-        <div className="absolute -left-10 top-4 transition-opacity">
+        <div className="absolute -left-10 top-4 transition-opacity z-10">
           <div
             {...listeners}
             {...attributes}
@@ -781,7 +791,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       {onEdit && isHovered && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute -right-10 top-4 p-2 bg-blue-100 rounded transition-opacity"
+          className="absolute -right-10 top-4 p-2 bg-blue-100 rounded transition-opacity z-10"
           title="Edit section"
         >
           <Edit className="w-4 h-4 text-blue-600" />
@@ -794,7 +804,7 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       </div>
       
       {/* Micro-slots container */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white">
+      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white relative z-1">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMicroDragEnd}>
           <SortableContext items={microSlotOrder} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-12 gap-2 auto-rows-min">

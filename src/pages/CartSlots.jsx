@@ -137,15 +137,36 @@ export default function CartSlots({
   };
 
   // Extract custom text from layoutConfig if available
-  const getCustomText = (key, defaultValue) => {
+  const getCustomText = (key, defaultValue, renderAsHtml = false) => {
     if (layoutConfig?.textContent?.[key]) {
-      // Remove HTML tags for plain text
       const htmlText = layoutConfig.textContent[key];
-      // Simple regex to remove HTML tags (SSR-safe)
+      
+      if (renderAsHtml) {
+        // Return the HTML as-is for rendering with dangerouslySetInnerHTML
+        return htmlText;
+      }
+      
+      // For plain text, strip HTML tags (SSR-safe)
       const textContent = htmlText.replace(/<[^>]*>/g, '').trim();
       return textContent || defaultValue;
     }
     return defaultValue;
+  };
+  
+  // Helper to render custom HTML content
+  const renderCustomHtml = (key, defaultContent) => {
+    const htmlContent = getCustomText(key, '', true);
+    
+    if (htmlContent && htmlContent.includes('<')) {
+      // Has HTML content, render it
+      console.log(`Rendering HTML for ${key}:`, htmlContent);
+      // Ensure we preserve inline styles
+      return <div className="rich-text-content" dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+    }
+    
+    // Fallback to plain text or default
+    const plainText = getCustomText(key, defaultContent);
+    return <>{plainText}</>;
   };
 
   // Loading state matching Cart.jsx
@@ -350,9 +371,9 @@ export default function CartSlots({
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          {getCustomText('header.title', 'My Cart')}
-        </h1>
+        <div className="text-3xl font-bold text-gray-900 mb-8">
+          {renderCustomHtml('header.title', 'My Cart')}
+        </div>
         <CmsBlockRenderer position="cart_above_items" />
         
         {cartItems.length === 0 ? (
