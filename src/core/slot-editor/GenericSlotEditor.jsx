@@ -1605,13 +1605,13 @@ export default ${componentName};`;
                         }
                         
                         // Check if configuration exists
-                        const existing = await apiClient.get('slot-configurations', {
-                          params: { 
-                            page_name: 'Cart', 
-                            slot_type: 'cart_layout',
-                            store_id: storeId
-                          }
-                        });
+                        // Build query string manually to avoid params issue
+                        const queryParams = new URLSearchParams({
+                          page_name: 'Cart',
+                          slot_type: 'cart_layout',
+                          store_id: storeId
+                        }).toString();
+                        const existing = await apiClient.get(`slot-configurations?${queryParams}`);
                         
                         if (existing?.data?.data?.length > 0) {
                           // Update existing configuration
