@@ -886,6 +886,60 @@ export default function CartSlotsEditorWithMicroSlots({
 
   const formatPrice = (value) => typeof value === "number" ? value : parseFloat(value) || 0;
 
+  // Load saved configuration on mount
+  useEffect(() => {
+    const loadConfiguration = async () => {
+      try {
+        // First try to load from localStorage
+        const localConfig = localStorage.getItem('cart_slots_layout_config');
+        if (localConfig) {
+          const config = JSON.parse(localConfig);
+          console.log('Loading saved configuration from localStorage:', config);
+          
+          if (config.majorSlots) setMajorSlots(config.majorSlots);
+          if (config.microSlotOrders) setMicroSlotOrders(config.microSlotOrders);
+          if (config.microSlotSpans) setMicroSlotSpans(config.microSlotSpans);
+          if (config.textContent) setTextContent(prev => ({ ...prev, ...config.textContent }));
+          if (config.componentSizes) setComponentSizes(prev => ({ ...prev, ...config.componentSizes }));
+          if (config.componentCode) setComponentCode(prev => ({ ...prev, ...config.componentCode }));
+        }
+        
+        // Try to load from database if we have a store ID
+        const storeId = localStorage.getItem('selectedStoreId');
+        if (storeId) {
+          const queryParams = new URLSearchParams({
+            page_name: 'Cart',
+            slot_type: 'cart_layout',
+            store_id: storeId
+          }).toString();
+          
+          // Import apiClient dynamically to avoid circular dependencies
+          const { default: apiClient } = await import('@/api/client');
+          const response = await apiClient.get(`slot-configurations?${queryParams}`);
+          
+          if (response?.data?.data?.length > 0) {
+            const dbConfig = response.data.data[0].configuration;
+            console.log('Loading saved configuration from database:', dbConfig);
+            
+            if (dbConfig.majorSlots) setMajorSlots(dbConfig.majorSlots);
+            if (dbConfig.microSlotOrders) setMicroSlotOrders(dbConfig.microSlotOrders);
+            if (dbConfig.microSlotSpans) setMicroSlotSpans(dbConfig.microSlotSpans);
+            if (dbConfig.textContent) setTextContent(prev => ({ ...prev, ...dbConfig.textContent }));
+            if (dbConfig.componentSizes) setComponentSizes(prev => ({ ...prev, ...dbConfig.componentSizes }));
+            if (dbConfig.componentCode) setComponentCode(prev => ({ ...prev, ...dbConfig.componentCode }));
+            
+            // Save to localStorage for faster access
+            localStorage.setItem('cart_slots_layout_config', JSON.stringify(dbConfig));
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load configuration:', error);
+      }
+    };
+    
+    loadConfiguration();
+  }, []); // Only run once on mount
+
   // Drag sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {

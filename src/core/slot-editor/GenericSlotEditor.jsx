@@ -78,17 +78,31 @@ const GenericSlotEditor = ({
       if (pageName !== 'Cart') return;
       
       try {
-        // Try to load from database first
-        const response = await apiClient.get('slot-configurations', {
-          params: { page_name: 'Cart', slot_type: 'cart_layout', is_active: true }
-        });
+        // Get store ID
+        const storeId = localStorage.getItem('selectedStoreId');
+        if (!storeId) {
+          console.log('No store selected, loading from localStorage only');
+          const saved = localStorage.getItem('cart_slots_layout_config');
+          if (saved) {
+            setCartLayoutConfig(JSON.parse(saved));
+          }
+          return;
+        }
         
-        if (response?.data?.length > 0) {
-          const config = response.data[0].configuration;
+        // Try to load from database first
+        const queryParams = new URLSearchParams({
+          page_name: 'Cart',
+          slot_type: 'cart_layout',
+          store_id: storeId
+        }).toString();
+        const response = await apiClient.get(`slot-configurations?${queryParams}`);
+        
+        if (response?.data?.data?.length > 0) {
+          const config = response.data.data[0].configuration;
           setCartLayoutConfig(config);
           // Also save to localStorage for offline access
           localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
-          console.log('✅ Loaded cart layout configuration from database');
+          console.log('✅ Loaded cart layout configuration from database', config);
         } else {
           // Fallback to localStorage
           const saved = localStorage.getItem('cart_slots_layout_config');
