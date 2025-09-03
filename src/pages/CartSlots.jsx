@@ -75,8 +75,8 @@ function SortableItem({
   };
 
   return (
-      <div 
-        ref={setNodeRef} 
+      <div
+        ref={setNodeRef}
         style={style}
         className="relative mb-4 group"
       >
@@ -94,14 +94,14 @@ function SortableItem({
 
         {/* Edit and Hide buttons */}
         <div className="absolute right-2 top-6 z-10 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button 
+          <button
             onClick={() => onEdit(id)}
             className="p-1 hover:bg-gray-100 rounded"
             aria-label="Edit"
           >
             <Pencil size={16} />
           </button>
-          <button 
+          <button
             onClick={() => onHide(id)}
             className="p-1 hover:bg-gray-100 rounded"
             aria-label="Hide"
@@ -124,6 +124,9 @@ const defaultSlots = [
 ];
 
 export default function CartSlots() {
+  // Add basic store context check
+  const storeCode = window.location.pathname.split('/')[2] || 'demo';
+
   const [order, setOrder] = useState(() => {
     const saved = localStorage.getItem("slotOrder");
     return saved ? JSON.parse(saved) : defaultSlots.map((s) => s.id);
