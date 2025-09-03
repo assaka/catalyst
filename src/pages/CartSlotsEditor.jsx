@@ -335,7 +335,6 @@ function EditableSection({ id, children, onEdit, isDraggable = true, className =
 export default function CartSlotsEditor({
   data = {},
   onSave = () => {},
-  onModeChange = () => {},
 }) {
   // State for component code
   const [componentCode, setComponentCode] = useState({ ...SLOT_CODE_TEMPLATES });
@@ -485,15 +484,6 @@ export default function CartSlotsEditor({
     setHistoryIndex(0);
   }, [originalCode]);
 
-  // Reset layout
-  const handleResetLayout = useCallback(() => {
-    setContentSections(['cartItems', 'sidebar']);
-    onSave({
-      componentCode,
-      contentSections: ['cartItems', 'sidebar'],
-      timestamp: new Date().toISOString()
-    });
-  }, [componentCode, onSave]);
 
   // Undo/Redo
   const handleUndo = useCallback(() => {
@@ -530,63 +520,6 @@ export default function CartSlotsEditor({
           description="Review your shopping cart items before proceeding to checkout."
           keywords="cart, shopping cart, checkout, e-commerce, online store"
         />
-        
-        {/* Editor Action Bar */}
-        <div className="bg-white border-b sticky top-0 z-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between py-3">
-              <div className="flex items-center gap-4">
-                <h2 className="text-lg font-semibold">Cart Layout Editor</h2>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onModeChange && onModeChange('preview')}
-                    className="flex items-center gap-2"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Preview
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onModeChange && onModeChange('code')}
-                    className="flex items-center gap-2"
-                  >
-                    <Code className="w-4 h-4" />
-                    Code View
-                  </Button>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleResetLayout}
-                  className="flex items-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Reset Layout
-                </Button>
-                <Button
-                  size="sm"
-                  variant="default"
-                  onClick={() => {
-                    onSave({
-                      componentCode,
-                      contentSections,
-                      timestamp: new Date().toISOString()
-                    });
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <Save className="w-4 h-4" />
-                  Save All
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" style={{ paddingLeft: '60px', paddingRight: '60px' }}>
           <EditableSection id="header" onEdit={handleEdit} isDraggable={false}>
