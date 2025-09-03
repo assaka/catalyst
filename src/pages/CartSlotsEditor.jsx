@@ -1,546 +1,612 @@
 /**
- * CartSlotsEditor.jsx - LAYOUT EDITOR VERSION
- * 
- * This is the editable version of CartSlots for the Layout Editor mode.
- * Features:
- * - 🎯 DRAG & DROP: Visual drag and drop with handles
- * - 📐 SNAP TO GRID: Automatic alignment and spacing
- * - ✏️ INLINE EDITING: Click to edit slot content
- * - 👁️ SHOW/HIDE: Toggle slot visibility
- * - 🎨 VISUAL FEEDBACK: Hover effects and drag indicators
+ * CartSlotsEditor.jsx - Editor version with Monaco code editor for individual slots
+ * This component provides the exact same layout as Cart.jsx but with:
+ * - Drag and drop capability
+ * - Edit icons on each component
+ * - Monaco editor modal for editing individual component code
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useCallback } from "react";
 import {
   DndContext,
   closestCenter,
-  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { 
-  GripVertical, 
-  Eye, 
-  EyeOff, 
-  Edit3, 
-  Save,
-  X,
-  Settings,
-  ShoppingCart,
-  Tag,
-  Package,
-  CreditCard,
-  TrendingUp
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import SeoHeadManager from "@/components/storefront/SeoHeadManager";
+import FlashMessage from "@/components/storefront/FlashMessage";
+import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
+import RecommendedProducts from "@/components/storefront/RecommendedProducts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code } from "lucide-react";
+import Editor from '@monaco-editor/react';
 
-// Slot configuration with metadata
-const SLOT_CONFIGS = {
-  header: {
-    id: "header",
-    title: "Page Header",
-    icon: ShoppingCart,
-    description: "Cart title and breadcrumbs",
-    color: "bg-blue-50 border-blue-200",
-    defaultContent: {
-      title: "Shopping Cart",
-      subtitle: "Review and edit your items"
-    },
-    editable: true,
-    deletable: false,
-  },
-  cart_items: {
-    id: "cart_items",
-    title: "Cart Items",
-    icon: Package,
-    description: "Product list with quantity controls",
-    color: "bg-green-50 border-green-200",
-    defaultContent: {
-      title: "Your Items",
-      emptyMessage: "Your cart is empty"
-    },
-    editable: true,
-    deletable: false,
-  },
-  coupon_section: {
-    id: "coupon_section",
-    title: "Coupon Code",
-    icon: Tag,
-    description: "Apply discount codes",
-    color: "bg-purple-50 border-purple-200",
-    defaultContent: {
-      title: "Have a coupon?",
-      placeholder: "Enter code"
-    },
-    editable: true,
-    deletable: true,
-  },
-  order_summary: {
-    id: "order_summary",
-    title: "Order Summary",
-    icon: CreditCard,
-    description: "Pricing breakdown and checkout",
-    color: "bg-yellow-50 border-yellow-200",
-    defaultContent: {
-      title: "Order Summary",
-      checkoutText: "Proceed to Checkout"
-    },
-    editable: true,
-    deletable: false,
-  },
-  recommended_products: {
-    id: "recommended_products",
-    title: "Recommendations",
-    icon: TrendingUp,
-    description: "Suggested products",
-    color: "bg-pink-50 border-pink-200",
-    defaultContent: {
-      title: "You might also like",
-      itemCount: 4
-    },
-    editable: true,
-    deletable: true,
-  },
-};
-
-// Individual Slot Component for editing
-function EditableSlot({ 
-  config, 
-  content, 
-  isEditing, 
-  onEdit, 
-  onSave, 
-  onCancel,
-  onChange,
-  isHidden 
-}) {
-  const [localContent, setLocalContent] = useState(content);
-  const Icon = config.icon;
-
-  useEffect(() => {
-    setLocalContent(content);
-  }, [content]);
-
-  const handleSave = () => {
-    onChange(config.id, localContent);
-    onSave();
-  };
-
+// Component code templates for each slot
+const SLOT_CODE_TEMPLATES = {
+  header: `// Header Component
+function HeaderComponent({ flashMessage, setFlashMessage }) {
   return (
-    <Card className={cn(
-      "transition-all duration-200",
-      config.color,
-      isHidden && "opacity-50",
-      isEditing && "ring-2 ring-blue-500"
-    )}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Icon className="w-5 h-5 text-gray-600" />
-            <CardTitle className="text-lg">{config.title}</CardTitle>
-          </div>
-          {isEditing ? (
-            <div className="flex gap-2">
-              <Button size="sm" variant="ghost" onClick={handleSave}>
-                <Save className="w-4 h-4" />
-              </Button>
-              <Button size="sm" variant="ghost" onClick={onCancel}>
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          ) : (
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              onClick={onEdit}
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <Edit3 className="w-4 h-4" />
-            </Button>
-          )}
+    <>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
+      <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+      <CmsBlockRenderer position="cart_above_items" />
+    </>
+  );
+}`,
+
+  emptyCart: `// Empty Cart Component
+function EmptyCartComponent({ store, getStoreBaseUrl, getExternalStoreUrl }) {
+  return (
+    <Card>
+      <CardContent className="text-center py-12">
+        <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
+        <p className="text-gray-600 mb-6">
+          Looks like you haven't added anything to your cart yet.
+        </p>
+        <Button onClick={() => {
+          const baseUrl = getStoreBaseUrl(store);
+          window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+        }}>
+          Continue Shopping
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}`,
+
+  cartItem: `// Cart Item Component
+function CartItemComponent({ item, product, formatDisplayPrice, updateQuantity, removeItem, currencySymbol, store, taxes, selectedCountry }) {
+  const basePriceForDisplay = product.sale_price || product.price;
+  const itemTotal = basePriceForDisplay * (item.quantity || 1);
+  
+  return (
+    <div className="flex items-center space-x-4 py-6 border-b border-gray-200">
+      <img
+        src={product.images?.[0] || 'https://placehold.co/100x100?text=No+Image'}
+        alt={product.name}
+        className="w-20 h-20 object-cover rounded-lg"
+      />
+      <div className="flex-1">
+        <h3 className="text-lg font-semibold">{product.name}</h3>
+        <p className="text-gray-600">
+          {formatDisplayPrice(basePriceForDisplay, currencySymbol, store, taxes, selectedCountry)} each
+        </p>
+        
+        <div className="flex items-center space-x-3 mt-3">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => updateQuantity(item.id, Math.max(1, (item.quantity || 1) - 1))}
+          >
+            <Minus className="w-4 h-4" />
+          </Button>
+          <span className="text-lg font-semibold">{item.quantity || 1}</span>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => updateQuantity(item.id, (item.quantity || 1) + 1)}
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => removeItem(item.id)}
+            className="ml-auto"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
-        <p className="text-sm text-gray-600 mt-1">{config.description}</p>
+      </div>
+      <div className="text-right">
+        <p className="text-xl font-bold">
+          {formatDisplayPrice(itemTotal, currencySymbol, store, taxes, selectedCountry)}
+        </p>
+      </div>
+    </div>
+  );
+}`,
+
+  cartItems: `// Cart Items Section Component
+function CartItemsSection({ cartItems, formatPrice, formatDisplayPrice, calculateItemTotal, updateQuantity, removeItem, currencySymbol, store, taxes, selectedCountry }) {
+  return (
+    <div className="lg:col-span-2">
+      <Card>
+        <CardContent className="px-4 divide-y divide-gray-200">
+          {cartItems.map(item => {
+            const product = item.product;
+            if (!product) return null;
+            
+            return <CartItemComponent 
+              key={item.id}
+              item={item}
+              product={product}
+              formatDisplayPrice={formatDisplayPrice}
+              updateQuantity={updateQuantity}
+              removeItem={removeItem}
+              currencySymbol={currencySymbol}
+              store={store}
+              taxes={taxes}
+              selectedCountry={selectedCountry}
+            />;
+          })}
+        </CardContent>
+      </Card>
+      <CmsBlockRenderer position="cart_below_items" />
+    </div>
+  );
+}`,
+
+  coupon: `// Coupon Section Component
+function CouponSection({ appliedCoupon, couponCode, setCouponCode, handleApplyCoupon, handleRemoveCoupon, handleCouponKeyPress, currencySymbol, safeToFixed }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Apply Coupon</CardTitle>
       </CardHeader>
       <CardContent>
-        {isEditing ? (
-          <div className="space-y-3">
-            {Object.entries(localContent).map(([key, value]) => (
-              <div key={key}>
-                <label className="text-sm font-medium text-gray-700 capitalize">
-                  {key.replace(/_/g, ' ')}
-                </label>
-                {typeof value === 'string' && value.length > 50 ? (
-                  <Textarea
-                    value={value}
-                    onChange={(e) => setLocalContent({
-                      ...localContent,
-                      [key]: e.target.value
-                    })}
-                    className="mt-1"
-                    rows={3}
-                  />
-                ) : (
-                  <Input
-                    type={typeof value === 'number' ? 'number' : 'text'}
-                    value={value}
-                    onChange={(e) => setLocalContent({
-                      ...localContent,
-                      [key]: e.target.type === 'number' 
-                        ? parseInt(e.target.value) || 0 
-                        : e.target.value
-                    })}
-                    className="mt-1"
-                  />
-                )}
-              </div>
-            ))}
+        {!appliedCoupon ? (
+          <div className="flex space-x-2">
+            <Input
+              placeholder="Enter coupon code"
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+              onKeyPress={handleCouponKeyPress}
+            />
+            <Button
+              onClick={handleApplyCoupon}
+              disabled={!couponCode.trim()}
+            >
+              <Tag className="w-4 h-4 mr-2" /> Apply
+            </Button>
           </div>
         ) : (
-          <div className="bg-white/50 rounded p-4">
-            <div className="space-y-2">
-              {Object.entries(content).map(([key, value]) => (
-                <div key={key} className="flex justify-between">
-                  <span className="text-sm text-gray-600 capitalize">
-                    {key.replace(/_/g, ' ')}:
-                  </span>
-                  <span className="text-sm font-medium">{value}</span>
-                </div>
-              ))}
+          <div className="flex items-center justify-between bg-green-50 p-3 rounded-lg">
+            <div>
+              <p className="text-sm font-medium text-green-800">
+                Applied: {appliedCoupon.name}
+              </p>
+              <p className="text-xs text-green-600">
+                {appliedCoupon.discount_type === 'fixed'
+                  ? \`\${currencySymbol}\${safeToFixed(appliedCoupon.discount_value)} off\`
+                  : \`\${safeToFixed(appliedCoupon.discount_value)}% off\`
+                }
+              </p>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRemoveCoupon}
+              className="text-red-600 hover:text-red-800"
+            >
+              Remove
+            </Button>
           </div>
         )}
       </CardContent>
     </Card>
   );
-}
+}`,
 
-// Sortable Item Wrapper with enhanced drag controls
-function SortableItem({ 
-  id, 
-  children, 
-  onToggleVisibility,
-  onEdit,
-  isHidden,
-  isDeletable = true 
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    setActivatorNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  orderSummary: `// Order Summary Component
+function OrderSummarySection({ subtotal, discount, tax, total, currencySymbol, safeToFixed, settings, handleCheckout }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Order Summary</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex justify-between">
+          <span>Subtotal</span>
+          <span>{currencySymbol}{safeToFixed(subtotal)}</span>
+        </div>
+        {discount > 0 && (
+          <div className="flex justify-between">
+            <span>Discount</span>
+            <span className="text-green-600">
+              -{currencySymbol}{safeToFixed(discount)}
+            </span>
+          </div>
+        )}
+        <div className="flex justify-between">
+          <span>Tax</span>
+          <span>{currencySymbol}{safeToFixed(tax)}</span>
+        </div>
+        <CmsBlockRenderer position="cart_above_total" />
+        <div className="flex justify-between text-lg font-semibold border-t pt-4">
+          <span>Total</span>
+          <span>{currencySymbol}{safeToFixed(total)}</span>
+        </div>
+        <CmsBlockRenderer position="cart_below_total" />
+        <div className="border-t mt-6 pt-6">
+          <Button
+            size="lg"
+            className="w-full"
+            onClick={handleCheckout}
+            style={{
+              backgroundColor: settings?.theme?.checkout_button_color || '#007bff',
+              color: '#FFFFFF',
+            }}
+          >
+            Proceed to Checkout
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}`,
 
-  const style = {
+  recommendedProducts: `// Recommended Products Component
+function RecommendedProductsSection({ store }) {
+  if (!store || !store.id) return null;
+  
+  return (
+    <div className="mt-12">
+      <h2 className="text-2xl font-bold mb-6">Recommended Products</h2>
+      <RecommendedProducts storeId={store.id} />
+    </div>
+  );
+}`
+};
+
+// Editable section wrapper with drag handle and edit button
+function EditableSection({ id, children, onEdit, isDraggable = true, className = "" }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
+    id,
+    disabled: !isDraggable 
+  });
+
+  const style = isDraggable ? {
     transform: CSS.Transform.toString(transform),
     transition,
-  };
+    opacity: isDragging ? 0.5 : 1,
+  } : {};
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        "relative group",
-        isDragging && "z-50 opacity-50"
-      )}
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={`relative group ${className}`}
     >
-      {/* Drag Handle */}
-      <div
-        ref={setActivatorNodeRef}
-        {...attributes}
-        {...listeners}
-        className={cn(
-          "absolute left-0 top-1/2 -translate-y-1/2 -translate-x-10",
-          "p-2 rounded-lg bg-gray-100 cursor-grab",
-          "opacity-0 group-hover:opacity-100 transition-opacity",
-          "hover:bg-gray-200",
-          isDragging && "cursor-grabbing"
-        )}
-      >
-        <GripVertical className="w-4 h-4 text-gray-600" />
-      </div>
-
-      {/* Action Buttons */}
-      <div className={cn(
-        "absolute right-0 top-4 -translate-x-full mr-2",
-        "flex flex-col gap-1",
-        "opacity-0 group-hover:opacity-100 transition-opacity"
-      )}>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => onToggleVisibility(id)}
-          className="p-1"
+      {isDraggable && (
+        <button
+          {...listeners}
+          {...attributes}
+          className="absolute -left-10 top-4 p-2 bg-gray-100 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-gray-200 cursor-grab active:cursor-grabbing"
+          title="Drag to reorder"
         >
-          {isHidden ? (
-            <EyeOff className="w-4 h-4 text-gray-400" />
-          ) : (
-            <Eye className="w-4 h-4 text-gray-600" />
-          )}
-        </Button>
-      </div>
-
-      {/* Main Content */}
-      <div className={cn(
-        "transition-transform",
-        isDragging && "scale-105"
-      )}>
+          <GripVertical className="w-4 h-4 text-gray-600" />
+        </button>
+      )}
+      
+      <button
+        onClick={() => onEdit(id)}
+        className="absolute -right-10 top-4 p-2 bg-blue-100 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-blue-200"
+        title="Edit component code"
+      >
+        <Edit className="w-4 h-4 text-blue-600" />
+      </button>
+      
+      <div className="hover:ring-2 hover:ring-blue-200 rounded-lg transition-shadow">
         {children}
       </div>
     </div>
   );
 }
 
-// Main Editor Component
-export default function CartSlotsEditor({ 
-  initialOrder = ["header", "cart_items", "coupon_section", "order_summary", "recommended_products"],
-  initialContent = {},
-  onSave,
-  onCancel
+// Main CartSlotsEditor component
+export default function CartSlotsEditor({
+  data = {},
+  onSave = () => {},
 }) {
-  const [slotOrder, setSlotOrder] = useState(initialOrder);
-  const [slotContent, setSlotContent] = useState(() => {
-    const content = {};
-    Object.values(SLOT_CONFIGS).forEach(config => {
-      content[config.id] = initialContent[config.id] || config.defaultContent;
-    });
-    return content;
-  });
-  const [hiddenSlots, setHiddenSlots] = useState(new Set());
-  const [editingSlot, setEditingSlot] = useState(null);
-  const [activeId, setActiveId] = useState(null);
-  const [hasChanges, setHasChanges] = useState(false);
+  // State for component code
+  const [componentCode, setComponentCode] = useState({ ...SLOT_CODE_TEMPLATES });
+  const [editingComponent, setEditingComponent] = useState(null);
+  const [tempCode, setTempCode] = useState('');
+  
+  // State for layout order
+  const [mainSections, setMainSections] = useState(['header', 'content', 'recommendedProducts']);
+  const [contentSections, setContentSections] = useState(['cartItems', 'sidebar']);
+  
+  // Sample data for preview
+  const {
+    store = { id: 1, slug: 'demo-store' },
+    cartItems = [
+      { 
+        id: 1, 
+        product: { 
+          id: 1, 
+          name: 'Sample Product', 
+          price: 29.99,
+          sale_price: 24.99,
+          images: ['https://placehold.co/100x100?text=Product'],
+        },
+        quantity: 2,
+        price: 24.99
+      }
+    ],
+    appliedCoupon = null,
+    couponCode = '',
+    subtotal = 49.98,
+    discount = 0,
+    tax = 4.99,
+    total = 54.97,
+    currencySymbol = '$',
+    settings = { theme: { checkout_button_color: '#007bff' } },
+    flashMessage = null,
+    selectedCountry = 'US',
+    taxes = [],
+  } = data;
 
+  // Helper functions
+  const safeToFixed = (val) => (val || 0).toFixed(2);
+  const formatPrice = (value) => typeof value === "number" ? value : parseFloat(value) || 0;
+  const formatDisplayPrice = (value) => `${currencySymbol}${(value || 0).toFixed(2)}`;
+  const calculateItemTotal = (item, product) => (product?.sale_price || product?.price || 0) * (item?.quantity || 1);
+  const getStoreBaseUrl = () => "/";
+  const getExternalStoreUrl = () => "/shop";
+
+  // Drag sensors
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
+      activationConstraint: { distance: 8 },
     })
   );
 
-  const handleDragStart = (event) => {
-    setActiveId(event.active.id);
-  };
-
-  const handleDragEnd = (event) => {
+  // Handle drag end
+  const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
-    
-    if (active.id !== over.id) {
-      setSlotOrder((items) => {
+    if (!over || active.id === over.id) return;
+
+    if (['cartItems', 'sidebar'].includes(active.id)) {
+      setContentSections((items) => {
         const oldIndex = items.indexOf(active.id);
         const newIndex = items.indexOf(over.id);
         return arrayMove(items, oldIndex, newIndex);
       });
-      setHasChanges(true);
     }
-    
-    setActiveId(null);
-  };
+  }, []);
 
-  const toggleSlotVisibility = (slotId) => {
-    setHiddenSlots(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(slotId)) {
-        newSet.delete(slotId);
-      } else {
-        newSet.add(slotId);
-      }
-      return newSet;
-    });
-    setHasChanges(true);
-  };
+  // Open code editor
+  const handleEdit = useCallback((componentId) => {
+    setEditingComponent(componentId);
+    setTempCode(componentCode[componentId] || SLOT_CODE_TEMPLATES[componentId] || '// Component code');
+  }, [componentCode]);
 
-  const updateSlotContent = (slotId, content) => {
-    setSlotContent(prev => ({
-      ...prev,
-      [slotId]: content
-    }));
-    setHasChanges(true);
-  };
-
-  const handleSave = () => {
-    const configuration = {
-      slotOrder,
-      slotContent,
-      hiddenSlots: Array.from(hiddenSlots),
-      timestamp: new Date().toISOString()
-    };
-    
-    if (onSave) {
-      onSave(configuration);
-    } else {
-      // Save to localStorage as fallback
-      localStorage.setItem('cart_slots_config', JSON.stringify(configuration));
-      console.log('Saved configuration:', configuration);
-    }
-    
-    setHasChanges(false);
-  };
-
-  const handleReset = () => {
-    setSlotOrder(initialOrder);
-    setSlotContent(() => {
-      const content = {};
-      Object.values(SLOT_CONFIGS).forEach(config => {
-        content[config.id] = config.defaultContent;
+  // Save component code
+  const handleSaveCode = useCallback(() => {
+    if (editingComponent) {
+      const newComponentCode = {
+        ...componentCode,
+        [editingComponent]: tempCode
+      };
+      setComponentCode(newComponentCode);
+      
+      // Save configuration
+      onSave({
+        componentCode: newComponentCode,
+        contentSections,
+        timestamp: new Date().toISOString()
       });
-      return content;
-    });
-    setHiddenSlots(new Set());
-    setEditingSlot(null);
-    setHasChanges(false);
-  };
+    }
+    setEditingComponent(null);
+    setTempCode('');
+  }, [editingComponent, tempCode, componentCode, contentSections, onSave]);
 
-  return (
-    <div className="h-full flex flex-col bg-gray-50">
-      {/* Header Controls */}
-      <div className="bg-white border-b px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold">Cart Layout Editor</h2>
-            <p className="text-sm text-gray-600 mt-1">
-              Drag slots to reorder, click to edit content
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {hasChanges && (
-              <Badge variant="secondary" className="bg-yellow-100">
-                Unsaved Changes
-              </Badge>
-            )}
-            <Button variant="outline" onClick={handleReset}>
-              Reset
-            </Button>
-            <Button 
-              onClick={handleSave}
-              disabled={!hasChanges}
-            >
-              Save Configuration
-            </Button>
-          </div>
-        </div>
+  // Cancel editing
+  const handleCancelEdit = useCallback(() => {
+    setEditingComponent(null);
+    setTempCode('');
+  }, []);
+
+  // Component sections
+  const HeaderSection = () => (
+    <EditableSection id="header" onEdit={handleEdit} isDraggable={false}>
+      <div className="py-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
+        <FlashMessage message={flashMessage} onClose={() => {}} />
+        <CmsBlockRenderer position="cart_above_items" />
       </div>
+    </EditableSection>
+  );
 
-      {/* Grid Layout Indicator */}
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="grid grid-cols-12 gap-4 mb-4">
-            <div className="col-span-12 text-xs text-gray-400 flex justify-between">
-              {[...Array(12)].map((_, i) => (
-                <div key={i} className="text-center">{i + 1}</div>
-              ))}
-            </div>
-          </div>
+  const EmptyCartSection = () => (
+    <EditableSection id="emptyCart" onEdit={handleEdit} isDraggable={false}>
+      <Card>
+        <CardContent className="text-center py-12">
+          <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
+          <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+          <Button>Continue Shopping</Button>
+        </CardContent>
+      </Card>
+    </EditableSection>
+  );
 
-          {/* Draggable Slots */}
-          <div className="space-y-4 min-h-[500px]">
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={slotOrder}
-                strategy={verticalListSortingStrategy}
-              >
-                {slotOrder.map((slotId) => {
-                  const config = SLOT_CONFIGS[slotId];
-                  if (!config) return null;
-
-                  return (
-                    <SortableItem
-                      key={slotId}
-                      id={slotId}
-                      onToggleVisibility={toggleSlotVisibility}
-                      onEdit={() => setEditingSlot(slotId)}
-                      isHidden={hiddenSlots.has(slotId)}
-                      isDeletable={config.deletable}
-                    >
-                      <EditableSlot
-                        config={config}
-                        content={slotContent[slotId]}
-                        isEditing={editingSlot === slotId}
-                        onEdit={() => setEditingSlot(slotId)}
-                        onSave={() => setEditingSlot(null)}
-                        onCancel={() => setEditingSlot(null)}
-                        onChange={updateSlotContent}
-                        isHidden={hiddenSlots.has(slotId)}
-                      />
-                    </SortableItem>
-                  );
-                })}
-              </SortableContext>
-
-              <DragOverlay>
-                {activeId ? (
-                  <div className="opacity-80">
-                    <EditableSlot
-                      config={SLOT_CONFIGS[activeId]}
-                      content={slotContent[activeId]}
-                      isEditing={false}
-                      onEdit={() => {}}
-                      onSave={() => {}}
-                      onCancel={() => {}}
-                      onChange={() => {}}
-                      isHidden={hiddenSlots.has(activeId)}
-                    />
+  const CartItemsSection = () => (
+    <EditableSection id="cartItems" onEdit={handleEdit} className="lg:col-span-2">
+      <Card>
+        <CardContent className="px-4 divide-y divide-gray-200">
+          {cartItems.map(item => {
+            const product = item.product;
+            if (!product) return null;
+            
+            return (
+              <div key={item.id} className="relative">
+                <button
+                  onClick={() => handleEdit('cartItem')}
+                  className="absolute -right-6 top-2 p-1 bg-blue-100 rounded opacity-0 hover:opacity-100 transition-opacity"
+                  title="Edit cart item component"
+                >
+                  <Code className="w-3 h-3 text-blue-600" />
+                </button>
+                <div className="flex items-center space-x-4 py-6 border-b border-gray-200">
+                  <img
+                    src={product.images?.[0] || 'https://placehold.co/100x100?text=Product'}
+                    alt={product.name}
+                    className="w-20 h-20 object-cover rounded-lg"
+                  />
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold">{product.name}</h3>
+                    <p className="text-gray-600">{formatDisplayPrice(product.sale_price || product.price)} each</p>
+                    
+                    <div className="flex items-center space-x-3 mt-3">
+                      <Button size="sm" variant="outline"><Minus className="w-4 h-4" /></Button>
+                      <span className="text-lg font-semibold">{item.quantity || 1}</span>
+                      <Button size="sm" variant="outline"><Plus className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="destructive" className="ml-auto">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </div>
-
-          {/* Hidden Slots Section */}
-          {hiddenSlots.size > 0 && (
-            <div className="mt-8 p-4 bg-gray-100 rounded-lg">
-              <h3 className="text-sm font-medium text-gray-700 mb-2">
-                Hidden Slots ({hiddenSlots.size})
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {Array.from(hiddenSlots).map(slotId => {
-                  const config = SLOT_CONFIGS[slotId];
-                  const Icon = config.icon;
-                  return (
-                    <Badge 
-                      key={slotId}
-                      variant="secondary"
-                      className="cursor-pointer"
-                      onClick={() => toggleSlotVisibility(slotId)}
-                    >
-                      <Icon className="w-3 h-3 mr-1" />
-                      {config.title}
-                      <Eye className="w-3 h-3 ml-2" />
-                    </Badge>
-                  );
-                })}
+                  <div className="text-right">
+                    <p className="text-xl font-bold">{formatDisplayPrice(calculateItemTotal(item, product))}</p>
+                  </div>
+                </div>
               </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+      <CmsBlockRenderer position="cart_below_items" />
+    </EditableSection>
+  );
+
+  const SidebarSection = () => (
+    <EditableSection id="sidebar" onEdit={() => {}} isDraggable={true} className="lg:col-span-1 space-y-6">
+      {/* Coupon Section */}
+      <EditableSection id="coupon" onEdit={handleEdit} isDraggable={false}>
+        <Card>
+          <CardHeader><CardTitle>Apply Coupon</CardTitle></CardHeader>
+          <CardContent>
+            <div className="flex space-x-2">
+              <Input placeholder="Enter coupon code" value={couponCode} readOnly />
+              <Button><Tag className="w-4 h-4 mr-2" /> Apply</Button>
             </div>
-          )}
+          </CardContent>
+        </Card>
+      </EditableSection>
+
+      {/* Order Summary Section */}
+      <EditableSection id="orderSummary" onEdit={handleEdit} isDraggable={false}>
+        <Card>
+          <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex justify-between"><span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span></div>
+            {discount > 0 && (
+              <div className="flex justify-between"><span>Discount</span><span className="text-green-600">-{currencySymbol}{safeToFixed(discount)}</span></div>
+            )}
+            <div className="flex justify-between"><span>Tax</span><span>{currencySymbol}{safeToFixed(tax)}</span></div>
+            <div className="flex justify-between text-lg font-semibold border-t pt-4">
+              <span>Total</span><span>{currencySymbol}{safeToFixed(total)}</span>
+            </div>
+            <div className="border-t mt-6 pt-6">
+              <Button size="lg" className="w-full" style={{ backgroundColor: settings?.theme?.checkout_button_color || '#007bff', color: '#FFFFFF' }}>
+                Proceed to Checkout
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </EditableSection>
+    </EditableSection>
+  );
+
+  const RecommendedSection = () => (
+    <EditableSection id="recommendedProducts" onEdit={handleEdit} isDraggable={false}>
+      <div className="mt-12 p-8 bg-gray-100 rounded-lg text-center">
+        <h2 className="text-xl font-semibold mb-4">Recommended Products</h2>
+        <p className="text-gray-600">RecommendedProducts component will appear here</p>
+      </div>
+    </EditableSection>
+  );
+
+  // Main render
+  return (
+    <>
+      <div className="bg-gray-50 min-h-screen relative">
+        <div className="pl-12 pr-12"> {/* Add padding for drag/edit handles */}
+          <SeoHeadManager
+            title="Cart Editor"
+            description="Edit your cart layout"
+            keywords="cart, editor, layout"
+          />
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <HeaderSection />
+            
+            {cartItems.length === 0 ? (
+              <EmptyCartSection />
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext items={contentSections} strategy={verticalListSortingStrategy}>
+                  <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+                    {contentSections.map(sectionId => {
+                      if (sectionId === 'cartItems') return <CartItemsSection key={sectionId} />;
+                      if (sectionId === 'sidebar') return <SidebarSection key={sectionId} />;
+                      return null;
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+            
+            <RecommendedSection />
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Monaco Editor Modal */}
+      <Dialog open={!!editingComponent} onOpenChange={(open) => !open && handleCancelEdit()}>
+        <DialogContent className="max-w-5xl w-[90vw] h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Code className="w-5 h-5" />
+              Edit {editingComponent ? editingComponent.charAt(0).toUpperCase() + editingComponent.slice(1).replace(/([A-Z])/g, ' $1').trim() : ''} Component
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 border rounded-lg overflow-hidden">
+            <Editor
+              height="100%"
+              defaultLanguage="javascript"
+              value={tempCode}
+              onChange={(value) => setTempCode(value || '')}
+              theme="vs-dark"
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                wordWrap: 'on',
+                automaticLayout: true,
+                scrollBeyondLastLine: false,
+                padding: { top: 16, bottom: 16 },
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancelEdit}>
+              <X className="w-4 h-4 mr-2" /> Cancel
+            </Button>
+            <Button onClick={handleSaveCode}>
+              <Save className="w-4 h-4 mr-2" /> Save Code
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

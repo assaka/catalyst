@@ -1501,13 +1501,13 @@ export default ${componentName};`;
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-0 h-full">
+              <CardContent className="p-0 h-full overflow-auto">
                 {pageName === 'Cart' ? (
                   <CartSlotsEditor 
                     onSave={(config) => {
                       console.log('Saving Cart layout configuration:', config);
-                      // Save to localStorage or API
-                      localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
+                      // Save component code and configuration
+                      localStorage.setItem('cart_slots_editor_config', JSON.stringify(config));
                       triggerAutoSave();
                     }}
                   />
