@@ -18,6 +18,8 @@ import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
+  horizontalListSortingStrategy,
+  rectSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import SeoHeadManager from "@/components/storefront/SeoHeadManager";
@@ -29,8 +31,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, Move } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, Move, LayoutGrid, AlignJustify, AlignLeft } from "lucide-react";
 import Editor from '@monaco-editor/react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 // Micro-slot definitions for each major slot
 const MICRO_SLOT_DEFINITIONS = {
@@ -38,31 +41,41 @@ const MICRO_SLOT_DEFINITIONS = {
     id: 'emptyCart',
     name: 'Empty Cart',
     microSlots: ['emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button'],
-    defaultOrder: ['emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button']
+    defaultOrder: ['emptyCart.icon', 'emptyCart.title', 'emptyCart.text', 'emptyCart.button'],
+    defaultLayout: 'grid', // Can be 'vertical', 'horizontal', or 'grid'
+    gridCols: 2 // Used when layout is 'grid' - allows icon and title on one row, text and button on another
   },
   header: {
     id: 'header',
     name: 'Page Header',
     microSlots: ['header.flashMessage', 'header.title', 'header.cmsBlock'],
-    defaultOrder: ['header.flashMessage', 'header.title', 'header.cmsBlock']
+    defaultOrder: ['header.flashMessage', 'header.title', 'header.cmsBlock'],
+    defaultLayout: 'vertical',
+    gridCols: 2
   },
   cartItem: {
     id: 'cartItem',
     name: 'Cart Item',
     microSlots: ['cartItem.image', 'cartItem.details', 'cartItem.quantity', 'cartItem.price', 'cartItem.remove'],
-    defaultOrder: ['cartItem.image', 'cartItem.details', 'cartItem.quantity', 'cartItem.price', 'cartItem.remove']
+    defaultOrder: ['cartItem.image', 'cartItem.details', 'cartItem.quantity', 'cartItem.price', 'cartItem.remove'],
+    defaultLayout: 'horizontal',
+    gridCols: 3
   },
   coupon: {
     id: 'coupon',
     name: 'Coupon Section',
     microSlots: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.applied'],
-    defaultOrder: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.applied']
+    defaultOrder: ['coupon.title', 'coupon.input', 'coupon.button', 'coupon.applied'],
+    defaultLayout: 'horizontal',
+    gridCols: 2
   },
   orderSummary: {
     id: 'orderSummary',
     name: 'Order Summary',
     microSlots: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton'],
-    defaultOrder: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton']
+    defaultOrder: ['orderSummary.title', 'orderSummary.subtotal', 'orderSummary.discount', 'orderSummary.tax', 'orderSummary.total', 'orderSummary.checkoutButton'],
+    defaultLayout: 'vertical',
+    gridCols: 2
   }
 };
 
@@ -146,7 +159,7 @@ function MicroSlot({ id, children, onEdit, isDraggable = true }) {
 }
 
 // Parent slot container with micro-slots
-function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true }) {
+function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, layout = 'vertical', onLayoutChange, gridCols = 2 }) {
   const {
     attributes,
     listeners,
@@ -175,6 +188,34 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
     // Only allow reordering within the same parent
     if (active.id.split('.')[0] === over.id.split('.')[0]) {
       onMicroSlotReorder(id, active.id, over.id);
+    }
+  };
+
+  // Choose sorting strategy based on layout
+  const getSortingStrategy = () => {
+    switch (layout) {
+      case 'horizontal':
+        return horizontalListSortingStrategy;
+      case 'grid':
+        return rectSortingStrategy;
+      default:
+        return verticalListSortingStrategy;
+    }
+  };
+
+  // Get container styles based on layout
+  const getContainerStyles = () => {
+    switch (layout) {
+      case 'horizontal':
+        return 'flex flex-row gap-4 items-start flex-wrap';
+      case 'grid':
+        // Use fixed grid column classes that Tailwind can recognize
+        const gridClass = gridCols === 2 ? 'grid-cols-2' : 
+                         gridCols === 3 ? 'grid-cols-3' : 
+                         gridCols === 4 ? 'grid-cols-4' : 'grid-cols-2';
+        return `grid gap-4 ${gridClass}`;
+      default:
+        return 'space-y-2';
     }
   };
 
@@ -209,16 +250,45 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
         </button>
       )}
       
-      {/* Section label */}
-      <div className="absolute -top-3 left-4 px-2 bg-white text-xs font-medium text-gray-500">
-        {name}
+      {/* Section label and layout selector */}
+      <div className="absolute -top-3 left-4 right-4 flex justify-between items-center">
+        <span className="px-2 bg-white text-xs font-medium text-gray-500">
+          {name}
+        </span>
+        {onLayoutChange && (
+          <Select value={layout} onValueChange={(value) => onLayoutChange(id, value)}>
+            <SelectTrigger className="h-6 w-32 text-xs bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="vertical">
+                <div className="flex items-center gap-1">
+                  <AlignJustify className="w-3 h-3" />
+                  <span>Vertical</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="horizontal">
+                <div className="flex items-center gap-1">
+                  <AlignLeft className="w-3 h-3 rotate-90" />
+                  <span>Horizontal</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="grid">
+                <div className="flex items-center gap-1">
+                  <LayoutGrid className="w-3 h-3" />
+                  <span>Grid</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
       
       {/* Micro-slots container */}
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-white">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMicroDragEnd}>
-          <SortableContext items={microSlotOrder} strategy={verticalListSortingStrategy}>
-            <div className="space-y-2">
+          <SortableContext items={microSlotOrder} strategy={getSortingStrategy()}>
+            <div className={getContainerStyles()}>
               {children}
             </div>
           </SortableContext>
@@ -243,6 +313,15 @@ export default function CartSlotsEditorWithMicroSlots({
       orders[key] = [...def.defaultOrder];
     });
     return orders;
+  });
+  
+  // State for layout modes of each parent slot
+  const [slotLayouts, setSlotLayouts] = useState(() => {
+    const layouts = {};
+    Object.entries(MICRO_SLOT_DEFINITIONS).forEach(([key, def]) => {
+      layouts[key] = def.defaultLayout || 'vertical';
+    });
+    return layouts;
   });
   
   // State for component code
@@ -325,6 +404,14 @@ export default function CartSlotsEditorWithMicroSlots({
       return newOrders;
     });
   }, []);
+  
+  // Handle layout change for a parent slot
+  const handleLayoutChange = useCallback((slotId, newLayout) => {
+    setSlotLayouts(prev => ({
+      ...prev,
+      [slotId]: newLayout
+    }));
+  }, []);
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((microSlotId) => {
@@ -344,6 +431,7 @@ export default function CartSlotsEditorWithMicroSlots({
         componentCode: { ...componentCode, [editingComponent]: tempCode },
         majorSlots,
         microSlotOrders,
+        slotLayouts,
         timestamp: new Date().toISOString()
       });
     }
@@ -354,6 +442,7 @@ export default function CartSlotsEditorWithMicroSlots({
   // Render empty cart with micro-slots
   const renderEmptyCart = () => {
     const microSlots = microSlotOrders.emptyCart || MICRO_SLOT_DEFINITIONS.emptyCart.defaultOrder;
+    const layout = slotLayouts.emptyCart || 'vertical';
     
     return (
       <ParentSlot
@@ -362,6 +451,9 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('emptyCart')}
+        layout={layout}
+        onLayoutChange={handleLayoutChange}
+        gridCols={MICRO_SLOT_DEFINITIONS.emptyCart.gridCols}
       >
         {microSlots.map(slotId => {
           if (slotId === 'emptyCart.icon') {
@@ -412,6 +504,7 @@ export default function CartSlotsEditorWithMicroSlots({
   // Render header with micro-slots
   const renderHeader = () => {
     const microSlots = microSlotOrders.header || MICRO_SLOT_DEFINITIONS.header.defaultOrder;
+    const layout = slotLayouts.header || 'vertical';
     
     return (
       <ParentSlot
@@ -420,6 +513,9 @@ export default function CartSlotsEditorWithMicroSlots({
         microSlotOrder={microSlots}
         onMicroSlotReorder={handleMicroSlotReorder}
         onEdit={() => handleEditMicroSlot('header')}
+        layout={layout}
+        onLayoutChange={handleLayoutChange}
+        gridCols={MICRO_SLOT_DEFINITIONS.header.gridCols}
       >
         {microSlots.map(slotId => {
           if (slotId === 'header.flashMessage') {
