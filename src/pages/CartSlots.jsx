@@ -54,6 +54,8 @@ export default function CartSlots({
   layoutConfig = null, // Layout configuration from editor
   enableDragDrop = false, // Set to true to enable drag and drop
 }) {
+  // Debug: Log the received configuration
+  console.log('CartSlots received layoutConfig:', layoutConfig);
   // Destructure all props with defaults matching Cart.jsx
   const {
     store = {},
@@ -88,11 +90,26 @@ export default function CartSlots({
 
   // Define sections for potential reordering, using layoutConfig if available
   const [sectionOrder, setSectionOrder] = useState(() => {
-    if (layoutConfig?.contentSections) {
-      return layoutConfig.contentSections;
+    if (layoutConfig?.majorSlots) {
+      console.log('Using saved majorSlots configuration:', layoutConfig.majorSlots);
+      // Map the editor slot names to the actual component names used in this file
+      const slotMapping = {
+        'header': 'header',
+        'cartItems': 'cartItems',
+        'coupon': 'sidebar', // Coupon and orderSummary are in sidebar
+        'orderSummary': 'sidebar',
+        'recommendedProducts': 'recommendedProducts'
+      };
+      
+      // Filter and map to valid slots, ensuring sidebar is included if coupon or orderSummary are present
+      const mappedSlots = layoutConfig.majorSlots.map(slot => slotMapping[slot] || slot);
+      const uniqueSlots = [...new Set(mappedSlots)]; // Remove duplicates
+      
+      // For now, use simple cartItems and sidebar layout
+      return ['cartItems', 'sidebar'];
     }
-    // Default order from layout config or fallback
-    return layoutConfig?.majorSlots || ['cartItems', 'sidebar'];
+    // Default order
+    return ['cartItems', 'sidebar'];
   });
 
   const sensors = useSensors(
@@ -119,6 +136,18 @@ export default function CartSlots({
     return typeof value === "number" ? value : parseFloat(value) || 0;
   };
 
+  // Extract custom text from layoutConfig if available
+  const getCustomText = (key, defaultValue) => {
+    if (layoutConfig?.textContent?.[key]) {
+      // Remove HTML tags for plain text
+      const htmlText = layoutConfig.textContent[key];
+      // Simple regex to remove HTML tags (SSR-safe)
+      const textContent = htmlText.replace(/<[^>]*>/g, '').trim();
+      return textContent || defaultValue;
+    }
+    return defaultValue;
+  };
+
   // Loading state matching Cart.jsx
   if (loading || storeLoading) {
     return (
@@ -128,18 +157,22 @@ export default function CartSlots({
     );
   }
 
-  // Empty cart view
+  // Empty cart view with custom text support
   const EmptyCart = () => (
     <Card>
       <CardContent className="text-center py-12">
         <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-        <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+        <h2 className="text-xl font-semibold mb-2">
+          {getCustomText('emptyCart.title', 'Your cart is empty')}
+        </h2>
+        <p className="text-gray-600 mb-6">
+          {getCustomText('emptyCart.text', "Looks like you haven't added anything to your cart yet.")}
+        </p>
         <Button onClick={() => {
           const baseUrl = getStoreBaseUrl(store);
           window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
         }}>
-          Continue Shopping
+          {getCustomText('emptyCart.button', 'Continue Shopping')}
         </Button>
       </CardContent>
     </Card>
@@ -317,7 +350,9 @@ export default function CartSlots({
       />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">
+          {getCustomText('header.title', 'My Cart')}
+        </h1>
         <CmsBlockRenderer position="cart_above_items" />
         
         {cartItems.length === 0 ? (
