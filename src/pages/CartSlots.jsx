@@ -22,7 +22,7 @@ function SlotWrapper({ children, isEditing, onEditCancel }) {
         {isEditing && (
             <button
                 onClick={onEditCancel}
-                className="absolute top-2 right-2 px-2 py-1 bg-red-200 rounded hover:bg-red-300"
+                className="absolute top-2 right-2 z-20 px-2 py-1 bg-red-200 rounded hover:bg-red-300 text-sm"
             >
               Cancel
             </button>
@@ -66,40 +66,51 @@ function SortableItem({
     transform,
     transition,
     isDragging
-  } = useSortable({ id });
+  } = useSortable({ id, disabled: !draggable });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    position: "relative",
-    marginBottom: "1rem"
   };
 
   return (
-      <div ref={setNodeRef} style={style}>
+      <div 
+        ref={setNodeRef} 
+        style={style}
+        className="relative mb-4 group"
+      >
         {draggable && (
-            <span
+            <button
                 ref={setActivatorNodeRef}
                 {...listeners}
                 {...attributes}
-                className="absolute left-2 top-2 cursor-grab"
+                className="absolute left-2 top-6 z-10 cursor-grab active:cursor-grabbing touch-none"
+                aria-label="Drag handle"
             >
           <GripVertical size={20} />
-        </span>
+        </button>
         )}
 
-        {/* Hide when hovering */}
-        <div className="absolute right-2 top-2 flex space-x-2 opacity-0 group-hover:opacity-100">
-          <button onClick={() => onEdit(id)}>
+        {/* Edit and Hide buttons */}
+        <div className="absolute right-2 top-6 z-10 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button 
+            onClick={() => onEdit(id)}
+            className="p-1 hover:bg-gray-100 rounded"
+            aria-label="Edit"
+          >
             <Pencil size={16} />
           </button>
-          <button onClick={() => onHide(id)}>
+          <button 
+            onClick={() => onHide(id)}
+            className="p-1 hover:bg-gray-100 rounded"
+            aria-label="Hide"
+          >
             <EyeOff size={16} />
           </button>
         </div>
 
-        <div className="group">{children}</div>
+        {children}
       </div>
   );
 }
@@ -147,7 +158,13 @@ export default function CartSlots() {
     localStorage.setItem("slotHidden", JSON.stringify(hidden));
   }, [hidden]);
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const handleDragEnd = (event) => {
     const { active, over } = event;
