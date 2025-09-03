@@ -348,10 +348,21 @@ export default function CartSlotsEditor({
   const [codeHistory, setCodeHistory] = useState([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   
-  // State for layout order
-  const [contentSections, setContentSections] = useState(['header', 'cartItems', 'sidebar', 'recommendedProducts']);
-  const [sidebarSlots, setSidebarSlots] = useState(['coupon', 'orderSummary']);
-  const [originalSections, setOriginalSections] = useState(['header', 'cartItems', 'sidebar', 'recommendedProducts']);
+  // State for layout order - all slots are now draggable
+  const [allSlots, setAllSlots] = useState([
+    'header',
+    'cartItems', 
+    'coupon',
+    'orderSummary',
+    'recommendedProducts'
+  ]);
+  const [originalSlots] = useState([
+    'header',
+    'cartItems',
+    'coupon', 
+    'orderSummary',
+    'recommendedProducts'
+  ]);
   
   // Destructure all props with defaults matching Cart.jsx
   const {
@@ -397,28 +408,27 @@ export default function CartSlotsEditor({
     })
   );
 
-  // Handle drag end
+  // Handle drag end - now handles all slots uniformly
   const handleDragEnd = useCallback((event) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    // Check if we're moving main sections
-    if (['header', 'cartItems', 'sidebar', 'recommendedProducts'].includes(active.id)) {
-      setContentSections((items) => {
-        const oldIndex = items.indexOf(active.id);
-        const newIndex = items.indexOf(over.id);
+    setAllSlots((items) => {
+      const oldIndex = items.indexOf(active.id);
+      const newIndex = items.indexOf(over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
         return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-    // Check if we're moving sidebar slots
-    else if (['coupon', 'orderSummary'].includes(active.id)) {
-      setSidebarSlots((items) => {
-        const oldIndex = items.indexOf(active.id);
-        const newIndex = items.indexOf(over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  }, []);
+      }
+      return items;
+    });
+    
+    // Trigger save with new layout
+    onSave({
+      componentCode,
+      slotOrder: allSlots,
+      timestamp: new Date().toISOString()
+    });
+  }, [allSlots, componentCode, onSave]);
 
   // Open code editor
   const handleEdit = useCallback((componentId) => {
@@ -443,13 +453,13 @@ export default function CartSlotsEditor({
       // Save configuration
       onSave({
         componentCode: newComponentCode,
-        contentSections,
+        slotOrder: allSlots,
         timestamp: new Date().toISOString()
       });
     }
     setEditingComponent(null);
     setTempCode('');
-  }, [editingComponent, tempCode, componentCode, contentSections, onSave]);
+  }, [editingComponent, tempCode, componentCode, allSlots, onSave]);
 
   // Cancel editing
   const handleCancelEdit = useCallback(() => {
@@ -538,13 +548,13 @@ export default function CartSlotsEditor({
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={contentSections} strategy={verticalListSortingStrategy}>
+            <SortableContext items={allSlots} strategy={verticalListSortingStrategy}>
               <div className="space-y-6">
-                {contentSections.map(sectionId => {
+                {allSlots.map(slotId => {
                   // Header Section
-                  if (sectionId === 'header') {
+                  if (slotId === 'header') {
                     return (
-                      <EditableSection key={sectionId} id={sectionId} onEdit={handleEdit} isDraggable={true}>
+                      <EditableSection key={slotId} id={slotId} onEdit={handleEdit} isDraggable={true}>
                         <div className="bg-white p-4 rounded-lg">
                           <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
                           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Cart</h1>
@@ -554,11 +564,11 @@ export default function CartSlotsEditor({
                     );
                   }
                   
-                  // Empty Cart or Cart Items
-                  if (sectionId === 'cartItems') {
+                  // Cart Items Section
+                  if (slotId === 'cartItems') {
                     if (cartItems.length === 0) {
                       return (
-                        <EditableSection key={sectionId} id={sectionId} onEdit={handleEdit} isDraggable={true}>
+                        <EditableSection key={slotId} id="emptyCart" onEdit={handleEdit} isDraggable={true}>
                           <Card>
                             <CardContent className="text-center py-12">
                               <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -576,7 +586,7 @@ export default function CartSlotsEditor({
                       );
                     }
                     return (
-                      <EditableSection key={sectionId} id={sectionId} onEdit={handleEdit} isDraggable={true}>
+                      <EditableSection key={slotId} id={slotId} onEdit={handleEdit} isDraggable={true}>
                           <Card>
                             <CardContent className="px-4 divide-y divide-gray-200">
                               {cartItems.map(item => {
@@ -668,16 +678,11 @@ export default function CartSlotsEditor({
                       );
                     }
                     
-                  // Sidebar with draggable slots
-                  if (sectionId === 'sidebar') {
+                  // Coupon Section
+                  if (slotId === 'coupon') {
                     return (
-                      <EditableSection key={sectionId} id={sectionId} onEdit={null} isDraggable={true}>
-                        <div className="space-y-4">
-                          {sidebarSlots.map(slotId => {
-                            if (slotId === 'coupon') {
-                              return (
-                                <EditableSection key={slotId} id={slotId} onEdit={handleEdit} isDraggable={true}>
-                            <Card>
+                      <EditableSection key={slotId} id={slotId} onEdit={handleEdit} isDraggable={true}>
+                        <Card>
                               <CardHeader><CardTitle>Apply Coupon</CardTitle></CardHeader>
                               <CardContent>
                                 {!appliedCoupon ? (
@@ -718,14 +723,15 @@ export default function CartSlotsEditor({
                                 )}
                               </CardContent>
                             </Card>
-                          </EditableSection>
-                              );
-                            }
-                            
-                            if (slotId === 'orderSummary') {
-                              return (
-                                <EditableSection key={slotId} id={slotId} onEdit={handleEdit} isDraggable={true}>
-                            <Card>
+                      </EditableSection>
+                    );
+                  }
+                  
+                  // Order Summary Section  
+                  if (slotId === 'orderSummary') {
+                    return (
+                      <EditableSection key={slotId} id={slotId} onEdit={handleEdit} isDraggable={true}>
+                        <Card>
                               <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
                               <CardContent className="space-y-4">
                                 <div className="flex justify-between"><span>Subtotal</span><span>{currencySymbol}{safeToFixed(subtotal)}</span></div>
@@ -754,20 +760,14 @@ export default function CartSlotsEditor({
                                 </div>
                               </CardContent>
                             </Card>
-                          </EditableSection>
-                              );
-                            }
-                            return null;
-                          })}
-                        </div>
                       </EditableSection>
-                      );
-                    }
+                    );
+                  }
                     
                   // Recommended Products Section
-                  if (sectionId === 'recommendedProducts') {
+                  if (slotId === 'recommendedProducts') {
                     return (
-                      <EditableSection key={sectionId} id={sectionId} onEdit={handleEdit} isDraggable={true}>
+                      <EditableSection key={slotId} id={slotId} onEdit={handleEdit} isDraggable={true}>
                         <div className="mt-8">
                           {store && store.id ? (
                             <RecommendedProducts storeId={store.id} />
