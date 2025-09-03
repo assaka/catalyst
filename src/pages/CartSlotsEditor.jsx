@@ -522,6 +522,7 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
 function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowSpan = 1, onSpanChange, isEditable = false, onContentChange }) {
   const [isResizing, setIsResizing] = useState(false);
   const [resizeStart, setResizeStart] = useState(null);
+  const [isHovered, setIsHovered] = useState(false);
   const slotRef = useRef(null);
   
   const {
@@ -634,10 +635,12 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         slotRef.current = el;
       }}
       style={style}
-      className={`relative group ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
+      className={`relative ${getGridSpanClass()} ${isDragging ? 'z-50' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      {isDraggable && (
-        <div className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+      {isDraggable && isHovered && (
+        <div className="absolute -left-6 top-1/2 -translate-y-1/2 transition-opacity">
           <div
             {...listeners}
             {...attributes}
@@ -649,10 +652,10 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         </div>
       )}
       
-      {onEdit && (
+      {onEdit && isHovered && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute -right-6 top-1/2 -translate-y-1/2 p-1 bg-gray-100 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute -right-6 top-1/2 -translate-y-1/2 p-1 bg-gray-100 rounded transition-opacity"
           title="Edit micro-slot"
         >
           <Edit className="w-3 h-3 text-gray-600" />
@@ -660,8 +663,8 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
       )}
       
       {/* Span controls */}
-      {onSpanChange && (
-        <div className="absolute -bottom-6 left-0 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+      {onSpanChange && isHovered && (
+        <div className="absolute -bottom-6 left-0 flex gap-2 transition-opacity z-10">
           <div className="flex items-center bg-white rounded shadow-sm border px-1">
             <span className="text-xs text-gray-500 mr-1">W:</span>
             <input
@@ -691,21 +694,21 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
         {children}
         
         {/* Resize handles */}
-        {onSpanChange && !isDragging && (
+        {onSpanChange && !isDragging && isHovered && (
           <>
             {/* Right edge */}
             <div
-              className="absolute top-0 right-0 w-2 h-full cursor-ew-resize opacity-0 group-hover:opacity-100 bg-blue-500/20 hover:bg-blue-500/30"
+              className="absolute top-0 right-0 w-2 h-full cursor-ew-resize bg-blue-500/20 hover:bg-blue-500/30"
               onMouseDown={(e) => handleResizeStart(e, 'right')}
             />
             {/* Bottom edge */}
             <div
-              className="absolute bottom-0 left-0 w-full h-2 cursor-ns-resize opacity-0 group-hover:opacity-100 bg-blue-500/20 hover:bg-blue-500/30"
+              className="absolute bottom-0 left-0 w-full h-2 cursor-ns-resize bg-blue-500/20 hover:bg-blue-500/30"
               onMouseDown={(e) => handleResizeStart(e, 'bottom')}
             />
             {/* Bottom-right corner */}
             <div
-              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100"
+              className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize"
               onMouseDown={(e) => handleResizeStart(e, 'bottom-right')}
             >
               <div className="absolute bottom-1 right-1 w-2 h-2 bg-blue-500 rounded-sm" />
@@ -719,6 +722,8 @@ function MicroSlot({ id, children, onEdit, isDraggable = true, colSpan = 1, rowS
 
 // Parent slot container with micro-slots
 function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, onEdit, isDraggable = true, gridCols = 12 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  
   const {
     attributes,
     listeners,
@@ -754,11 +759,13 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
+      className={`relative ${isDragging ? 'ring-2 ring-blue-500' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Parent drag handle */}
-      {isDraggable && (
-        <div className="absolute -left-10 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+      {isDraggable && isHovered && (
+        <div className="absolute -left-10 top-4 transition-opacity">
           <div
             {...listeners}
             {...attributes}
@@ -771,10 +778,10 @@ function ParentSlot({ id, name, children, microSlotOrder, onMicroSlotReorder, on
       )}
       
       {/* Parent edit button */}
-      {onEdit && (
+      {onEdit && isHovered && (
         <button
           onClick={() => onEdit(id)}
-          className="absolute -right-10 top-4 p-2 bg-blue-100 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute -right-10 top-4 p-2 bg-blue-100 rounded transition-opacity"
           title="Edit section"
         >
           <Edit className="w-4 h-4 text-blue-600" />
