@@ -26,18 +26,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-
-import SeoHeadManager from "./SeoHeadManager";
-import FlashMessage from "./FlashMessage";
-import CmsBlockRenderer from "./CmsBlockRenderer";
-import Button from "./Button";
-import Card from "./Card";
-import CardContent from "./CardContent";
-import CardHeader from "./CardHeader";
-import CardTitle from "./CardTitle";
-import Input from "./Input";
-import ShoppingCart from "./icons/ShoppingCart";
-import { Minus, Plus, Trash2, Tag } from "./icons";
+import SeoHeadManager from "@/components/storefront//SeoHeadManager";
+import FlashMessage from "@/components/storefront/FlashMessage";
+import CmsBlockRenderer from "@/components/storefront/CmsBlockRenderer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 // --- Slot Components ---
 
