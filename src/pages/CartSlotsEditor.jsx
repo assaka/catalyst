@@ -34,6 +34,11 @@ import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, Minus, Plus, Trash2, Tag, GripVertical, Edit, X, Save, Code, RefreshCw, Copy, Check, FileCode, Maximize2, Eye, EyeOff, Undo2, Redo2, Move, LayoutGrid, AlignJustify, AlignLeft, GripHorizontal, GripVertical as ResizeVertical } from "lucide-react";
 import Editor from '@monaco-editor/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
 
 // Micro-slot definitions for each major slot
 const MICRO_SLOT_DEFINITIONS = {
@@ -127,8 +132,76 @@ const MICRO_SLOT_TEMPLATES = {
   'orderSummary.checkoutButton': `<Button size="lg" className="w-full">Proceed to Checkout</Button>`
 };
 
+// Rich Text Editor component
+function RichTextEditor({ content, onSave, onCancel }) {
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      TextStyle,
+      Color,
+    ],
+    content: content,
+    autofocus: true,
+  });
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <div className="bg-gray-50 border-b p-2 flex gap-1">
+        <button
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={`px-2 py-1 rounded ${editor?.isActive('bold') ? 'bg-gray-200' : 'hover:bg-gray-200'}`}
+          title="Bold"
+        >
+          <strong>B</strong>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          className={`px-2 py-1 rounded ${editor?.isActive('italic') ? 'bg-gray-200' : 'hover:bg-gray-200'}`}
+          title="Italic"
+        >
+          <em>I</em>
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          className={`px-2 py-1 rounded ${editor?.isActive('strike') ? 'bg-gray-200' : 'hover:bg-gray-200'}`}
+          title="Strikethrough"
+        >
+          <s>S</s>
+        </button>
+        <div className="border-l mx-1" />
+        <button
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={`px-2 py-1 rounded ${editor?.isActive('heading', { level: 2 }) ? 'bg-gray-200' : 'hover:bg-gray-200'}`}
+          title="Heading"
+        >
+          H2
+        </button>
+        <button
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={`px-2 py-1 rounded ${editor?.isActive('bulletList') ? 'bg-gray-200' : 'hover:bg-gray-200'}`}
+          title="Bullet List"
+        >
+          •
+        </button>
+      </div>
+      <EditorContent 
+        editor={editor} 
+        className="p-3 min-h-[100px] max-h-[300px] overflow-y-auto prose prose-sm max-w-none"
+      />
+      <div className="bg-gray-50 border-t p-2 flex justify-end gap-2">
+        <Button size="sm" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button size="sm" onClick={() => onSave(editor.getHTML())}>
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // Inline editable text component
-function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multiline = false }) {
+function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multiline = false, richText = false }) {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
   const inputRef = useRef(null);
@@ -138,16 +211,16 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
   }, [value]);
 
   useEffect(() => {
-    if (isEditing && inputRef.current) {
+    if (isEditing && inputRef.current && !richText) {
       inputRef.current.focus();
       if (inputRef.current.select) {
         inputRef.current.select();
       }
     }
-  }, [isEditing]);
+  }, [isEditing, richText]);
 
-  const handleSave = () => {
-    onChange(tempValue);
+  const handleSave = (newValue) => {
+    onChange(newValue || tempValue);
     setIsEditing(false);
   };
 
@@ -159,20 +232,29 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !multiline) {
       e.preventDefault();
-      handleSave();
+      handleSave(tempValue);
     } else if (e.key === 'Escape') {
       handleCancel();
     }
   };
 
   if (isEditing) {
+    if (richText) {
+      return (
+        <RichTextEditor
+          content={tempValue}
+          onSave={handleSave}
+          onCancel={handleCancel}
+        />
+      );
+    }
     if (multiline) {
       return (
         <textarea
           ref={inputRef}
           value={tempValue}
           onChange={(e) => setTempValue(e.target.value)}
-          onBlur={handleSave}
+          onBlur={() => handleSave(tempValue)}
           onKeyDown={handleKeyDown}
           className={`${className} w-full min-h-[60px] p-1 border rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500`}
         />
@@ -184,9 +266,21 @@ function InlineEdit({ value, onChange, className = "", tag: Tag = 'span', multil
         type="text"
         value={tempValue}
         onChange={(e) => setTempValue(e.target.value)}
-        onBlur={handleSave}
+        onBlur={() => handleSave(tempValue)}
         onKeyDown={handleKeyDown}
         className={`${className} w-full p-1 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
+      />
+    );
+  }
+
+  // For rich text, render HTML content
+  if (richText && value && value.includes('<')) {
+    return (
+      <Tag
+        onClick={() => setIsEditing(true)}
+        className={`${className} cursor-text hover:bg-gray-100 px-1 rounded transition-colors`}
+        title="Click to edit"
+        dangerouslySetInnerHTML={{ __html: value }}
       />
     );
   }
@@ -524,6 +618,13 @@ export default function CartSlotsEditorWithMicroSlots({
     'header.title': 'My Cart',
   });
   
+  // State for component sizes
+  const [componentSizes, setComponentSizes] = useState({
+    'emptyCart.icon': 64, // pixels
+    'emptyCart.button': 'default', // 'sm' | 'default' | 'lg'
+    'cartItem.image': 80,
+  });
+  
   // Props from data
   const {
     store = {},
@@ -617,6 +718,14 @@ export default function CartSlotsEditorWithMicroSlots({
       [slotId]: newText
     }));
   }, []);
+  
+  // Handle component size change
+  const handleSizeChange = useCallback((slotId, newSize) => {
+    setComponentSizes(prev => ({
+      ...prev,
+      [slotId]: newSize
+    }));
+  }, []);
 
   // Edit micro-slot
   const handleEditMicroSlot = useCallback((microSlotId) => {
@@ -662,6 +771,7 @@ export default function CartSlotsEditorWithMicroSlots({
           const slotSpan = spans[slotId] || { col: 12, row: 1 };
           
           if (slotId === 'emptyCart.icon') {
+            const iconSize = componentSizes[slotId] || 64;
             return (
               <MicroSlot 
                 key={slotId} 
@@ -671,8 +781,23 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
-                <div className="flex items-center justify-center h-full">
-                  <ShoppingCart className="w-16 h-16 text-gray-400" />
+                <div className="flex flex-col items-center justify-center h-full gap-2">
+                  <ShoppingCart 
+                    className="text-gray-400" 
+                    style={{ width: `${iconSize}px`, height: `${iconSize}px` }}
+                  />
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-xs text-gray-500">Size:</span>
+                    <Slider
+                      value={[iconSize]}
+                      onValueChange={([value]) => handleSizeChange(slotId, value)}
+                      min={16}
+                      max={128}
+                      step={8}
+                      className="w-24"
+                    />
+                    <span className="text-xs text-gray-600 w-12">{iconSize}px</span>
+                  </div>
                 </div>
               </MicroSlot>
             );
@@ -710,13 +835,14 @@ export default function CartSlotsEditorWithMicroSlots({
                   value={textContent[slotId]}
                   onChange={(newText) => handleTextChange(slotId, newText)}
                   className="text-gray-600 block"
-                  tag="p"
-                  multiline
+                  tag="div"
+                  richText
                 />
               </MicroSlot>
             );
           }
           if (slotId === 'emptyCart.button') {
+            const buttonSize = componentSizes[slotId] || 'default';
             return (
               <MicroSlot 
                 key={slotId} 
@@ -726,11 +852,14 @@ export default function CartSlotsEditorWithMicroSlots({
                 rowSpan={slotSpan.row}
                 onSpanChange={(id, newSpan) => handleSpanChange('emptyCart', id, newSpan)}
               >
-                <div className="flex items-center justify-center h-full">
-                  <Button onClick={() => {
-                    const baseUrl = getStoreBaseUrl(store);
-                    window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-                  }}>
+                <div className="flex flex-col items-center justify-center h-full gap-2">
+                  <Button 
+                    size={buttonSize}
+                    onClick={() => {
+                      const baseUrl = getStoreBaseUrl(store);
+                      window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+                    }}
+                  >
                     <InlineEdit
                       value={textContent[slotId]}
                       onChange={(newText) => handleTextChange(slotId, newText)}
@@ -738,6 +867,19 @@ export default function CartSlotsEditorWithMicroSlots({
                       tag="span"
                     />
                   </Button>
+                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-xs text-gray-500">Size:</span>
+                    <Select value={buttonSize} onValueChange={(value) => handleSizeChange(slotId, value)}>
+                      <SelectTrigger className="h-6 w-20 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sm">Small</SelectItem>
+                        <SelectItem value="default">Default</SelectItem>
+                        <SelectItem value="lg">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </MicroSlot>
             );
@@ -837,11 +979,12 @@ export default function CartSlotsEditorWithMicroSlots({
           keywords="cart, editor, micro-slots"
         />
         
-        {/* Instructions */}
+        {/* Instructions and Save Button */}
         <div className="bg-blue-50 border-b border-blue-200 p-4">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="secondary" className="bg-blue-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-wrap">
+                <Badge variant="secondary" className="bg-blue-100">
                 <GripVertical className="w-3 h-3 mr-1" />
                 Sections
               </Badge>
@@ -857,6 +1000,28 @@ export default function CartSlotsEditorWithMicroSlots({
                 W/H
               </Badge>
               <span className="text-sm text-blue-800">Hover to adjust width (1-12) and height (1-4)</span>
+              </div>
+              <Button 
+                onClick={() => {
+                  // Save all configuration
+                  const config = {
+                    majorSlots,
+                    microSlotOrders,
+                    microSlotSpans,
+                    textContent,
+                    componentSizes,
+                    componentCode,
+                    timestamp: new Date().toISOString()
+                  };
+                  onSave(config);
+                  // Show success message (optional)
+                  console.log('Layout configuration saved!', config);
+                }}
+                className="flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                Save Layout
+              </Button>
             </div>
           </div>
         </div>

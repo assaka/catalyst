@@ -51,6 +51,7 @@ function SortableSection({ id, children, isDraggable = true }) {
 // Main CartSlots component matching Cart.jsx layout exactly
 export default function CartSlots({
   data = {},
+  layoutConfig = null, // Layout configuration from editor
   enableDragDrop = false, // Set to true to enable drag and drop
 }) {
   // Destructure all props with defaults matching Cart.jsx
@@ -85,8 +86,14 @@ export default function CartSlots({
     getExternalStoreUrl = (slug, path, baseUrl) => `${baseUrl}${slug || ""}${path || ""}`,
   } = data;
 
-  // Define sections for potential reordering
-  const [sectionOrder, setSectionOrder] = useState(['cartItems', 'sidebar']);
+  // Define sections for potential reordering, using layoutConfig if available
+  const [sectionOrder, setSectionOrder] = useState(() => {
+    if (layoutConfig?.contentSections) {
+      return layoutConfig.contentSections;
+    }
+    // Default order from layout config or fallback
+    return layoutConfig?.majorSlots || ['cartItems', 'sidebar'];
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

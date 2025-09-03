@@ -69,6 +69,12 @@ const GenericSlotEditor = ({
   const [draggedSlotId, setDraggedSlotId] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   
+  // Cart layout configuration state
+  const [cartLayoutConfig, setCartLayoutConfig] = useState(() => {
+    const saved = localStorage.getItem('cart_slots_layout_config');
+    return saved ? JSON.parse(saved) : null;
+  });
+  
   // Auto-save refs
   const saveTimeoutRef = useRef(null);
   const lastSavedRef = useRef(null);
@@ -1502,7 +1508,10 @@ export default ${componentName};`;
                     data={{}}
                     onSave={(config) => {
                       console.log('Saving Cart layout configuration:', config);
-                      // Save component code and configuration
+                      // Save layout configuration
+                      setCartLayoutConfig(config);
+                      localStorage.setItem('cart_slots_layout_config', JSON.stringify(config));
+                      // Also save to the main editor config
                       localStorage.setItem('cart_slots_editor_config', JSON.stringify(config));
                       triggerAutoSave();
                     }}
@@ -1520,7 +1529,10 @@ export default ${componentName};`;
               <CardContent className="p-0 h-full">
                 <div className="h-full overflow-auto bg-white">
                   {pageName === 'Cart' ? (
-                    <CartSlots />
+                    <CartSlots 
+                      layoutConfig={cartLayoutConfig}
+                      data={{}}
+                    />
                   ) : (
                     <LayoutPreview isDraggable={false} showSettings={false} />
                   )}
