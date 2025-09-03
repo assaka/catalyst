@@ -349,8 +349,9 @@ export default function CartSlotsEditor({
   const [historyIndex, setHistoryIndex] = useState(-1);
   
   // State for layout order
-  const [contentSections, setContentSections] = useState(['cartItems', 'sidebar']);
-  const [originalSections, setOriginalSections] = useState(['cartItems', 'sidebar']);
+  const [contentSections, setContentSections] = useState(['header', 'cartItems', 'sidebar', 'recommendedProducts']);
+  const [sidebarSlots, setSidebarSlots] = useState(['coupon', 'orderSummary']);
+  const [originalSections, setOriginalSections] = useState(['header', 'cartItems', 'sidebar', 'recommendedProducts']);
   
   // Destructure all props with defaults matching Cart.jsx
   const {
@@ -401,8 +402,17 @@ export default function CartSlotsEditor({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    if (['cartItems', 'sidebar'].includes(active.id)) {
+    // Check if we're moving main sections
+    if (['header', 'cartItems', 'sidebar', 'recommendedProducts'].includes(active.id)) {
       setContentSections((items) => {
+        const oldIndex = items.indexOf(active.id);
+        const newIndex = items.indexOf(over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+    // Check if we're moving sidebar slots
+    else if (['coupon', 'orderSummary'].includes(active.id)) {
+      setSidebarSlots((items) => {
         const oldIndex = items.indexOf(active.id);
         const newIndex = items.indexOf(over.id);
         return arrayMove(items, oldIndex, newIndex);
@@ -522,40 +532,51 @@ export default function CartSlotsEditor({
         />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12" style={{ paddingLeft: '60px', paddingRight: '60px' }}>
-          <EditableSection id="header" onEdit={handleEdit} isDraggable={false}>
-            <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">My Cart</h1>
-            <CmsBlockRenderer position="cart_above_items" />
-          </EditableSection>
 
-          {cartItems.length === 0 ? (
-            <EditableSection id="emptyCart" onEdit={handleEdit} isDraggable={false}>
-              <Card>
-                <CardContent className="text-center py-12">
-                  <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-                  <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
-                  <Button onClick={() => {
-                    const baseUrl = getStoreBaseUrl(store);
-                    window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
-                  }}>
-                    Continue Shopping
-                  </Button>
-                </CardContent>
-              </Card>
-            </EditableSection>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext items={contentSections} strategy={verticalListSortingStrategy}>
-                <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-                  {contentSections.map(sectionId => {
-                    if (sectionId === 'cartItems') {
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext items={contentSections} strategy={verticalListSortingStrategy}>
+              <div className="space-y-6">
+                {contentSections.map(sectionId => {
+                  // Header Section
+                  if (sectionId === 'header') {
+                    return (
+                      <EditableSection key={sectionId} id={sectionId} onEdit={handleEdit} isDraggable={true}>
+                        <div className="bg-white p-4 rounded-lg">
+                          <FlashMessage message={flashMessage} onClose={() => setFlashMessage(null)} />
+                          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Cart</h1>
+                          <CmsBlockRenderer position="cart_above_items" />
+                        </div>
+                      </EditableSection>
+                    );
+                  }
+                  
+                  // Empty Cart or Cart Items
+                  if (sectionId === 'cartItems') {
+                    if (cartItems.length === 0) {
                       return (
-                        <EditableSection key={sectionId} id={sectionId} onEdit={handleEdit} className="lg:col-span-2">
+                        <EditableSection key={sectionId} id={sectionId} onEdit={handleEdit} isDraggable={true}>
+                          <Card>
+                            <CardContent className="text-center py-12">
+                              <ShoppingCart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                              <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
+                              <p className="text-gray-600 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                              <Button onClick={() => {
+                                const baseUrl = getStoreBaseUrl(store);
+                                window.location.href = getExternalStoreUrl(store?.slug, '', baseUrl);
+                              }}>
+                                Continue Shopping
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        </EditableSection>
+                      );
+                    }
+                    return (
+                      <EditableSection key={sectionId} id={sectionId} onEdit={handleEdit} isDraggable={true}>
                           <Card>
                             <CardContent className="px-4 divide-y divide-gray-200">
                               {cartItems.map(item => {
@@ -647,11 +668,15 @@ export default function CartSlotsEditor({
                       );
                     }
                     
-                    if (sectionId === 'sidebar') {
-                      return (
-                        <EditableSection key={sectionId} id={sectionId} onEdit={null} isDraggable={true} className="lg:col-span-1 space-y-6 mt-8 lg:mt-0">
-                          {/* Coupon Section */}
-                          <EditableSection id="coupon" onEdit={handleEdit} isDraggable={false}>
+                  // Sidebar with draggable slots
+                  if (sectionId === 'sidebar') {
+                    return (
+                      <EditableSection key={sectionId} id={sectionId} onEdit={null} isDraggable={true}>
+                        <div className="space-y-4">
+                          {sidebarSlots.map(slotId => {
+                            if (slotId === 'coupon') {
+                              return (
+                                <EditableSection key={slotId} id={slotId} onEdit={handleEdit} isDraggable={true}>
                             <Card>
                               <CardHeader><CardTitle>Apply Coupon</CardTitle></CardHeader>
                               <CardContent>
@@ -694,9 +719,12 @@ export default function CartSlotsEditor({
                               </CardContent>
                             </Card>
                           </EditableSection>
-
-                          {/* Order Summary Section */}
-                          <EditableSection id="orderSummary" onEdit={handleEdit} isDraggable={false}>
+                              );
+                            }
+                            
+                            if (slotId === 'orderSummary') {
+                              return (
+                                <EditableSection key={slotId} id={slotId} onEdit={handleEdit} isDraggable={true}>
                             <Card>
                               <CardHeader><CardTitle>Order Summary</CardTitle></CardHeader>
                               <CardContent className="space-y-4">
@@ -727,22 +755,37 @@ export default function CartSlotsEditor({
                               </CardContent>
                             </Card>
                           </EditableSection>
-                        </EditableSection>
+                              );
+                            }
+                            return null;
+                          })}
+                        </div>
+                      </EditableSection>
                       );
                     }
                     
-                    return null;
-                  })}
-                </div>
-              </SortableContext>
-            </DndContext>
-          )}
-          
-          <EditableSection id="recommendedProducts" onEdit={handleEdit} isDraggable={false}>
-            <div className="mt-12">
-              <RecommendedProducts />
-            </div>
-          </EditableSection>
+                  // Recommended Products Section
+                  if (sectionId === 'recommendedProducts') {
+                    return (
+                      <EditableSection key={sectionId} id={sectionId} onEdit={handleEdit} isDraggable={true}>
+                        <div className="mt-8">
+                          {store && store.id ? (
+                            <RecommendedProducts storeId={store.id} />
+                          ) : (
+                            <div className="text-center py-8 bg-gray-50 rounded-lg">
+                              <p className="text-gray-500">Recommended products will appear here</p>
+                            </div>
+                          )}
+                        </div>
+                      </EditableSection>
+                    );
+                  }
+                  
+                  return null;
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       </div>
 
