@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import CartSlots from '@/pages/CartSlots';
 import CartSlotsEditor from '@/pages/CartSlotsEditor';
+import CartSlotsEditorWithMicroSlots from '@/pages/CartSlotsEditorWithMicroSlots';
 import { 
   Code, 
   Eye, 
@@ -1498,9 +1499,10 @@ export default ${componentName};`;
             <Card className="h-full">
               <CardContent className="p-0 h-full overflow-auto">
                 {pageName === 'Cart' ? (
-                  <CartSlotsEditor 
+                  <CartSlotsEditorWithMicroSlots 
+                    data={data}
                     onSave={(config) => {
-                      console.log('Saving Cart layout configuration:', config);
+                      console.log('Saving Cart layout configuration with micro-slots:', config);
                       // Save component code and configuration
                       localStorage.setItem('cart_slots_editor_config', JSON.stringify(config));
                       triggerAutoSave();
